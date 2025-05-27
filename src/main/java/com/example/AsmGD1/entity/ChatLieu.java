@@ -17,6 +17,6 @@ public class ChatLieu {
     @Column(name = "ten_chat_lieu")
     private String tenChatLieu;
 
-    @Column(name = "ma")
+    @Column(name = "ma nnnn")
     private String ma;
 }
