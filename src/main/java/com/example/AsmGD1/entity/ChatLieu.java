@@ -16,7 +16,4 @@ public class ChatLieu {
 
     @Column(name = "ten_chat_lieu")
     private String tenChatLieu;
-
-    @Column(name = "chat_lieu_deu")
-    private String chatLieuDeu;
 }
