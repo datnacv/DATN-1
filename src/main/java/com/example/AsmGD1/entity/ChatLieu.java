@@ -14,6 +14,9 @@ public class ChatLieu {
     @Column(name = "id")
     private Integer id;
 
-    @Column(name = "ten_chat_lieu")
+    @Column(name = "chat_lieu")
     private String tenChatLieu;
+
+    @Column(name = "ma_chat_lieu")
+    private String maChatLieu;
 }
