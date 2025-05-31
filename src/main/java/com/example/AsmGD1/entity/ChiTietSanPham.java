@@ -1,8 +1,9 @@
 package com.example.AsmGD1.entity;
 
-import jakarta.persistence.*;
 import lombok.Data;
-
+import jakarta.persistence.*;
+import java.util.UUID;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -10,8 +11,8 @@ import java.time.LocalDateTime;
 @Data
 public class ChiTietSanPham {
     @Id
-    @Column(name = "id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "id_san_pham")
@@ -24,6 +25,9 @@ public class ChiTietSanPham {
     @ManyToOne
     @JoinColumn(name = "id_mau_sac")
     private MauSac mauSac;
+
+    @Column(name = "gia")
+    private BigDecimal gia;
 
     @Column(name = "so_luong_ton_kho")
     private Integer soLuongTonKho;

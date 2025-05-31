@@ -1,11 +1,7 @@
 package com.example.AsmGD1.entity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Data;
-
+import jakarta.persistence.*;
+import java.util.UUID;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,8 +11,8 @@ import java.time.LocalDateTime;
 @Data
 public class ChienDichGiamGia {
     @Id
-    @Column(name = "id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @Column(name = "ten")
     private String ten;

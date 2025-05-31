@@ -1,11 +1,8 @@
 package com.example.AsmGD1.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Data;
-
+import jakarta.persistence.*;
+import java.util.UUID;
 import java.math.BigDecimal;
 
 @Entity
@@ -13,8 +10,9 @@ import java.math.BigDecimal;
 @Data
 public class PhuongThucBanHang {
     @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "ma")
-    private Integer ma;
+    private UUID ma;
 
     @Column(name = "ten")
     private String ten;

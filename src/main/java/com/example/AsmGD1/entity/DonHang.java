@@ -1,8 +1,8 @@
 package com.example.AsmGD1.entity;
 
-import jakarta.persistence.*;
 import lombok.Data;
-
+import jakarta.persistence.*;
+import java.util.UUID;
 import java.math.BigDecimal;
 
 @Entity
@@ -10,8 +10,8 @@ import java.math.BigDecimal;
 @Data
 public class DonHang {
     @Id
-    @Column(name = "id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "id_nguoi_dung")
