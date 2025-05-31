@@ -1,30 +1,31 @@
 package com.example.AsmGD1.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
-import java.util.UUID;
+import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "phieu_giam_gia")
 @Data
 public class PhieuGiamGia {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
-    @Column(name = "ten")
+    @Column(name = "ten", nullable = false, length = 100)
     private String ten;
 
-    @Column(name = "loai")
+    @Column(name = "loai", nullable = false, length = 50)
     private String loai;
 
-    @Column(name = "gia_tri_giam")
+    @Column(name = "gia_tri_giam", nullable = false, precision = 10, scale = 2)
     private BigDecimal giaTriGiam;
 
-    @Column(name = "gia_tri_giam_toi_thieu")
+    @Column(name = "gia_tri_giam_toi_thieu", precision = 10, scale = 2)
     private BigDecimal giaTriGiamToiThieu;
 
     @Column(name = "so_luong")
@@ -42,6 +43,9 @@ public class PhieuGiamGia {
     @Column(name = "ngay_ket_thuc")
     private LocalDate ngayKetThuc;
 
-    @Column(name = "thoi_gian_tao")
+    @Column(name = "thoi_gian_tao", nullable = false)
     private LocalDateTime thoiGianTao;
+
+    @Column(name = "kieu_phieu", length = 20)
+    private String kieuPhieu;
 }

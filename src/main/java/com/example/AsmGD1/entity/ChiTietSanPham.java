@@ -1,40 +1,68 @@
 package com.example.AsmGD1.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
-import java.util.UUID;
+import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "chi_tiet_san_pham")
 @Data
 public class ChiTietSanPham {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_san_pham")
+    @JoinColumn(name = "id_san_pham", nullable = false)
     private SanPham sanPham;
 
     @ManyToOne
-    @JoinColumn(name = "id_kich_co")
+    @JoinColumn(name = "id_kich_co", nullable = false)
     private KichCo kichCo;
 
     @ManyToOne
-    @JoinColumn(name = "id_mau_sac")
+    @JoinColumn(name = "id_mau_sac", nullable = false)
     private MauSac mauSac;
 
-    @Column(name = "gia")
+    @ManyToOne
+    @JoinColumn(name = "id_chat_lieu", nullable = false)
+    private ChatLieu chatLieu;
+
+    @ManyToOne
+    @JoinColumn(name = "id_xuat_xu", nullable = false)
+    private XuatXu xuatXu;
+
+    @ManyToOne
+    @JoinColumn(name = "id_tay_ao", nullable = false)
+    private TayAo tayAo;
+
+    @ManyToOne
+    @JoinColumn(name = "id_co_ao", nullable = false)
+    private CoAo coAo;
+
+    @ManyToOne
+    @JoinColumn(name = "id_kieu_dang", nullable = false)
+    private KieuDang kieuDang;
+
+    @ManyToOne
+    @JoinColumn(name = "id_thuong_hieu", nullable = false)
+    private ThuongHieu thuongHieu;
+
+    @Column(name = "gia", nullable = false, precision = 10, scale = 2)
     private BigDecimal gia;
 
-    @Column(name = "so_luong_ton_kho")
+    @Column(name = "so_luong_ton_kho", nullable = false)
     private Integer soLuongTonKho;
 
-    @Column(name = "thoi_gian_tao")
+    @Column(name = "gioi_tinh", length = 50)
+    private String gioiTinh;
+
+    @Column(name = "thoi_gian_tao", nullable = false)
     private LocalDateTime thoiGianTao;
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai;
 }

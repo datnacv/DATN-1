@@ -1,39 +1,40 @@
 package com.example.AsmGD1.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
-import java.util.UUID;
+import lombok.Data;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Entity
 @Table(name = "chi_tiet_don_hang")
 @Data
 public class ChiTietDonHang {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_don_hang")
+    @JoinColumn(name = "id_don_hang", nullable = false)
     private DonHang donHang;
 
     @ManyToOne
-    @JoinColumn(name = "id_chi_tiet_san_pham")
+    @JoinColumn(name = "id_chi_tiet_san_pham", nullable = false)
     private ChiTietSanPham chiTietSanPham;
 
-    @Column(name = "so_luong")
+    @Column(name = "so_luong", nullable = false)
     private Integer soLuong;
 
-    @Column(name = "gia")
+    @Column(name = "gia", nullable = false, precision = 10, scale = 2)
     private BigDecimal gia;
 
-    @Column(name = "ten_san_pham")
+    @Column(name = "ten_san_pham", nullable = false, length = 100)
     private String tenSanPham;
 
-    @Column(name = "thanh_tien")
+    @Column(name = "thanh_tien", nullable = false, precision = 10, scale = 2)
     private BigDecimal thanhTien;
 
-    @Column(name = "ghi_chu")
+    @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
 
     @Column(name = "trang_thai_hoan_tra")

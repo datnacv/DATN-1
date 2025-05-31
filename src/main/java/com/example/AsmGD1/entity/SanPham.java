@@ -1,52 +1,38 @@
 package com.example.AsmGD1.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
-import java.util.UUID;
+import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "san_pham")
 @Data
 public class SanPham {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_chat_lieu")
-    private ChatLieu chatLieu;
-
-    @ManyToOne
-    @JoinColumn(name = "id_xuat_xu")
-    private XuatXu xuatXu;
-
-    @ManyToOne
-    @JoinColumn(name = "id_phong_cach")
-    private PhongCach phongCach;
-
-    @ManyToOne
-    @JoinColumn(name = "id_danh_muc")
+    @JoinColumn(name = "id_danh_muc", nullable = false)
     private DanhMuc danhMuc;
 
-    @Column(name = "ten_san_pham")
-    private String tenSanPham;
-
-    @Column(name = "ma_san_pham")
+    @Column(name = "ma_san_pham", nullable = false, length = 50, unique = true)
     private String maSanPham;
 
-    @Column(name = "mo_ta")
+    @Column(name = "ten_san_pham", nullable = false, length = 100)
+    private String tenSanPham;
+
+    @Column(name = "mo_ta", columnDefinition = "NVARCHAR(MAX)")
     private String moTa;
 
-    @Column(name = "url_hinh_anh")
+    @Column(name = "url_hinh_anh", columnDefinition = "NVARCHAR(MAX)")
     private String urlHinhAnh;
 
-    @Column(name = "id_nha_phan_phoi")
-    private Integer idNhaPhanPhoi;
-
-    @Column(name = "thoi_gian_tao")
+    @Column(name = "thoi_gian_tao", nullable = false)
     private LocalDateTime thoiGianTao;
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai;
 }
