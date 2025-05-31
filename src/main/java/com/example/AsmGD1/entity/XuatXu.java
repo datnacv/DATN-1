@@ -1,7 +1,7 @@
 package com.example.AsmGD1.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
+import lombok.Data;
 import java.util.UUID;
 
 @Entity
@@ -9,9 +9,10 @@ import java.util.UUID;
 @Data
 public class XuatXu {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
-    @Column(name = "ten_xuat_xu")
+    @Column(name = "ten_xuat_xu", nullable = false, length = 100)
     private String tenXuatXu;
 }

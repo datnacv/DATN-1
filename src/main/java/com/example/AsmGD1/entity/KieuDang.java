@@ -5,14 +5,14 @@ import lombok.Data;
 import java.util.UUID;
 
 @Entity
-@Table(name = "mau_sac")
+@Table(name = "kieu_dang")
 @Data
-public class MauSac {
+public class KieuDang {
     @Id
     @GeneratedValue
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
-    @Column(name = "ten_mau", nullable = false, length = 100)
-    private String tenMau;
+    @Column(name = "ten_kieu_dang", nullable = false, length = 50)
+    private String tenKieuDang;
 }
