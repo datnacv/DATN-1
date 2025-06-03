@@ -26,7 +26,7 @@
     <table class="table table-bordered">
         <thead>
         <tr>
-            <th>ID</th>
+            <th>STT</th>
             <th>Họ tên</th>
             <th>Email</th>
             <th>Số điện thoại</th>
@@ -35,8 +35,8 @@
         </tr>
         </thead>
         <tbody>
-        <tr th:each="customer : ${customers}">
-            <td th:text="${customer.id}"></td>
+        <tr th:each="customer, Stat : ${customers}">
+            <td th:text="${Stat.index + 1}"></td>
             <td th:text="${customer.hoTen}"></td>
             <td th:text="${customer.email}"></td>
             <td th:text="${customer.soDienThoai}"></td>
@@ -75,7 +75,6 @@
                 </div>
                 <div class="modal-body">
                     <form th:action="@{/customers/add}" th:object="${customer}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                         <div class="mb-3">
                             <label for="hoTen" class="form-label">Họ tên</label>
                             <input type="text" class="form-control" id="hoTen" th:field="*{hoTen}" required>
@@ -130,7 +129,6 @@
                     </div>
                     <div class="modal-body">
                         <form th:action="@{/customers/edit}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <input type="hidden" name="id" th:value="${customer.id}">
                             <div class="mb-3">
                                 <label for="hoTenEdit" class="form-label">Họ tên</label>
@@ -188,7 +186,6 @@
                     <div class="modal-body">
                         <p>Bạn có chắc chắn muốn xóa <span th:text="${customer.hoTen}"></span>?</p>
                         <form th:action="@{/customers/delete/{id}(id=${customer.id})}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                             <button type="submit" class="btn btn-danger">Xóa</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                         </form>
