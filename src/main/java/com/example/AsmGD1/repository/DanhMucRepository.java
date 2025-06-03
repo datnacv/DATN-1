@@ -2,7 +2,14 @@ package com.example.AsmGD1.repository;
 
 import com.example.AsmGD1.entity.DanhMuc;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
-public interface DanhMucRepository extends JpaRepository<DanhMuc, Integer> {
+import java.util.List;
+import java.util.UUID;
 
+@Repository
+public interface DanhMucRepository extends JpaRepository<DanhMuc, UUID> {
+    @Query("SELECT d FROM DanhMuc d WHERE LOWER(d.tenDanhMuc) LIKE LOWER(CONCAT('%', :tenDanhMuc, '%'))")
+    List<DanhMuc> findByTenDanhMucContainingIgnoreCase(String tenDanhMuc);
 }
