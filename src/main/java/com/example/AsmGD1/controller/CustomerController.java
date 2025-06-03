@@ -7,8 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Controller
@@ -28,51 +28,40 @@ public class CustomerController {
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
-        return "WebQuanly/customer/list";
+        return "WebQuanly/list-khach-hang";
     }
 
     @PostMapping("/add")
-    public String addCustomer(@ModelAttribute("customer") NguoiDung customer) {
+    public String addCustomer(@ModelAttribute("customer") NguoiDung customer, RedirectAttributes redirectAttributes) {
         customer.setVaiTro("customer");
         nguoiDungService.save(customer);
+        redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thành công!");
+        redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/customers";
     }
 
     @PostMapping("/edit")
-    public String editCustomer(
-            @RequestParam("id") UUID id,
-            @RequestParam("hoTen") String hoTen,
-            @RequestParam("email") String email,
-            @RequestParam("soDienThoai") String soDienThoai,
-            @RequestParam("tenDangNhap") String tenDangNhap,
-            @RequestParam("matKhau") String matKhau,
-            @RequestParam(value = "ngaySinh", required = false) LocalDate ngaySinh,
-            @RequestParam("gioiTinh") Boolean gioiTinh,
-            @RequestParam(value = "diaChi", required = false) String diaChi) {
-        NguoiDung customer = nguoiDungService.findById(id);
-        if (customer == null) {
-            throw new RuntimeException("Không tìm thấy khách hàng với ID: " + id);
+    public String editCustomer(@ModelAttribute("customer") NguoiDung customer, RedirectAttributes redirectAttributes) {
+        NguoiDung existingCustomer = nguoiDungService.findById(customer.getId());
+        if (existingCustomer == null) {
+            throw new RuntimeException("Không tìm thấy khách hàng với ID: " + customer.getId());
         }
-        customer.setHoTen(hoTen);
-        customer.setEmail(email);
-        customer.setSoDienThoai(soDienThoai);
-        customer.setTenDangNhap(tenDangNhap);
-        customer.setMatKhau(matKhau);
-        customer.setNgaySinh(ngaySinh);
-        customer.setGioiTinh(gioiTinh);
-        customer.setDiaChi(diaChi);
         customer.setVaiTro("customer");
         nguoiDungService.save(customer);
+        redirectAttributes.addFlashAttribute("message", "Sửa khách hàng thành công!");
+        redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/customers";
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteCustomer(@PathVariable UUID id) {
+    public String deleteCustomer(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
         NguoiDung customer = nguoiDungService.findById(id);
         if (customer == null) {
             throw new RuntimeException("Không tìm thấy khách hàng với ID: " + id);
         }
         nguoiDungService.deleteById(id);
+        redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thành công!");
+        redirectAttributes.addFlashAttribute("messageType", "success");
         return "redirect:/customers";
     }
 }

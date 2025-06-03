@@ -1,25 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Employee Management</title>
+    <title>Quản lý nhân viên</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="container mt-5">
-    <h2>Employee Management</h2>
+    <h2>Quản lý nhân viên</h2>
+
+    <!-- Hiển thị thông báo -->
+    <div th:if="${message}" class="alert" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 
     <!-- Search Form -->
     <form th:action="@{/employees}" method="get" class="mb-3">
         <div class="input-group">
-            <input type="text" name="keyword" class="form-control" th:value="${keyword}" placeholder="Search by name, email, or phone">
-            <button type="submit" class="btn btn-primary">Search</button>
+            <input type="text" name="keyword" class="form-control" th:value="${keyword}" placeholder="Tìm theo tên, email hoặc số điện thoại">
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
         </div>
     </form>
 
     <!-- Add Employee Button -->
     <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-        Add Employee
+        Thêm nhân viên
     </button>
 
     <!-- Employee List Table -->
@@ -27,15 +33,14 @@
         <thead>
         <tr>
             <th>ID</th>
-            <th>Full Name</th>
-            <th>Tên đăng nhập</th>
-            <th>Mật khẩu</th>
-
-
+            <th>Họ tên</th>
+            <th>Tên đăng nhập</th>
+            <th>Mật khẩu</th>
             <th>Email</th>
-            <th>Phone</th>
-            <th>Role</th>
-            <th>Actions</th>
+            <th>Số điện thoại</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Hành động</th>
         </tr>
         </thead>
         <tbody>
@@ -46,40 +51,32 @@
             <td th:text="${employee.matKhau}"></td>
             <td th:text="${employee.email}"></td>
             <td th:text="${employee.soDienThoai}"></td>
-            <td th:text="${employee.vaiTro}"></td>
+            <td th:text="${employee.vaiTro == 'employee' ? 'Nhân Viên' : employee.vaiTro}"></td>
+            <td th:text="${employee.trangThai == true ? 'Hoạt động' : 'Ngưng hoạt động'}"></td>
             <td>
                 <button type="button" class="btn btn-primary btn-sm"
                         data-bs-toggle="modal"
-                        th:data-bs-target="'#editEmployeeModal' + ${employee.id}"
-                        th:attr="data-id=${employee.id},
-                                 data-hoTen=${employee.hoTen},
-                                 data-email=${employee.email},
-                                 data-soDienThoai=${employee.soDienThoai},
-                                 data-tenDangNhap=${employee.tenDangNhap},
-                                 data-matKhau=${employee.matKhau},
-                                 data-ngaySinh=${employee.ngaySinh != null ? employee.ngaySinh : ''},
-                                 data-gioiTinh=${employee.gioiTinh},
-                                 data-diaChi=${employee.diaChi}">
-                    Edit
+                        th:data-bs-target="'#editEmployeeModal' + ${employee.id}">
+                    Sửa
                 </button>
-                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}">Delete</button>
+                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}">Xóa</button>
             </td>
         </tr>
         </tbody>
     </table>
 
     <!-- Pagination -->
-    <nav aria-label="Page navigation">
+    <nav aria-label="Phân trang">
         <ul class="pagination">
             <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                <a class="page-link" th:href="@{/employees(page=${currentPage - 1}, keyword=${keyword})}">Previous</a>
+                <a class="page-link" th:href="@{/employees(page=${currentPage - 1}, keyword=${keyword})}">Trước</a>
             </li>
             <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${i == currentPage} ? 'active'">
                 <a class="page-link" th:href="@{/employees(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
             </li>
             <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                <a class="page-link" th:href="@{/employees(page=${currentPage + 1}, keyword=${keyword})}">Next</a>
+                <a class="page-link" th:href="@{/employees(page=${currentPage + 1}, keyword=${keyword})}">Sau</a>
             </li>
         </ul>
     </nav>
@@ -89,14 +86,14 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addEmployeeModalLabel">Add Employee</h5>
+                    <h5 class="modal-title" id="addEmployeeModalLabel">Thêm nhân viên</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form th:action="@{/employees/add}" th:object="${employee}" method="post">
 
                         <div class="mb-3">
-                            <label for="hoTen" class="form-label">Full Name</label>
+                            <label for="hoTen" class="form-label">Họ tên</label>
                             <input type="text" class="form-control" id="hoTen" th:field="*{hoTen}" required>
                         </div>
                         <div class="mb-3">
@@ -104,34 +101,41 @@
                             <input type="email" class="form-control" id="email" th:field="*{email}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="soDienThoai" class="form-label">Phone</label>
+                            <label for="soDienThoai" class="form-label">Số điện thoại</label>
                             <input type="text" class="form-control" id="soDienThoai" th:field="*{soDienThoai}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="tenDangNhap" class="form-label">Username</label>
+                            <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
                             <input type="text" class="form-control" id="tenDangNhap" th:field="*{tenDangNhap}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="matKhau" class="form-label">Password</label>
+                            <label for="matKhau" class="form-label">Mật khẩu</label>
                             <input type="password" class="form-control" id="matKhau" th:field="*{matKhau}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="ngaySinh" class="form-label">Birth Date</label>
+                            <label for="ngaySinh" class="form-label">Ngày sinh</label>
                             <input type="date" class="form-control" id="ngaySinh" th:field="*{ngaySinh}">
                         </div>
                         <div class="mb-3">
-                            <label for="gioiTinh" class="form-label">Gender</label>
+                            <label for="gioiTinh" class="form-label">Giới tính</label>
                             <select class="form-control" id="gioiTinh" th:field="*{gioiTinh}">
-                                <option value="true">Male</option>
-                                <option value="false">Female</option>
+                                <option value="true">Nam</option>
+                                <option value="false">Nữ</option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="diaChi" class="form-label">Address</label>
+                            <label for="diaChi" class="form-label">Địa chỉ</label>
                             <input type="text" class="form-control" id="diaChi" th:field="*{diaChi}">
                         </div>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <div class="mb-3">
+                            <label for="trangThai" class="form-label">Trạng thái</label>
+                            <select class="form-control" id="trangThai" th:field="*{trangThai}">
+                                <option value="true">Hoạt động</option>
+                                <option value="false">Ngưng hoạt động</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                     </form>
                 </div>
             </div>
@@ -144,15 +148,15 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" th:id="'editEmployeeModalLabel' + ${employee.id}">Edit Employee</h5>
+                        <h5 class="modal-title" th:id="'editEmployeeModalLabel' + ${employee.id}">Sửa nhân viên</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form th:action="@{/employees/edit}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
                             <input type="hidden" name="id" th:value="${employee.id}">
                             <div class="mb-3">
-                                <label for="hoTenEdit" class="form-label">Full Name</label>
+                                <label for="hoTenEdit" class="form-label">Họ tên</label>
                                 <input type="text" class="form-control" id="hoTenEdit" name="hoTen" th:value="${employee.hoTen}" required>
                             </div>
                             <div class="mb-3">
@@ -160,34 +164,41 @@
                                 <input type="email" class="form-control" id="emailEdit" name="email" th:value="${employee.email}" required>
                             </div>
                             <div class="mb-3">
-                                <label for="soDienThoaiEdit" class="form-label">Phone</label>
+                                <label for="soDienThoaiEdit" class="form-label">Số điện thoại</label>
                                 <input type="text" class="form-control" id="soDienThoaiEdit" name="soDienThoai" th:value="${employee.soDienThoai}" required>
                             </div>
                             <div class="mb-3">
-                                <label for="tenDangNhapEdit" class="form-label">Username</label>
+                                <label for="tenDangNhapEdit" class="form-label">Tên đăng nhập</label>
                                 <input type="text" class="form-control" id="tenDangNhapEdit" name="tenDangNhap" th:value="${employee.tenDangNhap}" required>
                             </div>
                             <div class="mb-3">
-                                <label for="matKhauEdit" class="form-label">Password</label>
+                                <label for="matKhauEdit" class="form-label">Mật khẩu</label>
                                 <input type="password" class="form-control" id="matKhauEdit" name="matKhau" th:value="${employee.matKhau}" required>
                             </div>
                             <div class="mb-3">
-                                <label for="ngaySinhEdit" class="form-label">Birth Date</label>
-                                <input type="date" class="form-control" id="ngaySinhEdit" name="ngaySinh" th:value="${employee.ngaySinh}">
+                                <label for="ngaySinhEdit" class="form-label">Ngày sinh</label>
+                                <input type="date" class="form-control" id="ngaySinhEdit" name="ngaySinh" th:value="${employee.ngaySinh != null ? #temporals.format(employee.ngaySinh, 'yyyy-MM-dd') : ''}">
                             </div>
                             <div class="mb-3">
-                                <label for="gioiTinhEdit" class="form-label">Gender</label>
+                                <label for="gioiTinhEdit" class="form-label">Giới tính</label>
                                 <select class="form-control" id="gioiTinhEdit" name="gioiTinh">
-                                    <option value="true" th:selected="${employee.gioiTinh == true}">Male</option>
-                                    <option value="false" th:selected="${employee.gioiTinh == false}">Female</option>
+                                    <option value="true" th:selected="${employee.gioiTinh == true}">Nam</option>
+                                    <option value="false" th:selected="${employee.gioiTinh == false}">Nữ</option>
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="diaChiEdit" class="form-label">Address</label>
+                                <label for="diaChiEdit" class="form-label">Địa chỉ</label>
                                 <input type="text" class="form-control" id="diaChiEdit" name="diaChi" th:value="${employee.diaChi}">
                             </div>
-                            <button type="submit" class="btn btn-primary">Save</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <div class="mb-3">
+                                <label for="trangThaiEdit" class="form-label">Trạng thái</label>
+                                <select class="form-control" id="trangThaiEdit" name="trangThai">
+                                    <option value="true" th:selected="${employee.trangThai == true}">Hoạt động</option>
+                                    <option value="false" th:selected="${employee.trangThai == false}">Ngưng hoạt động</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Lưu</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                         </form>
                     </div>
                 </div>
@@ -201,15 +212,15 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" th:id="'deleteEmployeeModalLabel' + ${employee.id}">Delete Employee</h5>
+                        <h5 class="modal-title" th:id="'deleteEmployeeModalLabel' + ${employee.id}">Xóa nhân viên</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Are you sure you want to delete <span th:text="${employee.hoTen}"></span>?</p>
+                        <p>Bạn có chắc chắn muốn xóa <span th:text="${employee.hoTen}"></span>?</p>
                         <form th:action="@{/employees/delete/{id}(id=${employee.id})}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                            <button type="submit" class="btn btn-danger">Delete</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+
+                            <button type="submit" class="btn btn-danger">Xóa</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                         </form>
                     </div>
                 </div>

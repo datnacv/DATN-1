@@ -9,6 +9,12 @@
 <div class="container mt-5">
     <h2>Quản lý khách hàng</h2>
 
+    <!-- Hiển thị thông báo -->
+    <div th:if="${message}" class="alert" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
     <!-- Form tìm kiếm -->
     <form th:action="@{/customers}" method="get" class="mb-3">
         <div class="input-group">
@@ -28,8 +34,8 @@
         <tr>
             <th>ID</th>
             <th>Họ tên</th>
-            <th>Tn đăng nhập</th>
-            <th>Mật khẩu</th>
+            <th>Tên đăng nhập</th>
+            <th>Mật khẩu</th>
             <th>Email</th>
             <th>Số điện thoại</th>
             <th>Vai trò</th>
@@ -42,10 +48,9 @@
             <td th:text="${customer.hoTen}"></td>
             <td th:text="${customer.tenDangNhap}"></td>
             <td th:text="${customer.matKhau}"></td>
-
             <td th:text="${customer.email}"></td>
             <td th:text="${customer.soDienThoai}"></td>
-            <td th:text="${customer.vaiTro}"></td>
+            <td th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></td>
             <td>
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" th:data-bs-target="'#editCustomerModal' + ${customer.id}">Sửa</button>
                 <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteCustomerModal' + ${customer.id}">Xóa</button>
@@ -80,7 +85,7 @@
                 </div>
                 <div class="modal-body">
                     <form th:action="@{/customers/add}" th:object="${customer}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
                         <div class="mb-3">
                             <label for="hoTen" class="form-label">Họ tên</label>
                             <input type="text" class="form-control" id="hoTen" th:field="*{hoTen}" required>
@@ -88,18 +93,22 @@
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" th:field="*{email}" required>
+                            <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger"></div>
                         </div>
                         <div class="mb-3">
                             <label for="soDienThoai" class="form-label">Số điện thoại</label>
                             <input type="text" class="form-control" id="soDienThoai" th:field="*{soDienThoai}" required>
+                            <div th:if="${#fields.hasErrors('soDienThoai')}" th:errors="*{soDienThoai}" class="text-danger"></div>
                         </div>
                         <div class="mb-3">
                             <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
                             <input type="text" class="form-control" id="tenDangNhap" th:field="*{tenDangNhap}" required>
+                            <div th:if="${#fields.hasErrors('tenDangNhap')}" th:errors="*{tenDangNhap}" class="text-danger"></div>
                         </div>
                         <div class="mb-3">
                             <label for="matKhau" class="form-label">Mật khẩu</label>
                             <input type="password" class="form-control" id="matKhau" th:field="*{matKhau}" required>
+                            <div th:if="${#fields.hasErrors('matKhau')}" th:errors="*{matKhau}" class="text-danger"></div>
                         </div>
                         <div class="mb-3">
                             <label for="ngaySinh" class="form-label">Ngày sinh</label>
@@ -135,7 +144,7 @@
                     </div>
                     <div class="modal-body">
                         <form th:action="@{/customers/edit}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
                             <input type="hidden" name="id" th:value="${customer.id}">
                             <div class="mb-3">
                                 <label for="hoTenEdit" class="form-label">Họ tên</label>
@@ -193,7 +202,7 @@
                     <div class="modal-body">
                         <p>Bạn có chắc chắn muốn xóa <span th:text="${customer.hoTen}"></span>?</p>
                         <form th:action="@{/customers/delete/{id}(id=${customer.id})}" method="post">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
                             <button type="submit" class="btn btn-danger">Xóa</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                         </form>

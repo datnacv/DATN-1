@@ -64,5 +64,5 @@ public class NguoiDung {
     private LocalDateTime thoiGianBatHanOtp;
 
     @Column(name = "trang_thai", nullable = false)
-    private Boolean trangThai;
+    private Boolean trangThai = true;
 }
