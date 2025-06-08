@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Chỉnh sửa đợt giảm giá</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="d-flex">
+    <div class="content mt-4">
+        <form th:action="@{/admin/chien-dich-giam-gia/update}" method="post" id="updateCampaignForm">
+            <input type="hidden" name="id" th:value="${chienDich.id}" />
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">Thông tin đợt giảm giá</div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Mã đợt</label>
+                                <input type="text" class="form-control" name="ma" th:value="${chienDich.ma}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tên đợt</label>
+                                <input type="text" class="form-control" name="ten" th:value="${chienDich.ten}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">% giảm</label>
+                                <input type="number" class="form-control" name="phanTramGiam" th:value="${chienDich.phanTramGiam}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Số lượng</label>
+                                <input type="number" class="form-control" name="soLuong" th:value="${chienDich.soLuong}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Ngày bắt đầu</label>
+                                <input type="date" class="form-control" name="ngayBatDau"
+                                       th:value="${#temporals.format(chienDich.ngayBatDau, 'yyyy-MM-dd')}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Ngày kết thúc</label>
+                                <input type="date" class="form-control" name="ngayKetThuc"
+                                       th:value="${#temporals.format(chienDich.ngayKetThuc, 'yyyy-MM-dd')}" required>
+                            </div>
+                            <div class="col-md-12 d-flex justify-content-end">
+                                <button type="reset" class="btn btn-outline-secondary me-2">Làm mới</button>
+                                <button type="submit" class="btn btn-warning">Cập nhật đợt giảm giá</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">Danh sách sản phẩm</div>
+                        <div class="card-body">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-white">
+                                    <i class="fas fa-search text-secondary"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0" id="productSearchInput" placeholder="Nhập tên sản phẩm...">
+                            </div>
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllProducts"></th>
+                                    <th>Mã</th>
+                                    <th>Tên sản phẩm</th>
+                                </tr>
+                                </thead>
+                                <tbody id="productTableBody">
+                                <tr th:each="product : ${productPage.content}" th:data-id="${product.id}" class="product-row">
+                                    <td><input type="checkbox" class="product-checkbox" th:value="${product.id}" th:checked="${selectedProductIds.contains(product.id)}"></td>
+                                    <td th:text="${product.maSanPham}"></td>
+                                    <td th:text="${product.tenSanPham}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <nav id="productPagination" class="mt-3"></nav>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">Chi tiết sản phẩm</div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllDetails"></th>
+                                    <th>Tên SP</th>
+                                    <th>Màu</th>
+                                    <th>Size</th>
+                                    <th>Giá</th>
+                                    <th>Tồn</th>
+                                </tr>
+                                </thead>
+                                <tbody id="productDetailTableBody"></tbody>
+                            </table>
+                            <input type="hidden" id="selectedProductDetailIdsInput"
+                                   name="selectedProductDetailIds"
+                                   th:value="${#strings.listJoin(selectedDetails.![chiTietSanPham.id], ',')}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<script th:inline="javascript">
+    const pageSize = 5;
+    const selectedProductIds = new Set([[${selectedProductIds}]].map(String));
+    const selectedDetailIds = new Set([[${#strings.listJoin(selectedDetails.![chiTietSanPham.id], ',')}]].split(","));
+
+    function updateSelectAll(checkboxSelector, masterId) {
+        const all = document.querySelectorAll(checkboxSelector);
+        const master = document.getElementById(masterId);
+        master.checked = [...all].every(cb => cb.checked);
+    }
+
+    function attachCheckboxHandler(selector, selectedSet, inputId, masterId) {
+        document.querySelectorAll(selector).forEach(cb => {
+            cb.addEventListener("change", () => {
+                cb.checked ? selectedSet.add(cb.value) : selectedSet.delete(cb.value);
+                if (inputId) document.getElementById(inputId).value = [...selectedSet].join(',');
+                if (masterId) updateSelectAll(selector, masterId);
+            });
+        });
+    }
+
+    function loadProductDetails() {
+        const container = document.getElementById("productDetailTableBody");
+        if (selectedProductIds.size === 0) {
+            container.innerHTML = `<tr><td colspan="6">Chưa chọn sản phẩm nào</td></tr>`;
+            return;
+        }
+        fetch(`/admin/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
+            .then(res => res.json())
+            .then(data => {
+                container.innerHTML = "";
+                data.forEach(detail => {
+                    const checked = selectedDetailIds.has(String(detail.id)) ? 'checked' : '';
+                    container.innerHTML += `
+<tr>
+<td><input type="checkbox" class="detail-checkbox" value="${detail.id}" ${checked}></td>
+<td>${detail.sanPham?.tenSanPham || 'N/A'}</td>
+<td>${detail.mauSac?.ten || 'N/A'}</td>
+<td>${detail.kichCo?.ten || 'N/A'}</td>
+<td>${detail.gia || 'N/A'}</td>
+<td>${detail.soLuongTonKho || 0}</td>
+</tr>`;
+                });
+                attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectedProductDetailIdsInput", "selectAllDetails");
+                updateSelectAll(".detail-checkbox", "selectAllDetails");
+            });
+    }
+
+    function renderProductList(products) {
+        const tbody = document.getElementById("productTableBody");
+        tbody.innerHTML = products.length === 0
+            ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
+            : products.map(p => `
+<tr class="product-row" data-id="${p.id}">
+<td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''}></td>
+<td>${p.maSanPham}</td>
+<td>${p.tenSanPham}</td>
+</tr>`).join('');
+        attachCheckboxHandler(".product-checkbox", selectedProductIds, null, "selectAllProducts");
+        updateSelectAll(".product-checkbox", "selectAllProducts");
+        loadProductDetails();
+    }
+
+    function renderPagination(totalPages, currentPage, keyword) {
+        const pagination = document.getElementById("productPagination");
+        if (!pagination) return;
+
+        let html = `<ul class="pagination justify-content-center">`;
+        for (let i = 0; i < totalPages; i++) {
+            html += `
+<li class="page-item ${i === currentPage ? 'active' : ''}">
+<a class="page-link" href="#" data-page="${i}" data-keyword="${keyword}">${i + 1}</a>
+</li>`;
+        }
+        html += `</ul>`;
+        pagination.innerHTML = html;
+
+        pagination.querySelectorAll(".page-link").forEach(link => {
+            link.addEventListener("click", e => {
+                e.preventDefault();
+                const page = parseInt(link.dataset.page);
+                const keyword = link.dataset.keyword;
+                searchProducts(keyword, page);
+            });
+        });
+    }
+
+    function searchProducts(keyword = "", page = 0) {
+        fetch(`/admin/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}`)
+            .then(res => res.json())
+            .then(data => {
+                renderProductList(data.content);
+                renderPagination(data.totalPages, data.number, keyword);
+            });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        attachCheckboxHandler(".product-checkbox", selectedProductIds, null, "selectAllProducts");
+        updateSelectAll(".product-checkbox", "selectAllProducts");
+        loadProductDetails();
+
+        document.getElementById("selectAllProducts")?.addEventListener("change", function () {
+            document.querySelectorAll(".product-checkbox").forEach(cb => {
+                cb.checked = this.checked;
+                this.checked ? selectedProductIds.add(cb.value) : selectedProductIds.delete(cb.value);
+            });
+            loadProductDetails();
+        });
+
+        document.getElementById("selectAllDetails")?.addEventListener("change", function () {
+            document.querySelectorAll(".detail-checkbox").forEach(cb => {
+                cb.checked = this.checked;
+                this.checked ? selectedDetailIds.add(cb.value) : selectedDetailIds.delete(cb.value);
+            });
+            document.getElementById("selectedProductDetailIdsInput").value = [...selectedDetailIds].join(',');
+        });
+
+        document.getElementById("updateCampaignForm")?.addEventListener("submit", function () {
+            document.getElementById("selectedProductDetailIdsInput").value = [...selectedDetailIds].join(',');
+        });
+
+        document.getElementById("productSearchInput").addEventListener("input", function () {
+            clearTimeout(this._searchTimer);
+            const query = this.value.trim();
+            this._searchTimer = setTimeout(() => searchProducts(query, 0), 300);
+        });
+
+        // Load initial product page with pagination
+        searchProducts("", [[${currentProductPage}]]);
+    });
+</script>
+
+
+</body>
+</html>

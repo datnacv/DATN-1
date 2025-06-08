@@ -17,6 +17,11 @@ public class ChienDichGiamGia {
     @Column(name = "ten")
     private String ten;
 
+    @Column(name = "ma", nullable = false, length = 50)
+    private String ma;
+
+
+
     @Column(name = "hinh_thuc_giam")
     private String hinhThucGiam;
 
@@ -34,4 +39,15 @@ public class ChienDichGiamGia {
 
     @Column(name = "thoi_gian_tao")
     private LocalDateTime thoiGianTao;
+    public String getStatus() {
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(ngayBatDau)) {
+            return "UPCOMING"; // Sắp diễn ra
+        } else if (today.isAfter(ngayKetThuc)) {
+            return "ENDED"; // Đã kết thúc
+        } else {
+            return "ONGOING"; // Đang diễn ra
+        }
+    }
+
 }
