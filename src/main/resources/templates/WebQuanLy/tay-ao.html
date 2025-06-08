@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Tay áo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        /* Ensure content is not overlapped by the fixed navbar */
+        .content {
+            margin-top: 70px; /* Adjust based on navbar height */
+            max-width: 1200px; /* Optional: Limit content width */
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
+</head>
+<body>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+    <a class="navbar-brand fw-bold text-primary" href="#">
+        <i class="fas fa-store-alt me-2"></i>ACV Admin
+    </a>
+    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+</nav>
+
+<!-- Content -->
+<div class="content p-4">
+    <h2 class="text-center my-4">Danh sách Tay áo</h2>
+
+    <!-- Thanh tìm kiếm -->
+    <div class="mb-3 d-flex justify-content-center">
+        <form th:action="@{/acvstore/tay-ao}" method="get" class="d-flex w-50">
+            <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm theo tên tay áo..." th:value="${param.search}">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Tìm
+            </button>
+        </form>
+    </div>
+
+    <!-- Nút Thêm Tay áo Mới -->
+    <div class="mb-3 text-center">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#tayAoModal" onclick="resetModal()">
+            <i class="fas fa-plus"></i> Thêm Tay áo Mới
+        </button>
+    </div>
+
+    <!-- Bảng Tay áo -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Tên tay áo</th>
+                <th>Hành động</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="tayAo, stat : ${tayAoList}">
+                <td th:text="${stat.count}"></td>
+                <td th:text="${tayAo.tenTayAo}"></td>
+                <td>
+                    <button class="btn btn-warning btn-sm btn-custom"
+                            data-bs-toggle="modal"
+                            data-bs-target="#tayAoModal"
+                            th:attr="data-id=${tayAo.id},data-name=${tayAo.tenTayAo}"
+                            onclick="fillModal(this)">
+                        <i class="fas fa-edit"></i> Sửa
+                    </button>
+                    <a th:href="@{/acvstore/tay-ao/delete/{id}(id=${tayAo.id})}"
+                       class="btn btn-danger btn-sm"
+                       onclick="return confirm('Bạn có chắc chắn muốn xóa?');">
+                        <i class="fas fa-trash-alt"></i> Xóa
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Tay áo -->
+<div class="modal fade" id="tayAoModal" tabindex="-1" aria-labelledby="tayAoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tayAoModalLabel">Thêm Tay áo Mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/acvstore/tay-ao/save}" method="post">
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="tayAoId">
+                    <div class="mb-3">
+                        <label for="tayAoName" class="form-label">Tên tay áo</label>
+                        <input type="text" name="tenTayAo" id="tayAoName" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Đóng
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/sidebar.js}" defer></script>
+<script>
+    function resetModal() {
+        document.getElementById('tayAoModalLabel').textContent = 'Thêm Tay áo Mới';
+        document.getElementById('tayAoId').value = '';
+        document.getElementById('tayAoName').value = '';
+    }
+
+    function fillModal(button) {
+        document.getElementById('tayAoModalLabel').textContent = 'Sửa Tay áo';
+        const id = button.getAttribute('data-id');
+        const name = button.getAttribute('data-name');
+        document.getElementById('tayAoId').value = id;
+        document.getElementById('tayAoName').value = name;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sản Phẩm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #eef2f7;
+            color: #333;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .page-title {
+            color: #343a40;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .card {
+            border: none;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+            border: 1px solid #ced4da;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        .btn {
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        .btn-warning {
+            background-color: #ffc107;
+            border-color: #ffc107;
+            color: #333;
+        }
+        .btn-warning:hover {
+            background-color: #ffca2c;
+            border-color: #ffc720;
+        }
+        .btn-success {
+            background-color: #198754;
+            border-color: #198754;
+        }
+        .btn-success:hover {
+            background-color: #157347;
+            border-color: #146c43;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .btn i {
+            margin-right: 0.4rem;
+        }
+        .table {
+            margin-bottom: 0;
+            border-color: #e9ecef;
+            vertical-align: middle;
+        }
+        .table thead {
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 500;
+            border-bottom-width: 2px;
+        }
+        .table th, .table td {
+            padding: 1rem;
+            vertical-align: middle;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .table th {
+            min-width: 50px;
+        }
+        .table td {
+            max-width: 0;
+        }
+        .table thead th:nth-child(1) { min-width: 40px; }
+        .table thead th:nth-child(2) { min-width: 80px; }
+        .table thead th:nth-child(3) { min-width: 150px; }
+        .table thead th:nth-child(4) { min-width: 200px; }
+        .table thead th:nth-child(5) { min-width: 120px; }
+        .table thead th:nth-child(6) { min-width: 100px; }
+        .table thead th:nth-child(7) { min-width: 120px; }
+        .table thead th:nth-child(8) { min-width: 150px; }
+        .table-hover > tbody > tr:hover {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+        .input-group .btn {
+            z-index: 2;
+        }
+        .modal-header {
+            background-color: #0d6efd;
+            color: white;
+            border-bottom: none;
+        }
+        .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        .modal-content {
+            border-radius: 0.75rem;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .modal-footer {
+            border-top: 1px solid #e9ecef;
+        }
+        .action-buttons .btn {
+            margin-right: 5px;
+        }
+        .action-buttons .btn:last-child {
+            margin-right: 0;
+        }
+        .table-responsive {
+            border-radius: 0.75rem;
+        }
+        .product-image {
+            max-width: 50px;
+            max-height: 50px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+        .pagination {
+            justify-content: center;
+            margin-top: 1rem;
+        }
+        .pagination-custom {
+            padding: 0.5rem 0;
+        }
+        .pagination-custom .page-item {
+            margin: 0 0.2rem;
+        }
+        .pagination-custom .page-link {
+            color: #0d6efd;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .pagination-custom .page-link:hover {
+            color: #0a58ca;
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+            text-decoration: none;
+        }
+        .pagination-custom .page-item.active .page-link {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+            z-index: 1;
+        }
+        .pagination-custom .page-item.disabled .page-link {
+            color: #6c757d;
+            background-color: #fff;
+            border-color: #dee2e6;
+            cursor: not-allowed;
+        }
+        .pagination-custom .page-link:focus {
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            outline: none;
+        }
+        .content {
+            margin-top: 70px;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .form-switch {
+            align-items: center;
+        }
+        .form-check-input {
+            cursor: pointer;
+            width: 3em;
+            height: 1.5em;
+        }
+        .form-check-label {
+            font-size: 1rem;
+            color: #333;
+            margin-left: 1rem; /* Increased spacing for better look */
+            transition: color 0.2s ease;
+        }
+        .form-check-input:checked + .form-check-label {
+            color: #198754; /* Green color when checked (Đang Bán) */
+        }
+        .form-check-input:not(:checked) + .form-check-label {
+            color: #dc3545; /* Red color when unchecked (Ngừng Bán) */
+        }
+        .status-badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .status-active {
+            color: #198754;
+            border: 1px solid #198754;
+            background-color: rgba(25, 135, 84, 0.1);
+        }
+        .status-inactive {
+            color: #dc3545;
+            border: 1px solid #dc3545;
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+    </style>
+</head>
+<body>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+    <a class="navbar-brand fw-bold text-primary" href="#">
+        <i class="fas fa-store-alt me-2"></i>ACV Admin
+    </a>
+    <div class="d-flex align-items-center">
+        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="content">
+    <h2 class="mb-4 page-title">QUẢN LÝ SẢN PHẨM</h2>
+    <div th:fragment="content">
+        <div class="card mb-4">
+            <div class="card-body">
+                <form th:action="@{/acvstore/san-pham}" method="get">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4 col-lg-4">
+                            <label for="searchNameInput" class="form-label">Tìm kiếm</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" class="form-control border-start-0" id="searchNameInput" name="searchName" th:value="${searchName}" placeholder="Nhập tên sản phẩm...">
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-lg-4">
+                            <label for="trangThaiFilter" class="form-label">Lọc theo trạng thái</label>
+                            <select class="form-select" id="trangThaiFilter" name="trangThai" onchange="this.form.submit()">
+                                <option value="">-- Tất cả trạng thái --</option>
+                                <option value="true" th:selected="${selectedTrangThai != null and selectedTrangThai == true}">Đang Bán</option>
+                                <option value="false" th:selected="${selectedTrangThai != null and selectedTrangThai == false}">Ngừng Bán</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-lg-4 d-flex align-items-end">
+                            <a th:href="@{/acvstore/chi-tiet-san-pham/add}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus"></i> Thêm sản phẩm
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-list me-2"></i> Danh sách sản phẩm
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="sanPhamTable">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Ảnh</th>
+                        <th>Tên</th>
+                        <th>Mô tả</th>
+                        <th>Danh mục</th>
+                        <th>Trạng thái</th>
+                        <th>Ngày tạo</th>
+                        <th>Thao tác</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${sanPhamList == null or sanPhamList.isEmpty()}">
+                        <td colspan="8" class="text-center text-muted py-5">Không tìm thấy sản phẩm nào.</td>
+                    </tr>
+                    <tr th:each="sp, iter : ${sanPhamList}" th:data-id="${sp.id}">
+                        <td th:text="${iter.count + (currentPage * 10)}"></td>
+                        <td>
+                            <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}" th:src="${sp.urlHinhAnh}" class="product-image" alt="Product Image">
+                            <span th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}">N/A</span>
+                        </td>
+                        <td th:text="${sp.tenSanPham}"></td>
+                        <td th:text="${sp.moTa}" th:title="${sp.moTa}"></td>
+                        <td th:text="${sp.danhMuc != null ? sp.danhMuc.tenDanhMuc : 'N/A'}"></td>
+                        <td>
+                            <span th:class="${sp.trangThai != null and sp.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+                                  th:text="${sp.trangThai != null and sp.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
+                        </td>
+                        <td th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></td>
+                        <td class="text-center action-buttons">
+                            <button class="btn btn-warning btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editSanPhamModal"
+                                    th:data-sanpham="${sp.id}" title="Sửa">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}" class="btn btn-success btn-sm" title="Xem chi tiết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center pagination-custom">
+                    <li class="page-item" th:class="${currentPage == 0 ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/acvstore/san-pham(page=${currentPage - 1}, searchName=${searchName}, trangThai=${selectedTrangThai})}" aria-label="Previous">
+                            <span aria-hidden="true">« Trước</span>
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:class="${p == currentPage ? 'active' : ''}">
+                        <a class="page-link" th:href="@{/acvstore/san-pham(page=${p}, searchName=${searchName}, trangThai=${selectedTrangThai})}"
+                           th:text="${p + 1}">1</a>
+                    </li>
+                    <li class="page-item" th:class="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                        <a class="page-link" th:href="@{/acvstore/san-pham(page=${currentPage + 1}, searchName=${searchName}, trangThai=${selectedTrangThai})}" aria-label="Next">
+                            <span aria-hidden="true">Sau »</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <!-- Modal Sửa Sản Phẩm -->
+        <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editSanPhamModalLabel"><i class="fas fa-edit me-2"></i> Sửa Thông Tin Sản Phẩm</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="editSanPhamForm">
+                        <div class="modal-body">
+                            <input type="hidden" name="id">
+                            <div class="mb-3">
+                                <label for="editMaSanPham" class="form-label">Mã sản phẩm</label>
+                                <input type="text" class="form-control" id="editMaSanPham" name="maSanPham" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editTenSanPham" class="form-label">Tên sản phẩm</label>
+                                <input type="text" class="form-control" id="editTenSanPham" name="tenSanPham" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editMoTa" class="form-label">Mô tả</label>
+                                <textarea class="form-control" id="editMoTa" name="moTa" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editDanhMuc" class="form-label">Danh mục</label>
+                                <select class="form-select" id="editDanhMuc" name="danhMuc.id" required>
+                                    <option value="">-- Chọn danh mục --</option>
+                                    <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Ảnh sản phẩm</label>
+                                <div class="d-flex align-items-center">
+                                    <button type="button" class="btn btn-primary" id="openCloudinaryWidget">
+                                        <i class="fas fa-image"></i> Chọn ảnh
+                                    </button>
+                                    <input type="hidden" id="editUrlHinhAnh" name="urlHinhAnh">
+                                    <span id="imageNameDisplay" class="ms-2 text-muted">Chưa chọn ảnh</span>
+                                </div>
+                                <div class="mt-2" id="imagePreviewContainer">
+                                    <img class="product-image" alt="Current Image" id="imagePreview">
+                                    <small class="d-block mt-1">Ảnh hiện tại</small>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="editTrangThai" class="form-label">Trạng thái</label>
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    <input class="form-check-input" type="checkbox" id="editTrangThai" name="trangThai" th:checked="${trangThai}">
+                                    <label class="form-check-label ms-3" id="trangThaiLabel" for="editTrangThai">Ngừng Bán</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times"></i> Đóng
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editSanPhamModal = document.getElementById('editSanPhamModal');
+        const editSanPhamForm = document.getElementById('editSanPhamForm');
+        const openCloudinaryWidgetBtn = document.getElementById('openCloudinaryWidget');
+        const urlHinhAnhInput = document.getElementById('editUrlHinhAnh');
+        const imagePreview = document.getElementById('imagePreview');
+        const imageNameDisplay = document.getElementById('imageNameDisplay');
+        const trangThaiInput = document.getElementById('editTrangThai');
+        const trangThaiLabel = document.getElementById('trangThaiLabel');
+
+        // Update label based on toggle state
+        function updateTrangThaiLabel() {
+            trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
+        }
+
+        // Handle Edit Modal
+        if (editSanPhamModal) {
+            editSanPhamModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const sanPhamId = button.getAttribute('data-sanpham');
+                const modalForm = editSanPhamModal.querySelector('#editSanPhamForm');
+                const modalTitle = editSanPhamModal.querySelector('.modal-title');
+                const sanPhamIdInput = modalForm.querySelector('input[name="id"]');
+                const maSanPhamInput = modalForm.querySelector('input[name="maSanPham"]');
+                const tenSanPhamInput = modalForm.querySelector('input[name="tenSanPham"]');
+                const moTaInput = modalForm.querySelector('textarea[name="moTa"]');
+                const danhMucSelect = modalForm.querySelector('select[name="danhMuc.id"]');
+                const trangThaiInput = modalForm.querySelector('input[name="trangThai"]');
+
+                modalTitle.textContent = 'Sửa Thông Tin Sản Phẩm (ID: ' + sanPhamId + ')';
+                sanPhamIdInput.value = sanPhamId;
+
+                fetch(`/acvstore/san-pham/get/${sanPhamId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok ' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        maSanPhamInput.value = data.maSanPham || '';
+                        tenSanPhamInput.value = data.tenSanPham || '';
+                        moTaInput.value = data.moTa || '';
+                        danhMucSelect.value = data.danhMuc && data.danhMuc.id ? data.danhMuc.id : '';
+                        trangThaiInput.checked = data.trangThai != null ? data.trangThai : false;
+                        updateTrangThaiLabel(); // Update label after setting the checkbox state
+                        urlHinhAnhInput.value = data.urlHinhAnh || '';
+                        imageNameDisplay.textContent = data.urlHinhAnh ? 'Đã chọn ảnh' : 'Chưa chọn ảnh';
+                        if (imagePreview) {
+                            if (data.urlHinhAnh) {
+                                imagePreview.src = data.urlHinhAnh;
+                                imagePreview.style.display = 'block';
+                            } else {
+                                imagePreview.style.display = 'none';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching san pham data:', error);
+                        alert('Không thể tải dữ liệu sản phẩm. Vui lòng thử lại.');
+                        maSanPhamInput.value = '';
+                        tenSanPhamInput.value = '';
+                        moTaInput.value = '';
+                        danhMucSelect.value = '';
+                        trangThaiInput.checked = false;
+                        updateTrangThaiLabel(); // Update label for default state
+                        urlHinhAnhInput.value = '';
+                        imageNameDisplay.textContent = 'Chưa chọn ảnh';
+                        if (imagePreview) {
+                            imagePreview.style.display = 'none';
+                        }
+                    });
+            });
+        }
+
+        // Handle toggle switch change
+        if (trangThaiInput) {
+            trangThaiInput.addEventListener('change', updateTrangThaiLabel);
+        }
+
+        // Handle Form Submission
+        if (editSanPhamForm) {
+            editSanPhamForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = new FormData(editSanPhamForm);
+                fetch('/acvstore/san-pham/save', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const modal = bootstrap.Modal.getInstance(editSanPhamModal);
+                            modal.hide();
+                            const sanPham = data.sanPham;
+                            let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
+                            if (row) {
+                                row.cells[0].textContent = row.rowIndex + (parseInt('[[${currentPage}]]') * 10);
+                                row.cells[1].innerHTML = sanPham.urlHinhAnh
+                                    ? `<img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image">`
+                                    : 'N/A';
+                                row.cells[2].textContent = sanPham.tenSanPham || '';
+                                row.cells[3].textContent = sanPham.moTa || '';
+                                row.cells[3].title = sanPham.moTa || '';
+                                row.cells[4].textContent = sanPham.danhMuc && sanPham.danhMuc.tenDanhMuc ? sanPham.danhMuc.tenDanhMuc : 'N/A';
+                                row.cells[5].innerHTML = `
+                                    <span class="${sanPham.trangThai ? 'status-badge status-active' : 'status-badge status-inactive'}">
+                                        ${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}
+                                    </span>`;
+                                row.cells[6].textContent = sanPham.thoiGianTao
+                                    ? new Date(sanPham.thoiGianTao).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                                    : 'N/A';
+                            }
+                        } else {
+                            alert(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving san pham:', error);
+                        alert('Lỗi khi lưu sản phẩm. Vui lòng thử lại.');
+                    });
+            });
+        }
+
+        // Handle Cloudinary Widget
+        if (openCloudinaryWidgetBtn) {
+            const myWidget = cloudinary.createUploadWidget(
+                {
+                    cloudName: 'dfwbuxr0c',
+                    uploadPreset: 'acvstore_unsigned_preset',
+                    folder: 'acvstore/products',
+                    sources: ['local', 'url', 'google_drive', 'dropbox', 'shutterstock', 'getty'],
+                    multiple: false,
+                    clientAllowedFormats: ['image'],
+                    maxImageFileSize: 2000000,
+                    theme: 'minimal'
+                },
+                (error, result) => {
+                    if (!error && result && result.event === 'success') {
+                        urlHinhAnhInput.value = result.info.secure_url;
+                        imagePreview.src = result.info.secure_url;
+                        imagePreview.style.display = 'block';
+                        imageNameDisplay.textContent = result.info.original_filename;
+                    } else if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        alert('Lỗi khi tải ảnh lên Cloudinary. Vui lòng thử lại.');
+                    }
+                }
+            );
+
+            openCloudinaryWidgetBtn.addEventListener('click', () => {
+                myWidget.open();
+            }, false);
+        }
+    });
+</script>
+</body>
+</html>
