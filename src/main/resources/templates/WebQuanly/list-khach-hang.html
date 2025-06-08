@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý khách hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Quản lý khách hàng</h2>
+
+    <!-- Hiển thị thông báo -->
+    <div th:if="${message}" class="alert" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Form tìm kiếm -->
+    <form th:action="@{/customers}" method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="keyword" class="form-control" th:value="${keyword}" placeholder="Tìm theo tên, email hoặc số điện thoại">
+            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        </div>
+    </form>
+
+    <!-- Nút thêm khách hàng -->
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+        Thêm khách hàng
+    </button>
+
+    <!-- Bảng danh sách khách hàng -->
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Họ tên</th>
+            <th>Tên đăng nhập</th>
+            <th>Mật khẩu</th>
+            <th>Email</th>
+            <th>Số điện thoại</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="customer, customerStat : ${customers}">
+            <td th:text="${customerStat.index + 1}"></td>
+            <td th:text="${customer.hoTen}"></td>
+            <td th:text="${customer.tenDangNhap}"></td>
+            <td th:text="${customer.matKhau}"></td>
+            <td th:text="${customer.email}"></td>
+            <td th:text="${customer.soDienThoai}"></td>
+            <td th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></td>
+            <td>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" th:data-bs-target="'#editCustomerModal' + ${customer.id}">Sửa</button>
+                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteCustomerModal' + ${customer.id}">Xóa</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Phân trang -->
+    <nav aria-label="Phân trang">
+        <ul class="pagination">
+            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                <a class="page-link" th:href="@{/customers(page=${currentPage - 1}, keyword=${keyword})}">Trước</a>
+            </li>
+            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                th:classappend="${i == currentPage} ? 'active'">
+                <a class="page-link" th:href="@{/customers(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
+            </li>
+            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                <a class="page-link" th:href="@{/customers(page=${currentPage + 1}, keyword=${keyword})}">Sau</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Modal Thêm khách hàng -->
+    <div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addCustomerModalLabel">Thêm khách hàng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form th:action="@{/customers/add}" th:object="${customer}" method="post">
+
+                        <div class="mb-3">
+                            <label for="hoTen" class="form-label">Họ tên</label>
+                            <input type="text" class="form-control" id="hoTen" th:field="*{hoTen}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" th:field="*{email}" required>
+                            <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="soDienThoai" class="form-label">Số điện thoại</label>
+                            <input type="text" class="form-control" id="soDienThoai" th:field="*{soDienThoai}" required>
+                            <div th:if="${#fields.hasErrors('soDienThoai')}" th:errors="*{soDienThoai}" class="text-danger"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
+                            <input type="text" class="form-control" id="tenDangNhap" th:field="*{tenDangNhap}" required>
+                            <div th:if="${#fields.hasErrors('tenDangNhap')}" th:errors="*{tenDangNhap}" class="text-danger"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="matKhau" class="form-label">Mật khẩu</label>
+                            <input type="password" class="form-control" id="matKhau" th:field="*{matKhau}" required>
+                            <div th:if="${#fields.hasErrors('matKhau')}" th:errors="*{matKhau}" class="text-danger"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ngaySinh" class="form-label">Ngày sinh</label>
+                            <input type="date" class="form-control" id="ngaySinh" th:field="*{ngaySinh}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="gioiTinh" class="form-label">Giới tính</label>
+                            <select class="form-control" id="gioiTinh" th:field="*{gioiTinh}">
+                                <option value="true">Nam</option>
+                                <option value="false">Nữ</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="diaChi" class="form-label">Địa chỉ</label>
+                            <input type="text" class="form-control" id="diaChi" th:field="*{diaChi}">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Sửa khách hàng -->
+    <th:block th:each="customer : ${customers}">
+        <div class="modal fade" th:id="'editCustomerModal' + ${customer.id}" tabindex="-1" th:aria-labelledby="'editCustomerModalLabel' + ${customer.id}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" th:id="'editCustomerModalLabel' + ${customer.id}">Sửa khách hàng</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form th:action="@{/customers/edit}" method="post">
+
+                            <input type="hidden" name="id" th:value="${customer.id}">
+                            <div class="mb-3">
+                                <label for="hoTenEdit" class="form-label">Họ tên</label>
+                                <input type="text" class="form-control" id="hoTenEdit" name="hoTen" th:value="${customer.hoTen}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="emailEdit" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="emailEdit" name="email" th:value="${customer.email}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="soDienThoaiEdit" class="form-label">Số điện thoại</label>
+                                <input type="text" class="form-control" id="soDienThoaiEdit" name="soDienThoai" th:value="${customer.soDienThoai}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tenDangNhapEdit" class="form-label">Tên đăng nhập</label>
+                                <input type="text" class="form-control" id="tenDangNhapEdit" name="tenDangNhap" th:value="${customer.tenDangNhap}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="matKhauEdit" class="form-label">Mật khẩu</label>
+                                <input type="password" class="form-control" id="matKhauEdit" name="matKhau" th:value="${customer.matKhau}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="ngaySinhEdit" class="form-label">Ngày sinh</label>
+                                <input type="date" class="form-control" id="ngaySinhEdit" name="ngaySinh" th:value="${customer.ngaySinh != null ? #temporals.format(customer.ngaySinh, 'yyyy-MM-dd') : ''}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="gioiTinhEdit" class="form-label">Giới tính</label>
+                                <select class="form-control" id="gioiTinhEdit" name="gioiTinh">
+                                    <option value="true" th:selected="${customer.gioiTinh == true}">Nam</option>
+                                    <option value="false" th:selected="${customer.gioiTinh == false}">Nữ</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="diaChiEdit" class="form-label">Địa chỉ</label>
+                                <input type="text" class="form-control" id="diaChiEdit" name="diaChi" th:value="${customer.diaChi}">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Lưu</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+
+    <!-- Modal Xóa khách hàng -->
+    <th:block th:each="customer : ${customers}">
+        <div class="modal fade" th:id="'deleteCustomerModal' + ${customer.id}" tabindex="-1" th:aria-labelledby="'deleteCustomerModalLabel' + ${customer.id}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" th:id="'deleteCustomerModalLabel' + ${customer.id}">Xóa khách hàng</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Bạn có chắc chắn muốn xóa <span th:text="${customer.hoTen}"></span>?</p>
+                        <form th:action="@{/customers/delete/{id}(id=${customer.id})}" method="post">
+
+                            <button type="submit" class="btn btn-danger">Xóa</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
