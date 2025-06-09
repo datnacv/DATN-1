@@ -1,5 +1,6 @@
 package com.example.AsmGD1.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -68,5 +69,6 @@ public class ChiTietSanPham {
     private Boolean trangThai;
 
     @OneToMany(mappedBy = "chiTietSanPham", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<HinhAnhSanPham> hinhAnhSanPhams;
 }

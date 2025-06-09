@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo Phiếu Giảm Giá</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="container mt-5">
+    <h2 class="mb-4">Tạo Phiếu Giảm Giá</h2>
+
+    <div th:if="${errorMessage}" class="alert alert-danger" th:utext="${errorMessage}"></div>
+    <div th:if="${mailMessage}" class="alert alert-info" th:text="${mailMessage}"></div>
+
+    <form th:action="@{/admin/voucher/vouchers/create}" th:object="${voucher}" method="post">
+        <div class="mb-3">
+            <label class="form-label">Mã phiếu:</label>
+            <input type="text" th:field="*{ma}" class="form-control" placeholder="Tự động tạo nếu bỏ trống"/>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Tên phiếu:</label>
+            <input type="text" th:field="*{ten}" class="form-control" required/>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Kiểu giảm:</label>
+            <div>
+                <label><input type="radio" th:field="*{loai}" value="PERCENT" onchange="toggleDiscountFields()"> Giảm theo %</label>
+                <label class="ms-3"><input type="radio" th:field="*{loai}" value="CASH" onchange="toggleDiscountFields()"> Giảm theo tiền mặt</label>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Giá trị giảm:</label>
+                <div class="input-group">
+                    <input type="text" th:field="*{giaTriGiam}" class="form-control" id="giaTriGiam" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')">
+                    <span class="input-group-text" id="discountUnit">%</span>
+                </div>
+            </div>
+            <div class="col-md-6" id="maxDiscountGroup">
+                <label class="form-label">Giá trị giảm tối đa:</label>
+                <div class="input-group">
+                    <input type="text" th:field="*{giaTriGiamToiDa}" class="form-control" id="giaTriGiamToiDa" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')">
+                    <span class="input-group-text">₫</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Loại phiếu:</label>
+            <div>
+                <label><input type="radio" th:field="*{kieuPhieu}" value="cong_khai" onclick="toggleUsageCount()"> Công khai</label>
+                <label class="ms-3"><input type="radio" th:field="*{kieuPhieu}" value="ca_nhan" onclick="toggleUsageCount()"> Cá nhân</label>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Lượt sử dụng:</label>
+                <input type="text" th:field="*{gioiHanSuDung}" class="form-control" id="gioiHanSuDung" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                <small class="text-muted" id="caNhanNote" style="display:none;">* Phiếu cá nhân chỉ áp dụng 1 lượt sử dụng</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Đơn tối thiểu áp dụng:</label>
+                <div class="input-group">
+                    <input type="text" th:field="*{giaTriGiamToiThieu}" class="form-control" id="giaTriGiamToiThieu" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')">
+                    <span class="input-group-text">₫</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">Ngày bắt đầu:</label>
+                <input type="date" th:field="*{ngayBatDau}" class="form-control">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Ngày kết thúc:</label>
+                <input type="date" th:field="*{ngayKetThuc}" class="form-control">
+            </div>
+        </div>
+
+        <div id="emailOptions" class="mb-3" style="display:none">
+            <label class="form-label">Chọn khách hàng áp dụng:</label>
+            <input type="text" class="form-control mb-2" id="searchCustomerInput" placeholder="Tìm khách hàng...">
+            <table class="table table-bordered">
+                <thead><tr><th>Chọn</th><th>Họ tên</th><th>Email</th><th>SĐT</th></tr></thead>
+                <tbody id="customerTableBody">
+                <tr th:each="customer : ${customers}">
+                    <td><input type="checkbox" name="selectedCustomerIds" th:value="${customer.id}"/></td>
+                    <td th:text="${customer.hoTen}"></td>
+                    <td th:text="${customer.email}"></td>
+                    <td th:text="${customer.soDienThoai}"></td>
+                </tr>
+                </tbody>
+            </table>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="sendMail" name="sendMail">
+                <label class="form-check-label" for="sendMail">Gửi Email cho khách hàng</label>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-primary">Lưu</button>
+            <a th:href="@{/admin/voucher/vouchers}" class="btn btn-secondary">Quay lại</a>
+        </div>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function formatNumber(value, allowDecimal) {
+        value = value.replace(/[^\d,]/g, '').replace(/\./g, '').replace(/,/g, '.');
+        let number = parseFloat(value);
+        if (isNaN(number)) return '';
+        return new Intl.NumberFormat('vi-VN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: allowDecimal ? 2 : 0
+        }).format(number);
+    }
+
+    function parseNumber(value) {
+        return value.replace(/[.,]/g, '');
+    }
+
+    $(document).ready(function () {
+        const inputs = [
+            { selector: '#giaTriGiam', allowDecimal: true },
+            { selector: '#giaTriGiamToiDa', allowDecimal: true },
+            { selector: '#giaTriGiamToiThieu', allowDecimal: true },
+            { selector: '#gioiHanSuDung', allowDecimal: false }
+        ];
+
+        inputs.forEach(input => {
+            const $el = $(input.selector);
+            $el.on('blur', function () {
+                const formatted = formatNumber($(this).val(), input.allowDecimal);
+                $(this).val(formatted);
+            });
+            if ($el.val()) {
+                const formatted = formatNumber($el.val(), input.allowDecimal);
+                $el.val(formatted);
+            }
+        });
+
+        $('form').on('submit', function () {
+            inputs.forEach(input => {
+                const $el = $(input.selector);
+                $el.val(parseNumber($el.val()));
+            });
+        });
+
+        toggleUsageCount();
+        toggleDiscountFields();
+
+        $('#searchCustomerInput').on('keyup', function () {
+            const keyword = $(this).val().toLowerCase();
+            $('#customerTableBody tr').each(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(keyword) > -1);
+            });
+        });
+    });
+
+    function toggleUsageCount() {
+        const isCaNhan = $('input[name="kieuPhieu"]:checked').val() === 'ca_nhan';
+        $('#emailOptions').toggle(isCaNhan);
+        if (isCaNhan) {
+            $('#gioiHanSuDung').val('1').prop('readonly', true);
+        } else {
+            $('#gioiHanSuDung').val('').prop('readonly', false);
+        }
+        $('#caNhanNote').toggle(isCaNhan);
+    }
+
+    function toggleDiscountFields() {
+        const type = $('input[name="loai"]:checked').val();
+        const isPercent = type === 'PERCENT';
+        $('#discountUnit').text(isPercent ? '%' : '₫');
+        $('#maxDiscountGroup').toggle(isPercent);
+        $('#giaTriGiamToiDa').prop('readonly', !isPercent);
+        if (!isPercent) $('#giaTriGiamToiDa').val('');
+    }
+</script>
+</body>
+</html>

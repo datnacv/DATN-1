@@ -9,12 +9,14 @@ import java.util.UUID;
 @Data
 public class ChiTietSanPhamChienDichGiamGia {
     @Id
-    @ManyToOne
-    @JoinColumn(name = "id_chien_dich", nullable = false)
-    private ChienDichGiamGia chienDich;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-    @Id
     @ManyToOne
-    @JoinColumn(name = "id_chi_tiet_san_pham", nullable = false)
+    @JoinColumn(name = "id_chien_dich")
+    private ChienDichGiamGia chienDichGiamGia;
+
+    @ManyToOne
+    @JoinColumn(name = "id_chi_tiet_san_pham")
     private ChiTietSanPham chiTietSanPham;
 }
