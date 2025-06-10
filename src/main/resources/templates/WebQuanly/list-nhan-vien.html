@@ -16,7 +16,7 @@
     </div>
 
     <!-- Search Form -->
-    <form th:action="@{/employees}" method="get" class="mb-3">
+    <form th:action="@{/acvstore/employees}" method="get" class="mb-3">
         <div class="input-group">
             <input type="text" name="keyword" class="form-control" th:value="${keyword}" placeholder="Tìm theo tên, email hoặc số điện thoại">
             <button type="submit" class="btn btn-primary">Tìm kiếm</button>
@@ -69,14 +69,14 @@
     <nav aria-label="Phân trang">
         <ul class="pagination">
             <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                <a class="page-link" th:href="@{/employees(page=${currentPage - 1}, keyword=${keyword})}">Trước</a>
+                <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage - 1}, keyword=${keyword})}">Trước</a>
             </li>
             <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                 th:classappend="${i == currentPage} ? 'active'">
-                <a class="page-link" th:href="@{/employees(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
+                <a class="page-link" th:href="@{/acvstore/employees(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
             </li>
             <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                <a class="page-link" th:href="@{/employees(page=${currentPage + 1}, keyword=${keyword})}">Sau</a>
+                <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage + 1}, keyword=${keyword})}">Sau</a>
             </li>
         </ul>
     </nav>
@@ -90,7 +90,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form th:action="@{/employees/add}" th:object="${employee}" method="post">
+                    <form th:action="@{/acvstore/employees/add}" th:object="${employee}" method="post">
 
                         <div class="mb-3">
                             <label for="hoTen" class="form-label">Họ tên</label>
@@ -152,7 +152,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form th:action="@{/employees/edit}" method="post">
+                        <form th:action="@{/acvstore/employees/edit}" method="post">
 
                             <input type="hidden" name="id" th:value="${employee.id}">
                             <div class="mb-3">
@@ -217,7 +217,7 @@
                     </div>
                     <div class="modal-body">
                         <p>Bạn có chắc chắn muốn xóa <span th:text="${employee.hoTen}"></span>?</p>
-                        <form th:action="@{/employees/delete/{id}(id=${employee.id})}" method="post">
+                        <form th:action="@{/acvstore/employees/delete/{id}(id=${employee.id})}" method="post">
 
                             <button type="submit" class="btn btn-danger">Xóa</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>

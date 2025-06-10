@@ -37,7 +37,7 @@ public class CustomerController {
         nguoiDungService.save(customer);
         redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thành công!");
         redirectAttributes.addFlashAttribute("messageType", "success");
-        return "redirect:/customers";
+        return "redirect:/acvstore/customers";
     }
 
     @PostMapping("/edit")
@@ -50,7 +50,7 @@ public class CustomerController {
         nguoiDungService.save(customer);
         redirectAttributes.addFlashAttribute("message", "Sửa khách hàng thành công!");
         redirectAttributes.addFlashAttribute("messageType", "success");
-        return "redirect:/customers";
+        return "redirect:/acvstore/customers";
     }
 
     @PostMapping("/delete/{id}")
@@ -62,6 +62,6 @@ public class CustomerController {
         nguoiDungService.deleteById(id);
         redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thành công!");
         redirectAttributes.addFlashAttribute("messageType", "success");
-        return "redirect:/customers";
+        return "redirect:/acvstore/customers";
     }
 }
