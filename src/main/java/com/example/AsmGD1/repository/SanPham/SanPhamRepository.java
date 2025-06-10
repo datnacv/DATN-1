@@ -23,4 +23,7 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
 
     @Query("SELECT sp FROM SanPham sp WHERE sp.trangThai = :trangThai")
     Page<SanPham> findByTrangThai(@Param("trangThai") Boolean trangThai, Pageable pageable);
+
+    Page<SanPham> findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(String ten, String ma, Pageable pageable);
+
 }

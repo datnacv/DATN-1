@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -55,5 +56,21 @@ public class SanPhamService {
     public Page<SanPham> findByTrangThai(Boolean trangThai, Pageable pageable) {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
         return sanPhamRepository.findByTrangThai(trangThai, sortedByThoiGianTaoDesc);
+    }
+
+    //nam
+    public Page<SanPham> getPagedProducts(Pageable pageable) {
+        return sanPhamRepository.findAll(pageable);
+    }
+
+    public List<SanPham> getAll() {
+        return sanPhamRepository.findAll();
+    }
+
+//    public Optional<SanPham> findById(UUID id) {
+//        return sanPhamRepository.findById(id);
+//    }
+    public Page<SanPham> searchByTenOrMa(String keyword, Pageable pageable) {
+        return sanPhamRepository.findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(keyword, keyword, pageable);
     }
 }
