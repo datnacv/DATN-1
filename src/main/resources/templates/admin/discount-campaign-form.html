@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Tạo chiến dịch giảm giá</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .card-header {
+            font-weight: bold;
+        }
+        .pagination {
+            margin-bottom: 0;
+        }
+        .search-container {
+            margin-bottom: 15px;
+        }
+        .search-container h5 {
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .input-group-text {
+            border-right: 0;
+        }
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="d-flex">
+    <!-- Sidebar -->
+    <!--    <div th:replace="~{fragments/admin_sidebar :: sidebar}"></div>-->
+    <div class="content mt-4">
+        <form th:action="@{/admin/chien-dich-giam-gia/create}" method="post" id="discountForm">
+            <div class="row g-3">
+                <!-- THÔNG TIN CHIẾN DỊCH GIẢM GIÁ -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">Thông tin chiến dịch giảm giá</div>
+                        <div class="card-body row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Mã chiến dịch</label>
+                                <input type="text" class="form-control" name="ma" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tên chiến dịch</label>
+                                <input type="text" class="form-control" name="ten" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">% Giảm</label>
+                                <input type="number" step="0.01" class="form-control" name="phanTramGiam">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Số lượng</label>
+                                <input type="number" class="form-control" name="soLuong">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Ngày bắt đầu</label>
+                                <input type="date" class="form-control" name="ngayBatDau" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Ngày kết thúc</label>
+                                <input type="date" class="form-control" name="ngayKetThuc" required>
+                            </div>
+                            <div class="col-md-12 d-flex justify-content-end">
+                                <button type="reset" class="btn btn-outline-secondary me-2">Làm mới</button>
+                                <button type="submit" class="btn btn-success">Tạo chiến dịch</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHỌN SẢN PHẨM VÀ CHI TIẾT -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">Danh sách sản phẩm</div>
+                        <div class="card-body">
+                            <div class="search-container">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text bg-white">
+                                        <i class="fas fa-search text-secondary"></i>
+                                    </span>
+                                    <input type="text" class="form-control border-start-0" id="productSearchInput" placeholder="Nhập tên sản phẩm...">
+                                </div>
+                            </div>
+                            <div class="loading-spinner" id="productsLoading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Đang tải...</span>
+                                </div>
+                                <p class="mt-2">Đang tải dữ liệu...</p>
+                            </div>
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllProducts"></th>
+                                    <th>Mã</th>
+                                    <th>Tên sản phẩm</th>
+                                </tr>
+                                </thead>
+                                <tbody id="productTableBody">
+                                <tr th:each="product : ${productPage.content}" th:data-id="${product.id}" class="product-row">
+                                    <td><input type="checkbox" class="product-checkbox" th:value="${product.id}"></td>
+                                    <td th:text="${product.maSanPham}"></td>
+                                    <td th:text="${product.tenSanPham}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <nav id="productPagination">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item" th:classappend="${currentProductPage == 0} ? 'disabled'">
+                                        <a class="page-link pagination-link" th:data-page="${currentProductPage - 1}" href="javascript:void(0)">Trước</a>
+                                    </li>
+                                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalProductPages - 1)}"
+                                        th:classappend="${i == currentProductPage} ? 'active'">
+                                        <a class="page-link pagination-link" th:data-page="${i}" href="javascript:void(0)" th:text="${i + 1}"></a>
+                                    </li>
+                                    <li class="page-item" th:classappend="${currentProductPage + 1 == totalProductPages} ? 'disabled'">
+                                        <a class="page-link pagination-link" th:data-page="${currentProductPage + 1}" href="javascript:void(0)">Sau</a>
+                                    </li>
+                                </ul>
+                            </nav>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">Chi tiết sản phẩm</div>
+                        <div class="card-body">
+                            <table class="table table-bordered">
+                                <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllDetails"></th>
+                                    <th>Tên SP</th>
+                                    <th>Màu</th>
+                                    <th>Size</th>
+                                    <th>Giá</th>
+                                    <th>Tồn</th>
+                                </tr>
+                                </thead>
+                                <tbody id="productDetailTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="selectedProductDetailIdsInput" name="selectedProductDetailIds" value="">
+        </form>
+    </div>
+</div>
+<script>
+    const STORAGE_KEYS = {
+        selectedProducts: 'selectedProductIds',
+        selectedDetails: 'selectedDetailIds'
+    };
+
+    const selectedProductIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedProducts) || '[]'));
+    const selectedDetailIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedDetails) || '[]'));
+
+    let currentSearchPage = 0;
+    const pageSize = 5;
+
+    function saveSelections() {
+        localStorage.setItem(STORAGE_KEYS.selectedProducts, JSON.stringify([...selectedProductIds]));
+        localStorage.setItem(STORAGE_KEYS.selectedDetails, JSON.stringify([...selectedDetailIds]));
+        document.getElementById("selectedProductDetailIdsInput").value = [...selectedDetailIds].join(',');
+    }
+
+    function clearSelections() {
+        localStorage.removeItem(STORAGE_KEYS.selectedProducts);
+        localStorage.removeItem(STORAGE_KEYS.selectedDetails);
+        selectedProductIds.clear();
+        selectedDetailIds.clear();
+    }
+
+    function restoreSelectedProducts() {
+        document.querySelectorAll(".product-checkbox").forEach(cb => {
+            cb.checked = selectedProductIds.has(cb.value);
+        });
+        updateSelectAll("#selectAllProducts", ".product-checkbox");
+        loadProductDetails();
+    }
+
+    function updateSelectAll(masterSelector, itemSelector) {
+        const all = document.querySelectorAll(itemSelector);
+        const master = document.querySelector(masterSelector);
+        if (all.length > 0) {
+            master.checked = Array.from(all).every(cb => cb.checked);
+        }
+    }
+
+    function loadProductDetails() {
+        const body = document.getElementById("productDetailTableBody");
+        if (selectedProductIds.size === 0) return body.innerHTML = "";
+
+        saveSelections();
+        fetch(`/admin/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
+            .then(res => res.json())
+            .then(data => {
+                body.innerHTML = data.map(detail => `
+                    <tr>
+                        <td><input type="checkbox" class="detail-checkbox" value="${detail.id}"></td>
+                        <td>${detail.sanPham.tenSanPham}</td>
+                        <td>${detail.mauSac?.ten ?? 'N/A'}</td>
+                        <td>${detail.kichCo?.ten ?? 'N/A'}</td>
+                        <td>${detail.gia}</td>
+                        <td>${detail.soLuongTonKho}</td>
+                    </tr>
+                `).join('');
+                attachCheckboxEvents(".detail-checkbox", selectedDetailIds);
+                updateSelectAll("#selectAllDetails", ".detail-checkbox");
+            });
+    }
+
+    function attachCheckboxEvents(selector, storeSet) {
+        document.querySelectorAll(selector).forEach(cb => {
+            cb.addEventListener("change", () => {
+                const id = cb.value;
+                cb.checked ? storeSet.add(id) : storeSet.delete(id);
+                saveSelections();
+                if (selector === ".product-checkbox") loadProductDetails();
+            });
+        });
+    }
+
+    function attachMasterCheckboxEvents() {
+        document.getElementById("selectAllProducts")?.addEventListener("change", function () {
+            document.querySelectorAll(".product-checkbox").forEach(cb => {
+                cb.checked = this.checked;
+                this.checked ? selectedProductIds.add(cb.value) : selectedProductIds.delete(cb.value);
+            });
+            saveSelections();
+            loadProductDetails();
+        });
+
+        document.getElementById("selectAllDetails")?.addEventListener("change", function () {
+            document.querySelectorAll(".detail-checkbox").forEach(cb => {
+                cb.checked = this.checked;
+                this.checked ? selectedDetailIds.add(cb.value) : selectedDetailIds.delete(cb.value);
+            });
+            saveSelections();
+        });
+    }
+
+    function searchProducts(query, page = 0) {
+        document.getElementById("productsLoading").style.display = "block";
+
+        fetch(`/admin/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`)
+            .then(res => res.json())
+            .then(data => {
+                renderSearchResults(data.content);
+                renderPagination(data.totalPages, data.number, query);
+                document.getElementById("productsLoading").style.display = "none";
+            });
+    }
+
+    function renderSearchResults(products) {
+        const tbody = document.getElementById("productTableBody");
+        tbody.innerHTML = products.length === 0
+            ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
+            : products.map(p => `
+                <tr class="product-row" data-id="${p.id}">
+                    <td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''}></td>
+                    <td>${p.maSanPham}</td>
+                    <td>${p.tenSanPham}</td>
+                </tr>
+            `).join('');
+        attachCheckboxEvents(".product-checkbox", selectedProductIds);
+    }
+
+    function renderPagination(totalPages, currentPage, keyword) {
+        const pagination = document.getElementById("productPagination");
+        if (totalPages <= 1) {
+            pagination.innerHTML = "";
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < totalPages; i++) {
+            html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link pagination-link" href="#" data-page="${i}" data-keyword="${keyword}">${i + 1}</a>
+                </li>
+            `;
+        }
+
+        pagination.innerHTML = `<ul class="pagination justify-content-center">${html}</ul>`;
+
+        document.querySelectorAll(".pagination-link").forEach(link => {
+            link.addEventListener("click", function (e) {
+                e.preventDefault();
+                const page = parseInt(this.getAttribute("data-page"));
+                const keyword = this.getAttribute("data-keyword");
+                currentSearchPage = page;
+                searchProducts(keyword, page);
+            });
+        });
+    }
+
+    function initEvents() {
+        document.querySelector("button[type='reset']")?.addEventListener("click", () => {
+            clearSelections();
+            document.querySelectorAll(".product-checkbox, .detail-checkbox").forEach(cb => cb.checked = false);
+            document.getElementById("selectAllProducts").checked = false;
+            document.getElementById("selectAllDetails").checked = false;
+            document.getElementById("productDetailTableBody").innerHTML = "";
+            document.getElementById("selectedProductDetailIdsInput").value = "";
+            document.getElementById("productSearchInput").value = "";
+            document.getElementById("productPagination").innerHTML = "";
+        });
+
+        document.getElementById("productSearchInput").addEventListener("input", function () {
+            clearTimeout(this._searchTimer);
+            const query = this.value.trim();
+            this._searchTimer = setTimeout(() => {
+                searchProducts(query, 0);
+            }, 300);
+        });
+
+
+        document.getElementById("discountForm").addEventListener("submit", saveSelections);
+    }
+
+    function initFormState() {
+        if (window.location.pathname.includes("/admin/chien-dich-giam-gia/create")) {
+            clearSelections();
+        }
+        restoreSelectedProducts();
+        attachCheckboxEvents(".product-checkbox", selectedProductIds);
+        attachMasterCheckboxEvents();
+        initEvents();
+        saveSelections();
+    }
+
+    document.addEventListener("DOMContentLoaded", initFormState);
+</script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script th:src="@{/js/sidebar.js}"></script>
+</body>
+</html>

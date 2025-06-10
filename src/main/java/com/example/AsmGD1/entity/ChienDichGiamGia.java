@@ -1,11 +1,7 @@
 package com.example.AsmGD1.entity;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Data;
-
+import jakarta.persistence.*;
+import java.util.UUID;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,11 +11,16 @@ import java.time.LocalDateTime;
 @Data
 public class ChienDichGiamGia {
     @Id
-    @Column(name = "id")
-    private Integer id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
     @Column(name = "ten")
     private String ten;
+
+    @Column(name = "ma", nullable = false, length = 50)
+    private String ma;
+
+
 
     @Column(name = "hinh_thuc_giam")
     private String hinhThucGiam;
@@ -38,4 +39,15 @@ public class ChienDichGiamGia {
 
     @Column(name = "thoi_gian_tao")
     private LocalDateTime thoiGianTao;
+    public String getStatus() {
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(ngayBatDau)) {
+            return "UPCOMING"; // Sắp diễn ra
+        } else if (today.isAfter(ngayKetThuc)) {
+            return "ENDED"; // Đã kết thúc
+        } else {
+            return "ONGOING"; // Đang diễn ra
+        }
+    }
+
 }

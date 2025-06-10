@@ -2,46 +2,51 @@ package com.example.AsmGD1.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "don_hang")
 @Data
 public class DonHang {
     @Id
-    @Column(name = "id")
-    private Integer id;
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
+    private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_nguoi_dung")
+    @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
-    @ManyToOne
-    @JoinColumn(name = "id_phuong_thuc_ban_hang")
-    private PhuongThucBanHang phuongThucBanHang;
-
-    @Column(name = "ma_don_hang")
+    @Column(name = "ma_don_hang", nullable = false, length = 50)
     private String maDonHang;
 
-    @Column(name = "trang_thai_thanh_toan")
+    @Column(name = "trang_thai_thanh_toan", nullable = false)
     private Boolean trangThaiThanhToan;
 
-    @Column(name = "phi_van_chuyen")
+    @Column(name = "phi_van_chuyen", precision = 10, scale = 2)
     private BigDecimal phiVanChuyen;
 
-    @Column(name = "phuong_thuc_thanh_toan")
-    private String phuongThucThanhToan;
+    @ManyToOne
+    @JoinColumn(name = "id_phuong_thuc_thanh_toan")
+    private PhuongThucThanhToan phuongThucThanhToan;
 
-    @Column(name = "so_lien_lac_dua")
-    private String soLienLacDua;
+    @Column(name = "so_tien_khach_dua", precision = 10, scale = 2)
+    private BigDecimal soTienKhachDua;
 
-    @Column(name = "ghi_chu_thanh_toan")
-    private String ghiChuThanhToan;
+    @Column(name = "thoi_gian_thanh_toan")
+    private LocalDateTime thoiGianThanhToan;
 
-    @Column(name = "tien_giam")
+    @Column(name = "thoi_gian_tao", nullable = false)
+    private LocalDateTime thoiGianTao;
+
+    @Column(name = "tien_giam", precision = 10, scale = 2)
     private BigDecimal tienGiam;
 
-    @Column(name = "tong_tien")
+    @Column(name = "tong_tien", nullable = false, precision = 10, scale = 2)
     private BigDecimal tongTien;
+
+    @Column(name = "phuong_thuc_ban_hang", nullable = false, length = 50)
+    private String phuongThucBanHang;
 }

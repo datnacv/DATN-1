@@ -2,49 +2,50 @@ package com.example.AsmGD1.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
+import java.util.UUID;
 
 @Entity
 @Table(name = "hoa_don")
 @Data
 public class HoaDon {
     @Id
-    @Column(name = "id")
-    private Integer id;
+    @GeneratedValue
+    @Column(columnDefinition = "UNIQUEIDENTIFIER")
+    private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_nguoi_dung")
+    @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
     @ManyToOne
-    @JoinColumn(name = "id_don_hang")
+    @JoinColumn(name = "id_don_hang", nullable = false)
     private DonHang donHang;
 
     @ManyToOne
     @JoinColumn(name = "id_ma_giam_gia")
-    private ChienDichGiamGia chienDichGiamGia;
+    private ChienDichGiamGia maGiamGia;
 
-    @Column(name = "ngay_tao")
+    @Column(name = "ngay_tao", nullable = false)
     private LocalDateTime ngayTao;
 
-    @Column(name = "ngay_hoan_tien")
-    private LocalDateTime ngayHoanTien;
+    @Column(name = "ngay_thanh_toan")
+    private LocalDateTime ngayThanhToan;
 
-    @Column(name = "tong_tien")
+    @Column(name = "tong_tien", nullable = false, precision = 10, scale = 2)
     private BigDecimal tongTien;
 
-    @Column(name = "tien_giam")
+    @Column(name = "tien_giam", precision = 10, scale = 2)
     private BigDecimal tienGiam;
 
-    @Column(name = "hinh_thuc_thanh_toan")
-    private String hinhThucThanhToan;
+    @ManyToOne
+    @JoinColumn(name = "id_phuong_thuc_thanh_toan")
+    private PhuongThucThanhToan phuongThucThanhToan;
 
-    @Column(name = "trang_thai")
+    @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai;
 
-    @Column(name = "ghi_chu")
+    @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
 }

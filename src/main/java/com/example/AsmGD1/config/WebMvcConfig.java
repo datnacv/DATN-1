@@ -13,6 +13,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(faceVerificationInterceptor)
+
                 .addPathPatterns("/acvstore/**")
                 .excludePathPatterns("/acvstore/login", "/acvstore/verify-face", "/logout", "/css/**", "/js/**", "/images/**");
     }
