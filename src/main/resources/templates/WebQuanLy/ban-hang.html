@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bán Hàng Tại Quầy</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    .modal-dialog { max-width: 800px; }
+    .product-image { max-width: 50px; max-height: 50px; }
+    .cart-empty-state { text-align: center; padding: 20px; color: #6c757d; }
+  </style>
+</head>
+<body>
+<div class="container mt-4">
+  <h2>Bán Hàng Tại Quầy</h2>
+  <div class="row">
+    <!-- Danh sách sản phẩm -->
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">Danh Sách Sản Phẩm</div>
+        <div class="card-body">
+          <table class="table table-striped" id="productList">
+            <thead>
+            <tr>
+              <th>STT</th>
+              <th>Hình Ảnh</th>
+              <th>Tên Sản Phẩm</th>
+              <th>Số Lượng Tồn</th>
+              <th>Giá (VNĐ)</th>
+              <th>Hành Động</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="product, stat : ${products}">
+              <td th:text="${stat.count}"></td>
+              <td><img th:src="${product.urlHinhAnh}" alt="Product Image" class="product-image"></td>
+              <td th:text="${product.tenSanPham}"></td>
+              <td th:text="${product.totalStockQuantity}"></td>
+              <td th:text="${product.minPriceFormatted} + ' - ' + ${product.maxPriceFormatted}"></td>
+              <td>
+                <button class="btn btn-primary btn-sm" th:attr="data-product-id=${product.id}" onclick="showProductVariants(this)">Chọn</button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Giỏ hàng và thông tin -->
+    <div class="col-md-4">
+      <form id="orderForm">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title d-flex align-items-center">
+              <i class="fa-solid fa-cart-shopping me-2"></i>
+              <span>Giỏ hàng</span>
+              <span class="badge bg-primary ms-2" id="cartItemCount">0</span>
+            </h5>
+
+            <!-- Customer Selection -->
+            <div class="customer-info mb-3">
+              <h6 class="d-flex align-items-center">
+                <i class="fa-solid fa-user me-2"></i>
+                <span>Thông tin khách hàng</span>
+              </h6>
+              <div class="mb-3">
+                <label class="form-label d-flex align-items-center">
+                  <i class="fa-solid fa-users-viewfinder me-2"></i>
+                  <span>Chọn khách hàng</span>
+                </label>
+                <div class="input-group">
+                  <select id="customerSelect" class="form-select" name="selectedCustomer" onchange="handleCustomerSelection()">
+                    <option value="" data-name="" data-email="">Chọn khách hàng</option>
+                    <option value="0999999999" data-name="Khách lẻ" data-email="" selected>Khách lẻ</option>
+                    <option th:each="cus : ${customers}"
+                            th:if="${cus.hoTen != 'Khách lẻ'}"
+                            th:value="${cus.soDienThoai}"
+                            th:data-name="${cus.hoTen}"
+                            th:data-email="${cus.email}"
+                            th:text="${cus.hoTen} + ' - ' + ${cus.soDienThoai}">
+                    </option>
+                  </select>
+                  <button type="button" class="btn btn-outline-primary" onclick="openCustomerModal()">
+                    <i class="fa fa-user-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Customer Info -->
+            <div id="customerInfo" class="mb-3 p-3 bg-light rounded" style="display: none;">
+              <p class="mb-1"><strong><i class="fa-solid fa-user me-2"></i>Tên:</strong> <span id="customerName"></span></p>
+              <p class="mb-0"><strong><i class="fa-solid fa-envelope me-2"></i>Email:</strong> <span id="customerEmail"></span></p>
+            </div>
+
+            <!-- Cart Items -->
+            <div class="card shadow-sm mb-3">
+              <div class="card-body p-0">
+                <div id="cartItems" class="p-3"></div>
+                <div id="cartEmpty" class="cart-empty-state">
+                  <i class="fa-solid fa-cart-arrow-down"></i>
+                  <h5>Giỏ hàng trống</h5>
+                  <p class="text-muted">Hãy thêm sản phẩm vào giỏ hàng</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div id="cartSummary" style="display: none;">
+              <div class="d-flex justify-content-between">
+                <span>Tạm tính:</span>
+                <span id="subTotal">0 VNĐ</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Giảm giá:</span>
+                <span id="discount" class="text-danger">0 VNĐ</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Phí vận chuyển:</span>
+                <span id="shippingFeeDisplay">0 VNĐ</span>
+              </div>
+              <hr>
+              <div class="d-flex justify-content-between fw-bold">
+                <span>Tổng cộng:</span>
+                <span id="totalPrice" class="text-primary">0 VNĐ</span>
+              </div>
+            </div>
+
+            <!-- Voucher -->
+            <div class="mb-3">
+              <label for="voucherSelect" class="form-label d-flex align-items-center">
+                <i class="fa-solid fa-ticket me-2"></i>
+                <span>Mã giảm giá</span>
+              </label>
+              <select id="voucherSelect" class="form-select" name="voucherId" onchange="applyVoucher()">
+                <option value="" selected>-- Không áp dụng mã --</option>
+                <option th:each="voucher : ${discountVouchers}"
+                        th:value="${voucher.id}"
+                        th:data-min-order-value="${voucher.giaTriGiamToiThieu}"
+                        th:text="${voucher.ten} + ' (Tối thiểu ' + ${voucher.giaTriGiamToiThieuFormatted} + ')'">
+                </option>
+              </select>
+              <div id="voucherMessage" class="text-danger mt-1" style="display: none;"></div>
+            </div>
+
+            <!-- Shipping Fee -->
+            <div class="mb-3">
+              <label for="shippingFee" class="form-label d-flex align-items-center">
+                <i class="fa-solid fa-truck me-2"></i>
+                <span>Phí vận chuyển</span>
+              </label>
+              <input type="number" id="shippingFee" name="shippingFee" class="form-control" value="0" min="0" onchange="updateTotal()">
+            </div>
+
+            <!-- Payment and Delivery Method -->
+            <div class="mb-3">
+              <label for="paymentMethod" class="form-label d-flex align-items-center">
+                <i class="fa-solid fa-wallet me-2"></i>
+                <span>Phương thức thanh toán</span>
+              </label>
+              <select id="paymentMethod" name="paymentMethod" class="form-select" onchange="togglePaymentFields()">
+                <option value="Tiền mặt" selected>Tiền mặt</option>
+                <option value="Chuyển khoản">Chuyển khoản</option>
+                <option value="VNPay">VNPay</option>
+              </select>
+            </div>
+
+            <div id="cashPaymentFields" class="mb-3">
+              <label class="form-label d-flex align-items-center">
+                <i class="fa-solid fa-money-bill-wave me-2"></i>
+                <span>Số tiền khách đưa:</span>
+              </label>
+              <input type="number" id="cashAmount" class="form-control" placeholder="Nhập số tiền khách đưa" min="0" oninput="calculateChange()">
+              <p class="mt-2 d-flex justify-content-between">
+                <span>Tiền thối lại:</span>
+                <span id="changeAmount" class="text-success fw-bold">0 VNĐ</span>
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <label for="deliveryMethod" class="form-label d-flex align-items-center">
+                <i class="fa-solid fa-box-open me-2"></i>
+                <span>Hình thức bán hàng</span>
+              </label>
+              <select id="deliveryMethod" name="deliveryMethod" class="form-select">
+                <option value="Tại quầy" selected>Tại quầy</option>
+                <option value="Giao hàng">Giao hàng</option>
+              </select>
+            </div>
+
+            <!-- Buttons -->
+            <div class="d-flex gap-2 mb-2">
+              <button type="button" class="btn btn-warning flex-grow-1" onclick="holdOrder()">
+                <i class="fa-solid fa-pause me-1"></i> Giữ đơn
+              </button>
+              <button type="button" class="btn btn-danger flex-grow-1" onclick="clearCart()">
+                <i class="fa-solid fa-trash me-1"></i> Xóa giỏ
+              </button>
+            </div>
+            <button type="button" class="btn btn-success w-100" onclick="createOrder()">
+              <i class="fa-solid fa-check me-1"></i> Xác nhận thanh toán
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Danh sách đơn hàng tạm thời -->
+      <div class="card shadow-sm mt-3">
+        <div class="card-body">
+          <h5 class="card-title d-flex align-items-center">
+            <i class="fa-solid fa-clock me-2"></i>
+            <span>Đơn hàng tạm thời</span>
+          </h5>
+          <a href="/acvstore/banhang/held-orders-page" class="btn btn-outline-primary w-100">
+            <i class="fa-solid fa-list me-1"></i> Xem đơn hàng tạm thời
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--Modal Biến Thể-->
+<div class="modal fade" id="productVariantModal" tabindex="-1" aria-labelledby="productVariantModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="productVariantModalLabel">Chọn Biến Thể</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="variantDetails"></div>
+        <div class="mb-3">
+          <label for="colorSelect" class="form-label">Màu Sắc</label>
+          <select class="form-select" id="colorSelect"></select>
+        </div>
+        <div class="mb-3">
+          <label for="sizeSelect" class="form-label">Kích Cỡ</label>
+          <select class="form-select" id="sizeSelect"></select>
+        </div>
+        <p>Số lượng tồn kho: <span id="stockQuantity">0</span></p>
+        <p>Giá: <span id="variantPrice">0 VNĐ</span></p>
+        <input type="number" class="form-control mb-3" id="quantityInput" min="1" value="1">
+        <button class="btn btn-primary" id="addToCartBtn">Thêm Vào Giỏ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Thêm Khách Hàng -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addCustomerModalLabel">Thêm Khách Hàng</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form th:action="@{/acvstore/banhang/add-customer}" method="post">
+          <div class="mb-3">
+            <label for="hoTen" class="form-label">Họ Tên</label>
+            <input type="text" class="form-control" id="hoTen" name="hoTen" required>
+          </div>
+          <div class="mb-3">
+            <label for="soDienThoai" class="form-label">Số Điện Thoại</label>
+            <input type="text" class="form-control" id="soDienThoai" name="soDienThoai" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Lưu</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Biến toàn cục lưu giỏ hàng trên client-side
+  let cart = [];
+
+  // Hàm hiển thị thông tin khách hàng khi chọn
+  function handleCustomerSelection() {
+    const select = document.getElementById('customerSelect');
+    const customerInfo = document.getElementById('customerInfo');
+    const customerName = document.getElementById('customerName');
+    const customerEmail = document.getElementById('customerEmail');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption.value === '0999999999') {
+      customerName.textContent = 'Khách lẻ';
+      customerEmail.textContent = '';
+      customerInfo.style.display = 'none';
+    } else {
+      customerName.textContent = selectedOption.getAttribute('data-name');
+      customerEmail.textContent = selectedOption.getAttribute('data-email') || 'Chưa có email';
+      customerInfo.style.display = 'block';
+    }
+  }
+
+  // Hàm mở modal thêm khách hàng
+  function openCustomerModal() {
+    $('#addCustomerModal').modal('show');
+  }
+
+  // Hàm hiển thị biến thể sản phẩm
+  function showProductVariants(button) {
+    const productId = button.getAttribute('data-product-id');
+    console.log('Product ID from button:', productId);
+    fetch(`/acvstore/banhang/product/${productId}/variants`)
+            .then(response => response.json())
+            .then(data => {
+              const colorSelect = document.getElementById('colorSelect');
+              const sizeSelect = document.getElementById('sizeSelect');
+              colorSelect.innerHTML = '<option value="">Chọn màu sắc</option>';
+              sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
+
+              data.colors.forEach(color => {
+                const option = document.createElement('option');
+                option.value = color.id;
+                option.textContent = color.name;
+                colorSelect.appendChild(option);
+              });
+
+              data.sizes.forEach(size => {
+                const option = document.createElement('option');
+                option.value = size.id;
+                option.textContent = size.name;
+                sizeSelect.appendChild(option);
+              });
+
+              colorSelect.addEventListener('change', updateVariantDetails);
+              sizeSelect.addEventListener('change', updateVariantDetails);
+
+              document.getElementById('variantPrice').textContent = '0 VNĐ';
+              document.getElementById('stockQuantity').textContent = '0';
+              document.getElementById('addToCartBtn').disabled = true;
+
+              $('#productVariantModal').modal('show');
+            })
+            .catch(error => console.error('Lỗi khi tải biến thể:', error));
+  }
+
+  // Hàm cập nhật thông tin biến thể
+  function updateVariantDetails() {
+    const productId = document.querySelector('[data-product-id]').getAttribute('data-product-id');
+    const colorId = document.getElementById('colorSelect').value;
+    const sizeId = document.getElementById('sizeSelect').value;
+
+    if (!colorId || !sizeId) {
+      document.getElementById('variantPrice').textContent = '0 VNĐ';
+      document.getElementById('stockQuantity').textContent = '0';
+      document.getElementById('addToCartBtn').disabled = true;
+      return;
+    }
+
+    fetch(`/acvstore/banhang/product/variant?productId=${productId}&colorId=${colorId}&sizeId=${sizeId}`)
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              if (data.error) {
+                alert(data.error);
+                document.getElementById('variantPrice').textContent = '0 VNĐ';
+                document.getElementById('stockQuantity').textContent = '0';
+                document.getElementById('addToCartBtn').disabled = true;
+              } else {
+                document.getElementById('stockQuantity').textContent = data.stockQuantity || 0;
+                const price = data.price !== undefined && data.price !== null ? data.price : 0;
+                document.getElementById('variantPrice').textContent = price.toLocaleString('vi-VN') + ' VNĐ';
+                document.getElementById('addToCartBtn').dataset.productDetailId = data.productDetailId || '';
+                document.getElementById('addToCartBtn').disabled = !data.stockQuantity || data.stockQuantity === 0;
+              }
+            })
+            .catch(error => {
+              console.error('Lỗi khi cập nhật biến thể:', error);
+              alert('Không thể tải thông tin biến thể. Vui lòng thử lại.');
+            });
+  }
+
+  // Hàm thêm sản phẩm vào giỏ hàng
+  document.getElementById('addToCartBtn').addEventListener('click', () => {
+    const productDetailId = document.getElementById('addToCartBtn').dataset.productDetailId;
+    const quantityInput = document.getElementById('quantityInput');
+    const quantity = parseInt(quantityInput.value) || 0;
+    const shippingFee = parseFloat(document.getElementById('shippingFee').value) || 0;
+
+    if (!productDetailId) {
+      alert('Vui lòng chọn biến thể sản phẩm hợp lệ.');
+      return;
+    }
+
+    if (quantity <= 0) {
+      alert('Số lượng phải lớn hơn 0.');
+      return;
+    }
+
+    fetch('/acvstore/banhang/cart/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productDetailId, quantity, shippingFee })
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              console.log('API Response:', data);
+              fetchCartData(); // Làm mới toàn bộ giỏ hàng để đảm bảo hiển thị đúng
+              updateTotal();
+              $('#productVariantModal').modal('hide');
+              alert('Đã thêm sản phẩm vào giỏ hàng!');
+            })
+            .catch(error => {
+              console.error('Lỗi:', error);
+              alert(`Lỗi: ${error.message}`);
+            });
+  });
+
+  function fetchCartData() {
+    fetch('/acvstore/banhang/cart/get?shippingFee=0', {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              console.log('Cart data:', data);
+              updateCartDisplay(data); // Giả sử bạn đã có hàm updateCartDisplay
+            })
+            .catch(error => {
+              console.error('Lỗi khi tải dữ liệu giỏ hàng:', error);
+              updateCartDisplay({ danhSachSanPham: [] }); // Hiển thị giỏ hàng trống nếu lỗi
+            });
+  }
+
+  function updateCartDisplay(data) {
+    const cartItems = document.getElementById('cartItems');
+    const danhSachSanPham = data?.danhSachSanPham || [];
+    cart = danhSachSanPham.map(item => ({
+      productDetailId: item.idChiTietSanPham,
+      quantity: item.soLuong,
+      shippingFee: data.phiVanChuyen || 0
+    }));
+    cartItems.innerHTML = danhSachSanPham.map(item => `
+        <div class="d-flex justify-content-between align-items-center mb-2" data-product-detail-id="${item.idChiTietSanPham}">
+            <span>${item.tenSanPham || 'Sản phẩm không rõ'} (${item.mauSac || 'Không rõ'}, ${item.kichCo || 'Không rõ'})</span>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-sm btn-outline-secondary" onclick="decreaseQuantity('${item.idChiTietSanPham}', ${item.stockQuantity || 0})">-</button>
+                <span class="mx-2" id="quantity-${item.idChiTietSanPham}">${item.soLuong || 0}</span>
+                <button class="btn btn-sm btn-outline-secondary" onclick="increaseQuantity('${item.idChiTietSanPham}', ${item.stockQuantity || 0})">+</button>
+                <span class="ms-2">${(item.thanhTien || 0).toLocaleString('vi-VN')} VNĐ</span>
+                <button class="btn btn-sm btn-danger" onclick="removeFromCart('${item.idChiTietSanPham}')"><i class="fa fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
+    document.getElementById('subTotal').textContent = data.tongTienHang || '0 VNĐ';
+    document.getElementById('discount').textContent = data.giamGia || '0 VNĐ';
+    document.getElementById('totalPrice').textContent = data.tong || '0 VNĐ';
+    document.getElementById('cartItemCount').textContent = danhSachSanPham.length;
+
+    if (danhSachSanPham.length > 0) {
+      document.getElementById('cartEmpty').style.display = 'none';
+      document.getElementById('cartSummary').style.display = 'block';
+    } else {
+      document.getElementById('cartEmpty').style.display = 'block';
+      document.getElementById('cartSummary').style.display = 'none';
+    }
+  }
+
+  // Hàm lấy giỏ hàng
+  function getCart() {
+    const cartItemsJson = JSON.stringify(cart);
+    const shippingFee = parseFloat(document.getElementById('shippingFee').value) || 0;
+    fetch(`/acvstore/banhang/cart/get?cartItemsJson=${encodeURIComponent(cartItemsJson)}&shippingFee=${shippingFee}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              console.log('API Response for getCart:', data);
+              updateCartDisplay(data);
+              updateTotal();
+            })
+            .catch(error => {
+              console.error('Lỗi khi lấy giỏ hàng:', error);
+              alert(`Lỗi: ${error.message}`);
+            });
+  }
+
+  // Gọi getCart khi khởi tạo hoặc cần cập nhật
+  document.addEventListener('DOMContentLoaded', getCart);
+
+  // Hàm tăng số lượng
+  function increaseQuantity(productDetailId, stockQuantity) {
+    const currentQuantityElement = document.getElementById(`quantity-${productDetailId}`);
+    let currentQuantity = parseInt(currentQuantityElement.textContent) || 0;
+    if (currentQuantity < stockQuantity) {
+      currentQuantity += 1;
+      currentQuantityElement.textContent = currentQuantity;
+
+      fetch('/acvstore/banhang/cart/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productDetailId, quantity: currentQuantity, shippingFee: 0 })
+      })
+              .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                return response.json();
+              })
+              .then(data => {
+                console.log('Update response:', data);
+                updateCartDisplay(data);
+                updateTotal();
+              })
+              .catch(error => {
+                console.error('Lỗi khi tăng số lượng:', error);
+                alert(`Lỗi: ${error.message}`);
+                currentQuantityElement.textContent = currentQuantity - 1; // Hoàn tác
+              });
+    } else {
+      alert(`Số lượng vượt quá tồn kho: ${stockQuantity}`);
+    }
+  }
+
+  // Hàm giảm số lượng
+  function decreaseQuantity(productDetailId, stockQuantity) {
+    const currentQuantity = parseInt(document.getElementById(`quantity-${productDetailId}`).textContent) || 0;
+    const newQuantity = currentQuantity - 1;
+    if (newQuantity > 0) {
+      updateCart(productDetailId, -1);
+    } else {
+      removeFromCart(productDetailId);
+    }
+  }
+
+  function updateCart(productDetailId, change) {
+    const currentQuantity = parseInt(document.getElementById(`quantity-${productDetailId}`).textContent) || 0;
+    const newQuantity = currentQuantity + change;
+
+    if (newQuantity <= 0) {
+      removeFromCart(productDetailId);
+      return;
+    }
+
+    fetch('/acvstore/banhang/cart/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productDetailId, quantity: newQuantity })
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              console.log('API Response:', data);
+              updateCartDisplay(data);
+              updateTotal();
+            })
+            .catch(error => {
+              console.error('Lỗi khi cập nhật giỏ hàng:', error);
+              alert(`Lỗi: ${error.message}`);
+            });
+  }
+
+  // Hàm xóa sản phẩm khỏi giỏ hàng
+  function removeFromCart(productDetailId) {
+    fetch('/acvstore/banhang/cart/remove', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productDetailId })
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              console.log('API Response:', data);
+              updateCartDisplay(data);
+              updateTotal();
+            })
+            .catch(error => {
+              console.error('Lỗi khi xóa khỏi giỏ hàng:', error);
+              alert(`Lỗi: ${error.message}`);
+            });
+  }
+
+  // Hàm gửi giỏ hàng qua AJAX
+  function sendCartUpdate() {
+    fetch('/acvstore/banhang/cart/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cartItems: cart })
+    })
+            .then(response => {
+              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              console.log('API Response:', data);
+              updateCartDisplay(data);
+              updateTotal();
+            })
+            .catch(error => {
+              console.error('Lỗi khi cập nhật giỏ hàng:', error);
+              alert(`Lỗi: ${error.message}`);
+            });
+  }
+
+  // Hàm áp dụng voucher
+  function applyVoucher() {
+    const voucherId = document.getElementById('voucherSelect').value;
+    const minOrderValue = parseFloat(document.querySelector(`#voucherSelect option[value="${voucherId}"]`).getAttribute('data-min-order-value')) || 0;
+    const subTotal = parseFloat(document.getElementById('subTotal').textContent.replace(' VNĐ', '').replace('.', '')) || 0;
+    const voucherMessage = document.getElementById('voucherMessage');
+
+    if (voucherId && subTotal < minOrderValue) {
+      voucherMessage.textContent = `Đơn hàng phải tối thiểu ${minOrderValue.toLocaleString('vi-VN')} VNĐ`;
+      voucherMessage.style.display = 'block';
+      document.getElementById('discount').textContent = '0 VNĐ';
+      updateTotal();
+    } else {
+      voucherMessage.style.display = 'none';
+      fetch(`/acvstore/banhang/cart/apply-voucher?voucherId=${voucherId}&customerId=${document.getElementById('customerSelect').value}`, {
+        method: 'POST'
+      })
+              .then(response => response.json())
+              .then(data => {
+                document.getElementById('discount').textContent = data.giamGia || '0 VNĐ';
+                updateTotal();
+              })
+              .catch(error => console.error('Lỗi khi áp dụng voucher:', error));
+    }
+  }
+
+  // Hàm cập nhật tổng tiền
+  function updateTotal() {
+    const subTotal = parseFloat(document.getElementById('subTotal').textContent.replace(' VNĐ', '').replace('.', '')) || 0;
+    const discount = parseFloat(document.getElementById('discount').textContent.replace(' VNĐ', '').replace('.', '')) || 0;
+    const shippingFee = parseFloat(document.getElementById('shippingFee').value) || 0;
+    const total = subTotal - discount + shippingFee;
+    document.getElementById('shippingFeeDisplay').textContent = shippingFee.toLocaleString('vi-VN') + ' VNĐ';
+    document.getElementById('totalPrice').textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+    calculateChange();
+  }
+
+  // Hàm tính tiền thối lại
+  function calculateChange() {
+    const total = parseFloat(document.getElementById('totalPrice').textContent.replace(' VNĐ', '').replace('.', '')) || 0;
+    const cashAmount = parseFloat(document.getElementById('cashAmount').value) || 0;
+    const change = cashAmount - total;
+    document.getElementById('changeAmount').textContent = change >= 0 ? change.toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ';
+  }
+
+  // Hàm hiển thị/ẩn trường thanh toán tiền mặt
+  function togglePaymentFields() {
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const cashFields = document.getElementById('cashPaymentFields');
+    cashFields.style.display = paymentMethod === 'Tiền mặt' ? 'block' : 'none';
+    if (paymentMethod !== 'Tiền mặt') {
+      document.getElementById('cashAmount').value = '';
+      document.getElementById('changeAmount').textContent = '0 VNĐ';
+    }
+  }
+
+  // Hàm giữ đơn hàng
+  function holdOrder() {
+    const donHangDTO = {
+      khachHangDaChon: document.getElementById('customerSelect').value,
+      phiVanChuyen: parseFloat(document.getElementById('shippingFee').value) || 0,
+      phuongThucThanhToan: document.getElementById('paymentMethod').value,
+      phuongThucBanHang: document.getElementById('deliveryMethod').value,
+      soTienKhachDua: parseFloat(document.getElementById('cashAmount').value) || 0,
+      danhSachSanPham: cart.map(item => ({
+        idChiTietSanPham: item.productDetailId,
+        soLuong: item.quantity
+      })),
+      idPhieuGiamGia: document.getElementById('voucherSelect').value
+    };
+    fetch('/acvstore/banhang/hold-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donHangDTO)
+    })
+            .then(response => response.json())
+            .then(data => {
+              alert(data.message);
+              cart = [];
+              updateCartDisplay({ danhSachSanPham: [] });
+              updateTotal();
+            })
+            .catch(error => console.error('Lỗi khi giữ đơn:', error));
+  }
+
+  // Hàm xóa giỏ hàng
+  function clearCart() {
+    cart = [];
+    fetch('/acvstore/banhang/cart/clear', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+              updateCartDisplay({ danhSachSanPham: [] });
+              updateTotal();
+            })
+            .catch(error => console.error('Lỗi khi xóa giỏ hàng:', error));
+  }
+
+  // Hàm tạo đơn hàng
+  function createOrder() {
+    const donHangDTO = {
+      khachHangDaChon: document.getElementById('customerSelect').value,
+      phiVanChuyen: parseFloat(document.getElementById('shippingFee').value) || 0,
+      phuongThucThanhToan: document.getElementById('paymentMethod').value,
+      phuongThucBanHang: document.getElementById('deliveryMethod').value,
+      soTienKhachDua: parseFloat(document.getElementById('cashAmount').value) || 0,
+      danhSachSanPham: cart.map(item => ({
+        idChiTietSanPham: item.productDetailId,
+        soLuong: item.quantity
+      })),
+      idPhieuGiamGia: document.getElementById('voucherSelect').value
+    };
+    fetch('/acvstore/banhang/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(donHangDTO)
+    })
+            .then(response => response.json())
+            .then(data => {
+              alert(data.message);
+              cart = [];
+              updateCartDisplay({ danhSachSanPham: [] });
+              updateTotal();
+            })
+            .catch(error => console.error('Lỗi khi tạo đơn hàng:', error));
+  }
+
+  // Khởi tạo
+  handleCustomerSelection();
+  togglePaymentFields();
+</script>
+</body>
+</html>
