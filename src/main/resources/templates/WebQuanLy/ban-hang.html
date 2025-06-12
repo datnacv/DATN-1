@@ -39,7 +39,7 @@
               <td th:text="${stat.count}"></td>
               <td><img th:src="${product.urlHinhAnh}" alt="Product Image" class="product-image"></td>
               <td th:text="${product.tenSanPham}"></td>
-              <td th:text="${product.totalStockQuantity}"></td>
+              <td th:text="${product.totalStockQuantity}" id="stock-${product.id}"></td>
               <td th:text="${product.minPriceFormatted} + ' - ' + ${product.maxPriceFormatted}"></td>
               <td>
                 <button class="btn btn-primary btn-sm" th:attr="data-product-id=${product.id}" onclick="showProductVariants(this)">Chọn</button>
@@ -225,7 +225,7 @@
   </div>
 </div>
 
-<!--Modal Biến Thể-->
+<!-- Modal Biến Thể -->
 <div class="modal fade" id="productVariantModal" tabindex="-1" aria-labelledby="productVariantModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -316,48 +316,61 @@
   function showProductVariants(button) {
     const productId = button.getAttribute('data-product-id');
     console.log('Product ID from button:', productId);
+    document.getElementById('productVariantModal').setAttribute('data-product-id', productId);
     fetch(`/acvstore/banhang/product/${productId}/variants`)
-            .then(response => response.json())
+            .then(response => {
+              console.log('Response status:', response.status);
+              if (!response.ok) return response.json().then(err => Promise.reject(err));
+              return response.json();
+            })
             .then(data => {
+              console.log('Variants data:', data);
               const colorSelect = document.getElementById('colorSelect');
               const sizeSelect = document.getElementById('sizeSelect');
               colorSelect.innerHTML = '<option value="">Chọn màu sắc</option>';
               sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
 
-              data.colors.forEach(color => {
-                const option = document.createElement('option');
-                option.value = color.id;
-                option.textContent = color.name;
-                colorSelect.appendChild(option);
-              });
+              if (data.colors && data.sizes) {
+                data.colors.forEach(color => {
+                  const option = document.createElement('option');
+                  option.value = color.id;
+                  option.textContent = color.tenMau;
+                  colorSelect.appendChild(option);
+                });
 
-              data.sizes.forEach(size => {
-                const option = document.createElement('option');
-                option.value = size.id;
-                option.textContent = size.name;
-                sizeSelect.appendChild(option);
-              });
+                data.sizes.forEach(size => {
+                  const option = document.createElement('option');
+                  option.value = size.id;
+                  option.textContent = size.ten;
+                  sizeSelect.appendChild(option);
+                });
+              } else {
+                throw new Error('Dữ liệu màu sắc hoặc kích cỡ không hợp lệ');
+              }
 
               colorSelect.addEventListener('change', updateVariantDetails);
               sizeSelect.addEventListener('change', updateVariantDetails);
 
-              // Reset số lượng về 1 khi mở modal
               document.getElementById('quantityInput').value = 1;
-
               document.getElementById('variantPrice').textContent = '0 VNĐ';
               document.getElementById('stockQuantity').textContent = '0';
               document.getElementById('addToCartBtn').disabled = true;
 
               $('#productVariantModal').modal('show');
             })
-            .catch(error => console.error('Lỗi khi tải biến thể:', error));
+            .catch(error => {
+              console.error('Lỗi khi tải biến thể:', error);
+              alert(error.message || 'Không tìm thấy thông tin biến thể. Vui lòng thử lại!');
+            });
   }
 
   // Hàm cập nhật thông tin biến thể
   function updateVariantDetails() {
-    const productId = document.querySelector('[data-product-id]').getAttribute('data-product-id');
+    const productId = document.getElementById('productVariantModal').getAttribute('data-product-id');
     const colorId = document.getElementById('colorSelect').value;
     const sizeId = document.getElementById('sizeSelect').value;
+
+    console.log('Updating variant with:', { productId, colorId, sizeId });
 
     if (!colorId || !sizeId) {
       document.getElementById('variantPrice').textContent = '0 VNĐ';
@@ -368,29 +381,22 @@
 
     fetch(`/acvstore/banhang/product/variant?productId=${productId}&colorId=${colorId}&sizeId=${sizeId}`)
             .then(response => {
-              if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+              console.log('Variant response status:', response.status);
+              if (!response.ok) return response.json().then(err => Promise.reject(err));
               return response.json();
             })
             .then(data => {
+              console.log('Variant data:', data);
               if (data.error) {
                 alert(data.error);
                 document.getElementById('variantPrice').textContent = '0 VNĐ';
                 document.getElementById('stockQuantity').textContent = '0';
                 document.getElementById('addToCartBtn').disabled = true;
               } else {
-                // Lấy số lượng hiện tại trong giỏ hàng
-                fetchCartData().then(cartData => {
-                  const currentCart = cartData?.danhSachSanPham || [];
-                  const existingItem = currentCart.find(item => item.idChiTietSanPham === data.productDetailId);
-                  const usedQuantity = existingItem ? existingItem.soLuong : 0;
-                  const availableStock = data.stockQuantity - usedQuantity;
-
-                  document.getElementById('stockQuantity').textContent = availableStock > 0 ? availableStock : 0;
-                  const price = data.price !== undefined && data.price !== null ? data.price : 0;
-                  document.getElementById('variantPrice').textContent = price.toLocaleString('vi-VN') + ' VNĐ';
-                  document.getElementById('addToCartBtn').dataset.productDetailId = data.productDetailId || '';
-                  document.getElementById('addToCartBtn').disabled = availableStock <= 0;
-                });
+                document.getElementById('stockQuantity').textContent = data.stockQuantity > 0 ? data.stockQuantity : 0;
+                document.getElementById('variantPrice').textContent = data.price.toLocaleString('vi-VN') + ' VNĐ';
+                document.getElementById('addToCartBtn').dataset.productDetailId = data.productDetailId || '';
+                document.getElementById('addToCartBtn').disabled = data.stockQuantity <= 0;
               }
             })
             .catch(error => {
@@ -405,6 +411,7 @@
     const quantityInput = document.getElementById('quantityInput');
     const quantity = parseInt(quantityInput.value) || 0;
     const shippingFee = parseFloat(document.getElementById('shippingFee').value) || 0;
+    const productId = document.getElementById('productVariantModal').getAttribute('data-product-id');
 
     if (!productDetailId) {
       alert('Vui lòng chọn biến thể sản phẩm hợp lệ.');
@@ -416,6 +423,7 @@
       return;
     }
 
+    // Gửi yêu cầu thêm vào giỏ hàng
     fetch('/acvstore/banhang/cart/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -427,8 +435,12 @@
             })
             .then(data => {
               console.log('API Response:', data);
-              fetchCartData(); // Làm mới giỏ hàng
+              // Làm mới giỏ hàng
+              fetchCartData();
+              // Cập nhật tổng tiền
               updateTotal();
+              // Cập nhật số lượng tồn kho trên giao diện
+              updateStockQuantity(productId, productDetailId, quantity);
               $('#productVariantModal').modal('hide');
               alert('Đã thêm sản phẩm vào giỏ hàng!');
             })
@@ -437,6 +449,54 @@
               alert(`Lỗi: ${error.message}`);
             });
   });
+
+  // Hàm lấy productId từ productDetailId
+  function getProductIdFromDetailId(productDetailId) {
+    const button = document.querySelector(`#productList tr button[data-product-detail-id="${productDetailId}"]`) ||
+            document.querySelector(`#cartItems div[data-product-detail-id="${productDetailId}"] .increase-btn`);
+    return button ? button.getAttribute('data-product-id') : null;
+  }
+
+  // Hàm cập nhật số lượng tồn kho trong bảng sản phẩm
+  function updateStockQuantity(productId, productDetailId, quantityChange) {
+    fetch(`/acvstore/banhang/product/variant?productDetailId=${productDetailId}`)
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('Updated variant data:', data);
+              const productRow = document.querySelector(`#productList tr button[data-product-id="${productId}"]`)?.parentElement?.parentElement;
+              if (productRow) {
+                const stockCell = productRow.querySelector('td:nth-child(4)');
+                if (stockCell) {
+                  let currentStock = parseInt(data.stockQuantity) || 0;
+                  fetch(`/acvstore/banhang/cart/get-temp-stock?productDetailId=${productDetailId}`)
+                          .then(resp => resp.json())
+                          .then(tempData => {
+                            let reserved = parseInt(tempData.reservedQuantity) || 0;
+                            let newStock = currentStock - reserved + quantityChange; // Điều chỉnh tồn kho
+                            stockCell.textContent = newStock >= 0 ? newStock : 0;
+                            if (document.getElementById('stockQuantity')) {
+                              document.getElementById('stockQuantity').textContent = newStock >= 0 ? newStock : 0;
+                            }
+                          })
+                          .catch(() => {
+                            stockCell.textContent = currentStock;
+                            if (document.getElementById('stockQuantity')) {
+                              document.getElementById('stockQuantity').textContent = currentStock;
+                            }
+                          });
+                }
+              }
+            })
+            .catch(error => {
+              console.error('Lỗi khi cập nhật số lượng tồn kho:', error);
+              alert('Không thể cập nhật số lượng tồn kho. Vui lòng thử lại.');
+            });
+  }
 
   // Hàm lấy giỏ hàng bằng AJAX
   function fetchCartData() {
@@ -470,17 +530,17 @@
       shippingFee: data.phiVanChuyen || 0
     }));
     cartItems.innerHTML = danhSachSanPham.map(item => `
-        <div class="d-flex justify-content-between align-items-center mb-2" data-product-detail-id="${item.idChiTietSanPham}">
-            <span>${item.tenSanPham || 'Sản phẩm không rõ'} (${item.mauSac || 'Không rõ'}, ${item.kichCo || 'Không rõ'})</span>
-            <div class="d-flex align-items-center">
-                <button class="btn btn-sm btn-outline-secondary decrease-btn" data-product-detail-id="${item.idChiTietSanPham}" data-stock="${item.stockQuantity || 0}">-</button>
-                <span class="mx-2" id="quantity-${item.idChiTietSanPham}">${item.soLuong || 0}</span>
-                <button class="btn btn-sm btn-outline-secondary increase-btn" data-product-detail-id="${item.idChiTietSanPham}" data-stock="${item.stockQuantity || 0}">+</button>
-                <span class="ms-2">${(item.thanhTien || 0).toLocaleString('vi-VN').replace(/\s*đ$/, '')} VNĐ</span>
-                <button class="btn btn-sm btn-danger" onclick="removeFromCart('${item.idChiTietSanPham}')"><i class="fa fa-trash"></i></button>
+            <div class="d-flex justify-content-between align-items-center mb-2" data-product-detail-id="${item.idChiTietSanPham}">
+                <span>${item.tenSanPham || 'Sản phẩm không rõ'} (${item.mauSac || 'Không rõ'}, ${item.kichCo || 'Không rõ'})</span>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-secondary decrease-btn" data-product-detail-id="${item.idChiTietSanPham}" data-stock="${item.stockQuantity || 0}">-</button>
+                    <span class="mx-2" id="quantity-${item.idChiTietSanPham}">${item.soLuong || 0}</span>
+                    <button class="btn btn-sm btn-outline-secondary increase-btn" data-product-detail-id="${item.idChiTietSanPham}" data-stock="${item.stockQuantity || 0}">+</button>
+                    <span class="ms-2">${(item.thanhTien || 0).toLocaleString('vi-VN').replace(/\s*đ$/, '')} VNĐ</span>
+                    <button class="btn btn-sm btn-danger" onclick="removeFromCart('${item.idChiTietSanPham}')"><i class="fa fa-trash"></i></button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
     document.getElementById('subTotal').textContent = (data.tongTienHang || 0).toLocaleString('vi-VN').replace(/\s*đ$/, '');
     document.getElementById('discount').textContent = (data.giamGia || 0).toLocaleString('vi-VN').replace(/\s*đ$/, '');
     document.getElementById('totalPrice').textContent = (data.tong || 0).toLocaleString('vi-VN').replace(/\s*đ$/, '');
@@ -518,64 +578,74 @@
   function increaseQuantity(productDetailId, stockQuantity) {
     const currentQuantityElement = document.getElementById(`quantity-${productDetailId}`);
     let currentQuantity = parseInt(currentQuantityElement.textContent) || 0;
-    if (currentQuantity < stockQuantity) {
-      currentQuantity += 1;
-      currentQuantityElement.textContent = currentQuantity;
+    const newQuantity = currentQuantity + 1;
 
-      fetch('/acvstore/banhang/cart/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productDetailId, quantity: currentQuantity, shippingFee: 0 })
-      })
-              .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-              })
-              .then(data => {
-                console.log('Update response:', data);
-                updateCartDisplay(data);
-                updateTotal();
-              })
-              .catch(error => {
-                console.error('Lỗi khi tăng số lượng:', error);
-                alert(`Lỗi: ${error.message}`);
-                currentQuantityElement.textContent = currentQuantity - 1; // Hoàn tác
-              });
-    } else {
+    if (newQuantity > stockQuantity) {
       alert(`Số lượng vượt quá tồn kho: ${stockQuantity}`);
+      return;
     }
+
+    currentQuantityElement.textContent = newQuantity; // Cập nhật tạm thời trên giao diện
+
+    fetch('/acvstore/banhang/cart/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productDetailId, quantity: newQuantity, shippingFee: 0 })
+    })
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error || `HTTP error! Status: ${response.status}`); });
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('Update response:', data);
+              updateCartDisplay(data); // Cập nhật giỏ hàng từ dữ liệu backend
+              const productId = getProductIdFromDetailId(productDetailId);
+              if (productId) updateStockQuantity(productId, productDetailId, -1); // Giảm tồn kho
+            })
+            .catch(error => {
+              console.error('Lỗi khi tăng số lượng:', error);
+              alert(`Lỗi: ${error.message}`);
+              currentQuantityElement.textContent = currentQuantity; // Khôi phục số lượng trước đó
+            });
   }
 
   // Hàm giảm số lượng
   function decreaseQuantity(productDetailId, stockQuantity) {
     const currentQuantityElement = document.getElementById(`quantity-${productDetailId}`);
     let currentQuantity = parseInt(currentQuantityElement.textContent) || 0;
-    if (currentQuantity > 1) {
-      currentQuantity -= 1;
-      currentQuantityElement.textContent = currentQuantity;
+    const newQuantity = currentQuantity - 1;
 
-      fetch('/acvstore/banhang/cart/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productDetailId, quantity: currentQuantity, shippingFee: 0 })
-      })
-              .then(response => {
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                return response.json();
-              })
-              .then(data => {
-                console.log('Update response:', data);
-                updateCartDisplay(data);
-                updateTotal();
-              })
-              .catch(error => {
-                console.error('Lỗi khi giảm số lượng:', error);
-                alert(`Lỗi: ${error.message}`);
-                currentQuantityElement.textContent = currentQuantity + 1; // Hoàn tác
-              });
-    } else {
+    if (newQuantity < 1) {
       removeFromCart(productDetailId);
+      return;
     }
+
+    currentQuantityElement.textContent = newQuantity; // Cập nhật tạm thời trên giao diện
+
+    fetch('/acvstore/banhang/cart/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productDetailId, quantity: newQuantity, shippingFee: 0 })
+    })
+            .then(response => {
+              if (!response.ok) {
+                return response.json().then(err => { throw new Error(err.error || `HTTP error! Status: ${response.status}`); });
+              }
+              return response.json();
+            })
+            .then(data => {
+              console.log('Update response:', data);
+              updateCartDisplay(data); // Cập nhật giỏ hàng từ dữ liệu backend
+              const productId = getProductIdFromDetailId(productDetailId);
+              if (productId) updateStockQuantity(productId, productDetailId, 1); // Tăng tồn kho
+            })
+            .catch(error => {
+              console.error('Lỗi khi giảm số lượng:', error);
+              alert(`Lỗi: ${error.message}`);
+              currentQuantityElement.textContent = currentQuantity; // Khôi phục số lượng trước đó
+            });
   }
 
   // Hàm xóa sản phẩm khỏi giỏ hàng
@@ -594,6 +664,8 @@
                 console.log('Remove response:', data);
                 updateCartDisplay(data);
                 updateTotal();
+                const productId = getProductIdFromDetailId(productDetailId);
+                if (productId) updateStockQuantity(productId, productDetailId, 0); // Khôi phục tồn kho
               })
               .catch(error => {
                 console.error('Lỗi khi xóa khỏi giỏ hàng:', error);
@@ -680,7 +752,7 @@
             .then(response => response.json())
             .then(data => {
               alert(data.message);
-              fetchCartData(); // Làm mới giỏ hàng
+              fetchCartData();
               updateTotal();
             })
             .catch(error => console.error('Lỗi khi giữ đơn:', error));
@@ -719,7 +791,7 @@
             .then(response => response.json())
             .then(data => {
               alert(data.message);
-              fetchCartData(); // Làm mới giỏ hàng
+              fetchCartData();
               updateTotal();
             })
             .catch(error => console.error('Lỗi khi tạo đơn hàng:', error));
