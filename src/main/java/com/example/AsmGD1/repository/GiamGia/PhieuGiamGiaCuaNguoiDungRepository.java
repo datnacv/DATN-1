@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface PhieuGiamGiaCuaNguoiDungRepository extends JpaRepository<PhieuGiamGiaCuaNguoiDung, UUID> {
     List<PhieuGiamGiaCuaNguoiDung> findByPhieuGiamGia_Id(UUID phieuId);
-
+    List<PhieuGiamGiaCuaNguoiDung> findByNguoiDungId(UUID nguoiDungId);
 }

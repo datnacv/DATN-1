@@ -68,6 +68,21 @@
             width: 100px;
             height: 100px;
         }
+        #quickAddImagePreviewContainer {
+            max-width: 100%;
+            margin-top: 10px;
+        }
+
+        #quickAddImagePreview {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            border: 1px solid #ced4da;
+            display: block;
+            /* Ẩn tooltip nếu trình duyệt hiển thị */
+            pointer-events: none;
+        }
         .image-preview img {
             width: 100%;
             height: 100%;
@@ -89,6 +104,77 @@
             text-align: center;
             cursor: pointer;
             font-size: 12px;
+        }
+        .modal-header {
+            background-color: #0d6efd;
+            color: white;
+            border-bottom: none;
+        }
+        .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+        .modal-content {
+            border-radius: 0.75rem;
+            border: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .modal-footer {
+            border-top: 1px solid #e9ecef;
+        }
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+            border: 1px solid #ced4da;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        .btn {
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        .btn-success {
+            background-color: #198754;
+            border-color: #198754;
+        }
+        .btn-success:hover {
+            background-color: #157347;
+            border-color: #146c43;
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .btn i {
+            margin-right: 0.4rem;
+        }
+        .form-check-input {
+            cursor: pointer;
+            width: 3em;
+            height: 1.5em;
+        }
+        .form-check-label {
+            font-size: 1rem;
+            color: #333;
+            margin-left: 1rem;
+            transition: color 0.2s ease;
+        }
+        .form-check-input:checked + .form-check-label {
+            color: #198754;
+        }
+        .form-check-input:not(:checked) + .form-check-label {
+            color: #dc3545;
         }
     </style>
 </head>
@@ -112,10 +198,15 @@
                 <div class="row g-3">
                     <div class="col-md-12">
                         <label for="productSelect" class="form-label">Sản phẩm</label>
-                        <select class="form-select" id="productSelect" name="productId" required>
-                            <option value="">Chọn sản phẩm...</option>
-                            <option th:each="p : ${sanPhams}" th:value="${p.id}" th:text="${p.tenSanPham}" th:selected="${selectedProductId != null and p.id == selectedProductId}"></option>
-                        </select>
+                        <div class="d-flex align-items-center">
+                            <select class="form-select" id="productSelect" name="productId" required>
+                                <option value="">Chọn sản phẩm...</option>
+                                <option th:each="p : ${sanPhams}" th:value="${p.id}" th:text="${p.tenSanPham}" th:selected="${selectedProductId != null and p.id == selectedProductId}"></option>
+                            </select>
+                            <button type="button" class="btn btn-success btn-sm quick-add-btn ms-2" data-bs-toggle="modal" data-bs-target="#quickAddProductModal" data-entity="product" title="Thêm nhanh sản phẩm">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <label for="originSelect" class="form-label">Xuất xứ</label>
@@ -272,11 +363,73 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Thêm Nhanh Sản Phẩm -->
+    <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickAddProductModalLabel"><i class="fas fa-plus me-2"></i> Thêm Nhanh Sản Phẩm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="quickAddProductForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="id" value="">
+                        <div class="mb-3">
+                            <label for="quickAddMaSanPham" class="form-label">Mã sản phẩm</label>
+                            <input type="text" class="form-control" id="quickAddMaSanPham" name="maSanPham" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickAddTenSanPham" class="form-label">Tên sản phẩm</label>
+                            <input type="text" class="form-control" id="quickAddTenSanPham" name="tenSanPham" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickAddMoTa" class="form-label">Mô tả</label>
+                            <textarea class="form-control" id="quickAddMoTa" name="moTa" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickAddDanhMuc" class="form-label">Danh mục</label>
+                            <select class="form-select" id="quickAddDanhMuc" name="danhMuc.id" required>
+                                <option value="">-- Chọn danh mục --</option>
+                                <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Ảnh sản phẩm</label>
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-primary" id="quickAddCloudinaryWidget">
+                                    <i class="fas fa-image"></i> Chọn ảnh
+                                </button>
+                                <input type="hidden" id="quickAddUrlHinhAnh" name="urlHinhAnh">
+                                <span id="quickAddImageNameDisplay" class="ms-2 text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                            </div>
+                            <div class="mt-2" id="quickAddImagePreviewContainer">
+                                <img class="product-image" alt="" id="quickAddImagePreview">
+                                <small class="d-block mt-1">Ảnh hiện tại</small>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <input type="hidden" name="trangThai" value="true">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Đóng
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
     $(document).ready(function () {
         $('#productSelect').select2({ placeholder: "Chọn sản phẩm...", allowClear: true, width: '100%' });
@@ -285,7 +438,6 @@
         $('#originSelect').select2({ placeholder: "Chọn xuất xứ...", allowClear: true, width: '100%' });
         $('#materialSelect').select2({ placeholder: "Chọn chất liệu...", allowClear: true, width: '100%' });
         $('#styleSelect').select2({ placeholder: "Chọn kiểu dáng...", allowClear: true, width: '100%' });
-        $('#styleSelect').select2({ placeholder: "Chọn kiểu dáng...", allowClear: true, width: '100%' });
         $('#sleeveSelect').select2({ placeholder: "Chọn tay áo...", allowClear: true, width: '100%' });
         $('#collarSelect').select2({ placeholder: "Chọn cổ áo...", allowClear: true, width: '100%' });
         $('#brandSelect').select2({ placeholder: "Chọn thương hiệu...", allowClear: true, width: '100%' });
@@ -293,9 +445,11 @@
 
         $('.quick-add-btn').on('click', function() {
             const entity = $(this).data('entity');
-            $('#quickAddEntity').val(entity);
-            $('#quickAddName').val('');
-            $('#quickAddModalLabel').text('Thêm Nhanh ' + capitalize(entity));
+            if (entity !== 'product') {
+                $('#quickAddEntity').val(entity);
+                $('#quickAddName').val('');
+                $('#quickAddModalLabel').text('Thêm Nhanh ' + capitalize(entity));
+            }
         });
 
         $('#imageFiles').on('change', function() {
@@ -306,6 +460,62 @@
                 updateFileInputLabel(this);
             }
         });
+
+        // Initialize Cloudinary Widget for Quick Add Product
+        const quickAddCloudinaryWidget = cloudinary.createUploadWidget(
+            {
+                cloudName: 'dfwbuxr0c',
+                uploadPreset: 'acvstore_unsigned_preset',
+                folder: 'acvstore/products',
+                sources: ['local', 'url', 'google_drive', 'dropbox', 'shutterstock', 'getty'],
+                multiple: false,
+                clientAllowedFormats: ['image'],
+                maxImageFileSize: 2000000,
+                theme: 'minimal'
+            },
+            (error, result) => {
+                if (!error && result && result.event === 'success') {
+                    $('#quickAddUrlHinhAnh').val(result.info.secure_url);
+                    $('#quickAddImagePreview').attr('src', result.info.secure_url).show();
+                    $('#quickAddImageNameDisplay').text(result.info.original_filename);
+                    console.log('Ảnh đã được tải: ', result.info.secure_url); // Log để kiểm tra
+                } else if (error) {
+                    console.error('Cloudinary upload error:', error);
+                    alert('Lỗi khi tải ảnh lên Cloudinary. Vui lòng thử lại.');
+                }
+            }
+        );
+
+        $('#quickAddCloudinaryWidget').on('click', function() {
+            quickAddCloudinaryWidget.open();
+        });
+
+        // Handle Quick Add Product Form Submission
+        $('#quickAddProductForm').on('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/save-auto-product',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#quickAddProductModal').modal('hide');
+                    refreshProductSelect(response.id, response.tenSanPham);
+                    alert('Thêm sản phẩm thành công!');
+                },
+                error: function(xhr) {
+                    let errorMessage = xhr.statusText;
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.message || xhr.responseText;
+                    } catch (e) {}
+                    alert('Lỗi khi thêm sản phẩm: ' + errorMessage);
+                }
+            });
+        });
+
     });
 
     function generateVariations() {
@@ -424,7 +634,7 @@
         }
 
         $.ajax({
-            url: '/acvstore/chi-tiet-san-pham/save-auto' + entity,
+            url: '/acvstore/chi-tiet-san-pham/save-auto-' + entity,
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ name: name }),
@@ -448,6 +658,12 @@
         const selectId = '#' + entity + 'Select';
         const $select = $(selectId);
         $select.append(new Option(newName, newId, false, false));
+        $select.trigger('change');
+    }
+
+    function refreshProductSelect(newId, newName) {
+        const $select = $('#productSelect');
+        $select.append(new Option(newName, newId, true, true));
         $select.trigger('change');
     }
 </script>

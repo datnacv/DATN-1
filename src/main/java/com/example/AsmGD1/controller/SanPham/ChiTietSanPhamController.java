@@ -13,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class ChiTietSanPhamController {
     @Autowired private CoAoService coAoService;
     @Autowired private KieuDangService kieuDangService;
     @Autowired private ThuongHieuService thuongHieuService;
+    @Autowired private DanhMucService danhMucService;
 
     @GetMapping
     public String xemTatCa(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
@@ -81,6 +83,9 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
+            List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
+            logger.info("Số lượng danh mục: {}", danhMucList.size());
+            model.addAttribute("danhMucList", danhMucList);
             return "/WebQuanLy/add-chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang thêm chi tiết sản phẩm: ", e);
@@ -194,6 +199,48 @@ public class ChiTietSanPhamController {
         } catch (Exception e) {
             logger.error("Lỗi khi xóa ảnh ID {}: ", imageId, e);
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xóa ảnh: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/save-auto-product")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(@ModelAttribute SanPham sanPham, @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            SanPham newSanPham = new SanPham();
+            newSanPham.setMaSanPham(sanPham.getMaSanPham());
+            newSanPham.setTenSanPham(sanPham.getTenSanPham());
+            newSanPham.setMoTa(sanPham.getMoTa());
+            newSanPham.setUrlHinhAnh(sanPham.getUrlHinhAnh());
+            newSanPham.setTrangThai(true); // Mặc định là Đang Bán
+            newSanPham.setThoiGianTao(LocalDateTime.now());
+
+            if (danhMucId != null) {
+                DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
+                if (danhMuc != null) {
+                    newSanPham.setDanhMuc(danhMuc);
+                } else {
+                    response.put("success", false);
+                    response.put("message", "Danh mục không tồn tại!");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            } else {
+                response.put("success", false);
+                response.put("message", "Vui lòng chọn danh mục!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            sanPhamService.save(newSanPham);
+            response.put("success", true);
+            response.put("id", newSanPham.getId());
+            response.put("tenSanPham", newSanPham.getTenSanPham());
+            response.put("message", "Thêm sản phẩm thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Lỗi khi thêm nhanh sản phẩm: ", e);
+            response.put("success", false);
+            response.put("message", "Lỗi khi thêm sản phẩm: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 }

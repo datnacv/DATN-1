@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
@@ -31,9 +32,17 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
             "LOWER(u.soDienThoai) LIKE LOWER(CONCAT('%', :keyword, '%')) )")
     Page<NguoiDung> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 
-    // Lấy tất cả theo vai trò + trạng thái
     Page<NguoiDung> findByVaiTroAndTrangThaiTrue(String vaiTro, Pageable pageable);
 
-    // Tìm theo họ tên + vai trò + trạng thái
     Page<NguoiDung> findByHoTenContainingIgnoreCaseAndVaiTroAndTrangThaiTrue(String hoTen, String vaiTro, Pageable pageable);
+
+    // Thêm phương thức kiểm tra số điện thoại tồn tại
+    boolean existsBySoDienThoai(String soDienThoai);
+
+    Optional<NguoiDung> findBySoDienThoai(String soDienThoai);
+
+    @Query("SELECT u FROM NguoiDung u WHERE u.tenDangNhap = :tenDangNhap AND u.trangThai = true")
+    Optional<NguoiDung> findByTenDangNhap(@Param("tenDangNhap") String tenDangNhap);
+
+    Optional<NguoiDung> findByEmail(String email);
 }

@@ -2,7 +2,10 @@ package com.example.AsmGD1.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -35,4 +38,37 @@ public class SanPham {
 
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai;
+
+    //long
+    @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ChiTietSanPham> chiTietSanPhams;
+
+    // Helper methods for frontend
+    public int getTotalStockQuantity() {
+        return chiTietSanPhams != null ? chiTietSanPhams.stream()
+                .mapToInt(ChiTietSanPham::getSoLuongTonKho)
+                .sum() : 0;
+    }
+
+    public BigDecimal getMinPrice() {
+        return chiTietSanPhams != null && !chiTietSanPhams.isEmpty() ? chiTietSanPhams.stream()
+                .map(ChiTietSanPham::getGia)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getMaxPrice() {
+        return chiTietSanPhams != null && !chiTietSanPhams.isEmpty() ? chiTietSanPhams.stream()
+                .map(ChiTietSanPham::getGia)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO) : BigDecimal.ZERO;
+    }
+
+    public String getMinPriceFormatted() {
+        return String.format("%,.0f VNĐ", getMinPrice().doubleValue());
+    }
+
+    public String getMaxPriceFormatted() {
+        return String.format("%,.0f VNĐ", getMaxPrice().doubleValue());
+    }
 }
