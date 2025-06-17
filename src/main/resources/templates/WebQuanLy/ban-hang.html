@@ -1114,54 +1114,75 @@
 
         html5QrCode.start(
                 cameraId,
-                { fps: 20, qrbox: 320, aspectRatio: 1.7777778 },
+                { fps: 20, qrbox: 320, aspectRatio: 1.777 },
                 qrCodeMessage => {
-                  console.log("Nội dung mã QR thô:", qrCodeMessage);
+                  console.log("QR content:", qrCodeMessage);
                   let productDetailId = qrCodeMessage.trim();
                   if (qrCodeMessage.includes('productDetailId:')) {
                     productDetailId = qrCodeMessage.split('productDetailId:')[1].trim();
                   }
-                  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+                  const uuidRegex = /^[0-9a-fA-F\-]{36}$/;
                   if (!uuidRegex.test(productDetailId)) {
-                    showToast("Mã QR chứa productDetailId không hợp lệ: " + productDetailId, 10000, 'error');
+                    showToast("QR không hợp lệ!", 10000, 'error');
                     html5QrCode.stop().then(() => qrReader.style.display = "none");
                     return;
                   }
-                  console.log("Extracted productDetailId:", productDetailId);
-                  fetch(`/acvstore/banhang/product-detail/${productDetailId}`)
-                          .then(response => {
-                            if (!response.ok) {
-                              return response.json().then(err => Promise.reject(err));
-                            }
-                            return response.json();
+
+                  // Gọi API lấy thông tin biến thể
+                  fetch(`/acvstore/banhang/product/variant?productDetailId=${productDetailId}`)
+                          .then(res => {
+                            if (!res.ok) throw new Error('Không tìm thấy thông tin biến thể');
+                            return res.json();
                           })
                           .then(data => {
-                            console.log("API response for product detail:", data);
-                            if (data.error) {
-                              showToast(data.error, 10000, 'error');
-                              return;
+                            if (!data || !data.productDetailId) {
+                              throw new Error(data.error || 'Dữ liệu biến thể không hợp lệ');
                             }
-                            showProductVariants({ productId: data.productId }); // Sử dụng object với productId
+
+                            // Thêm vào giỏ hàng luôn
+                            fetch('/acvstore/banhang/cart/add', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                productDetailId: data.productDetailId,
+                                quantity: 1,
+                                shippingFee: parseFloat(document.getElementById('shippingFee').value) || 0
+                              })
+                            })
+                                    .then(resp => {
+                                      if (!resp.ok) throw new Error('Thêm vào giỏ thất bại');
+                                      return resp.json();
+                                    })
+                                    .then(cartData => {
+                                      showToast(`✅ Đã thêm "${data.tenSanPham} (${data.mauSac}, ${data.kichCo})" vào giỏ hàng`, 6000, 'success');
+                                      fetchCartData(); // Cập nhật giao diện giỏ hàng
+                                    })
+                                    .catch(err => {
+                                      showToast('❌ ' + err.message, 8000, 'error');
+                                    });
+
                             html5QrCode.stop().then(() => qrReader.style.display = "none");
                           })
-                          .catch(error => {
-                            console.error('Lỗi khi lấy productId từ productDetailId:', error);
-                            showToast('Lỗi khi tải thông tin sản phẩm: ' + (error.message || 'Không xác định'), 10000, 'error');
+                          .catch(err => {
+                            showToast('❌ Lỗi khi xử lý mã QR: ' + err.message, 8000, 'error');
                             html5QrCode.stop().then(() => qrReader.style.display = "none");
                           });
                 },
                 errorMessage => {
-                  console.warn("Lỗi nhận diện QR:", errorMessage);
+                  console.warn("QR đọc lỗi:", errorMessage);
                 }
         );
-        showToast("💡 Giữ mã QR trước camera và đảm bảo ánh sáng đầy đủ!", 5000, 'success');
+
+        showToast("📷 Đưa mã QR gần camera để quét", 5000, 'success');
       } else {
-        showToast("Không tìm thấy thiết bị camera!", 10000, 'error');
+        showToast("❌ Không tìm thấy camera!", 10000, 'error');
       }
     }).catch(err => {
-      showToast("Không thể truy cập camera: " + err, 10000, 'error');
+      showToast("Không thể mở camera: " + err, 10000, 'error');
     });
   }
+
 
   // Khởi tạo
   document.addEventListener('DOMContentLoaded', () => {

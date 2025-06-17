@@ -243,6 +243,21 @@
             border: 1px solid #dc3545;
             background-color: rgba(220, 53, 69, 0.1);
         }
+        .table td, .table th {
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        /* Căn giữa ảnh trong ô */
+        .table td:nth-child(2) {
+            padding: 0.5rem;
+        }
+        .table td:nth-child(2) div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 50px;
+        }
     </style>
 </head>
 <body>
@@ -311,8 +326,10 @@
                     <tr th:each="sp, iter : ${sanPhamList}" th:data-id="${sp.id}">
                         <td th:text="${iter.count + (currentPage * 10)}"></td>
                         <td>
-                            <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}" th:src="${sp.urlHinhAnh}" class="product-image" alt="Product Image">
-                            <span th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}">N/A</span>
+                            <div>
+                                <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}" th:src="${sp.urlHinhAnh}" class="product-image" alt="Product Image">
+                                <span th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}">N/A</span>
+                            </div>
                         </td>
                         <td th:text="${sp.tenSanPham}"></td>
                         <td th:text="${sp.moTa}" th:title="${sp.moTa}"></td>
