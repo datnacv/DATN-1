@@ -1,601 +1,478 @@
-﻿USE master;
+﻿
+USE Master;
+GO
+DROP DATABASE IF EXISTS ACVStore;
+GO
+CREATE DATABASE ACVStore;
+GO
+USE ACVStore;
 GO
 
--- Drop the database if it exists
-IF EXISTS (SELECT name FROM sys.databases WHERE name = 'ClothingACVShop')
-BEGIN
-    DROP DATABASE ClothingACVShop;
-END
-GO
-
--- Create the database
-CREATE DATABASE ClothingACVShop;
-GO
-
--- Set the Vietnamese collation
-ALTER DATABASE ClothingACVShop
-COLLATE Vietnamese_CI_AS;
-GO
-
--- Switch to the new database
-USE ClothingACVShop;
-GO
-
--- Table Users
-CREATE TABLE Users (
-                       id INT IDENTITY(1,1) PRIMARY KEY,
-                       username NVARCHAR(50) UNIQUE NOT NULL,
-                       password NVARCHAR(255) NULL,
-                       full_name NVARCHAR(100),
-                       email NVARCHAR(100) UNIQUE,
-                       phone NVARCHAR(15),
-                       address NVARCHAR(255),
-                       role NVARCHAR(20) CHECK (role IN ('ADMIN', 'EMPLOYEE', 'CUSTOMER')),
-                       date_of_birth DATE,
-                       id_card NVARCHAR(20),
-                       gender NVARCHAR(50),
-                       province NVARCHAR(100),
-                       district NVARCHAR(100),
-                       ward NVARCHAR(100),
-                       address_detail NVARCHAR(255),
-                       created_at DATETIME DEFAULT GETDATE(),
-                       is_deleted BIT DEFAULT 0,
-                       reset_otp VARCHAR(6) NULL,
-                       otp_expiry DATETIME NULL
+-- 1. Bảng chất liệu
+CREATE TABLE chat_lieu (
+                           id UNIQUEIDENTIFIER PRIMARY KEY,
+                           ten_chat_lieu NVARCHAR(100) NOT NULL
 );
-GO
 
--- Table Categories
-CREATE TABLE Categories (
-                            id INT IDENTITY(1,1) PRIMARY KEY,
-                            name NVARCHAR(100) NOT NULL UNIQUE,
-                            description NVARCHAR(255),
-                            created_at DATETIME DEFAULT GETDATE()
+-- 2. Bảng màu sắc
+CREATE TABLE mau_sac (
+                         id UNIQUEIDENTIFIER PRIMARY KEY,
+                         ten_mau NVARCHAR(100) NOT NULL
 );
-GO
 
--- Table Products
-CREATE TABLE Products (
-                          id INT IDENTITY(1,1) PRIMARY KEY,
-                          name NVARCHAR(255) NOT NULL,
-                          description NVARCHAR(1000),
-                          category_id INT,
-                          image_url VARCHAR(MAX),
-    created_at DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (category_id) REFERENCES Categories(id) ON DELETE SET NULL
+-- 3. Bảng xuất xứ
+CREATE TABLE xuat_xu (
+                         id UNIQUEIDENTIFIER PRIMARY KEY,
+                         ten_xuat_xu NVARCHAR(100) NOT NULL
 );
-GO
 
--- Tables Origin, Color, Size, Materials, Style
-CREATE TABLE Origins (
-                         id INT IDENTITY(1,1) PRIMARY KEY,
-                         name NVARCHAR(100) UNIQUE NOT NULL
+-- 4. Bảng kích cỡ
+CREATE TABLE kich_co (
+                         id UNIQUEIDENTIFIER PRIMARY KEY,
+                         ten NVARCHAR(100) NOT NULL
 );
-GO
 
-CREATE TABLE Colors (
-                        id INT IDENTITY(1,1) PRIMARY KEY,
-                        name NVARCHAR(50) UNIQUE NOT NULL
+-- 5. Bảng danh mục
+CREATE TABLE danh_muc (
+                          id UNIQUEIDENTIFIER PRIMARY KEY,
+                          ten_danh_muc NVARCHAR(100) NOT NULL
 );
-GO
 
-CREATE TABLE Sizes (
-                       id INT IDENTITY(1,1) PRIMARY KEY,
-                       name NVARCHAR(20) UNIQUE NOT NULL
+-- 6. Bảng tay áo
+CREATE TABLE tay_ao (
+                        id UNIQUEIDENTIFIER PRIMARY KEY,
+                        ten_tay_ao NVARCHAR(50) NOT NULL
 );
-GO
 
-CREATE TABLE Materials (
-                           id INT IDENTITY(1,1) PRIMARY KEY,
-                           name NVARCHAR(100) UNIQUE NOT NULL
+-- 7. Bảng cổ áo
+CREATE TABLE co_ao (
+                       id UNIQUEIDENTIFIER PRIMARY KEY,
+                       ten_co_ao NVARCHAR(50) NOT NULL
 );
-GO
 
-CREATE TABLE Styles (
-                        id INT IDENTITY(1,1) PRIMARY KEY,
-                        name NVARCHAR(100) UNIQUE NOT NULL
+-- 8. Bảng kiểu dáng
+CREATE TABLE kieu_dang (
+                           id UNIQUEIDENTIFIER PRIMARY KEY,
+                           ten_kieu_dang NVARCHAR(50) NOT NULL
 );
-GO
 
--- Table Product_Details
-CREATE TABLE Product_Details (
-                                 id INT IDENTITY(1,1) PRIMARY KEY,
-                                 product_id INT NOT NULL,
-                                 origin_id INT,
-                                 color_id INT,
-                                 size_id INT,
-                                 material_id INT,
-                                 style_id INT,
-                                 price DECIMAL(10,2) NOT NULL,
-                                 stock_quantity INT DEFAULT 0,
-                                 created_at DATETIME DEFAULT GETDATE(),
-                                 FOREIGN KEY (product_id) REFERENCES Products(id) ON DELETE CASCADE,
-                                 FOREIGN KEY (origin_id) REFERENCES Origins(id) ON DELETE SET NULL,
-                                 FOREIGN KEY (color_id) REFERENCES Colors(id) ON DELETE SET NULL,
-                                 FOREIGN KEY (size_id) REFERENCES Sizes(id) ON DELETE SET NULL,
-                                 FOREIGN KEY (material_id) REFERENCES Materials(id) ON DELETE SET NULL,
-                                 FOREIGN KEY (style_id) REFERENCES Styles(id) ON DELETE SET NULL
+-- 9. Bảng thương hiệu
+CREATE TABLE thuong_hieu (
+                             id UNIQUEIDENTIFIER PRIMARY KEY,
+                             ten_thuong_hieu NVARCHAR(100) NOT NULL
 );
-GO
 
--- Add unique constraint to Product_Details to prevent duplicates
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'unique_product_color_size' AND object_id = OBJECT_ID('Product_Details'))
-BEGIN
-ALTER TABLE Product_Details
-    ADD CONSTRAINT unique_product_color_size UNIQUE (product_id, color_id, size_id);
-END
-GO
-
--- Table Product_Images
-CREATE TABLE Product_Images (
-                                id INT IDENTITY(1,1) PRIMARY KEY,
-                                product_detail_id INT,
-                                image_url VARCHAR(MAX),
-    uploaded_at DATETIME DEFAULT GETDATE(),
-    FOREIGN KEY (product_detail_id) REFERENCES Product_Details(id) ON DELETE CASCADE
+-- 10. Bảng người dùng
+CREATE TABLE nguoi_dung (
+                            id UNIQUEIDENTIFIER PRIMARY KEY,
+                            ten_dang_nhap NVARCHAR(50) NOT NULL,
+                            mat_khau NVARCHAR(100) NOT NULL,
+                            ho_ten NVARCHAR(100) NOT NULL,
+                            email NVARCHAR(100) NOT NULL,
+                            so_dien_thoai NVARCHAR(20) NOT NULL,
+                            dia_chi NVARCHAR(MAX),
+                            vai_tro NVARCHAR(50) CHECK (vai_tro IN (N'admin', N'customer', N'employee')),
+                            ngay_sinh DATE,
+                            gioi_tinh BIT,
+                            tinh_thanh_pho NVARCHAR(100),
+                            quan_huyen NVARCHAR(100),
+                            phuong_xa NVARCHAR(100),
+                            chi_tiet_dia_chi NVARCHAR(MAX),
+                            thoi_gian_tao DATETIME,
+                            id_qr_gioi_thieu NVARCHAR(50),
+                            thoi_gian_bat_han_otp DATETIME,
+                            trang_thai BIT NOT NULL
 );
-GO
 
--- Table Employees
-CREATE TABLE Employees (
-                           id INT IDENTITY(1,1) PRIMARY KEY,
-                           user_id INT NOT NULL,
-                           employee_code NVARCHAR(20) UNIQUE,
-                           hire_date DATE,
-                           department NVARCHAR(100),
-                           created_at DATETIME DEFAULT GETDATE(),
-                           is_deleted BIT DEFAULT 0,
-                           status BIT DEFAULT 1, -- 1 = Active, 0 = Inactive
-                           FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+-- 11. Bảng phiếu giảm giá
+CREATE TABLE phieu_giam_gia (
+                                id UNIQUEIDENTIFIER PRIMARY KEY,
+                                ten NVARCHAR(100) NOT NULL,
+                                loai NVARCHAR(50) NOT NULL,
+                                gia_tri_giam DECIMAL(10,2) NOT NULL,
+                                gia_tri_giam_toi_thieu DECIMAL(10,2),
+                                so_luong INT,
+                                gioi_han_su_dung INT,
+                                cong_khai BIT,
+                                ngay_bat_dau DATE,
+                                ngay_ket_thuc DATE,
+                                thoi_gian_tao DATETIME NOT NULL,
+                                kieu_phieu NVARCHAR(20) CHECK (kieu_phieu IN (N'cong_khai', N'ca_nhan')) DEFAULT N'cong_khai'
 );
-GO
 
--- Table Orders
-CREATE TABLE Orders (
-                        id INT IDENTITY(1,1) PRIMARY KEY,
-                        user_id INT,
-                        total_price DECIMAL(10,2) NOT NULL,
-                        status NVARCHAR(20) DEFAULT 'Pending',
-                        created_at DATETIME DEFAULT GETDATE(),
-                        code NVARCHAR(20),
-                        shipping_fee DECIMAL(10,2) DEFAULT 0,
-                        delivery_method NVARCHAR(50),
-                        payment_method NVARCHAR(50),
-                        FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+-- 12. Bảng phương thức thanh toán
+CREATE TABLE phuong_thuc_thanh_toan (
+                                        id UNIQUEIDENTIFIER PRIMARY KEY,
+                                        ten_phuong_thuc NVARCHAR(100) NOT NULL,
+                                        trang_thai BIT NOT NULL,
+                                        ngay_tao DATETIME NOT NULL
 );
-GO
 
--- Table Cart
-CREATE TABLE Cart (
-                      id INT IDENTITY(1,1) PRIMARY KEY,
-                      user_id INT NOT NULL,
-                      product_id INT NOT NULL,
-                      quantity INT NOT NULL DEFAULT 1,
-                      created_at DATETIME DEFAULT GETDATE(),
-                      FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
-                      FOREIGN KEY (product_id) REFERENCES Products(id) ON DELETE CASCADE
+-- 13. Bảng chiến dịch giảm giá
+CREATE TABLE chien_dich_giam_gia (
+                                     id UNIQUEIDENTIFIER PRIMARY KEY,
+                                     ten NVARCHAR(100) NOT NULL,
+                                     hinh_thuc_giam NVARCHAR(50) NOT NULL,
+                                     so_luong INT,
+                                     phan_tram_giam DECIMAL(5,2),
+                                     ngay_bat_dau DATE,
+                                     ngay_ket_thuc DATE,
+                                     thoi_gian_tao DATETIME NOT NULL
 );
-GO
 
--- Table Order_Details
-CREATE TABLE Order_Details (
-                               id INT IDENTITY(1,1) PRIMARY KEY,
-                               order_id INT NOT NULL,
-                               product_detail_id INT NOT NULL,
-                               quantity INT NOT NULL,
-                               price DECIMAL(10,2) NOT NULL,
-                               product_name NVARCHAR(255),
-                               FOREIGN KEY (order_id) REFERENCES Orders(id) ON DELETE CASCADE,
-                               FOREIGN KEY (product_detail_id) REFERENCES Product_Details(id) ON DELETE CASCADE
+-- 14. Bảng sản phẩm
+CREATE TABLE san_pham (
+                          id UNIQUEIDENTIFIER PRIMARY KEY,
+                          id_danh_muc UNIQUEIDENTIFIER NOT NULL,
+                          ma_san_pham NVARCHAR(50) UNIQUE NOT NULL,
+                          ten_san_pham NVARCHAR(100) NOT NULL,
+                          mo_ta NVARCHAR(MAX),
+                          url_hinh_anh NVARCHAR(MAX),
+                          thoi_gian_tao DATETIME NOT NULL,
+                          trang_thai BIT NOT NULL,
+                          FOREIGN KEY (id_danh_muc) REFERENCES danh_muc(id)
 );
-GO
 
--- Table Checkout
-CREATE TABLE Checkout (
-                          id INT IDENTITY(1,1) PRIMARY KEY,
-                          user_id INT NOT NULL,
-                          total_price DECIMAL(10,2) NOT NULL,
-                          status NVARCHAR(20) NOT NULL DEFAULT 'Pending'
+-- 15. Bảng chi tiết sản phẩm (Removed id_phong_cach)
+CREATE TABLE chi_tiet_san_pham (
+                                   id UNIQUEIDENTIFIER PRIMARY KEY,
+                                   id_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                   id_kich_co UNIQUEIDENTIFIER NOT NULL,
+                                   id_mau_sac UNIQUEIDENTIFIER NOT NULL,
+                                   id_chat_lieu UNIQUEIDENTIFIER NOT NULL,
+                                   id_xuat_xu UNIQUEIDENTIFIER NOT NULL,
+                                   id_tay_ao UNIQUEIDENTIFIER NOT NULL,
+                                   id_co_ao UNIQUEIDENTIFIER NOT NULL,
+                                   id_kieu_dang UNIQUEIDENTIFIER NOT NULL,
+                                   id_thuong_hieu UNIQUEIDENTIFIER NOT NULL,
+                                   gia DECIMAL(10,2) NOT NULL,
+                                   so_luong_ton_kho INT NOT NULL,
+                                   gioi_tinh NVARCHAR(50),
+                                   thoi_gian_tao DATETIME NOT NULL,
+                                   trang_thai BIT NOT NULL,
+                                   FOREIGN KEY (id_san_pham) REFERENCES san_pham(id) ON DELETE CASCADE,
+                                   FOREIGN KEY (id_kich_co) REFERENCES kich_co(id),
+                                   FOREIGN KEY (id_mau_sac) REFERENCES mau_sac(id),
+                                   FOREIGN KEY (id_chat_lieu) REFERENCES chat_lieu(id),
+                                   FOREIGN KEY (id_xuat_xu) REFERENCES xuat_xu(id),
+                                   FOREIGN KEY (id_tay_ao) REFERENCES tay_ao(id),
+                                   FOREIGN KEY (id_co_ao) REFERENCES co_ao(id),
+                                   FOREIGN KEY (id_kieu_dang) REFERENCES kieu_dang(id),
+                                   FOREIGN KEY (id_thuong_hieu) REFERENCES thuong_hieu(id)
 );
-GO
 
--- Table Reviews
-CREATE TABLE Reviews (
-                         id INT IDENTITY(1,1) PRIMARY KEY,
-                         user_id INT NOT NULL,
-                         product_id INT NOT NULL,
-                         rating INT CHECK (rating BETWEEN 1 AND 5),
-                         comment NVARCHAR(1000),
-                         created_at DATETIME DEFAULT GETDATE(),
-                         FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
-                         FOREIGN KEY (product_id) REFERENCES Products(id) ON DELETE CASCADE
+-- 16. Bảng hình ảnh sản phẩm
+CREATE TABLE hinh_anh_san_pham (
+                                   id UNIQUEIDENTIFIER PRIMARY KEY,
+                                   id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                   url_hinh_anh NVARCHAR(MAX) NOT NULL,
+                                   FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id) ON DELETE CASCADE
 );
-GO
 
--- Table Notifications
-CREATE TABLE Notifications (
-                               id INT IDENTITY(1,1) PRIMARY KEY,
-                               user_id INT NOT NULL,
-                               message NVARCHAR(255) NOT NULL,
-                               is_read BIT DEFAULT 0,
-                               created_at DATETIME DEFAULT GETDATE(),
-                               FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE
+-- 17. Bảng đơn hàng
+CREATE TABLE don_hang (
+                          id UNIQUEIDENTIFIER PRIMARY KEY,
+                          id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                          ma_don_hang NVARCHAR(50) NOT NULL,
+                          trang_thai_thanh_toan BIT NOT NULL,
+                          phi_van_chuyen DECIMAL(10,2),
+                          id_phuong_thuc_thanh_toan UNIQUEIDENTIFIER,
+                          so_tien_khach_dua DECIMAL(10,2),
+                          thoi_gian_thanh_toan DATETIME,
+                          thoi_gian_tao DATETIME NOT NULL,
+                          tien_giam DECIMAL(10,2),
+                          tong_tien DECIMAL(10,2) NOT NULL,
+                          phuong_thuc_ban_hang NVARCHAR(50) NOT NULL CHECK (phuong_thuc_ban_hang IN (N'Tại quầy', N'Giao hàng')) DEFAULT N'Tại quầy',
+                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id),
+                          FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
-GO
 
--- Table Promotions
-CREATE TABLE Promotions (
-                            id INT IDENTITY(1,1) PRIMARY KEY,
-                            name NVARCHAR(100) NOT NULL,
-                            discount_percentage DECIMAL(5,2) NOT NULL,
-                            start_date DATE NOT NULL,
-                            end_date DATE NOT NULL,
-                            created_at DATETIME DEFAULT GETDATE()
+-- 18. Bảng chi tiết đơn hàng
+CREATE TABLE chi_tiet_don_hang (
+                                   id UNIQUEIDENTIFIER PRIMARY KEY,
+                                   id_don_hang UNIQUEIDENTIFIER NOT NULL,
+                                   id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                   so_luong INT NOT NULL,
+                                   gia DECIMAL(10,2) NOT NULL,
+                                   ten_san_pham NVARCHAR(100) NOT NULL,
+                                   thanh_tien DECIMAL(10,2) NOT NULL,
+                                   ghi_chu NVARCHAR(MAX),
+                                   trang_thai_hoan_tra BIT,
+                                   FOREIGN KEY (id_don_hang) REFERENCES don_hang(id) ON DELETE CASCADE,
+                                   FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
-GO
 
--- Table DiscountVoucher
-CREATE TABLE discount_voucher (
-                                  id INT IDENTITY(1,1) PRIMARY KEY,
-                                  code NVARCHAR(50) UNIQUE NOT NULL,
-                                  name NVARCHAR(100) NOT NULL,
-                                  type NVARCHAR(10) CHECK (type IN ('PERCENT', 'CASH')) NOT NULL,
-                                  discount_value DECIMAL(10,2) NOT NULL,
-                                  max_discount_value DECIMAL(10,2),
-                                  min_order_value DECIMAL(10,2),
-                                  quantity INT DEFAULT 0,
-                                  usage_count INT DEFAULT 0,
-                                  is_public BIT DEFAULT 1,
-                                  start_date DATETIME NOT NULL,
-                                  end_date DATETIME NOT NULL,
-                                  created_at DATETIME DEFAULT GETDATE(),
-                                  is_deleted BIT DEFAULT 0
+-- 19. Bảng hóa đơn
+CREATE TABLE hoa_don (
+                         id UNIQUEIDENTIFIER PRIMARY KEY,
+                         id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                         id_don_hang UNIQUEIDENTIFIER NOT NULL,
+                         id_ma_giam_gia UNIQUEIDENTIFIER,
+                         ngay_tao DATETIME NOT NULL,
+                         ngay_thanh_toan DATETIME,
+                         tong_tien DECIMAL(10,2) NOT NULL,
+                         tien_giam DECIMAL(10,2),
+                         id_phuong_thuc_thanh_toan UNIQUEIDENTIFIER,
+                         trang_thai BIT NOT NULL,
+                         ghi_chu NVARCHAR(MAX),
+                         FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id),
+                         FOREIGN KEY (id_don_hang) REFERENCES don_hang(id),
+                         FOREIGN KEY (id_ma_giam_gia) REFERENCES chien_dich_giam_gia(id),
+                         FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
-GO
 
--- Table DiscountCampaigns
-CREATE TABLE discount_campaigns (
-                                    id INT IDENTITY(1,1) PRIMARY KEY,
-                                    code NVARCHAR(50) UNIQUE NOT NULL,
-                                    name NVARCHAR(100) NOT NULL,
-                                    discount_percent DECIMAL(5,2) NOT NULL,
-                                    quantity INT DEFAULT 0,
-                                    start_date DATETIME NOT NULL,
-                                    end_date DATETIME NOT NULL,
-                                    created_at DATETIME DEFAULT GETDATE(),
-                                    is_deleted BIT DEFAULT 0
+-- 20. Bảng ticket giảm giá của người dùng
+CREATE TABLE phieu_giam_gia_cua_nguoi_dung (
+                                               id UNIQUEIDENTIFIER PRIMARY KEY,
+                                               id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                                               id_phieu_giam_gia UNIQUEIDENTIFIER NOT NULL,
+                                               da_gui_mail BIT DEFAULT 0,
+                                               FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id),
+                                               FOREIGN KEY (id_phieu_giam_gia) REFERENCES phieu_giam_gia(id)
 );
-GO
 
--- Table discount_campaign_products
-CREATE TABLE discount_campaign_products (
-                                            id INT IDENTITY(1,1) PRIMARY KEY,
-                                            campaign_id INT NOT NULL,
-                                            product_id INT NOT NULL,
-                                            FOREIGN KEY (campaign_id) REFERENCES discount_campaigns(id) ON DELETE CASCADE,
-                                            FOREIGN KEY (product_id) REFERENCES Products(id) ON DELETE CASCADE
+-- 21. Bảng chi tiết sản phẩm - chiến dịch giảm giá
+CREATE TABLE chi_tiet_san_pham_chien_dich_giam_gia (
+                                                       id UNIQUEIDENTIFIER PRIMARY KEY,
+                                                       id_chien_dich UNIQUEIDENTIFIER NOT NULL,
+                                                       id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                                       FOREIGN KEY (id_chien_dich) REFERENCES chien_dich_giam_gia(id),
+                                                       FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
-GO
 
--- Table user_discount_voucher
-CREATE TABLE user_discount_voucher (
-                                       id INT IDENTITY(1,1) PRIMARY KEY,
-                                       user_id INT NOT NULL,
-                                       voucher_id INT NOT NULL,
-                                       created_at DATETIME DEFAULT GETDATE(),
-                                       FOREIGN KEY (user_id) REFERENCES Users(id) ON DELETE CASCADE,
-                                       FOREIGN KEY (voucher_id) REFERENCES discount_voucher(id) ON DELETE CASCADE
+CREATE TABLE don_hang_tam (
+                              id UNIQUEIDENTIFIER PRIMARY KEY,
+                              id_khach_hang UNIQUEIDENTIFIER NOT NULL,
+                              ma_don_hang_tam NVARCHAR(20) NOT NULL,
+                              tong_tien DECIMAL(10,2) NOT NULL,
+                              thoi_gian_tao DATETIME NOT NULL,
+                              danh_sach_item NVARCHAR(MAX),
+                              phuong_thuc_thanh_toan NVARCHAR(50),
+                              phuong_thuc_ban_hang NVARCHAR(50),
+                              phi_van_chuyen DECIMAL(10,2),
+                              so_dien_thoai_khach_hang NVARCHAR(20),
+                              id_phieu_giam_gia UNIQUEIDENTIFIER,
+                              FOREIGN KEY (id_khach_hang) REFERENCES nguoi_dung(id),
+                              FOREIGN KEY (id_phieu_giam_gia) REFERENCES phieu_giam_gia(id)
 );
-GO
 
--- Table discount_campaign_product_details
-CREATE TABLE discount_campaign_product_details (
-                                                   id INT IDENTITY(1,1) PRIMARY KEY,
-                                                   campaign_id INT NOT NULL,
-                                                   product_detail_id INT NOT NULL,
-                                                   FOREIGN KEY (campaign_id) REFERENCES discount_campaigns(id) ON DELETE CASCADE,
-                                                   FOREIGN KEY (product_detail_id) REFERENCES Product_Details(id) ON DELETE CASCADE
-);
-GO
 
--- Insert sample data
-INSERT INTO Users (username, password, full_name, email, phone, address, role, date_of_birth, id_card, gender, province, district, ward, address_detail) VALUES
-    ('admin', 'admin123', N'Admin User', 'admin@example.com', '0123456789', N'Admin Address', 'ADMIN', NULL, '111111111111', NULL, NULL, NULL, NULL, NULL),
-    ('staff1', 'staffpass', N'Staff Member', 'staff@example.com', '0987654321', N'Staff Address', 'EMPLOYEE', NULL, '222222222222', NULL, NULL, NULL, NULL, NULL),
-    ('customer1', 'customerpass', N'Customer One', 'customer@example.com', '0912345678', N'Customer Address', 'CUSTOMER', '1995-05-15', '123456789012', N'Nam', N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'123 Đường Láng'),
-    ('hoanganh01', '123456', N'Hoàng Anh', 'hoanganh@gmail.com', '0911111111', N'Đà Nẵng', 'CUSTOMER', '1998-03-10', '987654321012', N'Nữ', N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'45 Lê Lợi'),
-    ('thutrang02', '123456', N'Thùy Trang', 'namhaihoang3103@gmail.com', '0922222222', N'Hải Phòng', 'CUSTOMER', '1997-07-22', '456789123012', N'Nữ', N'Hải Phòng', N'Hồng Bàng', N'Hạ Lý', N'78 Nguyễn Trãi'),
-    ('guest', 'guest123', N'Khách lẻ', 'guest@example.com', '0999999999', N'Chưa xác định', 'CUSTOMER', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-GO
+-- Insert data with explicit UUIDs
+-- 1. Insert vào bảng chat_lieu
+INSERT INTO chat_lieu (id, ten_chat_lieu) VALUES
+                                              ('550E8400-E29B-41D4-A716-446655440000', N'Cotton'),
+                                              ('550E8400-E29B-41D4-A716-446655440001', N'Polyester');
 
--- Insert into Categories
-INSERT INTO Categories (name, description) VALUES
-    (N'Áo Nam', N'Các loại áo nam thời trang, trẻ trung và lịch lãm'),
-    (N'Áo Nữ', N'Áo nữ đa phong cách, từ năng động đến nữ tính'),
-    (N'Quần Nam', N'Quần nam jeans, kaki, jogger chất lượng cao'),
-    (N'Quần Nữ', N'Quần nữ legging, short, quần dài thời thượng'),
-    (N'Phụ Kiện', N'Phụ kiện thời trang như mũ, khăn, thắt lưng');
-GO
+-- 2. Insert vào bảng mau_sac
+INSERT INTO mau_sac (id, ten_mau) VALUES
+                                      ('550E8400-E29B-41D4-A716-446655440002', N'Đen'),
+                                      ('550E8400-E29B-41D4-A716-446655440003', N'Trắng'),
+                                      ('550E8400-E29B-41D4-A716-446655440004', N'Xanh dương');
 
--- Insert into Products
-INSERT INTO Products (name, description, category_id, image_url) VALUES
-    (N'Áo Thun Nam Đen Basic', N'Áo thun nam cotton mềm mại, phong cách tối giản', 1, 'https://example.com/images/ao-thun-den-basic.jpg'),
-    (N'Áo Sơ Mi Nam Trắng Công Sở', N'Áo sơ mi nam form dáng lịch lãm, phù hợp công sở', 1, 'https://example.com/images/ao-so-mi-trang.jpg'),
-    (N'Áo Polo Nam Xanh Navy', N'Áo polo nam thoáng mát, năng động', 1, 'https://example.com/images/ao-polo-xanh-navy.jpg'),
-    (N'Áo Khoác Nam Hoodie Xám', N'Áo hoodie nam ấm áp, phong cách trẻ trung', 1, 'https://example.com/images/ao-hoodie-xam.jpg'),
-    (N'Áo Thun Nam In Họa Tiết', N'Áo thun nam với họa tiết độc đáo', 1, 'https://example.com/images/ao-thun-hoa-tiet.jpg'),
-    (N'Áo Sơ Mi Nam Caro Đỏ', N'Áo sơise mi nam sơ mi nam caro đỏ', 1, 'https://example.com/images/ao-so-mi-caro-do.jpg'),
-    (N'Áo Polo Nam Đen Thể Thao', N'Áo polo nam phong cách thể thao, co giãn tốt', 1, 'https://example.com/images/ao-polo-den-the-thao.jpg'),
-    (N'Áo Thun Nam Dài Tay Xanh', N'Áo thun nam dài tay, phù hợp mùa thu', 1, 'https://example.com/images/ao-thun-dai-tay-xanh.jpg'),
-    (N'Áo Vest Nam Xanh Đậm', N'Áo vest nam lịch lãm, phù hợp sự kiện', 1, 'https://example.com/images/ao-vest-xanh-dam.jpg'),
-    (N'Áo Len Nam Nâu', N'Áo len nam ấm áp, phong cách cổ điển', 1, 'https://example.com/images/ao-len-nau.jpg');
-GO
+-- 3. Insert vào bảng xuat_xu
+INSERT INTO xuat_xu (id, ten_xuat_xu) VALUES
+                                          ('550E8400-E29B-41D4-A716-446655440005', N'Việt Nam'),
+                                          ('550E8400-E29B-41D4-A716-446655440006', N'Trung Quốc');
 
--- Insert into Origins
-INSERT INTO Origins (name) VALUES
-    (N'Vietnam'), (N'USA'), (N'China'), (N'Thailand'), (N'Korea'), (N'Japan'), (N'Germany'), (N'France');
-GO
+-- 4. Insert vào bảng kich_co
+INSERT INTO kich_co (id, ten) VALUES
+                                  ('550E8400-E29B-41D4-A716-446655440009', N'S'),
+                                  ('550E8400-E29B-41D4-A716-446655440010', N'M'),
+                                  ('550E8400-E29B-41D4-A716-446655440011', N'L');
 
--- Insert into Colors
-INSERT INTO Colors (name) VALUES
-    (N'Black'), (N'White'), (N'Red'), (N'Blue'), (N'Green'), (N'Yellow'), (N'Gray'), (N'Pink');
-GO
+-- 5. Insert vào bảng danh_muc
+INSERT INTO danh_muc (id, ten_danh_muc) VALUES
+    ('550E8400-E29B-41D4-A716-446655440012', N'Áo thun nam');
 
--- Insert into Sizes
-INSERT INTO Sizes (name) VALUES
-    (N'S'), (N'M'), (N'L'), (N'XL'), (N'XXL');
-GO
+-- 6. Insert vào bảng tay_ao
+INSERT INTO tay_ao (id, ten_tay_ao) VALUES
+    ('550E8400-E29B-41D4-A716-446655440032', N'Ngắn');
 
--- Insert into Materials
-INSERT INTO Materials (name) VALUES
-    (N'Leather'), (N'Mesh'), (N'Synthetic'), (N'Cotton'), (N'Denim'), (N'Linen'), (N'Wool'), (N'Silk');
-GO
+-- 7. Insert vào bảng co_ao
+INSERT INTO co_ao (id, ten_co_ao) VALUES
+    ('550E8400-E29B-41D4-A716-446655440033', N'Cổ tròn');
 
--- Insert into Styles
-INSERT INTO Styles (name) VALUES
-    (N'Sporty'), (N'Casual'), (N'Classic'), (N'Formal'), (N'Minimal'), (N'Streetwear'), (N'Vintage'), (N'Boho');
-GO
+-- 8. Insert vào bảng kieu_dang
+INSERT INTO kieu_dang (id, ten_kieu_dang) VALUES
+                                              ('550E8400-E29B-41D4-A716-446655440034', N'Rộng'),
+                                              ('550E8400-E29B-41D4-A716-446655440035', N'Ôm');
 
--- Insert into Product_Details
-INSERT INTO Product_Details (product_id, origin_id, color_id, size_id, material_id, style_id, price, stock_quantity) VALUES
-    -- 1. Áo Thun Nam Đen Basic (product_id=1)
-    (1, 1, 1, 2, 4, 2, 199000, 50), -- Black, M, Cotton, Casual
-    (1, 1, 1, 3, 4, 2, 199000, 40), -- Black, L, Cotton, Casual
-    (1, 1, 1, 4, 4, 2, 199000, 30), -- Black, XL, Cotton, Casual
-    (1, 1, 2, 2, 4, 2, 199000, 20), -- White, M, Cotton, Casual
-    -- 2. Áo Sơ Mi Nam Trắng Công Sở (product_id=2)
-    (2, 1, 2, 2, 4, 3, 299000, 30), -- White, M, Cotton, Classic
-    (2, 1, 2, 3, 4, 3, 299000, 25), -- White, L, Cotton, Classic
-    (2, 1, 2, 4, 4, 3, 299000, 20), -- White, XL, Cotton, Classic
-    (2, 1, 7, 3, 4, 3, 299000, 15), -- Gray, L, Cotton, Classic
-    -- 3. Áo Polo Nam Xanh Navy (product_id=3)
-    (3, 1, 4, 2, 4, 2, 249000, 35), -- Blue, M, Cotton, Casual
-    (3, 1, 4, 3, 4, 2, 249000, 30), -- Blue, L, Cotton, Casual
-    (3, 1, 4, 4, 4, 2, 249000, 25), -- Blue, XL, Cotton, Casual
-    -- 4. Áo Khoác Nam Hoodie Xám (product_id=4)
-    (4, 2, 7, 2, 4, 2, 399000, 25), -- Gray, M, Cotton, Casual
-    (4, 2, 7, 3, 4, 2, 399000, 20), -- Gray, L, Cotton, Casual
-    (4, 2, 7, 4, 4, 2, 399000, 15), -- Gray, XL, Cotton, Casual
-    (4, 2, 1, 3, 4, 2, 399000, 10), -- Black, L, Cotton, Casual
-    -- 5. Áo Thun Nam In Họa Tiết (product_id=5)
-    (5, 1, 1, 2, 4, 2, 229000, 40), -- Black, M, Cotton, Casual
-    (5, 1, 1, 3, 4, 2, 229000, 35), -- Black, L, Cotton, Casual
-    (5, 1, 1, 4, 4, 2, 229000, 30), -- Black, XL, Cotton, Casual
-    -- 6. Áo Sơ Mi Nam Caro Đỏ (product_id=6)
-    (6, 1, 3, 2, 4, 2, 279000, 30), -- Red, M, Cotton, Casual
-    (6, 1, 3, 3, 4, 2, 279000, 25), -- Red, L, Cotton, Casual
-    (6, 1, 3, 4, 4, 2, 279000, 20), -- Red, XL, Cotton, Casual
-    -- 7. Áo Polo Nam Đen Thể Thao (product_id=7)
-    (7, 1, 1, 2, 4, 1, 259000, 35), -- Black, M, Cotton, Sporty
-    (7, 1, 1, 3, 4, 1, 259000, 30), -- Black, L, Cotton, Sporty
-    (7, 1, 1, 4, 4, 1, 259000, 25), -- Black, XL, Cotton, Sporty
-    (7, 1, 4, 3, 4, 1, 259000, 20), -- Blue, L, Cotton, Sporty
-    -- 8. Áo Thun Nam Dài Tay Xanh (product_id=8)
-    (8, 1, 5, 2, 4, 2, 239000, 30), -- Green, M, Cotton, Casual
-    (8, 1, 5, 3, 4, 2, 239000, 25), -- Green, L, Cotton, Casual
-    (8, 1, 5, 4, 4, 2, 239000, 20), -- Green, XL, Cotton, Casual
-    -- 9. Áo Vest Nam Xanh Đậm (product_id=9)
-    (9, 2, 4, 2, 7, 4, 599000, 15), -- Blue, M, Wool, Formal
-    (9, 2, 4, 3, 7, 4, 599000, 12), -- Blue, L, Wool, Formal
-    (9, 2, 4, 4, 7, 4, 599000, 10), -- Blue, XL, Wool, Formal
-    -- 10. Áo Len Nam Nâu (product_id=10)
-    (10, 1, 6, 2, 7, 3, 349000, 20), -- Yellow (brown), M, Wool, Classic
-    (10, 1, 6, 3, 7, 3, 349000, 18), -- Yellow (brown), L, Wool, Classic
-    (10, 1, 6, 4, 7, 3, 349000, 15); -- Yellow (brown), XL, Wool, Classic
-GO
+-- 9. Insert vào bảng thuong_hieu
+INSERT INTO thuong_hieu (id, ten_thuong_hieu) VALUES
+                                                  ('550E8400-E29B-41D4-A716-446655440036', N'Uniqlo'),
+                                                  ('550E8400-E29B-41D4-A716-446655440037', N'Adidas');
 
--- Insert into Employees
-INSERT INTO Employees (user_id, employee_code, hire_date, department, status) VALUES
-    (2, N'NV001', '2023-01-15', N'Kinh doanh', 1);
-GO
+-- 10. Insert vào bảng nguoi_dung
+INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, dia_chi, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
+                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440013', N'admin', N'admin123', N'Nguyễn Văn Admin', N'admin1@example.com', N'0901234567', N'123 Đường ABC, Hà Nội', N'admin', '1985-01-01', 1, N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 123, Đường ABC', GETDATE(), N'QR123', NULL, 1),
+                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440014', N'customer1', N'customer123', N'Trần Thị Customer', N'customer1@example.com', N'0912345678', N'456 Đường XYZ, TP.HCM', N'customer', '1995-05-10', 0, N'TP.HCM', N'Quận 1', N'Bến Nghé', N'Số 456, Đường XYZ', GETDATE(), N'QR456', NULL, 1),
+                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440015', N'employee1', N'employee123', N'Lê Văn Employee', N'employee1@example.com', N'0923456789', N'789 Đường KLM, Đà Nẵng', N'employee', '1990-03-15', 1, N'Đà Nẵng', N'Hải Châu', N'Hải Châu I', N'Số 789, Đường KLM', GETDATE(), N'QR789', NULL, 1);
 
--- Insert into Orders
-INSERT INTO Orders (code, user_id, total_price, shipping_fee, delivery_method, payment_method, status) VALUES
-    (N'HD001', 3, 428000, 30000, N'Giao hàng', N'Chuyển khoản', N'Pending'),
-    (N'HD002', 4, 249000, 20000, N'Giao hàng', N'Tiền mặt', N'Completed'),
-    (N'HD003', 5, 598000, 30000, N'Giao hàng', N'Chuyển khoản', N'Pending'),
-    (N'HD004', 3, 299000, 0, N'Tại quầy', N'Tiền mặt', N'Completed');
-GO
+-- 11. Insert vào bảng phieu_giam_gia
+INSERT INTO phieu_giam_gia (id, ten, loai, gia_tri_giam, gia_tri_giam_toi_thieu, so_luong, gioi_han_su_dung, cong_khai, ngay_bat_dau, ngay_ket_thuc, thoi_gian_tao, kieu_phieu) VALUES
+    ('550E8400-E29B-41D4-A716-446655440016', N'Giảm 10% áo nam', N'Phần trăm', 10.00, 500000.00, 100, 1, 1, '2025-05-24', '2025-06-24', GETDATE(), N'cong_khai');
 
--- Insert into Order_Details
-INSERT INTO Order_Details (order_id, product_detail_id, quantity, price, product_name) VALUES
-    (1, 1, 2, 199000, N'Áo Thun Nam Đen Basic'), -- 2 Black M Áo Thun
-    (2, 9, 1, 249000, N'Áo Polo Nam Xanh Navy'), -- 1 Blue M Áo Polo
-    (3, 31, 1, 599000, N'Áo Vest Nam Xanh Đậm'), -- 1 Blue M Áo Vest
-    (4, 5, 1, 299000, N'Áo Sơ Mi Nam Trắng Công Sở'); -- 1 White M Áo Sơ Mi
-GO
+-- 12. Insert vào bảng phuong_thuc_thanh_toan
+INSERT INTO phuong_thuc_thanh_toan (id, ten_phuong_thuc, trang_thai, ngay_tao) VALUES
+                                                                                   ('550E8400-E29B-41D4-A716-446655440017', N'Tiền mặt', 1, GETDATE()),
+                                                                                   ('550E8400-E29B-41D4-A716-446655440018', N'Chuyển khoản', 1, GETDATE());
 
--- Insert into Cart
-INSERT INTO Cart (user_id, product_id, quantity) VALUES
-    (3, 1, 2), -- Customer1 adds 2 Áo Thun Nam Đen Basic
-    (4, 3, 1), -- Customer2 adds 1 Áo Polo Nam Xanh Navy
-    (5, 4, 1), -- Customer3 adds 1 Áo Khoác Nam Hoodie Xám
-    (5, 2, 2); -- Customer3 adds 2 Áo Sơ Mi Nam Trắng Công Sở
-GO
+-- 13. Insert vào bảng chien_dich_giam_gia
+INSERT INTO chien_dich_giam_gia (id, ten, hinh_thuc_giam, so_luong, phan_tram_giam, ngay_bat_dau, ngay_ket_thuc, thoi_gian_tao) VALUES
+    ('550E8400-E29B-41D4-A716-446655440019', N'Sale áo nam mùa hè', N'Phần trăm', 100, 20.00, '2025-06-01', '2025-06-30', GETDATE());
 
--- Insert into Reviews
-INSERT INTO Reviews (user_id, product_id, rating, comment) VALUES
-    (3, 1, 5, N'Áo đẹp, chất liệu tốt!'),
-    (4, 1, 4, N'Sản phẩm tốt, đúng mô tả'),
-    (5, 2, 5, N'Mẫu mã đẹp, giao hàng nhanh');
-GO
+-- 14. Insert vào bảng san_pham
+INSERT INTO san_pham (id, id_danh_muc, ten_san_pham, ma_san_pham, mo_ta, url_hinh_anh, thoi_gian_tao, trang_thai) VALUES
+                                                                                                                      ('550E8400-E29B-41D4-A716-446655440020', '550E8400-E29B-41D4-A716-446655440012', N'Áo thun nam cổ tròn', N'SP001', N'Áo thun cotton thoáng mát, phong cách hiện đại', N'https://img.muji.net/img/item/4550344421994_01_400.jpg', GETDATE(), 1),
+                                                                                                                      ('550E8400-E29B-41D4-A716-446655440021', '550E8400-E29B-41D4-A716-446655440012', N'Áo thun nam thể thao', N'SP002', N'Áo thun cotton co giãn, phù hợp hoạt động thể thao', N'https://img.muji.net/img/item/4550512218142_1260.jpg', GETDATE(), 1);
 
--- Insert into Notifications
-INSERT INTO Notifications (user_id, message, is_read) VALUES
-    (3, N'Đơn hàng của bạn đã được xác nhận!', 0),
-    (4, N'Đơn hàng của bạn đã được giao', 1),
-    (5, N'Bạn đã nhận được ưu đãi mới', 0);
-GO
+-- 15. Insert vào bảng chi_tiet_san_pham (Removed id_phong_cach)
+INSERT INTO chi_tiet_san_pham (id, id_san_pham, id_kich_co, id_mau_sac, id_chat_lieu, id_xuat_xu, id_tay_ao, id_co_ao, id_kieu_dang, id_thuong_hieu, gia, so_luong_ton_kho, gioi_tinh, thoi_gian_tao, trang_thai) VALUES
+                                                                                                                                                                                                                      ('550E8400-E29B-41D4-A716-446655440022', '550E8400-E29B-41D4-A716-446655440020', '550E8400-E29B-41D4-A716-446655440009', '550E8400-E29B-41D4-A716-446655440002', '550E8400-E29B-41D4-A716-446655440000', '550E8400-E29B-41D4-A716-446655440005', '550E8400-E29B-41D4-A716-446655440032', '550E8400-E29B-41D4-A716-446655440033', '550E8400-E29B-41D4-A716-446655440034', '550E8400-E29B-41D4-A716-446655440036', 100000.00, 100, N'Nam', GETDATE(), 1),
+                                                                                                                                                                                                                      ('550E8400-E29B-41D4-A716-446655440023', '550E8400-E29B-41D4-A716-446655440020', '550E8400-E29B-41D4-A716-446655440010', '550E8400-E29B-41D4-A716-446655440003', '550E8400-E29B-41D4-A716-446655440000', '550E8400-E29B-41D4-A716-446655440005', '550E8400-E29B-41D4-A716-446655440032', '550E8400-E29B-41D4-A716-446655440033', '550E8400-E29B-41D4-A716-446655440034', '550E8400-E29B-41D4-A716-446655440036', 120000.00, 150, N'Nam', GETDATE(), 1),
+                                                                                                                                                                                                                      ('550E8400-E29B-41D4-A716-446655440024', '550E8400-E29B-41D4-A716-446655440021', '550E8400-E29B-41D4-A716-446655440011', '550E8400-E29B-41D4-A716-446655440004', '550E8400-E29B-41D4-A716-446655440000', '550E8400-E29B-41D4-A716-446655440005', '550E8400-E29B-41D4-A716-446655440032', '550E8400-E29B-41D4-A716-446655440033', '550E8400-E29B-41D4-A716-446655440035', '550E8400-E29B-41D4-A716-446655440037', 110000.00, 80, N'Nam', GETDATE(), 1);
 
--- Insert into Promotions
-INSERT INTO Promotions (name, discount_percentage, start_date, end_date) VALUES
-    (N'Sale Tốt 2025', 20.00, '2025-01-10', '2025-02-10'),
-    (N'Flash Sale 11.11', 30.00, '2025-11-11', '2025-11-11'),
-    (N'Hot Deal 5.5', 25.00, '2025-05-05', '2025-05-10'),
-    (N'Mid Year Sale', 15.00, '2025-06-01', '2025-06-15'),
-    (N'Back to School', 10.00, '2025-08-01', '2025-08-31'),
-    (N'Black Friday', 50.00, '2025-11-25', '2025-11-29'),
-    (N'Xmas Deal', 30.00, '2025-12-20', '2025-12-26');
-GO
+-- 16. Insert vào bảng hinh_anh_san_pham
+INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
+                                                                           ('550E8400-E29B-41D4-A716-446655440025', '550E8400-E29B-41D4-A716-446655440022', N'https://img.muji.net/img/item/4550344421994_01_400.jpg'),
+                                                                           ('550E8400-E29B-41D4-A716-446655440026', '550E8400-E29B-41D4-A716-446655440023', N'https://img.muji.net/img/item/4550512218142_1260.jpg'),
+                                                                           ('550E8400-E29B-41D4-A716-446655440027', '550E8400-E29B-41D4-A716-446655440024', N'https://pos.nvncdn.com/5048a3-93414/ps/20220323_U27FWOyu1YcXxbMujIWbMrnS.jpg');
 
--- Insert into discount_voucher
-INSERT INTO discount_voucher (code, name, type, discount_value, max_discount_value, min_order_value, quantity, usage_count, is_public, start_date, end_date) VALUES
-    (N'GGTHANG6', N'Giảm giá tháng 5', 'PERCENT', 15.00, 150000, 1000000, 12, 0, 1, '2024-04-29 19:40:00', '2026-05-12 19:39:00'),
-    (N'GGMUNGLE', N'Giảm giá mừng lễ', 'PERCENT', 10.00, 200000, 100000, 96, 0, 1, '2024-04-29 19:34:00', '2024-05-12 19:34:00');
-GO
+-- 17. Insert vào bảng don_hang
+INSERT INTO don_hang (id, id_nguoi_dung, ma_don_hang, trang_thai_thanh_toan, phi_van_chuyen, id_phuong_thuc_thanh_toan, so_tien_khach_dua, thoi_gian_thanh_toan, thoi_gian_tao, tien_giam, tong_tien, phuong_thuc_ban_hang) VALUES
+    ('550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440014', N'DH001', 1, 30000.00, '550E8400-E29B-41D4-A716-446655440017', 230000.00, GETDATE(), GETDATE(), 20000.00, 230000.00, N'Giao hàng');
 
--- Insert into discount_campaigns
-INSERT INTO discount_campaigns (code, name, discount_percent, quantity, start_date, end_date) VALUES
-    (N'DGG219CA56', N'Giảm giá mừng lễ', 5.00, 21, '2024-04-29 19:40:00', '2024-05-12 19:39:00');
-GO
+-- 18. Insert vào bảng chi_tiet_don_hang
+INSERT INTO chi_tiet_don_hang (id, id_don_hang, id_chi_tiet_san_pham, so_luong, gia, ten_san_pham, thanh_tien, ghi_chu, trang_thai_hoan_tra) VALUES
+    ('550E8400-E29B-41D4-A716-446655440029', '550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440022', 2, 100000.00, N'Áo thun nam cổ tròn', 200000.00, N'Kích cỡ S, màu đen', 0);
 
--- Insert into user_discount_voucher
-INSERT INTO user_discount_voucher (user_id, voucher_id) VALUES
-    (3, 1),
-    (5, 2);
-GO
+-- 19. Insert vào bảng hoa_don
+INSERT INTO hoa_don (id, id_nguoi_dung, id_don_hang, id_ma_giam_gia, ngay_tao, ngay_thanh_toan, tong_tien, tien_giam, id_phuong_thuc_thanh_toan, trang_thai, ghi_chu) VALUES
+    ('550E8400-E29B-41D4-A716-446655440030', '550E8400-E29B-41D4-A716-446655440014', '550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440019', GETDATE(), GETDATE(), 230000.00, 20000.00, '550E8400-E29B-41D4-A716-446655440017', 1, N'Hoàn tất');
 
--- Query to check vouchers for customers
-SELECT
-    u.id AS user_id,
-    u.full_name,
-    u.email,
-    dv.code AS voucher_code,
-    dv.name AS voucher_name,
-    dv.type,
-    dv.discount_value,
-    dv.is_public
-FROM Users u
-         LEFT JOIN user_discount_voucher udv ON u.id = udv.user_id
-         LEFT JOIN discount_voucher dv ON (dv.id = udv.voucher_id OR dv.is_public = 1)
-WHERE u.role = 'CUSTOMER' AND u.is_deleted = 0 AND (dv.is_deleted = 0 OR dv.id IS NULL)
-ORDER BY u.id;
-GO
+-- 20. Insert vào bảng phieu_giam_gia_cua_nguoi_dung
+INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_nguoi_dung, id_phieu_giam_gia, da_gui_mail) VALUES
+    ('550E8400-E29B-41D4-A716-446655440031', '550E8400-E29B-41D4-A716-446655440014', '550E8400-E29B-41D4-A716-446655440016', 0);
 
--- Query to check personal vouchers assigned to users
-SELECT
-    u.id AS user_id,
-    u.full_name,
-    u.email,
-    dv.code AS voucher_code,
-    dv.name AS voucher_name,
-    dv.type,
-    dv.discount_value,
-    'CÁ NHÂN' AS voucher_type
-FROM Users u
-         JOIN user_discount_voucher udv ON u.id = udv.user_id
-         JOIN discount_voucher dv ON dv.id = udv.voucher_id
-WHERE u.role = 'CUSTOMER' AND u.is_deleted = 0 AND dv.is_deleted = 0;
-GO
+-- 21. Insert vào bảng chi_tiet_san_pham_chien_dich_giam_gia
+INSERT INTO chi_tiet_san_pham_chien_dich_giam_gia (id, id_chien_dich, id_chi_tiet_san_pham) VALUES
+                                                                                                (NEWID(), '550E8400-E29B-41D4-A716-446655440019', '550E8400-E29B-41D4-A716-446655440022'),
+                                                                                                (NEWID(), '550E8400-E29B-41D4-A716-446655440019', '550E8400-E29B-41D4-A716-446655440023');
 
--- Query to check Product_Details
-SELECT * FROM Product_Details;
-GO
+-- Select data from all tables
+SELECT * FROM chat_lieu;
+SELECT * FROM mau_sac;
+SELECT * FROM xuat_xu;
+SELECT * FROM kich_co;
+SELECT * FROM danh_muc;
+SELECT * FROM tay_ao;
+SELECT * FROM co_ao;
+SELECT * FROM kieu_dang;
+SELECT * FROM thuong_hieu;
+SELECT * FROM nguoi_dung;
+SELECT * FROM phieu_giam_gia;
+SELECT * FROM phuong_thuc_thanh_toan;
+SELECT * FROM chien_dich_giam_gia;
+SELECT * FROM san_pham;
+SELECT * FROM chi_tiet_san_pham;
+SELECT * FROM hinh_anh_san_pham;
+SELECT * FROM don_hang;
+SELECT * FROM chi_tiet_don_hang;
+SELECT * FROM hoa_don;
+SELECT * FROM phieu_giam_gia_cua_nguoi_dung;
+SELECT * FROM chi_tiet_san_pham_chien_dich_giam_gia;
+ALTER TABLE phieu_giam_gia ADD gia_tri_giam_toi_da DECIMAL(10, 2);
+ALTER TABLE phieu_giam_gia ADD ma VARCHAR(50);
+ALTER TABLE chien_dich_giam_gia
+    ADD ma NVARCHAR(50) NOT NULL DEFAULT NEWID();
+INSERT INTO chien_dich_giam_gia (id, ma, ten, hinh_thuc_giam, so_luong, phan_tram_giam, ngay_bat_dau, ngay_ket_thuc, thoi_gian_tao)
+VALUES (
+           NEWID(),
+           'KM001',
+           N'Giảm giá hè 2025',
+           N'Phần trăm',
+           100,
+           15.0,
+           '2025-06-01',
+           '2025-06-30',
+           GETDATE()
+       );
 
--- Query to check Products
-SELECT * FROM Products;
-GO
 
--- Query to check Users table columns
-SELECT COLUMN_NAME, DATA_TYPE
-FROM INFORMATION_SCHEMA.COLUMNS
-WHERE TABLE_NAME = 'Users';
-GO
 
--- Check for duplicates in Product_Details
-SELECT product_id, color_id, size_id, COUNT(*) as count
-FROM Product_Details
-GROUP BY product_id, color_id, size_id
-HAVING COUNT(*) > 1;
-GO
 
--- Remove duplicates if any
-DELETE FROM Product_Details
-WHERE id IN (
-    SELECT id FROM (
-                       SELECT id,
-                              ROW_NUMBER() OVER (PARTITION BY product_id, color_id, size_id ORDER BY id) AS row_num
-                       FROM Product_Details
-                   ) t
-    WHERE row_num > 1
-);
-GO
 
--- Check discount campaigns
-SELECT * FROM discount_campaigns;
-SELECT * FROM discount_campaigns WHERE is_deleted = 0;
-GO
+SELECT id, ho_ten, email, vai_tro, trang_thai FROM nguoi_dung WHERE vai_tro = 'CUSTOMER';
+INSERT INTO nguoi_dung (
+    id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, dia_chi,
+    vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa,
+    chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai
+)
+VALUES
+    (NEWID(), N'khachle', N'khachle', N'Khách lẻ', 'khachle@example.com', '0999999999', N'khách lẻ', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+    (NEWID(), N'customer6', N'123456', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
 
--- Check Product_Details for a specific product
-SELECT
-    pd.id AS product_detail_id,
-    p.name AS product_name,
-    c.name AS color_name,
-    s.name AS size_name,
-    pd.price,
-    pd.stock_quantity
-FROM Product_Details pd
-         JOIN Products p ON pd.product_id = p.id
-         LEFT JOIN Colors c ON pd.color_id = c.id
-         LEFT JOIN Sizes s ON pd.size_id = s.id
-WHERE pd.product_id = 1;
-GO
+    (NEWID(), N'customer2', N'123456', N'Nguyễn Thị A', 'customer2@example.com', '0911111111', N'123 ABC, Hà Nội', 'customer', '1990-01-01', 0, N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'Số 1, Phố A', GETDATE(), NULL, NULL, 1),
+    (NEWID(), N'customer3', N'123456', N'Lê Văn B', 'customer3@example.com', '0922222222', N'456 XYZ, TP.HCM', 'customer', '1992-02-02', 1, N'TP.HCM', N'Quận 5', N'Phường 5', N'Số 2, Phố B', GETDATE(), NULL, NULL, 1),
+    (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', N'789 DEF, Đà Nẵng', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
+    (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', N'321 GHI, Cần Thơ', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
+    (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung
+    ADD so_luot_con_lai INT DEFAULT 0;
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
 
--- Check Product_Details for product_id = 1
-SELECT * FROM Product_Details WHERE product_id = 1;
-GO
+select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
+select * from mau_sac where id = '550e8400-e29b-41d4-a716-446655440004'
+select * from kich_co where id = '550e8400-e29b-41d4-a716-446655440011'
+SELECT * FROM chi_tiet_san_pham
+WHERE id_san_pham = '550e8400-e29b-41d4-a716-446655440020';
+select * from don_hang
+select * from nguoi_dung
 
--- Check Product_Details for product_id = 2
-SELECT * FROM Product_Details WHERE product_id = 2;
-GO
+-- INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai, da_gui_mail)
+-- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646', 
+--         (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999'), 1, 0);
 
--- Check discount vouchers
-SELECT code, start_date, end_date
-FROM discount_voucher
-WHERE is_deleted = 0;
-GO
+SELECT id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai
+FROM phieu_giam_gia_cua_nguoi_dung
+WHERE id_phieu_giam_gia = '5aa57234-8476-451a-a008-1a4128682646'
+  AND id_nguoi_dung = (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999');
+update phieu_giam_gia
+set so_luong = 100 WHERE id = '5aa57234-8476-451a-a008-1a4128682646';
 
--- Check foreign key constraints for Order_Details
-SELECT
-    f.name AS foreign_key_name,
-    OBJECT_NAME(f.parent_object_id) AS table_name,
-    COL_NAME(fc.parent_object_id, fc.parent_column_id) AS column_name,
-    OBJECT_NAME(f.referenced_object_id) AS referenced_table,
-    COL_NAME(fc.referenced_object_id, fc.referenced_column_id) AS referenced_column
-FROM sys.foreign_keys AS f
-         INNER JOIN sys.foreign_key_columns AS fc ON f.object_id = fc.constraint_object_id
-WHERE OBJECT_NAME(f.parent_object_id) = 'Order_Details';
-GO
+SELECT * FROM mau_sac WHERE id = '550e8400-e29b-41d4-a716-446655440002';
+SELECT * FROM kich_co WHERE id = '550e8400-e29b-41d4-a716-446655440009';
 
--- Update Orders total_price based on Order_Details
-UPDATE Orders
-SET total_price = COALESCE(
-        (SELECT SUM(od.quantity * od.price)
-         FROM Order_Details od
-         WHERE od.order_id = Orders.id),
-        0
-                  );
-GO
-ALTER TABLE Users
-    ADD face_id VARCHAR(50);
-GO
+SELECT * FROM san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440021';
+SELECT * FROM san_pham WHERE id = '558e8400-e29b-41d4-a716-466554480021';
+
+SELECT * FROM chi_tiet_san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440022';
+SELECT * FROM phuong_thuc_thanh_toan;
+select * from nguoi_dung
+
+SELECT * FROM don_hang WHERE ma_don_hang = 'DHB098971';
+SELECT * FROM don_hang_tam
+SELECT id, danh_sach_item
+FROM don_hang_tam
+WHERE id = 'c554b5f1-8b99-48b3-8390-1d91bc302d9e';
+SELECT * FROM san_pham WHERE id IN ('550e8400-e29b-41d4-a716-446655440040', '550e8400-e29b-41d4-a716-446655440041', '550e8400-e29b-41d4-a716-446655440042');
+SELECT * FROM chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440040'
+    INSERT INTO san_pham (id, id_danh_muc, ten_san_pham, ma_san_pham, mo_ta, url_hinh_anh, thoi_gian_tao, trang_thai) VALUES
+    ('550e8400-e29b-41d4-a716-446655440040', '550e8400-e29b-41d4-a716-446655440012', N'Áo sơ mi nam dài tay', N'SP003', N'Áo sơ mi cotton cao cấp, phù hợp mặc công sở', N'https://example.com/shirt1.jpg', GETDATE(), 1),
+    ('550e8400-e29b-41d4-a716-446655440041', '550e8400-e29b-41d4-a716-446655440012', N'Áo hoodie nam mùa đông', N'SP004', N'Áo hoodie giữ ấm, chất liệu polyester', N'https://example.com/hoodie1.jpg', GETDATE(), 1),
+    ('550e8400-e29b-41d4-a716-446655440042', '550e8400-e29b-41d4-a716-446655440012', N'Áo khoác nam chống nước', N'SP005', N'Áo khoác chống nước, phong cách thể thao', N'https://example.com/jacket1.jpg', GETDATE(), 1);
+
+INSERT INTO chi_tiet_san_pham (id, id_san_pham, id_kich_co, id_mau_sac, id_chat_lieu, id_xuat_xu, id_tay_ao, id_co_ao, id_kieu_dang, id_thuong_hieu, gia, so_luong_ton_kho, gioi_tinh, thoi_gian_tao, trang_thai) VALUES
+                                                                                                                                                                                                                      ('550e8400-e29b-41d4-a716-446655440043', '550e8400-e29b-41d4-a716-446655440040', '550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440034', '550e8400-e29b-41d4-a716-446655440036', 250000.00, 50, N'Nam', GETDATE(), 1),
+                                                                                                                                                                                                                      ('550e8400-e29b-41d4-a716-446655440044', '550e8400-e29b-41d4-a716-446655440041', '550e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440035', '550e8400-e29b-41d4-a716-446655440037', 300000.00, 30, N'Nam', GETDATE(), 1),
+                                                                                                                                                                                                                      ('550e8400-e29b-41d4-a716-446655440045', '550e8400-e29b-41d4-a716-446655440042', '550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440034', '550e8400-e29b-41d4-a716-446655440036', 400000.00, 20, N'Nam', GETDATE(), 1);
+
+INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
+                                                                           ('550e8400-e29b-41d4-a716-446655440046', '550e8400-e29b-41d4-a716-446655440043', N'https://example.com/shirt1.jpg'),
+                                                                           ('550e8400-e29b-41d4-a716-446655440047', '550e8400-e29b-41d4-a716-446655440044', N'https://example.com/hoodie1.jpg'),
+                                                                           ('550e8400-e29b-41d4-a716-446655440048', '550e8400-e29b-41d4-a716-446655440045', N'https://example.com/jacket1.jpg');
+
+select * from nguoi_dung
+SELECT * FROM san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440020';
+select * from don_hang_tam
+select * from san_pham
