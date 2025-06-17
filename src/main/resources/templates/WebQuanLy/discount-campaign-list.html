@@ -47,7 +47,7 @@
         <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Bộ lọc</h5>
       </div>
       <div class="card-body">
-        <form class="row g-3" method="get" th:action="@{/admin/chien-dich-giam-gia}" id="filterForm">
+        <form class="row g-3" method="get" th:action="@{/acvstore/chien-dich-giam-gia}" id="filterForm">
           <div class="col-md-4">
             <label class="form-label small">Từ khóa</label>
             <input type="text" name="keyword" class="form-control" placeholder="Nhập tên, mã hoặc giá trị giảm"
@@ -94,7 +94,7 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">Danh sách chiến dịch giảm giá</h5>
-        <a th:href="@{/admin/chien-dich-giam-gia/create}" class="btn btn-primary">
+        <a th:href="@{/acvstore/chien-dich-giam-gia/create}" class="btn btn-primary">
           <i class="bi bi-plus-lg me-1"></i>Thêm mới
         </a>
       </div>
@@ -132,7 +132,7 @@
             </td>
             <td>
               <div class="action-buttons">
-                <a th:href="@{'/admin/chien-dich-giam-gia/edit/' + ${campaign.id}}" class="btn btn-sm btn-warning" title="Sửa">
+                <a th:href="@{'/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id}}" class="btn btn-sm btn-warning" title="Sửa">
                   <i class="bi bi-pencil-square"></i>
                 </a>
                 <button type="button" class="btn btn-sm btn-danger delete-btn"
@@ -243,7 +243,7 @@
         const campaignName = this.getAttribute('data-name');
 
         document.getElementById('campaignNameToDelete').textContent = campaignName;
-        document.getElementById('confirmDeleteBtn').href = '/admin/chien-dich-giam-gia/delete/' + campaignId;
+        document.getElementById('confirmDeleteBtn').href = '/acvstore/chien-dich-giam-gia/delete/' + campaignId;
 
         deleteModal.show();
       });

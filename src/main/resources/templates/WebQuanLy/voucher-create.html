@@ -13,7 +13,7 @@
     <div th:if="${errorMessage}" class="alert alert-danger" th:utext="${errorMessage}"></div>
     <div th:if="${mailMessage}" class="alert alert-info" th:text="${mailMessage}"></div>
 
-    <form th:action="@{/admin/voucher/vouchers/create}" th:object="${voucher}" method="post">
+    <form th:action="@{/acvstore/voucher/vouchers/create}" th:object="${voucher}" method="post">
         <div class="mb-3">
             <label class="form-label">Mã phiếu:</label>
             <input type="text" th:field="*{ma}" class="form-control" placeholder="Tự động tạo nếu bỏ trống"/>
@@ -105,7 +105,7 @@
 
         <div class="d-flex justify-content-between">
             <button type="submit" class="btn btn-primary">Lưu</button>
-            <a th:href="@{/admin/voucher/vouchers}" class="btn btn-secondary">Quay lại</a>
+            <a th:href="@{/acvstore/voucher/vouchers}" class="btn btn-secondary">Quay lại</a>
         </div>
     </form>
 </div>

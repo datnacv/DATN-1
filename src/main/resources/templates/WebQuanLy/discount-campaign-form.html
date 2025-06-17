@@ -7,67 +7,59 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
-        .table th, .table td {
-            vertical-align: middle;
-        }
-        .card-header {
-            font-weight: bold;
-        }
-        .pagination {
-            margin-bottom: 0;
-        }
-        .search-container {
-            margin-bottom: 15px;
-        }
-        .search-container h5 {
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
-        .input-group-text {
-            border-right: 0;
-        }
-        .loading-spinner {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
+        .table th, .table td { vertical-align: middle; }
+        .card-header { font-weight: bold; }
+        .pagination { margin-bottom: 0; }
+        .search-container { margin-bottom: 15px; }
+        .search-container h5 { margin-bottom: 10px; font-weight: 500; }
+        .input-group-text { border-right: 0; }
+        .loading-spinner { display: none; text-align: center; padding: 20px; }
     </style>
 </head>
 <body>
 <div class="d-flex">
-    <!-- Sidebar -->
-    <!--    <div th:replace="~{fragments/admin_sidebar :: sidebar}"></div>-->
     <div class="content mt-4">
-        <form th:action="@{/admin/chien-dich-giam-gia/create}" method="post" id="discountForm">
+        <form th:action="@{/acvstore/chien-dich-giam-gia/create}" method="post" id="discountForm">
             <div class="row g-3">
-                <!-- THÔNG TIN CHIẾN DỊCH GIẢM GIÁ -->
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">Thông tin chiến dịch giảm giá</div>
                         <div class="card-body row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">Mã chiến dịch</label>
-                                <input type="text" class="form-control" name="ma" required>
+                                <input type="text" class="form-control" name="ma" required
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập mã chiến dịch hợp lệ.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Tên chiến dịch</label>
-                                <input type="text" class="form-control" name="ten" required>
+                                <input type="text" class="form-control" name="ten" required maxlength="100"
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập tên chiến dịch.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">% Giảm</label>
-                                <input type="number" step="0.01" class="form-control" name="phanTramGiam">
+                                <input type="number" step="0.01" class="form-control" name="phanTramGiam" required min="0.1" max="100"
+                                       oninvalid="this.setCustomValidity('Nhập phần trăm giảm từ 0.1 đến 100%.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Số lượng</label>
-                                <input type="number" class="form-control" name="soLuong">
+                                <input type="number" class="form-control" name="soLuong" required min="1"
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập số lượng lớn hơn 0.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
-                                <input type="date" class="form-control" name="ngayBatDau" required>
+                                <input type="date" class="form-control" name="ngayBatDau" required
+                                       oninvalid="this.setCustomValidity('Vui lòng chọn ngày bắt đầu.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Ngày kết thúc</label>
-                                <input type="date" class="form-control" name="ngayKetThuc" required>
+                                <input type="date" class="form-control" name="ngayKetThuc" required
+                                       oninvalid="this.setCustomValidity('Vui lòng chọn ngày kết thúc.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-12 d-flex justify-content-end">
                                 <button type="reset" class="btn btn-outline-secondary me-2">Làm mới</button>
@@ -76,7 +68,6 @@
                         </div>
                     </div>
                 </div>
-
                 <!-- CHỌN SẢN PHẨM VÀ CHI TIẾT -->
                 <div class="col-md-6">
                     <div class="card">
@@ -203,7 +194,7 @@
         if (selectedProductIds.size === 0) return body.innerHTML = "";
 
         saveSelections();
-        fetch(`/admin/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
+        fetch(`/acvstore/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
             .then(res => res.json())
             .then(data => {
                 body.innerHTML = data.map(detail => `
@@ -254,7 +245,7 @@
     function searchProducts(query, page = 0) {
         document.getElementById("productsLoading").style.display = "block";
 
-        fetch(`/admin/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`)
+        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`)
             .then(res => res.json())
             .then(data => {
                 renderSearchResults(data.content);
@@ -331,7 +322,7 @@
     }
 
     function initFormState() {
-        if (window.location.pathname.includes("/admin/chien-dich-giam-gia/create")) {
+        if (window.location.pathname.includes("/acvstore/chien-dich-giam-gia/create")) {
             clearSelections();
         }
         restoreSelectedProducts();

@@ -5,12 +5,13 @@
     <title>Chỉnh sửa đợt giảm giá</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<!--    <link rel="stylesheet" th:href="@{/css/admin.css}">-->
 </head>
 <body>
+<input type="hidden" name="id" th:value="${chienDich.id}" />
+
 <div class="d-flex">
     <div class="content mt-4">
-        <form th:action="@{/admin/chien-dich-giam-gia/update}" method="post" id="updateCampaignForm">
+        <form th:action="@{/acvstore/chien-dich-giam-gia/update}" method="post" id="updateCampaignForm">
             <input type="hidden" name="id" th:value="${chienDich.id}" />
             <div class="row g-3">
                 <div class="col-12">
@@ -19,29 +20,39 @@
                         <div class="card-body row g-3">
                             <div class="col-md-4">
                                 <label class="form-label">Mã đợt</label>
-                                <input type="text" class="form-control" name="ma" th:value="${chienDich.ma}" required>
+                                <input type="text" class="form-control" name="ma" th:value="${chienDich.ma}" required
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập mã đợt hợp lệ.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Tên đợt</label>
-                                <input type="text" class="form-control" name="ten" th:value="${chienDich.ten}" required>
+                                <input type="text" class="form-control" name="ten" th:value="${chienDich.ten}" required maxlength="100"
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập tên đợt hợp lệ.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">% giảm</label>
-                                <input type="number" class="form-control" name="phanTramGiam" th:value="${chienDich.phanTramGiam}" required>
+                                <input type="number" class="form-control" name="phanTramGiam" th:value="${chienDich.phanTramGiam}" required min="0.1" max="100" step="0.01"
+                                       oninvalid="this.setCustomValidity('Nhập phần trăm giảm từ 0.1 đến 100%.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Số lượng</label>
-                                <input type="number" class="form-control" name="soLuong" th:value="${chienDich.soLuong}">
+                                <input type="number" class="form-control" name="soLuong" th:value="${chienDich.soLuong}" required min="1"
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập số lượng lớn hơn 0.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
-                                <input type="date" class="form-control" name="ngayBatDau"
-                                       th:value="${#temporals.format(chienDich.ngayBatDau, 'yyyy-MM-dd')}" required>
+                                <input type="date" class="form-control" name="ngayBatDau" th:value="${#temporals.format(chienDich.ngayBatDau, 'yyyy-MM-dd')}" required
+                                       oninvalid="this.setCustomValidity('Vui lòng chọn ngày bắt đầu.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Ngày kết thúc</label>
-                                <input type="date" class="form-control" name="ngayKetThuc"
-                                       th:value="${#temporals.format(chienDich.ngayKetThuc, 'yyyy-MM-dd')}" required>
+                                <input type="date" class="form-control" name="ngayKetThuc" th:value="${#temporals.format(chienDich.ngayKetThuc, 'yyyy-MM-dd')}" required
+                                       oninvalid="this.setCustomValidity('Vui lòng chọn ngày kết thúc.')"
+                                       oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-12 d-flex justify-content-end">
                                 <button type="reset" class="btn btn-outline-secondary me-2">Làm mới</button>
@@ -50,6 +61,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Danh sách sản phẩm -->
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">Danh sách sản phẩm</div>
@@ -80,6 +93,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Chi tiết sản phẩm -->
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">Chi tiết sản phẩm</div>
@@ -107,13 +122,15 @@
         </form>
     </div>
 </div>
+
+<!-- SCRIPT -->
 <script th:inline="javascript">
     const pageSize = 5;
     const selectedProductIds = new Set([[${selectedProductIds}]].map(String));
     const selectedDetailIds = new Set([[${#strings.listJoin(selectedDetails.![chiTietSanPham.id], ',')}]].split(","));
 
-    function updateSelectAll(checkboxSelector, masterId) {
-        const all = document.querySelectorAll(checkboxSelector);
+    function updateSelectAll(selector, masterId) {
+        const all = document.querySelectorAll(selector);
         const master = document.getElementById(masterId);
         master.checked = [...all].every(cb => cb.checked);
     }
@@ -134,7 +151,7 @@
             container.innerHTML = `<tr><td colspan="6">Chưa chọn sản phẩm nào</td></tr>`;
             return;
         }
-        fetch(`/admin/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
+        fetch(`/acvstore/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
             .then(res => res.json())
             .then(data => {
                 container.innerHTML = "";
@@ -155,25 +172,9 @@
             });
     }
 
-    function renderProductList(products) {
-        const tbody = document.getElementById("productTableBody");
-        tbody.innerHTML = products.length === 0
-            ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
-            : products.map(p => `
-<tr class="product-row" data-id="${p.id}">
-<td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''}></td>
-<td>${p.maSanPham}</td>
-<td>${p.tenSanPham}</td>
-</tr>`).join('');
-        attachCheckboxHandler(".product-checkbox", selectedProductIds, null, "selectAllProducts");
-        updateSelectAll(".product-checkbox", "selectAllProducts");
-        loadProductDetails();
-    }
-
     function renderPagination(totalPages, currentPage, keyword) {
         const pagination = document.getElementById("productPagination");
         if (!pagination) return;
-
         let html = `<ul class="pagination justify-content-center">`;
         for (let i = 0; i < totalPages; i++) {
             html += `
@@ -195,12 +196,27 @@
     }
 
     function searchProducts(keyword = "", page = 0) {
-        fetch(`/admin/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}`)
+        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}`)
             .then(res => res.json())
             .then(data => {
                 renderProductList(data.content);
                 renderPagination(data.totalPages, data.number, keyword);
             });
+    }
+
+    function renderProductList(products) {
+        const tbody = document.getElementById("productTableBody");
+        tbody.innerHTML = products.length === 0
+            ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
+            : products.map(p => `
+<tr class="product-row" data-id="${p.id}">
+<td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''}></td>
+<td>${p.maSanPham}</td>
+<td>${p.tenSanPham}</td>
+</tr>`).join('');
+        attachCheckboxHandler(".product-checkbox", selectedProductIds, null, "selectAllProducts");
+        updateSelectAll(".product-checkbox", "selectAllProducts");
+        loadProductDetails();
     }
 
     document.addEventListener("DOMContentLoaded", () => {
@@ -234,11 +250,8 @@
             this._searchTimer = setTimeout(() => searchProducts(query, 0), 300);
         });
 
-        // Load initial product page with pagination
         searchProducts("", [[${currentProductPage}]]);
     });
 </script>
-
-
 </body>
 </html>
