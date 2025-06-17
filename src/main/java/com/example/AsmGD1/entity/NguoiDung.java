@@ -11,11 +11,11 @@ import java.util.UUID;
 @Data
 public class NguoiDung {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
-    @Column(name = "ten_dang_nhap", nullable = false, length = 50)
+    @Column(name = "ten_dang_nhap", nullable = false, length = 50, unique = true)
     private String tenDangNhap;
 
     @Column(name = "mat_khau", nullable = false, length = 100)
@@ -24,10 +24,10 @@ public class NguoiDung {
     @Column(name = "ho_ten", nullable = false, length = 100)
     private String hoTen;
 
-    @Column(name = "email", nullable = false, length = 100)
+    @Column(name = "email", nullable = false, length = 100, unique = true)
     private String email;
 
-    @Column(name = "so_dien_thoai", nullable = false, length = 20)
+    @Column(name = "so_dien_thoai", nullable = false, length = 20, unique = true)
     private String soDienThoai;
 
     @Column(name = "dia_chi", columnDefinition = "NVARCHAR(MAX)")
@@ -56,12 +56,6 @@ public class NguoiDung {
 
     @Column(name = "thoi_gian_tao")
     private LocalDateTime thoiGianTao;
-
-    @Column(name = "id_qr_gioi_thieu", length = 50)
-    private String idQrGioiThieu;
-
-    @Column(name = "thoi_gian_bat_han_otp")
-    private LocalDateTime thoiGianBatHanOtp;
 
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai = true;

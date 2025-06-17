@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard Admin</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h2>Dashboard Admin</h2>
+    <p>Chào mừng <span th:text="${#authentication.name}"></span>! Bạn đang ở vai trò Admin.</p>
+    <a th:href="@{/acvstore/admins}" class="btn">Quản lý Admin</a>
+    <a th:href="@{/acvstore/employees}" class="btn">Quản lý Nhân viên</a>
+    <a th:href="@{/acvstore/customers}" class="btn">Quản lý Khách hàng</a>
+    <form th:action="@{/acvstore/logout}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <button type="submit" class="btn">Đăng xuất</button>
+    </form>
+</div>
+</body>
+</html>

@@ -35,7 +35,7 @@ public class EmployeeController {
     public String addEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes) {
         try {
             if (employee.getTrangThai() == null) {
-                employee.setTrangThai(true); // Giá trị mặc định
+                employee.setTrangThai(true);
             }
             employee.setVaiTro("employee");
             nguoiDungService.save(employee);
@@ -45,20 +45,14 @@ public class EmployeeController {
             redirectAttributes.addFlashAttribute("message", "Thêm nhân viên thất bại: " + e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "error");
         }
-        return "redirect:/employees";
+        return "redirect:/acvstore/employees";
     }
 
     @PostMapping("/edit")
     public String editEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes) {
-        NguoiDung existingEmployee = nguoiDungService.findById(employee.getId());
-        if (existingEmployee == null) {
-            redirectAttributes.addFlashAttribute("message", "Không tìm thấy nhân viên với ID: " + employee.getId());
-            redirectAttributes.addFlashAttribute("messageType", "error");
-            return "redirect:/employees";
-        }
         try {
             if (employee.getTrangThai() == null) {
-                employee.setTrangThai(true); // Giá trị mặc định
+                employee.setTrangThai(true);
             }
             employee.setVaiTro("employee");
             nguoiDungService.save(employee);
@@ -68,17 +62,11 @@ public class EmployeeController {
             redirectAttributes.addFlashAttribute("message", "Sửa nhân viên thất bại: " + e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "error");
         }
-        return "redirect:/employees";
+        return "redirect:/acvstore/employees";
     }
 
     @PostMapping("/delete/{id}")
     public String deleteEmployee(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
-        NguoiDung employee = nguoiDungService.findById(id);
-        if (employee == null) {
-            redirectAttributes.addFlashAttribute("message", "Không tìm thấy nhân viên với ID: " + id);
-            redirectAttributes.addFlashAttribute("messageType", "error");
-            return "redirect:/employees";
-        }
         try {
             nguoiDungService.deleteById(id);
             redirectAttributes.addFlashAttribute("message", "Xóa nhân viên thành công!");
@@ -87,6 +75,6 @@ public class EmployeeController {
             redirectAttributes.addFlashAttribute("message", "Xóa nhân viên thất bại: " + e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "error");
         }
-        return "redirect:/employees";
+        return "redirect:/acvstore/employees";
     }
 }
