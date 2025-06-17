@@ -212,7 +212,7 @@ public class ChiTietSanPhamController {
             newSanPham.setTenSanPham(sanPham.getTenSanPham());
             newSanPham.setMoTa(sanPham.getMoTa());
             newSanPham.setUrlHinhAnh(sanPham.getUrlHinhAnh());
-            newSanPham.setTrangThai(sanPham.getTrangThai() != null ? sanPham.getTrangThai() : false);
+            newSanPham.setTrangThai(true); // Mặc định là Đang Bán
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
             if (danhMucId != null) {
