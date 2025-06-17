@@ -25,7 +25,7 @@ import java.util.function.Function;
 
 
 @Controller
-@RequestMapping("/admin/voucher")
+@RequestMapping("/acvstore/voucher")
 public class PhieuGiamGiaController {
 
     @Autowired
@@ -38,7 +38,7 @@ public class PhieuGiamGiaController {
     @Autowired
     private GuiMailService guiMailService;
 
-    @GetMapping("/vouchers")
+    @GetMapping("vouchers")
     public String list(@RequestParam(required = false) String search,
                        @RequestParam(required = false) String fromDate,
                        @RequestParam(required = false) String toDate,
@@ -92,7 +92,7 @@ public class PhieuGiamGiaController {
         model.addAttribute("type", type);
         model.addAttribute("status", status);
 
-        return "admin/voucher-list";
+        return "WebQuanLy/voucher-list";
     }
 
 
@@ -110,7 +110,7 @@ public class PhieuGiamGiaController {
     public String createForm(Model model) {
         model.addAttribute("voucher", new PhieuGiamGia());
         model.addAttribute("customers", phieuService.layTatCaKhachHang());
-        return "admin/voucher-create";
+        return "WebQuanLy/voucher-create";
     }
 
     @PostMapping("/vouchers/create")
@@ -220,7 +220,7 @@ public class PhieuGiamGiaController {
             model.addAttribute("errorMessage", String.join("<br>", errors));
             model.addAttribute("voucher", voucher);
             model.addAttribute("customers", phieuService.layTatCaKhachHang());
-            return "admin/voucher-create";
+            return "WebQuanLy/voucher-create";
         }
 
         // Gán lượt sử dụng = 1 nếu là phiếu cá nhân
@@ -246,7 +246,7 @@ public class PhieuGiamGiaController {
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Tạo phiếu giảm giá thành công!");
-        return "redirect:/admin/voucher/vouchers";
+        return "redirect:/acvstore/voucher/vouchers";
     }
 
 
@@ -287,7 +287,7 @@ public class PhieuGiamGiaController {
         model.addAttribute("totalCustomerPages", customerPage.getTotalPages());
         model.addAttribute("search", search);
 
-        return "admin/voucher-edit";
+        return "WebQuanLy/voucher-edit";
     }
 
 
@@ -412,7 +412,7 @@ public class PhieuGiamGiaController {
             model.addAttribute("giaTriGiamToiThieuStr", voucher.getGiaTriGiamToiThieu() != null ? nf.format(voucher.getGiaTriGiamToiThieu()) : "");
             model.addAttribute("gioiHanSuDungStr", voucher.getGioiHanSuDung() != null ? String.valueOf(voucher.getGioiHanSuDung()) : "");
 
-            return "admin/voucher-edit";
+            return "WebQuanLy/voucher-edit";
         }
 
         // ✅ Nếu là phiếu cá nhân: set lượt sử dụng = 1
@@ -443,7 +443,7 @@ public class PhieuGiamGiaController {
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật phiếu giảm giá thành công!");
-        return "redirect:/admin/voucher/vouchers";
+        return "redirect:/acvstore/voucher/vouchers";
     }
 
     @PostMapping("/vouchers/delete/{id}")
@@ -460,7 +460,7 @@ public class PhieuGiamGiaController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());
         }
 
-        return "redirect:/admin/voucher/vouchers";
+        return "redirect:/acvstore/voucher/vouchers";
     }
 //    @GetMapping("/search")
 //    public List<NguoiDung> searchCustomers(@RequestParam("keyword") String keyword) {
