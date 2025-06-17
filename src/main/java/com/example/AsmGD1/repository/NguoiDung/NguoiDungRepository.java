@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
@@ -36,4 +37,9 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
 
     // Tìm theo họ tên + vai trò + trạng thái
     Page<NguoiDung> findByHoTenContainingIgnoreCaseAndVaiTroAndTrangThaiTrue(String hoTen, String vaiTro, Pageable pageable);
+
+    // Thêm phương thức kiểm tra số điện thoại tồn tại
+    boolean existsBySoDienThoai(String soDienThoai);
+
+    Optional<NguoiDung> findBySoDienThoai(String soDienThoai);
 }

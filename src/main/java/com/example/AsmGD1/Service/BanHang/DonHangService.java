@@ -1,6 +1,5 @@
 package com.example.AsmGD1.service.BanHang;
 
-
 import com.example.AsmGD1.dto.BanHang.*;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
@@ -12,6 +11,8 @@ import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,19 +49,24 @@ public class DonHangService {
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
 
-    // Loại bỏ @Autowired private GioHangService gioHangService;
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     @Transactional
     public KetQuaDonHangDTO taoDonHang(DonHangDTO donHangDTO) {
-        NguoiDung khachHang = nguoiDungRepository.findById(donHangDTO.getKhachHangDaChon())
-                .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại."));
+        String soDienThoai = donHangDTO.getSoDienThoaiKhachHang();
+        if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
+            throw new RuntimeException("Số điện thoại khách hàng không được để trống.");
+        }
+        NguoiDung khachHang = nguoiDungRepository.findBySoDienThoai(soDienThoai)
+                .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với số điện thoại: " + soDienThoai));
 
         DonHang donHang = new DonHang();
         donHang.setNguoiDung(khachHang);
         donHang.setMaDonHang(taoMaDonHang());
-        donHang.setTrangThaiThanhToan(donHangDTO.getPhuongThucThanhToan().equals("CASH") && donHangDTO.getSoTienKhachDua().compareTo(BigDecimal.ZERO) > 0);
+        donHang.setTrangThaiThanhToan(donHangDTO.getPhuongThucThanhToan() != null && donHangDTO.getPhuongThucThanhToan().equals("CASH") && donHangDTO.getSoTienKhachDua().compareTo(BigDecimal.ZERO) > 0);
         donHang.setPhiVanChuyen(donHangDTO.getPhiVanChuyen());
-        donHang.setPhuongThucThanhToan(phuongThucThanhToanRepository.findById(UUID.fromString(donHangDTO.getPhuongThucThanhToan())).orElse(null));
+        donHang.setPhuongThucThanhToan(phuongThucThanhToanRepository.findById(donHangDTO.getPhuongThucThanhToan()).orElse(null));
         donHang.setPhuongThucBanHang(donHangDTO.getPhuongThucBanHang().equals("DELIVERY") ? "Giao hàng" : "Tại quầy");
         donHang.setSoTienKhachDua(donHangDTO.getSoTienKhachDua());
         donHang.setThoiGianTao(LocalDateTime.now());
@@ -70,22 +76,26 @@ public class DonHangService {
         BigDecimal tienGiam = BigDecimal.ZERO;
         Map<UUID, Integer> soLuongTonKho = new HashMap<>();
 
+        if (donHangDTO.getDanhSachSanPham() == null || donHangDTO.getDanhSachSanPham().isEmpty()) {
+            throw new RuntimeException("Danh sách sản phẩm không được để trống.");
+        }
+
         for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham())
-                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại."));
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
             if (chiTiet.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
             }
 
             ChiTietDonHang chiTietDonHang = new ChiTietDonHang();
-            chiTietDonHang.setDonHang(donHang);
             chiTietDonHang.setChiTietSanPham(chiTiet);
             chiTietDonHang.setSoLuong(item.getSoLuong());
             chiTietDonHang.setGia(item.getGia());
             chiTietDonHang.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
             chiTietDonHang.setThanhTien(item.getThanhTien());
-            chiTietDonHangRepository.save(chiTietDonHang);
+            donHang.addChiTietDonHang(chiTietDonHang);
 
+            // Giảm tồn kho ngay tại đây, không phụ thuộc tempStockChanges
             chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
             chiTietSanPhamRepository.save(chiTiet);
             soLuongTonKho.put(chiTiet.getId(), chiTiet.getSoLuongTonKho());
@@ -110,8 +120,6 @@ public class DonHangService {
         donHang.setTongTien(tongTien.add(donHangDTO.getPhiVanChuyen()).subtract(tienGiam));
         donHangRepository.save(donHang);
 
-//        gioHangService.xoaGioHang(); // Gọi qua BanHangController nếu cần
-
         KetQuaDonHangDTO ketQua = new KetQuaDonHangDTO();
         ketQua.setMaDonHang(donHang.getMaDonHang());
         ketQua.setSoLuongTonKho(soLuongTonKho);
@@ -122,16 +130,69 @@ public class DonHangService {
     public DonHangDTO giuDonHang(DonHangDTO donHangDTO) {
         try {
             DonHangTam donHangTam = new DonHangTam();
-            donHangTam.setKhachHang(donHangDTO.getKhachHangDaChon());
-            donHangTam.setTong(new BigDecimal(donHangDTO.getTong().replace(" VNĐ", "").replace(".", "")));
-            donHangTam.setThoiGianTao(LocalDateTime.now());
-            donHangTam.setDanhSachSanPham(objectMapper.writeValueAsString(donHangDTO.getDanhSachSanPham()));
-            donHangTam.setPhuongThucThanhToan(donHangDTO.getPhuongThucThanhToan());
+            donHangTam.setId(UUID.randomUUID());
+            donHangTam.setMaDonHangTam("KH" + System.currentTimeMillis());
+
+            String soDienThoai = donHangDTO.getSoDienThoaiKhachHang();
+            if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
+                throw new RuntimeException("Số điện thoại khách hàng không được để trống.");
+            }
+            NguoiDung khachHang = nguoiDungRepository.findBySoDienThoai(soDienThoai)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + soDienThoai));
+            donHangTam.setKhachHang(khachHang.getId());
+            donHangTam.setSoDienThoaiKhachHang(donHangDTO.getSoDienThoaiKhachHang());
+            BigDecimal tongTien = BigDecimal.ZERO;
+            if (donHangDTO.getDanhSachSanPham() != null && !donHangDTO.getDanhSachSanPham().isEmpty()) {
+                List<GioHangItemDTO> enhancedItems = new ArrayList<>();
+                for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
+                    // Kiểm tra và bổ sung nếu thiếu
+                    if (item.getTenSanPham() == null || item.getMauSac() == null || item.getKichCo() == null) {
+                        ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham())
+                                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
+                        item.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
+                        item.setMauSac(chiTiet.getMauSac().getTenMau());
+                        item.setKichCo(chiTiet.getKichCo().getTen());
+                    }
+                    enhancedItems.add(item);
+                    tongTien = tongTien.add(item.getThanhTien());
+                }
+                donHangDTO.setDanhSachSanPham(enhancedItems); // Cập nhật lại danh sách
+            } else {
+                throw new RuntimeException("Danh sách sản phẩm không được để trống.");
+            }
+
+            BigDecimal phiVanChuyen = donHangDTO.getPhiVanChuyen() != null ? donHangDTO.getPhiVanChuyen() : BigDecimal.ZERO;
+            BigDecimal giamGia = BigDecimal.ZERO;
+            if (donHangDTO.getIdPhieuGiamGia() != null) {
+                PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
+                        .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
+                giamGia = phieuGiamGia.getGiaTriGiam().min(tongTien);
+            }
+            donHangTam.setTong(tongTien.add(phiVanChuyen).subtract(giamGia));
+            donHangTam.setPhiVanChuyen(phiVanChuyen);
+
+            if (donHangDTO.getDanhSachSanPham() != null) {
+                try {
+                    String danhSachSanPhamJson = objectMapper.writeValueAsString(donHangDTO.getDanhSachSanPham());
+                    donHangTam.setDanhSachSanPham(danhSachSanPhamJson);
+                } catch (Exception e) {
+                    throw new RuntimeException("Lỗi khi chuyển đổi danh sách sản phẩm thành JSON: " + e.getMessage());
+                }
+            }
+
+            donHangTam.setPhuongThucThanhToan(donHangDTO.getPhuongThucThanhToan() != null ? donHangDTO.getPhuongThucThanhToan().toString() : null);
             donHangTam.setPhuongThucBanHang(donHangDTO.getPhuongThucBanHang());
-            donHangTam.setPhiVanChuyen(donHangDTO.getPhiVanChuyen());
             donHangTam.setPhieuGiamGia(donHangDTO.getIdPhieuGiamGia());
+            donHangTam.setThoiGianTao(LocalDateTime.now());
+
             donHangTamRepository.save(donHangTam);
-            // Gọi xoaGioHang qua BanHangController nếu cần
+
+            HttpSession session = layPhien();
+            Map<UUID, Map<String, Object>> tempStockChanges = (Map<UUID, Map<String, Object>>) session.getAttribute("tempStockChanges");
+            if (tempStockChanges != null) {
+                session.removeAttribute("tempStockChanges");
+            }
+
             return donHangDTO;
         } catch (Exception e) {
             throw new RuntimeException("Không thể giữ đơn hàng: " + e.getMessage());
@@ -139,35 +200,26 @@ public class DonHangService {
     }
 
     public List<DonHangTamDTO> layDanhSachDonHangTam() {
-        return donHangTamRepository.findAll().stream()
-                .map(donHang -> {
-                    DonHangTamDTO dto = new DonHangTamDTO();
-                    dto.setId(donHang.getId());
-                    dto.setTenKhachHang(nguoiDungRepository.findById(donHang.getKhachHang())
-                            .map(NguoiDung::getHoTen)
-                            .orElse("Không rõ"));
-                    dto.setTong(donHang.getTong());
-                    dto.setThoiGianTao(donHang.getThoiGianTao().toString());
-                    try {
-                        List<Map<String, Object>> jsonList = objectMapper.readValue(donHang.getDanhSachSanPham(), List.class);
-                        List<GioHangItemDTO> danhSachSanPham = jsonList.stream().map(item -> {
-                            GioHangItemDTO dtoItem = new GioHangItemDTO();
-                            dtoItem.setIdChiTietSanPham(UUID.fromString((String) item.get("idChiTietSanPham")));
-                            dtoItem.setTenSanPham((String) item.get("tenSanPham"));
-                            dtoItem.setMauSac((String) item.get("mauSac"));
-                            dtoItem.setKichCo((String) item.get("kichCo"));
-                            dtoItem.setSoLuong(((Number) item.get("soLuong")).intValue());
-                            dtoItem.setGia(new BigDecimal((String) item.get("gia")));
-                            dtoItem.setThanhTien(new BigDecimal((String) item.get("thanhTien")));
-                            return dtoItem;
-                        }).collect(Collectors.toList());
-                        dto.setDanhSachSanPham(danhSachSanPham);
-                    } catch (Exception e) {
-                        dto.setDanhSachSanPham(new ArrayList<>());
-                    }
-                    return dto;
-                })
-                .toList();
+        List<DonHangTam> heldOrders = donHangTamRepository.findAll();
+        return heldOrders.stream().map(order -> {
+            DonHangTamDTO dto = new DonHangTamDTO();
+            dto.setId(order.getId());
+            if (order.getKhachHang() != null) {
+                NguoiDung nguoiDung = nguoiDungService.findById(order.getKhachHang());
+                dto.setTenKhachHang(nguoiDung != null ? nguoiDung.getHoTen() : "Không rõ");
+            } else {
+                dto.setTenKhachHang("Không rõ");
+            }
+            dto.setTong(order.getTong() != null ? order.getTong() : BigDecimal.ZERO);
+            dto.setThoiGianTao(order.getThoiGianTao());
+            dto.setPhuongThucThanhToan(order.getPhuongThucThanhToan() != null ? order.getPhuongThucThanhToan() : "Chưa chọn");
+            dto.setPhuongThucBanHang(order.getPhuongThucBanHang() != null ? order.getPhuongThucBanHang() : "Chưa chọn");
+            dto.setPhiVanChuyen(order.getPhiVanChuyen() != null ? order.getPhiVanChuyen() : BigDecimal.ZERO);
+            dto.setIdPhieuGiamGia(order.getPhieuGiamGia());
+            dto.setDanhSachItem(order.getDanhSachSanPham());
+            dto.parseDanhSachSanPham(objectMapper);
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     public DonHangTamDTO layChiTietDonHangTam(UUID id) {
@@ -175,11 +227,10 @@ public class DonHangService {
                 .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại."));
         DonHangTamDTO dto = new DonHangTamDTO();
         dto.setId(donHangTam.getId());
-        dto.setTenKhachHang(nguoiDungRepository.findById(donHangTam.getKhachHang())
-                .map(NguoiDung::getHoTen)
-                .orElse("Không rõ"));
+        // Lấy số điện thoại từ donHangTam (giả sử khachHang là số điện thoại)
+        dto.setTenKhachHang(String.valueOf(donHangTam.getKhachHang())); // Giả sử getKhachHang trả về String
         dto.setTong(donHangTam.getTong());
-        dto.setThoiGianTao(donHangTam.getThoiGianTao().toString());
+        dto.setThoiGianTao(donHangTam.getThoiGianTao());
         try {
             List<Map<String, Object>> jsonList = objectMapper.readValue(donHangTam.getDanhSachSanPham(), List.class);
             List<GioHangItemDTO> danhSachSanPham = jsonList.stream().map(item -> {
@@ -205,7 +256,7 @@ public class DonHangService {
         DonHangTam donHangTam = donHangTamRepository.findById(idDonHang)
                 .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại."));
         GioHangDTO gioHang = new GioHangDTO();
-        gioHang.setKhachHangDaChon(donHangTam.getKhachHang());
+        gioHang.setSoDienThoaiKhachHang(String.valueOf(donHangTam.getKhachHang()));
         gioHang.setPhiVanChuyen(donHangTam.getPhiVanChuyen());
         gioHang.setIdPhieuGiamGia(donHangTam.getPhieuGiamGia());
         gioHang.setPhuongThucThanhToan(donHangTam.getPhuongThucThanhToan());
@@ -232,11 +283,10 @@ public class DonHangService {
         } catch (Exception e) {
             gioHang.setDanhSachSanPham(new ArrayList<>());
         }
-        // Cập nhật tổng giỏ hàng
         BigDecimal tongTienHang = gioHang.getDanhSachSanPham().stream()
                 .map(GioHangItemDTO::getThanhTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        gioHang.setTongTienHang(tongTienHang.toString() + " VNĐ"); // Cần định dạng đúng
+        gioHang.setTongTienHang(tongTienHang.toString() + " VNĐ");
         BigDecimal giamGia = (gioHang.getIdPhieuGiamGia() != null) ? BigDecimal.valueOf(10000) : BigDecimal.ZERO;
         gioHang.setGiamGia(giamGia.toString() + " VNĐ");
         BigDecimal tong = tongTienHang.subtract(giamGia).add(gioHang.getPhiVanChuyen() != null ? gioHang.getPhiVanChuyen() : BigDecimal.ZERO);

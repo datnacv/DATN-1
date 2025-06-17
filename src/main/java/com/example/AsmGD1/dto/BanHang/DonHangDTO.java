@@ -10,10 +10,11 @@ import java.util.UUID;
 public class DonHangDTO {
     private UUID khachHangDaChon;
     private BigDecimal phiVanChuyen;
-    private String phuongThucThanhToan;
+    private UUID phuongThucThanhToan;
     private String phuongThucBanHang;
     private BigDecimal soTienKhachDua;
     private List<GioHangItemDTO> danhSachSanPham;
     private UUID idPhieuGiamGia;
     private String tong;
+    private String soDienThoaiKhachHang;
 }

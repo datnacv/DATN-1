@@ -21,4 +21,6 @@ public class GioHangDTO {
     private UUID idPhieuGiamGia;
     private String phuongThucBanHang;
     private String phuongThucThanhToan;
+    private String soDienThoaiKhachHang;
+
 }

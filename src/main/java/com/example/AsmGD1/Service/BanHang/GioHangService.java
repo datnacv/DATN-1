@@ -142,25 +142,39 @@ public class GioHangService {
         return gioHangDTO;
     }
 
-    public GioHangDTO capNhatGioHang(List<Map<String, Object>> cartItems, BigDecimal shippingFee) {
+    public GioHangDTO capNhatGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee) {
         List<GioHangItemDTO> currentCart = getCurrentCart();
-        currentCart.clear(); // Xóa giỏ hàng hiện tại
 
-        for (Map<String, Object> item : cartItems) {
-            UUID productDetailId = UUID.fromString((String) item.get("productDetailId"));
-            int quantity = (int) item.get("quantity");
-            ChiTietSanPham chiTiet = chiTietSanPhamService.findById(productDetailId);
-            if (chiTiet != null && chiTiet.getSoLuongTonKho() >= quantity) {
-                GioHangItemDTO gioHangItem = new GioHangItemDTO();
-                gioHangItem.setIdChiTietSanPham(productDetailId);
-                gioHangItem.setTenSanPham(chiTiet.getSanPham() != null ? chiTiet.getSanPham().getTenSanPham() : "Sản phẩm không rõ");
-                gioHangItem.setMauSac(chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTenMau() : "Không rõ");
-                gioHangItem.setKichCo(chiTiet.getKichCo() != null ? chiTiet.getKichCo().getTen() : "Không rõ");
-                gioHangItem.setSoLuong(quantity);
-                gioHangItem.setGia(chiTiet.getGia());
-                gioHangItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
-                currentCart.add(gioHangItem);
-            }
+        // Tìm sản phẩm trong giỏ hàng
+        GioHangItemDTO existingItem = currentCart.stream()
+                .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
+                .findFirst()
+                .orElse(null);
+
+        ChiTietSanPham chiTiet = chiTietSanPhamService.findById(productDetailId);
+        if (chiTiet == null) {
+            throw new RuntimeException("Không tìm thấy biến thể sản phẩm với ID: " + productDetailId);
+        }
+
+        if (quantity > chiTiet.getSoLuongTonKho()) {
+            throw new RuntimeException("Số lượng tồn kho không đủ: chỉ còn " + chiTiet.getSoLuongTonKho());
+        }
+
+        if (existingItem != null) {
+            // Cập nhật số lượng
+            existingItem.setSoLuong(quantity);
+            existingItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+        } else {
+            // Thêm mới nếu không tìm thấy
+            GioHangItemDTO newItem = new GioHangItemDTO();
+            newItem.setIdChiTietSanPham(productDetailId);
+            newItem.setTenSanPham(chiTiet.getSanPham() != null ? chiTiet.getSanPham().getTenSanPham() : "Sản phẩm không rõ");
+            newItem.setMauSac(chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTenMau() : "Không rõ");
+            newItem.setKichCo(chiTiet.getKichCo() != null ? chiTiet.getKichCo().getTen() : "Không rõ");
+            newItem.setSoLuong(quantity);
+            newItem.setGia(chiTiet.getGia());
+            newItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+            currentCart.add(newItem);
         }
 
         GioHangDTO gioHangDTO = new GioHangDTO();

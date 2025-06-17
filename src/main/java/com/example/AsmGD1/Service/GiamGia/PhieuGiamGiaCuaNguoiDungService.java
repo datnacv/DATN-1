@@ -85,4 +85,8 @@ public class PhieuGiamGiaCuaNguoiDungService {
         }
         return nguoiDungRepository.findByHoTenContainingIgnoreCaseAndVaiTroAndTrangThaiTrue(keyword.trim(), "CUSTOMER", pageable);
     }
+
+    public List<PhieuGiamGiaCuaNguoiDung> findByNguoiDungId(UUID nguoiDungId) {
+        return phieuGiamGiaCuaNguoiDungRepository.findByNguoiDungId(nguoiDungId);
+    }
 }

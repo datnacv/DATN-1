@@ -13,12 +13,17 @@ import java.util.UUID;
 @Data
 public class DonHangTam {
     @Id
-    @GeneratedValue
-    @Column(columnDefinition = "UNIQUEIDENTIFIER")
+    @Column(name = "id", columnDefinition = "UNIQUEIDENTIFIER", updatable = false)
     private UUID id;
 
     @Column(name = "id_khach_hang")
     private UUID khachHang;
+
+    @Column(name = "ma_don_hang_tam")
+    private String maDonHangTam;
+
+    @Column(name = "so_dien_thoai_khach_hang")
+    private String soDienThoaiKhachHang;
 
     @Column(name = "tong_tien")
     private BigDecimal tong;
@@ -40,4 +45,8 @@ public class DonHangTam {
 
     @Column(name = "id_phieu_giam_gia")
     private UUID phieuGiamGia;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_khach_hang", referencedColumnName = "id", insertable = false, updatable = false)
+    private NguoiDung nguoiDung;
 }
