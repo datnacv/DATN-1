@@ -300,9 +300,6 @@
                                         <option value="">Chọn màu...</option>
                                         <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
                                     </select>
-                                    <button type="button" class="btn btn-success btn-sm quick-add-btn mt-2" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="color" title="Thêm nhanh màu sắc">
-                                        <i class="fas fa-plus"></i> Thêm màu
-                                    </button>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="sizeSelect" class="form-label">Kích cỡ</label>
@@ -310,9 +307,6 @@
                                         <option value="">Chọn kích cỡ...</option>
                                         <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
                                     </select>
-                                    <button type="button" class="btn btn-success btn-sm quick-add-btn mt-2" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="size" title="Thêm nhanh kích cỡ">
-                                        <i class="fas fa-plus"></i> Thêm kích cỡ
-                                    </button>
                                 </div>
                             </div>
                             <button type="button" class="btn btn-primary mt-3" onclick="generateVariations()">Tạo biến thể</button>
