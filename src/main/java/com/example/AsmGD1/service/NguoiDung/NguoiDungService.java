@@ -38,4 +38,8 @@ public class NguoiDungService {
     public void deleteById(UUID id) {
         nguoiDungRepository.deleteById(id);
     }
+
+    public boolean existsByPhone(String phone) {
+        return nguoiDungRepository.existsBySoDienThoai(phone);
+    }
 }

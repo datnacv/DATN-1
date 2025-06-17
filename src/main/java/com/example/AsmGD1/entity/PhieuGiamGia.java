@@ -4,6 +4,8 @@ import lombok.Data;
 import jakarta.persistence.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.UUID;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -56,4 +58,9 @@ public class PhieuGiamGia {
 
     @Column(name="ma")
     private String ma;
+
+    public String getGiaTriGiamToiThieuFormatted() {
+        NumberFormat formatter = NumberFormat.getNumberInstance(new Locale("vi", "VN"));
+        return giaTriGiamToiThieu != null ? formatter.format(giaTriGiamToiThieu) + " VNĐ" : "0 VNĐ";
+    }
 }

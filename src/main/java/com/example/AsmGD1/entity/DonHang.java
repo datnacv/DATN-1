@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -49,4 +51,12 @@ public class DonHang {
 
     @Column(name = "phuong_thuc_ban_hang", nullable = false, length = 50)
     private String phuongThucBanHang;
+
+    @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
+
+    public void addChiTietDonHang(ChiTietDonHang chiTiet) {
+        chiTietDonHangs.add(chiTiet);
+        chiTiet.setDonHang(this);
+    }
 }

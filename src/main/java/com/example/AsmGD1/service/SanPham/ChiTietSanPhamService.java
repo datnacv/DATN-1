@@ -6,6 +6,8 @@ import com.example.AsmGD1.dto.ChiTietSanPhamVariationDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.SanPham.*;
 import com.example.AsmGD1.util.CloudinaryUtil;
+import com.example.AsmGD1.util.QRCodeUtil;
+import com.google.zxing.WriterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +41,28 @@ public class ChiTietSanPhamService {
     @Autowired private KieuDangRepository kieuDangRepo;
     @Autowired private ThuongHieuRepository thuongHieuRepo;
     @Autowired private CloudinaryUtil cloudinaryUtil;
+
+    private final String UPLOAD_DIR;
+
+    public ChiTietSanPhamService() {
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
+            UPLOAD_DIR = "C:/DATN/uploads/";
+        } else {
+            UPLOAD_DIR = System.getProperty("user.home") + "/DATN/uploads/";
+        }
+
+        try {
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+                System.out.println("Created directory: " + UPLOAD_DIR);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create upload directory: " + UPLOAD_DIR, e);
+        }
+    }
+
 
     @Transactional
     public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto, List<MultipartFile> imageFiles) {
@@ -81,6 +109,13 @@ public class ChiTietSanPhamService {
             pd.setTrangThai(true);
 
             ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
+
+            try {
+                QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
+            } catch (IOException | WriterException e) {
+                System.err.println("❌ Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId());
+                e.printStackTrace();
+            }
 
             if (imageFiles != null && !imageFiles.isEmpty()) {
                 saveImagesToCloudinary(savedDetail, imageFiles.stream().limit(3).collect(Collectors.toList()));
@@ -188,14 +223,14 @@ public class ChiTietSanPhamService {
         }
     }
 
-    private void saveImagesToCloudinary(ChiTietSanPham productDetail, List<MultipartFile> imageFiles) {
+    private void saveImagesToCloudinary(ChiTietSanPham ChiTietSanPham, List<MultipartFile> imageFiles) {
         List<MultipartFile> limitedImages = imageFiles.stream().limit(3).collect(Collectors.toList());
         for (MultipartFile file : limitedImages) {
             if (file != null && !file.isEmpty()) {
                 try {
                     String imageUrl = cloudinaryUtil.uploadImage(file);
                     HinhAnhSanPham img = new HinhAnhSanPham();
-                    img.setChiTietSanPham(productDetail);
+                    img.setChiTietSanPham(ChiTietSanPham);
                     img.setUrlHinhAnh(imageUrl);
                     hinhAnhSanPhamRepo.save(img);
                 } catch (IOException e) {
@@ -215,5 +250,85 @@ public class ChiTietSanPhamService {
 
     public ChiTietSanPham findById(UUID id) {
         return chiTietSanPhamRepo.findById(id).orElse(null);
+    }
+
+    public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
+        return chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(productId, mauSacId, kichCoId);
+    }
+
+    public List<MauSac> findColorsByProductId(UUID productId) {
+        return chiTietSanPhamRepo.findBySanPhamId(productId)
+                .stream()
+                .map(ChiTietSanPham::getMauSac)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public List<KichCo> findSizesByProductId(UUID productId) {
+        return chiTietSanPhamRepo.findBySanPhamId(productId)
+                .stream()
+                .map(ChiTietSanPham::getKichCo)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ChiTietSanPham save(ChiTietSanPham chiTietSanPham) {
+        return chiTietSanPhamRepo.save(chiTietSanPham);
+    }
+
+    public List<ChiTietSanPham> getAllChiTietSanPhamsWithQR() {
+        List<ChiTietSanPham> list = chiTietSanPhamRepo.findAll();
+        for (ChiTietSanPham pd : list) {
+            try {
+                String qrDir = "src/main/resources/static/qrcodes/";
+                new File(qrDir).mkdirs();
+                String path = qrDir + "qr_" + pd.getId() + ".png";
+                QRCodeUtil.generateQRCodeImage(String.valueOf(pd.getId()), 200, 200, path);
+            } catch (WriterException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return list;
+    }
+
+    @Transactional
+    public void saveChiTietSanPhamWithImages(ChiTietSanPham pd, MultipartFile[] imageFiles) {
+        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
+
+        try {
+            QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
+        } catch (IOException | WriterException e) {
+            System.err.println("❌ Không thể tạo QR Code cho sản phẩm ID: " + savedDetail.getId());
+            e.printStackTrace();
+        }
+
+        saveImagesForChiTietSanPham(savedDetail, imageFiles);
+    }
+
+    private void saveImagesForChiTietSanPham(ChiTietSanPham ChiTietSanPham, MultipartFile[] imageFiles) {
+        if (imageFiles != null) {
+            for (MultipartFile file : imageFiles) {
+                if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
+                    try {
+                        Path uploadPath = Paths.get(UPLOAD_DIR);
+                        if (!Files.exists(uploadPath)) {
+                            Files.createDirectories(uploadPath);
+                        }
+                        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
+                        Path filePath = uploadPath.resolve(filename);
+                        Files.write(filePath, file.getBytes());
+
+                        HinhAnhSanPham img = new HinhAnhSanPham();
+                        img.setChiTietSanPham(ChiTietSanPham);
+                        img.setUrlHinhAnh(filename);
+                        hinhAnhSanPhamRepo.save(img);
+                    } catch (IOException e) {
+                        System.err.println("Không thể lưu tệp ảnh: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
     }
 }
