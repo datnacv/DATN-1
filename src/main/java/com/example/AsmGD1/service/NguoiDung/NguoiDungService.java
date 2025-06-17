@@ -24,13 +24,18 @@ public class NguoiDungService {
 
     public NguoiDung findById(UUID id) {
         return nguoiDungRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + id));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + id));
     }
 
     public NguoiDung save(NguoiDung nguoiDung) {
         if (nguoiDung.getId() == null) {
             nguoiDung.setThoiGianTao(LocalDateTime.now());
             nguoiDung.setTrangThai(true);
+            // Xóa mã hóa, lưu mật khẩu trực tiếp
+        } else {
+            NguoiDung existing = nguoiDungRepository.findById(nguoiDung.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng với ID: " + nguoiDung.getId()));
+            // Không cần kiểm tra hoặc mã hóa, giữ nguyên mật khẩu
         }
         return nguoiDungRepository.save(nguoiDung);
     }
@@ -41,5 +46,14 @@ public class NguoiDungService {
 
     public boolean existsByPhone(String phone) {
         return nguoiDungRepository.existsBySoDienThoai(phone);
+    }
+
+    public NguoiDung findByTenDangNhap(String tenDangNhap) {
+        return nguoiDungRepository.findByTenDangNhap(tenDangNhap)
+                .orElse(null);
+    }
+
+    public NguoiDung getUserByEmail(String email) {
+        return nguoiDungRepository.findByEmail(email).orElse(null);
     }
 }

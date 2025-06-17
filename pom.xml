@@ -41,6 +41,11 @@
 <!--			<artifactId>spring-boot-starter-oauth2-client</artifactId>-->
 <!--		</dependency>-->
 		<dependency>
+			<groupId>jakarta.annotation</groupId>
+			<artifactId>jakarta.annotation-api</artifactId>
+			<version>2.1.1</version>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
@@ -133,7 +138,7 @@
 			</exclusions>
 		</dependency>
 
-		<!-- ✅ OpenCV with Face module from Bytedeco -->
+		<!-- OpenCV with Face module from Bytedeco -->
 		<dependency>
 			<groupId>org.bytedeco</groupId>
 			<artifactId>opencv-platform</artifactId>
