@@ -80,7 +80,6 @@
               <th>Tên Sản Phẩm</th>
               <th>Số Lượng Tồn</th>
               <th>Giá (VNĐ)</th>
-              <th>Mã QR</th>
               <th>Hành Động</th>
             </tr>
             </thead>
@@ -91,12 +90,6 @@
               <td th:text="${product.tenSanPham}"></td>
               <td th:text="${product.totalStockQuantity}" id="stock-${product.id}"></td>
               <td th:text="${product.minPriceFormatted} + ' - ' + ${product.maxPriceFormatted}"></td>
-              <td>
-                <!-- Thêm mã QR cho từng biến thể -->
-                <div th:each="variant : ${product.chiTietSanPhams}">
-                  <img th:src="@{/generate-qr(data='productDetailId:' + ${variant.id})}" alt="QR Code" style="max-width: 50px; max-height: 50px;">
-                </div>
-              </td>
               <td>
                 <button class="btn btn-primary btn-sm" th:attr="data-product-id=${product.id}" onclick="showProductVariants(this)">Chọn</button>
               </td>
