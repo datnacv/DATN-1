@@ -68,6 +68,21 @@
             width: 100px;
             height: 100px;
         }
+        #quickAddImagePreviewContainer {
+            max-width: 100%;
+            margin-top: 10px;
+        }
+
+        #quickAddImagePreview {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            border: 1px solid #ced4da;
+            display: block;
+            /* Ẩn tooltip nếu trình duyệt hiển thị */
+            pointer-events: none;
+        }
         .image-preview img {
             width: 100%;
             height: 100%;
@@ -386,19 +401,15 @@
                                     <i class="fas fa-image"></i> Chọn ảnh
                                 </button>
                                 <input type="hidden" id="quickAddUrlHinhAnh" name="urlHinhAnh">
-                                <span id="quickAddImageNameDisplay" class="ms-2 text-muted">Chưa chọn ảnh</span>
+                                <span id="quickAddImageNameDisplay" class="ms-2 text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
                             </div>
                             <div class="mt-2" id="quickAddImagePreviewContainer">
-                                <img class="product-image" alt="Image Preview" id="quickAddImagePreview" style="display: none;">
+                                <img class="product-image" alt="" id="quickAddImagePreview">
                                 <small class="d-block mt-1">Ảnh hiện tại</small>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="quickAddTrangThai" class="form-label">Trạng thái</label>
-                            <div class="form-check form-switch d-flex align-items-center">
-                                <input class="form-check-input" type="checkbox" id="quickAddTrangThai" name="trangThai">
-                                <label class="form-check-label ms-3" id="quickAddTrangThaiLabel" for="quickAddTrangThai">Ngừng Bán</label>
-                            </div>
+                            <input type="hidden" name="trangThai" value="true">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -467,6 +478,7 @@
                     $('#quickAddUrlHinhAnh').val(result.info.secure_url);
                     $('#quickAddImagePreview').attr('src', result.info.secure_url).show();
                     $('#quickAddImageNameDisplay').text(result.info.original_filename);
+                    console.log('Ảnh đã được tải: ', result.info.secure_url); // Log để kiểm tra
                 } else if (error) {
                     console.error('Cloudinary upload error:', error);
                     alert('Lỗi khi tải ảnh lên Cloudinary. Vui lòng thử lại.');
@@ -504,14 +516,6 @@
             });
         });
 
-        // Update status label for Quick Add Product
-        const quickAddTrangThaiInput = $('#quickAddTrangThai');
-        const quickAddTrangThaiLabel = $('#quickAddTrangThaiLabel');
-        function updateQuickAddTrangThaiLabel() {
-            quickAddTrangThaiLabel.text(quickAddTrangThaiInput.prop('checked') ? 'Đang Bán' : 'Ngừng Bán');
-        }
-        quickAddTrangThaiInput.on('change', updateQuickAddTrangThaiLabel);
-        updateQuickAddTrangThaiLabel(); // Initialize label
     });
 
     function generateVariations() {
