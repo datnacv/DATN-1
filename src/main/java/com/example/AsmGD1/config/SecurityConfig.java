@@ -1,167 +1,162 @@
 package com.example.AsmGD1.config;
 
-import jakarta.servlet.http.HttpServletRequest;
+import com.example.AsmGD1.service.NguoiDung.CustomUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
-
-import java.io.IOException;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.AccessDeniedHandlerImpl;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
+
+    @Bean
+    public AccessDeniedHandler accessDeniedHandlerEmployees() {
+        AccessDeniedHandlerImpl handler = new AccessDeniedHandlerImpl();
+        handler.setErrorPage("/acvstore/employees/login?error=accessDenied");
+        return handler;
+    }
+
+    @Bean
+    public AccessDeniedHandler accessDeniedHandlerCustomers() {
+        AccessDeniedHandlerImpl handler = new AccessDeniedHandlerImpl();
+        handler.setErrorPage("/acvstore/customers/login?error=accessDenied");
+        return handler;
+    }
+
+    @Bean
+    public AuthenticationEntryPoint employeeAuthEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_FOUND);
+            response.sendRedirect("/acvstore/employees/login");
+        };
+    }
+
+    @Bean
+    public AuthenticationEntryPoint customerAuthEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_FOUND);
+            response.sendRedirect("/acvstore/customers/login");
+        };
+    }
+
+    @Bean
+    public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/acvstore/employees/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/acvstore/employees/login").permitAll()
+                        .requestMatchers("/acvstore/employees/admin-dashboard").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/employees/employee-dashboard").hasRole("EMPLOYEE")
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/acvstore/employees/login")
+                        .loginProcessingUrl("/acvstore/employees/login")
+                        .defaultSuccessUrl("/acvstore/employees/redirect", true)
+                        .failureUrl("/acvstore/employees/login?error=invalidCredentials")
+                        .usernameParameter("tenDangNhap")
+                        .passwordParameter("matKhau")
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/acvstore/employees/logout")
+                        .logoutSuccessUrl("/acvstore/employees/login?logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(employeeAuthEntryPoint())
+                        .accessDeniedHandler(accessDeniedHandlerEmployees())
+                )
+                .sessionManagement(session -> session
+                        .sessionConcurrency(concurrency -> concurrency
+                                .maximumSessions(1)
+                                .expiredUrl("/acvstore/employees/login?expired")
+                        )
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .invalidSessionUrl("/acvstore/employees/login?invalid")
+                )
+                .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+    @Bean
+    public SecurityFilterChain customerSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/acvstore/customers/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/acvstore/customers/login").permitAll()
+                        .requestMatchers("/acvstore/customers/dashboard").hasRole("CUSTOMER")
+                        .anyRequest().authenticated()
+                )
+                .formLogin(form -> form
+                        .loginPage("/acvstore/customers/login")
+                        .loginProcessingUrl("/acvstore/customers/login")
+                        .defaultSuccessUrl("/acvstore/customers/dashboard", true)
+                        .failureUrl("/acvstore/customers/login?error=invalidCredentials")
+                        .usernameParameter("tenDangNhap")
+                        .passwordParameter("matKhau")
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/acvstore/customers/logout")
+                        .logoutSuccessUrl("/acvstore/customers/login?logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customerAuthEntryPoint())
+                        .accessDeniedHandler(accessDeniedHandlerCustomers())
+                )
+                .sessionManagement(session -> session
+                        .sessionConcurrency(concurrency -> concurrency
+                                .maximumSessions(1)
+                                .expiredUrl("/acvstore/customers/login?expired")
+                        )
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .invalidSessionUrl("/acvstore/customers/login?invalid")
+                )
+                .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(CustomUserDetailsService userDetailsService) {
+        DaoAuthenticationProvider auth = new DaoAuthenticationProvider();
+        auth.setUserDetailsService(userDetailsService);
+        auth.setPasswordEncoder(passwordEncoder());
+        return auth;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // Không mã hóa mật khẩu
-    }
-
-    @Bean
-    @Order(1)
-    public SecurityFilterChain customerSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/acvstore/WebKhachHang/**")
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/WebKhachHang/index", "/acvstore/login", "/acvstore/register", "/acvstore/oauth2/register").permitAll()
-                        .requestMatchers("/acvstore/WebKhachHang/**").hasAuthority("customer")
-                        .anyRequest().authenticated()
-                )
-                .formLogin(login -> login
-                        .loginPage("/acvstore/login")
-                        .loginProcessingUrl("/acvstore/login")
-                        .successHandler(customSuccessHandler())
-                        .failureUrl("/acvstore/login?error=invalid_credentials")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/acvstore/logout")
-                        .logoutSuccessUrl("/acvstore/login?logout=true")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .permitAll()
-                )
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendRedirect("/acvstore/access-denied?loginPage=/acvstore/login");
-                        })
-                )
-                .sessionManagement(session -> session
-                        .sessionFixation().migrateSession()
-                        .maximumSessions(1)
-                        .expiredUrl("/acvstore/login?expired=true"));
-
-        return http.build();
-    }
-
-    @Bean
-    @Order(2)
-    public SecurityFilterChain adminEmployeeSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/acvstore/admin/**", "/acvstore/WebNhanVien/**")
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login").permitAll()
-                        .requestMatchers("/acvstore/admin/**").hasAuthority("admin")
-                        .requestMatchers("/acvstore/WebNhanVien/**").hasAuthority("employee")
-                        .anyRequest().authenticated()
-                )
-                .formLogin(login -> login
-                        .loginPage("/acvstore/login")
-                        .loginProcessingUrl("/acvstore/login")
-                        .successHandler(customSuccessHandler())
-                        .failureUrl("/acvstore/login?error=invalid_credentials")
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/acvstore/logout")
-                        .logoutSuccessUrl("/acvstore/login?logout=true")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .permitAll()
-                )
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendRedirect("/acvstore/access-denied?loginPage=/acvstore/login");
-                        })
-                )
-                .sessionManagement(session -> session
-                        .sessionFixation().migrateSession()
-                        .maximumSessions(1)
-                        .expiredUrl("/acvstore/login?expired=true"));
-
-        return http.build();
-    }
-
-    @Bean
-    @Order(3)
-    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/register", "/acvstore/oauth2/register", "/static/**", "/css/**", "/js/**", "/images/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .formLogin(login -> login
-                        .loginPage("/acvstore/login")
-                        .loginProcessingUrl("/acvstore/login")
-                        .successHandler(customSuccessHandler())
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/acvstore/logout")
-                        .logoutSuccessUrl("/acvstore/login?logout=true")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
-                        .permitAll()
-                )
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            response.sendRedirect("/acvstore/access-denied?loginPage=/acvstore/login");
-                        })
-                )
-                .sessionManagement(session -> session
-                        .sessionFixation().migrateSession()
-                        .maximumSessions(1)
-                        .expiredUrl("/acvstore/login?expired=true"));
-
-        return http.build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler customSuccessHandler() {
-        return new AuthenticationSuccessHandler() {
-            @Override
-            public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                                Authentication authentication) throws IOException {
-                boolean hasRole = false;
-                if (authentication.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("customer"))) {
-                    response.sendRedirect("/acvstore/WebKhachHang/index");
-                    hasRole = true;
-                }
-                if (authentication.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("admin"))) {
-                    response.sendRedirect("/acvstore/admin/dashboard");
-                    hasRole = true;
-                }
-                if (authentication.getAuthorities().stream().anyMatch(auth -> auth.getAuthority().equals("employee"))) {
-                    response.sendRedirect("/acvstore/WebNhanVien/dashboard");
-                    hasRole = true;
-                }
-                if (!hasRole) {
-                    SecurityContextHolder.clearContext();
-                    response.sendRedirect("/acvstore/login?error=invalid_role");
-                }
-            }
-        };
+        return NoOpPasswordEncoder.getInstance(); // CẢNH BÁO: Không an toàn cho production, nên dùng BCryptPasswordEncoder
     }
 }

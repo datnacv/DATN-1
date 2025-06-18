@@ -43,7 +43,7 @@ public class EmployeeController {
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Thêm nhân viên thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "error");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/employees";
     }
@@ -60,7 +60,7 @@ public class EmployeeController {
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Sửa nhân viên thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "error");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/employees";
     }
@@ -73,8 +73,27 @@ public class EmployeeController {
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Xóa nhân viên thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "error");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/employees";
+    }
+
+    @GetMapping("/admin-dashboard")
+    public String showAdminDashboard(Model model) {
+        model.addAttribute("message", "Chào mừng Admin đến với dashboard!");
+        model.addAttribute("messageType", "success");
+        return "WebQuanly/admin-dashboard";
+    }
+
+    @GetMapping("/employee-dashboard")
+    public String showEmployeeDashboard(Model model) {
+        model.addAttribute("message", "Chào mừng Nhân viên đến với dashboard!");
+        model.addAttribute("messageType", "success");
+        return "WebQuanly/employee-dashboard";
+    }
+
+    @GetMapping("/login")
+    public String showLoginForm() {
+        return "WebQuanly/employee-login"; // Spring Security sẽ xử lý form login
     }
 }

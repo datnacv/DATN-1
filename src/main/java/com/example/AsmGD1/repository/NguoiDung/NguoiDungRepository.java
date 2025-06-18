@@ -15,6 +15,10 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = :vaiTro AND (u.hoTen LIKE %:keyword% OR u.email LIKE %:keyword% OR u.soDienThoai LIKE %:keyword%)")
     Page<NguoiDung> findByVaiTroAndKeyword(String vaiTro, String keyword, Pageable pageable);
 
+    // Thêm phương thức này
+    Optional<NguoiDung> findByTenDangNhap(String tenDangNhap);
+
+    // Các phương thức khác giữ nguyên
     List<NguoiDung> findByVaiTro(String vaiTro);
 
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = 'CUSTOMER' AND u.trangThai = true AND (" +
@@ -32,9 +36,4 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     Page<NguoiDung> findByVaiTroAndTrangThaiTrue(String vaiTro, Pageable pageable);
 
     Page<NguoiDung> findByHoTenContainingIgnoreCaseAndVaiTroAndTrangThaiTrue(String hoTen, String vaiTro, Pageable pageable);
-
-    @Query("SELECT u FROM NguoiDung u WHERE u.tenDangNhap = :tenDangNhap AND u.trangThai = true")
-    Optional<NguoiDung> findByTenDangNhap(@Param("tenDangNhap") String tenDangNhap);
-
-    Optional<NguoiDung> findByEmail(String email);
 }
