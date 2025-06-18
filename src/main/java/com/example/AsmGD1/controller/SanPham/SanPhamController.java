@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.SanPham;
 
+import com.example.AsmGD1.dto.SanPhamDto;
 import com.example.AsmGD1.entity.DanhMuc;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
@@ -73,35 +74,67 @@ public class SanPhamController {
 
     @PostMapping("/save")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveSanPham(@ModelAttribute SanPham sanPham, @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId) {
+    public ResponseEntity<Map<String, Object>> saveSanPham(@RequestBody Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
         try {
-            SanPham existingSanPham = sanPhamService.findById(sanPham.getId());
+            System.out.println("Received payload: " + payload.toString());
+
+            UUID id = UUID.fromString((String) payload.get("id"));
+            String maSanPham = (String) payload.get("maSanPham");
+            String tenSanPham = (String) payload.get("tenSanPham");
+            String moTa = (String) payload.get("moTa");
+            String urlHinhAnh = (String) payload.get("urlHinhAnh");
+            Boolean trangThai = (Boolean) payload.get("trangThai");
+            UUID danhMucId = payload.get("danhMucId") != null ? UUID.fromString((String) payload.get("danhMucId")) : null;
+
+            SanPham existingSanPham = sanPhamService.findById(id);
             if (existingSanPham == null) {
                 response.put("success", false);
                 response.put("message", "Sản phẩm không tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            existingSanPham.setMaSanPham(sanPham.getMaSanPham());
-            existingSanPham.setTenSanPham(sanPham.getTenSanPham());
-            existingSanPham.setMoTa(sanPham.getMoTa());
-            existingSanPham.setUrlHinhAnh(sanPham.getUrlHinhAnh());
-            existingSanPham.setTrangThai(sanPham.getTrangThai() != null ? sanPham.getTrangThai() : false); // Default to false if null
+            existingSanPham.setMaSanPham(maSanPham);
+            existingSanPham.setTenSanPham(tenSanPham);
+            existingSanPham.setMoTa(moTa);
+            existingSanPham.setUrlHinhAnh(urlHinhAnh);
+            existingSanPham.setTrangThai(trangThai != null ? trangThai : false);
 
             if (danhMucId != null) {
                 DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
                 if (danhMuc != null) {
                     existingSanPham.setDanhMuc(danhMuc);
+                } else {
+                    response.put("success", false);
+                    response.put("message", "Danh mục không tồn tại!");
+                    return ResponseEntity.badRequest().body(response);
                 }
             }
 
             sanPhamService.save(existingSanPham);
+
+            // Tạo DTO để trả về (tránh lỗi recursion)
+            SanPhamDto dto = new SanPhamDto();
+            dto.setId(existingSanPham.getId());
+            dto.setMaSanPham(existingSanPham.getMaSanPham());
+            dto.setTenSanPham(existingSanPham.getTenSanPham());
+            dto.setMoTa(existingSanPham.getMoTa());
+            dto.setUrlHinhAnh(existingSanPham.getUrlHinhAnh());
+            dto.setTrangThai(existingSanPham.getTrangThai());
+            dto.setThoiGianTao(existingSanPham.getThoiGianTao());
+
+            if (existingSanPham.getDanhMuc() != null) {
+                dto.setDanhMucId(existingSanPham.getDanhMuc().getId());
+                dto.setTenDanhMuc(existingSanPham.getDanhMuc().getTenDanhMuc());
+            }
+
             response.put("success", true);
             response.put("message", "Lưu sản phẩm thành công!");
-            response.put("sanPham", existingSanPham);
+            response.put("sanPham", dto);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
+            System.err.println("Exception: " + e.getMessage());
             response.put("success", false);
             response.put("message", "Lỗi khi lưu sản phẩm: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
@@ -132,11 +165,23 @@ public class SanPhamController {
 
     @GetMapping("/get/{id}")
     @ResponseBody
-    public ResponseEntity<SanPham> getSanPham(@PathVariable("id") UUID id) {
-        SanPham sanPham = sanPhamService.findById(id);
-        if (sanPham != null) {
-            return ResponseEntity.ok(sanPham);
+    public ResponseEntity<SanPhamDto> getSanPham(@PathVariable("id") UUID id) {
+        SanPham sp = sanPhamService.findById(id);
+        if (sp == null) return ResponseEntity.notFound().build();
+
+        SanPhamDto dto = new SanPhamDto();
+        dto.setId(sp.getId());
+        dto.setMaSanPham(sp.getMaSanPham());
+        dto.setTenSanPham(sp.getTenSanPham());
+        dto.setMoTa(sp.getMoTa());
+        dto.setUrlHinhAnh(sp.getUrlHinhAnh());
+        dto.setTrangThai(sp.getTrangThai());
+        dto.setThoiGianTao(sp.getThoiGianTao());
+        if (sp.getDanhMuc() != null) {
+            dto.setDanhMucId(sp.getDanhMuc().getId());
+            dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());
         }
-        return ResponseEntity.notFound().build();
+
+        return ResponseEntity.ok(dto);
     }
 }
