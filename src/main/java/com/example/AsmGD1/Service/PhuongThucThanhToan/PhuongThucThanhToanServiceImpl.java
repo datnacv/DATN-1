@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class PhuongThucThanhToanServiceImpl implements PhuongThucThanhToanService {
@@ -15,5 +17,10 @@ public class PhuongThucThanhToanServiceImpl implements PhuongThucThanhToanServic
     @Override
     public List<PhuongThucThanhToan> findAll() {
         return phuongThucThanhToanRepository.findAll();
+    }
+
+    @Override
+    public Optional<PhuongThucThanhToan> findById(UUID id) {
+        return phuongThucThanhToanRepository.findById(id);
     }
 }

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Data
 public class DonHangTamDTO {
     private UUID id;
+    private String maDonHangTam;
     private String tenKhachHang;
     private BigDecimal tong;
     private LocalDateTime thoiGianTao;

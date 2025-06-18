@@ -153,6 +153,12 @@ public class BanHangController {
         }
     }
 
+    @GetMapping("/vouchers")
+    @ResponseBody
+    public List<PhieuGiamGia> getVouchers() {
+        return phieuGiamGiaService.layTatCa(); // Trả về tất cả phiếu giảm giá
+    }
+
     @GetMapping("/product-detail/{productDetailId}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layIdSanPhamTuChiTiet(@PathVariable String productDetailId) {
@@ -404,15 +410,13 @@ public class BanHangController {
             List<DonHangTamDTO> dtos = heldOrders.stream().map(order -> {
                 DonHangTamDTO dto = new DonHangTamDTO();
                 dto.setId(order.getId());
-
-                // Lấy tên khách hàng
+                dto.setMaDonHangTam(order.getMaDonHangTam()); // Đảm bảo ánh xạ trường này
                 if (order.getKhachHang() != null) {
                     NguoiDung nguoiDung = nguoiDungService.findById(order.getKhachHang());
                     dto.setTenKhachHang(nguoiDung != null ? nguoiDung.getHoTen() : "Không rõ");
                 } else {
                     dto.setTenKhachHang("Không rõ");
                 }
-
                 dto.setTong(order.getTong() != null ? order.getTong() : BigDecimal.ZERO);
                 dto.setThoiGianTao(order.getThoiGianTao());
                 dto.setPhuongThucThanhToan(order.getPhuongThucThanhToan() != null ? order.getPhuongThucThanhToan() : "Chưa chọn");
@@ -420,11 +424,13 @@ public class BanHangController {
                 dto.setPhiVanChuyen(order.getPhiVanChuyen() != null ? order.getPhiVanChuyen() : BigDecimal.ZERO);
                 dto.setIdPhieuGiamGia(order.getPhieuGiamGia());
 
-                // Lưu JSON thô
-                dto.setDanhSachItem(order.getDanhSachSanPham()); // Sửa để dùng getDanhSachItem()
-
-                // Parse JSON thành danhSachSanPham
-                dto.parseDanhSachSanPham(objectMapper);
+                if (order.getDanhSachSanPham() != null) {
+                    try {
+                        dto.setDanhSachSanPham(objectMapper.readValue(order.getDanhSachSanPham(), new TypeReference<List<GioHangItemDTO>>(){}));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
 
                 return dto;
             }).collect(Collectors.toList());
