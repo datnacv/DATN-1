@@ -86,7 +86,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" onclick="restoreOrder()">Khôi Phục</button>
+                <button onclick="khoiPhucDonHang('[[${donHang.id}]]')">Khôi phục</button>
                 <button type="button" class="btn btn-danger" onclick="deleteOrder()">Xóa</button>
             </div>
         </div>
@@ -205,6 +205,7 @@
     }
 
     // Hàm khôi phục đơn hàng
+    // Hàm khôi phục đơn hàng
     function restoreOrder(orderId = currentOrderId) {
         if (confirm('Bạn có chắc muốn khôi phục đơn hàng này?')) {
             fetch('/acvstore/banhang/restore-order', {
@@ -212,49 +213,64 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `orderId=${orderId}`
             })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Dữ liệu khôi phục:', data);
-                    if (data && data.danhSachSanPham) {
-                        cart = data.danhSachSanPham.map(item => ({
-                            productDetailId: item.idChiTietSanPham,
-                            quantity: item.soLuong,
-                            price: parseFloat(item.gia) || 0,
-                            total: parseFloat(item.thanhTien) || 0,
-                            tenSanPham: item.tenSanPham || 'Không rõ',
-                            mauSac: item.mauSac || 'Không rõ',
-                            kichCo: item.kichCo || 'Không rõ'
-                        }));
-                        // Kiểm tra null trước khi gán
-                        const customerSelect = document.getElementById('customerSelect');
-                        if (customerSelect) customerSelect.value = data.soDienThoaiKhachHang || '0999999999';
-
-                        const shippingFee = document.getElementById('shippingFee');
-                        if (shippingFee) shippingFee.value = data.phiVanChuyen ? parseFloat(data.phiVanChuyen) : 0;
-
-                        const voucherSelect = document.getElementById('voucherSelect');
-                        if (voucherSelect) voucherSelect.value = data.idPhieuGiamGia || '';
-
-                        const paymentMethod = document.getElementById('paymentMethod');
-                        if (paymentMethod) paymentMethod.value = data.phuongThucThanhToan || '';
-
-                        const deliveryMethod = document.getElementById('deliveryMethod');
-                        if (deliveryMethod) deliveryMethod.value = data.phuongThucBanHang || 'Tại quầy';
-
-                        handleCustomerSelection();
-                        togglePaymentFields();
-                        fetchCartData().then(() => {
-                            showToast('Đơn hàng đã được khôi phục thành công!');
-                            $('#orderDetailModal').modal('hide');
-                            window.location.href = '/acvstore/banhang';
+                .then(response => {
+                    if (!response.ok) {
+                        // Nếu server trả về lỗi (ví dụ 500), chúng ta sẽ bắt ở đây
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.error || 'Lỗi từ server.');
                         });
-                    } else {
-                        showToast('Lỗi: Dữ liệu khôi phục không hợp lệ!');
                     }
+                    return response.json(); // Server của bạn luôn trả về JSON khi thành công 200 OK
+                })
+                .then(data => {
+                    console.log('Dữ liệu khôi phục thành công từ server:', data);
+                    // Các dòng code dưới đây là nguyên nhân gây lỗi vì các hàm và biến chỉ có trên trang ban-hang.html
+                    // XÓA BỎ HOẶC COMMENT CÁC DÒNG NÀY:
+                    /*
+                    cart = data.danhSachSanPham.map(item => ({
+                        productDetailId: item.idChiTietSanPham,
+                        quantity: item.soLuong,
+                        price: parseFloat(item.gia) || 0,
+                        total: parseFloat(item.thanhTien) || 0,
+                        tenSanPham: item.tenSanPham || 'Không rõ',
+                        mauSac: item.mauSac || 'Không rõ',
+                        kichCo: item.kichCo || 'Không rõ'
+                    }));
+                    const customerSelect = document.getElementById('customerSelect');
+                    if (customerSelect) customerSelect.value = data.soDienThoaiKhachHang || '0999999999';
+
+                    const shippingFee = document.getElementById('shippingFee');
+                    if (shippingFee) shippingFee.value = data.phiVanChuyen ? parseFloat(data.phiVanChuyen) : 0;
+
+                    const voucherSelect = document.getElementById('voucherSelect');
+                    if (voucherSelect) voucherSelect.value = data.idPhieuGiamGia || '';
+
+                    const paymentMethod = document.getElementById('paymentMethod');
+                    if (paymentMethod) paymentMethod.value = data.phuongThucThanhToan || '';
+
+                    const deliveryMethod = document.getElementById('deliveryMethod');
+                    if (deliveryMethod) deliveryMethod.value = data.phuongThucBanHang || 'Tại quầy';
+
+                    handleCustomerSelection(); // Không tồn tại trên trang này
+                    togglePaymentFields(); // Không tồn tại trên trang này
+                    fetchCartData().then(() => { // Không tồn tại trên trang này
+                        showToast('Đơn hàng đã được khôi phục thành công!');
+                        $('#orderDetailModal').modal('hide');
+                        window.location.href = '/acvstore/banhang';
+                    });
+                    */
+
+                    // Thay thế bằng logic đơn giản: hiển thị toast và chuyển hướng
+                    showToast('Đơn hàng đã được khôi phục thành công!');
+                    $('#orderDetailModal').modal('hide');
+                    // Chuyển hướng người dùng về trang bán hàng chính
+                    window.location.href = '/acvstore/banhang';
+
                 })
                 .catch(error => {
                     console.error('Lỗi khi khôi phục đơn hàng:', error);
-                    showToast('Lỗi khi khôi phục đơn hàng!');
+                    // Hiển thị thông báo lỗi chi tiết hơn nếu có
+                    showToast('Lỗi khi khôi phục đơn hàng: ' + error.message);
                 });
         }
     }
