@@ -31,20 +31,6 @@ public class CustomerController {
         return "WebQuanly/list-khach-hang";
     }
 
-    @GetMapping("/index")
-    public String customerIndex(@RequestParam(defaultValue = "0") int page,
-                                @RequestParam(defaultValue = "") String keyword,
-                                Model model) {
-        // Gửi danh sách khách hàng làm trang chính cho vai trò customer
-        Page<NguoiDung> customers = nguoiDungService.findUsersByVaiTro("customer", keyword, page, 5);
-        model.addAttribute("customers", customers.getContent());
-        model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", customers.getTotalPages());
-        model.addAttribute("keyword", keyword);
-        model.addAttribute("customer", new NguoiDung());
-        return "WebQuanly/list-khach-hang"; // Sử dụng cùng template với danh sách khách hàng
-    }
-
     @PostMapping("/add")
     public String addCustomer(@ModelAttribute("customer") NguoiDung customer, RedirectAttributes redirectAttributes) {
         try {
@@ -54,7 +40,7 @@ public class CustomerController {
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "error");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/customers";
     }
@@ -67,8 +53,8 @@ public class CustomerController {
             redirectAttributes.addFlashAttribute("message", "Sửa khách hàng thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "Sửa khách hàng thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "error");
+            redirectAttributes.addFlashAttribute("message", "Sửa thất bại: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/customers";
     }
@@ -80,9 +66,21 @@ public class CustomerController {
             redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "error");
+            redirectAttributes.addFlashAttribute("message", "Xóa thất bại: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/customers";
+    }
+
+    @GetMapping("/dashboard")
+    public String showDashboard(Model model) {
+        model.addAttribute("message", "Chào mừng đến với dashboard!");
+        model.addAttribute("messageType", "success");
+        return "WebQuanly/customer-dashboard";
+    }
+
+    @GetMapping("/login")
+    public String showLoginForm() {
+        return "WebQuanly/customer-login"; // Spring Security xử lý form login
     }
 }
