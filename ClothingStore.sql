@@ -494,3 +494,7 @@ CREATE TABLE thong_ke_doanh_thu_chi_tiet (
     FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
     FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
 );
+SELECT id, ho_ten, email FROM nguoi_dung WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
+UPDATE nguoi_dung
+SET email = 'namhaihoang3103@gmail.com'
+WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
