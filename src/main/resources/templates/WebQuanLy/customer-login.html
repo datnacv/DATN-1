@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng nhập khách hàng</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #4facfe, #00f2fe); /* Màu nền mới */
+            font-family: 'Inter', sans-serif; /* Font chữ hiện đại hơn */
+            min-height: 100vh; /* Đảm bảo chiều cao tối thiểu để căn giữa */
+            display: flex;
+            align-items: center; /* Căn giữa theo chiều dọc */
+            justify-content: center; /* Căn giữa theo chiều ngang */
+            margin: 0;
+        }
+        .login-box {
+            max-width: 480px; /* Tăng chiều rộng tối đa một chút */
+            width: 90%; /* Đảm bảo responsive tốt hơn trên màn hình nhỏ */
+            padding: 45px; /* Tăng padding */
+            background: white;
+            border-radius: 15px; /* Bo tròn góc hơn */
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18); /* Đổ bóng mạnh và mềm hơn */
+            animation: fadeIn 0.8s ease-out; /* Hiệu ứng fade-in khi tải trang */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-title {
+            font-size: 30px; /* Tăng kích thước tiêu đề */
+            font-weight: 700; /* Đậm hơn */
+            margin-bottom: 30px;
+            text-align: center;
+            color: #2c3e50; /* Màu tối hơn cho tiêu đề */
+        }
+        .form-label {
+            font-weight: 500; /* Chữ label đậm hơn */
+            color: #555;
+            margin-bottom: 8px; /* Khoảng cách dưới label */
+        }
+        .form-control {
+            border-radius: 10px; /* Bo tròn góc input */
+            padding: 12px 18px; /* Tăng padding input */
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt mà */
+        }
+        .form-control:focus {
+            border-color: #4facfe; /* Màu viền khi focus */
+            box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25); /* Đổ bóng khi focus */
+        }
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(to right, #4facfe, #00f2fe); /* Gradient cho nút */
+            border: none;
+            color: white;
+            padding: 14px 0; /* Tăng padding nút */
+            border-radius: 10px; /* Bo tròn góc nút */
+            font-size: 19px; /* Kích thước chữ nút lớn hơn */
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt mà */
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); /* Đổ bóng cho nút */
+        }
+        .btn-login:hover {
+            transform: translateY(-3px); /* Nâng nút lên một chút khi hover */
+            box-shadow: 0 8px 20px rgba(0, 242, 254, 0.4); /* Đổ bóng mạnh hơn khi hover */
+            background: linear-gradient(to right, #00f2fe, #4facfe); /* Đổi hướng gradient khi hover */
+        }
+        .alert {
+            margin-top: 25px;
+            border-radius: 8px;
+            font-size: 15px;
+            text-align: center;
+        }
+        .alert-danger {
+            background-color: #fcebeb;
+            color: #e53e3e;
+            border-color: #e53e3e;
+        }
+        .alert-success {
+            background-color: #e9f7ef;
+            color: #38a169;
+            border-color: #38a169;
+        }
+        .text-center-links {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+        .text-center-links a {
+            color: #4facfe;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .text-center-links a:hover {
+            color: #00f2fe;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="login-box">
+    <div class="form-title">Chào mừng trở lại</div>
+    <form method="post" action="/acvstore/customers/login">
+        <div class="mb-3">
+            <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
+            <input type="text" class="form-control" id="tenDangNhap" name="tenDangNhap" required>
+        </div>
+        <div class="mb-3">
+            <label for="matKhau" class="form-label">Mật khẩu</label>
+            <input type="password" class="form-control" id="matKhau" name="matKhau" required>
+        </div>
+        <button type="submit" class="btn btn-login">Đăng nhập</button>
+
+        <div class="mt-3">
+            <div th:if="${param.error}" class="alert alert-danger"
+                 th:text="${param.error == 'accessDenied'} ? 'Bạn không có quyền truy cập.' : 'Tên đăng nhập hoặc mật khẩu không đúng.'">
+                Tên đăng nhập hoặc mật khẩu không đúng.
+            </div>
+            <div th:if="${param.logout}" class="alert alert-success">Bạn đã đăng xuất thành công.</div>
+        </div>
+
+        <div class="text-center-links">
+            <a href="#">Quên mật khẩu?</a>
+            <span class="mx-2 text-muted">|</span>
+            <a href="#">Đăng ký ngay</a>
+        </div>
+    </form>
+</div>
+</body>
+</html>

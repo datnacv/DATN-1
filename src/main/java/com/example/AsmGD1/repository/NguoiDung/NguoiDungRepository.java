@@ -16,6 +16,10 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     Page<NguoiDung> findByVaiTroAndKeyword(String vaiTro, String keyword, Pageable pageable);
 
     //nam
+    // Thêm phương thức này
+//    Optional<NguoiDung> findByTenDangNhap(String tenDangNhap);
+
+    // Các phương thức khác giữ nguyên
     List<NguoiDung> findByVaiTro(String vaiTro);
 
     // Tìm kiếm KHÔNG phân trang

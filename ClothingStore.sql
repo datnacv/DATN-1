@@ -410,7 +410,7 @@ INSERT INTO nguoi_dung (
 )
 VALUES
     (NEWID(), N'khachle', N'khachle', N'Khách lẻ', 'khachle@example.com', '0999999999', N'khách lẻ', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer6', N'123456', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+    (NEWID(), N'customer6', N'123456', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
 
     (NEWID(), N'customer2', N'123456', N'Nguyễn Thị A', 'customer2@example.com', '0911111111', N'123 ABC, Hà Nội', 'customer', '1990-01-01', 0, N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'Số 1, Phố A', GETDATE(), NULL, NULL, 1),
     (NEWID(), N'customer3', N'123456', N'Lê Văn B', 'customer3@example.com', '0922222222', N'456 XYZ, TP.HCM', 'customer', '1992-02-02', 1, N'TP.HCM', N'Quận 5', N'Phường 5', N'Số 2, Phố B', GETDATE(), NULL, NULL, 1),
@@ -430,7 +430,7 @@ select * from don_hang
 select * from nguoi_dung
 
 -- INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai, da_gui_mail)
--- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646', 
+-- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646',
 --         (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999'), 1, 0);
 
 SELECT id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai
@@ -478,23 +478,28 @@ select * from don_hang_tam
 select * from san_pham
 
 CREATE TABLE thong_ke_doanh_thu_chi_tiet (
-    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-    ngay_thanh_toan DATE NOT NULL,
-    id_hoa_don UNIQUEIDENTIFIER NOT NULL,
-    id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
-    id_san_pham UNIQUEIDENTIFIER NOT NULL,
-    ten_san_pham NVARCHAR(100) NOT NULL,
-    kich_co NVARCHAR(50) NOT NULL,
-    mau_sac NVARCHAR(50) NOT NULL,
-    so_luong_da_ban INT NOT NULL DEFAULT 0,
-    doanh_thu NUMERIC(38,2) NOT NULL DEFAULT 0.00,
-    so_luong_ton_kho INT NOT NULL DEFAULT 0,
-    image_url NVARCHAR(MAX),
-    FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id),
-    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
-    FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
+                                             id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                             ngay_thanh_toan DATE NOT NULL,
+                                             id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+                                             id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                             id_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                             ten_san_pham NVARCHAR(100) NOT NULL,
+                                             kich_co NVARCHAR(50) NOT NULL,
+                                             mau_sac NVARCHAR(50) NOT NULL,
+                                             so_luong_da_ban INT NOT NULL DEFAULT 0,
+                                             doanh_thu NUMERIC(38,2) NOT NULL DEFAULT 0.00,
+                                             so_luong_ton_kho INT NOT NULL DEFAULT 0,
+                                             image_url NVARCHAR(MAX),
+                                             FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id),
+                                             FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
+                                             FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
 );
 SELECT id, ho_ten, email FROM nguoi_dung WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
+select * from nguoi_dung
 UPDATE nguoi_dung
 SET email = 'namhaihoang3103@gmail.com'
 WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
+
+UPDATE nguoi_dung
+SET vai_tro = UPPER(vai_tro)
+WHERE vai_tro IN ('admin', 'employee', 'customer');
