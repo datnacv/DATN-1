@@ -55,6 +55,16 @@ public class SecurityConfig {
         };
     }
 
+    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
+    @Bean
+    public AuthenticationEntryPoint defaultAuthEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_FOUND);
+            // Chuyển hướng đến trang login mặc định, ví dụ trang customer login
+            response.sendRedirect("/acvstore/customers/login");
+        };
+    }
+
     @Bean
     public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -128,6 +138,47 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(customerAuthEntryPoint())
                         .accessDeniedHandler(accessDeniedHandlerCustomers())
+                )
+                .sessionManagement(session -> session
+                        .sessionConcurrency(concurrency -> concurrency
+                                .maximumSessions(1)
+                                .expiredUrl("/acvstore/customers/login?expired")
+                        )
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .invalidSessionUrl("/acvstore/customers/login?invalid")
+                )
+                .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
+    @Bean
+    public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/acvstore/employees/login", "/acvstore/customers/login").permitAll()
+                        .anyRequest().authenticated() // Yêu cầu xác thực cho tất cả các request khác
+                )
+                .formLogin(form -> form
+                        .loginPage("/acvstore/customers/login") // Trang login mặc định
+                        .loginProcessingUrl("/acvstore/customers/login")
+                        .defaultSuccessUrl("/acvstore/customers/dashboard", true)
+                        .failureUrl("/acvstore/customers/login?error=invalidCredentials")
+                        .usernameParameter("tenDangNhap")
+                        .passwordParameter("matKhau")
+                        .permitAll()
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/acvstore/customers/logout")
+                        .logoutSuccessUrl("/acvstore/customers/login?logout")
+                        .invalidateHttpSession(true)
+                        .clearAuthentication(true)
+                        .deleteCookies("JSESSIONID")
+                        .permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(defaultAuthEntryPoint())
                 )
                 .sessionManagement(session -> session
                         .sessionConcurrency(concurrency -> concurrency
