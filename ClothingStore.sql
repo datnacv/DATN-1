@@ -476,3 +476,25 @@ select * from nguoi_dung
 SELECT * FROM san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440020';
 select * from don_hang_tam
 select * from san_pham
+
+CREATE TABLE thong_ke_doanh_thu_chi_tiet (
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    ngay_thanh_toan DATE NOT NULL,
+    id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+    id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+    id_san_pham UNIQUEIDENTIFIER NOT NULL,
+    ten_san_pham NVARCHAR(100) NOT NULL,
+    kich_co NVARCHAR(50) NOT NULL,
+    mau_sac NVARCHAR(50) NOT NULL,
+    so_luong_da_ban INT NOT NULL DEFAULT 0,
+    doanh_thu NUMERIC(38,2) NOT NULL DEFAULT 0.00,
+    so_luong_ton_kho INT NOT NULL DEFAULT 0,
+    image_url NVARCHAR(MAX),
+    FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id),
+    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
+    FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
+);
+SELECT id, ho_ten, email FROM nguoi_dung WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
+UPDATE nguoi_dung
+SET email = 'namhaihoang3103@gmail.com'
+WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
