@@ -28,7 +28,7 @@ public class CustomerController {
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
-        return "WebQuanly/list-khach-hang";
+        return "WebQuanLy/list-khach-hang";
     }
 
     @GetMapping("/index")
@@ -42,7 +42,7 @@ public class CustomerController {
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
-        return "WebQuanly/list-khach-hang"; // Sử dụng cùng template với danh sách khách hàng
+        return "WebQuanLy/list-khach-hang"; // Sử dụng cùng template với danh sách khách hàng
     }
 
     @PostMapping("/add")

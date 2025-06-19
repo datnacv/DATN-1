@@ -28,7 +28,7 @@ public class EmployeeController {
         model.addAttribute("totalPages", employees.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("employee", new NguoiDung());
-        return "WebQuanly/list-nhan-vien";
+        return "WebQuanLy/list-nhan-vien";
     }
 
     @PostMapping("/add")
