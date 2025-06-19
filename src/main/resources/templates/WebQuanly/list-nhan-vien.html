@@ -6,239 +6,482 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/sidebar.js}" defer></script>
 </head>
+<style>
+    .content {
+        margin-left: 260px;
+        padding: 20px;
+        min-height: 100vh;
+        background: #f8f9fa;
+    }
 
+    .table-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-top: 20px;
+    }
+
+    .table th {
+        background: #f8f9fa;
+        border: none;
+        font-weight: 600;
+        color: #495057;
+        padding: 15px;
+    }
+
+    .table td {
+        padding: 12px 15px;
+        vertical-align: middle;
+    }
+
+    .btn-action {
+        padding: 5px 10px;
+        margin: 0 2px;
+        border-radius: 5px;
+        font-size: 0.875rem;
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .modal-header .btn-close {
+        filter: invert(1);
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+
+    .page-title {
+        color: #495057;
+        margin-bottom: 30px;
+        font-weight: 600;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    }
+
+    .pagination .page-link {
+        color: #667eea;
+        border-color: #dee2e6;
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+    }
+
+    .status-badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .status-active {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .status-inactive {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+</style>
 <body>
 
 <div class="d-flex">
+    <!-- Include sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Nội dung chính bên phải -->
     <div class="content flex-grow-1">
-    <h2>Quản lý nhân viên</h2>
+        <h2 class="page-title">
+            <i class="fa-solid fa-users-gear"></i> Quản lý nhân viên
+        </h2>
 
-    <!-- Hiển thị thông báo -->
-    <div th:if="${message}" class="alert" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
-        <span th:text="${message}"></span>
-        <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-
-    <!-- Search Form -->
-    <form th:action="@{/acvstore/employees}" method="get" class="mb-3">
-        <div class="input-group">
-            <input type="text" name="keyword" class="form-control" th:value="${keyword}" placeholder="Tìm theo tên, email hoặc số điện thoại">
-            <button type="submit" class="btn btn-primary">Tìm kiếm</button>
+        <!-- Hiển thị thông báo -->
+        <div th:if="${message}" class="alert mb-4" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
+            <i class="fa-solid fa-check-circle" th:if="${messageType == 'success'}"></i>
+            <i class="fa-solid fa-exclamation-triangle" th:if="${messageType != 'success'}"></i>
+            <span th:text="${message}"></span>
+            <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    </form>
 
-    <!-- Add Employee Button -->
-    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-        Thêm nhân viên
-    </button>
-
-    <!-- Employee List Table -->
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Họ tên</th>
-            <th>Tên đăng nhập</th>
-            <th>Mật khẩu</th>
-            <th>Email</th>
-            <th>Số điện thoại</th>
-            <th>Vai trò</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="employee, employeeStat : ${employees}">
-            <td th:text="${employeeStat.index + 1}"></td>
-            <td th:text="${employee.hoTen}"></td>
-            <td th:text="${employee.tenDangNhap}"></td>
-            <td th:text="${employee.matKhau}"></td>
-            <td th:text="${employee.email}"></td>
-            <td th:text="${employee.soDienThoai}"></td>
-            <td th:text="${employee.vaiTro == 'employee' ? 'Nhân Viên' : employee.vaiTro}"></td>
-            <td th:text="${employee.trangThai == true ? 'Hoạt động' : 'Ngưng hoạt động'}"></td>
-            <td>
-                <button type="button" class="btn btn-primary btn-sm"
-                        data-bs-toggle="modal"
-                        th:data-bs-target="'#editEmployeeModal' + ${employee.id}">
-                    Sửa
-                </button>
-                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}">Xóa</button>
-            </td>
-        </tr>
-        </tbody>
-    </table>
-
-    <!-- Pagination -->
-    <nav aria-label="Phân trang">
-        <ul class="pagination">
-            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage - 1}, keyword=${keyword})}">Trước</a>
-            </li>
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                th:classappend="${i == currentPage} ? 'active'">
-                <a class="page-link" th:href="@{/acvstore/employees(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
-            </li>
-            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage + 1}, keyword=${keyword})}">Sau</a>
-            </li>
-        </ul>
-    </nav>
-
-    <!-- Add Employee Modal -->
-    <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addEmployeeModalLabel">Thêm nhân viên</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form th:action="@{/acvstore/employees/add}" th:object="${employee}" method="post">
-
-                        <div class="mb-3">
-                            <label for="hoTen" class="form-label">Họ tên</label>
-                            <input type="text" class="form-control" id="hoTen" th:field="*{hoTen}" required>
+        <!-- Form tìm kiếm -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form th:action="@{/acvstore/employees}" method="get">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fa-solid fa-search"></i>
+                                </span>
+                                <input type="text" name="keyword" class="form-control"
+                                       th:value="${keyword}"
+                                       placeholder="Tìm theo tên, email hoặc số điện thoại">
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" th:field="*{email}" required>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fa-solid fa-search"></i> Tìm kiếm
+                            </button>
                         </div>
-                        <div class="mb-3">
-                            <label for="soDienThoai" class="form-label">Số điện thoại</label>
-                            <input type="text" class="form-control" id="soDienThoai" th:field="*{soDienThoai}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
-                            <input type="text" class="form-control" id="tenDangNhap" th:field="*{tenDangNhap}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="matKhau" class="form-label">Mật khẩu</label>
-                            <input type="password" class="form-control" id="matKhau" th:field="*{matKhau}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="ngaySinh" class="form-label">Ngày sinh</label>
-                            <input type="date" class="form-control" id="ngaySinh" th:field="*{ngaySinh}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="gioiTinh" class="form-label">Giới tính</label>
-                            <select class="form-control" id="gioiTinh" th:field="*{gioiTinh}">
-                                <option value="true">Nam</option>
-                                <option value="false">Nữ</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="diaChi" class="form-label">Địa chỉ</label>
-                            <input type="text" class="form-control" id="diaChi" th:field="*{diaChi}">
-                        </div>
-                        <div class="mb-3">
-                            <label for="trangThai" class="form-label">Trạng thái</label>
-                            <select class="form-control" id="trangThai" th:field="*{trangThai}">
-                                <option value="true">Hoạt động</option>
-                                <option value="false">Ngưng hoạt động</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    </form>
-                </div>
+                    </div>
+                </form>
             </div>
         </div>
-    </div>
 
-    <!-- Edit Employee Modal -->
-    <th:block th:each="employee : ${employees}">
-        <div class="modal fade" th:id="'editEmployeeModal' + ${employee.id}" tabindex="-1" th:aria-labelledby="'editEmployeeModalLabel' + ${employee.id}" aria-hidden="true">
-            <div class="modal-dialog">
+        <!-- Nút thêm nhân viên -->
+        <div class="mb-3">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                <i class="fa-solid fa-plus"></i> Thêm nhân viên
+            </button>
+        </div>
+
+        <!-- Bảng danh sách nhân viên -->
+        <div class="table-container">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Họ tên</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Mật khẩu</th>
+                    <th>Email</th>
+                    <th>Số điện thoại</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="employee, employeeStat : ${employees}">
+                    <td th:text="${employeeStat.index + 1}"></td>
+                    <td th:text="${employee.hoTen}"></td>
+                    <td th:text="${employee.tenDangNhap}"></td>
+                    <td th:text="${employee.matKhau}"></td>
+                    <td th:text="${employee.email}"></td>
+                    <td th:text="${employee.soDienThoai}"></td>
+                    <td>
+                        <span class="badge bg-info" th:text="${employee.vaiTro == 'employee' ? 'Nhân Viên' : employee.vaiTro}"></span>
+                    </td>
+                    <td>
+                        <span class="status-badge"
+                              th:classappend="${employee.trangThai == true} ? 'status-active' : 'status-inactive'"
+                              th:text="${employee.trangThai == true ? 'Hoạt động' : 'Ngưng hoạt động'}"></span>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-primary btn-sm btn-action"
+                                data-bs-toggle="modal"
+                                th:data-bs-target="'#editEmployeeModal' + ${employee.id}">
+                            <i class="fa-solid fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm btn-action"
+                                data-bs-toggle="modal"
+                                th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Phân trang -->
+        <nav aria-label="Phân trang" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage - 1}, keyword=${keyword})}">
+                        <i class="fa-solid fa-chevron-left"></i> Trước
+                    </a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:classappend="${i == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/acvstore/employees(page=${i}, keyword=${keyword})}" th:text="${i + 1}"></a>
+                </li>
+                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage + 1}, keyword=${keyword})}">
+                        Sau <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Modal Thêm nhân viên -->
+        <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" th:id="'editEmployeeModalLabel' + ${employee.id}">Sửa nhân viên</h5>
+                        <h5 class="modal-title" id="addEmployeeModalLabel">
+                            <i class="fa-solid fa-user-plus"></i> Thêm nhân viên mới
+                        </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form th:action="@{/acvstore/employees/edit}" method="post">
+                        <form th:action="@{/acvstore/employees/add}" th:object="${employee}" method="post">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="addHoTen" class="form-label">Họ tên <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="addHoTen" th:field="*{hoTen}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="addTenDangNhap" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="addTenDangNhap" th:field="*{tenDangNhap}" required>
+                                        <div th:if="${#fields.hasErrors('tenDangNhap')}" th:errors="*{tenDangNhap}" class="text-danger small"></div>
+                                    </div>
+                                </div>
+                            </div>
 
-                            <input type="hidden" name="id" th:value="${employee.id}">
-                            <div class="mb-3">
-                                <label for="hoTenEdit" class="form-label">Họ tên</label>
-                                <input type="text" class="form-control" id="hoTenEdit" name="hoTen" th:value="${employee.hoTen}" required>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="addEmail" class="form-label">Email <span class="text-danger">*</span></label>
+                                        <input type="email" class="form-control" id="addEmail" th:field="*{email}" required>
+                                        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger small"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="addSoDienThoai" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="addSoDienThoai" th:field="*{soDienThoai}"
+                                               required pattern="[0-9]{10}" title="Số điện thoại phải là 10 chữ số">
+                                        <div th:if="${#fields.hasErrors('soDienThoai')}" th:errors="*{soDienThoai}" class="text-danger small"></div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="emailEdit" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="emailEdit" name="email" th:value="${employee.email}" required>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="addMatKhau" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                        <input type="password" class="form-control" id="addMatKhau" th:field="*{matKhau}"
+                                               required minlength="6">
+                                        <div th:if="${#fields.hasErrors('matKhau')}" th:errors="*{matKhau}" class="text-danger small"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="addNgaySinh" class="form-label">Ngày sinh</label>
+                                        <input type="date" class="form-control" id="addNgaySinh" th:field="*{ngaySinh}">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="soDienThoaiEdit" class="form-label">Số điện thoại</label>
-                                <input type="text" class="form-control" id="soDienThoaiEdit" name="soDienThoai" th:value="${employee.soDienThoai}" required>
+
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="addGioiTinh" class="form-label">Giới tính</label>
+                                        <select class="form-select" id="addGioiTinh" th:field="*{gioiTinh}">
+                                            <option value="true">Nam</option>
+                                            <option value="false">Nữ</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="addTrangThai" class="form-label">Trạng thái</label>
+                                        <select class="form-select" id="addTrangThai" th:field="*{trangThai}">
+                                            <option value="true">Hoạt động</option>
+                                            <option value="false">Ngưng hoạt động</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="addDiaChi" class="form-label">Địa chỉ</label>
+                                        <input type="text" class="form-control" id="addDiaChi" th:field="*{diaChi}">
+                                    </div>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="tenDangNhapEdit" class="form-label">Tên đăng nhập</label>
-                                <input type="text" class="form-control" id="tenDangNhapEdit" name="tenDangNhap" th:value="${employee.tenDangNhap}" required>
+
+                            <div class="text-end">
+                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-times"></i> Hủy
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Lưu
+                                </button>
                             </div>
-                            <div class="mb-3">
-                                <label for="matKhauEdit" class="form-label">Mật khẩu</label>
-                                <input type="password" class="form-control" id="matKhauEdit" name="matKhau" th:value="${employee.matKhau}" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="ngaySinhEdit" class="form-label">Ngày sinh</label>
-                                <input type="date" class="form-control" id="ngaySinhEdit" name="ngaySinh" th:value="${employee.ngaySinh != null ? #temporals.format(employee.ngaySinh, 'yyyy-MM-dd') : ''}">
-                            </div>
-                            <div class="mb-3">
-                                <label for="gioiTinhEdit" class="form-label">Giới tính</label>
-                                <select class="form-control" id="gioiTinhEdit" name="gioiTinh">
-                                    <option value="true" th:selected="${employee.gioiTinh == true}">Nam</option>
-                                    <option value="false" th:selected="${employee.gioiTinh == false}">Nữ</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="diaChiEdit" class="form-label">Địa chỉ</label>
-                                <input type="text" class="form-control" id="diaChiEdit" name="diaChi" th:value="${employee.diaChi}">
-                            </div>
-                            <div class="mb-3">
-                                <label for="trangThaiEdit" class="form-label">Trạng thái</label>
-                                <select class="form-control" id="trangThaiEdit" name="trangThai">
-                                    <option value="true" th:selected="${employee.trangThai == true}">Hoạt động</option>
-                                    <option value="false" th:selected="${employee.trangThai == false}">Ngưng hoạt động</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-primary">Lưu</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
-    </th:block>
 
-    <!-- Delete Employee Modal -->
-    <th:block th:each="employee : ${employees}">
-        <div class="modal fade" th:id="'deleteEmployeeModal' + ${employee.id}" tabindex="-1" th:aria-labelledby="'deleteEmployeeModalLabel' + ${employee.id}" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" th:id="'deleteEmployeeModalLabel' + ${employee.id}">Xóa nhân viên</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Bạn có chắc chắn muốn xóa <span th:text="${employee.hoTen}"></span>?</p>
-                        <form th:action="@{/acvstore/employees/delete/{id}(id=${employee.id})}" method="post">
+        <!-- Modal Sửa nhân viên -->
+        <th:block th:each="employee : ${employees}">
+            <div class="modal fade" th:id="'editEmployeeModal' + ${employee.id}" tabindex="-1"
+                 th:aria-labelledby="'editEmployeeModalLabel' + ${employee.id}" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" th:id="'editEmployeeModalLabel' + ${employee.id}">
+                                <i class="fa-solid fa-user-edit"></i> Sửa thông tin nhân viên
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form th:action="@{/acvstore/employees/edit}" method="post">
+                                <input type="hidden" name="id" th:value="${employee.id}">
 
-                            <button type="submit" class="btn btn-danger">Xóa</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        </form>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Họ tên <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="hoTen"
+                                                   th:value="${employee.hoTen}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="tenDangNhap"
+                                                   th:value="${employee.tenDangNhap}" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control" name="email"
+                                                   th:value="${employee.email}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="soDienThoai"
+                                                   th:value="${employee.soDienThoai}" required pattern="[0-9]{10}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                            <input type="password" class="form-control" name="matKhau"
+                                                   th:value="${employee.matKhau}" required minlength="6">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Ngày sinh</label>
+                                            <input type="date" class="form-control" name="ngaySinh"
+                                                   th:value="${employee.ngaySinh != null ? #temporals.format(employee.ngaySinh, 'yyyy-MM-dd') : ''}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Giới tính</label>
+                                            <select class="form-select" name="gioiTinh">
+                                                <option value="true" th:selected="${employee.gioiTinh == true}">Nam</option>
+                                                <option value="false" th:selected="${employee.gioiTinh == false}">Nữ</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Trạng thái</label>
+                                            <select class="form-select" name="trangThai">
+                                                <option value="true" th:selected="${employee.trangThai == true}">Hoạt động</option>
+                                                <option value="false" th:selected="${employee.trangThai == false}">Ngưng hoạt động</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">Địa chỉ</label>
+                                            <input type="text" class="form-control" name="diaChi"
+                                                   th:value="${employee.diaChi}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                                        <i class="fa-solid fa-times"></i> Hủy
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fa-solid fa-save"></i> Cập nhật
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </th:block>
+        </th:block>
+
+        <!-- Modal Xóa nhân viên -->
+        <th:block th:each="employee : ${employees}">
+            <div class="modal fade" th:id="'deleteEmployeeModal' + ${employee.id}" tabindex="-1"
+                 th:aria-labelledby="'deleteEmployeeModalLabel' + ${employee.id}" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" th:id="'deleteEmployeeModalLabel' + ${employee.id}">
+                                <i class="fa-solid fa-trash"></i> Xác nhận xóa
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="text-center">
+                                <i class="fa-solid fa-exclamation-triangle text-warning" style="font-size: 48px;"></i>
+                                <h5 class="mt-3">Bạn có chắc chắn muốn xóa?</h5>
+                                <p class="text-muted">
+                                    Nhân viên: <strong th:text="${employee.hoTen}"></strong><br>
+                                    Email: <strong th:text="${employee.email}"></strong>
+                                </p>
+                                <p class="text-danger small">
+                                    <i class="fa-solid fa-warning"></i> Hành động này không thể hoàn tác!
+                                </p>
+                            </div>
+
+                            <form th:action="@{/acvstore/employees/delete/{id}(id=${employee.id})}" method="post" class="text-center">
+                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-times"></i> Hủy
+                                </button>
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fa-solid fa-trash"></i> Xóa
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </th:block>
+    </div>
 </div>
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script th:src="@{/js/sidebar.js}" defer></script>
 
 </body>
 </html>
