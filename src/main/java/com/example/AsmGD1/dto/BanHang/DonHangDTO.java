@@ -18,4 +18,5 @@ public class DonHangDTO {
     private String tong;
     private String soDienThoaiKhachHang;
     private String tabId;
+    private String diaChiGiaoHang;
 }
