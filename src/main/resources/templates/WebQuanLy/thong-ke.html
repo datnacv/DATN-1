@@ -88,13 +88,19 @@
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-  <div class="d-flex align-items-center">
-    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
-  </div>
-</nav>
 <div class="d-flex">
-  <div class="content container mt-5 pt-3">
+  <!-- Include sidebar fragment -->
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+    <a class="navbar-brand fw-bold text-primary" href="#">
+      <i class="fas fa-store-alt me-2"></i>ACV Admin
+    </a>
+    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
+  <!-- Nội dung chính bên phải -->
+  <div class="content" id="content">
     <h1 style="text-align: center">THỐNG KÊ</h1>
     <!-- Hiển thị thông báo lỗi -->
     <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>

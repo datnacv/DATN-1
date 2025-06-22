@@ -28,7 +28,7 @@ public class CustomerController {
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
-        return "WebQuanly/list-khach-hang";
+        return "WebQuanLy/list-khach-hang";
     }
 
     @PostMapping("/add")
@@ -76,11 +76,11 @@ public class CustomerController {
     public String showDashboard(Model model) {
         model.addAttribute("message", "Chào mừng đến với dashboard!");
         model.addAttribute("messageType", "success");
-        return "WebQuanly/customer-dashboard";
+        return "WebQuanLy/customer-dashboard";
     }
 
     @GetMapping("/login")
     public String showLoginForm() {
-        return "WebQuanly/customer-login"; // Spring Security xử lý form login
+        return "WebQuanLy/customer-login"; // Spring Security xử lý form login
     }
 }

@@ -106,6 +106,28 @@
         background-color: #f8d7da;
         color: #721c24;
     }
+
+    .table-container {
+        max-width: 100%;
+        overflow-x: auto; /* Cho phép cuộn ngang */
+        white-space: nowrap; /* Ngăn nội dung xuống dòng */
+        -webkit-overflow-scrolling: touch; /* Cuộn mượt mà trên thiết bị di động */
+    }
+
+    /* Cố định tiêu đề bảng */
+    .table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f8f9fa; /* Giữ màu nền của tiêu đề */
+    }
+
+    /* Đảm bảo bảng có chiều rộng tối thiểu để kích hoạt cuộn ngang */
+    .table {
+        min-width: 1200px; /* Điều chỉnh giá trị này nếu cần */
+    }
+
+
 </style>
 <body>
 
@@ -113,8 +135,15 @@
     <!-- Include sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+        <a class="navbar-brand fw-bold text-primary" href="#">
+            <i class="fas fa-store-alt me-2"></i>ACV Admin
+        </a>
+        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    </nav>
     <!-- Nội dung chính bên phải -->
-    <div class="content flex-grow-1">
+    <div class="content" id="content">
         <h2 class="page-title">
             <i class="fa-solid fa-users-gear"></i> Quản lý nhân viên
         </h2>

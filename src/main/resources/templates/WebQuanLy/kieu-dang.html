@@ -8,46 +8,60 @@
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
         /* Fix navbar and sidebar overlap */
+
+        /*.sidebar {*/
+        /*    position: fixed;*/
+        /*    top: 70px; !* Match navbar height *!*/
+        /*    left: 0;*/
+        /*    height: calc(100% - 70px);*/
+        /*    width: 250px;*/
+        /*    background-color: #212529;*/
+        /*    padding-top: 20px;*/
+        /*    z-index: 900;*/
+        /*}*/
+        /*.content {*/
+        /*    margin-left: 260px; !* Adjust based on sidebar width + some padding *!*/
+        /*    margin-top: 70px; !* Adjust based on navbar height *!*/
+        /*    padding: 20px;*/
+        /*    max-width: 100%;*/
+        /*}*/
+        /*!* Ensure table responsiveness *!*/
+        /*.table-responsive {*/
+        /*    margin-top: 20px;*/
+        /*}*/
+
         .navbar {
-            z-index: 1000;
+            margin-left: 250px; /* Dời navbar sang phải theo chiều rộng của sidebar */
+            z-index: 1020; /* Đảm bảo nằm trên nội dung nhưng không đè sidebar */
+            width: calc(100% - 260px); /* Để không đè sang sidebar */
+            transition: all 0.3s ease;
         }
-        .sidebar {
-            position: fixed;
-            top: 70px; /* Match navbar height */
-            left: 0;
-            height: calc(100% - 70px);
-            width: 250px;
-            background-color: #212529;
-            padding-top: 20px;
-            z-index: 900;
+
+        .sidebar.hidden + .navbar {
+            margin-left: 0;
+            width: 100%;
         }
-        .content {
-            margin-left: 260px; /* Adjust based on sidebar width + some padding */
-            margin-top: 70px; /* Adjust based on navbar height */
-            padding: 20px;
-            max-width: 100%;
+
+        .sidebar.hidden ~ .content {
+            margin-left: 0;
         }
-        /* Ensure table responsiveness */
-        .table-responsive {
-            margin-top: 20px;
-        }
+
     </style>
 </head>
 <body>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-    <a class="navbar-brand fw-bold text-primary" href="#">
-        <i class="fas fa-store-alt me-2"></i>ACV Admin
-    </a>
-    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
-</nav>
-
 <div class="d-flex">
-    <!-- Sidebar -->
-    <div class="sidebar" th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <!-- Include sidebar fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+        <a class="navbar-brand fw-bold text-primary" href="#">
+            <i class="fas fa-store-alt me-2"></i>ACV Admin
+        </a>
+        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    </nav>
     <!-- Nội dung chính bên phải -->
-    <div class="content flex-grow-1">
+    <div class="content" id="content">
         <h2 class="text-center my-4">Danh sách Kiểu dáng</h2>
 
         <!-- Thanh tìm kiếm -->

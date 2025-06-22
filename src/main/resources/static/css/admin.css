@@ -7,28 +7,27 @@ body {
 
 /* Sidebar Styling */
 .sidebar {
-    width: 260px;
-    height: calc(100vh - 5px);
-    background: rgba(255, 255, 255, 0.9);
-    color: #333;
+    width: 250px;
+    height: 100vh;
+    background: #343a40;
+    color: #fff;
     display: flex;
     flex-direction: column;
     padding: 20px;
     position: fixed;
-    top: 5px;
+    top: 0;
     left: 0;
     transition: all 0.3s ease-in-out;
     box-shadow: 2px 0 15px rgba(0, 0, 0, 0.08);
-    backdrop-filter: blur(12px);
     font-size: 14px;
     border-radius: 0 10px 10px 0;
     overflow-y: auto;
+    z-index: 1030;
 }
 
 .sidebar::-webkit-scrollbar {
     width: 0;
 }
-
 
 .sidebar-header {
     text-align: center;
@@ -39,9 +38,16 @@ body {
     color: #3b82f6;
 }
 
+.sidebar.hidden {
+    transform: translateX(-250px);
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 0;
+}
 /* Sidebar Links */
 .nav-link {
-    color: #555;
+    color: #fff;
     display: flex;
     align-items: center;
     padding: 12px;
@@ -56,7 +62,7 @@ body {
 }
 
 .nav-link:hover {
-    background-color: #d1d9e6;
+    background-color: #495057;
     transform: translateX(7px);
 }
 
@@ -80,18 +86,32 @@ body {
 
 /* Main Content */
 .content {
-    margin-left: 260px;
+    margin-left: 250px;
     padding: 20px;
-    width: calc(100% - 260px);
+    width: calc(100% - 250px);
+    transition: all 0.3s ease-in-out;
 }
 
+
+
+
+.content.full-width {
+    margin-left: 0;
+    width: 100%;
+}
+
+
 /* Table Styling */
-.table {
+.table-container {
     background: white;
     border-radius: 10px;
     overflow: hidden;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease-in-out;
+}
+
+.table-container:hover .table {
+    transform: translateY(-5px);
 }
 
 .table th, .table td {
@@ -140,10 +160,10 @@ body {
     font-size: 13px;
 }
 
-
+/* Breadcrumb Styles */
 .breadcrumb-container {
     display: flex;
-    justify-content: flex-end; /* Đưa breadcrumb về góc phải */
+    justify-content: flex-end;
     padding: 10px;
 }
 
@@ -193,11 +213,66 @@ body {
 /* Responsive */
 @media (max-width: 768px) {
     .sidebar {
-        width: 220px;
+        width: 250px;
+        transform: translateX(-250px);
     }
-
     .content {
-        margin-left: 220px;
-        width: calc(100% - 220px);
+        margin-left: 0;
+        width: 100%;
+        padding-top: 70px;
+    }
+    .sidebar.active {
+        transform: translateX(0);
     }
 }
+
+/* Navbar */
+.navbar {
+    margin-left: 290px;
+    width: calc(100% - 250px);
+    z-index: 1020;
+    transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;
+    position: fixed;
+    top: 0;
+}
+.navbar.full-width {
+    margin-left: 0;
+    width: 100%;
+}
+.sidebar.hidden + .navbar {
+    margin-left: 0;
+    width: 100%;
+}
+
+.sidebar.hidden ~ .content {
+    margin-left: 0;
+}
+
+.toggle-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1050;
+    background: #343a40;
+    color: white;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-btn.sidebar-visible {
+    left: 265px;
+}
+
+
+
+
+
+
+
+
+

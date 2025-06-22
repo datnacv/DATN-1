@@ -7,26 +7,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
-        /* Ensure content is not overlapped by the fixed navbar */
-        .content {
-            margin-top: 70px; /* Adjust based on navbar height */
-            max-width: 1200px; /* Optional: Limit content width */
-            margin-left: auto;
-            margin-right: auto;
-        }
+        /*!* Ensure content is not overlapped by the fixed navbar *!*/
+        /*.content {*/
+        /*    margin-top: 70px; !* Adjust based on navbar height *!*/
+        /*    max-width: 1200px; !* Optional: Limit content width *!*/
+        /*    margin-left: auto;*/
+        /*    margin-right: auto;*/
+        /*}*/
     </style>
 </head>
 <body>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-    <a class="navbar-brand fw-bold text-primary" href="#">
-        <i class="fas fa-store-alt me-2"></i>ACV Admin
-    </a>
-    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
-</nav>
+<div class="d-flex">
+    <!-- Include sidebar fragment -->
+    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-<!-- Content -->
-<div class="content p-4">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+        <a class="navbar-brand fw-bold text-primary" href="#">
+            <i class="fas fa-store-alt me-2"></i>ACV Admin
+        </a>
+        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    </nav>
+    <!-- Nội dung chính bên phải -->
+    <div class="content" id="content">
     <h2 class="text-center my-4">Danh sách Tay áo</h2>
 
     <!-- Thanh tìm kiếm -->
