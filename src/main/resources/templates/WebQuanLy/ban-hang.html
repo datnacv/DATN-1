@@ -7,15 +7,19 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
   <style>
+    body {
+      background-color: #ffffff;
+      color: #1f2937;
+    }
     .toast {
       position: fixed;
       top: 1rem;
       right: 1rem;
-      background-color: #4f46e5;
-      color: white;
+      background-color: #1f2937;
+      color: #ffffff;
       padding: 1rem 1.5rem;
-      border-radius: 0.5rem;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      border-radius: 0.375rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 9999;
       opacity: 0;
       transition: opacity 0.3s ease;
@@ -27,16 +31,18 @@
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
-      border-radius: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.375rem;
+      color: #1f2937;
     }
     .tab.active {
-      background-color: #4f46e5;
-      color: white;
-      font-weight: bold;
+      background-color: #1f2937;
+      color: #ffffff;
+      font-weight: 600;
     }
     .tab:hover {
-      background-color: #e0e7ff;
-      color: #4f46e5;
+      background-color: #f3f4f6;
+      color: #1f2937;
     }
     .modal {
       display: none;
@@ -45,53 +51,64 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
+      background-color: rgba(0, 0, 0, 0.5);
       z-index: 1000;
       justify-content: center;
       align-items: center;
     }
     .modal-content {
-      background-color: white;
-      padding: 2rem;
-      border-radius: 1rem;
+      background-color: #ffffff;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
       max-width: 600px;
       width: 90%;
       max-height: 80vh;
       overflow-y: auto;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     }
     .input-field {
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
       border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
+      border-radius: 0.375rem;
+      padding: 0.75rem;
     }
     .input-field:focus {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+      border-color: #1f2937;
+      box-shadow: 0 0 0 3px rgba(31, 41, 55, 0.1);
       outline: none;
     }
     .btn-primary {
-      background-color: #4f46e5;
+      background-color: #1f2937;
+      color: #ffffff;
       transition: background-color 0.3s ease, transform 0.2s ease;
-      border-radius: 0.5rem;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
     }
     .btn-primary:hover {
-      background-color: #4338ca;
+      background-color: #111827;
       transform: translateY(-1px);
     }
-    .btn-secondary {
+    .btn-primary:disabled {
       background-color: #6b7280;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background-color: #4b5563;
+      color: #ffffff;
       transition: background-color 0.3s ease, transform 0.2s ease;
-      border-radius: 0.5rem;
+      border-radius: 0.375rem;
+      padding: 0.75rem 1.5rem;
+      font-weight: 500;
     }
     .btn-secondary:hover {
-      background-color: #4b5563;
+      background-color: #374151;
       transform: translateY(-1px);
     }
     .spinner {
       display: none;
       border: 4px solid #f3f3f3;
-      border-top: 4px solid #4f46e5;
+      border-top: 4px solid #1f2937;
       border-radius: 50%;
       width: 24px;
       height: 24px;
@@ -105,9 +122,22 @@
     .cart-table th, .cart-table td {
       padding: 1rem;
       border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+    .cart-table th {
+      background-color: #f9fafb;
+      font-weight: 600;
+      color: #1f2937;
     }
     .cart-table img {
-      border-radius: 0.5rem;
+      border-radius: 0.375rem;
+      max-width: 60px;
+      max-height: 60px;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.5rem;
     }
     @media (max-width: 640px) {
       .container {
@@ -121,139 +151,140 @@
         max-width: 40px;
         max-height: 40px;
       }
+      .modal-content {
+        width: 95%;
+        padding: 1rem;
+      }
     }
   </style>
 </head>
-<body class="bg-gray-50 font-sans">
-<div class="container mx-auto p-6 max-w-7xl">
-  <h1 class="text-4xl font-extrabold text-indigo-600 mb-8 text-center">ACV Store - Bán Hàng</h1>
+<body class="font-sans">
+<div class="container">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">ACV Store - Bán Hàng</h1>
 
   <!-- Tabs -->
-  <div class="flex items-center mb-6 bg-white rounded-lg shadow p-4">
+  <div class="flex items-center mb-6 bg-white rounded-lg shadow-sm p-4">
     <div id="orderTabs" class="flex space-x-2 flex-wrap"></div>
-    <button id="addTabBtn" class="ml-4 px-4 py-2 bg-indigo-600 text-white rounded-lg btn-primary disabled:bg-gray-400 disabled:cursor-not-allowed">Thêm Đơn Hàng</button>
+    <button id="addTabBtn" class="ml-4 btn-primary disabled:bg-gray-400 disabled:cursor-not-allowed">Thêm Đơn Hàng</button>
   </div>
 
-  <div class="bg-white shadow-xl rounded-lg p-8">
+  <div class="bg-white shadow-md rounded-lg p-6">
     <!-- Cart Table -->
-    <div class="overflow-x-auto mb-8">
+    <div class="overflow-x-auto mb-6">
       <div class="mb-4 flex space-x-3">
-        <button onclick="showQrScanner()" class="px-4 py-3 bg-indigo-600 text-white rounded-lg btn-primary">Quét QR sản phẩm</button>
-        <button onclick="showProductModal()" class="px-4 py-3 bg-indigo-600 text-white rounded-lg btn-primary">Chọn sản phẩm</button>
+        <button onclick="showQrScanner()" class="btn-primary">Quét QR sản phẩm</button>
+        <button onclick="showProductModal()" class="btn-primary">Chọn sản phẩm</button>
       </div>
       <table class="cart-table w-full border-collapse">
         <thead>
-        <tr class="bg-gray-100">
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Hình ảnh</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Tên sản phẩm</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Màu sắc</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Kích cỡ</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Giá</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Số lượng</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Thành tiền</th>
-          <th class="p-4 text-left text-sm font-semibold text-gray-700">Hành động</th>
+        <tr>
+          <th class="p-4 text-sm">Hình ảnh</th>
+          <th class="p-4 text-sm">Tên sản phẩm</th>
+          <th class="p-4 text-sm">Màu sắc</th>
+          <th class="p-4 text-sm">Kích cỡ</th>
+          <th class="p-4 text-sm">Giá</th>
+          <th class="p-4 text-sm">Số lượng</th>
+          <th class="p-4 text-sm">Thành tiền</th>
+          <th class="p-4 text-sm">Hành động</th>
         </tr>
         </thead>
         <tbody id="cartItems"></tbody>
       </table>
-
     </div>
+
     <!-- Customer Information -->
-    <div class="mb-8">
-      <label class="block text-sm font-semibold text-gray-700 mb-3">Thông tin khách hàng</label>
+    <div class="mb-6">
+      <label class="block text-sm font-semibold text-gray-700 mb-2">Thông tin khách hàng</label>
       <div class="flex space-x-3">
-        <input type="text" id="customerPhone" class="input-field flex-1 p-3 border rounded-lg" placeholder="Nhập số điện thoại">
-        <button onclick="showCustomerModal()" class="px-4 py-3 bg-indigo-600 text-white rounded-lg btn-primary">Chọn khách hàng</button>
+        <input type="text" id="customerPhone" class="input-field flex-1" placeholder="Nhập số điện thoại">
+        <button onclick="showCustomerModal()" class="btn-primary">Chọn khách hàng</button>
       </div>
       <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="customerName" class="block text-sm font-medium text-gray-700 mb-2">Tên khách hàng</label>
-          <input type="text" id="customerName" class="input-field w-full p-3 border rounded-lg" placeholder="Tên khách hàng" disabled>
+          <label for="customerName" class="block text-sm font-medium text-gray-700 mb-1">Tên khách hàng</label>
+          <input type="text" id="customerName" class="input-field w-full" placeholder="Tên khách hàng" disabled>
         </div>
         <div>
-          <label for="customerEmail" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-          <input type="email" id="customerEmail" class="input-field w-full p-3 border rounded-lg" placeholder="Email khách hàng" disabled>
+          <label for="customerEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" id="customerEmail" class="input-field w-full" placeholder="Email khách hàng" disabled>
         </div>
       </div>
     </div>
 
     <!-- Address Selection -->
-    <div id="addressSection" class="mb-8 hidden">
-      <label for="addressSelect" class="block text-sm font-semibold text-gray-700 mb-3">Chọn địa chỉ giao hàng</label>
-      <select id="addressSelect" class="input-field w-full p-3 border rounded-lg">
+    <div id="addressSection" class="mb-6 hidden">
+      <label for="addressSelect" class="block text-sm font-semibold text-gray-700 mb-2">Chọn địa chỉ giao hàng</label>
+      <select id="addressSelect" class="input-field w-full">
         <option value="">Chọn địa chỉ</option>
       </select>
-      <button onclick="showAddAddressForm()" class="mt-3 px-4 py-3 bg-gray-500 text-white rounded-lg btn-secondary">Thêm địa chỉ mới</button>
+      <button onclick="showAddAddressForm()" class="mt-3 btn-secondary">Thêm địa chỉ mới</button>
       <div id="addAddressForm" class="mt-4 hidden">
         <div class="grid grid-cols-1 gap-4">
           <div>
             <label for="addressLine" class="block text-sm font-medium text-gray-700">Địa chỉ cụ thể</label>
-            <input type="text" id="addressLine" class="input-field w-full p-3 border rounded-lg" placeholder="Số nhà, đường,...">
+            <input type="text" id="addressLine" class="input-field w-full" placeholder="Số nhà, đường,...">
           </div>
           <div>
             <label for="ward" class="block text-sm font-medium text-gray-700">Phường/Xã</label>
-            <input type="text" id="ward" class="input-field w-full p-3 border rounded-lg" placeholder="Nhập phường/xã">
+            <input type="text" id="ward" class="input-field w-full" placeholder="Nhập phường/xã">
           </div>
           <div>
             <label for="district" class="block text-sm font-medium text-gray-700">Quận/Huyện</label>
-            <input type="text" id="district" class="input-field w-full p-3 border rounded-lg" placeholder="Nhập quận/huyện">
+            <input type="text" id="district" class="input-field w-full" placeholder="Nhập quận/huyện">
           </div>
           <div>
             <label for="city" class="block text-sm font-medium text-gray-700">Tỉnh/Thành phố</label>
-            <input type="text" id="city" class="input-field w-full p-3 border rounded-lg" placeholder="Nhập tỉnh/thành phố">
+            <input type="text" id="city" class="input-field w-full" placeholder="Nhập tỉnh/thành phố">
           </div>
         </div>
         <div class="mt-4 flex space-x-3">
-          <button onclick="addNewAddress()" class="px-4 py-3 bg-green-600 text-white rounded-lg btn-primary">Lưu địa chỉ</button>
-          <button onclick="document.getElementById('addAddressForm').style.display='none'" class="px-4 py-3 bg-gray-500 text-white rounded-lg btn-secondary">Hủy</button>
+          <button onclick="addNewAddress()" class="btn-primary">Lưu địa chỉ</button>
+          <button onclick="document.getElementById('addAddressForm').style.display='none'" class="btn-secondary">Hủy</button>
         </div>
       </div>
     </div>
 
-
-
     <!-- Order Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
       <div>
-        <label for="saleMethod" class="block text-sm font-semibold text-gray-700 mb-2">Phương thức bán hàng</label>
-        <select id="saleMethod" onchange="toggleAddressSection()" class="input-field w-full p-3 border rounded-lg">
+        <label for="saleMethod" class="block text-sm font-semibold text-gray-700 mb-1">Phương thức bán hàng</label>
+        <select id="saleMethod" onchange="toggleAddressSection()" class="input-field w-full">
           <option value="Tại quầy">Tại quầy</option>
           <option value="Giao hàng">Giao hàng</option>
         </select>
       </div>
       <div>
-        <label for="shippingFee" class="block text-sm font-semibold text-gray-700 mb-2">Phí vận chuyển</label>
-        <input type="number" id="shippingFee" value="0" class="input-field w-full p-3 border rounded-lg">
+        <label for="shippingFee" class="block text-sm font-semibold text-gray-700 mb-1">Phí vận chuyển</label>
+        <input type="number" id="shippingFee" value="0" class="input-field w-full">
       </div>
       <div>
-        <label for="voucherSelect" class="block text-sm font-semibold text-gray-700 mb-2">Chọn phiếu giảm giá</label>
-        <select id="voucherSelect" onchange="applyVoucher()" class="input-field w-full p-3 border rounded-lg">
+        <label for="voucherSelect" class="block text-sm font-semibold text-gray-700 mb-1">Chọn phiếu giảm giá</label>
+        <select id="voucherSelect" onchange="applyVoucher()" class="input-field w-full">
           <option value="">Không sử dụng</option>
         </select>
       </div>
       <div>
-        <label for="paymentMethod" class="block text-sm font-semibold text-gray-700 mb-2">Phương thức thanh toán</label>
-        <select id="paymentMethod" onchange="toggleCashInput()" class="input-field w-full p-3 border rounded-lg">
+        <label for="paymentMethod" class="block text-sm font-semibold text-gray-700 mb-1">Phương thức thanh toán</label>
+        <select id="paymentMethod" onchange="toggleCashInput()" class="input-field w-full">
           <option value="550E8400-E29B-41D4-A716-446655440017">Tiền mặt</option>
           <option value="550E8400-E29B-41D4-A716-446655440018">Chuyển khoản</option>
         </select>
       </div>
       <div id="cashInput" class="hidden">
-        <label for="cashAmount" class="block text-sm font-semibold text-gray-700 mb-2">Số tiền khách đưa</label>
-        <input type="number" id="cashAmount" value="0" class="input-field w-full p-3 border rounded-lg">
+        <label for="cashAmount" class="block text-sm font-semibold text-gray-700 mb-1">Số tiền khách đưa</label>
+        <input type="number" id="cashAmount" value="0" class="input-field w-full">
       </div>
     </div>
 
-    <div class="p-6 bg-gray-50 rounded-lg shadow-inner">
+    <div class="p-4 bg-gray-50 rounded-lg shadow-inner">
       <p class="text-sm font-medium"><strong>Tổng tiền hàng:</strong> <span id="subTotal">0 VNĐ</span></p>
       <p class="text-sm font-medium"><strong>Phí vận chuyển:</strong> <span id="shippingFeeDisplay">0 VNĐ</span></p>
       <p class="text-sm font-medium"><strong>Giảm giá:</strong> <span id="discount">0 VNĐ</span></p>
       <p class="text-lg font-bold"><strong>Tổng tiền:</strong> <span id="total">0 VNĐ</span></p>
       <p class="text-sm font-medium"><strong>Tiền trả lại:</strong> <span id="changeAmount">0 VNĐ</span></p>
-
     </div>
 
-    <button onclick="createOrder()" class="mt-6 w-full px-6 py-4 bg-indigo-600 text-white rounded-lg btn-primary text-lg font-semibold">Tạo đơn hàng</button>
+    <button onclick="createOrder()" class="mt-6 w-full btn-primary text-lg font-semibold">Tạo đơn hàng</button>
   </div>
 
   <!-- QR Scanner Modal -->
@@ -261,7 +292,7 @@
     <div class="modal-content">
       <h3 class="text-lg font-bold mb-4">Quét QR Sản Phẩm</h3>
       <video id="video" width="100%" height="200" class="border border-gray-300 rounded-lg"></video>
-      <button onclick="stopQrScanner()" class="mt-4 w-full px-4 py-3 bg-red-600 text-white rounded-lg btn-primary">Dừng quét</button>
+      <button onclick="stopQrScanner()" class="mt-4 w-full btn-primary">Dừng quét</button>
     </div>
   </div>
 
@@ -271,7 +302,7 @@
       <h3 class="text-lg font-bold mb-4">Danh sách khách hàng</h3>
       <div id="customerList" class="space-y-2"></div>
       <div id="customerSpinner" class="spinner mt-4"></div>
-      <button onclick="document.getElementById('customerModal').style.display='none'" class="mt-4 w-full px-4 py-3 bg-gray-500 text-white rounded-lg btn-secondary">Đóng</button>
+      <button onclick="document.getElementById('customerModal').style.display='none'" class="mt-4 w-full btn-secondary">Đóng</button>
     </div>
   </div>
 
@@ -281,7 +312,7 @@
       <h3 class="text-lg font-bold mb-4">Danh sách sản phẩm</h3>
       <div id="productList" class="space-y-2"></div>
       <div id="productSpinner" class="spinner mt-4"></div>
-      <button onclick="document.getElementById('productModal').style.display='none'" class="mt-4 w-full px-4 py-3 bg-gray-500 text-white rounded-lg btn-secondary">Đóng</button>
+      <button onclick="document.getElementById('productModal').style.display='none'" class="mt-4 w-full btn-secondary">Đóng</button>
     </div>
   </div>
 
@@ -290,14 +321,14 @@
     <div class="modal-content">
       <h3 class="text-lg font-bold mb-4" id="variantModalTitle">Chọn biến thể sản phẩm</h3>
       <div class="mb-4">
-        <label for="colorSelect" class="block text-sm font-semibold text-gray-700 mb-2">Màu sắc</label>
-        <select id="colorSelect" class="input-field w-full p-3 border rounded-lg" onchange="fetchVariants()">
+        <label for="colorSelect" class="block text-sm font-semibold text-gray-700 mb-1">Màu sắc</label>
+        <select id="colorSelect" class="input-field w-full" onchange="fetchVariants()">
           <option value="">Chọn màu sắc</option>
         </select>
       </div>
       <div class="mb-4">
-        <label for="sizeSelect" class="block text-sm font-semibold text-gray-700 mb-2">Kích cỡ</label>
-        <select id="sizeSelect" class="input-field w-full p-3 border rounded-lg" onchange="fetchVariants()">
+        <label for="sizeSelect" class="block text-sm font-semibold text-gray-700 mb-1">Kích cỡ</label>
+        <select id="sizeSelect" class="input-field w-full" onchange="fetchVariants()">
           <option value="">Chọn kích cỡ</option>
         </select>
       </div>
@@ -305,20 +336,19 @@
         <p class="text-sm"><strong>Giá:</strong> <span id="variantPrice"></span></p>
         <p class="text-sm"><strong>Tồn kho:</strong> <span id="variantStock"></span></p>
         <div class="mt-2">
-          <label for="variantQuantity" class="block text-sm font-semibold text-gray-700 mb-2">Số lượng</label>
-          <input type="number" id="variantQuantity" min="1" value="1" class="input-field w-full p-3 border rounded-lg">
+          <label for="variantQuantity" class="block text-sm font-semibold text-gray-700 mb-1">Số lượng</label>
+          <input type="number" id="variantQuantity" min="1" value="1" class="input-field w-full">
         </div>
       </div>
       <div id="variantSpinner" class="spinner mt-4"></div>
       <div class="flex space-x-3">
-        <button onclick="addVariantToCart()" class="px-4 py-3 bg-green-600 text-white rounded-lg btn-primary">Thêm vào giỏ hàng</button>
-        <button onclick="document.getElementById('variantModal').style.display='none'" class="px-4 py-3 bg-gray-500 text-white rounded-lg btn-secondary">Hủy</button>
+        <button onclick="addVariantToCart()" class="btn-primary">Thêm vào giỏ hàng</button>
+        <button onclick="document.getElementById('variantModal').style.display='none'" class="btn-secondary">Hủy</button>
       </div>
     </div>
   </div>
 </div>
 <div id="toastContainer" class="fixed top-5 right-5 space-y-2 z-50"></div>
-
 <script>
   const BASE_URL = 'http://localhost:8080/acvstore/banhang';
   let tabs = [];
@@ -689,9 +719,9 @@
       <td class="p-4">${item.kichCo}</td>
       <td class="p-4">${item.gia.toLocaleString('vi-VN')} VNĐ</td>
       <td class="p-4 flex items-center space-x-2">
-        <button class="px-2 py-1 bg-indigo-600 text-white rounded btn-primary" onclick="updateQuantity(${index}, ${item.soLuong} - 1, '${item.idChiTietSanPham}')">-</button>
+        <button class="px-2 py-1 bg-gray-400 text-white rounded btn-primary" onclick="updateQuantity(${index}, ${item.soLuong} - 1, '${item.idChiTietSanPham}')">-</button>
         <input type="number" min="1" value="${item.soLuong}" class="input-field w-16 p-2 border rounded text-center" onchange="updateQuantity(${index}, this.value, '${item.idChiTietSanPham}')">
-        <button class="px-2 py-1 bg-indigo-600 text-white rounded btn-primary" onclick="updateQuantity(${index}, ${item.soLuong} + 1, '${item.idChiTietSanPham}')">+</button>
+        <button class="px-2 py-1 bg-gray-400 text-white rounded btn-primary" onclick="updateQuantity(${index}, ${item.soLuong} + 1, '${item.idChiTietSanPham}')">+</button>
       </td>
       <td class="p-4">${item.thanhTien.toLocaleString('vi-VN')} VNĐ</td>
       <td class="p-4">
