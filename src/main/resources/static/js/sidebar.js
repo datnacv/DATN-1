@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const content = document.querySelector('.content');
     const navbar = document.querySelector('.navbar');
 
-    // Khôi phục trạng thái sidebar khi tải trang
+    // Khôi phục trạng thái sidebar khi tải trangg
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
         sidebar.classList.add('collapsed');
