@@ -58,7 +58,19 @@
   </style>
 </head>
 <body>
+<div class="d-flex">
+  <!-- Include sidebar fragment -->
+  <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+    <a class="navbar-brand fw-bold text-primary" href="#">
+      <i class="fas fa-store-alt me-2"></i>ACV Admin
+    </a>
+    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
+  <!-- Nội dung chính bên phải -->
+  <div class="content" id="content">
 <div class="container mt-4">
   <!-- Vùng hiện camera cho QR -->
   <div id="qr-reader" style="width: 300px; margin: 0 auto; display: none;" class="my-3 border rounded"></div>
@@ -280,6 +292,8 @@
       </div>
     </div>
   </div>
+</div>
+</div>
 </div>
 
 <!-- Modal Biến Thể -->

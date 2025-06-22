@@ -50,3 +50,78 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const content = document.querySelector('.content');
+    const navbar = document.querySelector('.navbar');
+
+    // Khôi phục trạng thái sidebar khi tải trang
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    if (isCollapsed) {
+        sidebar.classList.add('collapsed');
+        content.classList.add('collapsed');
+        navbar.classList.add('collapsed');
+        toggleBtn.classList.add('collapsed');
+        toggleIcon.classList.remove('fa-bars');
+        toggleIcon.classList.add('fa-arrow-right');
+    }
+
+    toggleBtn.addEventListener('click', function () {
+        sidebar.classList.toggle('collapsed');
+        content.classList.toggle('collapsed');
+        navbar.classList.toggle('collapsed');
+        toggleBtn.classList.toggle('collapsed');
+
+        const isNowCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', isNowCollapsed);
+
+        if (isNowCollapsed) {
+            toggleIcon.classList.remove('fa-bars');
+            toggleIcon.classList.add('fa-arrow-right');
+        } else {
+            toggleIcon.classList.remove('fa-arrow-right');
+            toggleIcon.classList.add('fa-bars');
+        }
+    });
+
+    // Handle responsive behavior
+    window.addEventListener('resize', function () {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+            content.classList.add('collapsed');
+            navbar.classList.add('collapsed');
+            toggleBtn.classList.remove('collapsed');
+            toggleBtn.style.left = '15px';
+            localStorage.setItem('sidebarCollapsed', 'true');
+            toggleIcon.classList.remove('fa-bars');
+            toggleIcon.classList.add('fa-arrow-right');
+        } else {
+            sidebar.classList.remove('collapsed');
+            content.classList.remove('collapsed');
+            navbar.classList.remove('collapsed');
+            toggleBtn.classList.add('collapsed');
+            toggleBtn.style.left = '65px';
+            localStorage.setItem('sidebarCollapsed', 'false');
+            toggleIcon.classList.remove('fa-arrow-right');
+            toggleIcon.classList.add('fa-bars');
+        }
+    });
+
+    // Initialize responsive behavior on load
+    window.addEventListener('load', function () {
+        if (window.innerWidth <= 768) {
+            sidebar.classList.add('collapsed');
+            content.classList.add('collapsed');
+            navbar.classList.add('collapsed');
+            toggleBtn.classList.remove('collapsed');
+            toggleBtn.style.left = '15px';
+            localStorage.setItem('sidebarCollapsed', 'true');
+            toggleIcon.classList.remove('fa-bars');
+            toggleIcon.classList.add('fa-arrow-right');
+        }
+    });
+});
+
