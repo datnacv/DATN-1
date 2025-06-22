@@ -970,7 +970,9 @@
       }
       const customerList = document.getElementById('customerList');
       customerList.innerHTML = '';
-      data.customers.forEach(customer => {
+      // Lọc bỏ khách lẻ (số điện thoại 0999999999) khỏi danh sách
+      const filteredCustomers = data.customers.filter(customer => customer.soDienThoai !== '0999999999');
+      filteredCustomers.forEach(customer => {
         const div = document.createElement('div');
         div.className = 'p-3 border-b cursor-pointer hover:bg-gray-100 rounded-lg';
         div.innerText = `${customer.hoTen} (${customer.soDienThoai}) - ${customer.email}`;
@@ -978,7 +980,7 @@
         customerList.appendChild(div);
       });
     } catch (error) {
-      alert('Lỗi khi tải danh sách khách hàng: ' + error.message);
+      showToast('Lỗi khi tải danh sách khách hàng: ' + error.message, 'error');
     } finally {
       document.getElementById('customerSpinner').style.display = 'none';
     }
