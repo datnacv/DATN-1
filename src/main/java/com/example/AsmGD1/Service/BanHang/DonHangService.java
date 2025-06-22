@@ -59,7 +59,8 @@ public class DonHangService {
         if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
             throw new RuntimeException("Số điện thoại khách hàng không được để trống.");
         }
-        if (donHangDTO.getPhuongThucBanHang().equals("Giao hàng") &&
+
+        if ("Giao hàng".equals(donHangDTO.getPhuongThucBanHang()) &&
                 (donHangDTO.getDiaChiGiaoHang() == null || donHangDTO.getDiaChiGiaoHang().trim().isEmpty()) &&
                 !soDienThoai.equals("0999999999")) {
             throw new RuntimeException("Địa chỉ giao hàng không được để trống khi chọn phương thức giao hàng.");
@@ -71,22 +72,12 @@ public class DonHangService {
         DonHang donHang = new DonHang();
         donHang.setNguoiDung(khachHang);
         donHang.setMaDonHang(taoMaDonHang());
-        donHang.setTrangThaiThanhToan(donHangDTO.getPhuongThucThanhToan() != null &&
-                phuongThucThanhToanRepository.findById(donHangDTO.getPhuongThucThanhToan())
-                        .map(pttt -> pttt.getTenPhuongThuc().equals("Tiền mặt")).orElse(false) &&
-                donHangDTO.getSoTienKhachDua().compareTo(BigDecimal.ZERO) > 0);
-        donHang.setPhiVanChuyen(donHangDTO.getPhiVanChuyen());
-        donHang.setPhuongThucThanhToan(phuongThucThanhToanRepository.findById(donHangDTO.getPhuongThucThanhToan())
-                .orElse(null));
+        donHang.setPhiVanChuyen(Optional.ofNullable(donHangDTO.getPhiVanChuyen()).orElse(BigDecimal.ZERO));
+        donHang.setPhuongThucThanhToan(
+                phuongThucThanhToanRepository.findById(donHangDTO.getPhuongThucThanhToan()).orElse(null));
         donHang.setPhuongThucBanHang(donHangDTO.getPhuongThucBanHang());
-        donHang.setSoTienKhachDua(donHangDTO.getSoTienKhachDua());
-        donHang.setThoiGianTao(LocalDateTime.now());
-        donHang.setThoiGianThanhToan(donHang.getTrangThaiThanhToan() ? LocalDateTime.now() : null);
         donHang.setDiaChiGiaoHang(donHangDTO.getDiaChiGiaoHang());
-        BigDecimal change = donHangDTO.getSoTienKhachDua().subtract(donHang.getTongTien());
-        if (change.compareTo(BigDecimal.ZERO) < 0 && donHang.getPhuongThucThanhToan().getTenPhuongThuc().equals("Tiền mặt")) {
-            throw new RuntimeException("Số tiền khách đưa không đủ.");
-        }
+        donHang.setThoiGianTao(LocalDateTime.now());
 
         BigDecimal tongTien = BigDecimal.ZERO;
         BigDecimal tienGiam = BigDecimal.ZERO;
@@ -99,6 +90,7 @@ public class DonHangService {
         for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham())
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
+
             if (chiTiet.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
             }
@@ -114,14 +106,15 @@ public class DonHangService {
 
             chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
             chiTietSanPhamRepository.save(chiTiet);
-            soLuongTonKho.put(chiTiet.getId(), chiTiet.getSoLuongTonKho());
 
             tongTien = tongTien.add(item.getThanhTien());
+            soLuongTonKho.put(chiTiet.getId(), chiTiet.getSoLuongTonKho());
         }
 
         if (donHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
+
             if ("Phần trăm".equals(phieuGiamGia.getLoai())) {
                 tienGiam = tongTien.multiply(phieuGiamGia.getGiaTriGiam())
                         .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
@@ -129,15 +122,12 @@ public class DonHangService {
                     tienGiam = phieuGiamGia.getGiaTriGiamToiDa();
                 }
             } else {
-                tienGiam = phieuGiamGia.getGiaTriGiam();
-                if (tienGiam.compareTo(tongTien) > 0) {
-                    tienGiam = tongTien;
-                }
+                tienGiam = phieuGiamGia.getGiaTriGiam().min(tongTien);
             }
 
+            // Trừ lượt dùng của phiếu
             PhieuGiamGiaCuaNguoiDung phieuGiam = phieuGiamGiaCuaNguoiDungRepository
-                    .findByPhieuGiamGia_IdAndNguoiDung_Id(donHangDTO.getIdPhieuGiamGia(), khachHang.getId())
-                    .orElse(null);
+                    .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
             if (phieuGiam != null && phieuGiam.getSoLuotConLai() > 0) {
                 phieuGiam.setSoLuotConLai(phieuGiam.getSoLuotConLai() - 1);
                 phieuGiamGiaCuaNguoiDungRepository.save(phieuGiam);
@@ -150,16 +140,36 @@ public class DonHangService {
             donHang.setTienGiam(BigDecimal.ZERO);
         }
 
-        donHang.setTongTien(tongTien.add(donHangDTO.getPhiVanChuyen() != null ? donHangDTO.getPhiVanChuyen() : BigDecimal.ZERO)
-                .subtract(tienGiam));
+        // Tính tổng tiền đơn hàng
+        BigDecimal tongTienDonHang = tongTien.add(donHang.getPhiVanChuyen()).subtract(tienGiam);
+        donHang.setTongTien(tongTienDonHang);
+
+        // Xử lý tiền khách đưa và trạng thái thanh toán
+        BigDecimal tienKhachDua = Optional.ofNullable(donHangDTO.getSoTienKhachDua()).orElse(BigDecimal.ZERO);
+        donHang.setSoTienKhachDua(tienKhachDua);
+
+        if (donHang.getPhuongThucThanhToan() != null &&
+                "Tiền mặt".equals(donHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
+            if (tienKhachDua.compareTo(tongTienDonHang) < 0) {
+                throw new RuntimeException("Số tiền khách đưa không đủ.");
+            }
+            donHang.setTrangThaiThanhToan(true);
+            donHang.setThoiGianThanhToan(LocalDateTime.now());
+        } else {
+            donHang.setTrangThaiThanhToan(false);
+        }
+
+        // Lưu đơn hàng
         donHangRepository.save(donHang);
 
         KetQuaDonHangDTO ketQua = new KetQuaDonHangDTO();
         ketQua.setMaDonHang(donHang.getMaDonHang());
         ketQua.setSoLuongTonKho(soLuongTonKho);
-        ketQua.setChangeAmount(change); // Thêm số tiền trả lại
+        ketQua.setChangeAmount(tienKhachDua.subtract(tongTienDonHang));
+
         return ketQua;
     }
+
 
     @Transactional
     public DonHangDTO giuDonHang(DonHangDTO donHangDTO) {
@@ -255,81 +265,6 @@ public class DonHangService {
             dto.parseDanhSachSanPham(objectMapper);
             return dto;
         }).collect(Collectors.toList());
-    }
-
-    public DonHangTamDTO layChiTietDonHangTam(UUID id) {
-        DonHangTam donHangTam = donHangTamRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại."));
-        DonHangTamDTO dto = new DonHangTamDTO();
-        dto.setId(donHangTam.getId());
-        // Lấy số điện thoại từ donHangTam (giả sử khachHang là số điện thoại)
-        dto.setTenKhachHang(String.valueOf(donHangTam.getKhachHang())); // Giả sử getKhachHang trả về String
-        dto.setTong(donHangTam.getTong());
-        dto.setThoiGianTao(donHangTam.getThoiGianTao());
-        try {
-            List<Map<String, Object>> jsonList = objectMapper.readValue(donHangTam.getDanhSachSanPham(), List.class);
-            List<GioHangItemDTO> danhSachSanPham = jsonList.stream().map(item -> {
-                GioHangItemDTO dtoItem = new GioHangItemDTO();
-                dtoItem.setIdChiTietSanPham(UUID.fromString((String) item.get("idChiTietSanPham")));
-                dtoItem.setTenSanPham((String) item.get("tenSanPham"));
-                dtoItem.setMauSac((String) item.get("mauSac"));
-                dtoItem.setKichCo((String) item.get("kichCo"));
-                dtoItem.setSoLuong(((Number) item.get("soLuong")).intValue());
-                dtoItem.setGia(new BigDecimal((String) item.get("gia")));
-                dtoItem.setThanhTien(new BigDecimal((String) item.get("thanhTien")));
-                return dtoItem;
-            }).collect(Collectors.toList());
-            dto.setDanhSachSanPham(danhSachSanPham);
-        } catch (Exception e) {
-            dto.setDanhSachSanPham(new ArrayList<>());
-        }
-        return dto;
-    }
-
-    @Transactional
-    public GioHangDTO khoiPhucDonHang(UUID idDonHang) {
-        DonHangTam donHangTam = donHangTamRepository.findById(idDonHang)
-                .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại."));
-        GioHangDTO gioHang = new GioHangDTO();
-        gioHang.setSoDienThoaiKhachHang(String.valueOf(donHangTam.getKhachHang()));
-        gioHang.setPhiVanChuyen(donHangTam.getPhiVanChuyen());
-        gioHang.setIdPhieuGiamGia(donHangTam.getPhieuGiamGia());
-        gioHang.setPhuongThucThanhToan(donHangTam.getPhuongThucThanhToan());
-        gioHang.setPhuongThucBanHang(donHangTam.getPhuongThucBanHang());
-        try {
-            String jsonData = donHangTam.getDanhSachSanPham();
-            if (jsonData != null && !jsonData.isEmpty()) {
-                List<Map<String, Object>> jsonList = objectMapper.readValue(jsonData, List.class);
-                List<GioHangItemDTO> danhSachSanPham = jsonList.stream().map(item -> {
-                    GioHangItemDTO dtoItem = new GioHangItemDTO();
-                    dtoItem.setIdChiTietSanPham(UUID.fromString((String) item.get("idChiTietSanPham")));
-                    dtoItem.setTenSanPham((String) item.get("tenSanPham"));
-                    dtoItem.setMauSac((String) item.get("mauSac"));
-                    dtoItem.setKichCo((String) item.get("kichCo"));
-                    dtoItem.setSoLuong(((Number) item.get("soLuong")).intValue());
-                    dtoItem.setGia(new BigDecimal((String) item.get("gia")));
-                    dtoItem.setThanhTien(new BigDecimal((String) item.get("thanhTien")));
-                    return dtoItem;
-                }).collect(Collectors.toList());
-                gioHang.setDanhSachSanPham(danhSachSanPham);
-            } else {
-                gioHang.setDanhSachSanPham(new ArrayList<>());
-            }
-        } catch (Exception e) {
-            gioHang.setDanhSachSanPham(new ArrayList<>());
-        }
-        BigDecimal tongTienHang = gioHang.getDanhSachSanPham().stream()
-                .map(GioHangItemDTO::getThanhTien)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        gioHang.setTongTienHang(tongTienHang.toString() + " VNĐ");
-        BigDecimal giamGia = (gioHang.getIdPhieuGiamGia() != null) ? BigDecimal.valueOf(10000) : BigDecimal.ZERO;
-        gioHang.setGiamGia(giamGia.toString() + " VNĐ");
-        BigDecimal tong = tongTienHang.subtract(giamGia).add(gioHang.getPhiVanChuyen() != null ? gioHang.getPhiVanChuyen() : BigDecimal.ZERO);
-        gioHang.setTong(tong.toString() + " VNĐ");
-
-        layPhien().setAttribute("gioHang", gioHang);
-        donHangTamRepository.delete(donHangTam);
-        return gioHang;
     }
 
     @Transactional

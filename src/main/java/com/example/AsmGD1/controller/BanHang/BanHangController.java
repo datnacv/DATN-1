@@ -90,12 +90,6 @@ public class BanHangController {
     @Autowired
     private HttpSession session;
 
-    private static final DecimalFormat currencyFormat = new DecimalFormat("#,##0 VNĐ");
-
-    private String formatCurrency(BigDecimal amount) {
-        return amount != null ? currencyFormat.format(amount) : "0 VNĐ";
-    }
-
     @GetMapping("/customers")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getCustomers() {
@@ -265,13 +259,13 @@ public class BanHangController {
 
     @GetMapping("/cart/apply-voucher")
     public ResponseEntity<?> applyVoucher(@RequestParam UUID voucherId, @RequestParam BigDecimal shippingFee) {
+        System.out.println("Received voucherId: " + voucherId + ", shippingFee: " + shippingFee);
         try {
-            // Lấy giỏ hàng hiện tại
             GioHangDTO gioHangDTO = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO);
-            // Áp dụng voucher với giỏ hàng hiện tại
             GioHangDTO updatedGioHang = gioHangService.apDungPhieuGiamGia(voucherId, shippingFee, gioHangDTO);
             return ResponseEntity.ok(updatedGioHang);
         } catch (Exception e) {
+            System.err.println("Error in applyVoucher: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi áp dụng phiếu giảm giá: " + e.getMessage()));
         }
     }
@@ -529,7 +523,7 @@ public class BanHangController {
             UUID productDetailId = UUID.fromString((String) request.get("productDetailId"));
             int quantity = (int) request.get("quantity");
             BigDecimal shippingFee = request.containsKey("shippingFee") ? new BigDecimal(request.get("shippingFee").toString()) : BigDecimal.ZERO;
-
+            System.out.println("Processing: productDetailId=" + productDetailId + ", quantity=" + quantity + ", shippingFee=" + shippingFee);
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(productDetailId);
             if (chiTiet == null) {
                 System.err.println("ChiTietSanPham not found for ID: " + productDetailId);
@@ -646,13 +640,6 @@ public class BanHangController {
         } catch (Exception ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         }
-    }
-
-    // Thêm endpoint để render trang danh sách đơn hàng tạm
-    @GetMapping("/don-hang-tam-thoi")
-    public String hienThiTrangDonHangTam(Model model) {
-        model.addAttribute("heldOrders", donHangService.layDanhSachDonHangTam());
-        return "WebQuanLy/don-hang-tam-thoi"; // Trả về tên file HTML (không cần đuôi .html nếu dùng Thymeleaf)
     }
 
     // Thêm endpoint để xóa tất cả đơn hàng tạm

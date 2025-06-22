@@ -34,7 +34,7 @@ public class GioHangService {
     private static final String APPLIED_DISCOUNT_SESSION_KEY = "APPLIED_DISCOUNT";
     private static final String APPLIED_VOUCHER_ID_SESSION_KEY = "APPLIED_VOUCHER_ID";
 
-    private String formatCurrency(BigDecimal amount) {
+    public String formatCurrency(BigDecimal amount) {
         if (amount == null) {
             return "0 VNĐ";
         }
@@ -101,6 +101,7 @@ public class GioHangService {
             newItem.setSoLuong(quantity);
             newItem.setGia(chiTiet.getGia());
             newItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+            newItem.setHinhAnh(chiTiet.getSanPham().getUrlHinhAnh() != null ? chiTiet.getSanPham().getUrlHinhAnh() : "https://via.placeholder.com/50");
             currentCart.add(newItem);
         }
 
@@ -115,11 +116,14 @@ public class GioHangService {
     public void capNhatTongGioHang(GioHangDTO gioHangDTO, List<GioHangItemDTO> danhSachSanPham, BigDecimal shippingFee) {
         gioHangDTO.setDanhSachSanPham(new ArrayList<>(danhSachSanPham));
 
+        // Tính tổng tiền hàng
         BigDecimal tongTienHang = danhSachSanPham.stream()
                 .map(GioHangItemDTO::getThanhTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        gioHangDTO.setTongTienHang(formatCurrency(tongTienHang));
+        gioHangDTO.setTongTienHangValue(tongTienHang); // Lưu giá trị số
+        gioHangDTO.setTongTienHang(formatCurrency(tongTienHang)); // Định dạng
 
+        // Lấy giá trị giảm giá từ session
         BigDecimal giamGia = (BigDecimal) getSession().getAttribute(APPLIED_DISCOUNT_SESSION_KEY);
         UUID idPhieuGiamGia = (UUID) getSession().getAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
 
@@ -127,20 +131,15 @@ public class GioHangService {
             giamGia = BigDecimal.ZERO;
         }
 
-        gioHangDTO.setGiamGia(formatCurrency(giamGia));
+        gioHangDTO.setGiamGiaValue(giamGia); // Lưu giá trị số
+        gioHangDTO.setGiamGia(formatCurrency(giamGia)); // Định dạng
         gioHangDTO.setIdPhieuGiamGia(idPhieuGiamGia);
         gioHangDTO.setDaApDungPhieuGiamGia(idPhieuGiamGia != null);
 
+        // Tính tổng tiền sau giảm giá
         BigDecimal tong = tongTienHang.subtract(giamGia).add(shippingFee != null ? shippingFee : BigDecimal.ZERO);
-        gioHangDTO.setTong(formatCurrency(tong));
-
-        gioHangDTO.setDaXoaPhieuGiamGia(false);
-        gioHangDTO.setGiamGiaDaXoa(formatCurrency(BigDecimal.ZERO));
-        gioHangDTO.setPhiVanChuyen(shippingFee != null ? shippingFee : BigDecimal.ZERO);
-        gioHangDTO.setKhachHangDaChon(gioHangDTO.getKhachHangDaChon());
-        gioHangDTO.setIdPhieuGiamGia(gioHangDTO.getIdPhieuGiamGia());
-        gioHangDTO.setPhuongThucBanHang(gioHangDTO.getPhuongThucBanHang());
-        gioHangDTO.setPhuongThucThanhToan(gioHangDTO.getPhuongThucThanhToan());
+        gioHangDTO.setTongValue(tong); // Lưu giá trị số
+        gioHangDTO.setTong(formatCurrency(tong)); // Định dạng
     }
 
     public GioHangDTO layGioHang(BigDecimal shippingFee) {
@@ -158,12 +157,14 @@ public class GioHangService {
         }).collect(Collectors.toList());
         gioHangDTO.setDanhSachSanPham(updatedCartItems);
 
-        System.out.println("--- layGioHang: Kết thúc, giỏ hàng trả về: ---");
-        System.out.println("  Tổng tiền hàng: " + gioHangDTO.getTongTienHang());
-        System.out.println("  Giảm giá: " + gioHangDTO.getGiamGia());
-        System.out.println("  Tổng cuối: " + gioHangDTO.getTong());
-        System.out.println("  ID Voucher: " + gioHangDTO.getIdPhieuGiamGia());
-        System.out.println("----------------------------------------------");
+        System.out.println("Debug - layGioHang: TongTienHangValue: " + gioHangDTO.getTongTienHangValue());
+        System.out.println("Debug - layGioHang: GiamGiaValue: " + gioHangDTO.getGiamGiaValue());
+        System.out.println("Debug - layGioHang: TongValue: " + gioHangDTO.getTongValue());
+        System.out.println("Debug - layGioHang: TongTienHang: " + gioHangDTO.getTongTienHang());
+        System.out.println("Debug - layGioHang: GiamGia: " + gioHangDTO.getGiamGia());
+        System.out.println("Debug - layGioHang: Tong: " + gioHangDTO.getTong());
+        System.out.println("Debug - layGioHang: IdPhieuGiamGia: " + gioHangDTO.getIdPhieuGiamGia());
+
         return gioHangDTO;
     }
 
@@ -199,6 +200,7 @@ public class GioHangService {
             newItem.setSoLuong(quantity);
             newItem.setGia(chiTiet.getGia());
             newItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+            newItem.setHinhAnh(chiTiet.getSanPham().getUrlHinhAnh() != null ? chiTiet.getSanPham().getUrlHinhAnh() : "https://via.placeholder.com/50");
             currentCart.add(newItem);
         }
 
@@ -237,105 +239,55 @@ public class GioHangService {
         return layGioHang(BigDecimal.ZERO);
     }
 
-    public GioHangDTO apDungPhieuGiamGia(UUID voucherId, BigDecimal shippingFee) {
-        System.out.println("\n--- apDungPhieuGiamGia: Bắt đầu xử lý ---");
-        System.out.println("ID Phiếu giảm giá nhận được: " + voucherId);
-        System.out.println("Phí vận chuyển: " + shippingFee);
+    public GioHangDTO apDungPhieuGiamGia(UUID voucherId, BigDecimal shippingFee, GioHangDTO gioHang) {
+        System.out.println("--- apDungPhieuGiamGia: Bắt đầu, voucherId: " + voucherId + ", shippingFee: " + shippingFee + " ---");
+        BigDecimal tongTienHang = gioHang.getTongTienHangValue(); // Sử dụng giá trị từ GioHangDTO
+        System.out.println("Debug - Tổng tiền hàng từ giỏ: " + tongTienHang);
 
-        List<GioHangItemDTO> currentCart = getCurrentCart();
-        BigDecimal tongTienHang = currentCart.stream()
-                .map(GioHangItemDTO::getThanhTien)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        System.out.println("Tổng tiền hàng hiện tại trong giỏ: " + formatCurrency(tongTienHang));
+        BigDecimal giamGia = BigDecimal.ZERO;
+        UUID appliedVoucherId = null;
 
-        BigDecimal giamGiaThucTe = BigDecimal.ZERO;
-        UUID idPhieuGiamGiaApDung = null;
+        if (voucherId != null) {
+            PhieuGiamGia phieu = phieuGiamGiaRepository.findById(voucherId)
+                    .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
+            LocalDate today = LocalDate.now();
+            System.out.println("Debug - Voucher info: " + phieu.getMa() + ", NgayBatDau: " + phieu.getNgayBatDau() +
+                    ", NgayKetThuc: " + phieu.getNgayKetThuc() + ", SoLuong: " + phieu.getSoLuong() +
+                    ", GiaTriGiamToiThieu: " + phieu.getGiaTriGiamToiThieu());
 
-        PhieuGiamGia phieu = phieuGiamGiaRepository.findById(voucherId).orElse(null);
-
-        if (phieu == null) {
-            System.out.println("LỖI: Không tìm thấy phiếu giảm giá với ID: " + voucherId + ". Không áp dụng giảm giá.");
-            getSession().removeAttribute(APPLIED_DISCOUNT_SESSION_KEY);
-            getSession().removeAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
+            if (phieu.getNgayBatDau() != null && phieu.getNgayBatDau().isAfter(today) ||
+                    phieu.getNgayKetThuc() != null && phieu.getNgayKetThuc().isBefore(today) ||
+                    phieu.getSoLuong() != null && phieu.getSoLuong() <= 0 ||
+                    phieu.getGiaTriGiamToiThieu() != null && tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
+                System.out.println("Debug - Voucher không hợp lệ: " +
+                        "NgayBatDau: " + (phieu.getNgayBatDau() != null && phieu.getNgayBatDau().isAfter(today)) +
+                        ", NgayKetThuc: " + (phieu.getNgayKetThuc() != null && phieu.getNgayKetThuc().isBefore(today)) +
+                        ", SoLuong: " + (phieu.getSoLuong() != null && phieu.getSoLuong() <= 0) +
+                        ", GiaTriGiamToiThieu: " + (tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) < 0));
+            } else if ("PERCENT".equals(phieu.getLoai())) {
+                giamGia = tongTienHang.multiply(phieu.getGiaTriGiam())
+                        .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+                if (phieu.getGiaTriGiamToiDa() != null && giamGia.compareTo(phieu.getGiaTriGiamToiDa()) > 0) {
+                    giamGia = phieu.getGiaTriGiamToiDa();
+                }
+                appliedVoucherId = voucherId;
+                System.out.println("Debug - Áp dụng giảm giá %: " + giamGia);
+            } else if ("CASH".equals(phieu.getLoai())) {
+                giamGia = phieu.getGiaTriGiam();
+                if (giamGia.compareTo(tongTienHang) > 0) {
+                    giamGia = tongTienHang;
+                }
+                appliedVoucherId = voucherId;
+                System.out.println("Debug - Áp dụng giảm giá tiền mặt: " + giamGia);
+            }
         } else {
-            System.out.println("--- Thông tin Phiếu giảm giá tìm thấy ---");
-            System.out.println("  Mã phiếu: " + phieu.getMa());
-            System.out.println("  Tên phiếu: " + phieu.getTen());
-            System.out.println("  Loại giảm giá: " + phieu.getLoai());
-            System.out.println("  Giá trị giảm: " + phieu.getGiaTriGiam());
-            System.out.println("  Giá trị giảm tối đa: " + phieu.getGiaTriGiamToiDa());
-            System.out.println("  Giá trị giảm tối thiểu: " + phieu.getGiaTriGiamToiThieu());
-            System.out.println("  Ngày bắt đầu (DB): " + phieu.getNgayBatDau()); // Giờ đây chắc chắn là LocalDate
-            System.out.println("  Ngày kết thúc (DB): " + phieu.getNgayKetThuc()); // Giờ đây chắc chắn là LocalDate
-            System.out.println("  Số lượng còn lại: " + phieu.getSoLuong());
-            System.out.println("----------------------------------------");
-
-            boolean duDieuKienApDung = true;
-            LocalDate today = LocalDate.now(); // Lấy ngày hiện tại (chỉ ngày, không giờ)
-
-            // So sánh LocalDate với LocalDate
-            if (phieu.getNgayKetThuc() != null && phieu.getNgayKetThuc().isBefore(today)) {
-                System.out.println("  Voucher HẾT HẠN sử dụng. (Ngày kết thúc: " + phieu.getNgayKetThuc() + ")");
-                duDieuKienApDung = false;
-            }
-            if (phieu.getNgayBatDau() != null && phieu.getNgayBatDau().isAfter(today)) {
-                System.out.println("  Voucher CHƯA ĐẾN HẠN sử dụng. (Ngày bắt đầu: " + phieu.getNgayBatDau() + ")");
-                duDieuKienApDung = false;
-            }
-            if (phieu.getSoLuong() != null && phieu.getSoLuong() <= 0) {
-                System.out.println("  Voucher ĐÃ HẾT SỐ LƯỢNG.");
-                duDieuKienApDung = false;
-            }
-            if (phieu.getGiaTriGiamToiThieu() != null && tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
-                System.out.println("  TỔNG TIỀN HÀNG (" + formatCurrency(tongTienHang) + ") KHÔNG ĐẠT MỨC TỐI THIỂU (" + formatCurrency(phieu.getGiaTriGiamToiThieu()) + ") để áp dụng voucher.");
-                duDieuKienApDung = false;
-            }
-
-            if (duDieuKienApDung) {
-                if ("PERCENT".equals(phieu.getLoai())) {
-                    BigDecimal phanTramGiam = phieu.getGiaTriGiam();
-                    BigDecimal soTienGiamDuKien = tongTienHang.multiply(phanTramGiam)
-                            .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
-                    System.out.println("  [LOẠI PERCENT] Giảm dự kiến: " + formatCurrency(soTienGiamDuKien));
-
-                    if (phieu.getGiaTriGiamToiDa() != null && soTienGiamDuKien.compareTo(phieu.getGiaTriGiamToiDa()) > 0) {
-                        giamGiaThucTe = phieu.getGiaTriGiamToiDa();
-                        System.out.println("  [LOẠI PERCENT] Giảm vượt quá giới hạn tối đa. Áp dụng: " + formatCurrency(giamGiaThucTe));
-                    } else {
-                        giamGiaThucTe = soTienGiamDuKien;
-                        System.out.println("  [LOẠI PERCENT] Áp dụng: " + formatCurrency(giamGiaThucTe));
-                    }
-                } else if ("CASH".equals(phieu.getLoai())) {
-                    giamGiaThucTe = phieu.getGiaTriGiam();
-                    System.out.println("  [LOẠI CASH] Giảm tiền mặt: " + formatCurrency(giamGiaThucTe));
-
-                    if (giamGiaThucTe.compareTo(tongTienHang) > 0) {
-                        giamGiaThucTe = tongTienHang;
-                        System.out.println("  [LOẠI CASH] Giảm tiền mặt được điều chỉnh để không vượt quá tổng tiền hàng: " + formatCurrency(giamGiaThucTe));
-                    }
-                } else {
-                    System.out.println("  LOẠI PHIẾU GIẢM GIÁ KHÔNG HỢP LỆ: " + phieu.getLoai() + ". Không áp dụng giảm giá.");
-                }
-
-                if (giamGiaThucTe.compareTo(BigDecimal.ZERO) > 0) {
-                    idPhieuGiamGiaApDung = voucherId;
-                    System.out.println("  Voucher được áp dụng thành công! Số tiền giảm: " + formatCurrency(giamGiaThucTe));
-                } else {
-                    System.out.println("  Số tiền giảm thực tế là 0. Voucher không được áp dụng.");
-                }
-            } else {
-                System.out.println("  Voucher không đủ điều kiện áp dụng.");
-            }
+            System.out.println("Debug - Không có voucherId, không áp dụng giảm giá.");
         }
 
-        getSession().setAttribute(APPLIED_DISCOUNT_SESSION_KEY, giamGiaThucTe);
-        getSession().setAttribute(APPLIED_VOUCHER_ID_SESSION_KEY, idPhieuGiamGiaApDung);
-
-        GioHangDTO updatedGioHangDTO = layGioHang(shippingFee);
-
-        System.out.println("--- apDungPhieuGiamGia: Kết thúc xử lý ---");
-        System.out.println("  Giỏ hàng trả về sau khi áp dụng: " + updatedGioHangDTO);
-        System.out.println("----------------------------------------------\n");
-        return updatedGioHangDTO;
-    }
-}
+        getSession().setAttribute(APPLIED_DISCOUNT_SESSION_KEY, giamGia);
+        getSession().setAttribute(APPLIED_VOUCHER_ID_SESSION_KEY, appliedVoucherId);
+        System.out.println("Debug - Giảm giá lưu session: " + giamGia + ", Voucher ID: " + appliedVoucherId);
+        capNhatTongGioHang(gioHang, gioHang.getDanhSachSanPham(), shippingFee); // Cập nhật lại gioHang với giamGia
+        System.out.println("--- apDungPhieuGiamGia: Kết thúc, Tổng tiền sau giảm: " + gioHang.getTong() + " ---");
+        return gioHang;
+    }}
