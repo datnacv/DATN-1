@@ -39,7 +39,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
-@RequestMapping("/acvstore/banhang")
+@RequestMapping("/acvstore/ban-hang")
 public class BanHangController {
 
     @Autowired
@@ -614,10 +614,10 @@ public class BanHangController {
         nguoiDung.setTrangThai(true);
         nguoiDung.setThoiGianTao(LocalDateTime.now());
         if (nguoiDungService.existsByPhone(khachHangDTO.getSoDienThoai())) {
-            return "redirect:/acvstore/banhang?error=Số điện thoại đã tồn tại";
+            return "redirect:/acvstore/ban-hang?error=Số điện thoại đã tồn tại";
         }
         nguoiDungService.save(nguoiDung);
-        return "redirect:/acvstore/banhang";
+        return "redirect:/acvstore/ban-hang";
     }
 
     @PostMapping("/hold-order")

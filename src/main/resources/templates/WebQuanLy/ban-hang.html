@@ -268,6 +268,8 @@
   <!-- Customer Modal -->
   <div id="customerModal" class="modal">
     <div class="modal-content">
+      <button onclick="document.getElementById('customerModal').style.display='none'">Đóng</button>
+
       <h3 class="text-lg font-bold mb-4">Danh sách khách hàng</h3>
       <!-- Phần khách lẻ -->
       <div class="mb-4">
@@ -282,7 +284,6 @@
         <div id="customerList" class="space-y-2"></div>
       </div>
       <div id="customerSpinner" class="spinner mt-4"></div>
-      <button onclick="document.getElementById('customerModal').style.display='none'" class="mt-4 w-full px-4 py-3 bg-gray-500 text-white rounded-lg btn-secondary">Đóng</button>
     </div>
   </div>
 
@@ -331,7 +332,7 @@
 <div id="toastContainer" class="fixed top-5 right-5 space-y-2 z-50"></div>
 
 <script>
-  const BASE_URL = 'http://localhost:8080/acvstore/banhang';
+  const BASE_URL = 'http://localhost:8080/acvstore/ban-hang';
   let tabs = [];
   let currentTabId = null;
   const MAX_TABS = 5;
@@ -356,23 +357,23 @@
   // Initialize tabs
   async function initTabs() {
     try {
-      // Kiểm tra localStorage trước
       const savedTabs = localStorage.getItem('orderTabs');
       const savedTabId = localStorage.getItem('currentTabId');
       if (savedTabs && savedTabId) {
         tabs = JSON.parse(savedTabs);
         currentTabId = parseInt(savedTabId);
+        // Sắp xếp lại tabs theo id
+        tabs.sort((a, b) => a.id - b.id);
         renderTabs();
         loadTabContent(currentTabId);
         return;
       }
 
-      // Nếu không có trong localStorage, lấy từ server
       const response = await fetch(`${BASE_URL}/cart/get`);
       const cartData = await response.json();
       if (response.ok) {
         const newTab = {
-          id: 1,
+          id: getNextTabId(),
           cart: cartData.danhSachSanPham || [],
           customerPhone: '',
           customerName: '',
@@ -389,7 +390,7 @@
           selectedAddress: ''
         };
         tabs.push(newTab);
-        currentTabId = 1;
+        currentTabId = newTab.id;
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
         localStorage.setItem('currentTabId', currentTabId);
         renderTabs();
@@ -399,16 +400,26 @@
       }
     } catch (error) {
       console.error('Lỗi khi khởi tạo tabs:', error);
-      showToast('Không thể tải giỏ hàng từ server. Vui lòng thử lại.', "error")
+      showToast('Không thể tải giỏ hàng từ server. Vui lòng thử lại.', "error");
       addNewTab();
     }
+  }
+
+  // Get next available tab ID from 1 to 5
+  function getNextTabId() {
+    for (let i = 1; i <= MAX_TABS; i++) {
+      if (!tabs.some(tab => tab.id === i)) {
+        return i;
+      }
+    }
+    return tabs.length + 1; // Nếu tất cả từ 1-5 đã có, thêm tiếp
   }
 
   // Render tabs
   function renderTabs() {
     const tabsContainer = document.getElementById('orderTabs');
     tabsContainer.innerHTML = '';
-    tabs.forEach(tab => {
+    tabs.sort((a, b) => a.id - b.id).forEach(tab => {
       const tabElement = document.createElement('div');
       tabElement.className = `tab px-4 py-2 border border-gray-300 ${tab.id === currentTabId ? 'active' : ''}`;
       tabElement.innerText = `Đơn ${tab.id}`;
@@ -439,7 +450,7 @@
         throw new Error(cartData.error || 'Lỗi khi reset giỏ hàng.');
       }
       const newTab = {
-        id: tabs.length + 1,
+        id: getNextTabId(),
         cart: [],
         customerPhone: '',
         customerName: '',
@@ -462,7 +473,7 @@
       renderTabs();
       loadTabContent(currentTabId);
     } catch (error) {
-      alert('Lỗi khi tạo tab mới: ' + error.message);
+      showToast('Lỗi khi tạo tab mới: ' + error.message, 'error');
     }
   }
 
@@ -482,12 +493,12 @@
     }
     tabs = tabs.filter(t => t.id !== tabId);
     if (currentTabId === tabId) {
-      currentTabId = tabs[tabs.length - 1].id;
+      currentTabId = tabs.length > 0 ? tabs[tabs.length - 1].id : null;
     }
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
     localStorage.setItem('currentTabId', currentTabId);
     renderTabs();
-    loadTabContent(currentTabId);
+    if (currentTabId) loadTabContent(currentTabId);
   }
 
   // Load tab content
@@ -505,7 +516,7 @@
     toggleCashInput();
     renderCart(tab.cart);
     updateSummary(tab);
-    if (tab.customerPhone) {
+    if (tab.customerPhone && tab.customerPhone !== '0999999999') {
       await fetchCustomerAddresses();
     }
     await fetchVouchers();
