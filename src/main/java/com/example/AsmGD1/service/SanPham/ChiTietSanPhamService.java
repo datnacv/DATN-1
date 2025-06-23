@@ -81,6 +81,7 @@ public class ChiTietSanPhamService {
         ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
 
+        int variationIndex = 0;
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
                     variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
@@ -117,9 +118,15 @@ public class ChiTietSanPhamService {
                 e.printStackTrace();
             }
 
-            if (imageFiles != null && !imageFiles.isEmpty()) {
-                saveImagesToCloudinary(savedDetail, imageFiles.stream().limit(3).collect(Collectors.toList()));
+            // Lấy ảnh riêng cho từng biến thể
+            String imageFieldName = "variations[" + variationIndex + "].imageFiles";
+            List<MultipartFile> variationImages = imageFiles.stream()
+                    .filter(file -> file.getName().equals(imageFieldName))
+                    .collect(Collectors.toList());
+            if (!variationImages.isEmpty()) {
+                saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
+            variationIndex++;
         }
     }
 
