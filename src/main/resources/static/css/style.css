@@ -1,84 +1,81 @@
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 0;
+    font-family: 'Roboto', sans-serif;
 }
 
-.container {
-    max-width: 600px;
-    margin: 50px auto;
-    padding: 20px;
-    background-color: #fff;
+.main-box {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.checkout {
+    width: 450px;
+    box-shadow: 0 0 0 1px #6655ff;
     border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-h2 {
-    text-align: center;
-    color: #333;
+.product {
+    padding: 6px 10px
 }
 
-.form-group {
-    margin-bottom: 15px;
+.product p {
+    font-size: medium;
 }
 
-label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-input {
+#create-payment-link-btn {
     width: 100%;
-    padding: 8px;
-    box-sizing: border-box;
-}
-
-.btn {
-    background-color: #007bff;
-    color: #fff;
-    padding: 10px 20px;
+    height: 36px;
+    background-color: #6655ff;
+    color: white;
     border: none;
-    border-radius: 5px;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    font-size: medium;
     cursor: pointer;
-    text-decoration: none;
-    display: inline-block;
-    text-align: center;
+
 }
 
-.btn:hover {
-    background-color: #0056b3;
-}
-
-.error {
-    color: red;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-.success {
-    color: green;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-table {
-    width: 100%;
+#result {
+    font-family: Arial, Helvetica, sans-serif;
     border-collapse: collapse;
-    margin-top: 20px;
+    width: 100%;
 }
 
-th, td {
+#result td, #result th {
     border: 1px solid #ddd;
     padding: 8px;
-    text-align: left;
 }
 
-th {
-    background-color: #007bff;
+#result tr:nth-child(even){background-color: #f2f2f2;}
+
+#result tr:hover {background-color: #ddd;}
+
+#result th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #6655ff;
     color: white;
 }
 
-a.btn {
-    margin-right: 5px;
+#query-string-table {
+    width: 50%;
+}
+
+.payment-titlte {
+    color: #6655ff;
+    font-size: larger;
+}
+
+#return-page-btn {
+    margin-top: 10px;
+    border: 1px solid #6655ff;
+    border-radius: 5px;
+    background-color: #6655ff;
+    padding: 10px 8px;
+    color: white;
+    text-decoration: none;
+    font-size: small;
 }

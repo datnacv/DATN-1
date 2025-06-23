@@ -244,13 +244,37 @@ public class BanHangController {
     }
 
     @PostMapping("/create-order")
-    public ResponseEntity<Map<String, Object>> createOrder(@RequestBody DonHangDTO donHangDTO) {
+    public ResponseEntity<Map<String, Object>> createOrder(@RequestBody Map<String, Object> request, HttpSession session) {
         try {
+            String payosCheckoutId = (String) request.get("payosCheckoutId");
+            if (payosCheckoutId == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Thiếu payosCheckoutId"));
+            }
+
+            // Lấy giỏ hàng từ session hoặc tạm thời
+            GioHangDTO gioHangDTO = (GioHangDTO) session.getAttribute("gioHang");
+            if (gioHangDTO == null) {
+                gioHangDTO = gioHangService.layGioHang(BigDecimal.ZERO);
+            }
+
+            // Tạo DonHangDTO
+            DonHangDTO donHangDTO = new DonHangDTO();
+            donHangDTO.setDanhSachSanPham(gioHangDTO.getDanhSachSanPham());
+            donHangDTO.setPhiVanChuyen(gioHangDTO.getPhiVanChuyen());
+            donHangDTO.setPhuongThucThanhToan(UUID.fromString(gioHangDTO.getPhuongThucThanhToan()));
+            donHangDTO.setSoDienThoaiKhachHang((String) session.getAttribute("currentCustomerPhone")); // Cần đảm bảo có giá trị
+
+            // Gọi service để tạo đơn hàng
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
+
+            // Xóa giỏ hàng và tempStockChanges
+            session.removeAttribute("tempStockChanges");
+            gioHangService.xoaTatCaGioHang();
+
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Đơn hàng đã được tạo thành công!");
             response.put("maDonHang", ketQua.getMaDonHang());
-            response.put("soLuongTonKho", ketQua.getSoLuongTonKho());
+            response.put("payosCheckoutId", payosCheckoutId); // Trả về để debug
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -589,18 +613,6 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
-
-//    @PostMapping("/cart/apply-voucher")
-//    @ResponseBody
-//    public ResponseEntity<GioHangDTO> apDungPhieuGiamGia(@RequestParam UUID voucherId, @RequestParam(required = false) BigDecimal shippingFee) {
-//        try {
-//            BigDecimal fee = shippingFee != null ? shippingFee : BigDecimal.ZERO;
-//            GioHangDTO gioHang = gioHangService.apDungPhieuGiamGia(voucherId, fee);
-//            return ResponseEntity.ok(gioHang);
-//        } catch (Exception ex) {
-//            return ResponseEntity.badRequest().body(new GioHangDTO());
-//        }
-//    }
 
     @PostMapping("/add-customer")
     public String themKhachHang(@ModelAttribute NguoiDungDTO khachHangDTO) {

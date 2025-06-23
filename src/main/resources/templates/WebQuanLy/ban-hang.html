@@ -836,25 +836,34 @@
       console.error('Không tìm thấy tab hiện tại.');
       return;
     }
+
     const shippingFee = tab.shippingFee || 0;
+
+    if (!voucherId) {
+      // Không sử dụng mã giảm giá
+      tab.voucherId = null;
+      tab.discount = 0;
+      tab.total = tab.subTotal; // Tổng tiền hàng
+      // ✅ Cộng phí vận chuyển ngay ở đây (nếu muốn hiển thị đúng ngay)
+      updateSummary(tab); // Hàm này mới cộng shippingFee để hiển thị
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      return;
+    }
+
+
     try {
-      const response = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${voucherId}&shippingFee=${shippingFee}`, {
-        method: 'GET',
-      });
-      const data = await response.json(); // Có thể ném lỗi nếu JSON không hợp lệ
-      // if (!response.ok) {
-      //   const errorMessage = data.error ? data.error.toString() : `Lỗi khi áp dụng voucher (Mã trạng thái: ${response.status})`;
-      //   throw new Error(errorMessage);
-      // }
-      // Cập nhật giao diện hoặc tab với dữ liệu mới (data)
-      tab.voucherId = voucherId || null; // Đảm bảo voucherId là null nếu rỗng
-      updateCartDisplay(data); // Hàm tùy chỉnh để cập nhật giao diện
-      updateSummary(tab); // thêm cuối applyVoucher()
+      const response = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${voucherId}&shippingFee=${shippingFee}`);
+      const data = await response.json();
+
+      tab.voucherId = voucherId;
+      updateCartDisplay(data);
+      updateSummary(tab);
     } catch (error) {
       console.error('Lỗi khi áp dụng voucher:', error);
-      alert('Lỗi khi áp dụng voucher: ' + error.message); // Thông báo cho người dùng
+      alert('Lỗi khi áp dụng voucher: ' + error.message);
     }
   }
+
 
   // Gắn sự kiện khi chọn voucher
   document.getElementById('voucherSelect').addEventListener('change', (e) => {
@@ -880,31 +889,15 @@
     document.getElementById('discount').innerText = discount.toLocaleString('vi-VN');
     document.getElementById('shippingFeeDisplay').innerText = shippingFee.toLocaleString('vi-VN') + ' VNĐ';
     document.getElementById('total').innerText = total.toLocaleString('vi-VN');
-
-    // Nếu có phần tử tổng cuối cùng bao gồm phí ship
-    const totalWithShippingElem = document.getElementById('totalWithShipping');
-    if (totalWithShippingElem) {
-      totalWithShippingElem.innerText = totalWithShipping.toLocaleString('vi-VN') + ' VNĐ';
-    }
-
-    // Hiển thị lại tiền trả lại (KHÔNG ghi đè nội dung ban đầu)
-    const changeElem = document.getElementById('changeAmount');
-    if (changeElem) {
-      changeElem.innerHTML = `${(change > 0 ? change : 0).toLocaleString('vi-VN')} VNĐ`;
-    }
+    document.getElementById('changeAmount').innerText = (change > 0 ? change : 0).toLocaleString('vi-VN') + ' VNĐ';
   }
 
   function capNhatTienTraLai() {
-    // Lấy giá trị số tiền khách đưa
     const tienKhach = parseFloat(document.getElementById("cashAmount").value) || 0;
-
-    // Lấy tổng tiền đơn hàng (đã tính trước và đặt vào input hidden)
-    const tongTien = parseFloat(document.getElementById("total").value) || 0;
-
-    // Tính tiền thừa
+    const tongTienHang = parseFloat(document.getElementById("total").innerText.replace(/[^\d]/g, '')) || 0;
+    const phiVanChuyen = parseFloat(document.getElementById("shippingFee").value) || 0;
+    const tongTien = tongTienHang + phiVanChuyen;
     const tienThua = tienKhach - tongTien;
-
-    // Gán kết quả vào span tiền trả lại
     document.getElementById("changeAmount").textContent = tienThua > 0
             ? tienThua.toLocaleString("vi-VN") + " VNĐ"
             : "0 VNĐ";
@@ -914,7 +907,12 @@
   document.addEventListener("DOMContentLoaded", function () {
     const inputTienKhach = document.getElementById("cashAmount");
     if (inputTienKhach) {
-      inputTienKhach.addEventListener("input", capNhatTienTraLai);
+      inputTienKhach.addEventListener("input", function () {
+        const tab = tabs.find(t => t.id === currentTabId);
+        tab.cashAmount = parseFloat(this.value) || 0;
+        capNhatTienTraLai();
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      });
     }
   });
 
@@ -933,6 +931,7 @@
       showToast('Giỏ hàng trống.', 'warning');
       return;
     }
+
     const orderData = {
       soDienThoaiKhachHang: tab.customerPhone,
       phiVanChuyen: tab.shippingFee,
@@ -943,30 +942,77 @@
       danhSachSanPham: tab.cart,
       diaChiGiaoHang: tab.selectedAddress
     };
+
     try {
-      const response = await fetch(`${BASE_URL}/create-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        alert(data.error || 'Lỗi khi tạo đơn hàng.');
-        return;
-      }
-      alert(data.message + ' Mã đơn hàng: ' + data.maDonHang);
-      tabs = tabs.filter(t => t.id !== currentTabId);
-      if (tabs.length === 0) {
-        await addNewTab();
+      if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
+        // Chuyển khoản: Tạo link thanh toán PayOS
+        const productName = tab.cart.map(item => item.tenSanPham).join(', ');
+
+        // Clean and format the price from ",000 VNĐ" to a plain integer
+        let totalAmount = tab.total || "0"; // Fallback to "0" if undefined
+        totalAmount = totalAmount.replace(/[^\d]/g, ''); // Remove all non-digit characters
+        totalAmount = parseInt(totalAmount, 10) || 0; // Convert to integer, fallback to 0
+
+        // Add shipping fee if applicable
+        totalAmount += (tab.shippingFee || 0);
+
+        console.log("Total amount sent to PayOS:", totalAmount); // Debug log
+        if (totalAmount <= 0) {
+          showToast('Tổng tiền phải lớn hơn 0.', 'warning');
+          return;
+        }
+
+        const description = `Thanh toán đơn hàng ${currentTabId}`;
+        const formData = new URLSearchParams({
+          productName: productName,
+          price: totalAmount.toString(), // Send as plain integer
+          description: description
+        });
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'http://localhost:8080/create-payment-link';
+        form.style.display = 'none';
+
+        for (const [key, value] of formData.entries()) {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        }
+
+        sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData, tabId: currentTabId }));
+        document.body.appendChild(form);
+        form.submit();
       } else {
-        currentTabId = tabs[tabs.length - 1].id;
+        // Tiền mặt: Tạo đơn hàng như cũ
+        const response = await fetch(`${BASE_URL}/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          showToast(data.error || 'Lỗi khi tạo đơn hàng.', 'error');
+          return;
+        }
+
+        showToast(`Đơn hàng ${data.maDonHang} đã được tạo thành công!`, 'success');
+        tabs = tabs.filter(t => t.id !== currentTabId);
+        if (tabs.length === 0) {
+          await addNewTab();
+        } else {
+          currentTabId = tabs[tabs.length - 1].id;
+        }
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        localStorage.setItem('currentTabId', currentTabId);
+        renderTabs();
+        loadTabContent(currentTabId);
       }
-      localStorage.setItem('orderTabs', JSON.stringify(tabs));
-      localStorage.setItem('currentTabId', currentTabId);
-      renderTabs();
-      loadTabContent(currentTabId);
     } catch (error) {
-      alert('Lỗi khi tạo đơn hàng: ' + error.message);
+      showToast('Lỗi khi tạo đơn hàng: ' + error.message, 'error');
     }
   }
 
@@ -1227,19 +1273,15 @@
 
   document.getElementById('shippingFee').addEventListener('input', function () {
     const tab = tabs.find(t => t.id === currentTabId);
-    tab.shippingFee = parseFloat(this.value) || 0;
-    updateSummary(tab); // <-- THÊM DÒNG NÀY
+    let value = parseFloat(this.value) || 0;
+    if (value < 0) value = 0; // Đảm bảo không âm
+    this.value = value; // Cập nhật lại giá trị input
+    tab.shippingFee = value; // Cập nhật tab.shippingFee
+    updateSummary(tab); // Cập nhật tổng tiền
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
     if (tab.voucherId) {
-      applyVoucher(tab.voucherId);
-    } else {
-      updateSummary(tab); // vẫn cần cập nhật khi không có voucher
+      applyVoucher(tab.voucherId); // Cập nhật lại voucher nếu có
     }
-    let value = parseFloat(this.value) || 0;
-    if (value < 0) value = 0;
-    this.value = value;
-    tab.shippingFee = value;
-
   });
 
 
