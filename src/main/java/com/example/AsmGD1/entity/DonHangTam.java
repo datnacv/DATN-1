@@ -16,6 +16,9 @@ public class DonHangTam {
     @Column(name = "id", columnDefinition = "UNIQUEIDENTIFIER", updatable = false)
     private UUID id;
 
+    @Column(name = "tabId")
+    private String tabId; // Thêm trường này
+
     @Column(name = "id_khach_hang")
     private UUID khachHang;
 

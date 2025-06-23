@@ -17,4 +17,6 @@ public class DonHangDTO {
     private UUID idPhieuGiamGia;
     private String tong;
     private String soDienThoaiKhachHang;
+    private String tabId;
+    private String diaChiGiaoHang;
 }
