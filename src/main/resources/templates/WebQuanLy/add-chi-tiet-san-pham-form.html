@@ -671,51 +671,51 @@
         colors.forEach((colorId) => {
             const colorText = $('#colorSelect option[value="' + colorId + '"]').text();
             const colorGroupDiv = `
-                <div class="variation-group" data-color-id="${colorId}">
-                    <h5 class="mb-3">Màu: <span class="fw-bold">${colorText}</span></h5>
-                    <div class="mb-3">
-                        <label class="form-label">Ảnh cho màu ${colorText} (tối đa 3 ảnh)</label>
-                        <div class="custom-file-input-wrapper">
-                            <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
-                            <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
-                            <input type="file" class="variation-file-input" id="image-input-${colorId}" name="variations[${variationIndex}].imageFiles" multiple accept="image/*" onchange="updateFileInputLabel(this)">
-                        </div>
-                        <div class="image-preview-container" id="preview-${colorId}"></div>
+            <div class="variation-group" data-color-id="${colorId}">
+                <h5 class="mb-3">Màu: <span class="fw-bold">${colorText}</span></h5>
+                <div class="mb-3">
+                    <label class="form-label">Ảnh cho màu ${colorText} (tối đa 3 ảnh)</label>
+                    <div class="custom-file-input-wrapper">
+                        <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
+                        <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
+                        <input type="file" class="variation-file-input" id="image-input-${colorId}" name="variations[${variationIndex}].imageFiles" multiple accept="image/*" onchange="updateFileInputLabel(this)">
                     </div>
-                    <div id="sizes-container-${colorId}"></div>
+                    <div class="image-preview-container" id="preview-${colorId}"></div>
                 </div>
-            `;
+                <div id="sizes-container-${colorId}"></div>
+            </div>
+        `;
             container.append(colorGroupDiv);
 
             const sizesContainer = $(`#sizes-container-${colorId}`);
             sizes.forEach((sizeId) => {
                 const sizeText = $('#sizeSelect option[value="' + sizeId + '"]').text();
                 const variationHtml = `
-                    <div class="variation-item">
-                        <button type="button" class="remove-variation" onclick="removeVariation(this)">×</button>
-                        <div class="variation-details">
-                            <h6>Biến thể: ${colorText} - ${sizeText}</h6>
-                            <div class="row g-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Giá bán</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">₫</span>
-                                        <input type="number" class="form-control" name="variations[${variationIndex}].price" step="1000" min="0" required>
-                                    </div>
+                <div class="variation-item">
+                    <button type="button" class="remove-variation" onclick="removeVariation(this)">×</button>
+                    <div class="variation-details">
+                        <h6>Biến thể: ${colorText} - ${sizeText}</h6>
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label">Giá bán</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₫</span>
+                                    <input type="number" class="form-control" name="variations[${variationIndex}].price" step="1000" min="0" required>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Số lượng tồn</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                        <input type="number" class="form-control" name="variations[${variationIndex}].stockQuantity" min="0" required>
-                                    </div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Số lượng tồn</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                    <input type="number" class="form-control" name="variations[${variationIndex}].stockQuantity" min="0" required>
                                 </div>
                             </div>
                         </div>
-                        <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
-                        <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizeId}">
                     </div>
-                `;
+                    <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
+                    <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizeId}">
+                </div>
+            `;
                 sizesContainer.append(variationHtml);
                 variationIndex++;
             });
