@@ -1,8 +1,8 @@
 package com.example.AsmGD1.service.SanPham;
 
-import com.example.AsmGD1.dto.ChiTietSanPhamBatchDto;
-import com.example.AsmGD1.dto.ChiTietSanPhamUpdateDto;
-import com.example.AsmGD1.dto.ChiTietSanPhamVariationDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamVariationDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.SanPham.*;
 import com.example.AsmGD1.util.CloudinaryUtil;

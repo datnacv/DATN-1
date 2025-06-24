@@ -1,4 +1,4 @@
-package com.example.AsmGD1.controller;
+package com.example.AsmGD1.controller.GiamGia;
 
 import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import com.example.AsmGD1.entity.ChiTietSanPhamChienDichGiamGia;

@@ -1,6 +1,6 @@
 package com.example.AsmGD1.controller.SanPham;
 
-import com.example.AsmGD1.dto.SanPhamDto;
+import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.DanhMuc;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.service.SanPham.DanhMucService;

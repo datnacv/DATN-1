@@ -1,4 +1,4 @@
-package com.example.AsmGD1.dto;
+package com.example.AsmGD1.dto.ChiTietSanPham;
 
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;

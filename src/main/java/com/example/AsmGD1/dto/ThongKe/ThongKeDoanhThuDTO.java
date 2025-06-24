@@ -1,4 +1,4 @@
-package com.example.AsmGD1.dto;
+package com.example.AsmGD1.dto.ThongKe;
 
 import lombok.Data;
 

@@ -1,9 +1,9 @@
-package com.example.AsmGD1.service;
+package com.example.AsmGD1.service.ThongKe;
 
-import com.example.AsmGD1.dto.SanPhamBanChayDTO;
-import com.example.AsmGD1.dto.SanPhamTonKhoThapDTO;
-import com.example.AsmGD1.dto.ThongKeDoanhThuDTO;
-import com.example.AsmGD1.repository.ThongKeRepository;
+import com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO;
+import com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO;
+import com.example.AsmGD1.dto.ThongKe.ThongKeDoanhThuDTO;
+import com.example.AsmGD1.repository.ThongKe.ThongKeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

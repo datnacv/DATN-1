@@ -8,13 +8,13 @@
     </style>
     <body>
 
-    <div th:fragment="accountDropdown(user)">
+    <div th:fragment="accountDropdown(nguoidung)">
 
-        <div th:if="${user != null}" class="dropdown">
+        <div th:if="${nguoidung != null}" class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
                id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
-                <span th:text="${user.fullName}">Tên người dùng</span>
+                <span th:text="${nguoidung.hoTen}">Tên người dùng</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="accountDropdown" style="min-width: 250px;">
                 <li class="px-3 py-2">

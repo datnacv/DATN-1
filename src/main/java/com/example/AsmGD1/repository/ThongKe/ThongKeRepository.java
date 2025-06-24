@@ -1,7 +1,7 @@
-package com.example.AsmGD1.repository;
+package com.example.AsmGD1.repository.ThongKe;
 
-import com.example.AsmGD1.dto.SanPhamBanChayDTO;
-import com.example.AsmGD1.dto.SanPhamTonKhoThapDTO;
+import com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO;
+import com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO;
 import com.example.AsmGD1.entity.ThongKeDoanhThuChiTiet;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -34,7 +34,7 @@ public interface ThongKeRepository extends JpaRepository<ThongKeDoanhThuChiTiet,
     Integer demSanPhamTheoKhoangThoiGian(@Param("startDate") LocalDate startDate,
                                          @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT new com.example.AsmGD1.dto.SanPhamBanChayDTO(" +
+    @Query("SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO(" +
             "tk.idChiTietSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, " +
             "CASE WHEN SUM(tk.soLuongDaBan) > 0 THEN SUM(tk.doanhThu) / SUM(tk.soLuongDaBan) ELSE 0 END, " +
             "SUM(tk.soLuongDaBan), tk.imageUrl) " +
@@ -45,7 +45,7 @@ public interface ThongKeRepository extends JpaRepository<ThongKeDoanhThuChiTiet,
     List<SanPhamBanChayDTO> laySanPhamBanChay(@Param("startDate") LocalDate startDate,
                                               @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT new com.example.AsmGD1.dto.SanPhamTonKhoThapDTO(" +
+    @Query("SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO(" +
             "tk.idChiTietSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, " +
             "CASE WHEN tk.soLuongDaBan > 0 THEN tk.doanhThu / tk.soLuongDaBan ELSE 0 END, " +
             "tk.soLuongTonKho, tk.imageUrl) " +

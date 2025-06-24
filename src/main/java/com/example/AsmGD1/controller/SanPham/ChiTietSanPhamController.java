@@ -1,7 +1,7 @@
 package com.example.AsmGD1.controller.SanPham;
 
-import com.example.AsmGD1.dto.ChiTietSanPhamBatchDto;
-import com.example.AsmGD1.dto.ChiTietSanPhamUpdateDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package com.example.AsmGD1.controller;
+package com.example.AsmGD1.controller.GiamGia;
 
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaSpecification;
 import com.example.AsmGD1.service.GiamGia.GuiMailService;

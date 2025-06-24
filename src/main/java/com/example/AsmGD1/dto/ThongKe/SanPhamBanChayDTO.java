@@ -1,4 +1,4 @@
-package com.example.AsmGD1.dto;
+package com.example.AsmGD1.dto.ThongKe;
 
 import lombok.Data;
 
@@ -6,23 +6,23 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Data
-public class SanPhamTonKhoThapDTO {
+public class SanPhamBanChayDTO {
     private UUID idChiTietSanPham;
     private String tenSanPham;
     private String mauSac;
     private String kichCo;
     private BigDecimal gia;
-    private Integer soLuongTonKho;
+    private Long soLuongDaBan;
     private String imageUrl;
 
-    public SanPhamTonKhoThapDTO(UUID idChiTietSanPham, String tenSanPham, String mauSac,
-                                String kichCo, BigDecimal gia, Integer soLuongTonKho, String imageUrl) {
+    public SanPhamBanChayDTO(UUID idChiTietSanPham, String tenSanPham, String mauSac,
+                             String kichCo, BigDecimal gia, Long soLuongDaBan, String imageUrl) {
         this.idChiTietSanPham = idChiTietSanPham;
         this.tenSanPham = tenSanPham;
         this.mauSac = mauSac;
         this.kichCo = kichCo;
         this.gia = gia;
-        this.soLuongTonKho = soLuongTonKho;
+        this.soLuongDaBan = soLuongDaBan;
         this.imageUrl = imageUrl;
     }
 }
