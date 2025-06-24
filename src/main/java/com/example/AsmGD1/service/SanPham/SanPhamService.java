@@ -1,5 +1,6 @@
 package com.example.AsmGD1.service.SanPham;
 
+import com.example.AsmGD1.dto.SanPhamDto;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.repository.SanPham.SanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,9 +10,11 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class SanPhamService {
@@ -73,4 +76,7 @@ public class SanPhamService {
     public Page<SanPham> searchByTenOrMa(String keyword, Pageable pageable) {
         return sanPhamRepository.findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(keyword, keyword, pageable);
     }
+
+
+
 }

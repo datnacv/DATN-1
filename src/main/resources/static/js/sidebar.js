@@ -58,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const content = document.querySelector('.content');
     const navbar = document.querySelector('.navbar');
 
-    // Khôi phục trạng thái sidebar khi tải trangg
+    // Áp dụng trạng thái từ localStorage ngay khi tải trang
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
         sidebar.classList.add('collapsed');
@@ -67,8 +67,16 @@ document.addEventListener("DOMContentLoaded", function () {
         toggleBtn.classList.add('collapsed');
         toggleIcon.classList.remove('fa-bars');
         toggleIcon.classList.add('fa-arrow-right');
+    } else {
+        sidebar.classList.remove('collapsed');
+        content.classList.remove('collapsed');
+        navbar.classList.remove('collapsed');
+        toggleBtn.classList.remove('collapsed');
+        toggleIcon.classList.remove('fa-arrow-right');
+        toggleIcon.classList.add('fa-bars');
     }
 
+    // Xử lý sự kiện toggle
     toggleBtn.addEventListener('click', function () {
         sidebar.classList.toggle('collapsed');
         content.classList.toggle('collapsed');
@@ -87,7 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Handle responsive behavior
+    // Xử lý responsive
     window.addEventListener('resize', function () {
         if (window.innerWidth <= 768) {
             sidebar.classList.add('collapsed');
@@ -99,18 +107,28 @@ document.addEventListener("DOMContentLoaded", function () {
             toggleIcon.classList.remove('fa-bars');
             toggleIcon.classList.add('fa-arrow-right');
         } else {
-            sidebar.classList.remove('collapsed');
-            content.classList.remove('collapsed');
-            navbar.classList.remove('collapsed');
-            toggleBtn.classList.add('collapsed');
+            // Chỉ áp dụng trạng thái từ localStorage khi màn hình lớn hơn 768px
+            const storedState = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (storedState) {
+                sidebar.classList.add('collapsed');
+                content.classList.add('collapsed');
+                navbar.classList.add('collapsed');
+                toggleBtn.classList.add('collapsed');
+                toggleIcon.classList.remove('fa-bars');
+                toggleIcon.classList.add('fa-arrow-right');
+            } else {
+                sidebar.classList.remove('collapsed');
+                content.classList.remove('collapsed');
+                navbar.classList.remove('collapse   d');
+                toggleBtn.classList.remove('collapsed');
+                toggleIcon.classList.remove('fa-arrow-right');
+                toggleIcon.classList.add('fa-bars');
+            }
             toggleBtn.style.left = '65px';
-            localStorage.setItem('sidebarCollapsed', 'false');
-            toggleIcon.classList.remove('fa-arrow-right');
-            toggleIcon.classList.add('fa-bars');
         }
     });
 
-    // Initialize responsive behavior on load
+    // Khởi tạo responsive khi tải trang
     window.addEventListener('load', function () {
         if (window.innerWidth <= 768) {
             sidebar.classList.add('collapsed');

@@ -10,7 +10,7 @@ body {
     width: 250px;
     height: 100vh;
     max-height: 100vh;
-    background: #343a40;
+    background: #7a7a7a;
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -302,7 +302,7 @@ body {
 /* Navbar */
 /* Navbar */
 .navbar {
-    margin-left: 300px;
+    margin-left: 260px;
     width: calc(100% - 250px);
     z-index: 1020;
     transition: margin-left 0.3s ease-in-out, width 0.3s ease-in-out;

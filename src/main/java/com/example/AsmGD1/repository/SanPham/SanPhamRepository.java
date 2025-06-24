@@ -26,4 +26,6 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
 
     Page<SanPham> findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(String ten, String ma, Pageable pageable);
 
+
+
 }
