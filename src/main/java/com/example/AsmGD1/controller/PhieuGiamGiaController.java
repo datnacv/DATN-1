@@ -23,14 +23,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 
-
 @Controller
-@RequestMapping("/acvstore/voucher")
+@RequestMapping("/acvstore/phieu-giam-gia")
 public class PhieuGiamGiaController {
 
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
-
 
     @Autowired
     private PhieuGiamGiaCuaNguoiDungService phieuService;
@@ -38,7 +36,7 @@ public class PhieuGiamGiaController {
     @Autowired
     private GuiMailService guiMailService;
 
-    @GetMapping("vouchers")
+    @GetMapping
     public String list(@RequestParam(required = false) String search,
                        @RequestParam(required = false) String fromDate,
                        @RequestParam(required = false) String toDate,
@@ -95,7 +93,6 @@ public class PhieuGiamGiaController {
         return "WebQuanLy/voucher-list";
     }
 
-
     private String getTrangThai(PhieuGiamGia v) {
         LocalDateTime now = LocalDateTime.now();
         if (v.getNgayBatDau() != null && v.getNgayKetThuc() != null) {
@@ -106,14 +103,14 @@ public class PhieuGiamGiaController {
         return "Không xác định";
     }
 
-    @GetMapping("/vouchers/create")
+    @GetMapping("/create")
     public String createForm(Model model) {
         model.addAttribute("voucher", new PhieuGiamGia());
         model.addAttribute("customers", phieuService.layTatCaKhachHang());
         return "WebQuanLy/voucher-create";
     }
 
-    @PostMapping("/vouchers/create")
+    @PostMapping("/create")
     public String create(@RequestParam String giaTriGiam,
                          @RequestParam(required = false) String giaTriGiamToiDa,
                          @RequestParam(required = false) String giaTriGiamToiThieu,
@@ -246,11 +243,10 @@ public class PhieuGiamGiaController {
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Tạo phiếu giảm giá thành công!");
-        return "redirect:/acvstore/voucher/vouchers";
+        return "redirect:/acvstore/phieu-giam-gia";
     }
 
-
-    @GetMapping("/vouchers/edit/{id}")
+    @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable UUID id,
                                @RequestParam(defaultValue = "0") int page,
                                @RequestParam(defaultValue = "5") int size,
@@ -290,10 +286,7 @@ public class PhieuGiamGiaController {
         return "WebQuanLy/voucher-edit";
     }
 
-
-
-
-    @PostMapping("/vouchers/edit/{id}")
+    @PostMapping("/edit/{id}")
     public String update(@PathVariable UUID id,
                          @RequestParam String giaTriGiam,
                          @RequestParam(required = false) String giaTriGiamToiDa,
@@ -443,14 +436,14 @@ public class PhieuGiamGiaController {
         }
 
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật phiếu giảm giá thành công!");
-        return "redirect:/acvstore/voucher/vouchers";
+        return "redirect:/acvstore/phieu-giam-gia";
     }
 
-    @PostMapping("/vouchers/delete/{id}")
+    @PostMapping("/delete/{id}")
     public String delete(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
         try {
             // Xóa trước các bản ghi liên kết
-            phieuService.xoaTatCaGanKetTheoPhieu(id); // <== thêm dòng này
+            phieuService.xoaTatCaGanKetTheoPhieu(id);
 
             // Sau đó xóa chính phiếu
             phieuGiamGiaRepository.deleteById(id);
@@ -460,21 +453,6 @@ public class PhieuGiamGiaController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());
         }
 
-        return "redirect:/acvstore/voucher/vouchers";
+        return "redirect:/acvstore/phieu-giam-gia";
     }
-//    @GetMapping("/search")
-//    public List<NguoiDung> searchCustomers(@RequestParam("keyword") String keyword) {
-//        return phieuService.timKiemKhachHang(keyword);
-//    }
-
-//    @PostMapping("/vouchers/delete/{id}")
-//    public String delete(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
-//        try {
-//            phieuGiamGiaRepository.deleteById(id);
-//            redirectAttributes.addFlashAttribute("successMessage", "Xóa phiếu giảm giá thành công!");
-//        } catch (Exception e) {
-//            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());
-//        }
-//        return "redirect:/admin/voucher/vouchers";
-//    }
 }

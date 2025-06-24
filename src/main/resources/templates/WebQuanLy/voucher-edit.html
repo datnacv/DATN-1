@@ -14,7 +14,7 @@
     <div th:if="${errorMessage}" class="alert alert-danger" th:utext="${errorMessage}"></div>
     <div th:if="${mailMessage}" class="alert alert-info" th:text="${mailMessage}"></div>
 
-    <form th:action="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id}}" th:object="${voucher}" method="post">
+    <form th:action="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id}}" th:object="${voucher}" method="post">
         <div class="mb-3">
             <label class="form-label">Mã phiếu:</label>
             <input type="text" th:field="*{ma}" class="form-control" readonly/>
@@ -120,18 +120,18 @@
                     <ul class="pagination">
                         <li class="page-item" th:classappend="${currentCustomerPage == 0} ? 'disabled'">
                             <a class="page-link"
-                               th:href="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage - 1} + '&search=' + ${search}}"
+                               th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage - 1} + '&search=' + ${search}}"
                                aria-label="Previous"><span aria-hidden="true">«</span></a>
                         </li>
                         <li class="page-item" th:each="i : ${#numbers.sequence(0, totalCustomerPages - 1)}"
                             th:classappend="${i == currentCustomerPage} ? 'active'">
                             <a class="page-link"
-                               th:href="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id} + '?page=' + ${i} + '&search=' + ${search}}"
+                               th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id} + '?page=' + ${i} + '&search=' + ${search}}"
                                th:text="${i + 1}"></a>
                         </li>
                         <li class="page-item" th:classappend="${currentCustomerPage + 1 >= totalCustomerPages} ? 'disabled'">
                             <a class="page-link"
-                               th:href="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage + 1} + '&search=' + ${search}}"
+                               th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage + 1} + '&search=' + ${search}}"
                                aria-label="Next"><span aria-hidden="true">»</span></a>
                         </li>
                     </ul>
@@ -146,7 +146,7 @@
 
         <div class="d-flex justify-content-between">
             <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-            <a th:href="@{/acvstore/voucher/vouchers}" class="btn btn-secondary">Quay lại</a>
+            <a th:href="@{/acvstore/phieu-giam-gia}" class="btn btn-secondary">Quay lại</a>
         </div>
     </form>
 </div>

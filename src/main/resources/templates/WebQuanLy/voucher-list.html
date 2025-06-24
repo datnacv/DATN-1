@@ -36,10 +36,10 @@
         <!-- Header + Filter -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Phiếu Giảm Giá</h2>
-            <a href="/acvstore/voucher/vouchers/create" class="btn btn-primary">+ Tạo Mới</a>
+            <a href="/acvstore/phieu-giam-gia/create" class="btn btn-primary">+ Tạo Mới</a>
         </div>
 
-        <form method="get" th:action="@{/acvstore/voucher/vouchers}" class="row g-3 mb-4" id="filterForm">
+        <form method="get" th:action="@{/acvstore/phieu-giam-gia}" class="row g-3 mb-4" id="filterForm">
             <div class="col-md-3">
                 <input type="text" name="search" class="form-control" placeholder="Tìm theo mã hoặc tên..." th:value="${search}">
             </div>
@@ -111,8 +111,8 @@
                         </span>
                     </td>
                     <td class="text-center">
-                        <a th:href="@{'/acvstore/voucher/vouchers/edit/' + ${v.id}}" class="btn btn-sm btn-outline-primary me-1">✏️</a>
-                        <form th:action="@{'/acvstore/voucher/vouchers/delete/' + ${v.id}}" method="post" class="d-inline">
+                        <a th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${v.id}}" class="btn btn-sm btn-outline-primary me-1">✏️</a>
+                        <form th:action="@{'/acvstore/phieu-giam-gia/delete/' + ${v.id}}" method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-danger">🗑</button>
                         </form>
                     </td>
@@ -124,24 +124,24 @@
                 <ul class="pagination justify-content-end">
                     <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                         <a class="page-link"
-                           th:href="@{/acvstore/voucher/vouchers(page=${currentPage - 1}, size=${pageSize})}">&laquo;</a>
+                           th:href="@{/acvstore/phieu-giam-gia(page=${currentPage - 1}, size=${pageSize})}">«</a>
                     </li>
 
                     <li class="page-item"
                         th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                         th:classappend="${i == currentPage} ? 'active'">
                         <a class="page-link"
-                           th:href="@{/acvstore/voucher/vouchers(page=${i}, size=${pageSize})}"
+                           th:href="@{/acvstore/phieu-giam-gia(page=${i}, size=${pageSize})}"
                            th:text="${i + 1}">1</a>
                     </li>
 
                     <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
                         <a class="page-link"
-                           th:href="@{/acvstore/voucher/vouchers(page=${currentPage + 1}, size=${pageSize})}">&raquo;</a>
+                           th:href="@{/acvstore/phieu-giam-gia(page=${currentPage + 1}, size=${pageSize})}">»</a>
                     </li>
 
                     <li class="ms-2">
-                        <form method="get" th:action="@{/acvstore/voucher/vouchers}" class="d-inline">
+                        <form method="get" th:action="@{/acvstore/phieu-giam-gia}" class="d-inline">
                             <select name="size" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option th:value="5" th:selected="${pageSize == 5}">5 / trang</option>
                                 <option th:value="10" th:selected="${pageSize == 10}">10 / trang</option>

@@ -338,7 +338,7 @@
 </script>
 
 <!-- Filter form ẩn -->
-<form id="filterForm" method="get" th:action="@{/acvstore/thongke}" style="display: none;">
+<form id="filterForm" method="get" th:action="@{/acvstore/thong-ke}" style="display: none;">
   <input type="hidden" name="boLoc" id="filterInput">
   <input type="hidden" name="ngayBatDau" id="startDateInput">
   <input type="hidden" name="ngayKetThuc" id="endDateInput">
@@ -433,7 +433,7 @@
   }
 
   function exportExcel() {
-    window.location.href = '/acvstore/thongke/export?' + new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
+    window.location.href = '/acvstore/thong-ke/export?' + new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
   }
 </script>
 
