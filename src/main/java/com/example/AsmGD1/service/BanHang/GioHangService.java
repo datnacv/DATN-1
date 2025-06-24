@@ -160,9 +160,9 @@ public class GioHangService {
         System.out.println("Debug - layGioHang: TongTienHangValue: " + gioHangDTO.getTongTienHangValue());
         System.out.println("Debug - layGioHang: GiamGiaValue: " + gioHangDTO.getGiamGiaValue());
         System.out.println("Debug - layGioHang: TongValue: " + gioHangDTO.getTongValue());
-        System.out.println("Debug - layGioHang: TongTienHang: " + gioHangDTO.getTongTienHang());
-        System.out.println("Debug - layGioHang: GiamGia: " + gioHangDTO.getGiamGia());
-        System.out.println("Debug - layGioHang: Tong: " + gioHangDTO.getTong());
+        System.out.println("Debug - layGioHang: TongTienHang (formatted): " + gioHangDTO.getTongTienHang());
+        System.out.println("Debug - layGioHang: GiamGia (formatted): " + gioHangDTO.getGiamGia());
+        System.out.println("Debug - layGioHang: Tong (formatted): " + gioHangDTO.getTong());
         System.out.println("Debug - layGioHang: IdPhieuGiamGia: " + gioHangDTO.getIdPhieuGiamGia());
 
         return gioHangDTO;

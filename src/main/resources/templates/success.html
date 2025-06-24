@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Thanh toán thành công</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    window.onload = async function () {
+      const pending = sessionStorage.getItem("pendingOrder");
+      if (!pending) {
+        document.getElementById("orderCode").textContent = "Không tìm thấy đơn hàng.";
+        return;
+      }
+
+      const { orderData, tabId } = JSON.parse(pending);
+
+      try {
+        const res = await fetch("http://localhost:8080/acvstore/ban-hang/create-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(orderData)
+        });
+
+        const result = await res.json();
+        if (!res.ok) {
+          document.getElementById("orderCode").textContent = "Lỗi khi tạo đơn hàng!";
+          console.error("❌ Lỗi khi tạo đơn hàng:", result.error);
+          return;
+        }
+
+        document.getElementById("orderCode").textContent = result.maDonHang;
+        sessionStorage.removeItem("pendingOrder");
+
+        // 👉 Xoá tab đã thanh toán
+        let tabs = JSON.parse(localStorage.getItem('orderTabs') || '[]');
+        tabs = tabs.filter(t => String(t.id) !== String(tabId));
+
+        // 👉 Nếu không còn tab nào, tạo lại tab mặc định Đơn 1
+        if (tabs.length === 0) {
+          const newTab = {
+            id: 1,
+            tenTab: "Đơn 1",
+            sanPhams: [],
+            subTotal: 0,
+            discount: 0,
+            shippingFee: 0,
+            total: 0,
+            voucherId: null,
+            phieuGiamGia: null,
+            soTienKhachDua: 0,
+            tienThua: 0,
+            khachHangDaChon: null,
+            phuongThucThanhToan: null,
+            customerPhone: '',
+            customerName: '',
+            customerEmail: '',
+            saleMethod: 'Tại quầy',
+            cart: [],
+            addresses: [],
+            selectedAddress: ''
+          };
+          tabs.push(newTab);
+          localStorage.setItem('currentTabId', 1);
+        }
+
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+
+        // ⏳ Chuyển hướng sau 2 giây
+        setTimeout(() => {
+          window.location.href = "/acvstore/ban-hang";
+        }, 2000);
+
+      } catch (err) {
+        document.getElementById("orderCode").textContent = "Gặp lỗi khi xử lý!";
+        console.error("❌ Gọi API thất bại:", err);
+      }
+    };
+  </script>
+  <style>
+    body {
+      text-align: center;
+      margin-top: 100px;
+      font-family: sans-serif;
+      background-color: #f9fafb;
+    }
+
+    .success-box {
+      background: white;
+      display: inline-block;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .success-title {
+      color: green;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      background-color: #4f46e5;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 20px;
+    }
+
+    .btn:hover {
+      background-color: #4338ca;
+    }
+  </style>
+</head>
+<body>
+<div class="success-box">
+  <h2 class="success-title">✅ Thanh toán thành công!</h2>
+  <p>Mã đơn hàng: <strong id="orderCode">Đang xử lý...</strong></p>
+  <p>Đang quay lại trang bán hàng...</p>
+  <a href="/acvstore/ban-hang" class="btn">Quay lại ngay</a>
+</div>
+</body>
+</html>

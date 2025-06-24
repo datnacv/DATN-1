@@ -246,16 +246,28 @@ public class BanHangController {
     @PostMapping("/create-order")
     public ResponseEntity<Map<String, Object>> createOrder(@RequestBody DonHangDTO donHangDTO) {
         try {
+            System.out.println("=== [DEBUG] Nhận đơn hàng từ client ===");
+            System.out.println("SĐT: " + donHangDTO.getSoDienThoaiKhachHang());
+            System.out.println("SP: " + (donHangDTO.getDanhSachSanPham() != null ? donHangDTO.getDanhSachSanPham().size() : "null"));
+            System.out.println("PTTT: " + donHangDTO.getPhuongThucThanhToan());
+            System.out.println("Tiền khách đưa: " + donHangDTO.getSoTienKhachDua());
+            System.out.println("Giao đến: " + donHangDTO.getDiaChiGiaoHang());
+
+            if (donHangDTO.getDanhSachSanPham() == null || donHangDTO.getDanhSachSanPham().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
+            }
+
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Đơn hàng đã được tạo thành công!");
-            response.put("maDonHang", ketQua.getMaDonHang());
-            response.put("soLuongTonKho", ketQua.getSoLuongTonKho());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Tạo đơn hàng thành công!",
+                    "maDonHang", ketQua.getMaDonHang()
+            ));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/cart/apply-voucher")
     public ResponseEntity<?> applyVoucher(@RequestParam UUID voucherId, @RequestParam BigDecimal shippingFee) {
@@ -589,18 +601,6 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
-
-//    @PostMapping("/cart/apply-voucher")
-//    @ResponseBody
-//    public ResponseEntity<GioHangDTO> apDungPhieuGiamGia(@RequestParam UUID voucherId, @RequestParam(required = false) BigDecimal shippingFee) {
-//        try {
-//            BigDecimal fee = shippingFee != null ? shippingFee : BigDecimal.ZERO;
-//            GioHangDTO gioHang = gioHangService.apDungPhieuGiamGia(voucherId, fee);
-//            return ResponseEntity.ok(gioHang);
-//        } catch (Exception ex) {
-//            return ResponseEntity.badRequest().body(new GioHangDTO());
-//        }
-//    }
 
     @PostMapping("/add-customer")
     public String themKhachHang(@ModelAttribute NguoiDungDTO khachHangDTO) {
