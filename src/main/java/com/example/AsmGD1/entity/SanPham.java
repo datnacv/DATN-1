@@ -1,5 +1,6 @@
 package com.example.AsmGD1.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -41,6 +42,7 @@ public class SanPham {
 
     //long
     @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<ChiTietSanPham> chiTietSanPhams;
 
     // Helper methods for frontend

@@ -9,25 +9,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
+        .content {
+            margin-left: 250px; /* Adjust based on sidebar width if needed */
+            padding-top: 50px; /* Add padding to prevent overlap with the fixed navbar (adjust value as needed) */
+            width: calc(100% - 250px); /* Adjust based on sidebar width */
+            min-height: 100vh;
+            transition: all 0.3s;
+            position: relative;
+        }
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #eef2f7;
             color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            margin: 0;
+            padding: 0;
         }
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
         }
         .page-title {
             color: #343a40;
@@ -54,66 +60,14 @@
             border-radius: 0.375rem;
             margin-bottom: 1rem;
         }
-        .variation-group {
-            border: 2px solid #007bff;
-            padding: 10px;
-            border-radius: 0.5rem;
+        .table-responsive {
             margin-bottom: 1rem;
-            position: relative;
         }
-        .variation-item {
-            border: 1px solid #ced4da;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            margin-bottom: 0.5rem;
-            position: relative;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 5px;
-        }
-        .variation-details {
-            flex-grow: 1;
-            margin-right: 0;
-        }
-        .variation-details .row {
-            margin: 0 -5px;
-        }
-        .variation-details .col-md-4 {
-            padding: 0 5px;
-        }
-        .remove-variation {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            line-height: 20px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 12px;
-        }
-        .color-image-section {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 200px;
-            border: 1px solid #ced4da;
-            padding: 10px;
-            border-radius: 0.375rem;
+        .table {
             background-color: #fff;
         }
-        .color-image-section .form-label {
-            font-size: 0.9rem;
-            margin-bottom: 5px;
-        }
-        .color-image-section .btn {
-            font-size: 0.9rem;
-            padding: 0.25rem 0.5rem;
+        .table th, .table td {
+            vertical-align: middle;
         }
         .custom-file-input-wrapper {
             position: relative;
@@ -123,7 +77,7 @@
             border-radius: 0.375rem;
             background-color: #fff;
             transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-            height: calc(1.5em + 1.2rem + 2px);
+            height: calc(1.5em + 0.6rem + 2px); /* Smaller height for Hình ảnh */
             overflow: hidden;
         }
         .custom-file-input-wrapper:focus-within {
@@ -143,7 +97,7 @@
         .custom-file-input-button {
             background-color: #0d6efd;
             color: white;
-            padding: 0.6rem 1rem;
+            padding: 0.3rem 0.6rem; /* Smaller padding */
             border-right: 1px solid #ced4da;
             font-weight: 500;
             transition: background-color .2s ease-in-out;
@@ -154,10 +108,10 @@
         }
         .custom-file-input-label {
             flex-grow: 1;
-            padding: 0.6rem 1rem;
+            padding: 0.3rem 0.6rem; /* Smaller padding */
             color: #495057;
-            font-size: 1rem;
-            line-height: 1.5;
+            font-size: 0.75rem; /* Smaller font */
+            line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -166,35 +120,35 @@
         .image-preview-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 3px; /* Smaller gap */
+            margin-top: 3px; /* Smaller margin */
         }
         .image-preview {
             position: relative;
-            width: 100px;
-            height: 100px;
+            width: 30px; /* Smaller width */
+            height: 30px; /* Smaller height */
         }
         .image-preview img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 0.25rem;
+            border-radius: 0.2rem;
             border: 1px solid #ced4da;
         }
         .image-preview .remove-image {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: -5px; /* Adjusted for smaller size */
+            right: -5px; /* Adjusted for smaller size */
             background: #dc3545;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            line-height: 20px;
+            width: 12px; /* Smaller size */
+            height: 12px; /* Smaller size */
+            line-height: 12px; /* Adjusted for smaller size */
             text-align: center;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 8px; /* Smaller font */
         }
         .modal-header {
             background-color: #0d6efd;
@@ -289,22 +243,42 @@
             object-fit: cover;
             border-radius: 0.25rem;
         }
+        .bulk-edit-row {
+            background-color: #e9ecef;
+            padding: 0.5rem;
+            display: none; /* Hidden by default */
+        }
+        .bulk-edit-row.active {
+            display: flex; /* Show when active */
+        }
+        .bulk-edit-section {
+            margin-top: 1rem;
+        }
+        .table td:nth-child(4), .table td:nth-child(5) {
+            padding: 2rem; /* Larger padding for Giá and Số lượng */
+            font-size: 1.2rem; /* Larger font size */
+        }
+        .table td:nth-child(6) {
+            padding: 0.15rem; /* Even smaller padding for Hình ảnh */
+        }
     </style>
 </head>
 <body>
+
 <div class="d-flex">
     <!-- Include sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-
+        <a class="navbar-brand fw-bold text-primary" href="#">
+            <i class="fas fa-store-alt me-2"></i>ACV Admin
+        </a>
         <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
-
-
     <!-- Nội dung chính bên phải -->
-    <div class="content" id="mainContent">
+    <div class="content" id="content">
+<div class="container">
     <h2 class="mb-4 page-title">THÊM CHI TIẾT SẢN PHẨM</h2>
 
     <nav aria-label="breadcrumb">
@@ -325,7 +299,7 @@
                         <label for="productSelect" class="form-label">Sản phẩm</label>
                         <div class="d-flex align-items-center">
                             <select class="form-select" id="productSelect" name="productId" required>
-                                <option value="">Chọn sản phẩm...</option>
+                                <option value="">-- Chọn sản phẩm --</option>
                                 <option th:each="p : ${sanPhams}" th:value="${p.id}" th:text="${p.tenSanPham}" th:selected="${selectedProductId != null and p.id == selectedProductId}"></option>
                             </select>
                             <button type="button" class="btn btn-success btn-sm quick-add-btn ms-2" data-bs-toggle="modal" data-bs-target="#quickAddProductModal" data-entity="product" title="Thêm nhanh sản phẩm">
@@ -418,7 +392,7 @@
                     <div class="col-md-12">
                         <label class="form-label">Biến thể sản phẩm</label>
                         <div class="variation-block">
-                            <div class="row g-3">
+                            <div class="row g-3 mt-3">
                                 <div class="col-md-6">
                                     <label for="colorSelect" class="form-label">Màu sắc</label>
                                     <select class="form-select" id="colorSelect" name="colorIds" multiple>
@@ -435,7 +409,45 @@
                                 </div>
                             </div>
                             <button type="button" class="btn btn-primary mt-3" onclick="generateVariations()">Tạo biến thể</button>
-                            <div id="variationsContainer" class="mt-3"></div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="variationsTable" style="display: none;">
+                                    <thead>
+                                    <tr>
+                                        <th><input type="checkbox" id="selectAllVariations" onchange="toggleSelectAll()"></th>
+                                        <th>STT</th>
+                                        <th>Màu sắc + Size</th>
+                                        <th>Giá</th>
+                                        <th>Số lượng</th>
+                                        <th>Hình ảnh</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="variationsContainer">
+                                    <!-- Các biến thể sẽ được thêm động vào đây -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bulk-edit-section">
+                                <div class="bulk-edit-row" id="bulkEditRow">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Giá bán chung</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₫</span>
+                                            <input type="number" class="form-control" id="bulkPrice" step="1000" min="0" style="width: 120px;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Số lượng tồn chung</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                            <input type="number" class="form-control" id="bulkStock" min="0" style="width: 120px;">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-primary" onclick="applyBulkEdit()">Áp dụng</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -535,6 +547,7 @@
     </div>
 </div>
 </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -544,9 +557,14 @@
     $(document).ready(function () {
         new TomSelect('#productSelect', {
             create: false,
-            placeholder: 'Chọn sản phẩm...',
+            placeholder: '-- Chọn sản phẩm --',
             maxOptions: 200,
             allowClear: true,
+            onChange: function(value) {
+                if (value) {
+                    generateVariations(); // Regenerate variations when product changes
+                }
+            }
         });
         new TomSelect('#colorSelect', {
             create: false,
@@ -670,82 +688,133 @@
                 }
             });
         });
+
+        // Toggle bulk edit row based on checkbox selection
+        $('#variationsContainer').on('change', '.variation-checkbox', function() {
+            const anyChecked = $('.variation-checkbox:checked').length > 0;
+            $('#bulkEditRow').toggleClass('active', anyChecked);
+        });
+        $('#selectAllVariations').on('change', function() {
+            const anyChecked = $(this).is(':checked');
+            $('#bulkEditRow').toggleClass('active', anyChecked);
+        });
     });
 
     function generateVariations() {
         const colors = $('#colorSelect').val() || [];
         const sizes = $('#sizeSelect').val() || [];
+        const productId = $('#productSelect').val();
         const container = $('#variationsContainer');
         container.empty();
+        $('#variationsTable').show();
 
-        if (colors.length === 0 || sizes.length === 0) {
-            alert('Vui lòng chọn ít nhất một màu sắc và một kích cỡ.');
+
+        let variationIndex = 0;
+        colors.forEach((colorId, colorIndex) => {
+            const colorText = $('#colorSelect option[value="' + colorId + '"]').text();
+            let groupHtml = `
+                    <tr class="color-group" data-color="${colorId}">
+                        <td colspan="7" style="background-color: #f8f9fa; font-weight: bold;">Màu: ${colorText}</td>
+                    </tr>
+                    <tr class="variation-item" data-index="${variationIndex}">
+                        <td><input type="checkbox" class="variation-checkbox" name="selectedVariations" value="${variationIndex}"></td>
+                        <td>1</td>
+                        <td>${colorText} - ${$('#sizeSelect option[value="' + sizes[0] + '"]').text()}</td>
+                        <td>
+                            <div class="input-group">
+                                <span class="input-group-text">₫</span>
+                                <input type="number" class="form-control variation-price" name="variations[${variationIndex}].price" step="1000" min="0" required>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                <input type="number" class="form-control variation-stock" name="variations[${variationIndex}].stockQuantity" min="0" required>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="custom-file-input-wrapper">
+                                <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
+                                <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
+                                <input type="file" class="variation-file-input" id="image-input-${colorId}" name="variations[${variationIndex}].imageFiles" multiple accept="image/*" onchange="updateFileInputLabel(this, '${colorId}')">
+                            </div>
+                            <div class="image-preview-container mt-2" id="preview-${colorId}"></div>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-sm remove-variation" onclick="removeVariation(this)">Xóa</button>
+                        </td>
+                        <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
+                        <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizes[0]}">
+                    </tr>
+                `;
+            container.append(groupHtml);
+            variationIndex++;
+
+            for (let i = 1; i < sizes.length; i++) {
+                const sizeText = $('#sizeSelect option[value="' + sizes[i] + '"]').text();
+                const variationHtml = `
+                        <tr class="variation-item" data-index="${variationIndex}">
+                            <td><input type="checkbox" class="variation-checkbox" name="selectedVariations" value="${variationIndex}"></td>
+                            <td>${i + 1}</td>
+                            <td>${colorText} - ${sizeText}</td>
+                            <td>
+                                <div class="input-group">
+                                    <span class="input-group-text">₫</span>
+                                    <input type="number" class="form-control variation-price" name="variations[${variationIndex}].price" step="1000" min="0" required>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                    <input type="number" class="form-control variation-stock" name="variations[${variationIndex}].stockQuantity" min="0" required>
+                                </div>
+                            </td>
+                            <td></td>
+                            <td>
+                                <button type="button" class="btn btn-danger btn-sm remove-variation" onclick="removeVariation(this)">Xóa</button>
+                            </td>
+                            <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
+                            <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizes[i]}">
+                        </tr>
+                    `;
+                container.append(variationHtml);
+                variationIndex++;
+            }
+        });
+    }
+
+    function toggleSelectAll() {
+        const isChecked = $('#selectAllVariations').is(':checked');
+        $('.variation-checkbox').prop('checked', isChecked);
+        $('#bulkEditRow').toggleClass('active', isChecked);
+    }
+
+    function applyBulkEdit() {
+        const bulkPrice = $('#bulkPrice').val();
+        const bulkStock = $('#bulkStock').val();
+
+        if (!bulkPrice && !bulkStock) {
+            alert('Vui lòng nhập ít nhất một giá trị để áp dụng.');
             return;
         }
 
-        let variationIndex = 0;
-        colors.forEach((colorId) => {
-            const colorText = $('#colorSelect option[value="' + colorId + '"]').text();
-            const colorGroupDiv = `
-            <div class="variation-group" data-color-id="${colorId}">
-                <h5 class="mb-3">Màu: <span class="fw-bold">${colorText}</span></h5>
-                <div class="mb-3">
-                    <label class="form-label">Ảnh cho màu ${colorText} (tối đa 3 ảnh)</label>
-                    <div class="custom-file-input-wrapper">
-                        <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
-                        <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
-                        <input type="file" class="variation-file-input" id="image-input-${colorId}" name="variations[${variationIndex}].imageFiles" multiple accept="image/*" onchange="updateFileInputLabel(this)">
-                    </div>
-                    <div class="image-preview-container" id="preview-${colorId}"></div>
-                </div>
-                <div id="sizes-container-${colorId}"></div>
-            </div>
-        `;
-            container.append(colorGroupDiv);
-
-            const sizesContainer = $(`#sizes-container-${colorId}`);
-            sizes.forEach((sizeId) => {
-                const sizeText = $('#sizeSelect option[value="' + sizeId + '"]').text();
-                const variationHtml = `
-                <div class="variation-item">
-                    <button type="button" class="remove-variation" onclick="removeVariation(this)">×</button>
-                    <div class="variation-details">
-                        <h6>Biến thể: ${colorText} - ${sizeText}</h6>
-                        <div class="row g-3">
-                            <div class="col-md-5">
-                                <label class="form-label">Giá bán</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₫</span>
-                                    <input type="number" class="form-control" name="variations[${variationIndex}].price" step="1000" min="0" required>
-                                </div>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label">Số lượng tồn</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                    <input type="number" class="form-control" name="variations[${variationIndex}].stockQuantity" min="0" required>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
-                    <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizeId}">
-                </div>
-            `;
-                sizesContainer.append(variationHtml);
-                variationIndex++;
-            });
+        $('.variation-checkbox:checked').each(function() {
+            const variationItem = $(this).closest('.variation-item');
+            if (bulkPrice) {
+                variationItem.find('.variation-price').val(bulkPrice);
+            }
+            if (bulkStock) {
+                variationItem.find('.variation-stock').val(bulkStock);
+            }
         });
     }
 
     function removeVariation(button) {
-        $(button).closest('.variation-item').remove();
-        if ($(button).closest('.variation-group').find('.variation-item').length === 0) {
-            $(button).closest('.variation-group').remove();
-        }
+        $(button).closest('tr').remove();
+        updateSTT();
     }
 
-    function updateFileInputLabel(inputElement) {
+    function updateFileInputLabel(inputElement, colorId) {
         const wrapper = inputElement.closest('.custom-file-input-wrapper');
         if (!wrapper) return;
         const label = wrapper.querySelector('.custom-file-input-label');
@@ -761,7 +830,7 @@
             label.textContent = placeholder;
         }
 
-        const previewContainer = inputElement.closest('.mb-3')?.querySelector('.image-preview-container') || document.getElementById(`preview-${inputElement.id.split('-')[2]}`);
+        const previewContainer = document.getElementById(`preview-${colorId}`);
         if (previewContainer) {
             previewContainer.innerHTML = '';
             Array.from(inputElement.files).slice(0, 3).forEach((file, index) => {
@@ -770,9 +839,9 @@
                     const previewDiv = document.createElement('div');
                     previewDiv.classList.add('image-preview');
                     previewDiv.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview ${index + 1}">
-                        <button type="button" class="remove-image" onclick="removeImagePreview(this, '${inputElement.id}')">×</button>
-                    `;
+                            <img src="${e.target.result}" alt="Preview ${index + 1}">
+                            <button type="button" class="remove-image" onclick="removeImagePreview(this, '${inputElement.id}')">×</button>
+                        `;
                     previewContainer.appendChild(previewDiv);
                 };
                 reader.readAsDataURL(file);
@@ -793,7 +862,13 @@
         newFiles.forEach(file => dataTransfer.items.add(file));
         inputElement.files = dataTransfer.files;
 
-        updateFileInputLabel(inputElement);
+        updateFileInputLabel(inputElement, inputId.split('-')[2]);
+    }
+
+    function updateSTT() {
+        $('#variationsContainer .variation-item').each(function(index) {
+            $(this).find('td:nth-child(2)').text(index + 1);
+        });
     }
 
     function capitalize(str) {
