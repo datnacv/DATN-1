@@ -109,11 +109,9 @@ public class ChiTietSanPhamController {
     }
 
     @PostMapping("/save-batch")
-    public String luuChiTietSanPhamBatch(@ModelAttribute ChiTietSanPhamBatchDto batchDto,
-                                         @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
-                                         Model model) {
+    public String luuChiTietSanPhamBatch(@ModelAttribute ChiTietSanPhamBatchDto batchDto, Model model) {
         try {
-            chiTietSanPhamService.saveChiTietSanPhamVariationsDto(batchDto, imageFiles);
+            chiTietSanPhamService.saveChiTietSanPhamVariationsDto(batchDto);
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + batchDto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
             logger.error("Lỗi khi lưu batch chi tiết sản phẩm: ", e);

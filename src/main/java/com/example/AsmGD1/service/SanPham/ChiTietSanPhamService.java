@@ -21,8 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -65,7 +64,7 @@ public class ChiTietSanPhamService {
 
 
     @Transactional
-    public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto, List<MultipartFile> imageFiles) {
+    public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
         SanPham sanPham = sanPhamRepo.findById(batchDto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại ID: " + batchDto.getProductId()));
         XuatXu xuatXu = xuatXuRepo.findById(batchDto.getOriginId())
@@ -80,6 +79,15 @@ public class ChiTietSanPhamService {
                 .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại ID: " + batchDto.getCollarId()));
         ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
+
+        // Lưu danh sách hình ảnh theo colorId mà không ghi đè
+        Map<UUID, List<MultipartFile>> colorImagesMap = new HashMap<>();
+        for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
+            List<MultipartFile> images = variationDto.getImageFiles();
+            if (images != null && !images.isEmpty() && !colorImagesMap.containsKey(variationDto.getColorId())) {
+                colorImagesMap.put(variationDto.getColorId(), new ArrayList<>(images)); // Lưu ảnh cho từng colorId riêng biệt
+            }
+        }
 
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
@@ -117,8 +125,10 @@ public class ChiTietSanPhamService {
                 e.printStackTrace();
             }
 
-            if (imageFiles != null && !imageFiles.isEmpty()) {
-                saveImagesToCloudinary(savedDetail, imageFiles.stream().limit(3).collect(Collectors.toList()));
+            // Lấy toàn bộ hình ảnh cho màu sắc tương ứng
+            List<MultipartFile> variationImages = colorImagesMap.getOrDefault(variationDto.getColorId(), new ArrayList<>());
+            if (!variationImages.isEmpty()) {
+                saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
         }
     }
@@ -223,16 +233,16 @@ public class ChiTietSanPhamService {
         }
     }
 
-    private void saveImagesToCloudinary(ChiTietSanPham ChiTietSanPham, List<MultipartFile> imageFiles) {
-        List<MultipartFile> limitedImages = imageFiles.stream().limit(3).collect(Collectors.toList());
-        for (MultipartFile file : limitedImages) {
+    private void saveImagesToCloudinary(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
+        for (int i = 0; i < imageFiles.size() && i < 3; i++) {
+            MultipartFile file = imageFiles.get(i);
             if (file != null && !file.isEmpty()) {
                 try {
                     String imageUrl = cloudinaryUtil.uploadImage(file);
                     HinhAnhSanPham img = new HinhAnhSanPham();
-                    img.setChiTietSanPham(ChiTietSanPham);
+                    img.setChiTietSanPham(chiTietSanPham);
                     img.setUrlHinhAnh(imageUrl);
-                    hinhAnhSanPhamRepo.save(img);
+                    hinhAnhSanPhamRepo.save(img); // Lưu theo thứ tự tự nhiên
                 } catch (IOException e) {
                     logger.error("Không thể lưu ảnh lên Cloudinary: ", e);
                 }
