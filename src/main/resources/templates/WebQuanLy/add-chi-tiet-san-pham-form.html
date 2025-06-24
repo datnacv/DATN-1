@@ -9,16 +9,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
-
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
         .content {
-            margin-left: 250px; /* Adjust based on sidebar width if needed */
-            padding-top: 50px; /* Add padding to prevent overlap with the fixed navbar (adjust value as needed) */
-            width: calc(100% - 250px); /* Adjust based on sidebar width */
+            margin-left: 250px;
+            padding-top: 50px;
+            width: calc(100% - 250px);
             min-height: 100vh;
             transition: all 0.3s;
             position: relative;
@@ -77,7 +76,7 @@
             border-radius: 0.375rem;
             background-color: #fff;
             transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-            height: calc(1.5em + 0.6rem + 2px); /* Smaller height for Hình ảnh */
+            height: calc(1.5em + 0.6rem + 2px);
             overflow: hidden;
         }
         .custom-file-input-wrapper:focus-within {
@@ -97,7 +96,7 @@
         .custom-file-input-button {
             background-color: #0d6efd;
             color: white;
-            padding: 0.3rem 0.6rem; /* Smaller padding */
+            padding: 0.3rem 0.6rem;
             border-right: 1px solid #ced4da;
             font-weight: 500;
             transition: background-color .2s ease-in-out;
@@ -108,9 +107,9 @@
         }
         .custom-file-input-label {
             flex-grow: 1;
-            padding: 0.3rem 0.6rem; /* Smaller padding */
+            padding: 0.3rem 0.6rem;
             color: #495057;
-            font-size: 0.75rem; /* Smaller font */
+            font-size: 0.75rem;
             line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
@@ -120,13 +119,13 @@
         .image-preview-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 3px; /* Smaller gap */
-            margin-top: 3px; /* Smaller margin */
+            gap: 3px;
+            margin-top: 3px;
         }
         .image-preview {
             position: relative;
-            width: 30px; /* Smaller width */
-            height: 30px; /* Smaller height */
+            width: 30px;
+            height: 30px;
         }
         .image-preview img {
             width: 100%;
@@ -137,18 +136,18 @@
         }
         .image-preview .remove-image {
             position: absolute;
-            top: -5px; /* Adjusted for smaller size */
-            right: -5px; /* Adjusted for smaller size */
+            top: -5px;
+            right: -5px;
             background: #dc3545;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 12px; /* Smaller size */
-            height: 12px; /* Smaller size */
-            line-height: 12px; /* Adjusted for smaller size */
+            width: 12px;
+            height: 12px;
+            line-height: 12px;
             text-align: center;
             cursor: pointer;
-            font-size: 8px; /* Smaller font */
+            font-size: 8px;
         }
         .modal-header {
             background-color: #0d6efd;
@@ -246,20 +245,29 @@
         .bulk-edit-row {
             background-color: #e9ecef;
             padding: 0.5rem;
-            display: none; /* Hidden by default */
+            display: none;
+            gap: 10px;
         }
         .bulk-edit-row.active {
-            display: flex; /* Show when active */
+            display: flex;
+        }
+        .bulk-edit-row .input-group {
+            width: 100%;
+        }
+        .bulk-edit-row .form-control {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
         }
         .bulk-edit-section {
             margin-top: 1rem;
+            margin-bottom: 1rem;
         }
         .table td:nth-child(4), .table td:nth-child(5) {
-            padding: 2rem; /* Larger padding for Giá and Số lượng */
-            font-size: 1.2rem; /* Larger font size */
+            padding: 2rem;
+            font-size: 1.2rem;
         }
         .table td:nth-child(6) {
-            padding: 0.15rem; /* Even smaller padding for Hình ảnh */
+            padding: 0.15rem;
         }
     </style>
 </head>
@@ -278,275 +286,276 @@
     </nav>
     <!-- Nội dung chính bên phải -->
     <div class="content" id="content">
-<div class="container">
-    <h2 class="mb-4 page-title">THÊM CHI TIẾT SẢN PHẨM</h2>
+        <div class="container">
+            <h2 class="mb-4 page-title">THÊM CHI TIẾT SẢN PHẨM</h2>
 
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb justify-content-center">
-            <li class="breadcrumb-item"><a th:href="@{/acvstore/san-pham}"><i class="fas fa-list me-1"></i>Danh sách sản phẩm</a></li>
-            <li class="breadcrumb-item active" aria-current="page"><i class="fas fa-plus-circle me-1"></i>Thêm chi tiết</li>
-        </ol>
-    </nav>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb justify-content-center">
+                    <li class="breadcrumb-item"><a th:href="@{/acvstore/san-pham}"><i class="fas fa-list me-1"></i>Danh sách sản phẩm</a></li>
+                    <li class="breadcrumb-item active" aria-current="page"><i class="fas fa-plus-circle me-1"></i>Thêm chi tiết</li>
+                </ol>
+            </nav>
 
-    <div class="card">
-        <div class="card-header">
-            <span><i class="fas fa-box-open me-2"></i>Thông Tin Chi Tiết Sản Phẩm</span>
-        </div>
-        <div class="card-body">
-            <form th:action="@{/acvstore/chi-tiet-san-pham/save-batch}" method="post" enctype="multipart/form-data" id="batchForm">
-                <div class="row g-3">
-                    <div class="col-md-12">
-                        <label for="productSelect" class="form-label">Sản phẩm</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="productSelect" name="productId" required>
-                                <option value="">-- Chọn sản phẩm --</option>
-                                <option th:each="p : ${sanPhams}" th:value="${p.id}" th:text="${p.tenSanPham}" th:selected="${selectedProductId != null and p.id == selectedProductId}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn ms-2" data-bs-toggle="modal" data-bs-target="#quickAddProductModal" data-entity="product" title="Thêm nhanh sản phẩm">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="originSelect" class="form-label">Xuất xứ</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="originSelect" name="originId" required>
-                                <option value="">Chọn xuất xứ...</option>
-                                <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="origin" title="Thêm nhanh xuất xứ">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="materialSelect" class="form-label">Chất liệu</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="materialSelect" name="materialId" required>
-                                <option value="">Chọn chất liệu...</option>
-                                <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="material" title="Thêm nhanh chất liệu">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="styleSelect" class="form-label">Kiểu dáng</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="styleSelect" name="styleId" required>
-                                <option value="">Chọn kiểu dáng...</option>
-                                <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="style" title="Thêm nhanh kiểu dáng">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="sleeveSelect" class="form-label">Tay áo</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="sleeveSelect" name="sleeveId" required>
-                                <option value="">Chọn tay áo...</option>
-                                <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="sleeve" title="Thêm nhanh tay áo">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="collarSelect" class="form-label">Cổ áo</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="collarSelect" name="collarId" required>
-                                <option value="">Chọn cổ áo...</option>
-                                <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="collar" title="Thêm nhanh cổ áo">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="brandSelect" class="form-label">Thương hiệu</label>
-                        <div class="d-flex align-items-center">
-                            <select class="form-select" id="brandSelect" name="brandId" required>
-                                <option value="">Chọn thương hiệu...</option>
-                                <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
-                            </select>
-                            <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="brand" title="Thêm nhanh thương hiệu">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="col-md-12">
-                        <label for="genderSelect" class="form-label">Giới tính</label>
-                        <select class="form-select" id="genderSelect" name="gender" required>
-                            <option value="">Chọn giới tính...</option>
-                            <option value="Nam">Nam</option>
-                            <option value="Nữ">Nữ</option>
-                            <option value="Unisex">Unisex</option>
-                        </select>
-                    </div>
-                    <!-- Biến thể sản phẩm -->
-                    <div class="col-md-12">
-                        <label class="form-label">Biến thể sản phẩm</label>
-                        <div class="variation-block">
-                            <div class="row g-3 mt-3">
-                                <div class="col-md-6">
-                                    <label for="colorSelect" class="form-label">Màu sắc</label>
-                                    <select class="form-select" id="colorSelect" name="colorIds" multiple>
-                                        <option value="">Chọn màu...</option>
-                                        <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
+            <div class="card">
+                <div class="card-header">
+                    <span><i class="fas fa-box-open me-2"></i>Thông Tin Chi Tiết Sản Phẩm</span>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/acvstore/chi-tiet-san-pham/save-batch}" method="post" enctype="multipart/form-data" id="batchForm">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label for="productSelect" class="form-label">Sản phẩm</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="productSelect" name="productId" required>
+                                        <option value="">-- Chọn sản phẩm --</option>
+                                        <option th:each="p : ${sanPhams}" th:value="${p.id}" th:text="${p.tenSanPham}" th:selected="${selectedProductId != null and p.id == selectedProductId}"></option>
                                     </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="sizeSelect" class="form-label">Kích cỡ</label>
-                                    <select class="form-select" id="sizeSelect" name="sizeIds" multiple>
-                                        <option value="">Chọn kích cỡ...</option>
-                                        <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
-                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn ms-2" data-bs-toggle="modal" data-bs-target="#quickAddProductModal" data-entity="product" title="Thêm nhanh sản phẩm">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-primary mt-3" onclick="generateVariations()">Tạo biến thể</button>
-                            <div class="table-responsive">
-                                <table class="table table-bordered" id="variationsTable" style="display: none;">
-                                    <thead>
-                                    <tr>
-                                        <th><input type="checkbox" id="selectAllVariations" onchange="toggleSelectAll()"></th>
-                                        <th>STT</th>
-                                        <th>Màu sắc + Size</th>
-                                        <th>Giá</th>
-                                        <th>Số lượng</th>
-                                        <th>Hình ảnh</th>
-                                        <th>Thao tác</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody id="variationsContainer">
-                                    <!-- Các biến thể sẽ được thêm động vào đây -->
-                                    </tbody>
-                                </table>
+                            <div class="col-md-6">
+                                <label for="originSelect" class="form-label">Xuất xứ</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="originSelect" name="originId" required>
+                                        <option value="">Chọn xuất xứ...</option>
+                                        <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
+                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="origin" title="Thêm nhanh xuất xứ">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="bulk-edit-section">
-                                <div class="bulk-edit-row" id="bulkEditRow">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Giá bán chung</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">₫</span>
-                                            <input type="number" class="form-control" id="bulkPrice" step="1000" min="0" style="width: 120px;">
+                            <div class="col-md-6">
+                                <label for="materialSelect" class="form-label">Chất liệu</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="materialSelect" name="materialId" required>
+                                        <option value="">Chọn chất liệu...</option>
+                                        <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
+                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="material" title="Thêm nhanh chất liệu">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="styleSelect" class="form-label">Kiểu dáng</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="styleSelect" name="styleId" required>
+                                        <option value="">Chọn kiểu dáng...</option>
+                                        <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
+                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="style" title="Thêm nhanh kiểu dáng">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sleeveSelect" class="form-label">Tay áo</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="sleeveSelect" name="sleeveId" required>
+                                        <option value="">Chọn tay áo...</option>
+                                        <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
+                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="sleeve" title="Thêm nhanh tay áo">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="collarSelect" class="form-label">Cổ áo</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="collarSelect" name="collarId" required>
+                                        <option value="">Chọn cổ áo...</option>
+                                        <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
+                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="collar" title="Thêm nhanh cổ áo">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="brandSelect" class="form-label">Thương hiệu</label>
+                                <div class="d-flex align-items-center">
+                                    <select class="form-select" id="brandSelect" name="brandId" required>
+                                        <option value="">Chọn thương hiệu...</option>
+                                        <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
+                                    </select>
+                                    <button type="button" class="btn btn-success btn-sm quick-add-btn" data-bs-toggle="modal" data-bs-target="#quickAddModal" data-entity="brand" title="Thêm nhanh thương hiệu">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="genderSelect" class="form-label">Giới tính</label>
+                                <select class="form-select" id="genderSelect" name="gender" required>
+                                    <option value="">Chọn giới tính...</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Unisex">Unisex</option>
+                                </select>
+                            </div>
+                            <!-- Biến thể sản phẩm -->
+                            <div class="col-md-12">
+                                <label class="form-label">Biến thể sản phẩm</label>
+                                <div class="variation-block">
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-md-6">
+                                            <label for="colorSelect" class="form-label">Màu sắc</label>
+                                            <select class="form-select" id="colorSelect" name="colorIds" multiple>
+                                                <option value="">Chọn màu...</option>
+                                                <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="sizeSelect" class="form-label">Kích cỡ</label>
+                                            <select class="form-select" id="sizeSelect" name="sizeIds" multiple>
+                                                <option value="">Chọn kích cỡ...</option>
+                                                <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
+                                            </select>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Số lượng tồn chung</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                            <input type="number" class="form-control" id="bulkStock" min="0" style="width: 120px;">
+                                    <button type="button" class="btn btn-primary mt-3" onclick="generateVariations()">Tạo biến thể</button>
+                                    <!-- Bulk Edit Section Moved Above Table -->
+                                    <div class="bulk-edit-section">
+                                        <div class="bulk-edit-row" id="bulkEditRow">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Giá bán chung</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">₫</span>
+                                                    <input type="number" class="form-control" id="bulkPrice" step="1000" min="0" style="width: 100px;">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Số lượng tồn chung</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                                    <input type="number" class="form-control" id="bulkStock" min="0" style="width: 100px;">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 d-flex align-items-end">
+                                                <button type="button" class="btn btn-primary" onclick="applyBulkEdit()">Áp dụng</button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 d-flex align-items-end">
-                                        <button type="button" class="btn btn-primary" onclick="applyBulkEdit()">Áp dụng</button>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="variationsTable" style="display: none;">
+                                            <thead>
+                                            <tr>
+                                                <th><input type="checkbox" id="selectAllVariations" onchange="toggleSelectAll()"></th>
+                                                <th>STT</th>
+                                                <th>Màu sắc + Size</th>
+                                                <th>Giá</th>
+                                                <th>Số lượng</th>
+                                                <th>Hình ảnh</th>
+                                                <th>Thao tác</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody id="variationsContainer">
+                                            <!-- Các biến thể sẽ được thêm động vào đây -->
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-12 mt-4 text-center">
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Lưu Chi Tiết Sản Phẩm</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal Thêm Nhanh Thuộc Tính -->
-    <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="quickAddModalLabel">Thêm Nhanh Thuộc Tính</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="quickAddEntity">
-                    <div class="mb-3">
-                        <label for="quickAddName" class="form-label">Tên thuộc tính</label>
-                        <input type="text" class="form-control" id="quickAddName" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Đóng
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="saveQuickAdd()">
-                        <i class="fas fa-save"></i> Lưu
-                    </button>
+                        <div class="col-12 mt-4 text-center">
+                            <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Lưu Chi Tiết Sản Phẩm</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Modal Thêm Nhanh Sản Phẩm -->
-    <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="quickAddProductModalLabel"><i class="fas fa-plus me-2"></i> Thêm Nhanh Sản Phẩm</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Modal Thêm Nhanh Thuộc Tính -->
+            <div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="quickAddModalLabel">Thêm Nhanh Thuộc Tính</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="quickAddEntity">
+                            <div class="mb-3">
+                                <label for="quickAddName" class="form-label">Tên thuộc tính</label>
+                                <input type="text" class="form-control" id="quickAddName" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times"></i> Đóng
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="saveQuickAdd()">
+                                <i class="fas fa-save"></i> Lưu
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <form id="quickAddProductForm">
-                    <div class="modal-body">
-                        <input type="hidden" name="id" value="">
-                        <div class="mb-3">
-                            <label for="quickAddMaSanPham" class="form-label">Mã sản phẩm</label>
-                            <input type="text" class="form-control" id="quickAddMaSanPham" name="maSanPham" required>
+            </div>
+
+            <!-- Modal Thêm Nhanh Sản Phẩm -->
+            <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="quickAddProductModalLabel"><i class="fas fa-plus me-2"></i> Thêm Nhanh Sản Phẩm</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <div class="mb-3">
-                            <label for="quickAddTenSanPham" class="form-label">Tên sản phẩm</label>
-                            <input type="text" class="form-control" id="quickAddTenSanPham" name="tenSanPham" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="quickAddMoTa" class="form-label">Mô tả</label>
-                            <textarea class="form-control" id="quickAddMoTa" name="moTa" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="quickAddDanhMuc" class="form-label">Danh mục</label>
-                            <select class="form-select" id="quickAddDanhMuc" name="danhMuc.id" required>
-                                <option value="">-- Chọn danh mục --</option>
-                                <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Ảnh sản phẩm</label>
-                            <div class="d-flex align-items-center">
-                                <button type="button" class="btn btn-primary" id="quickAddCloudinaryWidget">
-                                    <i class="fas fa-image"></i> Chọn ảnh
+                        <form id="quickAddProductForm">
+                            <div class="modal-body">
+                                <input type="hidden" name="id" value="">
+                                <div class="mb-3">
+                                    <label for="quickAddMaSanPham" class="form-label">Mã sản phẩm</label>
+                                    <input type="text" class="form-control" id="quickAddMaSanPham" name="maSanPham" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="quickAddTenSanPham" class="form-label">Tên sản phẩm</label>
+                                    <input type="text" class="form-control" id="quickAddTenSanPham" name="tenSanPham" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="quickAddMoTa" class="form-label">Mô tả</label>
+                                    <textarea class="form-control" id="quickAddMoTa" name="moTa" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="quickAddDanhMuc" class="form-label">Danh mục</label>
+                                    <select class="form-select" id="quickAddDanhMuc" name="danhMuc.id" required>
+                                        <option value="">-- Chọn danh mục --</option>
+                                        <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Ảnh sản phẩm</label>
+                                    <div class="d-flex align-items-center">
+                                        <button type="button" class="btn btn-primary" id="quickAddCloudinaryWidget">
+                                            <i class="fas fa-image"></i> Chọn ảnh
+                                        </button>
+                                        <input type="hidden" id="quickAddUrlHinhAnh" name="urlHinhAnh">
+                                        <span id="quickAddImageNameDisplay" class="ms-2 text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                    </div>
+                                    <div class="mt-2" id="quickAddImagePreviewContainer">
+                                        <img class="product-image" alt="" id="quickAddImagePreview">
+                                        <small class="d-block mt-1">Ảnh hiện tại</small>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="hidden" name="trangThai" value="true">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times"></i> Đóng
                                 </button>
-                                <input type="hidden" id="quickAddUrlHinhAnh" name="urlHinhAnh">
-                                <span id="quickAddImageNameDisplay" class="ms-2 text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Lưu
+                                </button>
                             </div>
-                            <div class="mt-2" id="quickAddImagePreviewContainer">
-                                <img class="product-image" alt="" id="quickAddImagePreview">
-                                <small class="d-block mt-1">Ảnh hiện tại</small>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <input type="hidden" name="trangThai" value="true">
-                        </div>
+                        </form>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times"></i> Đóng
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Lưu
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
-</div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -708,6 +717,10 @@
         container.empty();
         $('#variationsTable').show();
 
+        if (colors.length === 0 || sizes.length === 0) {
+            $('#variationsTable').hide();
+            return;
+        }
 
         let variationIndex = 0;
         colors.forEach((colorId, colorIndex) => {
