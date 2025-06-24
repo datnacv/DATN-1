@@ -1,7 +1,6 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
-import com.example.AsmGD1.dto.ChiTietSanPhamDto;
-import com.example.AsmGD1.service.SanPham.SanPhamService;
+import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 
 import com.example.AsmGD1.service.WebKhachHang.KhachhangSanPhamService;
 import org.springframework.stereotype.Controller;
