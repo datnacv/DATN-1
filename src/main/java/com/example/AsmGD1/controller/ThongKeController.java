@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Controller
-@RequestMapping("/acvstore/thongke")
+@RequestMapping("/acvstore/thong-ke")
 public class ThongKeController {
 
     @Autowired
@@ -91,6 +91,5 @@ public class ThongKeController {
         model.addAttribute("filterStatus", trangThaiBoLoc);
 
         return "WebQuanLy/thong-ke";
-
     }
 }
