@@ -55,12 +55,10 @@ public class SecurityConfig {
         };
     }
 
-    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
             response.setStatus(HttpServletResponse.SC_FOUND);
-            // Chuyển hướng đến trang login mặc định, ví dụ trang customer login
             response.sendRedirect("/acvstore/customers/login");
         };
     }
@@ -70,7 +68,7 @@ public class SecurityConfig {
         http
                 .securityMatcher("/acvstore/employees/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/employees/login").permitAll()
+                        .requestMatchers("/acvstore/employees/login", "/acvstore/employees/verify-face", "/acvstore/employees/register-face").permitAll()
                         .requestMatchers("/acvstore/employees/admin-dashboard").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employees/employee-dashboard").hasRole("EMPLOYEE")
                         .anyRequest().authenticated()
@@ -78,7 +76,15 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/acvstore/employees/login")
                         .loginProcessingUrl("/acvstore/employees/login")
-                        .defaultSuccessUrl("/acvstore/employees/redirect", true)
+                        .successHandler((request, response, authentication) -> {
+                            boolean isAdmin = authentication.getAuthorities().stream()
+                                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+                            if (isAdmin) {
+                                response.sendRedirect("/acvstore/employees/verify-face");
+                            } else {
+                                response.sendRedirect("/acvstore/employees/redirect");
+                            }
+                        })
                         .failureUrl("/acvstore/employees/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
@@ -152,16 +158,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/employees/login", "/acvstore/customers/login").permitAll()
-                        .anyRequest().authenticated() // Yêu cầu xác thực cho tất cả các request khác
+                        .requestMatchers("/acvstore/employees/login", "/acvstore/employees/verify-face", "/acvstore/customers/login").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("/acvstore/customers/login") // Trang login mặc định
+                        .loginPage("/acvstore/customers/login")
                         .loginProcessingUrl("/acvstore/customers/login")
                         .defaultSuccessUrl("/acvstore/customers/dashboard", true)
                         .failureUrl("/acvstore/customers/login?error=invalidCredentials")

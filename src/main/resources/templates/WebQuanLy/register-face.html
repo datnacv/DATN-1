@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Đăng ký khuôn mặt</title>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container vh-100 d-flex justify-content-center align-items-center">
+    <div class="text-center">
+        <h2 class="mb-4">Đăng ký khuôn mặt cho Admin</h2>
+
+        <!-- ✅ Ảnh khuôn mặt nếu đã có -->
+        <img th:src="@{/acvstore/employees/view-face/{username}(username=${#authentication?.principal?.username})}"
+             alt="Ảnh khuôn mặt đã đăng ký"
+             class="mb-3 border rounded"
+             width="200"
+             th:if="${#authentication?.principal?.username != null}" />
+
+        <video id="video" width="320" height="240" autoplay class="border rounded"></video>
+        <br>
+        <button onclick="captureAndSend()" class="btn btn-primary mt-3">Đăng ký</button>
+        <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+    </div>
+
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+
+    // Mở webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => video.srcObject = stream)
+        .catch(err => alert("Không thể mở camera"));
+
+    // Gửi ảnh khuôn mặt để đăng ký
+    function captureAndSend() {
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageBase64 = canvas.toDataURL('image/jpeg');
+
+        const username = '[[${#authentication != null && #authentication.principal != null ? #authentication.principal.username : "unknown"}]]';
+
+        fetch('/acvstore/employees/register-face', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: username,
+                image: imageBase64
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message.includes("đã được đăng ký")) {
+                    alert("⚠️ " + data.message);
+                } else {
+                    alert("✅ " + data.message + " Đang chuyển hướng đến trang đăng nhập...");
+                    window.location.href = "/acvstore/employees/login?registered";
+                }
+            })
+            .catch(err => alert("❌ Gửi ảnh thất bại"));
+    }
+</script>
+</body>
+</html>

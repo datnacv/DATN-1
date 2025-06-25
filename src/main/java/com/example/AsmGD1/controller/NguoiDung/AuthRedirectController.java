@@ -19,15 +19,17 @@ public class AuthRedirectController {
         boolean isEmployee = auth.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE"));
 
-        // ❌ Nếu login bằng customer → không cho truy cập
+        // Nếu login bằng customer → không cho truy cập
         if (!isAdmin && !isEmployee) {
             SecurityContextHolder.clearContext(); // clear phiên đăng nhập
             return "redirect:/acvstore/employees/login?error=accessDenied";
         }
 
         if (isAdmin) {
-            return "redirect:/acvstore/employees/admin-dashboard";
+            // Chuyển hướng admin đến trang xác định khuôn mặt
+            return "redirect:/acvstore/employees/verify-face";
         } else {
+            // Chuyển hướng employee đến dashboard
             return "redirect:/acvstore/employees/employee-dashboard";
         }
     }
