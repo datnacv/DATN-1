@@ -3,9 +3,12 @@ package com.example.AsmGD1.service.BanHang;
 import com.example.AsmGD1.dto.BanHang.GioHangDTO;
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.DonHangTam;
 import com.example.AsmGD1.entity.PhieuGiamGia;
+import com.example.AsmGD1.repository.BanHang.DonHangTamRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
 import com.example.AsmGD1.service.SanPham.ChiTietSanPhamService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,9 +19,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.time.LocalDate;   // Đã có, dùng để so sánh với các trường trong PhieuGiamGia
-import java.time.LocalDateTime; // Đã có, dùng cho LocalDateTime.now()
-import java.util.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,9 +35,15 @@ public class GioHangService {
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
 
-    private static final String CART_SESSION_KEY = "CART";
-    private static final String APPLIED_DISCOUNT_SESSION_KEY = "APPLIED_DISCOUNT";
-    private static final String APPLIED_VOUCHER_ID_SESSION_KEY = "APPLIED_VOUCHER_ID";
+    @Autowired
+    private DonHangTamRepository donHangTamRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private static final String CART_SESSION_KEY_PREFIX = "CART_";
+    private static final String APPLIED_DISCOUNT_SESSION_KEY = "APPLIED_DISCOUNT_";
+    private static final String APPLIED_VOUCHER_ID_SESSION_KEY = "APPLIED_VOUCHER_ID_";
 
     public String formatCurrency(BigDecimal amount) {
         if (amount == null) {
@@ -45,19 +56,16 @@ public class GioHangService {
         return df.format(amount);
     }
 
-    public List<GioHangItemDTO> getCurrentCart() {
-        HttpSession session = getSession();
-        List<GioHangItemDTO> cart = (List<GioHangItemDTO>) session.getAttribute(CART_SESSION_KEY);
-        if (cart == null) {
-            cart = new ArrayList<>();
-            session.setAttribute(CART_SESSION_KEY, cart);
-        }
-        return cart;
+    private String getCartSessionKey(String tabId) {
+        return CART_SESSION_KEY_PREFIX + tabId;
     }
 
-    private void saveCart(List<GioHangItemDTO> cart) {
-        HttpSession session = getSession();
-        session.setAttribute(CART_SESSION_KEY, cart);
+    private String getDiscountSessionKey(String tabId) {
+        return APPLIED_DISCOUNT_SESSION_KEY + tabId;
+    }
+
+    private String getVoucherIdSessionKey(String tabId) {
+        return APPLIED_VOUCHER_ID_SESSION_KEY + tabId;
     }
 
     private HttpSession getSession() {
@@ -65,9 +73,24 @@ public class GioHangService {
         return attr.getRequest().getSession();
     }
 
-    public GioHangDTO themVaoGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee) {
-        System.out.println("--- themVaoGioHang: Bắt đầu ---");
-        List<GioHangItemDTO> currentCart = getCurrentCart();
+    public List<GioHangItemDTO> getCurrentCart(String tabId) {
+        HttpSession session = getSession();
+        List<GioHangItemDTO> cart = (List<GioHangItemDTO>) session.getAttribute(getCartSessionKey(tabId));
+        if (cart == null) {
+            cart = new ArrayList<>();
+            session.setAttribute(getCartSessionKey(tabId), cart);
+        }
+        return cart;
+    }
+
+    private void saveCart(String tabId, List<GioHangItemDTO> cart) {
+        HttpSession session = getSession();
+        session.setAttribute(getCartSessionKey(tabId), cart);
+    }
+
+    public GioHangDTO themVaoGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee, String tabId) {
+        System.out.println("--- themVaoGioHang: Bắt đầu, tabId: " + tabId + " ---");
+        List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
 
         GioHangItemDTO existingItem = currentCart.stream()
                 .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
@@ -105,48 +128,42 @@ public class GioHangService {
             currentCart.add(newItem);
         }
 
-        saveCart(currentCart);
-        // Reset thông tin giảm giá khi giỏ hàng thay đổi
-        getSession().removeAttribute(APPLIED_DISCOUNT_SESSION_KEY);
-        getSession().removeAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
+        saveCart(tabId, currentCart);
+        getSession().removeAttribute(getDiscountSessionKey(tabId));
+        getSession().removeAttribute(getVoucherIdSessionKey(tabId));
         System.out.println("--- themVaoGioHang: Kết thúc, giỏ hàng đã thay đổi, giảm giá bị reset ---");
-        return layGioHang(shippingFee);
+        return layGioHang(shippingFee, tabId);
     }
 
-    public void capNhatTongGioHang(GioHangDTO gioHangDTO, List<GioHangItemDTO> danhSachSanPham, BigDecimal shippingFee) {
+    public void capNhatTongGioHang(GioHangDTO gioHangDTO, List<GioHangItemDTO> danhSachSanPham, BigDecimal shippingFee, String tabId) {
         gioHangDTO.setDanhSachSanPham(new ArrayList<>(danhSachSanPham));
+        gioHangDTO.setTabId(tabId);
 
-        // Tính tổng tiền hàng
         BigDecimal tongTienHang = danhSachSanPham.stream()
                 .map(GioHangItemDTO::getThanhTien)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        gioHangDTO.setTongTienHangValue(tongTienHang); // Lưu giá trị số
-        gioHangDTO.setTongTienHang(formatCurrency(tongTienHang)); // Định dạng
+        gioHangDTO.setTongTienHang(tongTienHang);
 
-        // Lấy giá trị giảm giá từ session
-        BigDecimal giamGia = (BigDecimal) getSession().getAttribute(APPLIED_DISCOUNT_SESSION_KEY);
-        UUID idPhieuGiamGia = (UUID) getSession().getAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
+        BigDecimal giamGia = (BigDecimal) getSession().getAttribute(getDiscountSessionKey(tabId));
+        UUID idPhieuGiamGia = (UUID) getSession().getAttribute(getVoucherIdSessionKey(tabId));
 
         if (giamGia == null) {
             giamGia = BigDecimal.ZERO;
         }
 
-        gioHangDTO.setGiamGiaValue(giamGia); // Lưu giá trị số
-        gioHangDTO.setGiamGia(formatCurrency(giamGia)); // Định dạng
+        gioHangDTO.setGiamGia(giamGia);
         gioHangDTO.setIdPhieuGiamGia(idPhieuGiamGia);
         gioHangDTO.setDaApDungPhieuGiamGia(idPhieuGiamGia != null);
 
-        // Tính tổng tiền sau giảm giá
         BigDecimal tong = tongTienHang.subtract(giamGia).add(shippingFee != null ? shippingFee : BigDecimal.ZERO);
-        gioHangDTO.setTongValue(tong); // Lưu giá trị số
-        gioHangDTO.setTong(formatCurrency(tong)); // Định dạng
+        gioHangDTO.setTong(tong);
     }
 
-    public GioHangDTO layGioHang(BigDecimal shippingFee) {
-        System.out.println("--- layGioHang: Bắt đầu ---");
-        List<GioHangItemDTO> currentCart = getCurrentCart();
+    public GioHangDTO layGioHang(BigDecimal shippingFee, String tabId) {
+        System.out.println("--- layGioHang: Bắt đầu, tabId: " + tabId + " ---");
+        List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
         GioHangDTO gioHangDTO = new GioHangDTO();
-        capNhatTongGioHang(gioHangDTO, currentCart, shippingFee);
+        capNhatTongGioHang(gioHangDTO, currentCart, shippingFee, tabId);
 
         List<GioHangItemDTO> updatedCartItems = currentCart.stream().map(item -> {
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
@@ -157,20 +174,17 @@ public class GioHangService {
         }).collect(Collectors.toList());
         gioHangDTO.setDanhSachSanPham(updatedCartItems);
 
-        System.out.println("Debug - layGioHang: TongTienHangValue: " + gioHangDTO.getTongTienHangValue());
-        System.out.println("Debug - layGioHang: GiamGiaValue: " + gioHangDTO.getGiamGiaValue());
-        System.out.println("Debug - layGioHang: TongValue: " + gioHangDTO.getTongValue());
-        System.out.println("Debug - layGioHang: TongTienHang (formatted): " + gioHangDTO.getTongTienHang());
-        System.out.println("Debug - layGioHang: GiamGia (formatted): " + gioHangDTO.getGiamGia());
-        System.out.println("Debug - layGioHang: Tong (formatted): " + gioHangDTO.getTong());
+        System.out.println("Debug - layGioHang: TongTienHang: " + gioHangDTO.getTongTienHang());
+        System.out.println("Debug - layGioHang: GiamGia: " + gioHangDTO.getGiamGia());
+        System.out.println("Debug - layGioHang: Tong: " + gioHangDTO.getTong());
         System.out.println("Debug - layGioHang: IdPhieuGiamGia: " + gioHangDTO.getIdPhieuGiamGia());
 
         return gioHangDTO;
     }
 
-    public GioHangDTO capNhatGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee) {
-        System.out.println("--- capNhatGioHang: Bắt đầu ---");
-        List<GioHangItemDTO> currentCart = getCurrentCart();
+    public GioHangDTO capNhatGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee, String tabId) {
+        System.out.println("--- capNhatGioHang: Bắt đầu, tabId: " + tabId + " ---");
+        List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
 
         GioHangItemDTO existingItem = currentCart.stream()
                 .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
@@ -204,44 +218,44 @@ public class GioHangService {
             currentCart.add(newItem);
         }
 
-        saveCart(currentCart);
-        getSession().removeAttribute(APPLIED_DISCOUNT_SESSION_KEY);
-        getSession().removeAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
+        saveCart(tabId, currentCart);
+        getSession().removeAttribute(getDiscountSessionKey(tabId));
+        getSession().removeAttribute(getVoucherIdSessionKey(tabId));
         System.out.println("--- capNhatGioHang: Kết thúc, giỏ hàng đã thay đổi, giảm giá bị reset ---");
-        return layGioHang(shippingFee);
+        return layGioHang(shippingFee, tabId);
     }
 
-    public GioHangDTO xoaKhoiGioHang(UUID productDetailId, BigDecimal shippingFee) {
-        System.out.println("--- xoaKhoiGioHang: Bắt đầu ---");
-        List<GioHangItemDTO> currentCart = getCurrentCart();
+    public GioHangDTO xoaKhoiGioHang(UUID productDetailId, BigDecimal shippingFee, String tabId) {
+        System.out.println("--- xoaKhoiGioHang: Bắt đầu, tabId: " + tabId + " ---");
+        List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
         boolean removed = currentCart.removeIf(item -> item.getIdChiTietSanPham().equals(productDetailId));
 
         if (removed) {
-            saveCart(currentCart);
-            getSession().removeAttribute(APPLIED_DISCOUNT_SESSION_KEY);
-            getSession().removeAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
+            saveCart(tabId, currentCart);
+            getSession().removeAttribute(getDiscountSessionKey(tabId));
+            getSession().removeAttribute(getVoucherIdSessionKey(tabId));
             System.out.println("--- xoaKhoiGioHang: Kết thúc, sản phẩm đã xóa, giảm giá bị reset ---");
         } else {
             System.out.println("--- xoaKhoiGioHang: Không tìm thấy sản phẩm để xóa ---");
         }
-        return layGioHang(shippingFee);
+        return layGioHang(shippingFee, tabId);
     }
 
-    public GioHangDTO xoaTatCaGioHang() {
-        System.out.println("--- xoaTatCaGioHang: Bắt đầu ---");
-        List<GioHangItemDTO> currentCart = getCurrentCart();
+    public GioHangDTO xoaTatCaGioHang(String tabId) {
+        System.out.println("--- xoaTatCaGioHang: Bắt đầu, tabId: " + tabId + " ---");
+        List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
         currentCart.clear();
 
-        saveCart(currentCart);
-        getSession().removeAttribute(APPLIED_DISCOUNT_SESSION_KEY);
-        getSession().removeAttribute(APPLIED_VOUCHER_ID_SESSION_KEY);
+        saveCart(tabId, currentCart);
+        getSession().removeAttribute(getDiscountSessionKey(tabId));
+        getSession().removeAttribute(getVoucherIdSessionKey(tabId));
         System.out.println("--- xoaTatCaGioHang: Kết thúc, giỏ hàng đã xóa, giảm giá bị reset ---");
-        return layGioHang(BigDecimal.ZERO);
+        return layGioHang(BigDecimal.ZERO, tabId);
     }
 
-    public GioHangDTO apDungPhieuGiamGia(UUID voucherId, BigDecimal shippingFee, GioHangDTO gioHang) {
-        System.out.println("--- apDungPhieuGiamGia: Bắt đầu, voucherId: " + voucherId + ", shippingFee: " + shippingFee + " ---");
-        BigDecimal tongTienHang = gioHang.getTongTienHangValue(); // Sử dụng giá trị từ GioHangDTO
+    public GioHangDTO apDungPhieuGiamGia(UUID voucherId, BigDecimal shippingFee, GioHangDTO gioHang, String tabId) {
+        System.out.println("--- apDungPhieuGiamGia: Bắt đầu, voucherId: " + voucherId + ", shippingFee: " + shippingFee + ", tabId: " + tabId + " ---");
+        BigDecimal tongTienHang = gioHang.getTongTienHang();
         System.out.println("Debug - Tổng tiền hàng từ giỏ: " + tongTienHang);
 
         BigDecimal giamGia = BigDecimal.ZERO;
@@ -284,10 +298,34 @@ public class GioHangService {
             System.out.println("Debug - Không có voucherId, không áp dụng giảm giá.");
         }
 
-        getSession().setAttribute(APPLIED_DISCOUNT_SESSION_KEY, giamGia);
-        getSession().setAttribute(APPLIED_VOUCHER_ID_SESSION_KEY, appliedVoucherId);
+        getSession().setAttribute(getDiscountSessionKey(tabId), giamGia);
+        getSession().setAttribute(getVoucherIdSessionKey(tabId), appliedVoucherId);
         System.out.println("Debug - Giảm giá lưu session: " + giamGia + ", Voucher ID: " + appliedVoucherId);
-        capNhatTongGioHang(gioHang, gioHang.getDanhSachSanPham(), shippingFee); // Cập nhật lại gioHang với giamGia
+        capNhatTongGioHang(gioHang, gioHang.getDanhSachSanPham(), shippingFee, tabId);
         System.out.println("--- apDungPhieuGiamGia: Kết thúc, Tổng tiền sau giảm: " + gioHang.getTong() + " ---");
         return gioHang;
-    }}
+    }
+
+    public void saveCartToDonHangTam(GioHangDTO gioHangDTO, String tabId, UUID khachHangId, String soDienThoai) {
+        try {
+            DonHangTam donHangTam = donHangTamRepository.findByTabId(tabId)
+                    .orElse(new DonHangTam());
+            donHangTam.setId(donHangTam.getId() != null ? donHangTam.getId() : UUID.randomUUID());
+            donHangTam.setKhachHang(khachHangId);
+            donHangTam.setMaDonHangTam("TEMP_" + System.currentTimeMillis());
+            donHangTam.setTong(gioHangDTO.getTong());
+            donHangTam.setThoiGianTao(LocalDateTime.now());
+            donHangTam.setDanhSachSanPham(objectMapper.writeValueAsString(gioHangDTO.getDanhSachSanPham()));
+            donHangTam.setPhuongThucThanhToan(gioHangDTO.getPhuongThucThanhToan());
+            donHangTam.setPhuongThucBanHang(gioHangDTO.getPhuongThucBanHang());
+            donHangTam.setPhiVanChuyen(gioHangDTO.getPhiVanChuyen());
+            donHangTam.setSoDienThoaiKhachHang(soDienThoai);
+            donHangTam.setPhieuGiamGia(gioHangDTO.getIdPhieuGiamGia());
+            donHangTam.setTabId(tabId);
+            donHangTamRepository.save(donHangTam);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lưu đơn hàng tạm: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi lưu đơn hàng tạm");
+        }
+    }
+}

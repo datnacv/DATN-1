@@ -9,12 +9,9 @@ import java.util.UUID;
 @Data
 public class GioHangDTO {
     private List<GioHangItemDTO> danhSachSanPham;
-    private BigDecimal tongTienHangValue; // Thêm giá trị số
-    private String tongTienHang; // Giữ định dạng
-    private BigDecimal giamGiaValue; // Thêm giá trị số
-    private String giamGia; // Giữ định dạng
-    private BigDecimal tongValue; // Thêm giá trị số
-    private String tong; // Giữ định dạng
+    private BigDecimal tongTienHang; // Giữ định dạng
+    private BigDecimal giamGia; // Giữ định dạng
+    private BigDecimal tong; // Giữ định dạng
     private boolean daXoaPhieuGiamGia;
     private String giamGiaDaXoa;
     private boolean daApDungPhieuGiamGia;

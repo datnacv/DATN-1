@@ -74,7 +74,7 @@ public class DonHangService {
         donHang.setMaDonHang(taoMaDonHang());
         donHang.setPhiVanChuyen(Optional.ofNullable(donHangDTO.getPhiVanChuyen()).orElse(BigDecimal.ZERO));
         donHang.setPhuongThucThanhToan(
-                phuongThucThanhToanRepository.findById(donHangDTO.getPhuongThucThanhToan()).orElse(null));
+                phuongThucThanhToanRepository.findById(UUID.fromString(donHangDTO.getPhuongThucThanhToan())).orElse(null));
         donHang.setPhuongThucBanHang(donHangDTO.getPhuongThucBanHang());
         donHang.setDiaChiGiaoHang(donHangDTO.getDiaChiGiaoHang());
         donHang.setThoiGianTao(LocalDateTime.now());
