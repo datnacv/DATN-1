@@ -15,11 +15,12 @@ public class HoaDon {
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
+
     @ManyToOne
     @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL) // Thêm cascade
     @JoinColumn(name = "id_don_hang", nullable = false)
     private DonHang donHang;
 
@@ -48,4 +49,8 @@ public class HoaDon {
 
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
+
+//    @Version
+//    @Column(name = "version")
+//    private Long version;
 }

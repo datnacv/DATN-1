@@ -16,4 +16,5 @@ public class GioHangItemDTO {
     private BigDecimal thanhTien;
     private Integer stockQuantity;
     private String hinhAnh; // Thêm trường này
+    private String ghiChu;
 }

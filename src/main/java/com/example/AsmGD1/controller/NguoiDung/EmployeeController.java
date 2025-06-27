@@ -21,12 +21,19 @@ public class EmployeeController {
     @GetMapping
     public String listEmployees(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "") String keyword,
+                                @RequestParam(defaultValue = "") String vaiTro,
                                 Model model) {
-        Page<NguoiDung> employees = nguoiDungService.findUsersByVaiTro("employee", keyword, page, 5);
+        Page<NguoiDung> employees;
+        if (vaiTro.isEmpty()) {
+            employees = nguoiDungService.findUsersByVaiTroNotCustomer(keyword, page, 5);
+        } else {
+            employees = nguoiDungService.findUsersByVaiTro(vaiTro, keyword, page, 5);
+        }
         model.addAttribute("employees", employees.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", employees.getTotalPages());
         model.addAttribute("keyword", keyword);
+        model.addAttribute("vaiTro", vaiTro);
         model.addAttribute("employee", new NguoiDung());
         return "WebQuanLy/list-nhan-vien";
     }
@@ -37,7 +44,6 @@ public class EmployeeController {
             if (employee.getTrangThai() == null) {
                 employee.setTrangThai(true);
             }
-            employee.setVaiTro("employee");
             nguoiDungService.save(employee);
             redirectAttributes.addFlashAttribute("message", "Thêm nhân viên thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
@@ -54,7 +60,6 @@ public class EmployeeController {
             if (employee.getTrangThai() == null) {
                 employee.setTrangThai(true);
             }
-            employee.setVaiTro("employee");
             nguoiDungService.save(employee);
             redirectAttributes.addFlashAttribute("message", "Sửa nhân viên thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
@@ -82,18 +87,18 @@ public class EmployeeController {
     public String showAdminDashboard(Model model) {
         model.addAttribute("message", "Chào mừng Admin đến với dashboard!");
         model.addAttribute("messageType", "success");
-        return "WebQuanly/admin-dashboard";
+        return "WebQuanLy/admin-dashboard";
     }
 
     @GetMapping("/employee-dashboard")
     public String showEmployeeDashboard(Model model) {
         model.addAttribute("message", "Chào mừng Nhân viên đến với dashboard!");
         model.addAttribute("messageType", "success");
-        return "WebQuanly/employee-dashboard";
+        return "WebQuanLy/employee-dashboard";
     }
 
     @GetMapping("/login")
     public String showLoginForm() {
-        return "WebQuanly/employee-login"; // Spring Security sẽ xử lý form login
+        return "WebQuanLy/employee-login";
     }
 }

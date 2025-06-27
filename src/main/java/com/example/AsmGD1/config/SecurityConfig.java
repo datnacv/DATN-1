@@ -16,6 +16,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -28,14 +29,14 @@ public class SecurityConfig {
     @Bean
     public AccessDeniedHandler accessDeniedHandlerEmployees() {
         AccessDeniedHandlerImpl handler = new AccessDeniedHandlerImpl();
-        handler.setErrorPage("/acvstore/employees/login?error=accessDenied");
+        handler.setErrorPage("/acvstore/login?error=accessDenied");
         return handler;
     }
 
     @Bean
     public AccessDeniedHandler accessDeniedHandlerCustomers() {
         AccessDeniedHandlerImpl handler = new AccessDeniedHandlerImpl();
-        handler.setErrorPage("/acvstore/customers/login?error=accessDenied");
+        handler.setErrorPage("/customers/login?error=accessDenied");
         return handler;
     }
 
@@ -43,7 +44,7 @@ public class SecurityConfig {
     public AuthenticationEntryPoint employeeAuthEntryPoint() {
         return (request, response, authException) -> {
             response.setStatus(HttpServletResponse.SC_FOUND);
-            response.sendRedirect("/acvstore/employees/login");
+            response.sendRedirect("/acvstore/login");
         };
     }
 
@@ -51,42 +52,42 @@ public class SecurityConfig {
     public AuthenticationEntryPoint customerAuthEntryPoint() {
         return (request, response, authException) -> {
             response.setStatus(HttpServletResponse.SC_FOUND);
-            response.sendRedirect("/acvstore/customers/login");
+            response.sendRedirect("/customers/login");
         };
     }
 
-    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
             response.setStatus(HttpServletResponse.SC_FOUND);
-            // Chuyển hướng đến trang login mặc định, ví dụ trang customer login
-            response.sendRedirect("/acvstore/customers/login");
+            response.sendRedirect("/customers/login");
         };
     }
 
     @Bean
-    public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http,
+                                                           CustomerAccessBlockFilter blockFilter) throws Exception {
         http
-                .securityMatcher("/acvstore/employees/**")
+                .securityMatcher("/acvstore/**")
+                .addFilterBefore(blockFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/employees/login").permitAll()
-                        .requestMatchers("/acvstore/employees/admin-dashboard").hasRole("ADMIN")
-                        .requestMatchers("/acvstore/employees/employee-dashboard").hasRole("EMPLOYEE")
+                        .requestMatchers("/acvstore/login").permitAll()
+                        .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("/acvstore/employees/login")
-                        .loginProcessingUrl("/acvstore/employees/login")
-                        .defaultSuccessUrl("/acvstore/employees/redirect", true)
-                        .failureUrl("/acvstore/employees/login?error=invalidCredentials")
+                        .loginPage("/acvstore/login")
+                        .loginProcessingUrl("/acvstore/login")
+                        .defaultSuccessUrl("/acvstore/redirect", true)
+                        .failureUrl("/acvstore/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/acvstore/employees/logout")
-                        .logoutSuccessUrl("/acvstore/employees/login?logout")
+                        .logoutUrl("/acvstore/logout")
+                        .logoutSuccessUrl("/acvstore/login?logout")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
@@ -99,10 +100,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
-                                .expiredUrl("/acvstore/employees/login?expired")
+                                .expiredUrl("/acvstore/login?expired")
                         )
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .invalidSessionUrl("/acvstore/employees/login?invalid")
+                        .invalidSessionUrl("/acvstore/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
 
@@ -112,24 +113,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain customerSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/acvstore/customers/**")
+                .securityMatcher("/customers/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/customers/login").permitAll()
-                        .requestMatchers("/acvstore/customers/dashboard").hasRole("CUSTOMER")
-                        .anyRequest().authenticated()
+                        .requestMatchers("/customers/login").permitAll()
+                        .anyRequest().hasRole("CUSTOMER")
                 )
                 .formLogin(form -> form
-                        .loginPage("/acvstore/customers/login")
-                        .loginProcessingUrl("/acvstore/customers/login")
-                        .defaultSuccessUrl("/acvstore/customers/dashboard", true)
-                        .failureUrl("/acvstore/customers/login?error=invalidCredentials")
+                        .loginPage("/customers/login")
+                        .loginProcessingUrl("/customers/login")
+                        .defaultSuccessUrl("/", true)
+                        .failureUrl("/customers/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/acvstore/customers/logout")
-                        .logoutSuccessUrl("/acvstore/customers/login?logout")
+                        .logoutUrl("/customers/logout")
+                        .logoutSuccessUrl("/customers/login?logout")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
@@ -142,36 +142,35 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
-                                .expiredUrl("/acvstore/customers/login?expired")
+                                .expiredUrl("/customers/login?expired")
                         )
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .invalidSessionUrl("/acvstore/customers/login?invalid")
+                        .invalidSessionUrl("/customers/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
 
         return http.build();
     }
 
-    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/employees/login", "/acvstore/customers/login").permitAll()
-                        .anyRequest().authenticated() // Yêu cầu xác thực cho tất cả các request khác
+                        .requestMatchers("/", "/acvstore/login", "/customers/login").permitAll()
+                        .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginPage("/acvstore/customers/login") // Trang login mặc định
-                        .loginProcessingUrl("/acvstore/customers/login")
-                        .defaultSuccessUrl("/acvstore/customers/dashboard", true)
-                        .failureUrl("/acvstore/customers/login?error=invalidCredentials")
+                        .loginPage("/customers/login")
+                        .loginProcessingUrl("/customers/login")
+                        .defaultSuccessUrl("/", true)
+                        .failureUrl("/customers/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/acvstore/customers/logout")
-                        .logoutSuccessUrl("/acvstore/customers/login?logout")
+                        .logoutUrl("/customers/logout")
+                        .logoutSuccessUrl("/customers/login?logout")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
@@ -183,10 +182,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
-                                .expiredUrl("/acvstore/customers/login?expired")
+                                .expiredUrl("/customers/login?expired")
                         )
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                        .invalidSessionUrl("/acvstore/customers/login?invalid")
+                        .invalidSessionUrl("/customers/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
 
@@ -208,6 +207,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // CẢNH BÁO: Không an toàn cho production, nên dùng BCryptPasswordEncoder
+        return NoOpPasswordEncoder.getInstance(); // ⚠️ Dùng BCrypt trong môi trường thực tế
     }
 }

@@ -32,7 +32,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!targetEl) return;
 
-        // Đảm bảo không tự toggle khi init
         const collapse = new bootstrap.Collapse(targetEl, { toggle: false });
 
         toggle.addEventListener("click", () => {
@@ -107,7 +106,6 @@ document.addEventListener("DOMContentLoaded", function () {
             toggleIcon.classList.remove('fa-bars');
             toggleIcon.classList.add('fa-arrow-right');
         } else {
-            // Chỉ áp dụng trạng thái từ localStorage khi màn hình lớn hơn 768px
             const storedState = localStorage.getItem('sidebarCollapsed') === 'true';
             if (storedState) {
                 sidebar.classList.add('collapsed');
@@ -119,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
             } else {
                 sidebar.classList.remove('collapsed');
                 content.classList.remove('collapsed');
-                navbar.classList.remove('collapse   d');
+                navbar.classList.remove('collapsed');
                 toggleBtn.classList.remove('collapsed');
                 toggleIcon.classList.remove('fa-arrow-right');
                 toggleIcon.classList.add('fa-bars');
@@ -142,4 +140,3 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-

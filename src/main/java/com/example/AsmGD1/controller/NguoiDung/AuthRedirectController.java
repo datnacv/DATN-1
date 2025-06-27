@@ -8,10 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class AuthRedirectController {
 
-    @GetMapping("/acvstore/employees/redirect")
+    @GetMapping("/acvstore/redirect")
     public String redirectAfterLogin(Authentication auth) {
         if (auth == null || auth.getAuthorities().isEmpty()) {
-            return "redirect:/acvstore/employees/login?error=unauthorized";
+            return "redirect:/acvstore/login?error=unauthorized";
         }
 
         boolean isAdmin = auth.getAuthorities().stream()
@@ -22,13 +22,23 @@ public class AuthRedirectController {
         // ❌ Nếu login bằng customer → không cho truy cập
         if (!isAdmin && !isEmployee) {
             SecurityContextHolder.clearContext(); // clear phiên đăng nhập
-            return "redirect:/acvstore/employees/login?error=accessDenied";
+            return "redirect:/acvstore/login?error=accessDenied";
         }
 
         if (isAdmin) {
-            return "redirect:/acvstore/employees/admin-dashboard";
+            return "redirect:/acvstore/thong-ke";
         } else {
-            return "redirect:/acvstore/employees/employee-dashboard";
+            return "redirect:/acvstore/employee-dashboard";
         }
+    }
+
+    @GetMapping("/acvstore/login")
+    public String showLoginForm() {
+        return "WebQuanLy/employee-login";
+    }
+
+    @GetMapping("/customers/login")
+    public String showLoginFormCustomer() {
+        return "WebQuanLy/customer-login";
     }
 }
