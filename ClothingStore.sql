@@ -1,6 +1,6 @@
 ﻿USE Master;
 GO
-DROP DATABASE ACVStore;
+DROP DATABASE IF EXISTS ACVStore;
 GO
 CREATE DATABASE ACVStore;
 GO
@@ -402,6 +402,24 @@ VALUES (
            GETDATE()
        );
 
+ALTER TABLE don_hang
+ALTER COLUMN phi_van_chuyen DECIMAL(15,2);
+
+ALTER TABLE don_hang
+ALTER COLUMN so_tien_khach_dua DECIMAL(15,2);
+
+ALTER TABLE don_hang
+ALTER COLUMN tien_giam DECIMAL(15,2);
+
+ALTER TABLE don_hang
+ALTER COLUMN tong_tien DECIMAL(15,2);
+
+ALTER TABLE don_hang_tam
+ALTER COLUMN tong_tien DECIMAL(15,2);
+
+ALTER TABLE don_hang_tam
+ALTER COLUMN phi_van_chuyen DECIMAL(15,2);
+
 
 
 
@@ -424,6 +442,8 @@ VALUES
 ALTER TABLE phieu_giam_gia_cua_nguoi_dung
     ADD so_luot_con_lai INT DEFAULT 0;
 ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
+select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
+select * from san_pham where id = '550e8400-e29b-41d4-a716-446655440021'
 
 -- Add dia_chi_giao_hang column to don_hang (nullable to avoid impacting existing records)
 
