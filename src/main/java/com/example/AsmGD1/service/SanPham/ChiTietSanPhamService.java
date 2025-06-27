@@ -62,6 +62,60 @@ public class ChiTietSanPhamService {
         }
     }
 
+    public List<ChiTietSanPham> findByFilters(UUID productId, UUID colorId, UUID sizeId, UUID originId, UUID materialId,
+                                              UUID styleId, UUID sleeveId, UUID collarId, UUID brandId, String gender, Boolean status) {
+        StringBuilder query = new StringBuilder("SELECT ct FROM ChiTietSanPham ct " +
+                "JOIN FETCH ct.sanPham sp " +
+                "JOIN FETCH ct.kichCo kc " +
+                "JOIN FETCH ct.mauSac ms " +
+                "WHERE sp.id = :productId");
+        Map<String, Object> params = new HashMap<>();
+        params.put("productId", productId);
+
+        if (colorId != null) {
+            query.append(" AND ct.mauSac.id = :colorId");
+            params.put("colorId", colorId);
+        }
+        if (sizeId != null) {
+            query.append(" AND ct.kichCo.id = :sizeId");
+            params.put("sizeId", sizeId);
+        }
+        if (originId != null) {
+            query.append(" AND ct.xuatXu.id = :originId");
+            params.put("originId", originId);
+        }
+        if (materialId != null) {
+            query.append(" AND ct.chatLieu.id = :materialId");
+            params.put("materialId", materialId);
+        }
+        if (styleId != null) {
+            query.append(" AND ct.kieuDang.id = :styleId");
+            params.put("styleId", styleId);
+        }
+        if (sleeveId != null) {
+            query.append(" AND ct.tayAo.id = :sleeveId");
+            params.put("sleeveId", sleeveId);
+        }
+        if (collarId != null) {
+            query.append(" AND ct.coAo.id = :collarId");
+            params.put("collarId", collarId);
+        }
+        if (brandId != null) {
+            query.append(" AND ct.thuongHieu.id = :brandId");
+            params.put("brandId", brandId);
+        }
+        if (gender != null && !gender.isEmpty()) {
+            query.append(" AND ct.gioiTinh = :gender");
+            params.put("gender", gender);
+        }
+        if (status != null) {
+            query.append(" AND ct.trangThai = :status");
+            params.put("status", status);
+        }
+
+        return chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
+    }
+
     @Transactional
     public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
         SanPham sanPham = sanPhamRepo.findById(batchDto.getProductId())
@@ -165,7 +219,7 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(dto.getStatus() != null ? dto.getStatus() : true); // Mặc định true nếu null
+        pd.setTrangThai(dto.getStatus() != null ? dto.getStatus() : true);
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -200,8 +254,8 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : existingDetail.getTrangThai()); // Đảm bảo không null
-        logger.info("Updating status to: {}", updateDto.getStatus()); // Log để kiểm tra
+        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : existingDetail.getTrangThai());
+        logger.info("Updating status to: {}", updateDto.getStatus());
 
         chiTietSanPhamRepo.save(existingDetail);
 

@@ -7,11 +7,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, UUID> {
-//    List<ChiTietSanPham> findBySanPhamId(UUID productId);
 
     @Query("SELECT ct FROM ChiTietSanPham ct " +
             "JOIN FETCH ct.sanPham sp " +
@@ -27,4 +27,50 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             @Param("mauSacId") UUID mauSacId,
             @Param("kichCoId") UUID kichCoId);
 
+    @Query("SELECT ct FROM ChiTietSanPham ct " +
+            "JOIN FETCH ct.sanPham sp " +
+            "JOIN FETCH ct.kichCo kc " +
+            "JOIN FETCH ct.mauSac ms " +
+            "JOIN FETCH ct.xuatXu xx " +
+            "JOIN FETCH ct.chatLieu cl " +
+            "JOIN FETCH ct.kieuDang kd " +
+            "JOIN FETCH ct.tayAo ta " +
+            "JOIN FETCH ct.coAo ca " +
+            "JOIN FETCH ct.thuongHieu th " +
+            "WHERE 1=1 " +
+            "AND (:queryParams IS NULL OR (" +
+            "sp.id = :productId " +
+            "AND (:colorId IS NULL OR ct.mauSac.id = :colorId) " +
+            "AND (:sizeId IS NULL OR ct.kichCo.id = :sizeId) " +
+            "AND (:originId IS NULL OR ct.xuatXu.id = :originId) " +
+            "AND (:materialId IS NULL OR ct.chatLieu.id = :materialId) " +
+            "AND (:styleId IS NULL OR ct.kieuDang.id = :styleId) " +
+            "AND (:sleeveId IS NULL OR ct.tayAo.id = :sleeveId) " +
+            "AND (:collarId IS NULL OR ct.coAo.id = :collarId) " +
+            "AND (:brandId IS NULL OR ct.thuongHieu.id = :brandId) " +
+            "AND (:gender IS NULL OR ct.gioiTinh = :gender) " +
+            "AND (:status IS NULL OR ct.trangThai = :status)))")
+    List<ChiTietSanPham> findByDynamicQuery(@Param("queryParams") String query, @Param("productId") UUID productId,
+                                            @Param("colorId") UUID colorId, @Param("sizeId") UUID sizeId,
+                                            @Param("originId") UUID originId, @Param("materialId") UUID materialId,
+                                            @Param("styleId") UUID styleId, @Param("sleeveId") UUID sleeveId,
+                                            @Param("collarId") UUID collarId, @Param("brandId") UUID brandId,
+                                            @Param("gender") String gender, @Param("status") Boolean status);
+
+    default List<ChiTietSanPham> findByDynamicQuery(String query, Map<String, Object> params) {
+        return findByDynamicQuery(
+                query,
+                (UUID) params.get("productId"),
+                (UUID) params.get("colorId"),
+                (UUID) params.get("sizeId"),
+                (UUID) params.get("originId"),
+                (UUID) params.get("materialId"),
+                (UUID) params.get("styleId"),
+                (UUID) params.get("sleeveId"),
+                (UUID) params.get("collarId"),
+                (UUID) params.get("brandId"),
+                (String) params.get("gender"),
+                (Boolean) params.get("status")
+        );
+    }
 }

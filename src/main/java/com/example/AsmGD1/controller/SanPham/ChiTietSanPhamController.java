@@ -38,14 +38,25 @@ public class ChiTietSanPhamController {
     @Autowired private DanhMucService danhMucService;
 
     @GetMapping
-    public String xemTatCa(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
+    public String xemTatCa(Model model,
+                           @RequestParam(value = "productId", required = false) UUID productId,
+                           @RequestParam(value = "colorId", required = false) UUID colorId,
+                           @RequestParam(value = "sizeId", required = false) UUID sizeId,
+                           @RequestParam(value = "originId", required = false) UUID originId,
+                           @RequestParam(value = "materialId", required = false) UUID materialId,
+                           @RequestParam(value = "styleId", required = false) UUID styleId,
+                           @RequestParam(value = "sleeveId", required = false) UUID sleeveId,
+                           @RequestParam(value = "collarId", required = false) UUID collarId,
+                           @RequestParam(value = "brandId", required = false) UUID brandId,
+                           @RequestParam(value = "gender", required = false) String gender,
+                           @RequestParam(value = "status", required = false) Boolean status) {
         try {
             model.addAttribute("sanPham", new SanPham());
             model.addAttribute("sanPhams", sanPhamService.findAll());
-            model.addAttribute("mauSacs", mauSacService.getAllMauSac());
-            model.addAttribute("kichCos", kichCoService.getAllKichCo());
-            model.addAttribute("chatLieus", chatLieuService.getAllChatLieu());
+            model.addAttribute("mauSacs", chiTietSanPhamService.findColorsByProductId(productId));
+            model.addAttribute("kichCos", chiTietSanPhamService.findSizesByProductId(productId));
             model.addAttribute("xuatXus", xuatXuService.getAllXuatXu());
+            model.addAttribute("chatLieus", chatLieuService.getAllChatLieu());
             model.addAttribute("tayAos", tayAoService.getAllTayAo());
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
@@ -55,9 +66,21 @@ public class ChiTietSanPhamController {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
                 if (sanPhamDaChon != null) {
                     model.addAttribute("selectedProductId", productId);
-                    List<ChiTietSanPham> chiTietList = chiTietSanPhamService.findByProductId(productId);
+                    model.addAttribute("sanPhamDaChon", sanPhamDaChon);
+                    List<ChiTietSanPham> chiTietList = chiTietSanPhamService.findByFilters(
+                            productId, colorId, sizeId, originId, materialId, styleId, sleeveId, collarId, brandId, gender, status);
                     chiTietList.forEach(pd -> logger.info("Product ID: {}, Status: {}", pd.getId(), pd.getTrangThai()));
                     model.addAttribute("chiTietSanPhamList", chiTietList);
+                    model.addAttribute("selectedColorId", colorId);
+                    model.addAttribute("selectedSizeId", sizeId);
+                    model.addAttribute("selectedOriginId", originId);
+                    model.addAttribute("selectedMaterialId", materialId);
+                    model.addAttribute("selectedStyleId", styleId);
+                    model.addAttribute("selectedSleeveId", sleeveId);
+                    model.addAttribute("selectedCollarId", collarId);
+                    model.addAttribute("selectedBrandId", brandId);
+                    model.addAttribute("selectedGender", gender);
+                    model.addAttribute("selectedStatus", status);
                 } else {
                     model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
                 }
@@ -73,7 +96,7 @@ public class ChiTietSanPhamController {
     }
 
     @GetMapping("/add")
-    public String hienThiFormThem(Model model) {
+    public String hienThiFormThem(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
         try {
             model.addAttribute("sanPham", new SanPham());
             model.addAttribute("sanPhams", sanPhamService.findAll());
@@ -88,6 +111,11 @@ public class ChiTietSanPhamController {
             List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
             logger.info("Số lượng danh mục: {}", danhMucList.size());
             model.addAttribute("danhMucList", danhMucList);
+            if (productId != null) {
+                SanPham sanPhamDaChon = sanPhamService.findById(productId);
+                model.addAttribute("selectedProductId", productId);
+                model.addAttribute("sanPhamDaChon", sanPhamDaChon);
+            }
             return "/WebQuanLy/add-chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang thêm chi tiết sản phẩm: ", e);
@@ -145,7 +173,7 @@ public class ChiTietSanPhamController {
             response.put("price", chiTiet.getGia());
             response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("gender", chiTiet.getGioiTinh());
-            response.put("status", chiTiet.getTrangThai()); // Trả về đúng trạng thái từ entity
+            response.put("status", chiTiet.getTrangThai());
             response.put("images", chiTiet.getHinhAnhSanPhams().stream()
                     .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh()))
                     .collect(Collectors.toList()));
@@ -164,7 +192,6 @@ public class ChiTietSanPhamController {
                                                                      @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles) {
         try {
             updateDto.setId(id);
-            // Log để kiểm tra giá trị status từ form
             logger.info("Received updateDto with status: {}", updateDto.getStatus());
             chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles);
             return ResponseEntity.ok(Map.of("message", "Cập nhật chi tiết sản phẩm thành công"));
@@ -215,7 +242,7 @@ public class ChiTietSanPhamController {
             newSanPham.setTenSanPham(sanPham.getTenSanPham());
             newSanPham.setMoTa(sanPham.getMoTa());
             newSanPham.setUrlHinhAnh(sanPham.getUrlHinhAnh());
-            newSanPham.setTrangThai(true); // Mặc định là Đang Bán
+            newSanPham.setTrangThai(true);
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
             if (danhMucId != null) {
