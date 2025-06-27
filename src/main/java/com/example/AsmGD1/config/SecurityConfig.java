@@ -56,6 +56,7 @@ public class SecurityConfig {
         };
     }
 
+    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
@@ -74,12 +75,27 @@ public class SecurityConfig {
                         .requestMatchers("/acvstore/login").permitAll()
                         .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
+                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/register-face").permitAll()
+                        .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/acvstore/login")
                         .loginProcessingUrl("/acvstore/login")
                         .defaultSuccessUrl("/acvstore/redirect", true)
+                        .failureUrl("/acvstore/login?error=invalidCredentials")
+                        .loginPage("/acvstore/login")
+                        .loginProcessingUrl("/acvstore/login")
+                        .successHandler((request, response, authentication) -> {
+                            boolean isAdmin = authentication.getAuthorities().stream()
+                                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+                            if (isAdmin) {
+                                response.sendRedirect("/acvstore/employees/verify-face");
+                            } else {
+                                response.sendRedirect("/acvstore/redirect");
+                            }
+                        })
                         .failureUrl("/acvstore/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
@@ -152,11 +168,12 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/acvstore/login", "/customers/login").permitAll()
+                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/customers/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

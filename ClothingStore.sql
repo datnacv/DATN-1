@@ -420,8 +420,21 @@ ALTER COLUMN tong_tien DECIMAL(15,2);
 ALTER TABLE don_hang_tam
 ALTER COLUMN phi_van_chuyen DECIMAL(15,2);
 
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung
+    ADD so_luot_con_lai INT DEFAULT 0;
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
+select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
+select * from san_pham where id = '550e8400-e29b-41d4-a716-446655440021'
 
+-- Add dia_chi_giao_hang column to don_hang (nullable to avoid impacting existing records)
 
+ALTER TABLE don_hang ADD dia_chi_giao_hang NVARCHAR(MAX);
+-- Cập nhật tabId mặc định cho các bản ghi hiện có
+UPDATE don_hang_tam
+SET tabId = 'don1'
+WHERE tabId IS NULL;
+
+select * from don_hang
 
 
 SELECT id, ho_ten, email, vai_tro, trang_thai FROM nguoi_dung WHERE vai_tro = 'CUSTOMER';
@@ -439,18 +452,84 @@ VALUES
     (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', N'789 DEF, Đà Nẵng', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
     (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', N'321 GHI, Cần Thơ', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
     (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
-ALTER TABLE phieu_giam_gia_cua_nguoi_dung
-    ADD so_luot_con_lai INT DEFAULT 0;
-ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
+
+
 select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
-select * from san_pham where id = '550e8400-e29b-41d4-a716-446655440021'
-
--- Add dia_chi_giao_hang column to don_hang (nullable to avoid impacting existing records)
-
-ALTER TABLE don_hang ADD dia_chi_giao_hang NVARCHAR(MAX);
--- Cập nhật tabId mặc định cho các bản ghi hiện có
-UPDATE don_hang_tam
-SET tabId = 'don1'
-WHERE tabId IS NULL;
-
+select * from mau_sac where id = '550e8400-e29b-41d4-a716-446655440004'
+select * from kich_co where id = '550e8400-e29b-41d4-a716-446655440011'
+SELECT * FROM chi_tiet_san_pham
+WHERE id_san_pham = '550e8400-e29b-41d4-a716-446655440020';
 select * from don_hang
+select * from nguoi_dung
+
+-- INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai, da_gui_mail)
+-- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646',
+--         (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999'), 1, 0);
+
+
+update phieu_giam_gia
+set so_luong = 100 WHERE id = '5aa57234-8476-451a-a008-1a4128682646';
+
+SELECT * FROM mau_sac WHERE id = '550e8400-e29b-41d4-a716-446655440002';
+SELECT * FROM kich_co WHERE id = '550e8400-e29b-41d4-a716-446655440009';
+
+SELECT * FROM san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440021';
+SELECT * FROM san_pham WHERE id = '558e8400-e29b-41d4-a716-466554480021';
+
+SELECT * FROM chi_tiet_san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440022';
+SELECT * FROM phuong_thuc_thanh_toan;
+select * from nguoi_dung
+
+SELECT * FROM don_hang WHERE ma_don_hang = 'DHB098971';
+SELECT * FROM don_hang_tam
+SELECT id, danh_sach_item
+FROM don_hang_tam
+WHERE id = 'c554b5f1-8b99-48b3-8390-1d91bc302d9e';
+SELECT * FROM san_pham WHERE id IN ('550e8400-e29b-41d4-a716-446655440040', '550e8400-e29b-41d4-a716-446655440041', '550e8400-e29b-41d4-a716-446655440042');
+SELECT * FROM chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440040'
+    INSERT INTO san_pham (id, id_danh_muc, ten_san_pham, ma_san_pham, mo_ta, url_hinh_anh, thoi_gian_tao, trang_thai) VALUES
+    ('550e8400-e29b-41d4-a716-446655440040', '550e8400-e29b-41d4-a716-446655440012', N'Áo sơ mi nam dài tay', N'SP003', N'Áo sơ mi cotton cao cấp, phù hợp mặc công sở', N'https://example.com/shirt1.jpg', GETDATE(), 1),
+    ('550e8400-e29b-41d4-a716-446655440041', '550e8400-e29b-41d4-a716-446655440012', N'Áo hoodie nam mùa đông', N'SP004', N'Áo hoodie giữ ấm, chất liệu polyester', N'https://example.com/hoodie1.jpg', GETDATE(), 1),
+    ('550e8400-e29b-41d4-a716-446655440042', '550e8400-e29b-41d4-a716-446655440012', N'Áo khoác nam chống nước', N'SP005', N'Áo khoác chống nước, phong cách thể thao', N'https://example.com/jacket1.jpg', GETDATE(), 1);
+
+INSERT INTO chi_tiet_san_pham (id, id_san_pham, id_kich_co, id_mau_sac, id_chat_lieu, id_xuat_xu, id_tay_ao, id_co_ao, id_kieu_dang, id_thuong_hieu, gia, so_luong_ton_kho, gioi_tinh, thoi_gian_tao, trang_thai) VALUES
+                                                                                                                                                                                                                      ('550e8400-e29b-41d4-a716-446655440043', '550e8400-e29b-41d4-a716-446655440040', '550e8400-e29b-41d4-a716-446655440009', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440034', '550e8400-e29b-41d4-a716-446655440036', 250000.00, 50, N'Nam', GETDATE(), 1),
+                                                                                                                                                                                                                      ('550e8400-e29b-41d4-a716-446655440044', '550e8400-e29b-41d4-a716-446655440041', '550e8400-e29b-41d4-a716-446655440010', '550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440006', '550e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440035', '550e8400-e29b-41d4-a716-446655440037', 300000.00, 30, N'Nam', GETDATE(), 1),
+                                                                                                                                                                                                                      ('550e8400-e29b-41d4-a716-446655440045', '550e8400-e29b-41d4-a716-446655440042', '550e8400-e29b-41d4-a716-446655440011', '550e8400-e29b-41d4-a716-446655440004', '550e8400-e29b-41d4-a716-446655440000', '550e8400-e29b-41d4-a716-446655440005', '550e8400-e29b-41d4-a716-446655440032', '550e8400-e29b-41d4-a716-446655440033', '550e8400-e29b-41d4-a716-446655440034', '550e8400-e29b-41d4-a716-446655440036', 400000.00, 20, N'Nam', GETDATE(), 1);
+
+INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
+                                                                           ('550e8400-e29b-41d4-a716-446655440046', '550e8400-e29b-41d4-a716-446655440043', N'https://example.com/shirt1.jpg'),
+                                                                           ('550e8400-e29b-41d4-a716-446655440047', '550e8400-e29b-41d4-a716-446655440044', N'https://example.com/hoodie1.jpg'),
+                                                                           ('550e8400-e29b-41d4-a716-446655440048', '550e8400-e29b-41d4-a716-446655440045', N'https://example.com/jacket1.jpg');
+
+select * from nguoi_dung
+SELECT * FROM san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440020';
+select * from don_hang_tam
+select * from san_pham
+
+CREATE TABLE thong_ke_doanh_thu_chi_tiet (
+                                             id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                             ngay_thanh_toan DATE NOT NULL,
+                                             id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+                                             id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                             id_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                             ten_san_pham NVARCHAR(100) NOT NULL,
+                                             kich_co NVARCHAR(50) NOT NULL,
+                                             mau_sac NVARCHAR(50) NOT NULL,
+                                             so_luong_da_ban INT NOT NULL DEFAULT 0,
+                                             doanh_thu NUMERIC(38,2) NOT NULL DEFAULT 0.00,
+                                             so_luong_ton_kho INT NOT NULL DEFAULT 0,
+                                             image_url NVARCHAR(MAX),
+                                             FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id),
+                                             FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
+                                             FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
+);
+SELECT id, ho_ten, email FROM nguoi_dung WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
+UPDATE nguoi_dung
+SET email = 'namhaihoang3103@gmail.com'
+WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
+UPDATE nguoi_dung
+SET vai_tro = UPPER(vai_tro)
+WHERE vai_tro IN ('admin', 'employee', 'customer');
+
+SELECT * FROM nguoi_dung

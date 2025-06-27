@@ -1,20 +1,20 @@
-//package com.example.AsmGD1.config;
-//
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-//import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-//
-//@Configuration
-//public class WebMvcConfig implements WebMvcConfigurer {
-//
-//    @Autowired
-//    private FaceVerificationInterceptor faceVerificationInterceptor;
-//
-//    @Override
-//    public void addInterceptors(InterceptorRegistry registry) {
-//        registry.addInterceptor(faceVerificationInterceptor)
-//                .addPathPatterns("/acvstore/**")
-//                .excludePathPatterns("/acvstore/login", "/acvstore/verify-face", "/logout", "/css/**", "/js/**", "/images/**");
-//    }
-//}
+package com.example.AsmGD1.config;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@Configuration
+public class WebMvcConfig implements WebMvcConfigurer {
+
+    @Autowired
+    private FaceVerificationInterceptor faceVerificationInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(faceVerificationInterceptor)
+                .addPathPatterns("/acvstore/**")
+                .excludePathPatterns("/acvstore/login", "/acvstore/verify-face", "/logout", "/acvstore/employees/register-face", "/css/**", "/js/**", "/images/**");
+    }
+}
