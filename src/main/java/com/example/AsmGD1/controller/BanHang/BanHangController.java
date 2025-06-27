@@ -31,8 +31,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -109,7 +107,7 @@ public class BanHangController {
             response.put("customers", customerList);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy danh sách khách hàng: " + e.getMessage()));
         }
     }
 
@@ -118,38 +116,37 @@ public class BanHangController {
     public ResponseEntity<Map<String, Object>> getCustomerDetails(@PathVariable String phone) {
         try {
             NguoiDung nguoiDung = nguoiDungRepository.findBySoDienThoai(phone)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
-            List<String> addresses = (List<String>) session.getAttribute("customer_addresses_" + phone) != null
-                    ? (List<String>) session.getAttribute("customer_addresses_" + phone)
-                    : new ArrayList<>();
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
+            List<String> addresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
+            if (addresses == null) {
+                addresses = new ArrayList<>();
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("hoTen", nguoiDung.getHoTen());
-            response.put("email", nguoiDung.getEmail() != null ? nguoiDung.getEmail() : ""); // Ensure null handling
+            response.put("email", nguoiDung.getEmail() != null ? nguoiDung.getEmail() : "");
             response.put("addresses", addresses);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy chi tiết khách hàng: " + e.getMessage()));
         }
     }
 
     @GetMapping("/customer/{phone}/addresses")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getCustomerAddresses(@PathVariable String phone) {
         try {
             NguoiDung nguoiDung = nguoiDungRepository.findBySoDienThoai(phone)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
 
             List<String> addresses = new ArrayList<>();
-            // Thêm địa chỉ chính
             if (nguoiDung.getDiaChi() != null && !nguoiDung.getDiaChi().trim().isEmpty()) {
                 addresses.add(nguoiDung.getDiaChi());
             }
-            // Thêm địa chỉ chi tiết
             String detailedAddress = constructDetailedAddress(nguoiDung);
             if (detailedAddress != null && !addresses.contains(detailedAddress)) {
                 addresses.add(detailedAddress);
             }
-            // Thêm địa chỉ từ session
             List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
             if (sessionAddresses != null) {
                 addresses.addAll(sessionAddresses);
@@ -161,59 +158,57 @@ public class BanHangController {
             response.put("email", nguoiDung.getEmail() != null ? nguoiDung.getEmail() : "");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy địa chỉ khách hàng: " + e.getMessage()));
         }
     }
 
     @PostMapping("/customer/{phone}/add-address")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> addCustomerAddress(@PathVariable String phone, @RequestBody Map<String, String> request) {
         try {
             NguoiDung nguoiDung = nguoiDungRepository.findBySoDienThoai(phone)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
             String addressLine = request.get("addressLine");
             String ward = request.get("ward");
             String district = request.get("district");
             String city = request.get("city");
             if (addressLine != null && ward != null && district != null && city != null &&
                     !addressLine.trim().isEmpty() && !ward.trim().isEmpty() && !district.trim().isEmpty() && !city.trim().isEmpty()) {
-                // Update NguoiDung entity with detailed fields
                 nguoiDung.setChiTietDiaChi(addressLine);
                 nguoiDung.setPhuongXa(ward);
                 nguoiDung.setQuanHuyen(district);
                 nguoiDung.setTinhThanhPho(city);
                 nguoiDungRepository.save(nguoiDung);
 
-                // Optionally store in session for addresses list
                 List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
                 if (sessionAddresses == null) {
                     sessionAddresses = new ArrayList<>();
                 }
-                sessionAddresses.add(request.get("address"));
+                String fullAddress = addressLine + ", " + ward + ", " + district + ", " + city;
+                if (!sessionAddresses.contains(fullAddress)) {
+                    sessionAddresses.add(fullAddress);
+                }
                 session.setAttribute("customer_addresses_" + phone, sessionAddresses);
 
                 return ResponseEntity.ok(Map.of("success", true));
             }
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Địa chỉ không hợp lệ"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Lỗi khi thêm địa chỉ: " + e.getMessage()));
         }
     }
 
     @GetMapping("/vouchers")
-    public ResponseEntity<Map<String, Object>> getApplicableVouchers(@RequestParam String subTotal, @RequestParam(required = false) BigDecimal shippingFee) {
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getApplicableVouchers(@RequestParam String subTotal, @RequestParam(required = false) BigDecimal shippingFee, @RequestParam String tabId) {
         try {
             String cleanSubTotal = subTotal.replaceAll("[^0-9]", "");
             BigDecimal amount = new BigDecimal(cleanSubTotal.isEmpty() ? "0" : cleanSubTotal);
-            System.out.println("Debug - Cleaned subTotal: " + amount);
+            System.out.println("Debug - Cleaned subTotal: " + amount + ", tabId: " + tabId);
 
-            // Lấy giỏ hàng hiện tại
-            GioHangDTO gioHang = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO);
+            GioHangDTO gioHang = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO, tabId);
+            gioHang.setTongTienHang(amount);
 
-            // Cập nhật TongTienHangValue từ subTotal
-            gioHang.setTongTienHangValue(amount);
-            gioHang.setTongTienHang(gioHangService.formatCurrency(amount));
-
-            // Tạo danh sách sản phẩm giả lập nếu giỏ trống
             if (gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
                 GioHangItemDTO dummyItem = new GioHangItemDTO();
                 dummyItem.setIdChiTietSanPham(UUID.randomUUID());
@@ -225,7 +220,6 @@ public class BanHangController {
                 System.out.println("Debug - Added dummy item to cart with amount: " + amount);
             }
 
-            // Lấy danh sách voucher khả dụng
             List<PhieuGiamGia> applicableVouchers = phieuGiamGiaRepository.findAll().stream()
                     .filter(v -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)))
                     .filter(v -> amount.compareTo(v.getGiaTriGiamToiThieu()) >= 0)
@@ -235,15 +229,15 @@ public class BanHangController {
             Map<String, Object> response = new HashMap<>();
             response.put("gioHang", gioHang);
             response.put("vouchers", applicableVouchers);
-
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("Debug - Error in getApplicableVouchers: " + e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy phiếu giảm giá: " + e.getMessage()));
         }
     }
 
     @PostMapping("/create-order")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> createOrder(@RequestBody DonHangDTO donHangDTO) {
         try {
             System.out.println("=== [DEBUG] Nhận đơn hàng từ client ===");
@@ -252,29 +246,33 @@ public class BanHangController {
             System.out.println("PTTT: " + donHangDTO.getPhuongThucThanhToan());
             System.out.println("Tiền khách đưa: " + donHangDTO.getSoTienKhachDua());
             System.out.println("Giao đến: " + donHangDTO.getDiaChiGiaoHang());
+            System.out.println("TabId: " + donHangDTO.getTabId());
 
             if (donHangDTO.getDanhSachSanPham() == null || donHangDTO.getDanhSachSanPham().isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
+            donHangTamRepository.deleteByTabId(donHangDTO.getTabId()); // Xóa đơn hàng tạm sau khi tạo đơn hàng chính thức
+            session.removeAttribute("tempStockChanges"); // Xóa tồn kho tạm
             return ResponseEntity.ok(Map.of(
                     "message", "Tạo đơn hàng thành công!",
                     "maDonHang", ketQua.getMaDonHang()
             ));
         } catch (Exception e) {
+            System.err.println("Lỗi tạo đơn hàng: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
 
-
     @GetMapping("/cart/apply-voucher")
-    public ResponseEntity<?> applyVoucher(@RequestParam UUID voucherId, @RequestParam BigDecimal shippingFee) {
-        System.out.println("Received voucherId: " + voucherId + ", shippingFee: " + shippingFee);
+    @ResponseBody
+    public ResponseEntity<?> applyVoucher(@RequestParam UUID voucherId, @RequestParam BigDecimal shippingFee, @RequestParam String tabId) {
+        System.out.println("Received voucherId: " + voucherId + ", shippingFee: " + shippingFee + ", tabId: " + tabId);
         try {
-            GioHangDTO gioHangDTO = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO);
-            GioHangDTO updatedGioHang = gioHangService.apDungPhieuGiamGia(voucherId, shippingFee, gioHangDTO);
+            GioHangDTO gioHangDTO = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO, tabId);
+            GioHangDTO updatedGioHang = gioHangService.apDungPhieuGiamGia(voucherId, shippingFee, gioHangDTO, tabId);
             return ResponseEntity.ok(updatedGioHang);
         } catch (Exception e) {
             System.err.println("Error in applyVoucher: " + e.getMessage());
@@ -303,74 +301,157 @@ public class BanHangController {
     }
 
     @GetMapping
-    public String hienThiTrangBanHang(Model model, HttpSession session) {
-        List<SanPham> products = sanPhamService.findAll();
-        for (SanPham product : products) {
-            product.setChiTietSanPhams(chiTietSanPhamService.findByProductId(product.getId()));
+    public String hienThiTrangBanHang(Model model) {
+        try {
+            List<SanPham> products = sanPhamService.findAll();
+            for (SanPham product : products) {
+                product.setChiTietSanPhams(chiTietSanPhamService.findByProductId(product.getId()));
+            }
+            model.addAttribute("products", products);
+            model.addAttribute("chiTietSanPhams", chiTietSanPhamService.findAll());
+            model.addAttribute("customers", nguoiDungService.findUsersByVaiTro("customer", "", 0, 10).getContent());
+            model.addAttribute("paymentMethods", phuongThucThanhToanService.findAll());
+            model.addAttribute("discountVouchers", phieuGiamGiaService.layTatCa().stream()
+                    .filter(v -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)))
+                    .collect(Collectors.toList()));
+            BigDecimal defaultShippingFee = BigDecimal.ZERO;
+            model.addAttribute("gioHang", gioHangService.layGioHang(defaultShippingFee, "default"));
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+
+            List<DonHangTam> heldOrders = donHangTamRepository.findAll();
+            Map<String, Object> tabs = new HashMap<>();
+            for (DonHangTam order : heldOrders) {
+                Map<String, Object> tabData = new HashMap<>();
+                tabData.put("id", order.getId());
+                tabData.put("tabId", order.getTabId());
+                tabData.put("maDonHangTam", order.getMaDonHangTam());
+                tabData.put("tenKhachHang", nguoiDungRepository.findById(order.getKhachHang())
+                        .map(NguoiDung::getHoTen).orElse("Không rõ"));
+                tabData.put("soDienThoaiKhachHang", order.getSoDienThoaiKhachHang());
+                tabData.put("tong", order.getTong());
+                tabData.put("phuongThucThanhToan", order.getPhuongThucThanhToan());
+                tabData.put("phuongThucBanHang", order.getPhuongThucBanHang());
+                tabData.put("phiVanChuyen", order.getPhiVanChuyen());
+                tabData.put("idPhieuGiamGia", order.getPhieuGiamGia());
+                try {
+                    tabData.put("danhSachSanPham", objectMapper.readValue(order.getDanhSachSanPham(), new TypeReference<List<GioHangItemDTO>>(){}));
+                } catch (Exception e) {
+                    System.err.println("Lỗi parse danh sách sản phẩm cho tab " + order.getTabId() + ": " + e.getMessage());
+                    tabData.put("danhSachSanPham", new ArrayList<>());
+                }
+                tabs.put(order.getTabId(), tabData);
+            }
+            model.addAttribute("orderTabs", tabs);
+            model.addAttribute("orderCounter", heldOrders.size());
+
+            return "WebQuanLy/ban-hang";
+        } catch (Exception e) {
+            System.err.println("Lỗi khi hiển thị trang bán hàng: " + e.getMessage());
+            model.addAttribute("error", "Lỗi hệ thống: " + e.getMessage());
+            return "WebQuanLy/ban-hang";
         }
-        model.addAttribute("products", products);
-        model.addAttribute("chiTietSanPhams", chiTietSanPhamService.findAll());
-        model.addAttribute("customers", nguoiDungService.findUsersByVaiTro("customer", "", 0, 10).getContent());
-        model.addAttribute("paymentMethods", phuongThucThanhToanService.findAll());
-        model.addAttribute("discountVouchers", phieuGiamGiaService.layTatCa().stream()
-                .filter(v -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)))
-                .collect(Collectors.toList()));
-        BigDecimal defaultShippingFee = BigDecimal.ZERO;
-        model.addAttribute("gioHang", gioHangService.layGioHang(defaultShippingFee));
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-
-        // Load tabs from session
-        Map<String, Object> tabs = (Map<String, Object>) session.getAttribute("orderTabs");
-        model.addAttribute("orderTabs", tabs != null ? tabs : new HashMap<>());
-        model.addAttribute("orderCounter", session.getAttribute("orderCounter") != null ? session.getAttribute("orderCounter") : 0);
-
-        return "WebQuanLy/ban-hang";
     }
 
     @GetMapping("/get-tabs")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> getTabs(HttpSession session) {
-        Map<String, Object> tabs = (Map<String, Object>) session.getAttribute("orderTabs");
-        Integer orderCounter = (Integer) session.getAttribute("orderCounter");
-        if (tabs == null) {
-            tabs = new HashMap<>();
-            orderCounter = 0;
+    public ResponseEntity<Map<String, Object>> getTabs() {
+        try {
+            List<DonHangTam> heldOrders = donHangTamRepository.findAll();
+            Map<String, Object> tabs = new HashMap<>();
+            for (DonHangTam order : heldOrders) {
+                Map<String, Object> tabData = new HashMap<>();
+                tabData.put("id", order.getId());
+                tabData.put("tabId", order.getTabId());
+                tabData.put("maDonHangTam", order.getMaDonHangTam());
+                tabData.put("tenKhachHang", nguoiDungRepository.findById(order.getKhachHang())
+                        .map(NguoiDung::getHoTen).orElse("Không rõ"));
+                tabData.put("soDienThoaiKhachHang", order.getSoDienThoaiKhachHang());
+                tabData.put("tong", order.getTong());
+                tabData.put("phuongThucThanhToan", order.getPhuongThucThanhToan());
+                tabData.put("phuongThucBanHang", order.getPhuongThucBanHang());
+                tabData.put("phiVanChuyen", order.getPhiVanChuyen());
+                tabData.put("idPhieuGiamGia", order.getPhieuGiamGia());
+                try {
+                    tabData.put("danhSachSanPham", objectMapper.readValue(order.getDanhSachSanPham(), new TypeReference<List<GioHangItemDTO>>(){}));
+                } catch (Exception e) {
+                    System.err.println("Lỗi parse danh sách sản phẩm cho tab " + order.getTabId() + ": " + e.getMessage());
+                    tabData.put("danhSachSanPham", new ArrayList<>());
+                }
+                tabs.put(order.getTabId(), tabData);
+            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("orders", tabs);
+            response.put("orderCounter", heldOrders.size());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy danh sách tab: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy danh sách tab: " + e.getMessage()));
         }
-        Map<String, Object> response = new HashMap<>();
-        response.put("orders", tabs);
-        response.put("orderCounter", orderCounter);
-        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/save-tabs")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveTabs(@RequestBody Map<String, Object> request, HttpSession session) {
+    public ResponseEntity<Map<String, String>> saveTabs(@RequestBody Map<String, Object> request) {
         try {
             Map<String, Object> orders = (Map<String, Object>) request.get("orders");
             Integer orderCounter = (Integer) request.get("orderCounter");
+
+            for (Map.Entry<String, Object> entry : orders.entrySet()) {
+                String tabId = entry.getKey();
+                Map<String, Object> tabData = (Map<String, Object>) entry.getValue();
+                UUID khachHangId = tabData.get("khachHangId") != null ? UUID.fromString((String) tabData.get("khachHangId")) : null;
+                String soDienThoai = (String) tabData.get("soDienThoaiKhachHang");
+                GioHangDTO gioHangDTO = new GioHangDTO();
+                gioHangDTO.setDanhSachSanPham(objectMapper.convertValue(tabData.get("danhSachSanPham"), new TypeReference<List<GioHangItemDTO>>(){}));
+                gioHangDTO.setTong(new BigDecimal(tabData.get("tong").toString()));
+                gioHangDTO.setPhiVanChuyen(tabData.get("phiVanChuyen") != null ? new BigDecimal(tabData.get("phiVanChuyen").toString()) : BigDecimal.ZERO);
+                gioHangDTO.setPhuongThucThanhToan((String) tabData.get("phuongThucThanhToan"));
+                gioHangDTO.setPhuongThucBanHang((String) tabData.get("phuongThucBanHang"));
+                gioHangDTO.setIdPhieuGiamGia(tabData.get("idPhieuGiamGia") != null ? UUID.fromString((String) tabData.get("idPhieuGiamGia")) : null);
+                gioHangService.saveCartToDonHangTam(gioHangDTO, tabId, khachHangId, soDienThoai);
+            }
+
             session.setAttribute("orderTabs", orders);
             session.setAttribute("orderCounter", orderCounter);
-            return ResponseEntity.ok(Map.of("success", true));
+            return ResponseEntity.ok(Map.of("success", "true"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("success", false, "error", e.getMessage()));
+            System.err.println("Lỗi khi lưu tab: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("success", "false", "error", "Lỗi khi lưu tab: " + e.getMessage()));
         }
     }
 
     @GetMapping("/product/{productId}/variants")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getProductVariants(@PathVariable UUID productId) {
-        List<MauSac> colors = chiTietSanPhamService.findColorsByProductId(productId);
-        List<KichCo> sizes = chiTietSanPhamService.findSizesByProductId(productId);
-        if (colors.isEmpty() && sizes.isEmpty()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy thông tin biến thể"));
+        try {
+            List<ChiTietSanPham> variants = chiTietSanPhamService.findByProductId(productId);
+            if (variants.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy biến thể cho sản phẩm."));
+            }
+
+            List<Map<String, Object>> variantList = variants.stream().map(variant -> {
+                Map<String, Object> variantMap = new HashMap<>();
+                variantMap.put("colorId", variant.getMauSac().getId());
+                variantMap.put("sizeId", variant.getKichCo().getId());
+                variantMap.put("mauSac", variant.getMauSac().getTenMau());
+                variantMap.put("kichCo", variant.getKichCo().getTen());
+                variantMap.put("productDetailId", variant.getId());
+                variantMap.put("price", variant.getGia());
+                variantMap.put("stockQuantity", variant.getSoLuongTonKho());
+                return variantMap;
+            }).collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("variants", variantList);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy biến thể sản phẩm: " + e.getMessage()));
         }
-        Map<String, Object> response = new HashMap<>();
-        response.put("colors", colors);
-        response.put("sizes", sizes);
-        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/product/variant")
+    @ResponseBody
     public ResponseEntity<Map<String, Object>> getVariant(
             @RequestParam(required = false) UUID productId,
             @RequestParam(required = false) UUID colorId,
@@ -389,13 +470,27 @@ public class BanHangController {
             }
 
             if (variant != null) {
-                result.put("stockQuantity", variant.getSoLuongTonKho());
+                // Lấy số lượng tồn kho thực tế (có thể trừ đi số lượng đã được giữ tạm thời)
+                int actualStock = variant.getSoLuongTonKho();
+
+                // Kiểm tra số lượng đã được giữ tạm thời trong session
+                @SuppressWarnings("unchecked")
+                Map<UUID, Map<String, Integer>> tempStockChanges =
+                        (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
+
+                if (tempStockChanges != null && tempStockChanges.containsKey(variant.getId())) {
+                    int reservedQuantity = tempStockChanges.get(variant.getId()).getOrDefault("reservedQuantity", 0);
+                    actualStock = Math.max(0, actualStock - reservedQuantity);
+                }
+
+                result.put("stockQuantity", variant.getSoLuongTonKho()); // Tồn kho gốc
+                result.put("availableStock", actualStock); // Tồn kho khả dụng
                 result.put("price", variant.getGia());
                 result.put("productDetailId", variant.getId());
                 result.put("tenSanPham", variant.getSanPham().getTenSanPham());
                 result.put("mauSac", variant.getMauSac().getTenMau());
                 result.put("kichCo", variant.getKichCo().getTen());
-                result.put("hinhAnh", variant.getSanPham().getUrlHinhAnh()); // Add image URL
+                result.put("hinhAnh", variant.getSanPham().getUrlHinhAnh());
                 return ResponseEntity.ok(result);
             } else {
                 result.put("error", "Không tìm thấy biến thể.");
@@ -409,12 +504,6 @@ public class BanHangController {
             return ResponseEntity.status(500).body(result);
         }
     }
-//
-//    @GetMapping("/vouchers")
-//    @ResponseBody
-//    public List<PhieuGiamGia> getVouchers() {
-//        return phieuGiamGiaService.layTatCa(); // Trả về tất cả phiếu giảm giá
-//    }
 
     @GetMapping("/products")
     @ResponseBody
@@ -425,14 +514,14 @@ public class BanHangController {
                 Map<String, Object> productMap = new HashMap<>();
                 productMap.put("idChiTietSanPham", product.getId());
                 productMap.put("tenSanPham", product.getSanPham().getTenSanPham());
-                productMap.put("mauSac", product.getMauSac());
-                productMap.put("kichCo", product.getKichCo());
+                productMap.put("mauSanPham", product.getMauSac());
+                productMap.put("kichSanPham", product.getKichCo());
                 productMap.put("price", product.getGia());
                 return productMap;
             }).collect(Collectors.toList());
             return ResponseEntity.ok(Map.of("products", productList));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy danh sách sản phẩm: " + e.getMessage()));
         }
     }
 
@@ -452,16 +541,18 @@ public class BanHangController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "UUID không hợp lệ."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy chi tiết sản phẩm: " + e.getMessage()));
         }
     }
 
     @GetMapping("/cart/get")
     @ResponseBody
-    public ResponseEntity<GioHangDTO> layGioHang(@RequestParam(required = false) BigDecimal shippingFee) {
-        System.out.println("Fetching cart with shippingFee: " + shippingFee);
+    public ResponseEntity<GioHangDTO> layGioHang(@RequestParam(required = false) BigDecimal shippingFee, @RequestParam String tabId) {
+        System.out.println("Fetching cart với ID: " + tabId + ", shippingFee: " + shippingFee);
         try {
             BigDecimal fee = shippingFee != null ? shippingFee : BigDecimal.ZERO;
-            GioHangDTO gioHang = gioHangService.layGioHang(fee);
+            GioHangDTO gioHang = gioHangService.layGioHang(fee, tabId);
             if (gioHang.getDanhSachSanPham() != null) {
                 for (GioHangItemDTO item : gioHang.getDanhSachSanPham()) {
                     ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
@@ -474,45 +565,48 @@ public class BanHangController {
             }
             System.out.println("Cart fetched: " + gioHang);
             return ResponseEntity.ok(gioHang);
-        } catch (Exception ex) {
-            System.err.println("Exception in cart/get: " + ex.getMessage());
+        } catch (Exception e) {
+            System.err.println("Exception in cart/get: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
 
     @PostMapping("/cart/add")
     @ResponseBody
-    public ResponseEntity<GioHangDTO> themVaoGioHang(@RequestBody Map<String, Object> request, HttpSession session) {
+    public ResponseEntity<GioHangDTO> themVaoGioHang(@RequestBody Map<String, Object> request) {
         System.out.println("Request received for /cart/add: " + request);
         try {
             UUID productDetailId = UUID.fromString((String) request.get("productDetailId"));
             int quantity = (int) request.get("quantity");
-            BigDecimal shippingFee = request.containsKey("shippingFee") ? new BigDecimal(request.get("shippingFee").toString()) : BigDecimal.ZERO;
+            BigDecimal shippingFee = request.get("shippingFee") != null ? new BigDecimal(request.get("shippingFee").toString()) : BigDecimal.ZERO;
+            String tabId = (String) request.get("tabId");
 
-            System.out.println("Processing: productDetailId=" + productDetailId + ", quantity=" + quantity + ", shippingFee=" + shippingFee);
+            System.out.println("Processing: productDetailId=" + productDetailId + ", quantity=" + quantity + ", shippingFee=" + shippingFee + ", tabId=" + tabId);
 
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(productDetailId);
             if (chiTiet == null) {
-                System.err.println("ChiTietSanPham not found for ID: " + productDetailId);
+                System.err.println("ChiTietSanPham không tìm thấy với ID: " + productDetailId);
                 return ResponseEntity.badRequest().body(new GioHangDTO());
             }
 
-            // Kiểm tra tồn kho
+            @SuppressWarnings("unchecked")
+            Map<UUID, Map<String, Integer>> tempStockChanges = (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
+            if (tempStockChanges == null) {
+                tempStockChanges = new HashMap<>();
+            }
+
             int availableStock = chiTiet.getSoLuongTonKho();
-            Map<UUID, Map<String, Object>> tempStockChanges = (Map<UUID, Map<String, Object>>) session.getAttribute("tempStockChanges");
-            if (tempStockChanges != null && tempStockChanges.containsKey(productDetailId)) {
-                int reserved = (int) tempStockChanges.get(productDetailId).get("reservedQuantity");
+            if (tempStockChanges.containsKey(productDetailId)) {
+                int reserved = tempStockChanges.get(productDetailId).getOrDefault("reservedQuantity", 0);
                 availableStock -= reserved;
             }
             if (availableStock < quantity) {
-                System.err.println("Insufficient stock for productDetailId: " + productDetailId +
-                        ", available: " + availableStock + ", requested: " + quantity);
+                System.err.println("Số lượng tồn kho không đủ: available=" + availableStock + ", requested=" + quantity);
                 return ResponseEntity.badRequest().body(new GioHangDTO());
             }
 
-            GioHangDTO gioHang = gioHangService.themVaoGioHang(productDetailId, quantity, shippingFee);
-            if (tempStockChanges == null) tempStockChanges = new HashMap<>();
-            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", quantity));
+            GioHangDTO gioHang = gioHangService.themVaoGioHang(productDetailId, quantity, shippingFee, tabId);
+            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", tempStockChanges.getOrDefault(productDetailId, Map.of("reservedQuantity", 0)).getOrDefault("reservedQuantity", 0) + quantity));
             session.setAttribute("tempStockChanges", tempStockChanges);
 
             System.out.println("Successfully added to cart: " + gioHang);
@@ -520,44 +614,58 @@ public class BanHangController {
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid UUID or data format: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
-        } catch (Exception ex) {
-            System.err.println("Exception in cart/add: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Exception in cart/add: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
 
     @PostMapping("/cart/update")
     @ResponseBody
-    public ResponseEntity<GioHangDTO> capNhatGioHang(@RequestBody Map<String, Object> request, HttpSession session) {
+    public ResponseEntity<GioHangDTO> capNhatGioHang(@RequestBody Map<String, Object> request) {
         System.out.println("Request received for /cart/update: " + request);
         try {
             UUID productDetailId = UUID.fromString((String) request.get("productDetailId"));
             int quantity = (int) request.get("quantity");
-            BigDecimal shippingFee = request.containsKey("shippingFee") ? new BigDecimal(request.get("shippingFee").toString()) : BigDecimal.ZERO;
-            System.out.println("Processing: productDetailId=" + productDetailId + ", quantity=" + quantity + ", shippingFee=" + shippingFee);
+            BigDecimal shippingFee = request.get("shippingFee") != null ? new BigDecimal(request.get("shippingFee").toString()) : BigDecimal.ZERO;
+            String tabId = (String) request.get("tabId");
+
+            System.out.println("Processing: productDetailId=" + productDetailId + ", quantity=" + quantity + ", shippingFee=" + shippingFee + ", tabId=" + tabId);
+
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(productDetailId);
             if (chiTiet == null) {
-                System.err.println("ChiTietSanPham not found for ID: " + productDetailId);
+                System.err.println("ChiTietSanPham không tìm thấy với ID: " + productDetailId);
                 return ResponseEntity.badRequest().body(new GioHangDTO());
             }
 
-            Map<UUID, Map<String, Object>> tempStockChanges = (Map<UUID, Map<String, Object>>) session.getAttribute("tempStockChanges");
+            @SuppressWarnings("unchecked")
+            Map<UUID, Map<String, Integer>> tempStockChanges = (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
             if (tempStockChanges == null) {
                 tempStockChanges = new HashMap<>();
-                session.setAttribute("tempStockChanges", tempStockChanges);
             }
 
-            int currentReserved = tempStockChanges.containsKey(productDetailId) ? (int) tempStockChanges.get(productDetailId).get("reservedQuantity") : 0;
-            int availableStock = chiTiet.getSoLuongTonKho() - currentReserved + (quantity > currentReserved ? 0 : currentReserved - quantity);
-            if (quantity > availableStock) {
-                System.err.println("Insufficient stock for update: " + productDetailId +
-                        ", available: " + availableStock + ", requested: " + quantity);
+            // Lấy số lượng hiện tại trong giỏ hàng
+            GioHangDTO currentCart = gioHangService.layGioHang(shippingFee, tabId);
+            int currentQuantity = currentCart.getDanhSachSanPham().stream()
+                    .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
+                    .findFirst()
+                    .map(GioHangItemDTO::getSoLuong)
+                    .orElse(0);
+
+            // Tính số lượng đã giữ tạm thời (reservedQuantity)
+            int currentReserved = tempStockChanges.containsKey(productDetailId) ? tempStockChanges.get(productDetailId).getOrDefault("reservedQuantity", 0) : 0;
+            int totalReserved = currentReserved - currentQuantity + quantity; // Tổng số lượng mới
+            int availableStock = chiTiet.getSoLuongTonKho() - totalReserved;
+
+            if (quantity < 0 || availableStock < 0) {
+                System.err.println("Số lượng tồn kho không đủ để cập nhật: available=" + availableStock + ", requested=" + quantity);
                 return ResponseEntity.badRequest().body(new GioHangDTO());
             }
 
-            GioHangDTO gioHang = gioHangService.capNhatGioHang(productDetailId, quantity, shippingFee);
-            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", quantity));
+            // Cập nhật giỏ hàng
+            GioHangDTO gioHang = gioHangService.capNhatGioHang(productDetailId, quantity, shippingFee, tabId);
+            // Cập nhật reservedQuantity với tổng số lượng mới
+            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", totalReserved));
             session.setAttribute("tempStockChanges", tempStockChanges);
 
             System.out.println("Successfully updated cart: " + gioHang);
@@ -565,131 +673,122 @@ public class BanHangController {
         } catch (IllegalArgumentException e) {
             System.err.println("Invalid UUID or data format: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
-        } catch (Exception ex) {
-            System.err.println("Exception in cart/update: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Exception in cart/update: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
 
     @PostMapping("/cart/remove")
     @ResponseBody
-    public ResponseEntity<GioHangDTO> xoaKhoiGioHang(@RequestBody Map<String, Object> request, HttpSession session) {
+    public ResponseEntity<GioHangDTO> xoaKhoiGioHang(@RequestBody Map<String, String> request) {
         try {
-            UUID productDetailId = UUID.fromString((String) request.get("productDetailId"));
-            BigDecimal shippingFee = request.containsKey("shippingFee") ? new BigDecimal(request.get("shippingFee").toString()) : BigDecimal.ZERO;
+            UUID productDetailId = UUID.fromString(request.get("productDetailId"));
+            BigDecimal shippingFee = request.get("shippingFee") != null ? new BigDecimal(request.get("shippingFee")) : BigDecimal.ZERO;
+            String tabId = request.get("tabId");
 
-            GioHangDTO gioHang = gioHangService.xoaKhoiGioHang(productDetailId, shippingFee);
-            Map<UUID, Map<String, Object>> tempStockChanges = (Map<UUID, Map<String, Object>>) session.getAttribute("tempStockChanges");
+            System.out.println("Processing remove: productDetailId=" + productDetailId + ", shippingFee=" + shippingFee + ", tabId=" + tabId);
+
+            GioHangDTO gioHang = gioHangService.xoaKhoiGioHang(productDetailId, shippingFee, tabId);
+            @SuppressWarnings("unchecked")
+            Map<UUID, Map<String, Integer>> tempStockChanges = (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
             if (tempStockChanges != null && tempStockChanges.containsKey(productDetailId)) {
                 tempStockChanges.remove(productDetailId);
                 session.setAttribute("tempStockChanges", tempStockChanges);
             }
             return ResponseEntity.ok(gioHang);
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            System.err.println("Exception in cart/remove: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
 
     @PostMapping("/cart/clear")
     @ResponseBody
-    public ResponseEntity<GioHangDTO> xoaTatCaGioHang() {
+    public ResponseEntity<GioHangDTO> xoaTatCaGioHang(@RequestParam String tabId) {
         try {
-            GioHangDTO gioHang = gioHangService.xoaTatCaGioHang();
+            System.out.println("Clearing cart for tabId: " + tabId);
+            GioHangDTO gioHang = gioHangService.xoaTatCaGioHang(tabId);
+            donHangTamRepository.deleteByTabId(tabId);
+            session.removeAttribute("tempStockChanges");
             return ResponseEntity.ok(gioHang);
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            System.err.println("Exception in cart/clear: " + e.getMessage());
             return ResponseEntity.badRequest().body(new GioHangDTO());
         }
     }
 
     @PostMapping("/add-customer")
     public String themKhachHang(@ModelAttribute NguoiDungDTO khachHangDTO) {
-        NguoiDung nguoiDung = new NguoiDung();
-        nguoiDung.setHoTen(khachHangDTO.getHoTen());
-        nguoiDung.setSoDienThoai(khachHangDTO.getSoDienThoai());
-        nguoiDung.setEmail(khachHangDTO.getEmail());
-        nguoiDung.setVaiTro("customer");
-        nguoiDung.setTenDangNhap(khachHangDTO.getSoDienThoai());
-        nguoiDung.setMatKhau("123456");
-        nguoiDung.setTrangThai(true);
-        nguoiDung.setThoiGianTao(LocalDateTime.now());
-        if (nguoiDungService.existsByPhone(khachHangDTO.getSoDienThoai())) {
-            return "redirect:/acvstore/ban-hang?error=Số điện thoại đã tồn tại";
+        try {
+            NguoiDung nguoiDung = new NguoiDung();
+            nguoiDung.setHoTen(khachHangDTO.getHoTen());
+            nguoiDung.setSoDienThoai(khachHangDTO.getSoDienThoai());
+            nguoiDung.setEmail(khachHangDTO.getEmail());
+            nguoiDung.setVaiTro("customer");
+            nguoiDung.setTenDangNhap(khachHangDTO.getSoDienThoai());
+            nguoiDung.setMatKhau("123456");
+            nguoiDung.setTrangThai(true);
+            nguoiDung.setThoiGianTao(LocalDateTime.now());
+            if (nguoiDungService.existsByPhone(khachHangDTO.getSoDienThoai())) {
+                return "redirect:/acvstore/ban-hang?error=Số điện thoại đã tồn tại";
+            }
+            nguoiDungService.save(nguoiDung);
+            return "redirect:/acvstore/ban-hang";
+        } catch (Exception e) {
+            System.err.println("Lỗi khi thêm khách hàng: " + e.getMessage());
+            return "redirect:/acvstore/ban-hang?error=Lỗi hệ thống";
         }
-        nguoiDungService.save(nguoiDung);
-        return "redirect:/acvstore/ban-hang";
     }
 
     @PostMapping("/hold-order")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> giuDonHang(@RequestBody DonHangDTO donHangDTO, HttpSession session) {
+    public ResponseEntity<Map<String, Object>> giuDonHang(@RequestBody DonHangDTO donHangDTO) {
         try {
+            System.out.println("Holding order for tabId: " + donHangDTO.getTabId());
             DonHangDTO donHangDaGiu = donHangService.giuDonHang(donHangDTO);
             BigDecimal shippingFee = donHangDTO.getPhiVanChuyen() != null ? donHangDTO.getPhiVanChuyen() : BigDecimal.ZERO;
+            String tabId = donHangDTO.getTabId();
 
-            // Xóa tempStockChanges và reset giỏ hàng trên server
-            Map<UUID, Map<String, Object>> tempStockChanges = (Map<UUID, Map<String, Object>>) session.getAttribute("tempStockChanges");
-            if (tempStockChanges != null) {
-                session.removeAttribute("tempStockChanges");
-            }
-            gioHangService.xoaTatCaGioHang(); // Reset giỏ hàng trên server
+            GioHangDTO gioHangDTO = gioHangService.layGioHang(shippingFee, tabId);
+            gioHangService.saveCartToDonHangTam(gioHangDTO, tabId, donHangDTO.getKhachHangId(), donHangDTO.getSoDienThoaiKhachHang());
 
-            // Trả về giỏ hàng rỗng để đồng bộ với client
-            GioHangDTO gioHangRong = gioHangService.layGioHang(BigDecimal.ZERO);
+            session.removeAttribute("tempStockChanges");
+            gioHangService.xoaTatCaGioHang(tabId);
+
+            GioHangDTO gioHangRong = gioHangService.layGioHang(BigDecimal.ZERO, tabId);
             return ResponseEntity.ok(Map.of("message", "Đơn hàng đã được giữ thành công!", "cart", gioHangRong));
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Lỗi khi giữ đơn hàng: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi giữ đơn hàng: " + e.getMessage()));
         }
     }
 
-    // Thêm endpoint để xóa tất cả đơn hàng tạm
     @PostMapping("/delete-all-held-orders")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> xoaTatCaDonHangTam() {
         try {
             donHangTamRepository.deleteAll();
+            session.removeAttribute("tempStockChanges");
             return ResponseEntity.ok(Map.of("message", "Đã xóa tất cả đơn hàng tạm!"));
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Lỗi khi xóa tất cả đơn hàng tạm: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xóa đơn hàng tạm: " + e.getMessage()));
         }
     }
 
     @GetMapping("/held-orders")
     @ResponseBody
-    public ResponseEntity<List<DonHangTamDTO>> layDonHangTam(HttpSession session) {
+    public ResponseEntity<List<DonHangTamDTO>> layDonHangTam() {
         try {
             List<DonHangTam> heldOrders = donHangTamRepository.findAll();
             List<DonHangTamDTO> dtos = heldOrders.stream().map(order -> {
-                DonHangTamDTO dto = new DonHangTamDTO();
-                dto.setId(order.getId());
-                dto.setMaDonHangTam(order.getMaDonHangTam()); // Đảm bảo ánh xạ trường này
-                if (order.getKhachHang() != null) {
-                    NguoiDung nguoiDung = nguoiDungService.findById(order.getKhachHang());
-                    dto.setTenKhachHang(nguoiDung != null ? nguoiDung.getHoTen() : "Không rõ");
-                } else {
-                    dto.setTenKhachHang("Không rõ");
-                }
-                dto.setTong(order.getTong() != null ? order.getTong() : BigDecimal.ZERO);
-                dto.setThoiGianTao(order.getThoiGianTao());
-                dto.setPhuongThucThanhToan(order.getPhuongThucThanhToan() != null ? order.getPhuongThucThanhToan() : "Chưa chọn");
-                dto.setPhuongThucBanHang(order.getPhuongThucBanHang() != null ? order.getPhuongThucBanHang() : "Chưa chọn");
-                dto.setPhiVanChuyen(order.getPhiVanChuyen() != null ? order.getPhiVanChuyen() : BigDecimal.ZERO);
-                dto.setIdPhieuGiamGia(order.getPhieuGiamGia());
-
-                if (order.getDanhSachSanPham() != null) {
-                    try {
-                        dto.setDanhSachSanPham(objectMapper.readValue(order.getDanhSachSanPham(), new TypeReference<List<GioHangItemDTO>>(){}));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-
+                DonHangTamDTO dto = new DonHangTamDTO(order, objectMapper);
                 return dto;
             }).collect(Collectors.toList());
-
             return ResponseEntity.ok(dtos);
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println("Lỗi khi lấy danh sách đơn hàng tạm: " + e.getMessage());
             return ResponseEntity.badRequest().body(new ArrayList<>());
         }
     }
@@ -699,82 +798,91 @@ public class BanHangController {
     public ResponseEntity<Map<String, Object>> chiTietDonHangTam(@PathVariable UUID orderId) {
         try {
             DonHangTam donHangTam = donHangTamRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại."));
+                    .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại với ID: " + orderId));
+            System.out.println("Tìm thấy đơn hàng tạm với ID: " + orderId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("id", donHangTam.getId());
+            response.put("tabId", donHangTam.getTabId());
             response.put("maDonHangTam", donHangTam.getMaDonHangTam());
             response.put("tenKhachHang", nguoiDungRepository.findById(donHangTam.getKhachHang())
                     .map(NguoiDung::getHoTen).orElse("Không rõ"));
+            response.put("soDienThoaiKhachHang", donHangTam.getSoDienThoaiKhachHang());
             response.put("tong", donHangTam.getTong());
             response.put("thoiGianTao", donHangTam.getThoiGianTao());
             response.put("phuongThucThanhToan", donHangTam.getPhuongThucThanhToan());
             response.put("phuongThucBanHang", donHangTam.getPhuongThucBanHang());
+            response.put("phiVanChuyen", donHangTam.getPhiVanChuyen());
             response.put("idPhieuGiamGia", donHangTam.getPhieuGiamGia());
 
             if (donHangTam.getDanhSachSanPham() != null) {
                 try {
+                    System.out.println("Parse danh sách sản phẩm cho đơn hàng tạm: " + orderId);
                     List<GioHangItemDTO> danhSachSanPham = objectMapper.readValue(
                             donHangTam.getDanhSachSanPham(),
                             new TypeReference<List<GioHangItemDTO>>(){}
                     );
                     response.put("danhSachSanPham", danhSachSanPham);
                 } catch (Exception e) {
-                    throw new RuntimeException("Lỗi khi parse danh_sach_item: " + e.getMessage());
+                    System.err.println("Lỗi parse danh sách sản phẩm: " + e.getMessage());
+                    throw new RuntimeException("Lỗi khi parse danh_sachSanPham: " + e.getMessage());
                 }
             } else {
+                System.out.println("Không có danh sách sản phẩm cho đơn hàng tạm: " + orderId);
                 response.put("danhSachSanPham", new ArrayList<>());
             }
 
+            System.out.println("Trả về chi tiết đơn hàng tạm: " + response);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+            System.err.println("Lỗi khi lấy chi tiết đơn hàng tạm: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy chi tiết: " + e.getMessage()));
         }
     }
 
     @PostMapping("/restore-order")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> restoreOrder(@RequestParam UUID orderId, HttpSession session) {
+    public ResponseEntity<Map<String, Object>> restoreOrder(@RequestParam UUID orderId) {
         try {
-            // Tìm đơn hàng tạm thời theo ID
             DonHangTam donHangTam = donHangTamRepository.findById(orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng tạm với ID: " + orderId));
+            System.out.println("Khôi phục đơn hàng tạm với ID: " + orderId);
 
-            // Xóa giỏ hàng hiện tại
-            gioHangService.xoaTatCaGioHang();
+            String tabId = donHangTam.getTabId();
+            gioHangService.xoaTatCaGioHang(tabId);
 
-            // Khôi phục giỏ hàng từ đơn hàng tạm
             List<GioHangItemDTO> danhSachSanPham = new ArrayList<>();
             if (donHangTam.getDanhSachSanPham() != null) {
-                List<Map<String, Object>> items = objectMapper.readValue(
+                System.out.println("Parse danh sách sản phẩm từ đơn hàng tạm");
+                List<GioHangItemDTO> items = objectMapper.readValue(
                         donHangTam.getDanhSachSanPham(),
-                        new TypeReference<List<Map<String, Object>>>() {}
+                        new TypeReference<List<GioHangItemDTO>>(){}
                 );
-                for (Map<String, Object> item : items) {
-                    UUID productDetailId = UUID.fromString((String) item.get("idChiTietSanPham"));
+                for (GioHangItemDTO item : items) {
+                    UUID productDetailId = item.getIdChiTietSanPham();
                     ChiTietSanPham chiTiet = chiTietSanPhamService.findById(productDetailId);
                     if (chiTiet != null) {
-                        int soLuong = ((Number) item.get("soLuong")).intValue();
-                        BigDecimal gia = new BigDecimal(item.get("gia").toString());
-                        BigDecimal thanhTien = new BigDecimal(item.get("thanhTien").toString());
-                        GioHangItemDTO gioHangItem = new GioHangItemDTO();
-                        gioHangItem.setIdChiTietSanPham(productDetailId);
-                        gioHangItem.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
-                        gioHangItem.setMauSac(chiTiet.getMauSac().getTenMau());
-                        gioHangItem.setKichCo(chiTiet.getKichCo().getTen());
-                        gioHangItem.setSoLuong(soLuong);
-                        gioHangItem.setGia(gia);
-                        gioHangItem.setThanhTien(thanhTien);
-                        danhSachSanPham.add(gioHangItem);
-                        // Cập nhật giỏ hàng
-                        gioHangService.themVaoGioHang(productDetailId, soLuong, BigDecimal.ZERO);
+                        int quantity = item.getSoLuong();
+                        if (chiTiet.getSoLuongTonKho() < quantity) {
+                            throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
+                        }
+                        gioHangService.themVaoGioHang(productDetailId, quantity, BigDecimal.ZERO, tabId);
+                        danhSachSanPham.add(item);
                     }
                 }
+            } else {
+                System.out.println("Không có danh sách sản phẩm trong đơn hàng tạm: " + orderId);
             }
 
-            // Chuẩn bị dữ liệu trả về
+            if (donHangTam.getPhieuGiamGia() != null) {
+                GioHangDTO gioHang = gioHangService.layGioHang(donHangTam.getPhiVanChuyen() != null ? donHangTam.getPhiVanChuyen() : BigDecimal.ZERO, tabId);
+                gioHangService.apDungPhieuGiamGia(donHangTam.getPhieuGiamGia(), donHangTam.getPhiVanChuyen(), gioHang, tabId);
+            }
+
             Map<String, Object> response = new HashMap<>();
             response.put("id", donHangTam.getId());
+            response.put("tabId", donHangTam.getTabId());
+            response.put("maDonHangTam", donHangTam.getMaDonHangTam());
             response.put("soDienThoaiKhachHang", donHangTam.getSoDienThoaiKhachHang());
             response.put("phiVanChuyen", donHangTam.getPhiVanChuyen() != null ? donHangTam.getPhiVanChuyen() : BigDecimal.ZERO);
             response.put("phuongThucThanhToan", donHangTam.getPhuongThucThanhToan());
@@ -783,127 +891,30 @@ public class BanHangController {
             response.put("tong", donHangTam.getTong() != null ? donHangTam.getTong() : BigDecimal.ZERO);
             response.put("danhSachSanPham", danhSachSanPham);
 
-            // Xóa đơn hàng tạm sau khi khôi phục
-            donHangTamRepository.delete(donHangTam);
+            donHangTamRepository.deleteById(orderId);
+            session.removeAttribute("tempStockChanges");
 
-            // Cập nhật session nếu cần
-            session.setAttribute("tempStockChanges", new HashMap<>());
-
+            System.out.println("Khôi phục đơn hàng thành công: " + response);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
+            System.err.println("Lỗi: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Lỗi server: " + e.getMessage()));
+            System.err.println("Lỗi server khi khôi phục đơn hàng: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi hệ thống: " + e.getMessage()));
         }
     }
 
-    @PostMapping("/delete-held-order")
+    @PostMapping("/payment-methods")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> xoaDonHangTam(@RequestParam UUID orderId) {
+    public ResponseEntity<List<PhuongThucThanhToan>> getPaymentMethods() {
         try {
-            donHangService.xoaDonHangTam(orderId);
-            return ResponseEntity.ok(Map.of("message", "Đã xóa đơn hàng tạm."));
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
-        }
-    }
-
-//    @PostMapping("/create-order")
-//    @ResponseBody
-//    public ResponseEntity<Map<String, Object>> taoDonHang(@RequestBody DonHangDTO donHangDTO, HttpSession session) {
-//        try {
-//            System.out.println("Dữ liệu donHangDTO: " + donHangDTO);
-//            System.out.println("soDienThoaiKhachHang: " + donHangDTO.getSoDienThoaiKhachHang());
-//            System.out.println("phiVanChuyen: " + donHangDTO.getPhiVanChuyen());
-//            System.out.println("phuongThucThanhToan: " + donHangDTO.getPhuongThucThanhToan());
-//            System.out.println("soTienKhachDua: " + donHangDTO.getSoTienKhachDua());
-//            System.out.println("danhSachSanPham: " + (donHangDTO.getDanhSachSanPham() != null ? donHangDTO.getDanhSachSanPham() : "null"));
-//            if (donHangDTO.getDanhSachSanPham() != null) {
-//                donHangDTO.getDanhSachSanPham().forEach(item -> {
-//                    System.out.println("  - idChiTietSanPham: " + item.getIdChiTietSanPham() + ", soLuong: " + item.getSoLuong());
-//                });
-//            }
-//
-//            KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
-//            session.removeAttribute("tempStockChanges");
-//            return ResponseEntity.ok(Map.of("message", "Đơn hàng " + ketQua.getMaDonHang() + " đã được tạo thành công!"));
-//        } catch (Exception ex) {
-//            System.err.println("Lỗi khi tạo đơn hàng: " + ex.getMessage());
-//            ex.printStackTrace();
-//            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
-//        }
-//    }
-
-    @GetMapping("/cart/get-temp-stock")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> getTempStock(@RequestParam UUID productDetailId, HttpSession session) {
-        Map<UUID, Map<String, Object>> tempStockChanges = (Map<UUID, Map<String, Object>>) session.getAttribute("tempStockChanges");
-        Map<String, Object> result = new HashMap<>();
-        if (tempStockChanges != null && tempStockChanges.containsKey(productDetailId)) {
-            result.put("reservedQuantity", tempStockChanges.get(productDetailId).get("reservedQuantity"));
-        } else {
-            result.put("reservedQuantity", 0);
-        }
-        return ResponseEntity.ok(result);
-    }
-
-    @GetMapping("/payment-methods")
-    @ResponseBody
-    public List<PhuongThucThanhToan> getPaymentMethods() {
-        return phuongThucThanhToanService.findAll(); // Giả định service có phương thức này
-    }
-
-    @PostMapping("/vnpay-payment")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> createVNPayPayment(@RequestBody DonHangDTO donHangDTO, HttpSession session) {
-        try {
-            if (donHangDTO.getPhuongThucThanhToan() == null || !donHangDTO.getPhuongThucThanhToan().equals("VNPay")) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Phương thức thanh toán phải là VNPay."));
-            }
-
-            BigDecimal subTotal = donHangDTO.getDanhSachSanPham().stream()
-                    .map(item -> item.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal discount = (BigDecimal) session.getAttribute("discount") != null ? (BigDecimal) session.getAttribute("discount") : BigDecimal.ZERO;
-            BigDecimal total = subTotal.subtract(discount).add(donHangDTO.getPhiVanChuyen());
-            long amount = total.multiply(BigDecimal.valueOf(100)).longValue();
-
-            String orderCode = "HD" + System.currentTimeMillis();
-            Map<String, String> vnpParams = new HashMap<>();
-            vnpParams.put("vnp_Version", "2.1.0");
-            vnpParams.put("vnp_Command", "pay");
-            vnpParams.put("vnp_TmnCode", VNPayConfig.VNP_TMNCODE);
-            vnpParams.put("vnp_Amount", String.valueOf(amount));
-            vnpParams.put("vnp_CurrCode", "VND");
-            vnpParams.put("vnp_TxnRef", orderCode);
-            vnpParams.put("vnp_OrderInfo", "Thanh toán đơn hàng: " + orderCode);
-            vnpParams.put("vnp_OrderType", "billpayment");
-            vnpParams.put("vnp_Locale", "vn");
-            vnpParams.put("vnp_ReturnUrl", VNPayConfig.VNP_RETURN_URL);
-            vnpParams.put("vnp_IpAddr", "127.0.0.1");
-            vnpParams.put("vnp_CreateDate", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")));
-
-            String hashData = vnpParams.entrySet().stream()
-                    .filter(entry -> entry.getValue() != null)
-                    .sorted(Map.Entry.comparingByKey())
-                    .map(entry -> entry.getKey() + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-                    .collect(Collectors.joining("&"));
-            String vnpSecureHash = hmacSHA512(VNPayConfig.VNP_HASHSECRET, hashData);
-            vnpParams.put("vnp_SecureHash", vnpSecureHash);
-
-            String paymentUrl = VNPayConfig.VNP_URL + "?" + vnpParams.entrySet().stream()
-                    .map(entry -> entry.getKey() + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
-                    .collect(Collectors.joining("&"));
-
-            Map<String, Object> pendingOrder = new HashMap<>();
-            pendingOrder.put("donHangDTO", donHangDTO);
-            pendingOrder.put("discount", discount);
-            pendingOrder.put("orderCode", orderCode);
-            session.setAttribute("pendingVNPayOrder", pendingOrder);
-
-            return ResponseEntity.ok(Map.of("paymentUrl", paymentUrl));
+            List<PhuongThucThanhToan> paymentMethods = phuongThucThanhToanService.findAll();
+            System.out.println("Lấy danh sách phương thức thanh toán: " + paymentMethods.size());
+            return ResponseEntity.ok(paymentMethods);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Lỗi khi tạo URL thanh toán: " + e.getMessage()));
+            System.err.println("Lỗi khi lấy phương thức thanh toán: " + e.getMessage());
+            return ResponseEntity.badRequest().body(new ArrayList<>());
         }
     }
 
@@ -915,21 +926,25 @@ public class BanHangController {
         StringBuilder hash = new StringBuilder();
         for (byte b : bytes) {
             String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hash.append('0');
+            if (hex.length() == 1) {
+                hash.append('0');
+            }
             hash.append(hex);
         }
         return hash.toString();
     }
 
-    @GetMapping("/download-receipt/{maDonHang}")
-    public ResponseEntity<byte[]> taiHoaDon(@PathVariable String maDonHang) {
+
+    @PostMapping("/delete-held-order")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteHeldOrder(@RequestParam UUID orderId) {
         try {
-            byte[] pdfBytes = hoaDonService.taoHoaDon(maDonHang);
-            return ResponseEntity.ok()
-                    .header("Content-Disposition", "attachment; filename=hoa_don_" + maDonHang + ".pdf")
-                    .body(pdfBytes);
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body(null);
+            System.out.println("Xóa đơn hàng tạm với ID: " + orderId);
+            donHangTamRepository.deleteById(orderId);
+            return ResponseEntity.ok(Map.of("message", "Đã xóa đơn hàng tạm thành công."));
+        } catch (Exception e) {
+            System.err.println("Lỗi khi xóa đơn hàng tạm: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xóa đơn hàng tạm: " + e.getMessage()));
         }
     }
 }
