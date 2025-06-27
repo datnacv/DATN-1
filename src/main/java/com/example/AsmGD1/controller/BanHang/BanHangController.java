@@ -425,14 +425,25 @@ public class BanHangController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getProductVariants(@PathVariable UUID productId) {
         try {
-            List<MauSac> colors = chiTietSanPhamService.findColorsByProductId(productId);
-            List<KichCo> sizes = chiTietSanPhamService.findSizesByProductId(productId);
-            if (colors.isEmpty() && sizes.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy thông tin biến thể"));
+            List<ChiTietSanPham> variants = chiTietSanPhamService.findByProductId(productId);
+            if (variants.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy biến thể cho sản phẩm."));
             }
+
+            List<Map<String, Object>> variantList = variants.stream().map(variant -> {
+                Map<String, Object> variantMap = new HashMap<>();
+                variantMap.put("colorId", variant.getMauSac().getId());
+                variantMap.put("sizeId", variant.getKichCo().getId());
+                variantMap.put("mauSac", variant.getMauSac().getTenMau());
+                variantMap.put("kichCo", variant.getKichCo().getTen());
+                variantMap.put("productDetailId", variant.getId());
+                variantMap.put("price", variant.getGia());
+                variantMap.put("stockQuantity", variant.getSoLuongTonKho());
+                return variantMap;
+            }).collect(Collectors.toList());
+
             Map<String, Object> response = new HashMap<>();
-            response.put("colors", colors);
-            response.put("sizes", sizes);
+            response.put("variants", variantList);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy biến thể sản phẩm: " + e.getMessage()));
@@ -459,7 +470,21 @@ public class BanHangController {
             }
 
             if (variant != null) {
-                result.put("stockQuantity", variant.getSoLuongTonKho());
+                // Lấy số lượng tồn kho thực tế (có thể trừ đi số lượng đã được giữ tạm thời)
+                int actualStock = variant.getSoLuongTonKho();
+
+                // Kiểm tra số lượng đã được giữ tạm thời trong session
+                @SuppressWarnings("unchecked")
+                Map<UUID, Map<String, Integer>> tempStockChanges =
+                        (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
+
+                if (tempStockChanges != null && tempStockChanges.containsKey(variant.getId())) {
+                    int reservedQuantity = tempStockChanges.get(variant.getId()).getOrDefault("reservedQuantity", 0);
+                    actualStock = Math.max(0, actualStock - reservedQuantity);
+                }
+
+                result.put("stockQuantity", variant.getSoLuongTonKho()); // Tồn kho gốc
+                result.put("availableStock", actualStock); // Tồn kho khả dụng
                 result.put("price", variant.getGia());
                 result.put("productDetailId", variant.getId());
                 result.put("tenSanPham", variant.getSanPham().getTenSanPham());
@@ -572,7 +597,7 @@ public class BanHangController {
 
             int availableStock = chiTiet.getSoLuongTonKho();
             if (tempStockChanges.containsKey(productDetailId)) {
-                int reserved = tempStockChanges.get(productDetailId).get("reservedQuantity");
+                int reserved = tempStockChanges.get(productDetailId).getOrDefault("reservedQuantity", 0);
                 availableStock -= reserved;
             }
             if (availableStock < quantity) {
@@ -581,7 +606,7 @@ public class BanHangController {
             }
 
             GioHangDTO gioHang = gioHangService.themVaoGioHang(productDetailId, quantity, shippingFee, tabId);
-            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", quantity));
+            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", tempStockChanges.getOrDefault(productDetailId, Map.of("reservedQuantity", 0)).getOrDefault("reservedQuantity", 0) + quantity));
             session.setAttribute("tempStockChanges", tempStockChanges);
 
             System.out.println("Successfully added to cart: " + gioHang);
@@ -618,24 +643,29 @@ public class BanHangController {
             if (tempStockChanges == null) {
                 tempStockChanges = new HashMap<>();
             }
-            session.setAttribute("tempStockChanges", tempStockChanges);
 
-            // Sửa lỗi: Lấy số lượng đã giữ (reservedQuantity) từ tempStockChanges
-            int currentReserved = 0;
-            if (tempStockChanges.containsKey(productDetailId)) {
-                Map<String, Integer> stockInfo = tempStockChanges.get(productDetailId);
-                currentReserved = stockInfo.getOrDefault("reservedQuantity", 0);
-            }
+            // Lấy số lượng hiện tại trong giỏ hàng
+            GioHangDTO currentCart = gioHangService.layGioHang(shippingFee, tabId);
+            int currentQuantity = currentCart.getDanhSachSanPham().stream()
+                    .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
+                    .findFirst()
+                    .map(GioHangItemDTO::getSoLuong)
+                    .orElse(0);
 
-            // Tính số lượng tồn kho khả dụng
-            int availableStock = chiTiet.getSoLuongTonKho() - currentReserved;
-            if (quantity > availableStock) {
+            // Tính số lượng đã giữ tạm thời (reservedQuantity)
+            int currentReserved = tempStockChanges.containsKey(productDetailId) ? tempStockChanges.get(productDetailId).getOrDefault("reservedQuantity", 0) : 0;
+            int totalReserved = currentReserved - currentQuantity + quantity; // Tổng số lượng mới
+            int availableStock = chiTiet.getSoLuongTonKho() - totalReserved;
+
+            if (quantity < 0 || availableStock < 0) {
                 System.err.println("Số lượng tồn kho không đủ để cập nhật: available=" + availableStock + ", requested=" + quantity);
                 return ResponseEntity.badRequest().body(new GioHangDTO());
             }
 
+            // Cập nhật giỏ hàng
             GioHangDTO gioHang = gioHangService.capNhatGioHang(productDetailId, quantity, shippingFee, tabId);
-            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", quantity));
+            // Cập nhật reservedQuantity với tổng số lượng mới
+            tempStockChanges.put(productDetailId, Map.of("originalStock", chiTiet.getSoLuongTonKho(), "reservedQuantity", totalReserved));
             session.setAttribute("tempStockChanges", tempStockChanges);
 
             System.out.println("Successfully updated cart: " + gioHang);
