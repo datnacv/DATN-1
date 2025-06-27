@@ -8,15 +8,19 @@ import com.example.AsmGD1.repository.BanHang.DonHangTamRepository;
 import com.example.AsmGD1.repository.BanHang.PhuongThucThanhToanRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaCuaNguoiDungRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
-import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
+import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -28,6 +32,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class DonHangService {
     @Autowired
     private DonHangRepository donHangRepository;
@@ -40,8 +45,6 @@ public class DonHangService {
     @Autowired
     private PhieuGiamGiaCuaNguoiDungRepository phieuGiamGiaCuaNguoiDungRepository;
     @Autowired
-    private HoaDonRepository hoaDonRepository;
-    @Autowired
     private PhuongThucThanhToanRepository phuongThucThanhToanRepository;
     @Autowired
     private DonHangTamRepository donHangTamRepository;
@@ -49,12 +52,20 @@ public class DonHangService {
     private ObjectMapper objectMapper;
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
-
+    @Autowired
+    private HoaDonService hoaDonService;
     @Autowired
     private NguoiDungService nguoiDungService;
 
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Retryable(
+            value = { org.springframework.orm.ObjectOptimisticLockingFailureException.class },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100)
+    )
     public KetQuaDonHangDTO taoDonHang(DonHangDTO donHangDTO) {
+        log.info("Bắt đầu tạo đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
+
         String soDienThoai = donHangDTO.getSoDienThoaiKhachHang();
         if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
             throw new RuntimeException("Số điện thoại khách hàng không được để trống.");
@@ -87,13 +98,22 @@ public class DonHangService {
             throw new RuntimeException("Danh sách sản phẩm không được để trống.");
         }
 
+        // Tải và khóa các ChiTietSanPham
+        List<ChiTietSanPham> chiTietSanPhams = new ArrayList<>();
         for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
-            ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham())
+            ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham(), LockModeType.PESSIMISTIC_WRITE)
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
 
             if (chiTiet.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
             }
+            chiTietSanPhams.add(chiTiet);
+        }
+
+        // Cập nhật ChiTietDonHang và tồn kho
+        for (int i = 0; i < donHangDTO.getDanhSachSanPham().size(); i++) {
+            GioHangItemDTO item = donHangDTO.getDanhSachSanPham().get(i);
+            ChiTietSanPham chiTiet = chiTietSanPhams.get(i);
 
             ChiTietDonHang chiTietDonHang = new ChiTietDonHang();
             chiTietDonHang.setChiTietSanPham(chiTiet);
@@ -125,7 +145,6 @@ public class DonHangService {
                 tienGiam = phieuGiamGia.getGiaTriGiam().min(tongTien);
             }
 
-            // Trừ lượt dùng của phiếu
             PhieuGiamGiaCuaNguoiDung phieuGiam = phieuGiamGiaCuaNguoiDungRepository
                     .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
             if (phieuGiam != null && phieuGiam.getSoLuotConLai() > 0) {
@@ -140,11 +159,9 @@ public class DonHangService {
             donHang.setTienGiam(BigDecimal.ZERO);
         }
 
-        // Tính tổng tiền đơn hàng
         BigDecimal tongTienDonHang = tongTien.add(donHang.getPhiVanChuyen()).subtract(tienGiam);
         donHang.setTongTien(tongTienDonHang);
 
-        // Xử lý tiền khách đưa và trạng thái thanh toán
         BigDecimal tienKhachDua = Optional.ofNullable(donHangDTO.getSoTienKhachDua()).orElse(BigDecimal.ZERO);
         donHang.setSoTienKhachDua(tienKhachDua);
 
@@ -159,25 +176,33 @@ public class DonHangService {
             donHang.setTrangThaiThanhToan(false);
         }
 
-        // Lưu đơn hàng
+
+        // Sau khi lưu đơn hàng vào cơ sở dữ liệu
+        log.debug("Lưu đơn hàng với mã: {}", donHang.getMaDonHang());
         donHangRepository.save(donHang);
+
+        // Tạo hóa đơn từ đơn hàng
+        log.debug("Tạo hóa đơn cho đơn hàng: {}", donHang.getMaDonHang());
+        hoaDonService.createHoaDonFromDonHang(donHang);
 
         KetQuaDonHangDTO ketQua = new KetQuaDonHangDTO();
         ketQua.setMaDonHang(donHang.getMaDonHang());
         ketQua.setSoLuongTonKho(soLuongTonKho);
         ketQua.setChangeAmount(tienKhachDua.subtract(tongTienDonHang));
 
+        log.info("Tạo đơn hàng thành công với mã: {}", donHang.getMaDonHang());
         return ketQua;
     }
 
-
+    // Các phương thức khác giữ nguyên, chỉ thêm logging nếu cần
     @Transactional
     public DonHangDTO giuDonHang(DonHangDTO donHangDTO) {
+        log.info("Giữ đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
         try {
             DonHangTam donHangTam = new DonHangTam();
             donHangTam.setId(UUID.randomUUID());
             donHangTam.setMaDonHangTam("KH" + System.currentTimeMillis());
-            donHangTam.setTabId(donHangDTO.getTabId()); // Set tabId
+            donHangTam.setTabId(donHangDTO.getTabId());
 
             String soDienThoai = donHangDTO.getSoDienThoaiKhachHang();
             if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
@@ -238,13 +263,16 @@ public class DonHangService {
                 session.removeAttribute("tempStockChanges");
             }
 
+            log.info("Giữ đơn hàng thành công với mã: {}", donHangTam.getMaDonHangTam());
             return donHangDTO;
         } catch (Exception e) {
+            log.error("Lỗi khi giữ đơn hàng: {}", e.getMessage(), e);
             throw new RuntimeException("Không thể giữ đơn hàng: " + e.getMessage());
         }
     }
 
     public List<DonHangTamDTO> layDanhSachDonHangTam() {
+        log.info("Lấy danh sách đơn hàng tạm");
         List<DonHangTam> heldOrders = donHangTamRepository.findAll();
         return heldOrders.stream().map(order -> {
             DonHangTamDTO dto = new DonHangTamDTO();
@@ -269,9 +297,11 @@ public class DonHangService {
 
     @Transactional
     public void xoaDonHangTam(UUID idDonHang) {
+        log.info("Xóa đơn hàng tạm với ID: {}", idDonHang);
         DonHangTam donHangTam = donHangTamRepository.findById(idDonHang)
                 .orElseThrow(() -> new RuntimeException("Đơn hàng tạm không tồn tại."));
         donHangTamRepository.delete(donHangTam);
+        log.info("Xóa đơn hàng tạm thành công");
     }
 
     private String taoMaDonHang() {

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACV Store - Quản lý hóa đơn</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script th:src="@{/js/sidebar.js}" defer></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    /* Giữ nguyên các style CSS hiện tại và thêm cải tiến */
+    body {
+      background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+      color: #333;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 20px;
+      transition: margin-left 0.3s ease;
+    }
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .search-bar input {
+      padding: 12px;
+      width: 300px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    .search-bar button {
+      padding: 12px 20px;
+      background-color: #4a90e2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+    }
+    .search-bar button:hover {
+      background-color: #357abd;
+    }
+    .table-container {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    tr:hover {
+      background-color: #f1f5f9;
+    }
+    .btn-primary {
+      padding: 10px 20px;
+      background-color: #4a90e2;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+    }
+    .btn-primary:hover {
+      background-color: #357abd;
+    }
+    .btn-delete {
+      padding: 10px 20px;
+      background-color: #e53e3e;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+    }
+    .btn-delete:hover {
+      background-color: #c53030;
+    }
+    .btn-confirm {
+      padding: 10px 20px;
+      background-color: #48bb78;
+      color: #fff;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+    }
+    .btn-confirm:hover {
+      background-color: #38a169;
+    }
+    .action-btn {
+      padding: 12px 20px;
+      background-color: #4a90e2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+      width: 100%;
+      text-align: center;
+    }
+    .action-btn:hover {
+      background-color: #357abd;
+    }
+    .action-btn i {
+      margin-right: 0; /* Xóa margin-right để loại bỏ khoảng cách khi không có text */
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 20px;
+    }
+    .pagination a, .pagination span {
+      padding: 10px 15px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #4a90e2;
+      font-weight: 500;
+      font-size: 1rem;
+    }
+    .pagination a:hover {
+      background-color: #f1f5f9;
+    }
+    .pagination .active {
+      background-color: #4a90e2;
+      color: #fff;
+      border-color: #4a90e2;
+    }
+    .pagination .disabled {
+      color: #a0aec0;
+      cursor: not-allowed;
+    }
+    .spinner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4a90e2;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+    .toast.success {
+      background-color: #48bb78;
+      color: #fff;
+    }
+    .toast.error {
+      background-color: #e53e3e;
+      color: #fff;
+    }
+    .modal-content {
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .modal-header {
+      background-color: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      border-radius: 12px 12px 0 0;
+    }
+    .modal-body {
+      padding: 20px;
+    }
+    .modal-body p {
+      margin-bottom: 10px;
+      font-size: 1rem;
+      color: #2d3748;
+    }
+    .modal-body table {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .modal-body table th,
+    .modal-body table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .modal-body table th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #2d3748;
+    }
+    .modal-body table tr:hover {
+      background-color: #f1f5f9;
+    }
+    .modal-footer {
+      background-color: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      border-radius: 0 0 12px 12px;
+    }
+    @media (max-width: 768px) {
+      .content {
+        margin-left: 0;
+        padding: 10px;
+      }
+      .search-bar {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .search-bar input {
+        width: 100%;
+      }
+      table {
+        font-size: 0.9rem;
+      }
+      th, td {
+        padding: 8px;
+      }
+      .btn-primary, .btn-delete, .btn-confirm, .action-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+      }
+      .modal-body table th,
+      .modal-body table td {
+        padding: 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="d-flex">
+  <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
+
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed top-0 right-0 w-[calc(100%-256px)]">
+    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
+  <div class="content mt-16" id="content">
+    <h1 class="text-3xl font-bold text-blue-700 mb-6 text-center">Quản lý hóa đơn</h1>
+    <div class="search-bar">
+      <input id="searchInput" type="text" placeholder="Tìm kiếm hóa đơn (mã, tên, số điện thoại)..." onkeyup="loadHoaDonList(0, 10, this.value)" class="border-gray-300 focus:ring-2 focus:ring-blue-500">
+      <button onclick="loadHoaDonList(0, 10, $('#searchInput').val())" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md">Tìm kiếm</button>
+    </div>
+    <div class="table-container">
+      <table id="hoa-don-table" class="min-w-full">
+        <thead>
+        <tr>
+          <th class="border-b-2 border-gray-200">Mã đơn hàng</th>
+          <th class="border-b-2 border-gray-200">Khách hàng</th>
+          <th class="border-b-2 border-gray-200">Tổng tiền</th>
+          <th class="border-b-2 border-gray-200">Ngày tạo</th>
+          <th class="border-b-2 border-gray-200">Phương thức thanh toán</th>
+          <th class="border-b-2 border-gray-200">Phương thức bán hàng</th>
+          <th class="border-b-2 border-gray-200">Trạng thái</th>
+          <th class="border-b-2 border-gray-200">Hành động</th>
+        </tr>
+        </thead>
+        <tbody id="invoiceList"></tbody>
+      </table>
+      <div id="invoiceSpinner" class="spinner"></div>
+      <div id="pagination" class="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<div class="modal fade" id="hoaDonDetailModal" tabindex="-1" aria-labelledby="hoaDonDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-xl font-semibold" id="hoaDonDetailModalLabel">Chi tiết hóa đơn</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="hoaDonDetailContent" class="space-y-4">
+          <button id="confirmButton" class="btn btn-confirm inline-flex items-center" onclick="confirmHoaDon()">
+            <i class="fas fa-check mr-2"></i> Xác nhận đơn hàng
+          </button>
+          <button id="confirmDeliveryButton" class="btn btn-success inline-flex items-center" data-id="" style="display: none;" onclick="confirmDelivery(this)">
+            <i class="fas fa-truck mr-2"></i> Xác nhận giao hàng
+          </button>
+          <p><strong class="text-gray-700">Mã hóa đơn:</strong> <span id="maHoaDon" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Khách hàng:</strong> <span id="tenKhachHang" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Số điện thoại:</strong> <span id="soDienThoai" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Ngày tạo:</strong> <span id="thoiGianTao" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Phương thức thanh toán:</strong> <span id="phuongThucThanhToan" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Phương thức bán hàng:</strong> <span id="phuongThucBanHang" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Trạng thái thanh toán:</strong> <span id="trangThaiThanhToanDetail" class="text-gray-900"></span></p>
+          <p><strong class="text-gray-700">Tổng tiền hàng:</strong> <span id="tongTienHang" class="text-gray-900"></span> VNĐ</p>
+          <p><strong class="text-gray-700">Giảm giá:</strong> <span id="tienGiam" class="text-gray-900"></span> VNĐ</p>
+          <p><strong class="text-gray-700">Phí vận chuyển:</strong> <span id="phiVanChuyen" class="text-gray-900"></span> VNĐ</p>
+          <p><strong class="text-gray-700">Tổng tiền:</strong> <span id="tongTien" class="text-gray-900"></span> VNĐ</p>
+          <p><strong class="text-gray-700">Ghi chú:</strong> <span id="ghiChu" class="text-gray-900"></span></p>
+
+          <h6 class="text-lg font-semibold mt-4">Danh sách sản phẩm</h6>
+          <table class="table table-bordered w-full">
+            <thead>
+            <tr>
+              <th class="border-b-2 border-gray-200">STT</th>
+              <th class="border-b-2 border-gray-200">Sản phẩm</th>
+              <th class="border-b-2 border-gray-200">Số lượng</th>
+              <th class="border-b-2 border-gray-200">Đơn giá</th>
+              <th class="border-b-2 border-gray-200">Thành tiền</th>
+              <th class="border-b-2 border-gray-200">Ghi chú</th>
+            </tr>
+            </thead>
+            <tbody id="danhSachSanPham"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <a id="downloadPdfLink" class="btn btn-primary inline-flex items-center" href="#" onclick="downloadPdf(this); return false;">
+          <i class="fas fa-download mr-2"></i> Tải PDF
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showToast(message, type = "info") {
+    const container = document.getElementById("toastContainer");
+    const toast = document.createElement("div");
+    toast.className = `toast ${type} fixed top-5 right-5 p-3 rounded-lg shadow-lg text-white`;
+    toast.innerText = message;
+    container.appendChild(toast);
+    toast.classList.add("show");
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  function updatePagination(totalPages, currentPage, search = "") {
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = "";
+    if (totalPages <= 1) return;
+
+    const first = document.createElement("a");
+    first.innerText = "«";
+    first.className = `px-3 py-1 border rounded ${currentPage === 0 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-gray-100"}`;
+    if (currentPage > 0) first.onclick = () => loadHoaDonList(0, 5, search);
+    pagination.appendChild(first);
+
+    const prev = document.createElement("a");
+    prev.innerText = "Trước";
+    prev.className = `px-3 py-1 border rounded ${currentPage === 0 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-gray-100"}`;
+    if (currentPage > 0) prev.onclick = () => loadHoaDonList(currentPage - 1, 5, search);
+    pagination.appendChild(prev);
+
+    let startPage = Math.max(0, currentPage - 2);
+    let endPage = Math.min(totalPages - 1, startPage + 4);
+
+    if (endPage - startPage < 4 && endPage < totalPages - 1) {
+      startPage = Math.max(0, endPage - 4);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      const page = document.createElement(i === currentPage ? "span" : "a");
+      page.innerText = i + 1;
+      page.className = `px-3 py-1 border rounded ${i === currentPage ? "bg-blue-600 text-white" : "text-blue-600 hover:bg-gray-100"}`;
+      if (i !== currentPage) page.onclick = () => loadHoaDonList(i, 5, search);
+      pagination.appendChild(page);
+    }
+
+    const next = document.createElement("a");
+    next.innerText = "Sau";
+    next.className = `px-3 py-1 border rounded ${currentPage === totalPages - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-gray-100"}`;
+    if (currentPage < totalPages - 1) next.onclick = () => loadHoaDonList(currentPage + 1, 5, search);
+    pagination.appendChild(next);
+
+    const last = document.createElement("a");
+    last.innerText = "»";
+    last.className = `px-3 py-1 border rounded ${currentPage === totalPages - 1 ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:bg-gray-100"}`;
+    if (currentPage < totalPages - 1) last.onclick = () => loadHoaDonList(totalPages - 1, 5, search);
+    pagination.appendChild(last);
+  }
+
+  function loadHoaDonList(page = 0, size = 5, search = "") {
+    $("#invoiceSpinner").show();
+    $.ajax({
+      url: "/acvstore/hoa-don/list",
+      type: "GET",
+      data: { page, size, search },
+      success: function (response) {
+        const hoaDonList = response.hoaDon;
+        const tbody = $("#invoiceList");
+        tbody.empty();
+        if (hoaDonList.length === 0) {
+          tbody.append('<tr><td colspan="8" class="text-center py-4 text-gray-500">Không có hóa đơn nào.</td></tr>');
+        } else {
+          hoaDonList.forEach(hoaDon => {
+            const trangThai = hoaDon.trangThai;
+            const trangThaiText = trangThai === false ? "Chờ xác nhận" :
+                    (hoaDon.ghiChu && hoaDon.ghiChu.includes("Đã giao hàng") ? "Đang giao" : "Đã xác nhận");
+            tbody.append(`
+                        <tr>
+                            <td class="border-b">${hoaDon.maHoaDon}</td>
+                            <td class="border-b">${hoaDon.tenKhachHang}</td>
+                            <td class="border-b">${hoaDon.tongTien.toLocaleString("vi-VN")} VNĐ</td>
+                            <td class="border-b">${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+                            <td class="border-b">${hoaDon.phuongThucThanhToan}</td>
+                            <td class="border-b">${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+                            <td class="border-b">${trangThaiText}</td>
+                            <td class="border-b">
+                                <div class="dropdown">
+                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+                                        <li><button class="dropdown-item" onclick="viewHoaDonDetail('${hoaDon.id}')">Xem</button></li>
+                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${trangThai === true ? 'style="display:none;"' : ''}>Xác nhận</button></li>
+                                        <li><button class="dropdown-item" onclick="deleteHoaDon('${hoaDon.id}')">Xóa</button></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
+          });
+        }
+        updatePagination(response.totalPages, response.currentPage, search);
+        $("#invoiceSpinner").hide();
+      },
+      error: function (error) {
+        console.error("Lỗi khi tải danh sách hóa đơn:", error);
+        showToast("Lỗi khi tải danh sách hóa đơn.", "error");
+        $("#invoiceSpinner").hide();
+      }
+    });
+  }
+
+  function viewHoaDonDetail(id) {
+    $("#invoiceSpinner").show();
+    $.ajax({
+      url: `/acvstore/hoa-don/detail/${id}`,
+      type: "GET",
+      success: function (response) {
+        const hoaDon = response.hoaDon;
+        $("#maHoaDon").text(hoaDon.maHoaDon);
+        $("#tenKhachHang").text(hoaDon.tenKhachHang);
+        $("#soDienThoai").text(hoaDon.soDienThoaiKhachHang || "Không có");
+        $("#thoiGianTao").text(new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN"));
+        $("#phuongThucThanhToan").text(hoaDon.phuongThucThanhToan || "Chưa chọn");
+        $("#phuongThucBanHang").text(hoaDon.phuongThucBanHang || "Không rõ");
+        $("#trangThaiThanhToanDetail").text(hoaDon.trangThaiThanhToan ? "Đã thanh toán" : "Chưa thanh toán");
+        $("#tongTienHang").text(hoaDon.tongTienHang.toLocaleString("vi-VN"));
+        $("#tienGiam").text(hoaDon.tienGiam.toLocaleString("vi-VN"));
+        $("#phiVanChuyen").text(hoaDon.phiVanChuyen ? hoaDon.phiVanChuyen.toLocaleString("vi-VN") : "0");
+        $("#tongTien").text(hoaDon.tongTien.toLocaleString("vi-VN"));
+        $("#ghiChu").text(hoaDon.ghiChu || "Không có");
+
+        $("#danhSachSanPham").empty();
+        if (hoaDon.danhSachSanPham && hoaDon.danhSachSanPham.length > 0) {
+          hoaDon.danhSachSanPham.forEach((item, index) => {
+            $("#danhSachSanPham").append(`
+              <tr>
+                <td class="border-b text-center">${index + 1}</td>
+                <td class="border-b">${item.tenSanPham} (${item.mauSac}, ${item.kichCo})</td>
+                <td class="border-b text-center">${item.soLuong}</td>
+                <td class="border-b text-right">${item.gia.toLocaleString("vi-VN")} VNĐ</td>
+                <td class="border-b text-right">${item.thanhTien.toLocaleString("vi-VN")} VNĐ</td>
+                <td class="border-b">${item.ghiChu || "Không có"}</td>
+              </tr>
+            `);
+          });
+        } else {
+          $("#danhSachSanPham").append('<tr><td colspan="6" class="text-center py-4 text-gray-500">Không có sản phẩm nào.</td></tr>');
+        }
+
+        $("#confirmButton").prop("disabled", hoaDon.trangThaiThanhToan);
+        $("#confirmDeliveryButton").data("id", id); // Gán id vào data attribute
+        $("#confirmDeliveryButton").hide();
+        if (hoaDon.phuongThucBanHang && hoaDon.phuongThucBanHang.toLowerCase() === "giao hàng" && hoaDon.trangThaiThanhToan && !hoaDon.ghiChu.includes("Đã giao hàng")) {
+          $("#confirmDeliveryButton").show();
+        }
+
+        $("#downloadPdfLink").attr("href", `/acvstore/hoa-don/download/${id}`);
+        $("#hoaDonDetailModal").modal("show");
+        $("#invoiceSpinner").hide();
+      },
+      error: function (error) {
+        console.error("Lỗi khi tải chi tiết hóa đơn:", error);
+        showToast("Lỗi khi tải chi tiết hóa đơn.", "error");
+        $("#invoiceSpinner").hide();
+      }
+    });
+  }
+
+  function downloadPdf(link) {
+    const href = link.getAttribute("href");
+    if (href) {
+      window.location.href = href;
+    } else {
+      showToast("Lỗi: Không tìm thấy đường dẫn tải PDF.", "error");
+    }
+  }
+
+  function deleteHoaDon(id) {
+    if (confirm("Bạn có chắc chắn muốn xóa hóa đơn này? Hành động này không thể hoàn tác!")) {
+      $("#invoiceSpinner").show();
+      $.ajax({
+        url: `/acvstore/hoa-don/delete/${id}`,
+        type: "DELETE",
+        success: function (response) {
+          showToast("Hóa đơn đã được xóa thành công.", "success");
+          loadHoaDonList(0, 5, $("#searchInput").val());
+        },
+        error: function (error) {
+          console.error("Lỗi khi xóa hóa đơn:", error);
+          showToast("Lỗi khi xóa hóa đơn: " + (error.responseJSON?.error || "Không xác định"), "error");
+        },
+        complete: function () {
+          $("#invoiceSpinner").hide();
+        }
+      });
+    }
+  }
+
+  function confirmHoaDon(id) {
+    if (confirm("Bạn có chắc chắn muốn xác nhận đơn hàng này?")) {
+      $("#invoiceSpinner").show();
+      $.ajax({
+        url: `/acvstore/hoa-don/confirm/${id}`,
+        type: "POST",
+        data: JSON.stringify({ ghiChu: "Đã xác nhận" }),
+        contentType: "application/json",
+        success: function (response) {
+          showToast("Đơn hàng đã được xác nhận thành công.", "success");
+          $("#hoaDonDetailModal").modal("hide");
+          loadHoaDonList(0, 5, $("#searchInput").val());
+        },
+        error: function (error) {
+          console.error("Lỗi khi xác nhận hóa đơn:", error);
+          showToast("Lỗi khi xác nhận hóa đơn: " + (error.responseJSON?.error || "Không xác định"), "error");
+        },
+        complete: function () {
+          $("#invoiceSpinner").hide();
+        }
+      });
+    }
+  }
+
+  function confirmDelivery(button) {
+    const id = $(button).data("id");
+    if (confirm("Bạn có chắc chắn muốn xác nhận giao hàng thành công cho đơn hàng này?")) {
+      $("#invoiceSpinner").show();
+      $.ajax({
+        url: `/acvstore/hoa-don/confirm-delivery/${id}`,
+        type: "POST",
+        data: JSON.stringify({ ghiChu: "Đã giao hàng" }),
+        contentType: "application/json",
+        success: function (response) {
+          showToast("Đơn hàng đã được xác nhận giao hàng thành công.", "success");
+          $("#hoaDonDetailModal").modal("hide");
+          loadHoaDonList(0, 5, $("#searchInput").val());
+        },
+        error: function (error) {
+          console.error("Lỗi khi xác nhận giao hàng:", error);
+          showToast("Lỗi khi xác nhận giao hàng: " + (error.responseJSON?.error || "Không xác định"), "error");
+        },
+        complete: function () {
+          $("#invoiceSpinner").hide();
+        }
+      });
+    }
+  }
+
+  window.onload = () => loadHoaDonList(0, 5, "");
+</script>
+</body>
+</html>

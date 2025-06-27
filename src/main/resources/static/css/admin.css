@@ -10,7 +10,7 @@ body {
     width: 250px;
     height: 100vh;
     max-height: 100vh;
-    background: #c8c8c8;
+    background: #ffffff;
     color: #000000;
     display: flex;
     flex-direction: column;
@@ -19,42 +19,43 @@ body {
     top: 0;
     left: 0;
     transition: all 0.3s ease-in-out;
-    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1); /* Đổ bóng viền phải */
     font-size: 14px;
-
     overflow-y: auto;
     z-index: 1030;
 }
 
 .sidebar.collapsed {
-    width: 85px; /* Tăng chiều rộng khi thu gọn để icon rõ hơn */
-    padding: 20px; /* Tăng padding để logo và icon có không gian */
+    width: 85px;
+    padding: 20px;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1); /* Giữ đổ bóng khi thu gọn */
 }
 
 .sidebar-header img {
-    max-width: 60px; /* Tăng kích thước logo khi sidebar mở */
+    max-width: 60px;
     transition: all 0.3s ease-in-out;
 }
 
 .sidebar.collapsed .sidebar-header img {
-    max-width: 50px; /* Tăng kích thước logo khi thu gọn */
+    max-width: 50px;
 }
 
 .toggle-btn {
     position: fixed;
-    top: 20px; /* Điều chỉnh vị trí trên để tránh đè */
+    top: 20px;
     left: 15px;
     z-index: 1050;
-    background: #343a40;
+    background: #000000;
     color: white;
     border: none;
-    padding: 10px 12px; /* Tăng padding để nút lớn hơn và tránh đè chữ */
+    padding: 10px 12px;
     border-radius: 8px;
     font-size: 16px;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
+
 .toggle-btn.collapsed {
     left: 100px;
 }
@@ -69,23 +70,18 @@ body {
     font-weight: bold;
     padding-bottom: 20px;
     border-bottom: 2px solid #ddd;
-    color: #3b82f6;
+    color: #000000;
 }
 
 .sidebar.hidden {
     transform: translateX(-250px);
 }
 
-.sidebar::-webkit-scrollbar {
-    width: 0;
-}
-
-
 .nav-link {
-    color: #fff;
+    color: #000000;
     display: flex;
     align-items: center;
-    padding: 10px 15px; /* Giảm padding để tiết kiệm không gian */
+    padding: 10px 15px;
     border-radius: 10px;
     transition: all 0.3s;
     font-size: 14px;
@@ -95,6 +91,7 @@ body {
 .nav-link .nav-text {
     margin-left: 12px;
     transition: all 0.3s ease-in-out;
+    color: #000000;
 }
 
 .sidebar.collapsed .nav-link .nav-text {
@@ -109,10 +106,11 @@ body {
 .nav-link i {
     margin-right: 10px;
     font-size: 16px;
+    color: #000000;
 }
 
 .nav-link:hover {
-    background-color: #495057;
+    background-color: #e9ecef;
     transform: translateX(7px);
 }
 
@@ -130,6 +128,7 @@ body {
 
 [data-bs-toggle="collapse"] .toggle-icon {
     transition: transform 0.3s ease;
+    color: #000000;
 }
 
 .sidebar.collapsed [data-bs-toggle="collapse"] .toggle-icon {
@@ -152,6 +151,7 @@ body {
 
 .logout a {
     font-weight: bold;
+    color: #000000;
 }
 
 /* Main Content */
@@ -167,12 +167,10 @@ body {
     width: calc(100% - 90px);
 }
 
-
 .content.full-width {
     margin-left: 10px;
     width: 100%;
 }
-
 
 /* Table Styling */
 .table-container {
@@ -288,6 +286,7 @@ body {
     .sidebar {
         width: 250px;
         transform: translateX(-250px);
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1); /* Giữ đổ bóng khi thu gọn */
     }
     .content {
         margin-left: 0;
@@ -299,7 +298,6 @@ body {
     }
 }
 
-/* Navbar */
 /* Navbar */
 .navbar {
     margin-left: 260px;
@@ -322,6 +320,7 @@ body {
     .sidebar.collapsed {
         transform: translateX(0);
         width: 60px;
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1); /* Giữ đổ bóng khi thu gọn */
     }
     .content {
         margin-left: 0;
@@ -339,15 +338,3 @@ body {
         left: 65px;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

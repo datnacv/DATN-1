@@ -20,6 +20,10 @@ public class NguoiDungService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    public Page<NguoiDung> findUsersByVaiTroNotCustomer(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return nguoiDungRepository.findByVaiTroNotCustomer(keyword != null ? keyword : "", pageable);
+    }
     public Page<NguoiDung> findUsersByVaiTro(String vaiTro, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return nguoiDungRepository.findByVaiTroAndKeyword(vaiTro, keyword != null ? keyword : "", pageable);
