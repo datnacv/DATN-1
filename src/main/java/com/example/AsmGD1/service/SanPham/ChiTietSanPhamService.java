@@ -62,7 +62,6 @@ public class ChiTietSanPhamService {
         }
     }
 
-
     @Transactional
     public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
         SanPham sanPham = sanPhamRepo.findById(batchDto.getProductId())
@@ -80,19 +79,18 @@ public class ChiTietSanPhamService {
         ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
 
-        // Lưu danh sách hình ảnh theo colorId mà không ghi đè
         Map<UUID, List<MultipartFile>> colorImagesMap = new HashMap<>();
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             List<MultipartFile> images = variationDto.getImageFiles();
             if (images != null && !images.isEmpty() && !colorImagesMap.containsKey(variationDto.getColorId())) {
-                colorImagesMap.put(variationDto.getColorId(), new ArrayList<>(images)); // Lưu ảnh cho từng colorId riêng biệt
+                colorImagesMap.put(variationDto.getColorId(), new ArrayList<>(images));
             }
         }
 
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
                     variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
-                continue; // Bỏ qua các biến thể không hợp lệ
+                continue;
             }
 
             MauSac mauSac = mauSacRepo.findById(variationDto.getColorId())
@@ -125,7 +123,6 @@ public class ChiTietSanPhamService {
                 e.printStackTrace();
             }
 
-            // Lấy toàn bộ hình ảnh cho màu sắc tương ứng
             List<MultipartFile> variationImages = colorImagesMap.getOrDefault(variationDto.getColorId(), new ArrayList<>());
             if (!variationImages.isEmpty()) {
                 saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
@@ -168,7 +165,7 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(true);
+        pd.setTrangThai(dto.getStatus() != null ? dto.getStatus() : true); // Mặc định true nếu null
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -203,7 +200,8 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(true);
+        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : existingDetail.getTrangThai()); // Đảm bảo không null
+        logger.info("Updating status to: {}", updateDto.getStatus()); // Log để kiểm tra
 
         chiTietSanPhamRepo.save(existingDetail);
 
@@ -242,7 +240,7 @@ public class ChiTietSanPhamService {
                     HinhAnhSanPham img = new HinhAnhSanPham();
                     img.setChiTietSanPham(chiTietSanPham);
                     img.setUrlHinhAnh(imageUrl);
-                    hinhAnhSanPhamRepo.save(img); // Lưu theo thứ tự tự nhiên
+                    hinhAnhSanPhamRepo.save(img);
                 } catch (IOException e) {
                     logger.error("Không thể lưu ảnh lên Cloudinary: ", e);
                 }
@@ -316,7 +314,7 @@ public class ChiTietSanPhamService {
         saveImagesForChiTietSanPham(savedDetail, imageFiles);
     }
 
-    private void saveImagesForChiTietSanPham(ChiTietSanPham ChiTietSanPham, MultipartFile[] imageFiles) {
+    private void saveImagesForChiTietSanPham(ChiTietSanPham chiTietSanPham, MultipartFile[] imageFiles) {
         if (imageFiles != null) {
             for (MultipartFile file : imageFiles) {
                 if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
@@ -330,7 +328,7 @@ public class ChiTietSanPhamService {
                         Files.write(filePath, file.getBytes());
 
                         HinhAnhSanPham img = new HinhAnhSanPham();
-                        img.setChiTietSanPham(ChiTietSanPham);
+                        img.setChiTietSanPham(chiTietSanPham);
                         img.setUrlHinhAnh(filename);
                         hinhAnhSanPhamRepo.save(img);
                     } catch (IOException e) {

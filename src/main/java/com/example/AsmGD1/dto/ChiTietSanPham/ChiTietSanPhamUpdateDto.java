@@ -21,5 +21,6 @@ public class ChiTietSanPhamUpdateDto {
     private BigDecimal price;
     private Integer stockQuantity;
     private String gender;
+    private Boolean status; // Trường trạng thái đồng bộ với trangThai
     private MultipartFile[] imageFiles;
 }

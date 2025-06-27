@@ -55,7 +55,9 @@ public class ChiTietSanPhamController {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
                 if (sanPhamDaChon != null) {
                     model.addAttribute("selectedProductId", productId);
-                    model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findByProductId(productId));
+                    List<ChiTietSanPham> chiTietList = chiTietSanPhamService.findByProductId(productId);
+                    chiTietList.forEach(pd -> logger.info("Product ID: {}, Status: {}", pd.getId(), pd.getTrangThai()));
+                    model.addAttribute("chiTietSanPhamList", chiTietList);
                 } else {
                     model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
                 }
@@ -143,7 +145,8 @@ public class ChiTietSanPhamController {
             response.put("price", chiTiet.getGia());
             response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("gender", chiTiet.getGioiTinh());
-            response.put("images", chiTietSanPhamService.findById(id).getHinhAnhSanPhams().stream()
+            response.put("status", chiTiet.getTrangThai()); // Trả về đúng trạng thái từ entity
+            response.put("images", chiTiet.getHinhAnhSanPhams().stream()
                     .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh()))
                     .collect(Collectors.toList()));
 
@@ -161,6 +164,8 @@ public class ChiTietSanPhamController {
                                                                      @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles) {
         try {
             updateDto.setId(id);
+            // Log để kiểm tra giá trị status từ form
+            logger.info("Received updateDto with status: {}", updateDto.getStatus());
             chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles);
             return ResponseEntity.ok(Map.of("message", "Cập nhật chi tiết sản phẩm thành công"));
         } catch (Exception e) {
