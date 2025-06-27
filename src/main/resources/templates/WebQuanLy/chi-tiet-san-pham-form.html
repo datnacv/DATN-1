@@ -219,16 +219,24 @@
             border-radius: 0.375rem;
             font-size: 0.875rem;
             font-weight: 500;
+            display: inline-block;
+            white-space: nowrap;
         }
+
         .status-active {
             color: #198754;
             border: 1px solid #198754;
             background-color: rgba(25, 135, 84, 0.1);
         }
+
         .status-inactive {
             color: #dc3545;
             border: 1px solid #dc3545;
             background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        .table td:nth-child(15), .table th:nth-child(15) {
+            min-width: 150px !important;
         }
         .table td, .table th {
             vertical-align: middle;
@@ -370,7 +378,7 @@
                         <th>Giá</th>
                         <th>Số lượng tồn</th>
                         <th>Giới tính</th>
-                        <th>Trạng thái</th>
+                        <th style="min-width: 150px;">Trạng thái</th>
                         <th>Thao tác</th>
                     </tr>
                     </thead>
@@ -399,9 +407,9 @@
                         <td th:text="${#numbers.formatDecimal(pd.gia, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
                         <td th:text="${pd.soLuongTonKho}"></td>
                         <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
-                        <td>
-                            <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
-                                  th:text="${pd.trangThai} ? 'Hoạt động' : 'Ngừng hoạt động'"></span>
+                        <td style="min-width: 150px;">
+                        <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+                              th:text="${pd.trangThai} ? 'Hoạt động' : 'Ngừng hoạt động'"></span>
                         </td>
                         <td class="text-center action-buttons">
                             <button class="btn btn-warning btn-sm edit-btn" th:data-id="${pd.id}" data-bs-toggle="modal" data-bs-target="#editChiTietSanPhamModal" title="Sửa">
