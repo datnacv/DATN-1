@@ -352,6 +352,10 @@ body {
 .navbar .dropdown-menu li a i {
     margin-right: 10px;
 }
+.custom-navbar {
+    padding-top: 1.35rem;
+    padding-bottom: 1.2rem;
+}
 /* Responsive */
 @media (max-width: 768px) {
     .sidebar {
