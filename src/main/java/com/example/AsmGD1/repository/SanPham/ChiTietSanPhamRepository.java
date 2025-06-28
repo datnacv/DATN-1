@@ -21,11 +21,13 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
             "JOIN FETCH ct.mauSac ms " +
-            "WHERE sp.id = :idSanPham")
+            "WHERE sp.id = :idSanPham AND sp.trangThai = true AND ct.trangThai = true")
     List<ChiTietSanPham> findBySanPhamId(@Param("idSanPham") UUID idSanPham);
 
     @Query("SELECT ct FROM ChiTietSanPham ct " +
-            "WHERE ct.sanPham.id = :productId AND ct.mauSac.id = :mauSacId AND ct.kichCo.id = :kichCoId")
+            "JOIN ct.sanPham sp " +
+            "WHERE ct.sanPham.id = :productId AND ct.mauSac.id = :mauSacId AND ct.kichCo.id = :kichCoId " +
+            "AND ct.trangThai = true AND sp.trangThai = true")
     ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(
             @Param("productId") UUID productId,
             @Param("mauSacId") UUID mauSacId,
@@ -33,11 +35,13 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
 
     // hoadon
-    @Query("SELECT c FROM ChiTietSanPham c WHERE c.id = :id")
+    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.id = :id AND ct.trangThai = true AND sp.trangThai = true")
+    Optional<ChiTietSanPham> findById(@Param("id") UUID id);
+
+    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.id = :id AND ct.trangThai = true AND sp.trangThai = true")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ChiTietSanPham> findById(@Param("id") UUID id, LockModeType lockMode);
 
-    Optional<ChiTietSanPham> findById(UUID id);
     @Query("SELECT ct FROM ChiTietSanPham ct " +
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
@@ -48,7 +52,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "JOIN FETCH ct.tayAo ta " +
             "JOIN FETCH ct.coAo ca " +
             "JOIN FETCH ct.thuongHieu th " +
-            "WHERE 1=1 " +
+            "WHERE sp.trangThai = true " +
             "AND (:queryParams IS NULL OR (" +
             "sp.id = :productId " +
             "AND (:colorId IS NULL OR ct.mauSac.id = :colorId) " +
@@ -85,6 +89,6 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
         );
     }
 
-    @Query("SELECT sp FROM ChiTietSanPham sp WHERE sp.trangThai = true")
+    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.trangThai = true AND sp.trangThai = true")
     List<ChiTietSanPham> findAllByTrangThai();
 }
