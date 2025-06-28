@@ -303,12 +303,12 @@ public class BanHangController {
     @GetMapping
     public String hienThiTrangBanHang(Model model) {
         try {
-            List<SanPham> products = sanPhamService.findAll();
+            List<SanPham> products = sanPhamService.findAllByTrangThai();
             for (SanPham product : products) {
                 product.setChiTietSanPhams(chiTietSanPhamService.findByProductId(product.getId()));
             }
             model.addAttribute("products", products);
-            model.addAttribute("chiTietSanPhams", chiTietSanPhamService.findAll());
+            model.addAttribute("chiTietSanPhams", chiTietSanPhamService.findAllByTrangThai());
             model.addAttribute("customers", nguoiDungService.findUsersByVaiTro("customer", "", 0, 10).getContent());
             model.addAttribute("paymentMethods", phuongThucThanhToanService.findAll());
             model.addAttribute("discountVouchers", phieuGiamGiaService.layTatCa().stream()
@@ -509,7 +509,7 @@ public class BanHangController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getAllProducts() {
         try {
-            List<ChiTietSanPham> products = chiTietSanPhamService.findAll();
+            List<ChiTietSanPham> products = chiTietSanPhamService.findAllByTrangThai();
             List<Map<String, Object>> productList = products.stream().map(product -> {
                 Map<String, Object> productMap = new HashMap<>();
                 productMap.put("idChiTietSanPham", product.getId());

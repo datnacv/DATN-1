@@ -1,6 +1,7 @@
 package com.example.AsmGD1.repository.SanPham;
 
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.SanPham;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -83,4 +84,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                 (Boolean) params.get("status")
         );
     }
+
+    @Query("SELECT sp FROM ChiTietSanPham sp WHERE sp.trangThai = true")
+    List<ChiTietSanPham> findAllByTrangThai();
 }

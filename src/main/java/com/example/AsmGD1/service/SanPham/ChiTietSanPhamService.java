@@ -393,4 +393,7 @@ public class ChiTietSanPhamService {
             }
         }
     }
+    public List<ChiTietSanPham> findAllByTrangThai() {
+        return chiTietSanPhamRepo.findAllByTrangThai();
+    }
 }

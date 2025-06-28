@@ -22,6 +22,10 @@ public class SanPhamService {
         return sanPhamRepository.findAll();
     }
 
+    public List<SanPham> findAllByTrangThai() {
+        return sanPhamRepository.findAllByTrangThai();
+    }
+
     public Page<SanPham> findAllPaginated(Pageable pageable) {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
         return sanPhamRepository.findAll(sortedByThoiGianTaoDesc);
