@@ -533,10 +533,6 @@
       color: white;
     }
 
-    .navbar {
-      background-color: white !important;
-      border-bottom: 1px solid var(--border-color);
-    }
     @media (max-width: 768px) {
       .content {
         padding: 1rem;
@@ -580,40 +576,21 @@
       gap: 1rem;
       margin-bottom: 2rem;
     }
-    .search-container {
-      position: relative;
-      margin-bottom: 1rem;
-    }
-
-    .search-container input {
-      padding-left: 2.5rem;
-    }
-
-    .search-container i {
-      position: absolute;
-      left: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--secondary-color);
-    }
   </style>
 </head>
 <body>
 <div class="d-flex">
   <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
-<!--  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed top-0 right-0 w-[calc(100%-256px)]">-->
-<!--    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>-->
-<!--  </nav>-->
+  <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed top-0 right-0 w-[calc(100%-256px)]">
+    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
 
   <!-- Nội dung chính -->
   <div class="content mt-16" id="mainContent">
     <!-- Header Section -->
-    <div class="text-center mb-5">
-      <h1 class="display-3 fw-bold header-gradient mb-4">
-        ACV Store
-      </h1>
-      <p class="fs-4 text-muted fw-medium">Hệ thống bán hàng thông minh</p>
+    <div class="text-center mb-2 mt-3">
+      <p class="fs-2 fw-bold">Bán hàng tại quầy</p>
     </div>
 
     <!-- Tabs Section -->
@@ -765,7 +742,7 @@
             </select>
           </div>
 
-          <div class="floating-label">
+          <div class="floating-label d-none" id="shippingFeeContainer">
             <label for="shippingFee">Phí vận chuyển</label>
             <input type="number" id="shippingFee" value="0" class="form-control">
           </div>
@@ -1577,7 +1554,9 @@
       saleMethod: document.getElementById('saleMethod'),
       shippingFee: document.getElementById('shippingFee'),
       paymentMethod: document.getElementById('paymentMethod'),
-      cashAmount: document.getElementById('cashAmount')
+      cashAmount: document.getElementById('cashAmount'),
+      shippingFeeContainer: document.getElementById('shippingFeeContainer'),
+      addressSection: document.getElementById('addressSection')
     };
 
     if (elements.customerPhone) elements.customerPhone.value = tab.customerPhone;
@@ -1588,7 +1567,16 @@
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
     if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount;
 
-    toggleAddressSection();
+    // Điều khiển hiển thị của phí vận chuyển và địa chỉ giao hàng
+    if (tab.saleMethod === 'Giao hàng' && tab.customerPhone && tab.customerPhone !== '0999999999') {
+      if (elements.addressSection) elements.addressSection.classList.remove('d-none');
+      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.remove('d-none');
+    } else {
+      if (elements.addressSection) elements.addressSection.classList.add('d-none');
+      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.add('d-none');
+      tab.shippingFee = 0; // Đặt lại phí vận chuyển về 0
+    }
+
     toggleCashInput();
     renderCart(tab.cart);
     updateSummary(tab);
@@ -1755,8 +1743,9 @@
     const saleMethodSelect = document.getElementById('saleMethod');
     const phoneInput = document.getElementById('customerPhone');
     const addressSection = document.getElementById('addressSection');
+    const shippingFeeContainer = document.getElementById('shippingFeeContainer');
 
-    if (!saleMethodSelect || !phoneInput || !addressSection) return;
+    if (!saleMethodSelect || !phoneInput || !addressSection || !shippingFeeContainer) return;
 
     const saleMethod = saleMethodSelect.value;
     const phone = phoneInput.value;
@@ -1766,9 +1755,17 @@
       tab.saleMethod = saleMethod;
       if (saleMethod === 'Giao hàng' && phone && phone !== '0999999999') {
         addressSection.classList.remove('d-none');
+        shippingFeeContainer.classList.remove('d-none'); // Hiển thị phí vận chuyển
         fetchCustomerAddresses();
       } else {
         addressSection.classList.add('d-none');
+        shippingFeeContainer.classList.add('d-none'); // Ẩn phí vận chuyển
+        tab.shippingFee = 0; // Đặt lại phí vận chuyển về 0 khi không chọn Giao hàng
+        updateSummary(tab);
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        if (tab.voucherId) {
+          applyVoucher(tab.voucherId);
+        }
       }
 
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
@@ -1973,7 +1970,7 @@
     const discount = parseFloat(tab.discount) || 0;
     const shippingFee = parseFloat(tab.shippingFee) || 0;
     const total = subTotal - discount;
-    const totalWithShipping = total + shippingFee;
+    const totalWithShipping = total + (tab.saleMethod === 'Giao hàng' ? shippingFee : 0); // Chỉ cộng phí vận chuyển khi chọn Giao hàng
 
     const cashAmountInput = document.getElementById('cashAmount');
     const cashAmount = parseFloat(cashAmountInput ? cashAmountInput.value : 0) || 0;
@@ -1981,7 +1978,6 @@
 
     const change = Math.max(0, cashAmount - totalWithShipping);
 
-    // Update DOM elements safely
     const elements = {
       subTotal: document.getElementById('subTotal'),
       discount: document.getElementById('discount'),
@@ -1992,7 +1988,9 @@
 
     if (elements.subTotal) elements.subTotal.innerText = subTotal.toLocaleString('vi-VN') + ' VNĐ';
     if (elements.discount) elements.discount.innerText = discount.toLocaleString('vi-VN') + ' VNĐ';
-    if (elements.shippingFeeDisplay) elements.shippingFeeDisplay.innerText = shippingFee.toLocaleString('vi-VN') + ' VNĐ';
+    if (elements.shippingFeeDisplay) {
+      elements.shippingFeeDisplay.innerText = (tab.saleMethod === 'Giao hàng' ? shippingFee : 0).toLocaleString('vi-VN') + ' VNĐ';
+    }
     if (elements.total) elements.total.innerText = totalWithShipping.toLocaleString('vi-VN') + ' VNĐ';
     if (elements.changeAmount) elements.changeAmount.innerText = change.toLocaleString('vi-VN') + ' VNĐ';
   }
@@ -2019,7 +2017,7 @@
     const cashAmountInput = document.getElementById('cashAmount');
     const orderData = {
       soDienThoaiKhachHang: tab.customerPhone,
-      phiVanChuyen: tab.shippingFee,
+      phiVanChuyen: tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0, // Chỉ gửi phí vận chuyển nếu là Giao hàng
       phuongThucThanhToan: tab.paymentMethod,
       soTienKhachDua: parseFloat(cashAmountInput ? cashAmountInput.value : 0) || 0,
       phuongThucBanHang: tab.saleMethod,
@@ -2032,7 +2030,7 @@
     try {
       if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
         // Thanh toán chuyển khoản - chuyển hướng đến VNPay
-        let totalAmount = (tab.total || 0) + (tab.shippingFee || 0);
+        let totalAmount = (tab.total || 0) + (tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0);
 
         if (totalAmount <= 0) {
           showToast('Tổng tiền phải lớn hơn 0.', 'warning');
@@ -2062,7 +2060,6 @@
         descriptionInput.value = `Thanh toán đơn hàng ${currentTabId}`;
         form.appendChild(descriptionInput);
 
-        // Lưu thông tin đơn hàng để xử lý sau khi thanh toán
         sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData, tabId: currentTabId }));
 
         document.body.appendChild(form);
