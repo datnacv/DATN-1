@@ -238,13 +238,13 @@
 
     .modal-content {
       background: white;
-      padding: 2rem;
-      border-radius: 20px;
-      max-width: 600px;
+      padding: 1.5rem; /* Giảm padding từ 2rem xuống 1.5rem */
+      border-radius: 16px; /* Giảm border-radius từ 20px xuống 16px */
+      max-width: 500px; /* Giảm max-width từ 600px xuống 500px */
       width: 90%;
-      max-height: 80vh;
+      max-height: 70vh; /* Giảm max-height từ 80vh xuống 70vh */
       overflow-y: auto;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Giảm độ mờ của shadow */
       animation: slideUp 0.3s ease;
     }
 
@@ -840,6 +840,14 @@
             <h3 class="fs-3 fw-bold text-dark">Danh sách khách hàng</h3>
           </div>
           <button onclick="document.getElementById('customerModal').style.display='none'" class="btn-close"></button>
+        </div>
+
+        <!-- Thêm trường tìm kiếm -->
+        <div class="mb-4">
+          <div class="floating-label">
+            <label for="customerSearch">Tìm kiếm khách hàng</label>
+            <input type="text" id="customerSearch" class="form-control" placeholder="Nhập tên, số điện thoại hoặc email">
+          </div>
         </div>
 
         <!-- Khách lẻ -->
@@ -1635,7 +1643,14 @@
         } catch (e) {
           errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
-        throw new Error(errorMessage);
+        showToast(errorMessage, 'error');
+        const customerNameInput = document.getElementById('customerName');
+        const customerEmailInput = document.getElementById('customerEmail');
+        if (customerNameInput) customerNameInput.value = '';
+        if (customerEmailInput) customerEmailInput.value = '';
+        const addressSection = document.getElementById('addressSection');
+        if (addressSection) addressSection.classList.add('d-none');
+        return;
       }
 
       const data = await response.json();
@@ -2111,12 +2126,9 @@
     }
   }
 
-  async function fetchCustomers() {
-    const customerSpinner = document.getElementById('customerSpinner');
-    if (customerSpinner) customerSpinner.style.display = 'block';
-
+  async function fetchCustomers(keyword = '') {
     try {
-      const response = await fetch(`${BASE_URL}/customers`);
+      const response = await fetch(`${BASE_URL}/customers?keyword=${encodeURIComponent(keyword)}`);
       if (!response.ok) {
         let errorMessage = "Lỗi khi tải danh sách khách hàng.";
         try {
@@ -2133,29 +2145,29 @@
       if (customerList) {
         customerList.innerHTML = '';
 
-        data.customers.filter(customer => customer.soDienThoai !== '0999999999').forEach(customer => {
-          const div = document.createElement('div');
-          div.className = 'p-3 border rounded cursor-pointer mb-2';
-          div.style.cursor = 'pointer';
-          div.innerHTML = `
-            <div class="d-flex align-items-center gap-3">
-              <i class="fas fa-user-circle fs-3 text-primary"></i>
-              <div>
-                <div class="fw-semibold text-dark">${customer.hoTen}</div>
-                <div class="small text-muted">${customer.soDienThoai} • ${customer.email}</div>
-              </div>
-            </div>
-          `;
-          div.onmouseover = () => div.classList.add('bg-light');
-          div.onmouseout = () => div.classList.remove('bg-light');
-          div.onclick = () => selectCustomerFromModal(customer.soDienThoai, customer.hoTen, customer.email);
-          customerList.appendChild(div);
-        });
+        data.customers
+                .filter(customer => customer.soDienThoai !== '0999999999')
+                .forEach(customer => {
+                  const div = document.createElement('div');
+                  div.className = 'p-3 border rounded cursor-pointer mb-2';
+                  div.style.cursor = 'pointer';
+                  div.innerHTML = `
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fas fa-user-circle fs-3 text-primary"></i>
+                            <div>
+                                <div class="fw-semibold text-dark">${customer.hoTen}</div>
+                                <div class="small text-muted">${customer.soDienThoai} • ${customer.email}</div>
+                            </div>
+                        </div>
+                    `;
+                  div.onmouseover = () => div.classList.add('bg-light');
+                  div.onmouseout = () => div.classList.remove('bg-light');
+                  div.onclick = () => selectCustomerFromModal(customer.soDienThoai, customer.hoTen, customer.email);
+                  customerList.appendChild(div);
+                });
       }
     } catch (error) {
       showToast('Lỗi khi tải danh sách khách hàng: ' + error.message, 'error');
-    } finally {
-      if (customerSpinner) customerSpinner.style.display = 'none';
     }
   }
 
@@ -2554,6 +2566,14 @@
     if (voucherSelect) {
       voucherSelect.addEventListener('change', (e) => {
         applyVoucher(e.target.value || null);
+      });
+    }
+
+    const customerSearch = document.getElementById('customerSearch');
+    if (customerSearch) {
+      customerSearch.addEventListener('input', () => {
+        const keyword = customerSearch.value.trim();
+        fetchCustomers(keyword);
       });
     }
 
