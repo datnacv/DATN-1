@@ -13,7 +13,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "thong_ke_doanh_thu_chi_tiet")
 @Data
-public class ThongKeDoanhThuChiTiet {
+public class ThongKe {
     @Id
     @Column(name = "id")
     private UUID id;
@@ -21,8 +21,8 @@ public class ThongKeDoanhThuChiTiet {
     @Column(name = "ngay_thanh_toan")
     private LocalDate ngayThanhToan;
 
-    @Column(name = "id_hoa_don")
-    private UUID idHoaDon;
+    @Column(name = "id_chi_tiet_don_hang")
+    private UUID idChiTietDonHang;
 
     @Column(name = "id_chi_tiet_san_pham")
     private UUID idChiTietSanPham;

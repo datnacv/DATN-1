@@ -8,6 +8,7 @@ import java.util.UUID;
 @Data
 public class SanPhamBanChayDTO {
     private UUID idChiTietSanPham;
+    private UUID idSanPham;
     private String tenSanPham;
     private String mauSac;
     private String kichCo;
@@ -15,9 +16,11 @@ public class SanPhamBanChayDTO {
     private Long soLuongDaBan;
     private String imageUrl;
 
-    public SanPhamBanChayDTO(UUID idChiTietSanPham, String tenSanPham, String mauSac,
-                             String kichCo, BigDecimal gia, Long soLuongDaBan, String imageUrl) {
+    public SanPhamBanChayDTO(UUID idChiTietSanPham, UUID idSanPham,
+                             String tenSanPham, String mauSac, String kichCo,
+                             BigDecimal gia, Long soLuongDaBan, String imageUrl) {
         this.idChiTietSanPham = idChiTietSanPham;
+        this.idSanPham = idSanPham;
         this.tenSanPham = tenSanPham;
         this.mauSac = mauSac;
         this.kichCo = kichCo;
@@ -26,3 +29,4 @@ public class SanPhamBanChayDTO {
         this.imageUrl = imageUrl;
     }
 }
+

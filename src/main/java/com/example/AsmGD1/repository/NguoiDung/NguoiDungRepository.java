@@ -21,7 +21,7 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
 
     // Các phương thức khác giữ nguyên
     List<NguoiDung> findByVaiTro(String vaiTro);
-
+    List<NguoiDung> findByVaiTroAndTrangThai(String vaiTro, boolean trangThai);
     // Tìm kiếm KHÔNG phân trang
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = 'CUSTOMER' AND u.trangThai = true AND (" +
             "LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +

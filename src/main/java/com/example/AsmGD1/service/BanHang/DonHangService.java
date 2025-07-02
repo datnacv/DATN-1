@@ -10,8 +10,10 @@ import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaCuaNguoiDungRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
+import com.example.AsmGD1.repository.ThongKe.ThongKeRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.LockModeType;
 import jakarta.servlet.http.HttpSession;
@@ -56,6 +58,10 @@ public class DonHangService {
     private HoaDonService hoaDonService;
     @Autowired
     private NguoiDungService nguoiDungService;
+    @Autowired
+    private ThongKeRepository thongKeRepository;
+    @Autowired
+    private ThongBaoService thongBaoService;
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     @Retryable(
@@ -98,7 +104,6 @@ public class DonHangService {
             throw new RuntimeException("Danh sách sản phẩm không được để trống.");
         }
 
-        // Tải và khóa các ChiTietSanPham
         List<ChiTietSanPham> chiTietSanPhams = new ArrayList<>();
         for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham(), LockModeType.PESSIMISTIC_WRITE)
@@ -110,7 +115,6 @@ public class DonHangService {
             chiTietSanPhams.add(chiTiet);
         }
 
-        // Cập nhật ChiTietDonHang và tồn kho
         for (int i = 0; i < donHangDTO.getDanhSachSanPham().size(); i++) {
             GioHangItemDTO item = donHangDTO.getDanhSachSanPham().get(i);
             ChiTietSanPham chiTiet = chiTietSanPhams.get(i);
@@ -176,13 +180,34 @@ public class DonHangService {
             donHang.setTrangThaiThanhToan(false);
         }
 
-
-        // Sau khi lưu đơn hàng vào cơ sở dữ liệu
-        log.debug("Lưu đơn hàng với mã: {}", donHang.getMaDonHang());
+        // Lưu đơn hàng
         donHangRepository.save(donHang);
 
-        // Tạo hóa đơn từ đơn hàng
-        log.debug("Tạo hóa đơn cho đơn hàng: {}", donHang.getMaDonHang());
+        // Nếu đã thanh toán thì lưu thống kê
+        if (donHang.getTrangThaiThanhToan()) {
+            thongBaoService.taoThongBaoChoAdmin(donHang);
+            for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
+                ChiTietSanPham chiTiet = chiTietDonHang.getChiTietSanPham();
+
+                ThongKe thongKe = new ThongKe();
+                thongKe.setId(UUID.randomUUID());
+                thongKe.setNgayThanhToan(donHang.getThoiGianThanhToan().toLocalDate());
+                thongKe.setIdChiTietDonHang(chiTietDonHang.getId());
+                thongKe.setIdChiTietSanPham(chiTiet.getId());
+                thongKe.setIdSanPham(chiTiet.getSanPham().getId());
+                thongKe.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
+                thongKe.setKichCo(chiTiet.getKichCo().getTen());
+                thongKe.setMauSac(chiTiet.getMauSac().getTenMau());
+                thongKe.setSoLuongDaBan(chiTietDonHang.getSoLuong());
+                thongKe.setDoanhThu(chiTietDonHang.getThanhTien());
+                thongKe.setSoLuongTonKho(chiTiet.getSoLuongTonKho());
+                thongKe.setImageUrl(chiTiet.getSanPham().getUrlHinhAnh());
+
+                thongKeRepository.save(thongKe);
+            }
+        }
+
+        // Tạo hóa đơn
         hoaDonService.createHoaDonFromDonHang(donHang);
 
         KetQuaDonHangDTO ketQua = new KetQuaDonHangDTO();
@@ -193,6 +218,7 @@ public class DonHangService {
         log.info("Tạo đơn hàng thành công với mã: {}", donHang.getMaDonHang());
         return ketQua;
     }
+
 
     // Các phương thức khác giữ nguyên, chỉ thêm logging nếu cần
     @Transactional
