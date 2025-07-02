@@ -5,6 +5,7 @@
 
     import java.math.BigDecimal;
     import java.time.LocalDateTime;
+    import java.util.ArrayList;
     import java.util.List;
     import java.util.UUID;
 
@@ -24,4 +25,12 @@
         private List<GioHangItemDTO> danhSachSanPham;
         private BigDecimal phiVanChuyen; // Thêm trường này
         private String phuongThucBanHang; // Thêm trường này
+        private List<LichSuDTO> lichSuHoaDons = new ArrayList<>();
+
+        @Data
+        public static class LichSuDTO {
+            private LocalDateTime thoiGian;
+            private String trangThai;
+            private String ghiChu;
+        }
     }
