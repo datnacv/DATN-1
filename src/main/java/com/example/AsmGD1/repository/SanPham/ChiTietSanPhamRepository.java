@@ -23,6 +23,9 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "WHERE sp.id = :idSanPham")
     List<ChiTietSanPham> findBySanPhamId(@Param("idSanPham") UUID idSanPham);
 
+    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.trangThai = true AND sp.trangThai = true")
+    List<ChiTietSanPham> findAllByTrangThai();
+
     @Query("SELECT ct FROM ChiTietSanPham ct " +
             "WHERE ct.sanPham.id = :productId AND ct.mauSac.id = :mauSacId AND ct.kichCo.id = :kichCoId")
     ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(

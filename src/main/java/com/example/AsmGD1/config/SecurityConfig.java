@@ -169,6 +169,19 @@ public class SecurityConfig {
         return http.build();
     }
 
+    @Bean
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/**") // ✅ Áp dụng cho các API
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll() // ✅ Cho phép toàn bộ API truy cập công khai
+                )
+                .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+
     // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {

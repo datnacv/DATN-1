@@ -89,25 +89,18 @@ public class BanHangController {
     private HttpSession session;
 
     @GetMapping("/customers")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> getCustomers() {
+    public ResponseEntity<Map<String, Object>> getCustomers(@RequestParam(required = false, defaultValue = "") String keyword) {
         try {
-            List<NguoiDung> customers = nguoiDungService.findUsersByVaiTro("customer", "", 0, 10).getContent();
-            List<Map<String, Object>> customerList = customers.stream()
-                    .map(customer -> {
-                        Map<String, Object> customerInfo = new HashMap<>();
-                        customerInfo.put("hoTen", customer.getHoTen());
-                        customerInfo.put("soDienThoai", customer.getSoDienThoai());
-                        customerInfo.put("email", customer.getEmail());
-                        return customerInfo;
-                    })
-                    .collect(Collectors.toList());
-
+            List<NguoiDung> customers = nguoiDungRepository.searchByKeywordNoPaging(keyword);
             Map<String, Object> response = new HashMap<>();
-            response.put("customers", customerList);
+            response.put("success", true);
+            response.put("customers", customers);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy danh sách khách hàng: " + e.getMessage()));
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Lỗi khi tải danh sách khách hàng: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 
@@ -303,12 +296,12 @@ public class BanHangController {
     @GetMapping
     public String hienThiTrangBanHang(Model model) {
         try {
-            List<SanPham> products = sanPhamService.findAll();
+            List<SanPham> products = sanPhamService.findAllByTrangThai();
             for (SanPham product : products) {
                 product.setChiTietSanPhams(chiTietSanPhamService.findByProductId(product.getId()));
             }
             model.addAttribute("products", products);
-            model.addAttribute("chiTietSanPhams", chiTietSanPhamService.findAll());
+            model.addAttribute("chiTietSanPhams", chiTietSanPhamService.findAllByTrangThai());
             model.addAttribute("customers", nguoiDungService.findUsersByVaiTro("customer", "", 0, 10).getContent());
             model.addAttribute("paymentMethods", phuongThucThanhToanService.findAll());
             model.addAttribute("discountVouchers", phieuGiamGiaService.layTatCa().stream()
@@ -509,7 +502,7 @@ public class BanHangController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getAllProducts() {
         try {
-            List<ChiTietSanPham> products = chiTietSanPhamService.findAll();
+            List<ChiTietSanPham> products = chiTietSanPhamService.findAllByTrangThai();
             List<Map<String, Object>> productList = products.stream().map(product -> {
                 Map<String, Object> productMap = new HashMap<>();
                 productMap.put("idChiTietSanPham", product.getId());
