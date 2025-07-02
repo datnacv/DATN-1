@@ -166,7 +166,9 @@ public class ChiTietSanPhamService {
             pd.setSoLuongTonKho(variationDto.getStockQuantity());
             pd.setGioiTinh(batchDto.getGender());
             pd.setThoiGianTao(LocalDateTime.now());
-            pd.setTrangThai(true);
+            // Nếu số lượng tồn kho = 0, tự động đặt trạng thái là false
+            // Nếu không, mặc định là true (vì đây là tạo mới, không có trạng thái từ DTO)
+            pd.setTrangThai(variationDto.getStockQuantity() == 0 ? false : true);
 
             ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -219,7 +221,9 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(dto.getStatus() != null ? dto.getStatus() : true);
+        // Nếu số lượng tồn kho = 0, tự động đặt trạng thái là false
+        // Nếu không, sử dụng giá trị trạng thái từ DTO hoặc mặc định là true
+        pd.setTrangThai(dto.getStockQuantity() == 0 ? false : (dto.getStatus() != null ? dto.getStatus() : true));
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -254,8 +258,14 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : existingDetail.getTrangThai());
-        logger.info("Updating status to: {}", updateDto.getStatus());
+        // Nếu số lượng tồn kho = 0, tự động đặt trạng thái là false
+        // Nếu không, sử dụng giá trị trạng thái từ DTO hoặc giữ nguyên trạng thái hiện tại
+        if (updateDto.getStockQuantity() == 0) {
+            existingDetail.setTrangThai(false);
+        } else {
+            existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : existingDetail.getTrangThai());
+        }
+        logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
         chiTietSanPhamRepo.save(existingDetail);
 
@@ -336,6 +346,9 @@ public class ChiTietSanPhamService {
 
     @Transactional
     public ChiTietSanPham save(ChiTietSanPham chiTietSanPham) {
+        // Nếu số lượng tồn kho = 0, tự động đặt trạng thái là false
+        // Nếu không, giữ nguyên trạng thái từ đối tượng
+        chiTietSanPham.setTrangThai(chiTietSanPham.getSoLuongTonKho() == 0 ? false : chiTietSanPham.getTrangThai());
         return chiTietSanPhamRepo.save(chiTietSanPham);
     }
 
@@ -356,6 +369,9 @@ public class ChiTietSanPhamService {
 
     @Transactional
     public void saveChiTietSanPhamWithImages(ChiTietSanPham pd, MultipartFile[] imageFiles) {
+        // Nếu số lượng tồn kho = 0, tự động đặt trạng thái là false
+        // Nếu không, giữ nguyên trạng thái từ đối tượng
+        pd.setTrangThai(pd.getSoLuongTonKho() == 0 ? false : pd.getTrangThai());
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
         try {

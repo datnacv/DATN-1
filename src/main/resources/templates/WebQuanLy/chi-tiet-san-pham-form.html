@@ -120,7 +120,7 @@
         .table thead th:nth-child(9) { min-width: 100px; }
         .table thead th:nth-child(10) { min-width: 100px; }
         .table thead th:nth-child(11) { min-width: 100px; }
-        .table thead th:nth-child(12) { min-width: 100px; }
+        .table thead th:nth-child(12) { min-width: 130px; }
         .table thead th:nth-child(13) { min-width: 100px; }
         .table thead th:nth-child(14) { min-width: 100px; }
         .table thead th:nth-child(15) { min-width: 100px; }
@@ -404,7 +404,7 @@
                         <td th:text="${pd.tayAo?.tenTayAo ?: 'N/A'}"></td>
                         <td th:text="${pd.coAo?.tenCoAo ?: 'N/A'}"></td>
                         <td th:text="${pd.thuongHieu?.tenThuongHieu ?: 'N/A'}"></td>
-                        <td th:text="${#numbers.formatDecimal(pd.gia, 0, 'COMMA', 0, 'POINT')} + ' ₫'"></td>
+                        <td th:text="${#numbers.formatDecimal(pd.gia, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
                         <td th:text="${pd.soLuongTonKho}"></td>
                         <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
                         <td style="min-width: 150px;">
@@ -438,7 +438,7 @@
                         <div class="modal-body">
                             <input type="hidden" id="editId" name="id"/>
                             <div class="row g-3 mb-3">
-                                <div classコロ="col-md-6">
+                                <div class="col-md-6">
                                     <label for="editProduct" class="form-label">Sản phẩm</label>
                                     <input type="text" class="form-control" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
                                     <input type="hidden" id="editProductHidden" name="productId" th:value="${selectedProductId}"/>
@@ -521,7 +521,7 @@
                                 <div class="col-md-6">
                                     <label for="editPrice" class="form-label">Giá bán</label>
                                     <div class="input-group">
-                                        <span class="input-group-text">₫</span>
+                                        <span class="input-group-text">VNĐ</span>
                                         <input type="number" class="form-control" id="editPrice" name="price" step="1000" min="0" required>
                                     </div>
                                 </div>
@@ -576,23 +576,31 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function () {
-        $('#editColor').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn màu...", width: '100%' });
-        $('#editSize').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn kích cỡ...", width: '100%' });
-        $('#editOrigin').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn xuất xứ...", width: '100%' });
-        $('#editMaterial').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn chất liệu...", width: '100%' });
-        $('#editStyle').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn kiểu dáng...", width: '100%' });
-        $('#editSleeve').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn tay áo...", width: '100%' });
-        $('#editCollar').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn cổ áo...", width: '100%' });
-        $('#editBrand').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn thương hiệu...", width: '100%' });
-        $('#editGender').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn giới tính...", width: '100%' });
+        // $('#editColor').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn màu...", width: '100%' });
+        // $('#editSize').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn kích cỡ...", width: '100%' });
+        // $('#editOrigin').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn xuất xứ...", width: '100%' });
+        // $('#editMaterial').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn chất liệu...", width: '100%' });
+        // $('#editStyle').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn kiểu dáng...", width: '100%' });
+        // $('#editSleeve').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn tay áo...", width: '100%' });
+        // $('#editCollar').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn cổ áo...", width: '100%' });
+        // $('#editBrand').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn thương hiệu...", width: '100%' });
+        // $('#editGender').select2({ dropdownParent: $('#editChiTietSanPhamModal .modal-body'), placeholder: "Chọn giới tính...", width: '100%' });
 
         function updateStatusLabel() {
             const statusInput = $('#editStatus');
             const statusLabel = $('#statusLabel');
-            statusLabel.text(statusInput.is(':checked') ? 'Hoạt động' : 'Ngừng hoạt động');
+            const stockQuantity = parseInt($('#editStockQuantity').val()) || 0;
+            if (stockQuantity === 0) {
+                statusInput.prop('checked', false).prop('disabled', true);
+                statusLabel.text('Ngừng hoạt động (Hết hàng)');
+            } else {
+                statusInput.prop('disabled', false);
+                statusLabel.text(statusInput.is(':checked') ? 'Hoạt động' : 'Ngừng hoạt động');
+            }
         }
 
         $('#editStatus').on('change', updateStatusLabel);
+        $('#editStockQuantity').on('change', updateStatusLabel);
 
         $(document).on('click', '.edit-btn', function () {
             const productDetailId = $(this).data('id');
