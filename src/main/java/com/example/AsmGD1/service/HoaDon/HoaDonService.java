@@ -5,8 +5,10 @@ import com.example.AsmGD1.dto.HoaDonDTO;
 import com.example.AsmGD1.entity.ChiTietDonHang;
 import com.example.AsmGD1.entity.DonHang;
 import com.example.AsmGD1.entity.HoaDon;
+import com.example.AsmGD1.entity.LichSuHoaDon;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
+import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -24,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +43,9 @@ public class HoaDonService {
 
     @Autowired
     private DonHangRepository donHangRepository;
+
+    @Autowired
+    private LichSuHoaDonRepository lichSuHoaDonRepository;
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     @Retryable(
@@ -69,16 +77,30 @@ public class HoaDonService {
         hoaDon.setTongTien(refreshedDonHang.getTongTien());
         hoaDon.setTienGiam(refreshedDonHang.getTienGiam() != null ? refreshedDonHang.getTienGiam() : BigDecimal.ZERO);
         hoaDon.setPhuongThucThanhToan(refreshedDonHang.getPhuongThucThanhToan());
-        hoaDon.setTrangThai(refreshedDonHang.getTrangThaiThanhToan() != null ? refreshedDonHang.getTrangThaiThanhToan() : false);
+        hoaDon.setTrangThai(refreshedDonHang.getTrangThaiThanhToan() != null ? refreshedDonHang.getTrangThaiThanhToan() :
+                "Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang()));
         hoaDon.setNgayTao(refreshedDonHang.getThoiGianTao() != null ? refreshedDonHang.getThoiGianTao() : LocalDateTime.now());
         hoaDon.setGhiChu(refreshedDonHang.getDiaChiGiaoHang() != null ? refreshedDonHang.getDiaChiGiaoHang() : "");
+
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hoaDon);
+        lichSu.setTrangThai(hoaDon.getTrangThai() ? "Đã xác nhận" : "Chưa xác nhận");
+        lichSu.setThoiGian(LocalDateTime.now());
+        lichSu.setGhiChu("Hóa đơn được tạo");
+        hoaDon.getLichSuHoaDons().add(lichSu);
 
         hoaDonRepository.saveAndFlush(hoaDon);
     }
 
-    public Page<HoaDon> findAll(String search, Pageable pageable) {
+    public Page<HoaDon> findAll(String search, Boolean trangThai, Pageable pageable) {
         if (search != null && !search.isEmpty()) {
+            if (trangThai != null) {
+                return hoaDonRepository.findBySearchAndTrangThai(search, trangThai, pageable);
+            }
             return hoaDonRepository.searchByKeyword(search, pageable);
+        }
+        if (trangThai != null) {
+            return hoaDonRepository.findByTrangThai(trangThai, pageable);
         }
         return hoaDonRepository.findAll(pageable);
     }
@@ -88,8 +110,18 @@ public class HoaDonService {
             UUID uuid = UUID.fromString(id);
             HoaDon hoaDon = hoaDonRepository.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại."));
-            HoaDonDTO dto = new HoaDonDTO();
 
+            if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
+                    (hoaDon.getTrangThai() == null || !hoaDon.getTrangThai())) {
+                hoaDon.setTrangThai(true);
+                hoaDon.setNgayThanhToan(LocalDateTime.now());
+                hoaDon.setGhiChu("Đã xác nhận tự động (Tại quầy)");
+                addLichSuHoaDon(hoaDon, "Đã xác nhận", "Đã xác nhận tự động (Tại quầy)");
+                save(hoaDon);
+            }
+
+            HoaDonDTO dto = new HoaDonDTO();
+            dto.setId(hoaDon.getId());
             dto.setMaHoaDon(hoaDon.getDonHang().getMaDonHang());
             dto.setTenKhachHang(hoaDon.getNguoiDung().getHoTen());
             dto.setSoDienThoaiKhachHang(hoaDon.getNguoiDung().getSoDienThoai());
@@ -101,7 +133,7 @@ public class HoaDonService {
             dto.setTrangThaiThanhToan(hoaDon.getTrangThai());
             dto.setThoiGianTao(hoaDon.getNgayTao());
             dto.setGhiChu(hoaDon.getGhiChu());
-            dto.setPhuongThucBanHang(hoaDon.getDonHang().getPhuongThucBanHang()); // Thêm phương thức bán hàng
+            dto.setPhuongThucBanHang(hoaDon.getDonHang().getPhuongThucBanHang());
 
             List<GioHangItemDTO> danhSachSanPham = new ArrayList<>();
             DonHang donHang = donHangRepository.findByMaDonHang(hoaDon.getDonHang().getMaDonHang())
@@ -119,6 +151,16 @@ public class HoaDonService {
                 danhSachSanPham.add(item);
             }
             dto.setDanhSachSanPham(danhSachSanPham);
+
+            List<HoaDonDTO.LichSuDTO> lichSuDTOs = new ArrayList<>();
+            for (LichSuHoaDon lichSu : hoaDon.getLichSuHoaDons()) {
+                HoaDonDTO.LichSuDTO lichSuDTO = new HoaDonDTO.LichSuDTO();
+                lichSuDTO.setThoiGian(lichSu.getThoiGian());
+                lichSuDTO.setTrangThai(lichSu.getTrangThai());
+                lichSuDTO.setGhiChu(lichSu.getGhiChu());
+                lichSuDTOs.add(lichSuDTO);
+            }
+            dto.setLichSuHoaDons(lichSuDTOs);
 
             return dto;
         } catch (IllegalArgumentException e) {
@@ -170,7 +212,7 @@ public class HoaDonService {
             document.add(new Paragraph("Khách hàng: " + (hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Không rõ"), fontNormal));
             document.add(new Paragraph("Số điện thoại: " + (hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ"), fontNormal));
             if (hoaDon.getGhiChu() != null && !hoaDon.getGhiChu().isEmpty()) {
-                document.add(new Paragraph("Địa chỉ: " + hoaDon.getGhiChu(), fontNormal));
+                document.add(new Paragraph("Địa chỉ: " + hoaDon.getNguoiDung().getDiaChi(), fontNormal));
             }
             document.add(new Paragraph("\n"));
 
@@ -184,18 +226,18 @@ public class HoaDonService {
                 table.addCell(new PdfPCell(new Phrase(String.valueOf(index++), fontNormal)));
                 table.addCell(new PdfPCell(new Phrase(chiTiet.getTenSanPham() + " (" + (chiTiet.getGhiChu() != null ? chiTiet.getGhiChu() : "") + ")", fontNormal)));
                 table.addCell(new PdfPCell(new Phrase(String.valueOf(chiTiet.getSoLuong()), fontNormal)));
-                table.addCell(new PdfPCell(new Phrase(chiTiet.getGia().toString() + " VNĐ", fontNormal)));
-                table.addCell(new PdfPCell(new Phrase(chiTiet.getThanhTien().toString() + " VNĐ", fontNormal)));
+                table.addCell(new PdfPCell(new Phrase(formatCurrency(chiTiet.getGia()), fontNormal)));
+                table.addCell(new PdfPCell(new Phrase(formatCurrency(chiTiet.getThanhTien()), fontNormal)));
             }
 
             document.add(table);
             document.add(new Paragraph("\n"));
 
             BigDecimal tongTienHang = hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO);
-            document.add(new Paragraph("Tổng tiền hàng: " + tongTienHang.toString() + " VNĐ", fontNormal));
-            document.add(new Paragraph("Phí vận chuyển: " + (donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen().toString() : "0") + " VNĐ", fontNormal));
-            document.add(new Paragraph("Giảm giá: " + (hoaDon.getTienGiam() != null ? hoaDon.getTienGiam().toString() : "0") + " VNĐ", fontNormal));
-            document.add(new Paragraph("Tổng tiền: " + hoaDon.getTongTien().toString() + " VNĐ", fontBold));
+            document.add(new Paragraph("Tổng tiền hàng: " + formatCurrency(tongTienHang), fontNormal));
+            document.add(new Paragraph("Phí vận chuyển: " + formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO), fontNormal));
+            document.add(new Paragraph("Giảm giá: " + formatCurrency(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO), fontNormal));
+            document.add(new Paragraph("Tổng tiền: " + formatCurrency(hoaDon.getTongTien()), fontBold));
 
             document.close();
             return baos.toByteArray();
@@ -204,6 +246,16 @@ public class HoaDonService {
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi tạo PDF hóa đơn: " + e.getMessage());
         }
+    }
+
+    // Phương thức định dạng tiền tệ với dấu chấm làm dấu phân cách nghìn và loại bỏ chữ số thập phân
+    private String formatCurrency(BigDecimal amount) {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.'); // Sử dụng dấu chấm làm dấu phân cách nghìn
+        symbols.setDecimalSeparator(','); // Không sử dụng dấu phẩy thập phân
+        DecimalFormat df = new DecimalFormat("#,##0", symbols);
+        df.setGroupingSize(3); // Định dạng theo nhóm 3 chữ số
+        return df.format(amount.setScale(0, RoundingMode.HALF_UP)) + " VNĐ";
     }
 
     private void addTableHeader(PdfPTable table, Font font, String... headers) {
@@ -216,5 +268,29 @@ public class HoaDonService {
 
     public Optional<HoaDon> findById(UUID id) {
         return hoaDonRepository.findById(id);
+    }
+
+    public void addLichSuHoaDon(HoaDon hoaDon, String trangThai, String ghiChu) {
+        LichSuHoaDon lichSu = new LichSuHoaDon();
+        lichSu.setHoaDon(hoaDon);
+        lichSu.setTrangThai(trangThai);
+        lichSu.setThoiGian(LocalDateTime.now());
+        lichSu.setGhiChu(ghiChu);
+        lichSuHoaDonRepository.save(lichSu);
+        hoaDon.getLichSuHoaDons().add(lichSu);
+    }
+
+    public String getCurrentStatus(HoaDon hoaDon) {
+        if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Hoàn thành")) {
+            return "Hoàn thành";
+        } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Vận chuyển thành công")) {
+            return "Vận chuyển thành công";
+        } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Đang vận chuyển")) {
+            return "Đang vận chuyển";
+        } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai()) {
+            return "Đã xác nhận";
+        } else {
+            return "Chưa xác nhận";
+        }
     }
 }

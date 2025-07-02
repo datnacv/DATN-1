@@ -34,4 +34,11 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
     Page<HoaDon> findByDonHangMaDonHangContainingIgnoreCase(@Param("value") String maDonHang, Pageable pageable);
 
     Optional<HoaDon> findByDonHangMaDonHang(String maDonHang);
+    @Query("SELECT h FROM HoaDon h WHERE (h.donHang.maDonHang LIKE %:search% OR h.nguoiDung.hoTen LIKE %:search% OR h.nguoiDung.soDienThoai LIKE %:search%) AND h.trangThai = :trangThai")
+    Page<HoaDon> findBySearchAndTrangThai(@Param("search") String search, @Param("trangThai") Boolean trangThai, Pageable pageable);
+
+    @Query("SELECT h FROM HoaDon h WHERE h.trangThai = :trangThai")
+    Page<HoaDon> findByTrangThai(@Param("trangThai") Boolean trangThai, Pageable pageable);
+
+
 }
