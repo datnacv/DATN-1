@@ -13,10 +13,8 @@
         </a>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2" aria-labelledby="accountDropdown" style="min-width: 250px;">
             <li class="px-3 py-2">
-                <div class="fw-bold mb-1" th:text="${user.hoTen}">Tên người dùng</div>
+                <div class="fw-bold mb-1" th:text="${user.vaiTro == 'admin' ? 'QUẢN TRỊ VIÊN' : 'NHÂN VIÊN'}">Vai trò</div>
                 <div class="text-muted small" th:text="${user.email}">email@example.com</div>
-<!--                <div class="text-muted small" th:text="${user.soDienThoai}">Số điện thoại</div>-->
-                <div class="text-muted small" th:text="${user.vaiTro}">Vai trò</div>
             </li>
             <li><hr class="dropdown-divider"></li>
             <li>
