@@ -7,17 +7,22 @@ import java.util.UUID;
 
 @Data
 public class SanPhamTonKhoThapDTO {
+    private UUID idChiTietDonHang;
     private UUID idChiTietSanPham;
+    private UUID idSanPham;
     private String tenSanPham;
     private String mauSac;
     private String kichCo;
     private BigDecimal gia;
-    private Integer soLuongTonKho;
+    private Integer soLuongTonKho; // Giữ Integer vì tk.soLuongTonKho là int
     private String imageUrl;
 
-    public SanPhamTonKhoThapDTO(UUID idChiTietSanPham, String tenSanPham, String mauSac,
-                                String kichCo, BigDecimal gia, Integer soLuongTonKho, String imageUrl) {
+    public SanPhamTonKhoThapDTO(UUID idChiTietDonHang, UUID idChiTietSanPham, UUID idSanPham,
+                                String tenSanPham, String mauSac, String kichCo,
+                                BigDecimal gia, Integer soLuongTonKho, String imageUrl) {
+        this.idChiTietDonHang = idChiTietDonHang;
         this.idChiTietSanPham = idChiTietSanPham;
+        this.idSanPham = idSanPham;
         this.tenSanPham = tenSanPham;
         this.mauSac = mauSac;
         this.kichCo = kichCo;

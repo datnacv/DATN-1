@@ -109,49 +109,49 @@ public class EmployeeController {
     public String showLoginForm() {
         return "WebQuanLy/employee-login";
     }
-    @PostMapping("/verify-face")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> verifyFace(@RequestBody Map<String, String> payload) {
-        String imageBase64 = payload.get("image");
-
-        // Loại bỏ tiền tố base64
-        String base64Data = imageBase64.split(",")[1];
-
-        try {
-            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-
-            // ✅ Lưu ảnh vào thư mục src/main/resources/static/images/faces/
-            String folderPath = "src/main/resources/static/images/faces/";
-            Files.createDirectories(Paths.get(folderPath)); // Tạo folder nếu chưa có
-
-            // ✅ Tạo tên file ảnh với thời gian hiện tại
-            String fileName = "face_" + System.currentTimeMillis() + ".jpg";
-            Path imagePath = Paths.get(folderPath + fileName);
-            Files.write(imagePath, imageBytes);
-
-            // TODO: Gọi AI/so sánh ảnh nếu cần ở đây
-            boolean isFaceVerified = true; // Giả lập xác thực thành công
-
-            if (isFaceVerified) {
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "Xác minh thành công",
-                        "redirect", "/acvstore/thong-ke"
-                ));
-            } else {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Xác minh thất bại"
-                ));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                    "success", false,
-                    "message", "Lỗi khi lưu ảnh"
-            ));
-        }
-    }
+//    @PostMapping("/verify-face")
+//    @ResponseBody
+//    public ResponseEntity<Map<String, Object>> verifyFace(@RequestBody Map<String, String> payload) {
+//        String imageBase64 = payload.get("image");
+//
+//        // Loại bỏ tiền tố base64
+//        String base64Data = imageBase64.split(",")[1];
+//
+//        try {
+//            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+//
+//            // ✅ Lưu ảnh vào thư mục src/main/resources/static/images/faces/
+//            String folderPath = "src/main/resources/static/images/faces/";
+//            Files.createDirectories(Paths.get(folderPath)); // Tạo folder nếu chưa có
+//
+//            // ✅ Tạo tên file ảnh với thời gian hiện tại
+//            String fileName = "face_" + System.currentTimeMillis() + ".jpg";
+//            Path imagePath = Paths.get(folderPath + fileName);
+//            Files.write(imagePath, imageBytes);
+//
+//            // TODO: Gọi AI/so sánh ảnh nếu cần ở đây
+//            boolean isFaceVerified = true; // Giả lập xác thực thành công
+//
+//            if (isFaceVerified) {
+//                return ResponseEntity.ok(Map.of(
+//                        "success", true,
+//                        "message", "Xác minh thành công",
+//                        "redirect", "/acvstore/thong-ke"
+//                ));
+//            } else {
+//                return ResponseEntity.badRequest().body(Map.of(
+//                        "success", false,
+//                        "message", "Xác minh thất bại"
+//                ));
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+//                    "success", false,
+//                    "message", "Lỗi khi lưu ảnh"
+//            ));
+//        }
+//    }
 
 
     @GetMapping("/verify-face")

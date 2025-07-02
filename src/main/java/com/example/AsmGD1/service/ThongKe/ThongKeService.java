@@ -25,7 +25,6 @@ public class ThongKeService {
         ThongKeDoanhThuDTO thongKe = new ThongKeDoanhThuDTO();
         LocalDate homNay = LocalDate.now();
 
-        // Xác định khoảng thời gian dựa vào bộ lọc
         switch (boLoc) {
             case "day" -> {
                 ngayBatDau = homNay;
@@ -51,28 +50,41 @@ public class ThongKeService {
             }
         }
 
-        // Doanh thu
-        thongKe.setDoanhThuNgay(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay, homNay));
-        thongKe.setDoanhThuThang(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
-        thongKe.setDoanhThuNam(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfYear(1), homNay));
+        // Áp dụng defaultBigDecimal / defaultInteger để tránh null
+        BigDecimal doanhThuNgay = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay, homNay));
+        BigDecimal doanhThuThang = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
+        BigDecimal doanhThuNam = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfYear(1), homNay));
 
-        // Số đơn hàng
-        thongKe.setSoDonHangNgay(thongKeRepository.demDonHangTheoKhoangThoiGian(homNay, homNay));
-        thongKe.setSoDonHangThang(thongKeRepository.demDonHangTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
+        Integer donHangNgay = defaultInteger(thongKeRepository.demDonHangTheoKhoangThoiGian(homNay, homNay));
+        Integer donHangThang = defaultInteger(thongKeRepository.demDonHangTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
+        Integer sanPhamThang = defaultInteger(thongKeRepository.demSanPhamTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
 
-        // Sản phẩm bán
-        thongKe.setSoSanPhamThang(thongKeRepository.demSanPhamTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
+        BigDecimal dtNgayTruoc = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.minusDays(1), homNay.minusDays(1)));
+        BigDecimal dtThangTruoc = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(
+                homNay.minusMonths(1).withDayOfMonth(1),
+                homNay.minusMonths(1).withDayOfMonth(homNay.minusMonths(1).lengthOfMonth())
+        ));
+        BigDecimal dtNamTruoc = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(
+                homNay.minusYears(1).withDayOfYear(1),
+                homNay.minusYears(1).withDayOfYear(homNay.minusYears(1).lengthOfYear())
+        ));
+        Integer spThangTruoc = defaultInteger(thongKeRepository.demSanPhamTheoKhoangThoiGian(
+                homNay.minusMonths(1).withDayOfMonth(1),
+                homNay.minusMonths(1).withDayOfMonth(homNay.minusMonths(1).lengthOfMonth())
+        ));
 
-        // Tăng trưởng
-        BigDecimal dtNgayTruoc = thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.minusDays(1), homNay.minusDays(1));
-        BigDecimal dtThangTruoc = thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.minusMonths(1).withDayOfMonth(1), homNay.minusMonths(1));
-        BigDecimal dtNamTruoc = thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.minusYears(1).withDayOfYear(1), homNay.minusYears(1));
-        Integer spThangTruoc = thongKeRepository.demSanPhamTheoKhoangThoiGian(homNay.minusMonths(1).withDayOfMonth(1), homNay.minusMonths(1));
+        // Gán lại vào DTO
+        thongKe.setDoanhThuNgay(doanhThuNgay);
+        thongKe.setDoanhThuThang(doanhThuThang);
+        thongKe.setDoanhThuNam(doanhThuNam);
+        thongKe.setSoDonHangNgay(donHangNgay);
+        thongKe.setSoDonHangThang(donHangThang);
+        thongKe.setSoSanPhamThang(sanPhamThang);
 
-        thongKe.setTangTruongNgay(tinhTangTruong(thongKe.getDoanhThuNgay(), dtNgayTruoc));
-        thongKe.setTangTruongThang(tinhTangTruong(thongKe.getDoanhThuThang(), dtThangTruoc));
-        thongKe.setTangTruongNam(tinhTangTruong(thongKe.getDoanhThuNam(), dtNamTruoc));
-        thongKe.setTangTruongSanPhamThang(tinhTangTruong(thongKe.getSoSanPhamThang(), spThangTruoc));
+        thongKe.setTangTruongNgay(tinhTangTruong(doanhThuNgay, dtNgayTruoc));
+        thongKe.setTangTruongThang(tinhTangTruong(doanhThuThang, dtThangTruoc));
+        thongKe.setTangTruongNam(tinhTangTruong(doanhThuNam, dtNamTruoc));
+        thongKe.setTangTruongSanPhamThang(tinhTangTruong(sanPhamThang, spThangTruoc));
 
         return thongKe;
     }
@@ -109,23 +121,22 @@ public class ThongKeService {
     }
 
     public List<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap() {
-        return thongKeRepository.laySanPhamTonKhoThap(50); // ngưỡng 50 sản phẩm
+        return thongKeRepository.laySanPhamTonKhoThap(30);
     }
 
     public Double layPhanTramTrangThaiDonHang(Boolean trangThai, LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         LocalDateTime startDateTime = ngayBatDau.atStartOfDay();
         LocalDateTime endDateTime = ngayKetThuc.atTime(LocalTime.MAX);
-        return thongKeRepository.tinhPhanTramTrangThaiDonHang(startDateTime, endDateTime, trangThai);
+        Double percent = thongKeRepository.tinhPhanTramTrangThaiDonHang(startDateTime, endDateTime, trangThai);
+        return percent != null ? percent : 0.0;
     }
-
 
     public List<String> layNhanBieuDo(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         return thongKeRepository.layNhanBieuDo(ngayBatDau, ngayKetThuc)
                 .stream()
-                .map(date -> date.toString()) // đảm bảo không ép sai kiểu
+                .map(LocalDate::toString)
                 .collect(Collectors.toList());
     }
-
 
     public List<Integer> layDonHangBieuDo(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         List<LocalDate> days = thongKeRepository.layNhanBieuDo(ngayBatDau, ngayKetThuc);
@@ -147,7 +158,6 @@ public class ThongKeService {
         return result;
     }
 
-    // Tính % tăng trưởng doanh thu
     private Double tinhTangTruong(BigDecimal hienTai, BigDecimal truocDo) {
         if (truocDo == null || truocDo.compareTo(BigDecimal.ZERO) == 0)
             return hienTai != null && hienTai.compareTo(BigDecimal.ZERO) > 0 ? 100.0 : 0.0;
@@ -159,12 +169,19 @@ public class ThongKeService {
                 .doubleValue();
     }
 
-    // Tính % tăng trưởng sản phẩm
     private Double tinhTangTruong(Integer hienTai, Integer truocDo) {
         if (truocDo == null || truocDo == 0)
             return hienTai != null && hienTai > 0 ? 100.0 : 0.0;
         if (hienTai == null) return -100.0;
 
         return ((double) (hienTai - truocDo) / truocDo) * 100;
+    }
+
+    private BigDecimal defaultBigDecimal(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private Integer defaultInteger(Integer value) {
+        return value != null ? value : 0;
     }
 }

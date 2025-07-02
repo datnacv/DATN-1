@@ -126,10 +126,10 @@
     <!-- Include sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+        <!-- Các phần tử khác bên trái (nếu có) -->
 
-        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
 
