@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ hàng</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .cart-item { margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        .total { font-size: 1.5em; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Giỏ hàng của bạn</h2>
+    <div th:if="${chiTietGioHang.isEmpty()}">
+        <p>Giỏ hàng của bạn trống. <a th:href="@{/}">Mua sắm ngay</a></p>
+    </div>
+    <div th:unless="${chiTietGioHang.isEmpty()}">
+        <div th:each="item : ${chiTietGioHang}" class="cart-item">
+            <div class="row">
+                <div class="col-md-2">
+                    <img th:src="${item.chiTietSanPham.urlHinhAnh}" alt="Product Image" style="width: 100px; height: auto;" th:if="${item.chiTietSanPham.urlHinhAnh != null}" th:else='@/images/default-product.jpg'>
+                </div>
+                <div class="col-md-4">
+                    <h5 th:text="${item.chiTietSanPham.tenSanPham}"></h5>
+                    <p>Màu: <span th:text="${item.chiTietSanPham.mauSac.tenMau} ?: 'Chưa có'"></span></p>
+                    <p>Size: <span th:text="${item.chiTietSanPham.kichCo.ten} ?: 'Chưa có'"></span></p>
+                </div>
+                <div class="col-md-2">
+                    <p>Giá: <span th:text="${#numbers.formatDecimal(item.gia, 0, 'COMMA', 2, 'POINT')}"></span> VNĐ</p>
+                    <p>Giảm giá: <span th:text="${#numbers.formatDecimal(item.tienGiam, 0, 'COMMA', 2, 'POINT')}"></span> VNĐ</p>
+                    <p>Số lượng: <span th:text="${item.soLuong}"></span></p>
+                </div>
+                <div class="col-md-2">
+                    <button th:onclick="'removeItem(\'' + ${item.id} + '\')'" class="btn btn-danger btn-sm">Xóa</button>
+                </div>
+            </div>
+        </div>
+        <div class="total mt-4">
+            Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'COMMA', 2, 'POINT')}"></span> VNĐ
+        </div>
+        <a th:href="@{/}" class="btn btn-primary mt-3">Quay lại trang chủ</a>
+    </div>
+    <div th:if="${error}" class="alert alert-danger mt-3" th:text="${error}"></div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function removeItem(chiTietGioHangId) {
+        if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+            $.ajax({
+                url: '/api/cart/remove/' + chiTietGioHangId,
+                type: 'POST',
+                success: function(response) {
+                    alert(response);
+                    location.reload();
+                },
+                error: function(xhr) {
+                    alert('Lỗi: ' + xhr.responseText);
+                }
+            });
+        }
+    }
+</script>
+</body>
+</html>

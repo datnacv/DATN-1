@@ -70,21 +70,17 @@ public class ThongKeController {
             }
         }
 
-        // Dữ liệu thống kê
         ThongKeDoanhThuDTO thongKe = thongKeDichVu.layThongKeDoanhThu(boLoc, ngayBatDau, ngayKetThuc);
         List<SanPhamBanChayDTO> sanPhamBanChay = thongKeDichVu.laySanPhamBanChay(boLoc, ngayBatDau, ngayKetThuc);
         List<SanPhamTonKhoThapDTO> sanPhamTonKhoThap = thongKeDichVu.laySanPhamTonKhoThap();
 
-        // Trạng thái đơn hàng (truyền đúng kiểu String tương ứng với Enum hoặc định nghĩa trạng thái trong DB)
         model.addAttribute("successPercent", thongKeDichVu.layPhanTramTrangThaiDonHang(true, ngayBatDau, ngayKetThuc));
         model.addAttribute("failedPercent", thongKeDichVu.layPhanTramTrangThaiDonHang(false, ngayBatDau, ngayKetThuc));
 
-        // Biểu đồ
         model.addAttribute("chartLabels", thongKeDichVu.layNhanBieuDo(ngayBatDau, ngayKetThuc));
         model.addAttribute("chartOrders", thongKeDichVu.layDonHangBieuDo(ngayBatDau, ngayKetThuc));
         model.addAttribute("chartProducts", thongKeDichVu.laySanPhamBieuDo(ngayBatDau, ngayKetThuc));
 
-        // Gửi về view
         model.addAttribute("stats", thongKe);
         model.addAttribute("topSellingProducts", sanPhamBanChay);
         model.addAttribute("lowStockProducts", sanPhamTonKhoThap);

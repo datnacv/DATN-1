@@ -68,7 +68,7 @@ public class ChiTietSanPhamService {
                 "JOIN FETCH ct.sanPham sp " +
                 "JOIN FETCH ct.kichCo kc " +
                 "JOIN FETCH ct.mauSac ms " +
-                "WHERE sp.id = :productId AND sp.trangThai = true");
+                "WHERE sp.id = :productId");
         Map<String, Object> params = new HashMap<>();
         params.put("productId", productId);
 
@@ -111,9 +111,6 @@ public class ChiTietSanPhamService {
         if (status != null) {
             query.append(" AND ct.trangThai = :status");
             params.put("status", status);
-        } else {
-            query.append(" AND ct.trangThai = true");
-            params.put("status", true);
         }
 
         return chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
@@ -310,37 +307,19 @@ public class ChiTietSanPhamService {
     }
 
     public List<ChiTietSanPham> findByProductId(UUID productId) {
-        SanPham sanPham = sanPhamRepo.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + productId));
-        if (!sanPham.getTrangThai()) {
-            return Collections.emptyList(); // Không trả về biến thể nếu sản phẩm không hoạt động
-        }
         return chiTietSanPhamRepo.findBySanPhamId(productId);
     }
 
     public ChiTietSanPham findById(UUID id) {
-        Optional<ChiTietSanPham> optional = chiTietSanPhamRepo.findById(id);
-        if (optional.isPresent()) {
-            ChiTietSanPham chiTiet = optional.get();
-            if (!chiTiet.getSanPham().getTrangThai()) {
-                return null; // Không trả về nếu sản phẩm mẹ không hoạt động
-            }
-            return chiTiet;
-        }
-        return null;
+        return chiTietSanPhamRepo.findById(id).orElse(null);
     }
 
     public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
-        SanPham sanPham = sanPhamRepo.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + productId));
-        if (!sanPham.getTrangThai()) {
-            return null; // Không trả về nếu sản phẩm mẹ không hoạt động
-        }
         return chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(productId, mauSacId, kichCoId);
     }
 
     public List<MauSac> findColorsByProductId(UUID productId) {
-        return findByProductId(productId)
+        return chiTietSanPhamRepo.findBySanPhamId(productId)
                 .stream()
                 .map(ChiTietSanPham::getMauSac)
                 .distinct()
@@ -348,7 +327,7 @@ public class ChiTietSanPhamService {
     }
 
     public List<KichCo> findSizesByProductId(UUID productId) {
-        return findByProductId(productId)
+        return chiTietSanPhamRepo.findBySanPhamId(productId)
                 .stream()
                 .map(ChiTietSanPham::getKichCo)
                 .distinct()
@@ -373,6 +352,10 @@ public class ChiTietSanPhamService {
             }
         }
         return list;
+    }
+
+    public List<ChiTietSanPham> findAllByTrangThai() {
+        return chiTietSanPhamRepo.findAllByTrangThai();
     }
 
     @Transactional
@@ -413,8 +396,5 @@ public class ChiTietSanPhamService {
                 }
             }
         }
-    }
-    public List<ChiTietSanPham> findAllByTrangThai() {
-        return chiTietSanPhamRepo.findAllByTrangThai();
     }
 }

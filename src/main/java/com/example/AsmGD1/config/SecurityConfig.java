@@ -74,6 +74,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login").permitAll()
                         .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
+                        .requestMatchers("/api/get-descriptor").permitAll()
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/register-face").permitAll()
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")

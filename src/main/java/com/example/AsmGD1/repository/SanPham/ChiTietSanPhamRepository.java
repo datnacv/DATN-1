@@ -1,7 +1,6 @@
 package com.example.AsmGD1.repository.SanPham;
 
 import com.example.AsmGD1.entity.ChiTietSanPham;
-import com.example.AsmGD1.entity.SanPham;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -21,13 +20,14 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
             "JOIN FETCH ct.mauSac ms " +
-            "WHERE sp.id = :idSanPham AND sp.trangThai = true AND ct.trangThai = true")
+            "WHERE sp.id = :idSanPham")
     List<ChiTietSanPham> findBySanPhamId(@Param("idSanPham") UUID idSanPham);
 
+    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.trangThai = true AND sp.trangThai = true")
+    List<ChiTietSanPham> findAllByTrangThai();
+
     @Query("SELECT ct FROM ChiTietSanPham ct " +
-            "JOIN ct.sanPham sp " +
-            "WHERE ct.sanPham.id = :productId AND ct.mauSac.id = :mauSacId AND ct.kichCo.id = :kichCoId " +
-            "AND ct.trangThai = true AND sp.trangThai = true")
+            "WHERE ct.sanPham.id = :productId AND ct.mauSac.id = :mauSacId AND ct.kichCo.id = :kichCoId")
     ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(
             @Param("productId") UUID productId,
             @Param("mauSacId") UUID mauSacId,
@@ -35,13 +35,11 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
 
     // hoadon
-    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.id = :id AND ct.trangThai = true AND sp.trangThai = true")
-    Optional<ChiTietSanPham> findById(@Param("id") UUID id);
-
-    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.id = :id AND ct.trangThai = true AND sp.trangThai = true")
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.id = :id")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ChiTietSanPham> findById(@Param("id") UUID id, LockModeType lockMode);
 
+    Optional<ChiTietSanPham> findById(UUID id);
     @Query("SELECT ct FROM ChiTietSanPham ct " +
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
@@ -52,7 +50,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "JOIN FETCH ct.tayAo ta " +
             "JOIN FETCH ct.coAo ca " +
             "JOIN FETCH ct.thuongHieu th " +
-            "WHERE sp.trangThai = true " +
+            "WHERE 1=1 " +
             "AND (:queryParams IS NULL OR (" +
             "sp.id = :productId " +
             "AND (:colorId IS NULL OR ct.mauSac.id = :colorId) " +
@@ -88,7 +86,4 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                 (Boolean) params.get("status")
         );
     }
-
-    @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.trangThai = true AND sp.trangThai = true")
-    List<ChiTietSanPham> findAllByTrangThai();
 }
