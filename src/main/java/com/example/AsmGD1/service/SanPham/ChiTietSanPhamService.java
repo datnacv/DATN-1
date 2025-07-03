@@ -133,14 +133,6 @@ public class ChiTietSanPhamService {
         ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
 
-        Map<UUID, List<MultipartFile>> colorImagesMap = new HashMap<>();
-        for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
-            List<MultipartFile> images = variationDto.getImageFiles();
-            if (images != null && !images.isEmpty() && !colorImagesMap.containsKey(variationDto.getColorId())) {
-                colorImagesMap.put(variationDto.getColorId(), new ArrayList<>(images));
-            }
-        }
-
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
                     variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
@@ -173,11 +165,13 @@ public class ChiTietSanPhamService {
             try {
                 QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
             } catch (IOException | WriterException e) {
-                System.err.println("❌ Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId());
-                e.printStackTrace();
+                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId(), e);
             }
 
-            List<MultipartFile> variationImages = colorImagesMap.getOrDefault(variationDto.getColorId(), new ArrayList<>());
+            // Lưu ảnh cho biến thể dựa trên colorId
+            List<MultipartFile> variationImages = batchDto.getColorImages() != null
+                    ? batchDto.getColorImages().getOrDefault(variationDto.getColorId(), new ArrayList<>())
+                    : new ArrayList<>();
             if (!variationImages.isEmpty()) {
                 saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
