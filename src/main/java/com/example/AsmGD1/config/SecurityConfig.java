@@ -1,6 +1,8 @@
 package com.example.AsmGD1.config;
 
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.CustomUserDetailsService;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,12 +13,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 @Configuration
 public class SecurityConfig {
@@ -56,7 +58,6 @@ public class SecurityConfig {
         };
     }
 
-    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
@@ -67,34 +68,34 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http,
-                                                           CustomerAccessBlockFilter blockFilter) throws Exception {
+                                                           CustomerAccessBlockFilter blockFilter,
+                                                           NguoiDungService nguoiDungService) throws Exception {
         http
                 .securityMatcher("/acvstore/**")
                 .addFilterBefore(blockFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login").permitAll()
-                        .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
-                        .requestMatchers("/api/get-descriptor").permitAll()
-                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/register-face").permitAll()
-                        .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
+                        .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/acvstore/login")
                         .loginProcessingUrl("/acvstore/login")
-                        .defaultSuccessUrl("/acvstore/redirect", true)
-                        .failureUrl("/acvstore/login?error=invalidCredentials")
-                        .loginPage("/acvstore/login")
-                        .loginProcessingUrl("/acvstore/login")
                         .successHandler((request, response, authentication) -> {
-                            boolean isAdmin = authentication.getAuthorities().stream()
-                                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
-                            if (isAdmin) {
-                                response.sendRedirect("/acvstore/employees/verify-face");
+                            String tenDangNhap = authentication.getName();
+                            NguoiDung nguoiDung = nguoiDungService.findByTenDangNhap(tenDangNhap);
+
+                            if (nguoiDung != null) {
+                                byte[] descriptor = nguoiDung.getFaceDescriptor();
+                                if (descriptor == null || descriptor.length == 0) {
+                                    response.sendRedirect("/acvstore/register-face");
+                                } else {
+                                    response.sendRedirect("/acvstore/verify-face");
+                                }
                             } else {
-                                response.sendRedirect("/acvstore/redirect");
+                                response.sendRedirect("/acvstore/login?error=notfound");
                             }
                         })
                         .failureUrl("/acvstore/login?error=invalidCredentials")
@@ -172,17 +173,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/**") // ✅ Áp dụng cho các API
+                .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // ✅ Cho phép toàn bộ API truy cập công khai
+                        .anyRequest().permitAll()
                 )
                 .csrf(csrf -> csrf.disable());
 
         return http.build();
     }
 
-
-    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -238,6 +237,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // ⚠️ Dùng BCrypt trong môi trường thực tế
+        return NoOpPasswordEncoder.getInstance(); // ⚠️ Đổi thành BCrypt trong thực tế
     }
 }

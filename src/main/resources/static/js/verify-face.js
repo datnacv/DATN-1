@@ -1,141 +1,137 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const video = document.getElementById("video");
     const resultDiv = document.getElementById("result");
-    const username = "admin";
+    const username = "admin"; // 👈 Bạn có thể truyền động từ backend xuống thay vì hardcode
 
-    console.log("🚀 Starting face verification for:", username);
+    console.log("🚀 Bắt đầu xác minh khuôn mặt cho:", username);
 
     try {
-        resultDiv.textContent = "Đang tải models...";
+        resultDiv.textContent = "⏳ Đang tải models...";
         await Promise.all([
             faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
             faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
             faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
         ]);
-        console.log("✅ Đã load xong models");
+        console.log("✅ Đã load models thành công");
 
-        resultDiv.textContent = "Đang khởi động camera...";
+        resultDiv.textContent = "⏳ Đang mở camera...";
         const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
         video.srcObject = stream;
-        console.log("✅ Camera started successfully");
+        console.log("📷 Camera đã hoạt động");
+
     } catch (e) {
-        console.error("❌ Lỗi khi load models hoặc camera:", e);
+        console.error("❌ Lỗi khi khởi tạo camera/models:", e);
         resultDiv.textContent = "Lỗi: " + e.message;
         return;
     }
 
     video.addEventListener("play", async () => {
-        console.log("📹 Video started playing");
-
         const canvas = document.getElementById("overlay");
         const displaySize = { width: 600, height: 450 };
         faceapi.matchDimensions(canvas, displaySize);
 
         try {
-            resultDiv.textContent = "Đang tải dữ liệu khuôn mặt...";
-            const descriptorResponse = await fetch(`/api/get-descriptor?username=${encodeURIComponent(username)}`);
+            resultDiv.textContent = "⏳ Đang lấy dữ liệu khuôn mặt từ server...";
+            const response = await fetch(`/api/get-descriptor?username=${encodeURIComponent(username)}`);
+            const data = await response.json();
 
-            if (!descriptorResponse.ok) {
-                const errorData = await descriptorResponse.json().catch(() => ({}));
-                throw new Error(`Server error: ${descriptorResponse.status} - ${errorData.message || 'Unknown error'}`);
+            if (!response.ok || !data.descriptors || !Array.isArray(data.descriptors) || data.descriptors.length === 0) {
+                throw new Error(data.message || "Không tìm thấy dữ liệu khuôn mặt");
             }
 
-            const descriptorData = await descriptorResponse.json();
-            if (!descriptorData.descriptors || !Array.isArray(descriptorData.descriptors) || descriptorData.descriptors.length === 0) {
-                throw new Error("Invalid descriptor data format");
-            }
-
-            const labeledDescriptors = new faceapi.LabeledFaceDescriptors(
+            const labeledDescriptor = new faceapi.LabeledFaceDescriptors(
                 username,
-                descriptorData.descriptors.map(d => new Float32Array(d))
+                data.descriptors.map(d => new Float32Array(d))
             );
-            const faceMatcher = new faceapi.FaceMatcher([labeledDescriptors], 0.6);
+            const faceMatcher = new faceapi.FaceMatcher([labeledDescriptor], 0.6);
 
-            resultDiv.textContent = "Đang nhận diện khuôn mặt...";
+            resultDiv.textContent = "👁️ Đang xác minh khuôn mặt...";
 
-            let verificationAttempts = 0;
-            const maxAttempts = 3;
             let consecutiveMatches = 0;
-            let stopDetection = false;
+            const requiredMatches = 3;
+            let attempts = 0;
+            const maxAttempts = 5;
+            let stop = false;
 
-            const detectFace = async () => {
-                if (stopDetection) return;
+            const detectLoop = async () => {
+                if (stop) return;
 
                 const detections = await faceapi
                     .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
                     .withFaceLandmarks()
                     .withFaceDescriptors();
 
-                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                const resized = faceapi.resizeResults(detections, displaySize);
                 const ctx = canvas.getContext("2d");
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 if (detections.length === 0) {
-                    resultDiv.textContent = "Không phát hiện khuôn mặt. Vui lòng đối mặt với camera.";
+                    resultDiv.textContent = "😶 Không phát hiện khuôn mặt. Vui lòng đối diện camera.";
                     consecutiveMatches = 0;
-                    requestAnimationFrame(detectFace);
+                    requestAnimationFrame(detectLoop);
                     return;
                 }
 
-                const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
-                let foundMatch = false;
+                const results = resized.map(d => faceMatcher.findBestMatch(d.descriptor));
+                let matched = false;
 
                 results.forEach((result, i) => {
-                    const box = resizedDetections[i].detection.box;
-                    const isMatch = result.label === username && result.distance < 0.6;
+                    const box = resized[i].detection.box;
+                    const match = result.label === username && result.distance < 0.6;
+
                     const drawBox = new faceapi.draw.DrawBox(box, {
-                        label: `${result.label} (${result.distance.toFixed(2)})`,
-                        boxColor: isMatch ? '#00ff00' : '#ff0000'
+                        label: match ? `✅ ${result.label} (${result.distance.toFixed(2)})` : `❌ ${result.label}`,
+                        boxColor: match ? "#00ff00" : "#ff0000"
                     });
                     drawBox.draw(canvas);
 
-                    if (isMatch) {
-                        foundMatch = true;
+                    if (match) {
+                        matched = true;
                         consecutiveMatches++;
-                        resultDiv.textContent = `Đã nhận diện: ${result.label} (${consecutiveMatches}/3)`;
+                        resultDiv.textContent = `✅ Đã khớp (${consecutiveMatches}/${requiredMatches})`;
 
-                        if (consecutiveMatches >= 3) {
-                            stopDetection = true;
-                            resultDiv.textContent = "✅ Xác minh thành công! Đang chuyển hướng...";
+                        if (consecutiveMatches >= requiredMatches) {
+                            stop = true;
+                            resultDiv.textContent = "🎉 Xác minh thành công!";
 
+                            // Gửi xác minh lên server
                             fetch("/acvstore/verify-success", { method: "POST" })
                                 .then(res => res.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        setTimeout(() => {
-                                            window.location.href = "/acvstore/thong-ke";
-                                        }, 1000);
+                                .then(res => {
+                                    if (res.success) {
+                                        resultDiv.textContent = "✅ Đã xác minh. Chuyển hướng...";
+                                        setTimeout(() => window.location.href = "/acvstore/thong-ke", 1000);
                                     } else {
-                                        resultDiv.textContent = "Lỗi xác minh. Vui lòng thử lại.";
+                                        resultDiv.textContent = "❌ Xác minh thất bại!";
                                     }
                                 })
                                 .catch(err => {
-                                    console.error("❌ Lỗi gửi xác minh:", err);
-                                    resultDiv.textContent = "Lỗi kết nối. Vui lòng thử lại.";
+                                    console.error("Lỗi gửi xác minh:", err);
+                                    resultDiv.textContent = "❌ Lỗi xác minh session.";
                                 });
                         }
                     }
                 });
 
-                if (!foundMatch) {
+                if (!matched) {
                     consecutiveMatches = 0;
-                    verificationAttempts++;
-                    resultDiv.textContent = `Khuôn mặt không khớp. Thử lại... (${verificationAttempts}/${maxAttempts})`;
+                    attempts++;
+                    resultDiv.textContent = `⚠️ Không khớp. Thử lại... (${attempts}/${maxAttempts})`;
 
-                    if (verificationAttempts >= maxAttempts) {
-                        stopDetection = true;
-                        resultDiv.textContent = "❌ Xác minh thất bại. Vui lòng liên hệ quản trị viên.";
+                    if (attempts >= maxAttempts) {
+                        stop = true;
+                        resultDiv.textContent = "❌ Xác minh thất bại. Vui lòng thử lại hoặc liên hệ quản trị viên.";
                     }
                 }
 
-                if (!stopDetection) requestAnimationFrame(detectFace);
+                if (!stop) requestAnimationFrame(detectLoop);
             };
 
-            detectFace();
+            detectLoop();
 
-        } catch (error) {
-            console.error("❌ Lỗi tải descriptor:", error);
-            resultDiv.textContent = `Lỗi: ${error.message}`;
+        } catch (err) {
+            console.error("❌ Lỗi khi tải descriptor:", err);
+            resultDiv.textContent = "❌ " + (err.message || "Lỗi không xác định");
         }
     });
 });

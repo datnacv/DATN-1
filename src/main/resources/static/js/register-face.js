@@ -1,100 +1,105 @@
-const video = document.getElementById('video');
-const canvas = document.getElementById('overlay');
-const resultDiv = document.getElementById('result');
+// register-face.js
+const video = document.getElementById("video");
+const canvas = document.getElementById("overlay");
+const resultDiv = document.getElementById("result");
+const username = document.body.dataset.username;
+let hasRegistered = false;
 
-// Lấy username từ Thymeleaf hoặc URL
-const urlParams = new URLSearchParams(window.location.search);
-const username = urlParams.get('username') || (document.querySelector('body').dataset.username || 'unknown');
-
-let isRegistered = false;
-
-// Load face-api models
 Promise.all([
-    faceapi.nets.tinyFaceDetector.load('/models'),
-    faceapi.nets.faceLandmark68Net.load('/models'),
-    faceapi.nets.faceRecognitionNet.load('/models')
-])
-    .then(startVideo)
-    .catch(err => {
-        console.error("Lỗi tải model:", err);
-        resultDiv.innerHTML = `<span style="color: red">❌ Lỗi tải model nhận diện</span>`;
-    });
+    faceapi.nets.tinyFaceDetector.loadFromUri("/models"),
+    faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
+    faceapi.nets.faceRecognitionNet.loadFromUri("/models")
+]).then(startVideo);
 
 function startVideo() {
     navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
+        .then((stream) => {
             video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                video.play();
+                startFaceDetection();
+            };
         })
-        .catch(err => {
-            console.error("Không thể mở webcam:", err);
-            resultDiv.innerHTML = `<span style="color: red">❌ Không thể mở webcam</span>`;
+        .catch((err) => {
+            console.error("Không thể truy cập camera", err);
+            showError("❌ Không thể truy cập camera.");
         });
 }
 
-video.addEventListener('play', () => {
-    const displaySize = { width: video.videoWidth, height: video.videoHeight };
+function stopVideoStream() {
+    const stream = video.srcObject;
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        video.srcObject = null;
+    }
+}
+
+function showSuccess(message) {
+    resultDiv.textContent = message;
+    resultDiv.className = "text-success fw-bold mt-3";
+}
+
+function showError(message) {
+    resultDiv.textContent = message;
+    resultDiv.className = "text-danger fw-bold mt-3";
+}
+
+function startFaceDetection() {
+    const displaySize = { width: video.width, height: video.height };
     faceapi.matchDimensions(canvas, displaySize);
-    const ctx = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
 
-    let lastProcessed = 0;
-    const targetFPS = 15;
-    const frameInterval = 1000 / targetFPS;
-
-    async function detectAndRegister(timestamp) {
-        if (isRegistered) return;
-
-        if (timestamp - lastProcessed < frameInterval) {
-            requestAnimationFrame(detectAndRegister);
-            return;
-        }
-        lastProcessed = timestamp;
+    const interval = setInterval(async () => {
+        if (hasRegistered) return;
 
         const detection = await faceapi
             .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
             .withFaceLandmarks()
             .withFaceDescriptor();
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        context.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (detection && detection.descriptor) {
-            const resized = faceapi.resizeResults(detection, displaySize);
-            faceapi.draw.drawDetections(canvas, resized);
-            faceapi.draw.drawFaceLandmarks(canvas, resized);
+        if (detection) {
+            const { x, y, width, height } = detection.detection.box;
+            const centerX = x + width / 2;
+            const centerY = y + height / 2;
+            const radius = Math.max(width, height) / 2;
 
-            resultDiv.innerHTML = `<span style="color: blue">Đang xử lý khuôn mặt...</span>`;
+            context.beginPath();
+            context.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            context.lineWidth = 4;
+            context.strokeStyle = "#0d6efd";
+            context.shadowColor = "#0d6efd";
+            context.shadowBlur = 20;
+            context.stroke();
+            context.shadowBlur = 0;
 
+            hasRegistered = true;
+            showSuccess("📤 Đang lưu khuôn mặt...");
+
+            const descriptor = Array.from(detection.descriptor);
             try {
-                const response = await fetch('/api/register-descriptor', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        username: username,
-                        descriptor: Array.from(detection.descriptor)
-                    })
+                const response = await fetch("/api/register-descriptor", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, descriptor })
                 });
 
-                const data = await response.json();
-                if (data.success) {
-                    resultDiv.innerHTML = `<span style="color: green">✅ ${data.message}</span>`;
-                    isRegistered = true;
+                if (response.ok) {
+                    showSuccess("✅ Đăng ký thành công! Đang chuyển trang...");
+                    stopVideoStream();
+                    clearInterval(interval);
                     setTimeout(() => {
-                        window.location.href = "/acvstore/login";
-                    }, 2000);
+                        window.location.href = "/xac-thuc-khuon-mat";
+                    }, 1500);
                 } else {
-                    resultDiv.innerHTML = `<span style="color: red">❌ ${data.message || 'Đăng ký thất bại'}</span>`;
+                    throw new Error("Lỗi khi lưu descriptor");
                 }
             } catch (err) {
-                console.error("Lỗi gửi descriptor:", err);
-                resultDiv.innerHTML = `<span style="color: red">❌ Gửi dữ liệu thất bại</span>`;
+                console.error(err);
+                showError("❌ Không thể lưu khuôn mặt. Vui lòng thử lại.");
+                hasRegistered = false;
             }
-        } else {
-            resultDiv.innerHTML = `<span style="color: orange">Không phát hiện khuôn mặt</span>`;
         }
-
-        if (!isRegistered) {
-            requestAnimationFrame(detectAndRegister);
-        }
-    }
-
-    requestAnimationFrame(detectAndRegister);
-});
+    }, 1000);
+}
