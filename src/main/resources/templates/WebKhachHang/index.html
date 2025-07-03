@@ -494,7 +494,43 @@
     </a>
   </div>
 </section>
+<!-- Messenger Plugin chat -->
+<div id="fb-root"></div>
+<div id="fb-customer-chat" class="fb-customerchat"></div>
 
+<script>
+  var chatbox = document.getElementById('fb-customer-chat');
+  chatbox.setAttribute("page_id", "709877812209647");
+  chatbox.setAttribute("attribution", "biz_inbox");
+</script>
+
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      xfbml            : true,
+      version          : 'v19.0'
+    });
+  };
+
+  (function(d, s, id) {
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) return;
+    js = d.createElement(s); js.id = id;
+    js.src = 'https://connect.facebook.net/vi_VN/sdk/xfbml.customerchat.js';
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+<script type="text/javascript">
+  (function(d, m){
+    var kommunicateSettings =
+            {"appId":"316342495390b23df154082d388f63369","popupWidget":true,"automaticChatOpenOnNavigation":true};
+    var s = document.createElement("script"); s.type = "text/javascript"; s.async = true;
+    s.src = "https://widget.kommunicate.io/v2/kommunicate.app";
+    var h = document.getElementsByTagName("head")[0]; h.appendChild(s);
+    window.kommunicate = m; m._globals = kommunicateSettings;
+  })(document, window.kommunicate || {});
+  /* NOTE : Use web server to view HTML files as real-time update will not work if you directly open the HTML file in the browser. */
+</script>
 <!-- Enhanced Footer -->
 <footer class="text-white py-12" style="background: linear-gradient(135deg, #181e34, #1a1a7e);">
   <div class="container mx-auto">
