@@ -23,6 +23,8 @@ public class KhachhangSanPhamService {
     public List<SanPhamDto> getNewProducts() {
         List<SanPham> sanPhams = khachHangSanPhamRepository.findNewProducts();
         return sanPhams.stream()
+                .filter(sanPham -> khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPham.getId()).stream()
+                        .anyMatch(chiTiet -> chiTiet.getTrangThai()))
                 .map(this::convertToSanPhamDto)
                 .limit(10) // Giới hạn 10 sản phẩm mới
                 .collect(Collectors.toList());
@@ -32,6 +34,11 @@ public class KhachhangSanPhamService {
     public List<SanPhamDto> getBestSellingProducts() {
         List<Object[]> results = khachHangSanPhamRepository.findBestSellingProducts();
         return results.stream()
+                .filter(result -> {
+                    SanPham sanPham = (SanPham) result[0];
+                    return khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPham.getId()).stream()
+                            .anyMatch(chiTiet -> chiTiet.getTrangThai());
+                })
                 .map(result -> {
                     SanPham sanPham = (SanPham) result[0];
                     Long totalSold = (Long) result[1];

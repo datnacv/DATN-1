@@ -12,12 +12,17 @@ import java.math.BigDecimal;
 
 @Repository
 public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID> {
-    // Truy vấn sản phẩm đang hoạt động
-    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d WHERE p.trangThai = true")
+    // Truy vấn sản phẩm đang hoạt động và có ít nhất một ChiTietSanPham hoạt động
+    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d " +
+            "WHERE p.trangThai = true " +
+            "AND EXISTS (SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = p.id AND c.trangThai = true)")
     List<SanPham> findActiveProducts();
 
     // Truy vấn sản phẩm mới (sắp xếp theo thoi_gian_tao giảm dần, lấy tối đa 10 sản phẩm)
-    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d WHERE p.trangThai = true ORDER BY p.thoiGianTao DESC")
+    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d " +
+            "WHERE p.trangThai = true " +
+            "AND EXISTS (SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = p.id AND c.trangThai = true) " +
+            "ORDER BY p.thoiGianTao DESC")
     List<SanPham> findNewProducts();
 
     // Truy vấn sản phẩm bán chạy (dựa trên tổng số lượng bán từ chi_tiet_don_hang)
@@ -25,7 +30,7 @@ public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID>
             "FROM SanPham p " +
             "JOIN ChiTietSanPham ctsp ON p.id = ctsp.sanPham.id " +
             "JOIN ChiTietDonHang ctdh ON ctsp.id = ctdh.chiTietSanPham.id " +
-            "WHERE p.trangThai = true " +
+            "WHERE p.trangThai = true AND ctsp.trangThai = true " +
             "GROUP BY p " +
             "ORDER BY totalSold DESC")
     List<Object[]> findBestSellingProducts();
