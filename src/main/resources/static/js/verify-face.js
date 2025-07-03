@@ -98,7 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                             stopDetection = true;
                             resultDiv.textContent = "✅ Xác minh thành công! Đang chuyển hướng...";
 
-                            fetch("/acvstore/employees/verify-success", { method: "POST" })
+                            fetch("/acvstore/verify-success", { method: "POST" })
                                 .then(res => res.json())
                                 .then(data => {
                                     if (data.success) {

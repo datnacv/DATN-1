@@ -12,7 +12,7 @@ import java.util.Map;
 @Controller
 public class FaceVerificationController {
 
-    @PostMapping("/acvstore/employees/verify-success")
+    @PostMapping("/acvstore/verify-success") //
     @ResponseBody
     public ResponseEntity<?> setFaceVerified(HttpSession session, Authentication auth) {
         String username = auth.getName();
@@ -23,5 +23,6 @@ public class FaceVerificationController {
         result.put("success", true);
         return ResponseEntity.ok(result);
     }
+
 
 }
