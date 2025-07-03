@@ -1,4 +1,5 @@
-﻿USE Master;
+﻿
+USE Master;
 GO
 DROP DATABASE IF EXISTS ACVStore;
 GO
@@ -219,6 +220,14 @@ CREATE TABLE hoa_don (
                          FOREIGN KEY (id_ma_giam_gia) REFERENCES chien_dich_giam_gia(id),
                          FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
+CREATE TABLE lich_su_hoa_don (
+                                 id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                 id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+                                 trang_thai NVARCHAR(50) NOT NULL,
+                                 thoi_gian DATETIME NOT NULL,
+                                 ghi_chu NVARCHAR(MAX),
+                                 FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id)
+);
 
 -- 20. Bảng ticket giảm giá của người dùng
 CREATE TABLE phieu_giam_gia_cua_nguoi_dung (
@@ -254,18 +263,87 @@ CREATE TABLE don_hang_tam (
                               FOREIGN KEY (id_khach_hang) REFERENCES nguoi_dung(id),
                               FOREIGN KEY (id_phieu_giam_gia) REFERENCES phieu_giam_gia(id)
 );
--- Thêm trường tabId vào bảng don_hang_tam
-ALTER TABLE don_hang_tam
-    ADD tabId NVARCHAR(20) NOT NULL;
-select * from nguoi_dung
-select * from don_hang where id_phuong_thuc_thanh_toan = '550e8400-e29b-41d4-a716-446655440018'
-update phieu_giam_gia set so_luong = 100 where id = 'a2920bb3-f121-4b17-9f56-2f96d124d36c'
-select * from phuong_thuc_thanh_toan
+
+-- gio hang
+CREATE TABLE gio_hang (
+                          id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                          id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                          ma_gio_hang NVARCHAR(20) NOT NULL,
+                          tong_tien DECIMAL(15, 2) DEFAULT 0,
+                          thoi_gian_tao DATETIME NOT NULL DEFAULT GETDATE(),
+                          trang_thai BIT NOT NULL DEFAULT 1,
+                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
+);
+
+CREATE TABLE gio_hang_chi_tiet (
+                                   id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                   id_giohang UNIQUEIDENTIFIER NOT NULL,
+                                   id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                   so_luong INT NOT NULL DEFAULT 1,
+                                   gia DECIMAL(10, 2) NOT NULL,
+                                   tien_giam DECIMAL(10, 2) DEFAULT 0,
+                                   ghi_chu NVARCHAR(MAX),
+                                   thoi_gian_them DATETIME NOT NULL DEFAULT GETDATE(),
+                                   trang_thai BIT NOT NULL DEFAULT 1,
+                                   FOREIGN KEY (id_giohang) REFERENCES gio_hang(id) ON DELETE CASCADE,
+                                   FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
+);
+CREATE TABLE thong_ke_doanh_thu_chi_tiet (
+                                             id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                             ngay_thanh_toan DATE NOT NULL,
+                                             id_chi_tiet_don_hang UNIQUEIDENTIFIER NOT NULL,
+                                             id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                             id_san_pham UNIQUEIDENTIFIER NOT NULL,
+                                             ten_san_pham NVARCHAR(100) NOT NULL,
+                                             kich_co NVARCHAR(50) NOT NULL,
+                                             mau_sac NVARCHAR(50) NOT NULL,
+                                             so_luong_da_ban INT NOT NULL DEFAULT 0,
+                                             doanh_thu NUMERIC(38,2) NOT NULL DEFAULT 0.00,
+                                             so_luong_ton_kho INT NOT NULL DEFAULT 0,
+                                             image_url NVARCHAR(MAX),
+                                             FOREIGN KEY (id_chi_tiet_don_hang) REFERENCES chi_tiet_don_hang(id) ON DELETE CASCADE,
+                                             FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
+                                             FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
+);
+-- CREATE TABLE thong_bao_nhom (
+--                                 id UNIQUEIDENTIFIER PRIMARY KEY,
+--                                 id_don_hang UNIQUEIDENTIFIER NOT NULL,
+--                                 vai_tro_nhan NVARCHAR(50) NOT NULL CHECK (vai_tro_nhan IN (N'admin', N'employee', N'customer')),
+--                                 tieu_de NVARCHAR(200) NOT NULL,
+--                                 noi_dung NVARCHAR(MAX) NOT NULL,
+--                                 thoi_gian_tao DATETIME NOT NULL,
+--                                 trang_thai NVARCHAR(50) NOT NULL DEFAULT N'Mới',
+--                                 FOREIGN KEY (id_don_hang) REFERENCES don_hang(id) ON DELETE CASCADE
+-- );
+
+-- -- Tạo bảng chi_tiet_thong_bao_nhom
+-- CREATE TABLE chi_tiet_thong_bao_nhom (
+--                                          id UNIQUEIDENTIFIER PRIMARY KEY,
+--                                          id_thong_bao_nhom UNIQUEIDENTIFIER NOT NULL,
+--                                          id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+--                                          da_xem BIT NOT NULL DEFAULT 0,
+--                                          FOREIGN KEY (id_thong_bao_nhom) REFERENCES thong_bao_nhom(id) ON DELETE CASCADE,
+--                                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
+-- );
+
+
+
+-- -- Chèn thông báo nhóm
+-- INSERT INTO thong_bao_nhom (id, id_don_hang, vai_tro_nhan, tieu_de, noi_dung, thoi_gian_tao, trang_thai)
+-- VALUES (@id_thong_bao_nhom, @id_don_hang, N'admin', N'Đơn hàng mới',
+--         N'Có đơn hàng mới với mã ' + @ma_don_hang, GETDATE(), N'Mới');
+
+-- -- Chèn chi tiết thông báo cho từng admin có trạng thái hoạt động
+-- INSERT INTO chi_tiet_thong_bao_nhom (id, id_thong_bao_nhom, id_nguoi_dung, da_xem)
+-- SELECT NEWID(), @id_thong_bao_nhom, id, 0
+-- FROM nguoi_dung
+-- WHERE vai_tro = N'admin' AND trang_thai = 1;
+-- END;
 -- Insert data with explicit UUIDs
 -- 1. Insert vào bảng chat_lieu
-    INSERT INTO chat_lieu (id, ten_chat_lieu) VALUES
-    ('550E8400-E29B-41D4-A716-446655440000', N'Cotton'),
-    ('550E8400-E29B-41D4-A716-446655440001', N'Polyester');
+INSERT INTO chat_lieu (id, ten_chat_lieu) VALUES
+                                              ('550E8400-E29B-41D4-A716-446655440000', N'Cotton'),
+                                              ('550E8400-E29B-41D4-A716-446655440001', N'Polyester');
 
 -- 2. Insert vào bảng mau_sac
 INSERT INTO mau_sac (id, ten_mau) VALUES
@@ -402,39 +480,8 @@ VALUES (
            GETDATE()
        );
 
-ALTER TABLE don_hang
-ALTER COLUMN phi_van_chuyen DECIMAL(15,2);
 
-ALTER TABLE don_hang
-ALTER COLUMN so_tien_khach_dua DECIMAL(15,2);
 
-ALTER TABLE don_hang
-ALTER COLUMN tien_giam DECIMAL(15,2);
-
-ALTER TABLE don_hang
-ALTER COLUMN tong_tien DECIMAL(15,2);
-
-ALTER TABLE don_hang_tam
-ALTER COLUMN tong_tien DECIMAL(15,2);
-
-ALTER TABLE don_hang_tam
-ALTER COLUMN phi_van_chuyen DECIMAL(15,2);
-
-ALTER TABLE phieu_giam_gia_cua_nguoi_dung
-    ADD so_luot_con_lai INT DEFAULT 0;
-ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
-select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
-select * from san_pham where id = '550e8400-e29b-41d4-a716-446655440021'
-
--- Add dia_chi_giao_hang column to don_hang (nullable to avoid impacting existing records)
-
-ALTER TABLE don_hang ADD dia_chi_giao_hang NVARCHAR(MAX);
--- Cập nhật tabId mặc định cho các bản ghi hiện có
-UPDATE don_hang_tam
-SET tabId = 'don1'
-WHERE tabId IS NULL;
-
-select * from don_hang
 
 
 SELECT id, ho_ten, email, vai_tro, trang_thai FROM nguoi_dung WHERE vai_tro = 'CUSTOMER';
@@ -452,7 +499,9 @@ VALUES
     (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', N'789 DEF, Đà Nẵng', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
     (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', N'321 GHI, Cần Thơ', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
     (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
-
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung
+    ADD so_luot_con_lai INT DEFAULT 0;
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
 
 select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
 select * from mau_sac where id = '550e8400-e29b-41d4-a716-446655440004'
@@ -463,10 +512,13 @@ select * from don_hang
 select * from nguoi_dung
 
 -- INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai, da_gui_mail)
--- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646',
+-- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646', 
 --         (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999'), 1, 0);
 
-
+SELECT id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai
+FROM phieu_giam_gia_cua_nguoi_dung
+WHERE id_phieu_giam_gia = '5aa57234-8476-451a-a008-1a4128682646'
+  AND id_nguoi_dung = (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999');
 update phieu_giam_gia
 set so_luong = 100 WHERE id = '5aa57234-8476-451a-a008-1a4128682646';
 
@@ -502,34 +554,9 @@ INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
                                                                            ('550e8400-e29b-41d4-a716-446655440047', '550e8400-e29b-41d4-a716-446655440044', N'https://example.com/hoodie1.jpg'),
                                                                            ('550e8400-e29b-41d4-a716-446655440048', '550e8400-e29b-41d4-a716-446655440045', N'https://example.com/jacket1.jpg');
 
-select * from nguoi_dung
-SELECT * FROM san_pham WHERE id = '550e8400-e29b-41d4-a716-446655440020';
-select * from don_hang_tam
-select * from san_pham
 
-CREATE TABLE thong_ke_doanh_thu_chi_tiet (
-                                             id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-                                             ngay_thanh_toan DATE NOT NULL,
-                                             id_hoa_don UNIQUEIDENTIFIER NOT NULL,
-                                             id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
-                                             id_san_pham UNIQUEIDENTIFIER NOT NULL,
-                                             ten_san_pham NVARCHAR(100) NOT NULL,
-                                             kich_co NVARCHAR(50) NOT NULL,
-                                             mau_sac NVARCHAR(50) NOT NULL,
-                                             so_luong_da_ban INT NOT NULL DEFAULT 0,
-                                             doanh_thu NUMERIC(38,2) NOT NULL DEFAULT 0.00,
-                                             so_luong_ton_kho INT NOT NULL DEFAULT 0,
-                                             image_url NVARCHAR(MAX),
-                                             FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id),
-                                             FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
-                                             FOREIGN KEY (id_san_pham) REFERENCES san_pham(id)
-);
-SELECT id, ho_ten, email FROM nguoi_dung WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
-UPDATE nguoi_dung
-SET email = 'namhaihoang3103@gmail.com'
-WHERE id = 'a6295043-02c3-457a-b484-02af5152358d';
-UPDATE nguoi_dung
-SET vai_tro = UPPER(vai_tro)
-WHERE vai_tro IN ('admin', 'employee', 'customer');
 
-SELECT * FROM nguoi_dung
+
+-- Bước 4: Kiểm tra bằng cách chèn một đơn hàng mới
+INSERT INTO don_hang (id, id_nguoi_dung, ma_don_hang, trang_thai_thanh_toan, phi_van_chuyen, id_phuong_thuc_thanh_toan, so_tien_khach_dua, thoi_gian_thanh_toan, thoi_gian_tao, tien_giam, tong_tien, phuong_thuc_ban_hang)
+VALUES (NEWID(), '550E8400-E29B-41D4-A716-446655440014', N'DH006', 1, 30000.00, '550E8400-E29B-41D4-A716-446655440017', 230000.00, GETDATE(), GETDATE(), 20000.00, 230000.00, N'Giao hàng');
