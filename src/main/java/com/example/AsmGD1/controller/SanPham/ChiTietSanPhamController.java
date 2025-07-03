@@ -3,6 +3,7 @@ package com.example.AsmGD1.controller.SanPham;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.entity.*;
+import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ public class ChiTietSanPhamController {
     @Autowired private KieuDangService kieuDangService;
     @Autowired private ThuongHieuService thuongHieuService;
     @Autowired private DanhMucService danhMucService;
+    @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository; // Thêm repository
 
     @GetMapping
     public String xemTatCa(Model model,
@@ -271,6 +273,29 @@ public class ChiTietSanPhamController {
             response.put("success", false);
             response.put("message", "Lỗi khi thêm sản phẩm: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    // Thêm endpoint để lấy chiTietSanPhamId cho phía client
+    @GetMapping("/api")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getChiTietSanPhamId(
+            @RequestParam("sanPhamId") UUID sanPhamId,
+            @RequestParam("sizeId") UUID sizeId,
+            @RequestParam("colorId") UUID colorId) {
+        try {
+            ChiTietSanPham chiTiet = khachHangSanPhamRepository.findBySanPhamIdAndSizeIdAndColorId(sanPhamId, sizeId, colorId);
+            if (chiTiet == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại"));
+            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", chiTiet.getId());
+            response.put("gia", chiTiet.getGia());
+            response.put("soLuongTonKho", chiTiet.getSoLuongTonKho());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy chi tiết sản phẩm với sanPhamId={}, sizeId={}, colorId={}: ", sanPhamId, sizeId, colorId, e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy chi tiết sản phẩm: " + e.getMessage()));
         }
     }
 }

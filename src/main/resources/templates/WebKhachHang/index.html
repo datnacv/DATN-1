@@ -14,29 +14,26 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Custom styles */
     .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
     .product-card { transition: transform 0.3s; }
     .product-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .badge-new { background-color: #f97316; }
-    .size-option.active { background-color: #f97316; color: white; }
+    .size-option.active, .color-option.active { background-color: #f97316; color: white; }
     .swiper-slide img { object-fit: cover; height: 400px; }
     .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
     .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
     .dropdown:hover .dropdown-menu { display: block; }
-    body {
-      padding-top: 100px; /* Tổng chiều cao của ticker (30px) + navbar (70px) */
-    }
+    body { padding-top: 100px; }
     @media (max-width: 640px) {
       .swiper-slide img { height: 200px; }
       .product-grid { grid-template-columns: repeat(2, 1fr); }
       .dropdown-menu { width: 100%; left: 0; }
-      body { padding-top: 80px; } /* Điều chỉnh cho mobile */
+      body { padding-top: 80px; }
     }
   </style>
 </head>
 <body class="bg-gray-100">
-<!-- Ticker (Thanh chạy chạy) -->
+<!-- Ticker -->
 <div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
   <marquee behavior="scroll" direction="left" scrollamount="5">
     🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
@@ -46,9 +43,7 @@
 <!-- Header -->
 <nav class="navbar fixed-top shadow-lg mt-10 z-40">
   <div class="container mx-auto flex items-center justify-between py-2 px-4">
-    <!-- Logo -->
     <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
-    <!-- Menu Dropdown -->
     <div class="relative dropdown">
       <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
         Danh mục <i class="fas fa-caret-down"></i>
@@ -60,7 +55,6 @@
         <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
       </div>
     </div>
-    <!-- Search Bar -->
     <div class="flex-1 mx-4 max-w-2xl">
       <div class="relative">
         <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
@@ -69,7 +63,6 @@
         </button>
       </div>
     </div>
-    <!-- Cart Icon -->
     <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
   </div>
 </nav>
@@ -92,11 +85,14 @@
         </div>
         <div class="size-selection mt-4">
           <h6 class="font-semibold">Chọn size:</h6>
-          <div class="size-options flex space-x-2 mt-2">
-            <button class="size-option px-4 py-2 border rounded hover:bg-orange-100 active">S</button>
-            <button class="size-option px-4 py-2 border rounded hover:bg-orange-100">M</button>
-            <button class="size-option px-4 py-2 border rounded hover:bg-orange-100">L</button>
-            <button class="size-option px-4 py-2 border rounded hover:bg-orange-100">XL</button>
+          <div class="size-options flex space-x-2 mt-2" id="modalSizeOptions">
+            <!-- Kích cỡ sẽ được thêm động bằng JavaScript -->
+          </div>
+        </div>
+        <div class="color-selection mt-4">
+          <h6 class="font-semibold">Chọn màu sắc:</h6>
+          <div class="color-options flex space-x-2 mt-2" id="modalColorOptions">
+            <!-- Màu sắc sẽ được thêm động bằng JavaScript -->
           </div>
         </div>
         <div class="quantity-selection mt-4">
@@ -145,14 +141,18 @@
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
         </a>
-        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded">Mới</span>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100" th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
+        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-green-500">Mới</span>
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
           <i class="fas fa-shopping-cart text-orange-500"></i>
         </button>
+        <div th:if="${product.discount != null and not #strings.isEmpty(product.discount)}" class="absolute top-2 left-20 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Giảm <span th:text="${product.discount}"></span></div>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price}"></div>
+        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div th:if="${product.oldPrice != null}" class="text-gray-500 line-through text-sm" th:text="${product.oldPrice} + ' VNĐ'"></div>
+        <div th:if="${product.sold != null and not #strings.isEmpty(product.sold)}" class="text-sm text-gray-600">Đã bán: <span th:text="${product.sold}"></span></div>
       </a>
     </div>
   </div>
@@ -161,22 +161,26 @@
   </div>
 </section>
 
-<!-- Section Sản Phẩm All -->
+<!-- Section Sản Phẩm All -->
 <section class="container mx-auto py-8 bg-white">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản Phẩm</h2>
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản Phẩm</h2>
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${summerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
         </a>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100" th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
           <i class="fas fa-shopping-cart text-orange-500"></i>
         </button>
+        <div th:if="${product.discount != null and not #strings.isEmpty(product.discount)}" class="absolute top-2 left-20 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Giảm <span th:text="${product.discount}"></span></div>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price}"></div>
+        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div th:if="${product.oldPrice != null}" class="text-gray-500 line-through text-sm" th:text="${product.oldPrice} + ' VNĐ'"></div>
+        <div th:if="${product.sold != null and not #strings.isEmpty(product.sold)}" class="text-sm text-gray-600">Đã bán: <span th:text="${product.sold}"></span></div>
       </a>
     </div>
   </div>
@@ -195,13 +199,17 @@
           <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
         </a>
         <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-red-500">Hot</span>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100" th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
           <i class="fas fa-shopping-cart text-orange-500"></i>
         </button>
+        <div th:if="${product.discount != null and not #strings.isEmpty(product.discount)}" class="absolute top-2 left-20 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Giảm <span th:text="${product.discount}"></span></div>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price}"></div>
+        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div th:if="${product.oldPrice != null}" class="text-gray-500 line-through text-sm" th:text="${product.oldPrice} + ' VNĐ'"></div>
+        <div th:if="${product.sold != null and not #strings.isEmpty(product.sold)}" class="text-sm text-gray-600">Đã bán: <span th:text="${product.sold}"></span></div>
       </a>
     </div>
   </div>
@@ -263,8 +271,31 @@
       const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
       document.getElementById('modalProductImage').src = button.dataset.productImg;
       document.getElementById('modalProductName').textContent = button.dataset.productName;
-      document.getElementById('modalProductPrice').textContent = button.dataset.productPrice;
-      modal.show();
+      document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
+
+      // Load size options
+      const sizeOptionsContainer = document.getElementById('modalSizeOptions');
+      sizeOptionsContainer.innerHTML = '';
+      const sizes = JSON.parse(button.dataset.kichCo);
+      sizes.forEach(size => {
+        const sizeButton = document.createElement('button');
+        sizeButton.className = 'size-option px-4 py-2 border rounded hover:bg-orange-100';
+        sizeButton.textContent = size.ten;
+        sizeButton.dataset.sizeId = size.id;
+        sizeOptionsContainer.appendChild(sizeButton);
+      });
+
+      // Load color options
+      const colorOptionsContainer = document.getElementById('modalColorOptions');
+      colorOptionsContainer.innerHTML = '';
+      const colors = JSON.parse(button.dataset.mauSac);
+      colors.forEach(color => {
+        const colorButton = document.createElement('button');
+        colorButton.className = 'color-option px-4 py-2 border rounded hover:bg-orange-100';
+        colorButton.textContent = color.tenMau;
+        colorButton.dataset.colorId = color.id;
+        colorOptionsContainer.appendChild(colorButton);
+      });
 
       // Quantity controls
       const minusBtn = modal._element.querySelector('.quantity-btn.minus');
@@ -279,14 +310,63 @@
         input.value++;
       });
 
-      // Size selection
+      // Size and Color selection
       const sizeOptions = modal._element.querySelectorAll('.size-option');
+      const colorOptions = modal._element.querySelectorAll('.color-option');
       sizeOptions.forEach(option => {
         option.addEventListener('click', () => {
           sizeOptions.forEach(opt => opt.classList.remove('active'));
           option.classList.add('active');
         });
       });
+      colorOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          colorOptions.forEach(opt => opt.classList.remove('active'));
+          option.classList.add('active');
+        });
+      });
+
+      // Confirm Add to Cart
+      const confirmButton = modal._element.querySelector('#confirmAddToCart');
+      confirmButton.onclick = async () => {
+        const selectedSize = modal._element.querySelector('.size-option.active');
+        const selectedColor = modal._element.querySelector('.color-option.active');
+        const quantity = input.value;
+
+        if (!selectedSize || !selectedColor) {
+          alert('Vui lòng chọn kích cỡ và màu sắc!');
+          return;
+        }
+
+        // Gửi yêu cầu API để lấy chiTietSanPhamId
+        const response = await fetch(`/acvstore/chi-tiet-san-pham/api?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+        const chiTietSanPham = await response.json();
+        if (!chiTietSanPham.id) {
+          alert('Sản phẩm với kích cỡ và màu sắc này không tồn tại!');
+          return;
+        }
+
+        // Gửi yêu cầu thêm vào giỏ hàng
+        const payload = {
+          id: chiTietSanPham.id,
+          quantity: parseInt(quantity)
+        };
+        const addResponse = await fetch('/api/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (addResponse.ok) {
+          alert('Đã thêm vào giỏ hàng!');
+          modal.hide();
+        } else {
+          alert('Có lỗi xảy ra khi thêm vào giỏ hàng!');
+        }
+      };
+
+      modal.show();
     });
   });
 </script>
+</body>
+</html>
