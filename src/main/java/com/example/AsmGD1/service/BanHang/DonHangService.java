@@ -13,6 +13,7 @@ import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ThongKe.ThongKeRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.example.AsmGD1.service.SanPham.ChiTietSanPhamService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.LockModeType;
@@ -62,6 +63,8 @@ public class DonHangService {
     private ThongKeRepository thongKeRepository;
     @Autowired
     private ThongBaoService thongBaoService;
+    @Autowired
+    private ChiTietSanPhamService chiTietSanPhamService;
 
     @Transactional(isolation = Isolation.SERIALIZABLE)
     @Retryable(
@@ -128,11 +131,11 @@ public class DonHangService {
             chiTietDonHang.setGhiChu(item.getMauSac() + ", " + item.getKichCo());
             donHang.addChiTietDonHang(chiTietDonHang);
 
-            chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
-            chiTietSanPhamRepository.save(chiTiet);
+            // Sử dụng updateStockAndStatus để cập nhật tồn kho và trạng thái
+            ChiTietSanPham updatedChiTiet = chiTietSanPhamService.updateStockAndStatus(chiTiet.getId(), -item.getSoLuong());
 
             tongTien = tongTien.add(item.getThanhTien());
-            soLuongTonKho.put(chiTiet.getId(), chiTiet.getSoLuongTonKho());
+            soLuongTonKho.put(chiTiet.getId(), updatedChiTiet.getSoLuongTonKho());
         }
 
         if (donHangDTO.getIdPhieuGiamGia() != null) {
