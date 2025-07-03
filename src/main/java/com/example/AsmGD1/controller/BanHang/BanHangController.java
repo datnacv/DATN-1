@@ -418,9 +418,11 @@ public class BanHangController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getProductVariants(@PathVariable UUID productId) {
         try {
-            List<ChiTietSanPham> variants = chiTietSanPhamService.findByProductId(productId);
+            List<ChiTietSanPham> variants = chiTietSanPhamService.findByProductId(productId).stream()
+                    .filter(v -> v.getTrangThai() == true) // Chỉ lấy các biến thể có trạng thái = 1
+                    .collect(Collectors.toList());
             if (variants.isEmpty()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy biến thể cho sản phẩm."));
+                return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy biến thể hợp lệ cho sản phẩm."));
             }
 
             List<Map<String, Object>> variantList = variants.stream().map(variant -> {
