@@ -14,376 +14,106 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Enhanced Custom styles - Màu #181e34 */
-    :root {
-      --primary-color: #181e34;
-      --primary-dark: #000340;
-      --primary-light: #1a1a7e;
-      --secondary-color: #e6f0ff;
-      --accent-color: #3366ff;
-    }
-
-    .navbar {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-      backdrop-filter: blur(10px);
-    }
-
-    .product-card {
-      transition: all 0.3s ease;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #f1f5f9;
-    }
-
-    .product-card:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 8px 25px rgba(0, 4, 98, 0.15);
-      border-color: var(--primary-color);
-    }
-
-    .badge-new {
-      background: linear-gradient(45deg, var(--primary-color), var(--primary-light));
-      border-radius: 20px;
-    }
-
-    .size-option {
-      transition: all 0.2s ease;
-      border-radius: 8px;
-    }
-
-    .size-option.active {
-      background: linear-gradient(45deg, var(--primary-color), var(--primary-light));
-      color: white;
-      transform: scale(1.05);
-    }
-
-    .swiper-slide img {
-      object-fit: cover;
-      height: 450px;
-    }
-
-    .ticker {
-      background: linear-gradient(90deg, var(--secondary-color), #f0f8ff);
-      color: var(--primary-color);
-      font-weight: bold;
-      border-bottom: 2px solid var(--primary-color);
-    }
-
-    .dropdown-menu {
-      display: none;
-      position: absolute;
-      background-color: white;
-      min-width: 200px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-      z-index: 1000;
-      border-radius: 12px;
-      border: none;
-      padding: 8px 0;
-    }
-
-    .dropdown:hover .dropdown-menu {
-      display: block;
-      animation: fadeInDown 0.3s ease;
-    }
-
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .cart-icon {
-      transition: all 0.3s ease;
-    }
-
-    .cart-icon:hover {
-      transform: scale(1.1);
-      background-color: var(--primary-color) !important;
-    }
-
-    .cart-icon:hover i {
-      color: white !important;
-    }
-
-    .search-container {
-      position: relative;
-      overflow: hidden;
-      border-radius: 25px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-
-    .search-input {
-      border: none;
-      outline: none;
-      padding: 12px 50px 12px 20px;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .search-input:focus {
-      box-shadow: 0 0 0 3px rgba(0, 4, 98, 0.2);
-    }
-
-    .section-title {
-      position: relative;
-      display: inline-block;
-      margin-bottom: 2rem;
-    }
-
-    .section-title::after {
-      content: '';
-      position: absolute;
-      bottom: -8px;
-      left: 0;
-      width: 60px;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-      border-radius: 2px;
-    }
-
-    .price {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--primary-color) !important;
-    }
-
-    .modal-content {
-      border-radius: 15px;
-      border: none;
-      overflow: hidden;
-    }
-
-    .quantity-btn {
-      width: 35px;
-      height: 35px;
-      border-radius: 50%;
-      border: 2px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      background: white;
-    }
-
-    .quantity-btn:hover {
-      border-color: var(--primary-color);
-      background-color: var(--primary-color);
-      color: white;
-    }
-
-    body {
-      padding-top: 110px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    /* Loading animation */
-    .loading-spinner {
-      display: none;
-      width: 20px;
-      height: 20px;
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid var(--primary-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Toast notification */
-    .toast-container {
-      position: fixed;
-      top: 120px;
-      right: 20px;
-      z-index: 9999;
-    }
-
-    .custom-toast {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-      color: white;
-      border-radius: 10px;
-      box-shadow: 0 4px 15px rgba(0, 4, 98, 0.3);
-    }
-
-    .product-image {
-      transition: transform 0.3s ease;
-    }
-
-    .product-card:hover .product-image {
-      transform: scale(1.05);
-    }
-
-    /* Custom button styles */
-    .btn-primary-custom {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-      border: none;
-      color: white;
-    }
-
-    .btn-primary-custom:hover {
-      background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
-      color: white;
-    }
-
-    .btn-outline-primary-custom {
-      border: 2px solid var(--primary-color);
-      color: var(--primary-color);
-      background: transparent;
-    }
-
-    .btn-outline-primary-custom:hover {
-      background: var(--primary-color);
-      color: white;
-    }
-
-    /* Swiper custom colors */
-    .swiper-button-next,
-    .swiper-button-prev {
-      color: var(--primary-color) !important;
-    }
-
-    .swiper-pagination-bullet-active {
-      background: var(--primary-color) !important;
-    }
-
-    /* Ticker animation color */
-    .ticker i {
-      color: var(--primary-color) !important;
-    }
-
+    .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
+    .product-card { transition: transform 0.3s; }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .badge-new { background-color: #f97316; }
+    .size-option.active, .color-option.active { background-color: #f97316; color: white; }
+    .swiper-slide img { object-fit: cover; height: 400px; }
+    .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+    .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
+    .dropdown:hover .dropdown-menu { display: block; }
+    body { padding-top: 100px; }
     @media (max-width: 640px) {
-      .swiper-slide img { height: 250px; }
-      .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .swiper-slide img { height: 200px; }
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
       .dropdown-menu { width: 100%; left: 0; }
-      body { padding-top: 90px; }
-      .section-title { font-size: 1.5rem; }
+      body { padding-top: 80px; }
     }
   </style>
 </head>
-<body class="bg-gray-50">
-
-<!-- Toast Container -->
-<div class="toast-container">
-  <div id="successToast" class="toast custom-toast" role="alert" aria-live="assertive" aria-atomic="true">
-    <div class="toast-body d-flex align-items-center">
-      <i class="fas fa-check-circle me-2"></i>
-      <span>Đã thêm sản phẩm vào giỏ hàng!</span>
-    </div>
-  </div>
+<body class="bg-gray-100">
+<!-- Ticker -->
+<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+  <marquee behavior="scroll" direction="left" scrollamount="5">
+    🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+  </marquee>
 </div>
 
-<!-- Enhanced Ticker -->
-<div class="ticker py-2 overflow-hidden fixed top-0 w-full z-50">
-  <div class="d-flex align-items-center">
-    <i class="fas fa-fire me-2 ms-3"></i>
-    <marquee behavior="scroll" direction="left" scrollamount="3">
-      🎉 FLASH SALE: Giảm giá lên đến 70% cho tất cả sản phẩm hôm nay! 🎉 | 🚚 Miễn phí vận chuyển cho đơn từ 299k! | 💎 Tích điểm đổi quà hấp dẫn!
-    </marquee>
-  </div>
-</div>
-
-<!-- Enhanced Header -->
-<nav class="navbar fixed-top shadow-lg mt-12 z-40">
-  <div class="container mx-auto flex items-center justify-between py-3 px-4">
-    <!-- Logo with animation -->
-    <a href="/" class="text-2xl font-bold text-white hover:scale-105 transition-transform duration-300">
-      <i class="fas fa-store me-2"></i>ACV Store
-    </a>
-
-    <!-- Enhanced Menu Dropdown -->
+<!-- Header -->
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+  <div class="container mx-auto flex items-center justify-between py-2 px-4">
+    <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
     <div class="relative dropdown">
-      <button class="text-white font-semibold hover:text-blue-200 focus:outline-none d-flex align-items-center">
-        <i class="fas fa-bars me-2"></i>Danh mục <i class="fas fa-caret-down ms-1"></i>
+      <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
+        Danh mục <i class="fas fa-caret-down"></i>
       </button>
-      <div class="dropdown-menu bg-white text-gray-800 mt-2">
-        <a href="/category/nam" class="block px-4 py-3 hover:bg-blue-50 d-flex align-items-center">
-          <i class="fas fa-male me-2 text-blue-500"></i>Thời trang Nam
-        </a>
-        <a href="/category/nu" class="block px-4 py-3 hover:bg-blue-50 d-flex align-items-center">
-          <i class="fas fa-female me-2 text-pink-500"></i>Thời trang Nữ
-        </a>
-        <a href="/category/phu-kien" class="block px-4 py-3 hover:bg-blue-50 d-flex align-items-center">
-          <i class="fas fa-gem me-2 text-purple-500"></i>Phụ kiện
-        </a>
-        <a href="/category/gia-dung" class="block px-4 py-3 hover:bg-blue-50 d-flex align-items-center">
-          <i class="fas fa-home me-2 text-green-500"></i>Gia dụng
-        </a>
+      <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+        <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nam</a>
+        <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nữ</a>
+        <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100">Phụ kiện</a>
+        <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
       </div>
     </div>
-
-    <!-- Enhanced Search Bar -->
     <div class="flex-1 mx-4 max-w-2xl">
-      <div class="search-container">
-        <input type="text" placeholder="Tìm kiếm sản phẩm, thương hiệu..." class="search-input w-full"/>
-        <button class="absolute right-3 top-1/2 transform -translate-y-1/2 text-white px-4 py-2 rounded-full transition-colors" style="background: var(--primary-color);">
+      <div class="relative">
+        <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+        <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
           <i class="fas fa-search"></i>
         </button>
       </div>
     </div>
-
-    <!-- Enhanced Cart Icon -->
-    <div class="position-relative">
-      <a href="/cart" class="text-white text-xl hover:text-blue-200 transition-colors">
-        <i class="fas fa-shopping-cart"></i>
-      </a>
-    </div>
+    <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
   </div>
 </nav>
 
-<!-- Enhanced Modal - Giữ nguyên backend logic -->
+<!-- Modal Thêm vào giỏ hàng -->
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header" style="background: linear-gradient(135deg, #181e34, #1a1a7e);">
-        <h5 class="modal-title text-white" id="addToCartModalLabel">
-          <i class="fas fa-cart-plus me-2"></i>Thêm vào giỏ hàng
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-content rounded-lg">
+      <div class="modal-header bg-orange-500 text-white">
+        <h5 class="modal-title" id="addToCartModalLabel">Thêm vào giỏ hàng</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4">
-        <div class="modal-product-info d-flex align-items-center mb-4 p-3 bg-light rounded">
-          <img id="modalProductImage" src="/placeholder.svg" alt="Product Image" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
-          <div class="ms-3">
-            <h6 id="modalProductName" class="font-semibold mb-1"></h6>
-            <p id="modalProductPrice" class="font-bold mb-0 fs-5" style="color: var(--primary-color);"></p>
+        <div class="modal-product-info flex items-center space-x-4">
+          <img id="modalProductImage" src="" alt="Product Image" class="w-20 h-20 object-cover rounded">
+          <div>
+            <h6 id="modalProductName" class="font-semibold"></h6>
+            <p id="modalProductPrice" class="text-orange-600 font-bold"></p>
           </div>
         </div>
-
-        <div class="size-selection mb-4">
-          <h6 class="font-semibold mb-3"><i class="fas fa-ruler me-2"></i>Chọn size:</h6>
-          <div class="size-options d-flex gap-2">
-            <button class="size-option px-3 py-2 border rounded active">S</button>
-            <button class="size-option px-3 py-2 border rounded">M</button>
-            <button class="size-option px-3 py-2 border rounded">L</button>
-            <button class="size-option px-3 py-2 border rounded">XL</button>
+        <div class="size-selection mt-4">
+          <h6 class="font-semibold">Chọn size:</h6>
+          <div class="size-options flex space-x-2 mt-2" id="modalSizeOptions">
+            <!-- Kích cỡ sẽ được thêm động bằng JavaScript -->
           </div>
         </div>
-
-        <div class="quantity-selection">
-          <h6 class="font-semibold mb-3"><i class="fas fa-sort-numeric-up me-2"></i>Số lượng:</h6>
-          <div class="quantity-control d-flex align-items-center gap-3">
-            <button class="quantity-btn minus">-</button>
-            <input type="number" value="1" min="1" class="quantity-input form-control text-center" style="width: 80px;">
-            <button class="quantity-btn plus">+</button>
+        <div class="color-selection mt-4">
+          <h6 class="font-semibold">Chọn màu sắc:</h6>
+          <div class="color-options flex space-x-2 mt-2" id="modalColorOptions">
+            <!-- Màu sắc sẽ được thêm động bằng JavaScript -->
+          </div>
+        </div>
+        <div class="quantity-selection mt-4">
+          <h6 class="font-semibold">Số lượng:</h6>
+          <div class="quantity-control flex items-center space-x-2 mt-2">
+            <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded">-</button>
+            <input type="number" value="1" min="1" class="quantity-input w-16 text-center border rounded">
+            <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
           </div>
         </div>
       </div>
-      <div class="modal-footer border-0 pt-0">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-times me-2"></i>Đóng
-        </button>
-        <button type="button" class="btn text-white" style="background: linear-gradient(135deg, #181e34, #1a1a7e);" id="confirmAddToCart">
-          <span class="loading-spinner me-2"></span>
-          <i class="fas fa-cart-plus me-2"></i>Thêm vào giỏ
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        <button type="button" class="btn bg-orange-500 text-white hover:bg-orange-600" id="confirmAddToCart">Thêm vào giỏ</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Banner Slider - Giữ nguyên -->
-<div class="mt-0 mb-5">
+<!-- Banner Slider -->
+<div class="mt-0">
   <div class="swiper banner-slider">
     <div class="swiper-wrapper">
       <div class="swiper-slide">
@@ -396,187 +126,135 @@
         <img src="https://4menshop.com/images/thumbs/news/-602.jpg" alt="Banner 3" class="w-full"/>
       </div>
     </div>
-    <div class="swiper-button-next"></div>
-    <div class="swiper-button-prev"></div>
+    <div class="swiper-button-next text-orange-500"></div>
+    <div class="swiper-button-prev text-orange-500"></div>
     <div class="swiper-pagination"></div>
   </div>
 </div>
 
-<!-- Section Sản phẩm mới - Giữ nguyên backend logic -->
+<!-- Section Sản phẩm mới -->
 <section class="container mx-auto py-8">
-  <h2 class="section-title text-3xl font-bold text-gray-800">
-    <i class="fas fa-star text-yellow-500 me-2"></i>Sản phẩm mới
-  </h2>
-  <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-    <div class="product-card bg-white shadow-md overflow-hidden" th:each="product : ${newProducts}">
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản phẩm mới</h2>
+  <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${newProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="product-image w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
         </a>
-        <span class="badge-new absolute top-3 left-3 text-white text-xs font-semibold px-3 py-1">
-          <i class="fas fa-sparkles me-1"></i>Mới
-        </span>
-        <button class="cart-icon absolute top-3 right-3 bg-white p-2 rounded-full shadow-md"
+        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-green-500">Mới</span>
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
                 th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
-          <i class="fas fa-shopping-cart" style="color: var(--primary-color);"></i>
+          <i class="fas fa-shopping-cart text-orange-500"></i>
         </button>
+        <div th:if="${product.discount != null and not #strings.isEmpty(product.discount)}" class="absolute top-2 left-20 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Giảm <span th:text="${product.discount}"></span></div>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
-        <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate mb-2"></h4>
-        <div class="price font-bold" th:text="${product.price}"></div>
+        <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
+        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div th:if="${product.oldPrice != null}" class="text-gray-500 line-through text-sm" th:text="${product.oldPrice} + ' VNĐ'"></div>
+        <div th:if="${product.sold != null and not #strings.isEmpty(product.sold)}" class="text-sm text-gray-600">Đã bán: <span th:text="${product.sold}"></span></div>
       </a>
     </div>
   </div>
-  <div class="text-center mt-8">
-    <a href="new.html" class="btn btn-outline-primary-custom btn-lg rounded-pill px-5">
-      <i class="fas fa-eye me-2"></i>Xem tất cả sản phẩm mới
-    </a>
+  <div class="see-all text-center mt-6">
+    <a href="new.html" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
-<!-- Section Sản Phẩm All - Giữ nguyên backend logic -->
-<section class="container mx-auto py-8 bg-white rounded-lg shadow-sm">
-  <h2 class="section-title text-3xl font-bold text-gray-800">
-    <i class="fas fa-th-large me-2" style="color: var(--primary-color);"></i>Sản Phẩm
-  </h2>
-  <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-    <div class="product-card bg-white shadow-md overflow-hidden" th:each="product : ${summerProducts}">
+<!-- Section Sản Phẩm All -->
+<section class="container mx-auto py-8 bg-white">
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản Phẩm</h2>
+  <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${summerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="product-image w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
         </a>
-        <button class="cart-icon absolute top-3 right-3 bg-white p-2 rounded-full shadow-md"
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
                 th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
-          <i class="fas fa-shopping-cart" style="color: var(--primary-color);"></i>
+          <i class="fas fa-shopping-cart text-orange-500"></i>
         </button>
+        <div th:if="${product.discount != null and not #strings.isEmpty(product.discount)}" class="absolute top-2 left-20 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Giảm <span th:text="${product.discount}"></span></div>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
-        <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate mb-2"></h4>
-        <div class="price font-bold" th:text="${product.price}"></div>
+        <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
+        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div th:if="${product.oldPrice != null}" class="text-gray-500 line-through text-sm" th:text="${product.oldPrice} + ' VNĐ'"></div>
+        <div th:if="${product.sold != null and not #strings.isEmpty(product.sold)}" class="text-sm text-gray-600">Đã bán: <span th:text="${product.sold}"></span></div>
       </a>
     </div>
   </div>
-  <div class="text-center mt-8">
-    <a href="#" class="btn btn-outline-primary-custom btn-lg rounded-pill px-5">
-      <i class="fas fa-eye me-2"></i>Xem tất cả sản phẩm
-    </a>
+  <div class="see-all text-center mt-6">
+    <a href="#" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
-<!-- Section Bán Chạy - Giữ nguyên backend logic -->
+<!-- Section Bán Chạy -->
 <section class="container mx-auto py-8">
-  <h2 class="section-title text-3xl font-bold text-gray-800">
-    <i class="fas fa-fire text-red-500 me-2"></i>Sản phẩm bán chạy
-  </h2>
-  <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-    <div class="product-card bg-white shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản phẩm bán chạy</h2>
+  <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="product-image w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
         </a>
-        <span class="absolute top-3 left-3 text-white text-xs font-semibold px-3 py-1 rounded-full bg-red-500">
-          <i class="fas fa-fire me-1"></i>Hot
-        </span>
-        <button class="cart-icon absolute top-3 right-3 bg-white p-2 rounded-full shadow-md"
+        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-red-500">Hot</span>
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
                 th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh}">
-          <i class="fas fa-shopping-cart" style="color: var(--primary-color);"></i>
+          <i class="fas fa-shopping-cart text-orange-500"></i>
         </button>
+        <div th:if="${product.discount != null and not #strings.isEmpty(product.discount)}" class="absolute top-2 left-20 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Giảm <span th:text="${product.discount}"></span></div>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
-        <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate mb-2"></h4>
-        <div class="price font-bold" th:text="${product.price}"></div>
+        <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
+        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div th:if="${product.oldPrice != null}" class="text-gray-500 line-through text-sm" th:text="${product.oldPrice} + ' VNĐ'"></div>
+        <div th:if="${product.sold != null and not #strings.isEmpty(product.sold)}" class="text-sm text-gray-600">Đã bán: <span th:text="${product.sold}"></span></div>
       </a>
     </div>
   </div>
-  <div class="text-center mt-8">
-    <a href="#" class="btn btn-outline-danger btn-lg rounded-pill px-5">
-      <i class="fas fa-fire me-2"></i>Xem tất cả sản phẩm hot
-    </a>
+  <div class="see-all text-center mt-6">
+    <a href="#" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
-<!-- Enhanced Footer -->
-<footer class="text-white py-12" style="background: linear-gradient(135deg, #181e34, #1a1a7e);">
-  <div class="container mx-auto">
-    <div class="row">
-      <div class="col-lg-4 col-md-6 mb-4">
-        <h3 class="text-2xl font-bold mb-4">
-          <i class="fas fa-store me-2 text-blue-300"></i>ACV Store
-        </h3>
-        <p class="text-blue-100 mb-4">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng cao và giá cả hợp lý. Chúng tôi cam kết mang đến trải nghiệm mua sắm tuyệt vời nhất.</p>
-        <div class="d-flex gap-3">
-          <a href="#" class="text-white hover:text-blue-300 transition-colors fs-5">
-            <i class="fab fa-facebook-f"></i>
-          </a>
-          <a href="#" class="text-white hover:text-blue-300 transition-colors fs-5">
-            <i class="fab fa-instagram"></i>
-          </a>
-          <a href="#" class="text-white hover:text-blue-300 transition-colors fs-5">
-            <i class="fab fa-twitter"></i>
-          </a>
-          <a href="#" class="text-white hover:text-blue-300 transition-colors fs-5">
-            <i class="fab fa-youtube"></i>
-          </a>
-        </div>
-      </div>
-
-      <div class="col-lg-2 col-md-6 mb-4">
-        <h4 class="text-lg font-bold mb-4 text-blue-300">Liên kết nhanh</h4>
-        <ul class="list-unstyled space-y-2">
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Sản phẩm mới</a></li>
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Tủ đồ mùa hè</a></li>
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Sản phẩm bán chạy</a></li>
-        </ul>
-      </div>
-
-      <div class="col-lg-2 col-md-6 mb-4">
-        <h4 class="text-lg font-bold mb-4 text-blue-300">Hỗ trợ</h4>
-        <ul class="list-unstyled space-y-2">
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Chính sách đổi trả</a></li>
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Hướng dẫn mua hàng</a></li>
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Chính sách bảo mật</a></li>
-          <li><a href="#" class="text-blue-100 hover:text-blue-300 transition-colors">Điều khoản sử dụng</a></li>
-        </ul>
-      </div>
-
-      <div class="col-lg-4 col-md-6 mb-4">
-        <h4 class="text-lg font-bold mb-4 text-blue-300">Liên hệ</h4>
-        <div class="space-y-3">
-          <p class="text-blue-100 d-flex align-items-center">
-            <i class="fas fa-envelope me-3 text-blue-300"></i>
-            support@acvstore.com
-          </p>
-          <p class="text-blue-100 d-flex align-items-center">
-            <i class="fas fa-phone me-3 text-blue-300"></i>
-            0123 456 789
-          </p>
-          <p class="text-blue-100 d-flex align-items-start">
-            <i class="fas fa-map-marker-alt me-3 text-blue-300 mt-1"></i>
-            123 Đường ABC, Quận XYZ, TP.HCM
-          </p>
-        </div>
-      </div>
+<!-- Footer -->
+<footer class="bg-gray-800 text-white py-8">
+  <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div>
+      <h3 class="text-lg font-bold mb-4">ACV Store</h3>
+      <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
     </div>
-
-    <hr class="my-8" style="border-color: #1a1a7e;">
-    <div class="text-center">
-      <p class="text-blue-200">© 2025 ACV Store. All rights reserved.</p>
+    <div>
+      <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
+      <ul class="space-y-2">
+        <li><a href="#" class="hover:text-orange-500">Sản phẩm mới</a></li>
+        <li><a href="#" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
+        <li><a href="#" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+      <p class="text-sm">Email: support@160store.com</p>
+      <p class="text-sm">Hotline: 0123 456 789</p>
+      <div class="flex space-x-4 mt-4">
+        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+      </div>
     </div>
   </div>
+  <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
 </footer>
 
 <!-- JavaScript Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
-
 <script>
-  // Enhanced Swiper initialization
+  // Initialize Swiper for banner
   new Swiper('.banner-slider', {
     loop: true,
-    autoplay: {
-      delay: 4000,
-      disableOnInteraction: false,
-    },
+    autoplay: { delay: 5000 },
     navigation: {
       nextEl: '.swiper-button-next',
       prevEl: '.swiper-button-prev',
@@ -584,95 +262,111 @@
     pagination: {
       el: '.swiper-pagination',
       clickable: true,
-      dynamicBullets: true,
     },
   });
 
-  // Enhanced Cart Modal Functionality - Giữ nguyên logic
+  // Cart Modal Functionality
   document.querySelectorAll('.cart-icon').forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
+    button.addEventListener('click', () => {
       const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
-      const modalElement = document.getElementById('addToCartModal');
-
-      // Set product info từ backend data
       document.getElementById('modalProductImage').src = button.dataset.productImg;
       document.getElementById('modalProductName').textContent = button.dataset.productName;
-      document.getElementById('modalProductPrice').textContent = button.dataset.productPrice;
+      document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
 
-      modal.show();
-
-      // Enhanced Quantity controls
-      const minusBtn = modalElement.querySelector('.quantity-btn.minus');
-      const plusBtn = modalElement.querySelector('.quantity-btn.plus');
-      const input = modalElement.querySelector('.quantity-input');
-
-      // Remove existing event listeners
-      minusBtn.replaceWith(minusBtn.cloneNode(true));
-      plusBtn.replaceWith(plusBtn.cloneNode(true));
-
-      const newMinusBtn = modalElement.querySelector('.quantity-btn.minus');
-      const newPlusBtn = modalElement.querySelector('.quantity-btn.plus');
-
-      newMinusBtn.addEventListener('click', () => {
-        if (input.value > 1) {
-          input.value = parseInt(input.value) - 1;
-        }
+      // Load size options
+      const sizeOptionsContainer = document.getElementById('modalSizeOptions');
+      sizeOptionsContainer.innerHTML = '';
+      const sizes = JSON.parse(button.dataset.kichCo);
+      sizes.forEach(size => {
+        const sizeButton = document.createElement('button');
+        sizeButton.className = 'size-option px-4 py-2 border rounded hover:bg-orange-100';
+        sizeButton.textContent = size.ten;
+        sizeButton.dataset.sizeId = size.id;
+        sizeOptionsContainer.appendChild(sizeButton);
       });
 
-      newPlusBtn.addEventListener('click', () => {
-        input.value = parseInt(input.value) + 1;
+      // Load color options
+      const colorOptionsContainer = document.getElementById('modalColorOptions');
+      colorOptionsContainer.innerHTML = '';
+      const colors = JSON.parse(button.dataset.mauSac);
+      colors.forEach(color => {
+        const colorButton = document.createElement('button');
+        colorButton.className = 'color-option px-4 py-2 border rounded hover:bg-orange-100';
+        colorButton.textContent = color.tenMau;
+        colorButton.dataset.colorId = color.id;
+        colorOptionsContainer.appendChild(colorButton);
       });
 
-      // Enhanced Size selection
-      const sizeOptions = modalElement.querySelectorAll('.size-option');
+      // Quantity controls
+      const minusBtn = modal._element.querySelector('.quantity-btn.minus');
+      const plusBtn = modal._element.querySelector('.quantity-btn.plus');
+      const input = modal._element.querySelector('.quantity-input');
+
+      minusBtn.addEventListener('click', () => {
+        if (input.value > 1) input.value--;
+      });
+
+      plusBtn.addEventListener('click', () => {
+        input.value++;
+      });
+
+      // Size and Color selection
+      const sizeOptions = modal._element.querySelectorAll('.size-option');
+      const colorOptions = modal._element.querySelectorAll('.color-option');
       sizeOptions.forEach(option => {
         option.addEventListener('click', () => {
           sizeOptions.forEach(opt => opt.classList.remove('active'));
           option.classList.add('active');
         });
       });
-
-      // Enhanced Add to cart confirmation
-      const confirmBtn = modalElement.querySelector('#confirmAddToCart');
-      confirmBtn.addEventListener('click', () => {
-        const spinner = confirmBtn.querySelector('.loading-spinner');
-        const icon = confirmBtn.querySelector('.fas');
-
-        // Show loading
-        spinner.style.display = 'inline-block';
-        icon.style.display = 'none';
-        confirmBtn.disabled = true;
-
-        // Simulate API call - Có thể thay bằng actual backend call
-        setTimeout(() => {
-          // Hide loading
-          spinner.style.display = 'none';
-          icon.style.display = 'inline';
-          confirmBtn.disabled = false;
-
-          // Close modal
-          modal.hide();
-
-          // Show success toast
-          const toast = new bootstrap.Toast(document.getElementById('successToast'));
-          toast.show();
-        }, 1000);
+      colorOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          colorOptions.forEach(opt => opt.classList.remove('active'));
+          option.classList.add('active');
+        });
       });
+
+      // Confirm Add to Cart
+      const confirmButton = modal._element.querySelector('#confirmAddToCart');
+      confirmButton.onclick = async () => {
+        const selectedSize = modal._element.querySelector('.size-option.active');
+        const selectedColor = modal._element.querySelector('.color-option.active');
+        const quantity = input.value;
+
+        if (!selectedSize || !selectedColor) {
+          alert('Vui lòng chọn kích cỡ và màu sắc!');
+          return;
+        }
+
+        // Gửi yêu cầu API để lấy chiTietSanPhamId
+        const response = await fetch(`/acvstore/chi-tiet-san-pham/api?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+        const chiTietSanPham = await response.json();
+        if (!chiTietSanPham.id) {
+          alert('Sản phẩm với kích cỡ và màu sắc này không tồn tại!');
+          return;
+        }
+
+        // Gửi yêu cầu thêm vào giỏ hàng
+        const payload = {
+          id: chiTietSanPham.id,
+          quantity: parseInt(quantity)
+        };
+        const addResponse = await fetch('/api/cart/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (addResponse.ok) {
+          alert('Đã thêm vào giỏ hàng!');
+          modal.hide();
+        } else {
+          alert('Có lỗi xảy ra khi thêm vào giỏ hàng!');
+        }
+      };
+
+      modal.show();
     });
   });
-
-  // Search functionality enhancement
-  const searchInput = document.querySelector('.search-input');
-  searchInput.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      // Có thể implement search functionality với backend
-      console.log('Searching for:', this.value);
-    }
-  });
 </script>
-
 </body>
 </html>

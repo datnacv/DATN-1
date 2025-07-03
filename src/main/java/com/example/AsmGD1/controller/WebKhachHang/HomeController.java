@@ -26,8 +26,8 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute("newProducts", khachhangSanPhamService.getNewProducts());
-        model.addAttribute("summerProducts", khachhangSanPhamService.getNewProducts());
-        model.addAttribute("bestsellerProducts", khachhangSanPhamService.getNewProducts());
+        model.addAttribute("summerProducts", khachhangSanPhamService.getNewProducts()); // Tạm thời dùng getNewProducts
+        model.addAttribute("bestsellerProducts", khachhangSanPhamService.getNewProducts()); // Tạm thời dùng getNewProducts
         return "WebKhachHang/index";
     }
 
@@ -35,16 +35,15 @@ public class HomeController {
     public String productDetail(@RequestParam("id") UUID sanPhamId, Model model) {
         ChiTietSanPhamDto productDetail = khachhangSanPhamService.getProductDetail(sanPhamId);
         if (productDetail == null) {
-            return "redirect:/"; // Chuyển hướng nếu không tìm thấy sản phẩm
+            model.addAttribute("error", "Sản phẩm không tồn tại hoặc đã bị xóa!");
+            return "WebKhachHang/error"; // Sử dụng trang lỗi tùy chỉnh nếu có
         }
         model.addAttribute("productDetail", productDetail);
-        model.addAttribute("productImages", productDetail.getHinhAnhList());
         return "WebKhachHang/chitietsanpham";
     }
 
     @GetMapping("/cart")
     public String cart(Model model) {
-        // Sử dụng nguoiDungId có sẵn trong database
         UUID nguoiDungId = UUID.fromString("550e8400-e29b-41d4-a716-446655440014"); // Trần Thị Customer
         try {
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
