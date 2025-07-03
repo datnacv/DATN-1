@@ -19,10 +19,27 @@ public class KhachhangSanPhamService {
     @Autowired
     private KhachHangSanPhamRepository khachHangSanPhamRepository;
 
+    // Lấy danh sách sản phẩm mới
     public List<SanPhamDto> getNewProducts() {
-        List<SanPham> sanPhams = khachHangSanPhamRepository.findActiveProducts();
+        List<SanPham> sanPhams = khachHangSanPhamRepository.findNewProducts();
         return sanPhams.stream()
                 .map(this::convertToSanPhamDto)
+                .limit(10) // Giới hạn 10 sản phẩm mới
+                .collect(Collectors.toList());
+    }
+
+    // Lấy danh sách sản phẩm bán chạy
+    public List<SanPhamDto> getBestSellingProducts() {
+        List<Object[]> results = khachHangSanPhamRepository.findBestSellingProducts();
+        return results.stream()
+                .map(result -> {
+                    SanPham sanPham = (SanPham) result[0];
+                    Long totalSold = (Long) result[1];
+                    SanPhamDto dto = convertToSanPhamDto(sanPham);
+                    dto.setSold(totalSold.toString()); // Cập nhật số lượng đã bán thực tế
+                    return dto;
+                })
+                .limit(10) // Giới hạn 10 sản phẩm bán chạy
                 .collect(Collectors.toList());
     }
 
@@ -125,12 +142,11 @@ public class KhachhangSanPhamService {
         dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
         dto.setThoiGianTao(sanPham.getThoiGianTao());
 
-        // Ánh xạ dữ liệu flash sale (giả sử logic cơ bản)
+        // Ánh xạ dữ liệu giá và khuyến mãi
         BigDecimal minPrice = khachHangSanPhamRepository.findMinPriceBySanPhamId(sanPham.getId());
-        dto.setPrice(minPrice != null ? minPrice.toString() : "0"); // Chuyển BigDecimal thành String
-        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10")).toString() : "0"); // Giả lập giá cũ
+        dto.setPrice(minPrice != null ? minPrice.toString() : "0");
+        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10000")).toString() : "0"); // Giả lập giá cũ
         dto.setDiscount("10%"); // Giả lập giảm giá
-        dto.setSold("50"); // Giả lập số lượng đã bán
         dto.setProgress(50); // Giả lập tiến độ
 
         return dto;

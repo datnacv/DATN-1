@@ -26,8 +26,8 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         model.addAttribute("newProducts", khachhangSanPhamService.getNewProducts());
-        model.addAttribute("summerProducts", khachhangSanPhamService.getNewProducts()); // Tạm thời dùng getNewProducts
-        model.addAttribute("bestsellerProducts", khachhangSanPhamService.getNewProducts()); // Tạm thời dùng getNewProducts
+        model.addAttribute("summerProducts", khachhangSanPhamService.getNewProducts()); // Có thể thay đổi logic cho danh mục mùa hè
+        model.addAttribute("bestsellerProducts", khachhangSanPhamService.getBestSellingProducts());
         return "WebKhachHang/index";
     }
 
@@ -52,7 +52,7 @@ public class HomeController {
             model.addAttribute("tongTien", gioHang.getTongTien());
         } catch (Exception e) {
             model.addAttribute("error", "Không thể tải giỏ hàng: " + e.getMessage());
-            return "WebKhachHang/cart"; // Vẫn hiển thị trang với thông báo lỗi
+            return "WebKhachHang/cart";
         }
         return "WebKhachHang/cart";
     }

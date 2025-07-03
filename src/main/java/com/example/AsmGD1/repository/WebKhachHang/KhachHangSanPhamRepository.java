@@ -12,9 +12,25 @@ import java.math.BigDecimal;
 
 @Repository
 public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID> {
+    // Truy vấn sản phẩm đang hoạt động
     @Query("SELECT p FROM SanPham p JOIN p.danhMuc d WHERE p.trangThai = true")
     List<SanPham> findActiveProducts();
 
+    // Truy vấn sản phẩm mới (sắp xếp theo thoi_gian_tao giảm dần, lấy tối đa 10 sản phẩm)
+    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d WHERE p.trangThai = true ORDER BY p.thoiGianTao DESC")
+    List<SanPham> findNewProducts();
+
+    // Truy vấn sản phẩm bán chạy (dựa trên tổng số lượng bán từ chi_tiet_don_hang)
+    @Query("SELECT p, SUM(ctdh.soLuong) as totalSold " +
+            "FROM SanPham p " +
+            "JOIN ChiTietSanPham ctsp ON p.id = ctsp.sanPham.id " +
+            "JOIN ChiTietDonHang ctdh ON ctsp.id = ctdh.chiTietSanPham.id " +
+            "WHERE p.trangThai = true " +
+            "GROUP BY p " +
+            "ORDER BY totalSold DESC")
+    List<Object[]> findBestSellingProducts();
+
+    // Truy vấn chi tiết sản phẩm
     @Query("SELECT c FROM ChiTietSanPham c " +
             "JOIN c.sanPham p " +
             "JOIN p.danhMuc d " +
@@ -29,6 +45,7 @@ public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID>
             "WHERE c.trangThai = true")
     List<ChiTietSanPham> findActiveProductDetails();
 
+    // Truy vấn chi tiết sản phẩm theo sanPhamId
     @Query("SELECT c FROM ChiTietSanPham c " +
             "JOIN c.sanPham p " +
             "JOIN p.danhMuc d " +
@@ -43,14 +60,15 @@ public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID>
             "WHERE p.id = :sanPhamId AND c.trangThai = true")
     List<ChiTietSanPham> findActiveProductDetailsBySanPhamId(UUID sanPhamId);
 
+    // Truy vấn hình ảnh sản phẩm
     @Query("SELECT h.urlHinhAnh FROM HinhAnhSanPham h WHERE h.chiTietSanPham.id = :chiTietSanPhamId")
     List<String> findProductImagesByChiTietSanPhamId(UUID chiTietSanPhamId);
 
-    // Thêm truy vấn để lấy ChiTietSanPham theo sanPhamId, sizeId, colorId
+    // Truy vấn chi tiết sản phẩm theo sanPhamId, sizeId, colorId
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = :sanPhamId AND c.kichCo.id = :sizeId AND c.mauSac.id = :colorId AND c.trangThai = true")
     ChiTietSanPham findBySanPhamIdAndSizeIdAndColorId(UUID sanPhamId, UUID sizeId, UUID colorId);
 
-    // Thêm truy vấn để lấy giá thấp nhất
+    // Truy vấn giá thấp nhất
     @Query("SELECT MIN(c.gia) FROM ChiTietSanPham c WHERE c.sanPham.id = :sanPhamId AND c.trangThai = true")
     BigDecimal findMinPriceBySanPhamId(UUID sanPhamId);
 }
