@@ -40,7 +40,7 @@ public class SanPhamController {
             @RequestParam(value = "searchName", required = false) String searchName,
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
             @RequestParam(value = "page", defaultValue = "0") int page) {
-        Pageable pageable = PageRequest.of(page, 10);
+        Pageable pageable = PageRequest.of(page, 5);
         Page<SanPham> sanPhamPage;
 
         if (searchName != null && !searchName.isEmpty()) {
