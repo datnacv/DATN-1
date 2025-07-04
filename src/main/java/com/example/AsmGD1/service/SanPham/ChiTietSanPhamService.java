@@ -259,13 +259,6 @@ public class ChiTietSanPhamService {
     }
 
     @Transactional
-    public void deleteById(UUID id) {
-        ChiTietSanPham pd = chiTietSanPhamRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + id));
-        chiTietSanPhamRepo.delete(pd);
-    }
-
-    @Transactional
     public void deleteImage(UUID imageId) {
         HinhAnhSanPham image = hinhAnhSanPhamRepo.findById(imageId)
                 .orElseThrow(() -> new RuntimeException("Hình ảnh không tồn tại"));
