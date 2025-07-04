@@ -691,7 +691,9 @@
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <div class="content" id="content">
-        <h2 class="page-title">QUẢN LÝ SẢN PHẨM</h2>
+        <div class="text-center mb-2 mt-3">
+            <h2 class="page-title">QUẢN LÝ SẢN PHẨM</h2>
+        </div>
         <div th:fragment="content">
             <!-- Enhanced Search Section -->
             <div class="search-section">
@@ -896,10 +898,10 @@
                                     </div>
                                     <div class="col-lg-6">
                                         <div class="mb-3">
-                                            <label class="form-label fw-semibold text-dark mb-3">
+                                            <label class="form-label fw-semibold text-dark mb-3 d-flex justify-content-center">
                                                 <i class="fas fa-toggle-on me-2"></i>Trạng thái sản phẩm
                                             </label>
-                                            <div class="form-check form-switch d-flex align-items-center gap-3 mt-3">
+                                            <div class="form-check form-switch d-flex justify-content-center align-items-center gap-3 mt-3">
                                                 <input class="form-check-input" type="checkbox" id="editTrangThai" name="trangThai">
                                                 <label class="form-check-label fw-semibold fs-6" id="trangThaiLabel" for="editTrangThai">Ngừng Bán</label>
                                             </div>
@@ -909,8 +911,6 @@
                                         <div id="imagePreviewContainer" class="text-center">
                                             <img class="product-image" alt="Current Image" id="imagePreview" style="max-width: 250px; max-height: 250px; display: none;">
                                             <div id="noImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px; display: none;">
-                                                <i class="fas fa-image text-muted" style="font-size: 3rem;"></i>
-                                                <small class="text-muted mt-2">Chưa có ảnh được chọn</small>
                                             </div>
                                         </div>
                                     </div>
@@ -997,9 +997,9 @@
             trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
         }
 
-        // Fixed image preview logic
-        function updateImagePreview(imageUrl) {
-            if (imageUrl && imageUrl.trim() !== '') {
+        // Hàm cập nhật ảnh
+        function updateImagePreview(imageUrl = urlHinhAnhInput.value) {
+            if (imageUrl && imageUrl.trim() !== '' && isValidImageUrl(imageUrl)) {
                 imagePreview.src = imageUrl;
                 imagePreview.style.display = 'block';
                 noImagePlaceholder.style.display = 'none';
@@ -1007,7 +1007,17 @@
             } else {
                 imagePreview.style.display = 'none';
                 noImagePlaceholder.style.display = 'flex';
-                imageNameDisplay.textContent = 'Chưa chọn ảnh';
+                imageNameDisplay.textContent = 'Chưa có ảnh được chọn';
+            }
+        }
+
+        // Hàm kiểm tra URL hợp lệ
+        function isValidImageUrl(url) {
+            try {
+                new URL(url);
+                return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
+            } catch {
+                return false;
             }
         }
 
@@ -1023,11 +1033,12 @@
                 const moTaInput = modalForm.querySelector('textarea[name="moTa"]');
                 const danhMucSelect = modalForm.querySelector('#editDanhMuc');
                 const trangThaiInput = modalForm.querySelector('input[name="trangThai"]');
+                const urlHinhAnhInput = modalForm.querySelector('input[name="urlHinhAnh"]');
 
                 modalTitle.innerHTML = `<i class="fas fa-edit"></i> Chỉnh sửa sản phẩm #${sanPhamId}`;
                 sanPhamIdInput.value = sanPhamId;
 
-                // Reset form first
+                // Reset form
                 maSanPhamInput.value = '';
                 tenSanPhamInput.value = '';
                 moTaInput.value = '';
@@ -1035,7 +1046,7 @@
                 trangThaiInput.checked = false;
                 updateTrangThaiLabel();
                 urlHinhAnhInput.value = '';
-                updateImagePreview('');
+                updateImagePreview(); // Cập nhật ảnh dựa trên giá trị mặc định
 
                 fetch(`/acvstore/san-pham/get/${sanPhamId}`)
                     .then(response => {
@@ -1053,11 +1064,11 @@
                         trangThaiInput.checked = data.trangThai != null ? data.trangThai : false;
                         updateTrangThaiLabel();
 
-                        // Fixed image URL handling
+                        // Cập nhật URL ảnh
                         const imageUrl = data.urlHinhAnh || '';
                         urlHinhAnhInput.value = imageUrl;
                         console.log('Image URL:', imageUrl); // Debug log
-                        updateImagePreview(imageUrl);
+                        updateImagePreview(imageUrl); // Cập nhật ảnh từ dữ liệu server
                     })
                     .catch(error => {
                         console.error('Error fetching san pham data:', error);
@@ -1119,7 +1130,6 @@
                             const sanPham = data.sanPham;
                             let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
                             if (row) {
-                                // Update row data
                                 row.cells[1].innerHTML = `<code class="fw-bold">${sanPham.maSanPham || ''}</code>`;
                                 row.cells[2].innerHTML = sanPham.urlHinhAnh
                                     ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image"></div>`
@@ -1165,7 +1175,7 @@
                     if (!error && result && result.event === 'success') {
                         const imageUrl = result.info.secure_url;
                         urlHinhAnhInput.value = imageUrl;
-                        updateImagePreview(imageUrl);
+                        updateImagePreview(imageUrl); // Cập nhật ngay sau khi tải ảnh lên
                         showToast('Tải ảnh lên thành công!', 'success');
                     } else if (error) {
                         console.error('Cloudinary upload error:', error);
