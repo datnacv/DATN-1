@@ -3,9 +3,10 @@ package com.example.AsmGD1.controller.WebKhachHang;
 import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
+import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -25,108 +26,96 @@ public class CartController {
     @Autowired
     private ChiTietGioHangService chiTietGioHangService;
 
-    /**
-     * Thêm sản phẩm vào giỏ hàng
-     * @param payload Map chứa id (ChiTietSanPhamId), quantity
-     * @param authentication Đối tượng xác thực để lấy nguoiDungId
-     * @return ResponseEntity với thông báo thành công
-     */
-    @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestBody Map<String, String> payload, Authentication authentication) {
-        UUID chiTietSanPhamId = UUID.fromString(payload.get("id"));
-        int quantity = Integer.parseInt(payload.get("quantity"));
-
-        // Lấy nguoiDungId từ authentication (giả định đã tích hợp Spring Security)
-        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
-        if (nguoiDungId == null) {
-            return ResponseEntity.badRequest().body("Người dùng chưa đăng nhập");
-        }
-
-        // Tạo hoặc lấy giỏ hàng
-        GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
-
-        // Thêm sản phẩm vào giỏ hàng
-        khachHangGioHangService.addToGioHang(gioHang.getId(), chiTietSanPhamId, quantity);
-        return ResponseEntity.ok("Added to cart");
-    }
-
-    /**
-     * Cập nhật số lượng sản phẩm trong giỏ hàng
-     * @param chiTietGioHangId ID của chi tiết giỏ hàng
-     * @param quantity Số lượng mới
-     * @return ResponseEntity với thông báo thành công
-     */
-    @PostMapping("/update-quantity/{chiTietGioHangId}")
-    public ResponseEntity<String> updateQuantity(@PathVariable UUID chiTietGioHangId, @RequestParam int quantity) {
-        ChiTietGioHang chiTiet = chiTietGioHangService.updateSoLuong(chiTietGioHangId, quantity);
-        return ResponseEntity.ok("Quantity updated to " + quantity);
-    }
-
-    /**
-     * Áp dụng mã giảm giá cho sản phẩm trong giỏ hàng
-     * @param chiTietGioHangId ID của chi tiết giỏ hàng
-     * @param discount Số tiền giảm giá
-     * @return ResponseEntity với thông báo thành công
-     */
-    @PostMapping("/apply-discount/{chiTietGioHangId}")
-    public ResponseEntity<String> applyDiscount(@PathVariable UUID chiTietGioHangId, @RequestParam BigDecimal discount) {
-        ChiTietGioHang chiTiet = chiTietGioHangService.applyDiscount(chiTietGioHangId, discount);
-        return ResponseEntity.ok("Discount of " + discount + " applied successfully");
-    }
-
-    /**
-     * Xóa sản phẩm khỏi giỏ hàng
-     * @param chiTietGioHangId ID của chi tiết giỏ hàng
-     * @param authentication Đối tượng xác thực để lấy nguoiDungId
-     * @return ResponseEntity với thông báo thành công
-     */
-    @PostMapping("/remove/{chiTietGioHangId}")
-    public ResponseEntity<String> removeFromCart(@PathVariable UUID chiTietGioHangId, Authentication authentication) {
-        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
-        if (nguoiDungId == null) {
-            return ResponseEntity.badRequest().body("Người dùng chưa đăng nhập");
-        }
-
-        GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
-        ChiTietGioHang chiTiet = chiTietGioHangService.getChiTietGioHang(chiTietGioHangId)
-                .orElseThrow(() -> new RuntimeException("Chi tiết giỏ hàng không tồn tại"));
-        if (!chiTiet.getGioHang().getId().equals(gioHang.getId())) {
-            return ResponseEntity.badRequest().body("Chi tiết giỏ hàng không thuộc về người dùng");
-        }
-
-        chiTietGioHangService.removeChiTietGioHang(gioHang.getId(), chiTiet.getChiTietSanPham().getId());
-        return ResponseEntity.ok("Removed from cart");
-    }
-
-    /**
-     * Lấy danh sách sản phẩm trong giỏ hàng
-     * @param authentication Đối tượng xác thực để lấy nguoiDungId
-     * @return ResponseEntity với danh sách chi tiết giỏ hàng
-     */
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCart(Authentication authentication) {
-        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
-        if (nguoiDungId == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Người dùng chưa đăng nhập"));
-        }
+        try {
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Vui lòng đăng nhập để xem giỏ hàng"));
+            }
 
-        GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
-        Map<String, Object> response = new HashMap<>();
-        response.put("gioHangId", gioHang.getId());
-        response.put("chiTietGioHang", khachHangGioHangService.getGioHangChiTiets(gioHang.getId()));
-        response.put("tongTien", gioHang.getTongTien());
+            GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("gioHangId", gioHang.getId());
+            response.put("chiTietGioHang", khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) != null
+                    ? khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) : java.util.Collections.emptyList());
+            response.put("tongTien", gioHang.getTongTien() != null ? gioHang.getTongTien() : BigDecimal.ZERO);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Không thể tải giỏ hàng: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<String> addToCart(@RequestBody Map<String, String> payload, Authentication authentication) {
+        try {
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                return ResponseEntity.badRequest().body("Vui lòng đăng nhập để thêm sản phẩm");
+            }
+
+            UUID chiTietSanPhamId = UUID.fromString(payload.get("id"));
+            int quantity = Integer.parseInt(payload.get("quantity"));
+
+            GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
+            khachHangGioHangService.addToGioHang(gioHang.getId(), chiTietSanPhamId, quantity);
+            return ResponseEntity.ok("Sản phẩm đã được thêm vào giỏ hàng");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi thêm sản phẩm: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/update-quantity/{chiTietGioHangId}")
+    public ResponseEntity<String> updateQuantity(@PathVariable UUID chiTietGioHangId, @RequestParam Integer quantity, Authentication authentication) {
+        try {
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để cập nhật giỏ hàng");
+            }
+            chiTietGioHangService.updateSoLuong(chiTietGioHangId, quantity);
+            return ResponseEntity.ok("Cập nhật số lượng thành công");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi cập nhật số lượng: " + e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/remove")
+    public ResponseEntity<String> removeFromCart(@RequestParam UUID gioHangId, @RequestParam UUID chiTietSanPhamId, Authentication authentication) {
+        try {
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xóa sản phẩm");
+            }
+            chiTietGioHangService.removeChiTietGioHang(gioHangId, chiTietSanPhamId);
+            return ResponseEntity.ok("Xóa sản phẩm thành công");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Lỗi khi xóa sản phẩm: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/check-auth")
+    public ResponseEntity<Map<String, Boolean>> checkAuthentication(Authentication authentication) {
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isAuthenticated", authentication != null && authentication.isAuthenticated());
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Lấy nguoiDungId từ authentication (giả định tích hợp Spring Security)
-     * @param authentication Đối tượng xác thực
-     * @return UUID của nguoiDungId
-     */
+    @GetMapping("/get-user")
+    public ResponseEntity<Map<String, Object>> getUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Không có người dùng được xác thực"));
+        }
+        NguoiDung user = (NguoiDung) authentication.getPrincipal();
+        Map<String, Object> response = new HashMap<>();
+        response.put("hoTen", user.getHoTen());
+        response.put("tenDangNhap", user.getTenDangNhap());
+        return ResponseEntity.ok(response);
+    }
+
     private UUID getNguoiDungIdFromAuthentication(Authentication authentication) {
         if (authentication != null && authentication.getPrincipal() instanceof NguoiDung) {
             return ((NguoiDung) authentication.getPrincipal()).getId();
         }
-        return null; // Cần tích hợp Spring Security để lấy chính xác
+        return null;
     }
 }

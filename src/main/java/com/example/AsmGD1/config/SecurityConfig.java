@@ -9,6 +9,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -56,7 +57,6 @@ public class SecurityConfig {
         };
     }
 
-    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
@@ -85,18 +85,6 @@ public class SecurityConfig {
                         .loginProcessingUrl("/acvstore/login")
                         .defaultSuccessUrl("/acvstore/redirect", true)
                         .failureUrl("/acvstore/login?error=invalidCredentials")
-                        .loginPage("/acvstore/login")
-                        .loginProcessingUrl("/acvstore/login")
-                        .successHandler((request, response, authentication) -> {
-                            boolean isAdmin = authentication.getAuthorities().stream()
-                                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
-                            if (isAdmin) {
-                                response.sendRedirect("/acvstore/employees/verify-face");
-                            } else {
-                                response.sendRedirect("/acvstore/redirect");
-                            }
-                        })
-                        .failureUrl("/acvstore/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
                         .permitAll()
@@ -114,11 +102,11 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandlerEmployees())
                 )
                 .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/acvstore/login?expired")
                         )
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .invalidSessionUrl("/acvstore/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
@@ -156,11 +144,11 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandlerCustomers())
                 )
                 .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/customers/login?expired")
                         )
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .invalidSessionUrl("/customers/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
@@ -168,12 +156,12 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/customers/login").permitAll()
+                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/customers/login", "/customers/login", "/api/cart/check-auth", "/api/cart/get-user").permitAll()
+                        .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -197,11 +185,11 @@ public class SecurityConfig {
                         .authenticationEntryPoint(defaultAuthEntryPoint())
                 )
                 .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/customers/login?expired")
                         )
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .invalidSessionUrl("/customers/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
@@ -224,6 +212,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // ⚠️ Dùng BCrypt trong môi trường thực tế
+        return NoOpPasswordEncoder.getInstance(); // ⚠️ Thay bằng BCryptPasswordEncoder trong môi trường thực tế
     }
 }

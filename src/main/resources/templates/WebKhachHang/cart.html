@@ -1,67 +1,321 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
     <title>Giỏ hàng</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .cart-item { margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
-        .total { font-size: 1.5em; font-weight: bold; }
+        .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
+        .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+        .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        body { padding-top: 100px; }
+        @media (max-width: 640px) {
+            .dropdown-menu { width: 100%; left: 0; }
+            body { padding-top: 80px; }
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; }
+        th { background-color: #f97316; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .quantity-control { display: flex; align-items: center; gap: 10px; }
+        .quantity-input { width: 60px; text-align: center; }
     </style>
 </head>
-<body>
-<div class="container mt-4">
-    <h2>Giỏ hàng của bạn</h2>
-    <div th:if="${chiTietGioHang.isEmpty()}">
-        <p>Giỏ hàng của bạn trống. <a th:href="@{/}">Mua sắm ngay</a></p>
-    </div>
-    <div th:unless="${chiTietGioHang.isEmpty()}">
-        <div th:each="item : ${chiTietGioHang}" class="cart-item">
-            <div class="row">
-                <div class="col-md-2">
-                    <img th:src="${item.chiTietSanPham.urlHinhAnh}" alt="Product Image" style="width: 100px; height: auto;" th:if="${item.chiTietSanPham.urlHinhAnh != null}" th:else='@/images/default-product.jpg'>
-                </div>
-                <div class="col-md-4">
-                    <h5 th:text="${item.chiTietSanPham.tenSanPham}"></h5>
-                    <p>Màu: <span th:text="${item.chiTietSanPham.mauSac.tenMau} ?: 'Chưa có'"></span></p>
-                    <p>Size: <span th:text="${item.chiTietSanPham.kichCo.ten} ?: 'Chưa có'"></span></p>
-                </div>
-                <div class="col-md-2">
-                    <p>Giá: <span th:text="${#numbers.formatDecimal(item.gia, 0, 'COMMA', 2, 'POINT')}"></span> VNĐ</p>
-                    <p>Giảm giá: <span th:text="${#numbers.formatDecimal(item.tienGiam, 0, 'COMMA', 2, 'POINT')}"></span> VNĐ</p>
-                    <p>Số lượng: <span th:text="${item.soLuong}"></span></p>
-                </div>
-                <div class="col-md-2">
-                    <button th:onclick="'removeItem(\'' + ${item.id} + '\')'" class="btn btn-danger btn-sm">Xóa</button>
-                </div>
-            </div>
-        </div>
-        <div class="total mt-4">
-            Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'COMMA', 2, 'POINT')}"></span> VNĐ
-        </div>
-        <a th:href="@{/}" class="btn btn-primary mt-3">Quay lại trang chủ</a>
-    </div>
-    <div th:if="${error}" class="alert alert-danger mt-3" th:text="${error}"></div>
+<body class="bg-gray-100">
+<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+    <marquee behavior="scroll" direction="left" scrollamount="5">
+        🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+    </marquee>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+    <div class="container mx-auto flex items-center justify-between py-2 px-4">
+        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+        <div class="relative dropdown">
+            <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
+                Danh mục <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nam</a>
+                <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nữ</a>
+                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100">Phụ kiện</a>
+                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
+            </div>
+        </div>
+        <div class="flex-1 mx-4 max-w-2xl">
+            <div class="relative">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4" id="userSection">
+            <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
+            <div class="user-info" id="userInfo"></div>
+            <a href="/customers/login" id="loginButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none">Đăng nhập</a>
+            <a href="/logout" id="logoutButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none" style="display: none;">Đăng xuất</a>
+        </div>
+    </div>
+</nav>
+
+<section class="container mx-auto py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Giỏ hàng</h1>
+
+    <div th:if="${error}" class="bg-red-100 text-red-700 p-4 rounded mb-4" th:text="${error}"></div>
+
+    <div th:if="${chiTietGioHang == null or #lists.isEmpty(chiTietGioHang)}" class="bg-white p-6 rounded-lg shadow-md">
+        <p class="text-gray-600 text-center">Giỏ hàng của bạn đang trống.</p>
+        <div class="text-center mt-4">
+            <a href="/" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded">Tiếp tục mua sắm</a>
+        </div>
+    </div>
+
+    <div th:unless="${chiTietGioHang == null or #lists.isEmpty(chiTietGioHang)}" class="bg-white p-6 rounded-lg shadow-md">
+        <table>
+            <thead>
+            <tr>
+                <th>Sản phẩm</th>
+                <th>Màu sắc</th>
+                <th>Kích cỡ</th>
+                <th>Số lượng</th>
+                <th>Giá</th>
+                <th>Giảm giá</th>
+                <th>Thành tiền</th>
+                <th>Hành động</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="item : ${chiTietGioHang}">
+                <td th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
+                <td th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
+                <td th:text="${item.chiTietSanPham.kichCo.ten}"></td>
+                <td>
+                    <div class="quantity-control">
+                        <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">-</button>
+                        <input type="number" th:value="${item.soLuong}" min="1" class="quantity-input border rounded" th:attr="data-item-id=${item.id}"/>
+                        <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">+</button>
+                    </div>
+                </td>
+                <td th:text="${#numbers.formatDecimal(item.gia, 0, 0, 'COMMA')} + ' VNĐ'"></td>
+                <td th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 0, 'COMMA') + ' VNĐ' : '0 VNĐ'}"></td>
+                <td th:text="${#numbers.formatDecimal(item.gia * item.soLuong - (item.tienGiam != null ? item.tienGiam : 0), 0, 0, 'COMMA')} + ' VNĐ'"></td>
+                <td>
+                    <button class="btn bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded remove-item" th:attr="data-item-id=${item.id},data-gio-hang-id=${gioHangId},data-chi-tiet-san-pham-id=${item.chiTietSanPham.id}">
+                        <i class="fas fa-trash"></i> Xóa
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="mt-6 text-right">
+            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 0, 'COMMA')} + ' VNĐ'"></span></p>
+            <a href="/checkout" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded mt-4">Thanh toán</a>
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <a href="/" class="text-orange-500 font-semibold hover:underline">Quay lại trang chủ</a>
+    </div>
+</section>
+
+<footer class="bg-gray-800 text-white py-8">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+            <h3 class="text-lg font-bold mb-4">ACV Store</h3>
+            <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
+            <ul class="space-y-2">
+                <li><a href="/new" class="hover:text-orange-500">Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
+                <li><a href="/bestsellers" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+            <p class="text-sm">Email: support@160store.com</p>
+            <p class="text-sm">Hotline: 0123 456 789</p>
+            <div class="flex space-x-4 mt-4">
+                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function removeItem(chiTietGioHangId) {
-        if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
-            $.ajax({
-                url: '/api/cart/remove/' + chiTietGioHangId,
-                type: 'POST',
-                success: function(response) {
-                    alert(response);
-                    location.reload();
-                },
-                error: function(xhr) {
-                    alert('Lỗi: ' + xhr.responseText);
-                }
-            });
+    window.addEventListener('load', async () => {
+        const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
+        const data = await response.json();
+        const userSection = document.getElementById('userSection');
+        const userInfo = document.getElementById('userInfo');
+        const loginButton = document.getElementById('loginButton');
+        const logoutButton = document.getElementById('logoutButton');
+
+        if (data.isAuthenticated) {
+            const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
+            const userData = await userResponse.json();
+            if (userData.hoTen && userData.tenDangNhap) {
+                userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
+                userInfo.classList.add('active');
+                loginButton.style.display = 'none';
+                logoutButton.style.display = 'inline';
+            }
+        } else {
+            userInfo.classList.remove('active');
+            loginButton.style.display = 'inline';
+            logoutButton.style.display = 'none';
+        }
+    });
+
+    document.getElementById('logoutButton').addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('/logout', { method: 'POST', credentials: 'include' }).then(() => {
+            window.location.href = '/customers/login';
+        });
+    });
+
+    async function updateCartCount() {
+        try {
+            const response = await fetch('/api/cart', { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
+                document.getElementById('cart-count').textContent = cartCount;
+            } else if (response.status === 401) {
+                document.getElementById('cart-count').textContent = 0;
+            }
+        } catch (error) {
+            console.error('Error updating cart count:', error);
         }
     }
+
+    document.addEventListener('DOMContentLoaded', updateCartCount);
+
+    document.querySelectorAll('.quantity-btn').forEach(button => {
+        button.addEventListener('click', async () => {
+            const itemId = button.dataset.itemId;
+            const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
+            let quantity = parseInt(input.value);
+
+            if (button.classList.contains('minus') && quantity > 1) {
+                quantity--;
+            } else if (button.classList.contains('plus')) {
+                quantity++;
+            }
+
+            try {
+                const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+                });
+            }
+        });
+    });
+
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('change', async () => {
+            const itemId = input.dataset.itemId;
+            const quantity = parseInt(input.value);
+
+            if (quantity < 1) {
+                input.value = 1;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+                });
+            }
+        });
+    });
+
+    document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', async () => {
+            const gioHangId = button.dataset.gioHangId;
+            const chiTietSanPhamId = button.dataset.chiTietSanPhamId;
+
+            try {
+                const response = await fetch(`/api/cart/remove?gioHangId=${gioHangId}&chiTietSanPhamId=${chiTietSanPhamId}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công',
+                        text: 'Đã xóa sản phẩm khỏi giỏ hàng!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    window.location.reload();
+                } else {
+                    const errorData = await response.json();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: errorData.error || 'Có lỗi xảy ra khi xóa sản phẩm!',
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Có lỗi xảy ra khi xóa sản phẩm!',
+                });
+            }
+        });
+    });
 </script>
 </body>
 </html>

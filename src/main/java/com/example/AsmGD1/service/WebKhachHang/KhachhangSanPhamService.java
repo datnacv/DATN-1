@@ -19,10 +19,10 @@ public class KhachhangSanPhamService {
     @Autowired
     private KhachHangSanPhamRepository khachHangSanPhamRepository;
 
-    public List<SanPhamDto> getNewProducts() {
-        List<SanPham> sanPhams = khachHangSanPhamRepository.findActiveProducts();
-        return sanPhams.stream()
-                .map(this::convertToSanPhamDto)
+    public List<ChiTietSanPhamDto> getNewProducts() {
+        List<ChiTietSanPham> chiTietSanPhams = khachHangSanPhamRepository.findActiveProductDetails();
+        return chiTietSanPhams.stream()
+                .map(this::convertToChiTietSanPhamDto)
                 .collect(Collectors.toList());
     }
 
@@ -110,6 +110,8 @@ public class KhachhangSanPhamService {
         List<String> hinhAnhList = khachHangSanPhamRepository.findProductImagesByChiTietSanPhamId(chiTiet.getId());
         dto.setHinhAnhList(hinhAnhList);
 
+        // Ánh xạ dữ liệu flash sale (tương tự như SanPhamDto)
+
         return dto;
     }
 
@@ -125,13 +127,13 @@ public class KhachhangSanPhamService {
         dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
         dto.setThoiGianTao(sanPham.getThoiGianTao());
 
-        // Ánh xạ dữ liệu flash sale (giả sử logic cơ bản)
+        // Ánh xạ dữ liệu flash sale
         BigDecimal minPrice = khachHangSanPhamRepository.findMinPriceBySanPhamId(sanPham.getId());
-        dto.setPrice(minPrice != null ? minPrice.toString() : "0"); // Chuyển BigDecimal thành String
-        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10")).toString() : "0"); // Giả lập giá cũ
-        dto.setDiscount("10%"); // Giả lập giảm giá
-        dto.setSold("50"); // Giả lập số lượng đã bán
-        dto.setProgress(50); // Giả lập tiến độ
+        dto.setPrice(minPrice != null ? minPrice.toString() : "0");
+        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10")).toString() : "0");
+        dto.setDiscount("10%");
+        dto.setSold("50");
+        dto.setProgress(50);
 
         return dto;
     }
