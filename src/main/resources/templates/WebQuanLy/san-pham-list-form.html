@@ -110,23 +110,14 @@
         .table td {
             text-align: center;
         }
-        .table thead th:nth-child(4) {
-            min-width: 100px;
-        }
-        .table td:nth-child(4) {
-            max-width: 150px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .table thead th:nth-child(1) { min-width: 40px; }
-        .table thead th:nth-child(2) { min-width: 80px; }
-        .table thead th:nth-child(3) { min-width: 150px; }
-        .table thead th:nth-child(4) { min-width: 200px; }
-        .table thead th:nth-child(5) { min-width: 120px; }
-        .table thead th:nth-child(6) { min-width: 100px; }
-        .table thead th:nth-child(7) { min-width: 120px; }
-        .table thead th:nth-child(8) { min-width: 130px; }
+        .table thead th:nth-child(1) { min-width: 40px; } /* # */
+        .table thead th:nth-child(2) { min-width: 80px; } /* Mã Sản Phẩm */
+        .table thead th:nth-child(3) { min-width: 120px; } /* Ảnh */
+        .table thead th:nth-child(4) { min-width: 150px; } /* Tên */
+        .table thead th:nth-child(5) { min-width: 120px; } /* Danh mục */
+        .table thead th:nth-child(6) { min-width: 100px; } /* Trạng thái */
+        .table thead th:nth-child(7) { min-width: 120px; } /* Ngày tạo */
+        .table thead th:nth-child(8) { min-width: 130px; } /* Thao tác */
         .table-hover > tbody > tr:hover {
             background-color: rgba(0, 0, 0, 0.04);
         }
@@ -158,8 +149,8 @@
             border-radius: 0.75rem;
         }
         .product-image {
-            max-width: 50px;
-            max-height: 50px;
+            max-width: 80px;
+            max-height: 80px;
             object-fit: cover;
             border-radius: 0.25rem;
         }
@@ -242,11 +233,16 @@
         .table td:nth-child(2) {
             padding: 0.5rem;
         }
-        .table td:nth-child(2) div {
+        .table td:nth-child(3) div { /* Ảnh */
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 50px;
+            height: 100px; /* Adjusted to accommodate larger image */
+        }
+        .table td:nth-child(4) { /* Tên */
+            white-space: normal;
+            word-wrap: break-word;
+            max-width: 150px;
         }
     </style>
 </head>
@@ -270,7 +266,7 @@
                                 <label for="searchNameInput" class="form-label">Tìm kiếm</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                    <input type="text" class="form-control border-start-0" id="searchNameInput" name="searchName" th:value="${searchName}" placeholder="Nhập tên sản phẩm...">
+                                    <input type="text" class="form-control border-start-0" id="searchNameInput" name="searchName" th:value="${searchName}" placeholder="Nhập tên hoặc mã sản phẩm...">
                                 </div>
                             </div>
                             <div class="col-md-4 col-lg-4">
@@ -299,9 +295,9 @@
                         <thead>
                         <tr>
                             <th>#</th>
+                            <th>Mã Sản Phẩm</th>
                             <th>Ảnh</th>
                             <th>Tên</th>
-                            <th>Mô tả</th>
                             <th>Danh mục</th>
                             <th>Trạng thái</th>
                             <th>Ngày tạo</th>
@@ -314,6 +310,7 @@
                         </tr>
                         <tr th:each="sp, iter : ${sanPhamList}" th:data-id="${sp.id}">
                             <td th:text="${iter.count + (currentPage * 10)}"></td>
+                            <td th:text="${sp.maSanPham}"></td>
                             <td>
                                 <div>
                                     <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}" th:src="${sp.urlHinhAnh}" class="product-image" alt="Product Image">
@@ -321,7 +318,6 @@
                                 </div>
                             </td>
                             <td th:text="${sp.tenSanPham}"></td>
-                            <td th:text="${sp.moTa}" th:title="${sp.moTa}"></td>
                             <td th:text="${sp.danhMuc != null ? sp.danhMuc.tenDanhMuc : 'N/A'}"></td>
                             <td>
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
@@ -390,7 +386,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="editMoTa" class="form-label">Mô tả</label>
-                                    <textarea class="form-control" id="editMoTa" name="moTa" rows="3"></textarea>
+                                    <textarea class 투자="editMoTa" name="moTa" rows="3"></textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label for="editDanhMuc" class="form-label">Danh mục</label>
@@ -565,12 +561,11 @@
                             let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
                             if (row) {
                                 row.cells[0].textContent = row.rowIndex + (parseInt('[[${currentPage}]]') * 10);
-                                row.cells[1].innerHTML = sanPham.urlHinhAnh
+                                row.cells[1].textContent = sanPham.maSanPham || '';
+                                row.cells[2].innerHTML = sanPham.urlHinhAnh
                                     ? `<img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image">`
                                     : 'N/A';
-                                row.cells[2].textContent = sanPham.tenSanPham || '';
-                                row.cells[3].textContent = sanPham.moTa || '';
-                                row.cells[3].title = sanPham.moTa || '';
+                                row.cells[3].textContent = sanPham.tenSanPham || '';
                                 row.cells[4].textContent = sanPham.tenDanhMuc || 'N/A';
                                 row.cells[5].innerHTML = `
                                     <div class="form-check form-switch d-flex justify-content-center align-items-center">
