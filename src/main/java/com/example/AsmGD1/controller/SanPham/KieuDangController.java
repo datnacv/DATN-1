@@ -1,6 +1,8 @@
 package com.example.AsmGD1.controller.SanPham;
 
 import com.example.AsmGD1.entity.KieuDang;
+import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.KieuDangService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -16,6 +18,8 @@ import java.util.UUID;
 public class KieuDangController {
     @Autowired
     private KieuDangService kieuDangService;
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     @GetMapping("/kieu-dang")
     public String listKieuDang(@RequestParam(value = "search", required = false) String search, Model model) {
@@ -28,6 +32,8 @@ public class KieuDangController {
         // Reverse the list to show newest entries first (assumes database order is oldest first)
         Collections.reverse(kieuDangList);
         model.addAttribute("kieuDangList", kieuDangList);
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/kieu-dang";
     }
 

@@ -11,15 +11,12 @@
 </head>
 <body class="bg-light">
 <div class="d-flex">
-    <!-- Include sidebar fragment -->
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-        <a class="navbar-brand fw-bold text-primary" href="#">
-            <i class="fas fa-store-alt me-2"></i>ACV Admin
-        </a>
-        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+        <!-- Các phần tử khác bên trái (nếu có) -->
+
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <!-- Nội dung chính bên phải -->
     <div class="content" id="content">

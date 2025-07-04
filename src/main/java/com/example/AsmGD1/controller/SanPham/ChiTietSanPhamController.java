@@ -4,6 +4,7 @@ import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class ChiTietSanPhamController {
     @Autowired private ThuongHieuService thuongHieuService;
     @Autowired private DanhMucService danhMucService;
     @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository; // Thêm repository
+    @Autowired private NguoiDungService nguoiDungService;
 
     @GetMapping
     public String xemTatCa(Model model,
@@ -63,6 +65,8 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
 
             if (productId != null) {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
@@ -110,6 +114,8 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
             logger.info("Số lượng danh mục: {}", danhMucList.size());
             model.addAttribute("danhMucList", danhMucList);

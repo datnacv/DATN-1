@@ -9,6 +9,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -28,6 +29,9 @@ public class CustomerController {
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
+
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/list-khach-hang";
     }
 

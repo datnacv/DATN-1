@@ -1,6 +1,8 @@
 package com.example.AsmGD1.controller.SanPham;
 
 import com.example.AsmGD1.entity.CoAo;
+import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.CoAoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -17,6 +19,8 @@ public class CoAoController {
     @Autowired
     private CoAoService coAoService;
 
+    @Autowired private NguoiDungService nguoiDungService;
+
     @GetMapping("/co-ao")
     public String listCoAo(@RequestParam(value = "search", required = false) String search, Model model) {
         List<CoAo> coAoList;
@@ -28,6 +32,8 @@ public class CoAoController {
         // Reverse the list to show newest entries first (assumes database order is oldest first)
         Collections.reverse(coAoList);
         model.addAttribute("coAoList", coAoList);
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/co-ao";
     }
 

@@ -2,7 +2,9 @@ package com.example.AsmGD1.controller.SanPham;
 
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.DanhMuc;
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
 import com.example.AsmGD1.util.CloudinaryUtil;
@@ -34,6 +36,9 @@ public class SanPhamController {
     @Autowired
     private CloudinaryUtil cloudinaryUtil;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping
     public String viewSanPhamPage(
             Model model,
@@ -59,6 +64,8 @@ public class SanPhamController {
         model.addAttribute("selectedTrangThai", trangThai);
         model.addAttribute("sanPham", new SanPham());
         model.addAttribute("danhMucList", danhMucList);
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "/WebQuanLy/san-pham-list-form";
     }
 

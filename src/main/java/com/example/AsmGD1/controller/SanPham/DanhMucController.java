@@ -1,6 +1,8 @@
 package com.example.AsmGD1.controller.SanPham;
 
 import com.example.AsmGD1.entity.DanhMuc;
+import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -17,6 +19,9 @@ public class DanhMucController {
     @Autowired
     private DanhMucService danhMucService;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping("/danh-muc")
     public String listDanhMuc(@RequestParam(value = "search", required = false) String search, Model model) {
         List<DanhMuc> danhMucList;
@@ -28,6 +33,8 @@ public class DanhMucController {
         // Reverse the list to show newest entries first
         Collections.reverse(danhMucList);
         model.addAttribute("danhMucList", danhMucList);
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/danh-muc";
     }
 

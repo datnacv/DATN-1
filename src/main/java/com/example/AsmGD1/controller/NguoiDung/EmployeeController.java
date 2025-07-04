@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,6 +44,9 @@ public class EmployeeController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("vaiTro", vaiTro);
         model.addAttribute("employee", new NguoiDung());
+
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/list-nhan-vien";
     }
 

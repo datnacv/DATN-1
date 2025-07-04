@@ -3,8 +3,10 @@ package com.example.AsmGD1.controller.HoaDon;
 import com.example.AsmGD1.dto.HoaDonDTO;
 import com.example.AsmGD1.entity.DonHang;
 import com.example.AsmGD1.entity.HoaDon;
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -33,6 +35,9 @@ public class HoaDonController {
     @Autowired
     private DonHangRepository donHangRepository;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping
     public String hienThiTrangHoaDon(Model model,
                                      @RequestParam(defaultValue = "0") int page,
@@ -42,6 +47,9 @@ public class HoaDonController {
         Page<HoaDon> hoaDonPage = hoaDonService.findAll(search, null, pageable);
         model.addAttribute("hoaDonPage", hoaDonPage);
         model.addAttribute("search", search);
+
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/hoa-don";
     }
 
