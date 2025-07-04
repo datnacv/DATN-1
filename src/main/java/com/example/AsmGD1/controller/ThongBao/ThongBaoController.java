@@ -2,6 +2,7 @@ package com.example.AsmGD1.controller.ThongBao;
 
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -23,6 +25,9 @@ public class ThongBaoController {
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping("/xem")
     public String hienThiThongBao(Model model, Principal principal) {
         Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
@@ -31,6 +36,8 @@ public class ThongBaoController {
             NguoiDung nguoiDung = optionalNguoiDung.get();
             model.addAttribute("notifications", thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId()));
             model.addAttribute("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             model.addAttribute("user", nguoiDung);
         } else {
             model.addAttribute("notifications", null);

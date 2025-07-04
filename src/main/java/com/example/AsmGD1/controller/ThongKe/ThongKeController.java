@@ -3,6 +3,8 @@ package com.example.AsmGD1.controller.ThongKe;
 import com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO;
 import com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO;
 import com.example.AsmGD1.dto.ThongKe.ThongKeDoanhThuDTO;
+import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongKe.ThongKeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -21,6 +23,9 @@ public class ThongKeController {
 
     @Autowired
     private ThongKeService thongKeDichVu;
+
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     @GetMapping
     public String layThongKe(
@@ -85,6 +90,8 @@ public class ThongKeController {
         model.addAttribute("topSellingProducts", sanPhamBanChay);
         model.addAttribute("lowStockProducts", sanPhamTonKhoThap);
         model.addAttribute("filterStatus", trangThaiBoLoc);
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
 
         return "WebQuanLy/thong-ke";
     }

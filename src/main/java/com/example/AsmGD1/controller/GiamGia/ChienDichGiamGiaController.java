@@ -1,10 +1,8 @@
 package com.example.AsmGD1.controller.GiamGia;
 
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
-import com.example.AsmGD1.entity.ChiTietSanPhamChienDichGiamGia;
-import com.example.AsmGD1.entity.ChienDichGiamGia;
-import com.example.AsmGD1.entity.ChiTietSanPham;
-import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -30,6 +28,9 @@ public class ChienDichGiamGiaController {
     @Autowired
     private SanPhamService sanPhamService;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping
     public String danhSach(
             @RequestParam(name = "keyword", required = false) String keyword,
@@ -48,6 +49,8 @@ public class ChienDichGiamGiaController {
         model.addAttribute("currentPage", pageResult.getNumber());
         model.addAttribute("totalPages", pageResult.getTotalPages());
         model.addAttribute("totalItems", pageResult.getTotalElements());
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
 
         return "WebQuanLy/discount-campaign-list";
     }
