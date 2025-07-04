@@ -19,6 +19,9 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.io.PrintWriter;
 
 @Configuration
 public class SecurityConfig {
@@ -65,16 +68,31 @@ public class SecurityConfig {
             response.sendRedirect("/customers/login");
         };
     }
+    // ✅ BỔ SUNG MỚI: JSON entry point cho các API (ví dụ /verify-success)
+    @Bean
+    public AuthenticationEntryPoint jsonAuthEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            PrintWriter writer = response.getWriter();
+            writer.write("{\"success\": false, \"message\": \"Unauthorized\"}");
+            writer.flush();
+        };
+    }
+
 
     @Bean
     public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http,
                                                            CustomerAccessBlockFilter blockFilter,
+                                                           FaceVerificationFilter faceVerificationFilter,
                                                            NguoiDungService nguoiDungService) throws Exception {
         http
                 .securityMatcher("/acvstore/**")
                 .addFilterBefore(blockFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(faceVerificationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/register-face").permitAll()
+                        .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
+                        .requestMatchers("/acvstore/verify-success").authenticated()
                         .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
@@ -86,6 +104,7 @@ public class SecurityConfig {
                         .successHandler((request, response, authentication) -> {
                             String tenDangNhap = authentication.getName();
                             NguoiDung nguoiDung = nguoiDungService.findByTenDangNhap(tenDangNhap);
+                            request.getSession().setAttribute("faceVerified", false);
 
                             if (nguoiDung != null) {
                                 byte[] descriptor = nguoiDung.getFaceDescriptor();
@@ -112,8 +131,17 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(employeeAuthEntryPoint())
+                        .defaultAuthenticationEntryPointFor(
+                                jsonAuthEntryPoint(),
+                                new AntPathRequestMatcher("/acvstore/verify-success", "POST")
+                        )
+                        // Dành cho các route còn lại của /acvstore/**
+                        .defaultAuthenticationEntryPointFor(
+                                employeeAuthEntryPoint(),
+                                new AntPathRequestMatcher("/acvstore/**")
+                        )
                         .accessDeniedHandler(accessDeniedHandlerEmployees())
+
                 )
                 .sessionManagement(session -> session
                         .sessionConcurrency(concurrency -> concurrency
@@ -186,7 +214,7 @@ public class SecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/customers/login").permitAll()
+                        .requestMatchers("/acvstore/login", "/acvstore/verify-face").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

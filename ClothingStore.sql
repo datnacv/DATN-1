@@ -326,9 +326,17 @@ CREATE TABLE chi_tiet_thong_bao_nhom (
                                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
 );
 
+-- Bước 3: Tạo trigger để tự động gửi thông báo đến tất cả admin có trạng thái hoạt động
+CREATE TRIGGER tr_don_hang_thong_bao_nhom
+    ON don_hang
+    AFTER INSERT
+AS
+BEGIN
+    DECLARE @id_don_hang UNIQUEIDENTIFIER, @ma_don_hang NVARCHAR(50), @id_thong_bao_nhom UNIQUEIDENTIFIER;
+SELECT @id_don_hang = id, @ma_don_hang = ma_don_hang FROM inserted;
+SET @id_thong_bao_nhom = NEWID();
 
-
--- Chèn thông báo nhóm
+    -- Chèn thông báo nhóm
 INSERT INTO thong_bao_nhom (id, id_don_hang, vai_tro_nhan, tieu_de, noi_dung, thoi_gian_tao, trang_thai)
 VALUES (@id_thong_bao_nhom, @id_don_hang, N'admin', N'Đơn hàng mới',
         N'Có đơn hàng mới với mã ' + @ma_don_hang, GETDATE(), N'Mới');
@@ -512,7 +520,7 @@ select * from don_hang
 select * from nguoi_dung
 
 -- INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai, da_gui_mail)
--- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646', 
+-- VALUES (NEWID(), '5aa57234-8476-451a-a008-1a4128682646',
 --         (SELECT id FROM nguoi_dung WHERE so_dien_thoai = '0999999999'), 1, 0);
 
 SELECT id, id_phieu_giam_gia, id_nguoi_dung, so_luot_con_lai
@@ -561,3 +569,4 @@ INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
 INSERT INTO don_hang (id, id_nguoi_dung, ma_don_hang, trang_thai_thanh_toan, phi_van_chuyen, id_phuong_thuc_thanh_toan, so_tien_khach_dua, thoi_gian_thanh_toan, thoi_gian_tao, tien_giam, tong_tien, phuong_thuc_ban_hang)
 VALUES (NEWID(), '550E8400-E29B-41D4-A716-446655440014', N'DH006', 1, 30000.00, '550E8400-E29B-41D4-A716-446655440017', 230000.00, GETDATE(), GETDATE(), 20000.00, 230000.00, N'Giao hàng');
 
+select * from nguoi_dung

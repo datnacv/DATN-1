@@ -1,7 +1,12 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const video = document.getElementById("video");
     const resultDiv = document.getElementById("result");
-    const username = "admin"; // 👈 Bạn có thể truyền động từ backend xuống thay vì hardcode
+    const canvas = document.getElementById("overlay");
+    const displaySize = { width: 600, height: 450 };
+    canvas.width = displaySize.width;
+    canvas.height = displaySize.height;
+
+    const username = "admin"; // 👉 truyền từ backend nếu cần
 
     console.log("🚀 Bắt đầu xác minh khuôn mặt cho:", username);
 
@@ -12,50 +17,41 @@ document.addEventListener("DOMContentLoaded", async () => {
             faceapi.nets.faceLandmark68Net.loadFromUri("/models"),
             faceapi.nets.faceRecognitionNet.loadFromUri("/models"),
         ]);
-        console.log("✅ Đã load models thành công");
+        console.log("✅ Models đã được tải");
 
         resultDiv.textContent = "⏳ Đang mở camera...";
         const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
         video.srcObject = stream;
-        console.log("📷 Camera đã hoạt động");
-
     } catch (e) {
-        console.error("❌ Lỗi khi khởi tạo camera/models:", e);
+        console.error("❌ Lỗi khởi tạo:", e);
         resultDiv.textContent = "Lỗi: " + e.message;
         return;
     }
 
     video.addEventListener("play", async () => {
-        const canvas = document.getElementById("overlay");
-        const displaySize = { width: 600, height: 450 };
         faceapi.matchDimensions(canvas, displaySize);
 
         try {
-            resultDiv.textContent = "⏳ Đang lấy dữ liệu khuôn mặt từ server...";
-            const response = await fetch(`/api/get-descriptor?username=${encodeURIComponent(username)}`);
-            const data = await response.json();
+            resultDiv.textContent = "⏳ Đang lấy dữ liệu khuôn mặt...";
+            const res = await fetch(`/api/get-descriptor?username=${encodeURIComponent(username)}`);
+            const data = await res.json();
 
-            if (!response.ok || !data.descriptors || !Array.isArray(data.descriptors) || data.descriptors.length === 0) {
-                throw new Error(data.message || "Không tìm thấy dữ liệu khuôn mặt");
+            if (!res.ok || !data.descriptors || !Array.isArray(data.descriptors) || data.descriptors.length === 0) {
+                throw new Error(data.message || "Không có dữ liệu khuôn mặt");
             }
 
             const labeledDescriptor = new faceapi.LabeledFaceDescriptors(
                 username,
                 data.descriptors.map(d => new Float32Array(d))
             );
-            const faceMatcher = new faceapi.FaceMatcher([labeledDescriptor], 0.6);
+            const faceMatcher = new faceapi.FaceMatcher([labeledDescriptor], 0.45); // 👈 Độ chính xác cao hơn
 
             resultDiv.textContent = "👁️ Đang xác minh khuôn mặt...";
 
             let consecutiveMatches = 0;
-            const requiredMatches = 3;
-            let attempts = 0;
-            const maxAttempts = 5;
-            let stop = false;
+            const requiredMatches = 5;
 
             const detectLoop = async () => {
-                if (stop) return;
-
                 const detections = await faceapi
                     .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
                     .withFaceLandmarks()
@@ -66,18 +62,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 if (detections.length === 0) {
-                    resultDiv.textContent = "😶 Không phát hiện khuôn mặt. Vui lòng đối diện camera.";
+                    resultDiv.textContent = "😶 Không phát hiện khuôn mặt. Vui lòng nhìn vào camera.";
                     consecutiveMatches = 0;
                     requestAnimationFrame(detectLoop);
                     return;
                 }
 
-                const results = resized.map(d => faceMatcher.findBestMatch(d.descriptor));
                 let matched = false;
 
-                results.forEach((result, i) => {
-                    const box = resized[i].detection.box;
-                    const match = result.label === username && result.distance < 0.6;
+                resized.forEach((detection, i) => {
+                    const result = faceMatcher.findBestMatch(detection.descriptor);
+                    const box = detection.detection.box;
+                    const match = result.label === username && result.distance < 0.45;
 
                     const drawBox = new faceapi.draw.DrawBox(box, {
                         label: match ? `✅ ${result.label} (${result.distance.toFixed(2)})` : `❌ ${result.label}`,
@@ -89,48 +85,45 @@ document.addEventListener("DOMContentLoaded", async () => {
                         matched = true;
                         consecutiveMatches++;
                         resultDiv.textContent = `✅ Đã khớp (${consecutiveMatches}/${requiredMatches})`;
-
-                        if (consecutiveMatches >= requiredMatches) {
-                            stop = true;
-                            resultDiv.textContent = "🎉 Xác minh thành công!";
-
-                            // Gửi xác minh lên server
-                            fetch("/acvstore/verify-success", { method: "POST" })
-                                .then(res => res.json())
-                                .then(res => {
-                                    if (res.success) {
-                                        resultDiv.textContent = "✅ Đã xác minh. Chuyển hướng...";
-                                        setTimeout(() => window.location.href = "/acvstore/thong-ke", 1000);
-                                    } else {
-                                        resultDiv.textContent = "❌ Xác minh thất bại!";
-                                    }
-                                })
-                                .catch(err => {
-                                    console.error("Lỗi gửi xác minh:", err);
-                                    resultDiv.textContent = "❌ Lỗi xác minh session.";
-                                });
-                        }
                     }
                 });
 
-                if (!matched) {
-                    consecutiveMatches = 0;
-                    attempts++;
-                    resultDiv.textContent = `⚠️ Không khớp. Thử lại... (${attempts}/${maxAttempts})`;
-
-                    if (attempts >= maxAttempts) {
-                        stop = true;
-                        resultDiv.textContent = "❌ Xác minh thất bại. Vui lòng thử lại hoặc liên hệ quản trị viên.";
+                if (matched) {
+                    if (consecutiveMatches >= requiredMatches) {
+                        resultDiv.textContent = "🎉 Xác minh thành công! Đang chuyển hướng...";
+                        await fetch("/acvstore/verify-success", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ username }),
+                            credentials: "include"
+                        }).then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    setTimeout(() => {
+                                        window.location.href = "/acvstore/thong-ke";
+                                    }, 1000);
+                                } else {
+                                    resultDiv.textContent = "❌ Xác minh thất bại: " + data.message;
+                                    consecutiveMatches = 0;
+                                }
+                            }).catch(err => {
+                                console.error("Lỗi gửi xác minh:", err);
+                                resultDiv.textContent = "❌ Gửi xác minh thất bại.";
+                            });
+                        return;
                     }
+                } else {
+                    consecutiveMatches = 0;
+                    resultDiv.textContent = "⚠️ Không khớp. Đang chờ khuôn mặt hợp lệ...";
                 }
 
-                if (!stop) requestAnimationFrame(detectLoop);
+                requestAnimationFrame(detectLoop); // tiếp tục quét liên tục
             };
 
             detectLoop();
 
         } catch (err) {
-            console.error("❌ Lỗi khi tải descriptor:", err);
+            console.error("❌ Lỗi tải dữ liệu:", err);
             resultDiv.textContent = "❌ " + (err.message || "Lỗi không xác định");
         }
     });
