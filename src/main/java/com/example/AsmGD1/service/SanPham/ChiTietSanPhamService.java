@@ -248,7 +248,7 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStockQuantity() > 0 ? true : updateDto.getStatus() != null ? updateDto.getStatus() : false);
+        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
         logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
         chiTietSanPhamRepo.save(existingDetail);
