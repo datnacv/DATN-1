@@ -405,7 +405,22 @@
             margin-top: 1.5rem;
             margin-bottom: 1.5rem;
         }
+        #quickAddImagePreviewContainer {
+            display: block; /* Sử dụng block để căn trái */
+            margin-top: 0.5rem; /* Giảm khoảng cách để sát nút Chọn ảnh */
+            margin-left: 0; /* Căn trái */
+        }
 
+        #quickAddImagePreview {
+            max-width: 200px;
+            max-height: 200px;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            display: none; /* Ẩn ban đầu, chỉ hiển thị khi có ảnh */
+        }
         .table td:nth-child(4), .table td:nth-child(5) {
             padding: 1rem;
             font-size: 1rem;
