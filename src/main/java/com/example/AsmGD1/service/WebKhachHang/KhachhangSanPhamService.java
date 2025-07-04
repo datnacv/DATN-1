@@ -8,6 +8,7 @@ import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -18,9 +19,34 @@ public class KhachhangSanPhamService {
     @Autowired
     private KhachHangSanPhamRepository khachHangSanPhamRepository;
 
+    // Lấy danh sách sản phẩm mới
     public List<SanPhamDto> getNewProducts() {
-        return khachHangSanPhamRepository.findActiveProducts().stream()
-                .map(this::convertToDto)
+        List<SanPham> sanPhams = khachHangSanPhamRepository.findNewProducts();
+        return sanPhams.stream()
+                .filter(sanPham -> khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPham.getId()).stream()
+                        .anyMatch(chiTiet -> chiTiet.getTrangThai()))
+                .map(this::convertToSanPhamDto)
+                .limit(10) // Giới hạn 10 sản phẩm mới
+                .collect(Collectors.toList());
+    }
+
+    // Lấy danh sách sản phẩm bán chạy
+    public List<SanPhamDto> getBestSellingProducts() {
+        List<Object[]> results = khachHangSanPhamRepository.findBestSellingProducts();
+        return results.stream()
+                .filter(result -> {
+                    SanPham sanPham = (SanPham) result[0];
+                    return khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPham.getId()).stream()
+                            .anyMatch(chiTiet -> chiTiet.getTrangThai());
+                })
+                .map(result -> {
+                    SanPham sanPham = (SanPham) result[0];
+                    Long totalSold = (Long) result[1];
+                    SanPhamDto dto = convertToSanPhamDto(sanPham);
+                    dto.setSold(totalSold.toString()); // Cập nhật số lượng đã bán thực tế
+                    return dto;
+                })
+                .limit(10) // Giới hạn 10 sản phẩm bán chạy
                 .collect(Collectors.toList());
     }
 
@@ -29,23 +55,27 @@ public class KhachhangSanPhamService {
         if (details.isEmpty()) {
             return null;
         }
-        ChiTietSanPham firstDetail = details.get(0);
+        return convertToChiTietSanPhamDto(details.get(0));
+    }
+
+    private ChiTietSanPhamDto convertToChiTietSanPhamDto(ChiTietSanPham chiTiet) {
         ChiTietSanPhamDto dto = new ChiTietSanPhamDto();
-        dto.setId(firstDetail.getId());
-        dto.setSanPhamId(firstDetail.getSanPham().getId());
-        dto.setTenSanPham(firstDetail.getSanPham().getTenSanPham());
-        dto.setMaSanPham(firstDetail.getSanPham().getMaSanPham());
-        dto.setMoTa(firstDetail.getSanPham().getMoTa());
-        dto.setUrlHinhAnh(firstDetail.getSanPham().getUrlHinhAnh());
-        dto.setGia(firstDetail.getGia());
-        dto.setSoLuongTonKho(firstDetail.getSoLuongTonKho());
-        dto.setGioiTinh(firstDetail.getGioiTinh());
-        dto.setTrangThai(firstDetail.getTrangThai());
-        dto.setDanhMucId(firstDetail.getSanPham().getDanhMuc().getId());
-        dto.setTenDanhMuc(firstDetail.getSanPham().getDanhMuc().getTenDanhMuc());
+        dto.setId(chiTiet.getId());
+        dto.setSanPhamId(chiTiet.getSanPham().getId());
+        dto.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
+        dto.setMaSanPham(chiTiet.getSanPham().getMaSanPham());
+        dto.setMoTa(chiTiet.getSanPham().getMoTa());
+        dto.setUrlHinhAnh(chiTiet.getSanPham().getUrlHinhAnh());
+        dto.setGia(chiTiet.getGia());
+        dto.setSoLuongTonKho(chiTiet.getSoLuongTonKho());
+        dto.setGioiTinh(chiTiet.getGioiTinh());
+        dto.setTrangThai(chiTiet.getTrangThai());
+        dto.setDanhMucId(chiTiet.getSanPham().getDanhMuc().getId());
+        dto.setTenDanhMuc(chiTiet.getSanPham().getDanhMuc().getTenDanhMuc());
 
         // Lấy danh sách màu sắc
-        List<MauSacDto> mauSacList = details.stream()
+        List<MauSacDto> mauSacList = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId())
+                .stream()
                 .map(d -> {
                     MauSacDto msDto = new MauSacDto();
                     msDto.setId(d.getMauSac().getId());
@@ -57,7 +87,8 @@ public class KhachhangSanPhamService {
         dto.setMauSacList(mauSacList);
 
         // Lấy danh sách kích cỡ
-        List<KichCoDto> kichCoList = details.stream()
+        List<KichCoDto> kichCoList = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId())
+                .stream()
                 .map(d -> {
                     KichCoDto kcDto = new KichCoDto();
                     kcDto.setId(d.getKichCo().getId());
@@ -70,43 +101,43 @@ public class KhachhangSanPhamService {
 
         // Lấy thông tin chất liệu, xuất xứ, thương hiệu, kiểu dáng, tay áo, cổ áo
         ChatLieuDto chatLieuDto = new ChatLieuDto();
-        chatLieuDto.setId(firstDetail.getChatLieu().getId());
-        chatLieuDto.setTenChatLieu(firstDetail.getChatLieu().getTenChatLieu());
+        chatLieuDto.setId(chiTiet.getChatLieu().getId());
+        chatLieuDto.setTenChatLieu(chiTiet.getChatLieu().getTenChatLieu());
         dto.setChatLieu(chatLieuDto);
 
         XuatXuDto xuatXuDto = new XuatXuDto();
-        xuatXuDto.setId(firstDetail.getXuatXu().getId());
-        xuatXuDto.setTenXuatXu(firstDetail.getXuatXu().getTenXuatXu());
+        xuatXuDto.setId(chiTiet.getXuatXu().getId());
+        xuatXuDto.setTenXuatXu(chiTiet.getXuatXu().getTenXuatXu());
         dto.setXuatXu(xuatXuDto);
 
         ThuongHieuDto thuongHieuDto = new ThuongHieuDto();
-        thuongHieuDto.setId(firstDetail.getThuongHieu().getId());
-        thuongHieuDto.setTenThuongHieu(firstDetail.getThuongHieu().getTenThuongHieu());
+        thuongHieuDto.setId(chiTiet.getThuongHieu().getId());
+        thuongHieuDto.setTenThuongHieu(chiTiet.getThuongHieu().getTenThuongHieu());
         dto.setThuongHieu(thuongHieuDto);
 
         KieuDangDto kieuDangDto = new KieuDangDto();
-        kieuDangDto.setId(firstDetail.getKieuDang().getId());
-        kieuDangDto.setTenKieuDang(firstDetail.getKieuDang().getTenKieuDang());
+        kieuDangDto.setId(chiTiet.getKieuDang().getId());
+        kieuDangDto.setTenKieuDang(chiTiet.getKieuDang().getTenKieuDang());
         dto.setKieuDang(kieuDangDto);
 
         TayAoDto tayAoDto = new TayAoDto();
-        tayAoDto.setId(firstDetail.getTayAo().getId());
-        tayAoDto.setTenTayAo(firstDetail.getTayAo().getTenTayAo());
+        tayAoDto.setId(chiTiet.getTayAo().getId());
+        tayAoDto.setTenTayAo(chiTiet.getTayAo().getTenTayAo());
         dto.setTayAo(tayAoDto);
 
         CoAoDto coAoDto = new CoAoDto();
-        coAoDto.setId(firstDetail.getCoAo().getId());
-        coAoDto.setTenCoAo(firstDetail.getCoAo().getTenCoAo());
+        coAoDto.setId(chiTiet.getCoAo().getId());
+        coAoDto.setTenCoAo(chiTiet.getCoAo().getTenCoAo());
         dto.setCoAo(coAoDto);
 
         // Lấy danh sách ảnh sản phẩm
-        List<String> hinhAnhList = khachHangSanPhamRepository.findProductImagesByChiTietSanPhamId(firstDetail.getId());
+        List<String> hinhAnhList = khachHangSanPhamRepository.findProductImagesByChiTietSanPhamId(chiTiet.getId());
         dto.setHinhAnhList(hinhAnhList);
 
         return dto;
     }
 
-    private SanPhamDto convertToDto(SanPham sanPham) {
+    private SanPhamDto convertToSanPhamDto(SanPham sanPham) {
         SanPhamDto dto = new SanPhamDto();
         dto.setId(sanPham.getId());
         dto.setTenSanPham(sanPham.getTenSanPham());
@@ -117,7 +148,14 @@ public class KhachhangSanPhamService {
         dto.setDanhMucId(sanPham.getDanhMuc().getId());
         dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
         dto.setThoiGianTao(sanPham.getThoiGianTao());
-        dto.setPrice(sanPham.getMinPriceFormatted());
+
+        // Ánh xạ dữ liệu giá và khuyến mãi
+        BigDecimal minPrice = khachHangSanPhamRepository.findMinPriceBySanPhamId(sanPham.getId());
+        dto.setPrice(minPrice != null ? minPrice.toString() : "0");
+        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10000")).toString() : "0"); // Giả lập giá cũ
+        dto.setDiscount("10%"); // Giả lập giảm giá
+        dto.setProgress(50); // Giả lập tiến độ
+
         return dto;
     }
 }

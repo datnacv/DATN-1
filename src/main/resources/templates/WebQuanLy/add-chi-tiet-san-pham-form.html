@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
+        /* Giữ nguyên toàn bộ CSS từ file HTML mới của bạn */
         .content {
             margin-left: 250px;
             padding-top: 50px;
@@ -119,13 +120,13 @@
         .image-preview-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 3px;
-            margin-top: 3px;
+            gap: 5px;
+            margin-top: 5px;
         }
         .image-preview {
             position: relative;
-            width: 30px;
-            height: 30px;
+            width: 60px;
+            height: 60px;
         }
         .image-preview img {
             width: 100%;
@@ -142,12 +143,12 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 12px;
-            height: 12px;
-            line-height: 12px;
+            width: 15px;
+            height: 15px;
+            line-height: 15px;
             text-align: center;
             cursor: pointer;
-            font-size: 8px;
+            font-size: 10px;
         }
         .modal-header {
             background-color: #0d6efd;
@@ -236,12 +237,13 @@
         .ts-control input {
             padding: 4px;
         }
-        .product-image {
-            max-width: 50px;
-            max-height: 50px;
-            object-fit: cover;
-            border-radius: 0.25rem;
-        }
+        /*.product-image {*/
+        /*    max-width: 50px;*/
+        /*    Fragile*/
+        /*    max-height: 50px;*/
+        /*    object-fit: cover;*/
+        /*    border-radius: 0.25rem;*/
+        /*}*/
         .bulk-edit-row {
             background-color: #e9ecef;
             padding: 0.5rem;
@@ -515,7 +517,6 @@
                                                 <th>Màu sắc + Size</th>
                                                 <th>Giá</th>
                                                 <th>Số lượng</th>
-                                                <th>Hình ảnh</th>
                                                 <th>Thao tác</th>
                                             </tr>
                                             </thead>
@@ -651,7 +652,7 @@
             allowClear: true,
             onChange: function(value) {
                 if (value) {
-                    generateVariations(); // Regenerate variations when product changes
+                    generateVariations(); // Tái tạo biến thể khi sản phẩm thay đổi
                 }
             }
         });
@@ -846,13 +847,29 @@
         colors.forEach((colorId, colorIndex) => {
             const colorText = $('#colorSelect option[value="' + colorId + '"]').text();
             let groupHtml = `
-                    <tr class="color-group" data-color="${colorId}">
-                        <td colspan="7" style="background-color: #f8f9fa; font-weight: bold;">Màu: ${colorText}</td>
-                    </tr>
-                    <tr class="variation-item" data-index="${variationIndex}">
+                <tr class="color-group" data-color="${colorId}">
+                    <td colspan="6" style="background-color: #f8f9fa; font-weight: bold;">Màu: ${colorText}</td>
+                </tr>
+                <tr class="color-group-image" data-color="${colorId}">
+                    <td colspan="6">
+                        <div class="custom-file-input-wrapper">
+                            <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
+                            <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
+                            <input type="file" class="color-file-input" id="image-input-${colorId}" name="colorImages[${colorId}]" multiple accept="image/*" onchange="updateFileInputLabel(this, '${colorId}')">
+                        </div>
+                        <div class="image-preview-container mt-2" id="preview-${colorId}"></div>
+                    </td>
+                </tr>
+            `;
+            container.append(groupHtml);
+
+            sizes.forEach((sizeId, sizeIndex) => {
+                const sizeText = $('#sizeSelect option[value="' + sizeId + '"]').text();
+                const variationHtml = `
+                    <tr class="variation-item" data-index="${variationIndex}" data-color="${colorId}">
                         <td><input type="checkbox" class="variation-checkbox" name="selectedVariations" value="${variationIndex}"></td>
-                        <td>1</td>
-                        <td>${colorText} - ${$('#sizeSelect option[value="' + sizes[0] + '"]').text()}</td>
+                        <td>${variationIndex + 1}</td>
+                        <td>${colorText} - ${sizeText}</td>
                         <td>
                             <div class="input-group">
                                 <span class="input-group-text">₫</span>
@@ -866,53 +883,15 @@
                             </div>
                         </td>
                         <td>
-                            <div class="custom-file-input-wrapper">
-                                <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
-                                <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
-                                <input type="file" class="variation-file-input" id="image-input-${colorId}" name="variations[${variationIndex}].imageFiles" multiple accept="image/*" onchange="updateFileInputLabel(this, '${colorId}')">
-                            </div>
-                            <div class="image-preview-container mt-2" id="preview-${colorId}"></div>
-                        </td>
-                        <td>
                             <button type="button" class="btn btn-danger btn-sm remove-variation" onclick="removeVariation(this)">Xóa</button>
                         </td>
                         <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
-                        <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizes[0]}">
+                        <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizeId}">
                     </tr>
                 `;
-            container.append(groupHtml);
-            variationIndex++;
-
-            for (let i = 1; i < sizes.length; i++) {
-                const sizeText = $('#sizeSelect option[value="' + sizes[i] + '"]').text();
-                const variationHtml = `
-                        <tr class="variation-item" data-index="${variationIndex}">
-                            <td><input type="checkbox" class="variation-checkbox" name="selectedVariations" value="${variationIndex}"></td>
-                            <td>${i + 1}</td>
-                            <td>${colorText} - ${sizeText}</td>
-                            <td>
-                                <div class="input-group">
-                                    <span class="input-group-text">₫</span>
-                                    <input type="number" class="form-control variation-price" name="variations[${variationIndex}].price" step="1000" min="0" required>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                    <input type="number" class="form-control variation-stock" name="variations[${variationIndex}].stockQuantity" min="0" required>
-                                </div>
-                            </td>
-                            <td></td>
-                            <td>
-                                <button type="button" class="btn btn-danger btn-sm remove-variation" onclick="removeVariation(this)">Xóa</button>
-                            </td>
-                            <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
-                            <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizes[i]}">
-                        </tr>
-                    `;
                 container.append(variationHtml);
                 variationIndex++;
-            }
+            });
         });
     }
 
@@ -943,8 +922,19 @@
     }
 
     function removeVariation(button) {
-        $(button).closest('tr').remove();
-        updateSTT();
+        const row = $(button).closest('tr');
+        if (!row.hasClass('color-group') && !row.hasClass('color-group-image')) {
+            const colorId = row.data('color');
+            row.remove();
+            updateSTT();
+
+            // Kiểm tra xem tất cả các biến thể của màu này đã bị xóa chưa
+            const remainingVariants = $(`.variation-item[data-color="${colorId}"]`).length;
+            if (remainingVariants === 0) {
+                $(`.color-group[data-color="${colorId}"]`).remove();
+                $(`.color-group-image[data-color="${colorId}"]`).remove();
+            }
+        }
     }
 
     function updateFileInputLabel(inputElement, colorId) {
@@ -972,9 +962,9 @@
                     const previewDiv = document.createElement('div');
                     previewDiv.classList.add('image-preview');
                     previewDiv.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview ${index + 1}">
-                            <button type="button" class="remove-image" onclick="removeImagePreview(this, '${inputElement.id}')">×</button>
-                        `;
+                        <img src="${e.target.result}" alt="Preview ${index + 1}">
+                        <button type="button" class="remove-image" onclick="removeImagePreview(this, '${colorId}', ${index})">×</button>
+                    `;
                     previewContainer.appendChild(previewDiv);
                 };
                 reader.readAsDataURL(file);
@@ -982,20 +972,19 @@
         }
     }
 
-    function removeImagePreview(button, inputId) {
-        const inputElement = document.getElementById(inputId);
-        if (!inputElement) return;
+    function removeImagePreview(button, colorId, index) {
+        const inputElement = document.getElementById(`image-input-${colorId}`);
+        if (!inputElement || !inputElement.files) return;
 
         const files = Array.from(inputElement.files);
-        const index = Array.from(button.closest('.image-preview-container').children).indexOf(button.parentElement);
-        if (index === -1) return;
+        if (index >= files.length) return;
 
         const newFiles = files.filter((_, i) => i !== index);
         const dataTransfer = new DataTransfer();
         newFiles.forEach(file => dataTransfer.items.add(file));
         inputElement.files = dataTransfer.files;
 
-        updateFileInputLabel(inputElement, inputId.split('-')[2]);
+        updateFileInputLabel(inputElement, colorId);
     }
 
     function updateSTT() {

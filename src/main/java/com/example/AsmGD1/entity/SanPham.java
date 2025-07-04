@@ -40,6 +40,9 @@ public class SanPham {
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai;
 
+    @Transient
+    private long tongSoLuong;
+
     //long
     @OneToMany(mappedBy = "sanPham", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore

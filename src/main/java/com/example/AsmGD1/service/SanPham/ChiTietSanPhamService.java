@@ -133,14 +133,6 @@ public class ChiTietSanPhamService {
         ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
 
-        Map<UUID, List<MultipartFile>> colorImagesMap = new HashMap<>();
-        for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
-            List<MultipartFile> images = variationDto.getImageFiles();
-            if (images != null && !images.isEmpty() && !colorImagesMap.containsKey(variationDto.getColorId())) {
-                colorImagesMap.put(variationDto.getColorId(), new ArrayList<>(images));
-            }
-        }
-
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
                     variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
@@ -166,18 +158,20 @@ public class ChiTietSanPhamService {
             pd.setSoLuongTonKho(variationDto.getStockQuantity());
             pd.setGioiTinh(batchDto.getGender());
             pd.setThoiGianTao(LocalDateTime.now());
-            pd.setTrangThai(true);
+            pd.setTrangThai(variationDto.getStockQuantity() > 0);
 
             ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
             try {
                 QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
             } catch (IOException | WriterException e) {
-                System.err.println("❌ Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId());
-                e.printStackTrace();
+                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId(), e);
             }
 
-            List<MultipartFile> variationImages = colorImagesMap.getOrDefault(variationDto.getColorId(), new ArrayList<>());
+            // Lưu ảnh cho biến thể dựa trên colorId
+            List<MultipartFile> variationImages = batchDto.getColorImages() != null
+                    ? batchDto.getColorImages().getOrDefault(variationDto.getColorId(), new ArrayList<>())
+                    : new ArrayList<>();
             if (!variationImages.isEmpty()) {
                 saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
@@ -219,7 +213,7 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(dto.getStatus() != null ? dto.getStatus() : true);
+        pd.setTrangThai(dto.getStockQuantity() > 0 ? true : dto.getStatus() != null ? dto.getStatus() : true);
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -254,8 +248,8 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : existingDetail.getTrangThai());
-        logger.info("Updating status to: {}", updateDto.getStatus());
+        existingDetail.setTrangThai(updateDto.getStockQuantity() > 0 ? true : updateDto.getStatus() != null ? updateDto.getStatus() : false);
+        logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
         chiTietSanPhamRepo.save(existingDetail);
 
@@ -396,5 +390,26 @@ public class ChiTietSanPhamService {
                 }
             }
         }
+    }
+
+    /* Hàm xét số lượng về 0 khi bán hàng tại quầy */
+    @Transactional
+    public ChiTietSanPham updateStockAndStatus(UUID productDetailId, int quantityChange) {
+        ChiTietSanPham productDetail = chiTietSanPhamRepo.findById(productDetailId)
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + productDetailId));
+
+        // Cập nhật số lượng tồn kho
+        int newStock = productDetail.getSoLuongTonKho() + quantityChange;
+        if (newStock < 0) {
+            throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + productDetail.getSanPham().getTenSanPham());
+        }
+
+        productDetail.setSoLuongTonKho(newStock);
+
+        // Tự động cập nhật trạng thái
+        productDetail.setTrangThai(newStock > 0);
+
+        // Lưu thay đổi vào cơ sở dữ liệu
+        return chiTietSanPhamRepo.save(productDetail);
     }
 }

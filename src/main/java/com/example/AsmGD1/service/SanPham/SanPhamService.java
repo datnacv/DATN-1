@@ -3,7 +3,9 @@ package com.example.AsmGD1.service.SanPham;
 import com.example.AsmGD1.dto.ChatBot.ChiTietSanPhamDTO;
 import com.example.AsmGD1.dto.ChatBot.SanPhamWithChiTietDTO;
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
+import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.SanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -22,6 +24,9 @@ public class SanPhamService {
     @Autowired
     private SanPhamRepository sanPhamRepository;
 
+    @Autowired
+    private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
     public List<SanPham> findAll() {
         return sanPhamRepository.findAll();
     }
@@ -32,15 +37,15 @@ public class SanPhamService {
 
     public Page<SanPham> findAllPaginated(Pageable pageable) {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
-        return sanPhamRepository.findAll(sortedByThoiGianTaoDesc);
+        Page<SanPham> sanPhamPage = sanPhamRepository.findAll(sortedByThoiGianTaoDesc);
+        sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        return sanPhamPage;
     }
 
     public SanPham findById(UUID id) {
         SanPham sanPham = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + id));
-        if (!sanPham.getTrangThai()) {
-            throw new RuntimeException("Sản phẩm không hoạt động với ID: " + id);
-        }
+        setTongSoLuong(sanPham);
         return sanPham;
     }
 
@@ -53,39 +58,56 @@ public class SanPhamService {
     }
 
     public List<SanPham> findByTenSanPhamContaining(String name) {
-        return sanPhamRepository.findByTenSanPhamContainingIgnoreCase(name);
+        List<SanPham> sanPhams = sanPhamRepository.findByTenSanPhamContainingIgnoreCase(name);
+        sanPhams.forEach(this::setTongSoLuong);
+        return sanPhams;
     }
 
     public Page<SanPham> findByTenSanPhamContaining(String searchName, Boolean trangThai, Pageable pageable) {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
+        Page<SanPham> sanPhamPage;
         if (trangThai != null) {
-            return sanPhamRepository.findByTenSanPhamContainingIgnoreCaseAndTrangThai(searchName, trangThai, sortedByThoiGianTaoDesc);
+            sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCaseAndTrangThai(searchName, trangThai, sortedByThoiGianTaoDesc);
+        } else {
+            sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCase(searchName, sortedByThoiGianTaoDesc);
         }
-        return sanPhamRepository.findByTenSanPhamContainingIgnoreCase(searchName, sortedByThoiGianTaoDesc);
+        sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        return sanPhamPage;
     }
 
     public Page<SanPham> findByTrangThai(Boolean trangThai, Pageable pageable) {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
-        return sanPhamRepository.findByTrangThai(trangThai, sortedByThoiGianTaoDesc);
+        Page<SanPham> sanPhamPage = sanPhamRepository.findByTrangThai(trangThai, sortedByThoiGianTaoDesc);
+        sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        return sanPhamPage;
     }
 
-    //nam
     public Page<SanPham> getPagedProducts(Pageable pageable) {
-        return sanPhamRepository.findAll(pageable);
+        Page<SanPham> sanPhamPage = sanPhamRepository.findAll(pageable);
+        sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        return sanPhamPage;
     }
 
     public List<SanPham> getAll() {
-        return sanPhamRepository.findAll();
+        List<SanPham> sanPhams = sanPhamRepository.findAll();
+        sanPhams.forEach(this::setTongSoLuong);
+        return sanPhams;
     }
 
-//    public Optional<SanPham> findById(UUID id) {
-//        return sanPhamRepository.findById(id);
-//    }
     public Page<SanPham> searchByTenOrMa(String keyword, Pageable pageable) {
-        return sanPhamRepository.findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(keyword, keyword, pageable);
+        Page<SanPham> sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(keyword, keyword, pageable);
+        sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        return sanPhamPage;
     }
 
-    //chatbot
+    private void setTongSoLuong(SanPham sanPham) {
+        long tongSoLuong = chiTietSanPhamRepository.findBySanPhamId(sanPham.getId())
+                .stream()
+                .mapToLong(ChiTietSanPham::getSoLuongTonKho)
+                .sum();
+        sanPham.setTongSoLuong(tongSoLuong);
+    }
+
     public List<SanPhamDto> getAllSanPhamDtos() {
         List<SanPham> danhSach = sanPhamRepository.findAllByTrangThai();
         return danhSach.stream().map(sp -> {
@@ -97,13 +119,13 @@ public class SanPhamService {
             dto.setUrlHinhAnh(sp.getUrlHinhAnh());
             dto.setTrangThai(sp.getTrangThai());
             dto.setThoiGianTao(sp.getThoiGianTao());
+            dto.setTongSoLuong(sp.getTongSoLuong());
 
             if (sp.getDanhMuc() != null) {
                 dto.setDanhMucId(sp.getDanhMuc().getId());
                 dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());
             }
 
-            // Gán thêm giá, tồn kho, giá giảm nếu cần
             dto.setPrice(sp.getMinPrice().toString());
             dto.setOldPrice(sp.getMaxPrice().toString());
             dto.setSold(String.valueOf(sp.getTotalStockQuantity()));
@@ -121,6 +143,7 @@ public class SanPhamService {
             dto.setTenSanPham(sp.getTenSanPham());
             dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());
             dto.setUrlHinhAnh(sp.getUrlHinhAnh());
+            dto.setTongSoLuong(sp.getTongSoLuong());
 
             dto.setChiTietSanPhams(sp.getChiTietSanPhams().stream().map(ct -> {
                 ChiTietSanPhamDTO ctDto = new ChiTietSanPhamDTO();

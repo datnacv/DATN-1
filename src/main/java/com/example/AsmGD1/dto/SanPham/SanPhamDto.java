@@ -24,6 +24,7 @@ public class SanPhamDto {
     private String discount;
     private String sold;
     private Integer progress;
+    private long tongSoLuong;
 }
 
 
