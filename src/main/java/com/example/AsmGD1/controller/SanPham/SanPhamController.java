@@ -121,6 +121,7 @@ public class SanPhamController {
             dto.setUrlHinhAnh(existingSanPham.getUrlHinhAnh());
             dto.setTrangThai(existingSanPham.getTrangThai());
             dto.setThoiGianTao(existingSanPham.getThoiGianTao());
+            dto.setTongSoLuong(existingSanPham.getTongSoLuong());
 
             if (existingSanPham.getDanhMuc() != null) {
                 dto.setDanhMucId(existingSanPham.getDanhMuc().getId());
@@ -175,6 +176,7 @@ public class SanPhamController {
         dto.setUrlHinhAnh(sp.getUrlHinhAnh());
         dto.setTrangThai(sp.getTrangThai());
         dto.setThoiGianTao(sp.getThoiGianTao());
+        dto.setTongSoLuong(sp.getTongSoLuong());
         if (sp.getDanhMuc() != null) {
             dto.setDanhMucId(sp.getDanhMuc().getId());
             dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());

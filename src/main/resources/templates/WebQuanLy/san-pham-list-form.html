@@ -115,9 +115,10 @@
         .table thead th:nth-child(3) { min-width: 120px; } /* Ảnh */
         .table thead th:nth-child(4) { min-width: 150px; } /* Tên */
         .table thead th:nth-child(5) { min-width: 120px; } /* Danh mục */
-        .table thead th:nth-child(6) { min-width: 100px; } /* Trạng thái */
-        .table thead th:nth-child(7) { min-width: 120px; } /* Ngày tạo */
-        .table thead th:nth-child(8) { min-width: 130px; } /* Thao tác */
+        .table thead th:nth-child(6) { min-width: 100px; } /* Tổng số lượng */
+        .table thead th:nth-child(7) { min-width: 100px; } /* Trạng thái */
+        .table thead th:nth-child(8) { min-width: 120px; } /* Ngày tạo */
+        .table thead th:nth-child(9) { min-width: 130px; } /* Thao tác */
         .table-hover > tbody > tr:hover {
             background-color: rgba(0, 0, 0, 0.04);
         }
@@ -270,7 +271,7 @@
                                 </div>
                             </div>
                             <div class="col-md-4 col-lg-4">
-                                <label for="trangThaiFilter" class="form-label">Lọc theo trạng thái</label>
+                                <label for="trangThaiFilter" class="6orm-label">Lọc theo trạng thái</label>
                                 <select class="form-select" id="trangThaiFilter" name="trangThai" onchange="this.form.submit()">
                                     <option value="">-- Tất cả trạng thái --</option>
                                     <option value="true" th:selected="${selectedTrangThai != null and selectedTrangThai == true}">Đang Bán</option>
@@ -299,6 +300,7 @@
                             <th>Ảnh</th>
                             <th>Tên</th>
                             <th>Danh mục</th>
+                            <th>Tổng số lượng</th>
                             <th>Trạng thái</th>
                             <th>Ngày tạo</th>
                             <th>Thao tác</th>
@@ -306,7 +308,7 @@
                         </thead>
                         <tbody>
                         <tr th:if="${sanPhamList.isEmpty()}">
-                            <td colspan="8" class="text-center text-muted py-5">Không tìm thấy sản phẩm nào.</td>
+                            <td colspan="9" class="text-center text-muted py-5">Không tìm thấy sản phẩm nào.</td>
                         </tr>
                         <tr th:each="sp, iter : ${sanPhamList}" th:data-id="${sp.id}">
                             <td th:text="${iter.count + (currentPage * 10)}"></td>
@@ -314,11 +316,12 @@
                             <td>
                                 <div>
                                     <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}" th:src="${sp.urlHinhAnh}" class="product-image" alt="Product Image">
-                                    <span th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}">N/A</span>
+                                    <span th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}">-wifeN/A</span>
                                 </div>
                             </td>
                             <td th:text="${sp.tenSanPham}"></td>
                             <td th:text="${sp.danhMuc != null ? sp.danhMuc.tenDanhMuc : 'N/A'}"></td>
+                            <td th:text="${sp.tongSoLuong}"></td>
                             <td>
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                     <input class="form-check-input status-toggle"
@@ -386,7 +389,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="editMoTa" class="form-label">Mô tả</label>
-                                    <textarea class 투자="editMoTa" name="moTa" rows="3"></textarea>
+                                    <textarea class="form-control" id="editMoTa" name="moTa" rows="3"></textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label for="editDanhMuc" class="form-label">Danh mục</label>
@@ -567,7 +570,8 @@
                                     : 'N/A';
                                 row.cells[3].textContent = sanPham.tenSanPham || '';
                                 row.cells[4].textContent = sanPham.tenDanhMuc || 'N/A';
-                                row.cells[5].innerHTML = `
+                                row.cells[5].textContent = sanPham.tongSoLuong || 0;
+                                row.cells[6].innerHTML = `
                                     <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                         <input class="form-check-input status-toggle"
                                                type="checkbox"
@@ -576,7 +580,7 @@
                                                role="switch">
                                         <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
                                     </div>`;
-                                row.cells[6].textContent = sanPham.thoiGianTao
+                                row.cells[7].textContent = sanPham.thoiGianTao
                                     ? new Date(sanPham.thoiGianTao).toLocaleDateString('vi-VN')
                                     : 'N/A';
                             }
@@ -622,23 +626,19 @@
             }, false);
         }
 
-        // Xử lý thay đổi trạng thái trực tiếp trên bảng
         document.querySelectorAll('.status-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const sanPhamId = this.getAttribute('data-id');
                 const newTrangThai = this.checked;
                 const label = this.nextElementSibling;
 
-                // Hỏi xác nhận
                 if (!confirm(`Bạn có chắc muốn thay đổi trạng thái thành "${newTrangThai ? 'Đang Bán' : 'Ngừng Bán'}"?`)) {
-                    this.checked = !newTrangThai; // Hoàn tác thay đổi
+                    this.checked = !newTrangThai;
                     return;
                 }
 
-                // Cập nhật nhãn trạng thái
                 label.textContent = newTrangThai ? 'Đang Bán' : 'Ngừng Bán';
 
-                // Gửi yêu cầu cập nhật trạng thái qua AJAX
                 fetch('/acvstore/san-pham/update-status', {
                     method: 'POST',
                     headers: {
