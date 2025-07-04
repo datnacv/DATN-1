@@ -36,12 +36,8 @@ public class SanPhamService {
     }
 
     public SanPham findById(UUID id) {
-        SanPham sanPham = sanPhamRepository.findById(id)
+        return sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + id));
-        if (!sanPham.getTrangThai()) {
-            throw new RuntimeException("Sản phẩm không hoạt động với ID: " + id);
-        }
-        return sanPham;
     }
 
     public void save(SanPham sanPham) {
