@@ -245,13 +245,25 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
+            // Tạo đơn hàng
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
-            donHangTamRepository.deleteByTabId(donHangDTO.getTabId()); // Xóa đơn hàng tạm sau khi tạo đơn hàng chính thức
+            donHangTamRepository.deleteByTabId(donHangDTO.getTabId()); // Xóa đơn hàng tạm
             session.removeAttribute("tempStockChanges"); // Xóa tồn kho tạm
-            return ResponseEntity.ok(Map.of(
-                    "message", "Tạo đơn hàng thành công!",
-                    "maDonHang", ketQua.getMaDonHang()
-            ));
+
+            // Lấy mã đơn hàng
+            String maDonHang = ketQua.getMaDonHang();
+
+            // Tạo file PDF cho hóa đơn
+            byte[] pdfData = hoaDonService.taoHoaDon(maDonHang);
+            String pdfBase64 = Base64.getEncoder().encodeToString(pdfData); // Chuyển đổi PDF thành Base64
+
+            // Tạo phản hồi bao gồm mã đơn hàng và dữ liệu PDF
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Tạo đơn hàng thành công!");
+            response.put("maDonHang", maDonHang);
+            response.put("pdfData", pdfBase64); // Thêm dữ liệu PDF vào phản hồi
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             System.err.println("Lỗi tạo đơn hàng: " + e.getMessage());
             e.printStackTrace();
@@ -519,6 +531,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy danh sách sản phẩm: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/product-detail/{productDetailId}")
     @ResponseBody

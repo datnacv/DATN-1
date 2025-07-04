@@ -92,13 +92,13 @@ public class HoaDonController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
 
-            // Kiểm tra và tự động xác nhận nếu phương thức bán hàng là "Tại quầy" và chưa xác nhận
+            // Kiểm tra và tự động hoàn thành nếu phương thức bán hàng là "Tại quầy"
             if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
                     (hoaDon.getTrangThai() == null || !hoaDon.getTrangThai())) {
                 hoaDon.setTrangThai(true);
                 hoaDon.setNgayThanhToan(LocalDateTime.now());
-                hoaDon.setGhiChu("Đã xác nhận tự động (Tại quầy)");
-                hoaDonService.addLichSuHoaDon(hoaDon, "Đã xác nhận", "Đã xác nhận tự động (Tại quầy)");
+                hoaDon.setGhiChu("Hoàn thành (Tại quầy)");
+                hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Hoàn thành tự động (Tại quầy)");
                 hoaDonService.save(hoaDon);
             }
 
@@ -214,9 +214,10 @@ public class HoaDonController {
                     .orElseThrow(() -> new RuntimeException("Đơn hàng không tìm thấy trong cơ sở dữ liệu."));
 
             if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai()) {
-                throw new RuntimeException("Hóa đơn đã được xác nhận trước đó.");
+                throw new RuntimeException("Hóa đơn đã được xác nhận hoặc hoàn thành trước đó.");
             }
 
+            String trangThai = "Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang()) ? "Hoàn thành" : "Đã xác nhận";
             hoaDon.setGhiChu(ghiChu);
             hoaDon.setTrangThai(true);
             hoaDon.setNgayThanhToan(LocalDateTime.now());
@@ -225,12 +226,12 @@ public class HoaDonController {
             donHang.setThoiGianThanhToan(LocalDateTime.now());
             hoaDon.setDonHang(donHang);
 
-            hoaDonService.addLichSuHoaDon(hoaDon, "Đã xác nhận", ghiChu);
+            hoaDonService.addLichSuHoaDon(hoaDon, trangThai, ghiChu);
             hoaDonService.save(hoaDon);
 
             Map<String, Object> response = new HashMap<>();
-            response.put("message", "Đơn hàng đã được xác nhận thành công.");
-            response.put("currentStatus", "Đã xác nhận");
+            response.put("message", "Đơn hàng đã được " + trangThai.toLowerCase() + " thành công.");
+            response.put("currentStatus", trangThai);
             response.put("phuongThucBanHang", donHang.getPhuongThucBanHang());
             return ResponseEntity.ok(response);
         } catch (Exception e) {

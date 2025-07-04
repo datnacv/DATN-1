@@ -1,7 +1,10 @@
 package com.example.AsmGD1.dto.SanPham;
 
+import com.example.AsmGD1.entity.KichCo;
+import com.example.AsmGD1.entity.MauSac;
 import lombok.Data;
 
+import java.util.List;
 import java.util.UUID;
 
 import java.time.LocalDateTime; // THÊM nếu chưa có
@@ -24,6 +27,10 @@ public class SanPhamDto {
     private String discount;
     private String sold;
     private Integer progress;
+    private long tongSoLuong;
+    private List<KichCo> kichCoList; // Thêm danh sách kích cỡ
+    private List<MauSac> mauSacList; // Thêm danh sách màu sắc
 }
+
 
 

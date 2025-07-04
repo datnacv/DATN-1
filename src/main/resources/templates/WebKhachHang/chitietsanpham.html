@@ -8,25 +8,25 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
         .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
-        .product-img { object-fit: cover; height: 400px; }
-        .thumbnail-img { object-fit: cover; height: 80px; cursor: pointer; }
+        .product-img { width: 100%; max-height: 500px; object-fit: cover; }
+        .thumbnail-img { width: 80px; height: 80px; object-fit: cover; cursor: pointer; }
         .thumbnail-img:hover { opacity: 0.8; }
         .size-option.active, .color-option.active { background-color: #f97316; color: white; }
         .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
         .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
         .dropdown:hover .dropdown-menu { display: block; }
         body { padding-top: 100px; }
-        .button-group { display: flex; gap: 10px; }
         @media (max-width: 640px) {
-            .product-img { height: 200px; }
-            .thumbnail-img { height: 60px; }
+            .product-img { max-height: 300px; }
+            .thumbnail-img { width: 60px; height: 60px; }
+            .dropdown-menu { width: 100%; left: 0; }
             body { padding-top: 80px; }
-            .button-group { flex-direction: column; gap: 8px; }
         }
     </style>
 </head>
@@ -61,7 +61,10 @@
                 </button>
             </div>
         </div>
-        <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
+        <a href="/cart" class="text-white text-xl relative">
+            <i class="fas fa-shopping-cart"></i>
+            <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+        </a>
     </div>
 </nav>
 
@@ -84,20 +87,20 @@
                 <div class="size-selection mt-4">
                     <h6 class="font-semibold">Chọn size:</h6>
                     <div class="size-options flex space-x-2 mt-2">
-                        <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" class="size-option px-4 py-2 border rounded hover:bg-orange-100"></button>
+                        <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" th:attr="data-size-id=${size.id}" class="size-option px-4 py-2 border rounded hover:bg-orange-100"></button>
                     </div>
                 </div>
                 <div class="color-selection mt-4">
                     <h6 class="font-semibold">Chọn màu sắc:</h6>
                     <div class="color-options flex space-x-2 mt-2">
-                        <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" class="color-option px-4 py-2 border rounded hover:bg-orange-100"></button>
+                        <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" th:attr="data-color-id=${color.id}" class="color-option px-4 py-2 border rounded hover:bg-orange-100"></button>
                     </div>
                 </div>
                 <div class="quantity-selection mt-4">
                     <h6 class="font-semibold">Số lượng:</h6>
                     <div class="quantity-control flex items-center space-x-2 mt-2">
                         <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded">-</button>
-                        <input type="number" value="1" min="1" class="quantity-input w-16 text-center border rounded">
+                        <input type="number" value="1" min="1" th:max="${productDetail.soLuongTonKho}" class="quantity-input w-16 text-center border rounded">
                         <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
                     </div>
                 </div>
@@ -112,72 +115,44 @@
 
 <!-- Product Detail Section -->
 <section class="container mx-auto py-8">
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <!-- Product Images -->
-            <div>
-                <img th:src="${productDetail.urlHinhAnh}" th:alt="${productDetail.tenSanPham}" class="product-img w-full rounded-lg"/>
-                <div class="flex space-x-2 mt-4">
-                    <img th:each="image : ${productImages}" th:src="${image}" th:alt="${productDetail.tenSanPham}" class="thumbnail-img rounded"/>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Product Images -->
+        <div>
+            <img th:src="${productDetail.urlHinhAnh}" th:alt="${productDetail.tenSanPham}" class="product-img rounded-lg"/>
+            <div class="flex space-x-2 mt-4">
+                <img th:if="${productDetail.hinhAnhList != null and not #lists.isEmpty(productDetail.hinhAnhList)}" th:each="image : ${productDetail.hinhAnhList}"
+                     th:src="${image}" th:alt="${productDetail.tenSanPham}" class="thumbnail-img rounded"/>
+                <img th:unless="${productDetail.hinhAnhList != null and not #lists.isEmpty(productDetail.hinhAnhList)}" th:src="${productDetail.urlHinhAnh}"
+                     th:alt="${productDetail.tenSanPham}" class="thumbnail-img rounded"/>
+            </div>
+        </div>
+        <!-- Product Info -->
+        <div>
+            <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-4"></h1>
+            <p class="text-orange-600 font-bold text-2xl mb-4" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')} + ' VNĐ'"></p>
+            <p class="text-gray-600 mb-4" th:text="${productDetail.moTa}"></p>
+            <p class="text-gray-600 mb-2">Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span></p>
+            <p class="text-gray-600 mb-2">Số lượng tồn kho: <span th:text="${productDetail.soLuongTonKho}"></span></p>
+            <div class="size-selection mb-4">
+                <h6 class="font-semibold">Kích cỡ:</h6>
+                <div class="size-options flex space-x-2 mt-2">
+                    <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" th:attr="data-size-id=${size.id}" class="size-option px-4 py-2 border rounded hover:bg-orange-100"></button>
                 </div>
             </div>
-            <!-- Product Info -->
-            <div>
-                <h1 th:text="${productDetail.tenSanPham}" class="text-2xl font-bold text-gray-800"></h1>
-                <p class="text-gray-600 mt-2" th:text="${productDetail.moTa}"></p>
-                <div class="text-orange-600 font-bold text-xl mt-4" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')} + ' VNĐ'"></div>
-
-                <!-- Color Selection -->
-                <div class="mt-4">
-                    <h6 class="font-semibold">Màu sắc:</h6>
-                    <div class="color-options flex space-x-2 mt-2">
-                        <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" class="color-option px-4 py-2 border rounded hover:bg-orange-100"></button>
-                    </div>
+            <div class="color-selection mb-4">
+                <h6 class="font-semibold">Màu sắc:</h6>
+                <div class="color-options flex space-x-2 mt-2">
+                    <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" th:attr="data-color-id=${color.id}" class="color-option px-4 py-2 border rounded hover:bg-orange-100"></button>
                 </div>
-
-                <!-- Size Selection -->
-                <div class="mt-4">
-                    <h6 class="font-semibold">Kích cỡ:</h6>
-                    <div class="size-options flex space-x-2 mt-2">
-                        <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" class="size-option px-4 py-2 border rounded hover:bg-orange-100"></button>
-                    </div>
-                </div>
-
-                <!-- Quantity Selection -->
-                <div class="mt-4">
-                    <h6 class="font-semibold">Số lượng:</h6>
-                    <div class="quantity-control flex items-center space-x-2 mt-2">
-                        <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded">-</button>
-                        <input type="number" value="1" min="1" th:max="${productDetail.soLuongTonKho}" class="quantity-input w-16 text-center border rounded"/>
-                        <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
-                    </div>
-                    <p class="text-sm text-gray-600 mt-2">Kho: <span th:text="${productDetail.soLuongTonKho}"></span> sản phẩm</p>
-                </div>
-
-                <!-- Button Group -->
-                <div class="button-group mt-4">
-                    <button class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded"
-                            th:attr="data-product-id=${productDetail.id},data-product-name=${productDetail.tenSanPham},data-product-price=${productDetail.gia},data-product-img=${productDetail.urlHinhAnh}">
-                        <i class="fas fa-shopping-cart"></i> Thêm vào giỏ hàng
-                    </button>
-                    <a href="/" class="btn bg-gray-500 text-white hover:bg-gray-600 px-6 py-2 rounded">
-                        <i class="fas fa-home"></i> Quay lại trang chủ
-                    </a>
-                </div>
-
-                <!-- Product Attributes -->
-                <div class="mt-6">
-                    <h6 class="font-semibold">Thông tin sản phẩm:</h6>
-                    <ul class="text-gray-600 text-sm mt-2">
-                        <li>Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span></li>
-                        <li>Chất liệu: <span th:text="${productDetail.chatLieu.tenChatLieu}"></span></li>
-                        <li>Xuất xứ: <span th:text="${productDetail.xuatXu.tenXuatXu}"></span></li>
-                        <li>Kiểu dáng: <span th:text="${productDetail.kieuDang.tenKieuDang}"></span></li>
-                        <li>Tay áo: <span th:text="${productDetail.tayAo.tenTayAo}"></span></li>
-                        <li>Cổ áo: <span th:text="${productDetail.coAo.tenCoAo}"></span></li>
-                        <li>Giới tính: <span th:text="${productDetail.gioiTinh}"></span></li>
-                    </ul>
-                </div>
+            </div>
+            <div class="button-group mt-4">
+                <button class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded add-to-cart"
+                        th:attr="data-product-id=${productDetail.id},data-san-pham-id=${productDetail.sanPhamId},data-product-name=${productDetail.tenSanPham},data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},data-product-img=${productDetail.urlHinhAnh}">
+                    <i class="fas fa-shopping-cart"></i> Thêm vào giỏ hàng
+                </button>
+                <a href="/" class="btn bg-gray-500 text-white hover:bg-gray-600 px-6 py-2 rounded">
+                    <i class="fas fa-home"></i> Quay lại trang chủ
+                </a>
             </div>
         </div>
     </div>
@@ -214,57 +189,69 @@
 
 <!-- JavaScript Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Quantity controls
-    const minusBtn = document.querySelector('.quantity-btn.minus');
-    const plusBtn = document.querySelector('.quantity-btn.plus');
-    const input = document.querySelector('.quantity-input');
+    // Update cart count
+    async function updateCartCount() {
+        try {
+            const response = await fetch('/api/cart');
+            if (response.ok) {
+                const data = await response.json();
+                const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
+                document.getElementById('cart-count').textContent = cartCount;
+            } else if (response.status === 401) {
+                document.getElementById('cart-count').textContent = 0;
+            }
+        } catch (error) {
+            console.error('Error updating cart count:', error);
+        }
+    }
 
-    minusBtn.addEventListener('click', () => {
-        if (input.value > 1) input.value--;
+    // Call updateCartCount when page loads
+    document.addEventListener('DOMContentLoaded', updateCartCount);
+
+    // Quantity controls in modal
+    const modalMinusBtn = document.querySelector('.quantity-btn.minus');
+    const modalPlusBtn = document.querySelector('.quantity-btn.plus');
+    const modalInput = document.querySelector('.quantity-input');
+
+    modalMinusBtn.addEventListener('click', () => {
+        if (modalInput.value > 1) modalInput.value--;
     });
 
-    plusBtn.addEventListener('click', () => {
-        if (input.value < input.max) input.value++;
+    modalPlusBtn.addEventListener('click', () => {
+        if (modalInput.value < modalInput.max) modalInput.value++;
     });
 
-    // Cart Modal Functionality
-    document.querySelectorAll('.btn[data-product-id]').forEach(button => {
-        button.addEventListener('click', () => {
-            const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
-            document.getElementById('modalProductImage').src = button.dataset.productImg;
-            document.getElementById('modalProductName').textContent = button.dataset.productName;
-            document.getElementById('modalProductPrice').textContent = button.dataset.productPrice;
-            modal.show();
+    // Size and Color selection in modal
+    const modalSizeOptions = document.querySelectorAll('.size-option');
+    const modalColorOptions = document.querySelectorAll('.color-option');
+    modalSizeOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            modalSizeOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
+    modalColorOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            modalColorOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
 
-            // Quantity controls in modal
-            const modalMinusBtn = modal._element.querySelector('.quantity-btn.minus');
-            const modalPlusBtn = modal._element.querySelector('.quantity-btn.plus');
-            const modalInput = modal._element.querySelector('.quantity-input');
-
-            modalMinusBtn.addEventListener('click', () => {
-                if (modalInput.value > 1) modalInput.value--;
-            });
-
-            modalPlusBtn.addEventListener('click', () => {
-                modalInput.value++;
-            });
-
-            // Size and Color selection
-            const sizeOptions = modal._element.querySelectorAll('.size-option');
-            const colorOptions = modal._element.querySelectorAll('.color-option');
-            sizeOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    sizeOptions.forEach(opt => opt.classList.remove('active'));
-                    option.classList.add('active');
-                });
-            });
-            colorOptions.forEach(option => {
-                option.addEventListener('click', () => {
-                    colorOptions.forEach(opt => opt.classList.remove('active'));
-                    option.classList.add('active');
-                });
-            });
+    // Size and Color selection on main page
+    const sizeOptions = document.querySelectorAll('.size-selection .size-option');
+    const colorOptions = document.querySelectorAll('.color-selection .color-option');
+    sizeOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            sizeOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
+    colorOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            colorOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
         });
     });
 
@@ -276,19 +263,85 @@
         });
     });
 
-    // Size and Color selection on main page
-    const sizeOptions = document.querySelectorAll('.size-option');
-    const colorOptions = document.querySelectorAll('.color-option');
-    sizeOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            sizeOptions.forEach(opt => opt.classList.remove('active'));
-            option.classList.add('active');
-        });
-    });
-    colorOptions.forEach(option => {
-        option.addEventListener('click', () => {
-            colorOptions.forEach(opt => opt.classList.remove('active'));
-            option.classList.add('active');
+    // Add to cart
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', async () => {
+            const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
+            document.getElementById('modalProductImage').src = button.dataset.productImg;
+            document.getElementById('modalProductName').textContent = button.dataset.productName;
+            document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
+
+            const confirmButton = document.querySelector('#confirmAddToCart');
+            confirmButton.onclick = async () => {
+                const selectedSize = document.querySelector('.size-option.active');
+                const selectedColor = document.querySelector('.color-option.active');
+                const quantity = parseInt(modalInput.value);
+
+                if (!selectedSize || !selectedColor) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lỗi',
+                        text: 'Vui lòng chọn kích cỡ và màu sắc!',
+                    });
+                    return;
+                }
+
+                if (quantity > parseInt(modalInput.max)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lỗi',
+                        text: 'Số lượng vượt quá tồn kho!',
+                    });
+                    return;
+                }
+
+                try {
+                    // Gửi yêu cầu API để lấy chiTietSanPhamId
+                    const response = await fetch(`/api/getChiTietSanPham?sanPhamId=${button.dataset.s-describedby}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+                    if (!response.ok) {
+                        throw new Error('Không tìm thấy sản phẩm với kích cỡ và màu sắc này!');
+                    }
+                    const chiTietSanPham = await response.json();
+
+                    // Gửi yêu cầu thêm vào giỏ hàng
+                    const payload = {
+                        id: chiTietSanPham.id,
+                        quantity: quantity
+                    };
+                    const addResponse = await fetch('/api/cart/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (addResponse.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: 'Đã thêm vào giỏ hàng!',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        updateCartCount();
+                        modal.hide();
+                    } else {
+                        const errorData = await addResponse.json();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: errorData.error || 'Có lỗi xảy ra khi thêm vào giỏ hàng!',
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: error.message,
+                    });
+                }
+            };
+
+            modal.show();
         });
     });
 </script>

@@ -59,4 +59,17 @@ public class NguoiDung {
 
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai = true;
+
+    @Lob
+    @Column(name = "face_descriptor")
+    private byte[] faceDescriptor;
+
+    @Column(name = "face_registered")
+    private Boolean faceRegistered = false;
+
+    @Column(name = "face_verified")
+    private Boolean faceVerified = false;
+
+
+
 }
