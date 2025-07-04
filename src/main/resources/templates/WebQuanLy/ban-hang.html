@@ -1039,7 +1039,7 @@
     cart.forEach((item, index) => {
       const row = document.createElement("tr");
 
-      const actualStock = parseInt(item.soLuongTonKho || item.stockQuantity || 0);
+      const actualStock = parseInt(item.availableStock || item.soLuongTonKho || item.stockQuantity || 0);
       const currentQuantity = parseInt(item.soLuong || 0);
       const price = parseFloat(item.gia || 0);
       const totalPrice = parseFloat(item.thanhTien || 0);
@@ -1049,7 +1049,7 @@
       const isOverStock = currentQuantity > actualStock;
 
       const stockWarning = isOverStock
-              ? `<div class="stock-warning"><i class="fas fa-exclamation-triangle"></i>Vượt quá tồn kho (${actualStock})</div>`
+              ? `<div class="stock-warning"><i class="fas fa-exclamation-triangle"></i>Vượt quá tồn kho khả dụng (${actualStock})</div>`
               : "";
 
       row.innerHTML = `
@@ -1062,7 +1062,7 @@
       </td>
       <td>
         <div class="fw-semibold text-dark">${item.tenSanPham || "N/A"}</div>
-        <div class="small text-muted">Tồn kho: ${actualStock}</div>
+        <div class="small text-muted">Tồn kho khả dụng: ${actualStock}</div>
       </td>
       <td>
         <span class="badge badge-primary">
@@ -1141,12 +1141,11 @@
     }
     if (newQuantity > maxStock) {
       newQuantity = maxStock;
-      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho).`, "warning");
+      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
       return;
     }
 
     isUpdating = true;
-
     const quantityControls = document.querySelector(`.quantity-controls[data-index="${index}"]`);
     if (quantityControls) {
       quantityControls.classList.add("loading");
@@ -1182,16 +1181,15 @@
 
       const data = await response.json();
       updateCartFromResponse(data);
-
+      await refreshCartFromServer(); // Update stock in real-time
       if (tab.voucherId) {
         await applyVoucher(tab.voucherId);
       }
-
       showToast("Đã cập nhật số lượng!", "success");
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
       showToast("Lỗi khi cập nhật số lượng: " + error.message, "error");
-      await refreshCartFromServer();
+      await refreshCartFromServer(); // Ensure UI syncs on error
     } finally {
       isUpdating = false;
       if (quantityControls) {
@@ -1216,7 +1214,7 @@
     }
 
     if (quantity > maxStock) {
-      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho).`, "warning");
+      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
       const input = document.querySelector(`.quantity-controls[data-index="${index}"] input`);
       if (input) input.value = Math.min(currentQuantity, maxStock);
       return;
@@ -1242,7 +1240,7 @@
       showToast("Số lượng tối thiểu là 1.", "warning");
     } else if (value > maxStock) {
       inputElement.value = Math.min(currentQuantity, maxStock);
-      showToast(`Số lượng tối đa là ${maxStock} (tồn kho).`, "warning");
+      showToast(`Số lượng tối đa là ${maxStock} (tồn kho khả dụng).`, "warning");
     }
   }
 
@@ -1287,7 +1285,7 @@
     }
 
     if (quantity > maxStock) {
-      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho).`, "warning");
+      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
       return;
     }
 
@@ -1301,7 +1299,7 @@
         const newTotalQuantity = currentQuantity + quantity;
 
         if (newTotalQuantity > maxStock) {
-          showToast(`Tổng số lượng sẽ vượt quá ${maxStock} (tồn kho).`, "warning");
+          showToast(`Tổng số lượng sẽ vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
           return;
         }
 
@@ -1340,6 +1338,7 @@
       const data = await response.json();
       updateCartFromResponse(data);
       document.getElementById("variantModal").style.display = "none";
+      await refreshCartFromServer(); // Ensure stock is updated
       showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
     } catch (error) {
       console.error("Lỗi khi thêm biến thể:", error);
@@ -1447,7 +1446,7 @@
     tab.subTotal = data.tongTienHang || 0;
     tab.discount = data.giamGia || 0;
     tab.total = data.tong || 0;
-    tab.shippingFee = data.phiVanChuyen || 0; // Đảm bảo đồng bộ phí vận chuyển
+    tab.shippingFee = data.phiVanChuyen || 0;
 
     renderCart(tab.cart);
     updateSummary(tab);
@@ -1536,28 +1535,28 @@
 
   async function deleteTab(tabId) {
     if (tabs.length <= 1) {
-      showToast('Phải giữ ít nhất một tab.', 'warning');
+      showToast("Phải giữ ít nhất một tab.", "warning");
       return;
     }
 
-    // Xóa giỏ hàng trên server
     try {
-      await fetch(`${BASE_URL}/cart/clear?tabId=${tabId}`, { method: 'POST' });
+      await fetch(`${BASE_URL}/cart/clear?tabId=${tabId}`, { method: "POST" });
+      tabs = tabs.filter(t => t.id !== tabId);
+      if (currentTabId === tabId) {
+        currentTabId = tabs.length > 0 ? tabs[tabs.length - 1].id : null;
+      }
+
+      localStorage.setItem("orderTabs", JSON.stringify(tabs));
+      localStorage.setItem("currentTabId", currentTabId);
+      renderTabs();
+
+      if (currentTabId) {
+        loadTabContent(currentTabId);
+      }
+      showToast("Đã xóa tab và giải phóng tồn kho!", "success");
     } catch (error) {
-      console.error('Lỗi khi xóa giỏ hàng:', error);
-    }
-
-    tabs = tabs.filter(t => t.id !== tabId);
-    if (currentTabId === tabId) {
-      currentTabId = tabs.length > 0 ? tabs[tabs.length - 1].id : null;
-    }
-
-    localStorage.setItem('orderTabs', JSON.stringify(tabs));
-    localStorage.setItem('currentTabId', currentTabId);
-    renderTabs();
-
-    if (currentTabId) {
-      loadTabContent(currentTabId);
+      console.error("Lỗi khi xóa tab:", error);
+      showToast("Lỗi khi xóa tab: " + error.message, "error");
     }
   }
 
@@ -1884,10 +1883,10 @@
       };
 
       const response = await fetch(`${BASE_URL}/cart/remove`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          "Content-Type": "application/json",
+          "Accept": "application/json"
         },
         body: JSON.stringify(requestData)
       });
@@ -1905,9 +1904,10 @@
 
       const data = await response.json();
       updateCartFromResponse(data);
-      showToast('Đã xóa sản phẩm!', 'success');
+      await refreshCartFromServer(); // Ensure stock is updated
+      showToast("Đã xóa sản phẩm!", "success");
     } catch (error) {
-      showToast('Lỗi khi xóa sản phẩm: ' + error.message, 'error');
+      showToast("Lỗi khi xóa sản phẩm: " + error.message, "error");
     }
   }
 
@@ -2430,12 +2430,10 @@
     const colorId = colorSelect.value;
     const sizeId = sizeSelect.value;
 
-    // Nếu không chọn cả màu sắc và kích cỡ, tải lại toàn bộ danh sách
     if (!colorId && !sizeId) {
       const uniqueColors = [...new Set(window.productVariants.map(v => JSON.stringify({ id: v.colorId, tenMau: v.mauSac })))].map(str => JSON.parse(str));
       const uniqueSizes = [...new Set(window.productVariants.map(v => JSON.stringify({ id: v.sizeId, ten: v.kichCo })))].map(str => JSON.parse(str));
 
-      // Khởi tạo lại combobox màu sắc
       colorSelect.innerHTML = '<option value="">Chọn màu sắc</option>';
       uniqueColors.forEach(color => {
         const option = document.createElement('option');
@@ -2444,7 +2442,6 @@
         colorSelect.appendChild(option);
       });
 
-      // Khởi tạo lại combobox kích cỡ
       sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
       uniqueSizes.forEach(size => {
         const option = document.createElement('option');
@@ -2458,7 +2455,6 @@
       return;
     }
 
-    // Cập nhật danh sách kích cỡ khi chọn màu sắc
     if (colorId) {
       const selectedSize = sizeSelect.value;
       sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
@@ -2475,7 +2471,6 @@
       });
     }
 
-    // Cập nhật danh sách màu sắc khi chọn kích cỡ
     if (sizeId) {
       const selectedColor = colorSelect.value;
       colorSelect.innerHTML = '<option value="">Chọn màu sắc</option>';
@@ -2492,7 +2487,6 @@
       });
     }
 
-    // Nếu cả màu sắc và kích cỡ được chọn, lấy chi tiết biến thể
     if (colorId && sizeId) {
       const variantSpinner = document.getElementById('variantSpinner');
       if (variantSpinner) variantSpinner.style.display = 'block';
@@ -2517,9 +2511,9 @@
         const variantDetails = document.getElementById('variantDetails');
 
         if (variantPrice) variantPrice.innerText = data.price.toLocaleString('vi-VN') + ' VNĐ';
-        if (variantStock) variantStock.innerText = data.stockQuantity;
+        if (variantStock) variantStock.innerText = data.availableStock !== undefined ? data.availableStock : data.stockQuantity;
         if (variantQuantity) {
-          variantQuantity.max = data.stockQuantity;
+          variantQuantity.max = data.availableStock !== undefined ? data.availableStock : data.stockQuantity;
           variantQuantity.value = 1;
         }
         if (variantDetails) {

@@ -17,4 +17,5 @@ public class GioHangItemDTO {
     private Integer stockQuantity;
     private String hinhAnh; // Thêm trường này
     private String ghiChu;
+    private Integer availableStock; // Added to reflect available stock after reservations
 }
