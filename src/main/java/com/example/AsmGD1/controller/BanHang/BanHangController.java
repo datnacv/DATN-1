@@ -419,7 +419,7 @@ public class BanHangController {
     public ResponseEntity<Map<String, Object>> getProductVariants(@PathVariable UUID productId) {
         try {
             List<ChiTietSanPham> variants = chiTietSanPhamService.findByProductId(productId).stream()
-                    .filter(v -> v.getTrangThai() == true) // Chỉ lấy các biến thể có trạng thái = 1
+                    .filter(v -> v.getTrangThai() == true)
                     .collect(Collectors.toList());
             if (variants.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy biến thể hợp lệ cho sản phẩm."));
@@ -434,6 +434,7 @@ public class BanHangController {
                 variantMap.put("productDetailId", variant.getId());
                 variantMap.put("price", variant.getGia());
                 variantMap.put("stockQuantity", variant.getSoLuongTonKho());
+                variantMap.put("hinhAnh", variant.getSanPham().getUrlHinhAnh()); // Add image URL
                 return variantMap;
             }).collect(Collectors.toList());
 
