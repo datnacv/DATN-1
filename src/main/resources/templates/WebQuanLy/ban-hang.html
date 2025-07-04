@@ -1047,11 +1047,11 @@
 
       row.innerHTML = `
       <td>
-        <img src="${item.hinhAnh || "https://via.placeholder.com/60x60?text=No+Image"}"
+        <img src="${item.hinhAnh || "this.src='/images/acv-logo.png'"}"
              alt="Hình ảnh"
              class="rounded shadow-sm"
              style="width: 60px; height: 60px; object-fit: cover;"
-             onerror="this.src='https://via.placeholder.com/60x60?text=No+Image'">
+             onerror="this.src='/images/acv-logo.png'">
       </td>
       <td>
         <div class="fw-semibold text-dark">${item.tenSanPham || "N/A"}</div>
@@ -2294,10 +2294,10 @@
               if (variantDetails) {
                 variantDetails.innerHTML = `
             <div class="text-center">
-              <img src="${data.hinhAnh || 'https://via.placeholder.com/150x150?text=No+Image'}"
+              <img src="${data.hinhAnh || '/images/acv-logo.png'}"
                    alt="Hình ảnh" class="rounded shadow-lg mx-auto mb-3"
                    style="width: 150px; height: 150px; object-fit: cover;"
-                   onerror="this.src='https://via.placeholder.com/150x150?text=No+Image'">
+                   onerror="this.src='/images/acv-logo.png'">
             </div>
             <div class="mt-3">
               <div class="mb-3 d-flex justify-content-between">
