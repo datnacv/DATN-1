@@ -43,13 +43,6 @@ public class ChiTietSanPhamService {
 
     private final String UPLOAD_DIR;
 
-    public List<ChiTietSanPham> findAllByTrangThai(String keyword) {
-        // Giả sử bạn có một phương thức tìm kiếm trong repository
-        return chiTietSanPhamRepo.findAllByTrangThaiAndKeyword(keyword);
-    }
-
-
-
     public ChiTietSanPhamService() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {

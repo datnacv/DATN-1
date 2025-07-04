@@ -514,9 +514,9 @@ public class BanHangController {
 
     @GetMapping("/products")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> getAllProducts(@RequestParam(required = false, defaultValue = "") String keyword) {
+    public ResponseEntity<Map<String, Object>> getAllProducts() {
         try {
-            List<ChiTietSanPham> products = chiTietSanPhamService.findAllByTrangThai(keyword);
+            List<ChiTietSanPham> products = chiTietSanPhamService.findAllByTrangThai();
             List<Map<String, Object>> productList = products.stream().map(product -> {
                 Map<String, Object> productMap = new HashMap<>();
                 productMap.put("idChiTietSanPham", product.getId());
