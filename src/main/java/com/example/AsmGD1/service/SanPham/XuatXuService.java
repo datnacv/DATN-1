@@ -4,6 +4,9 @@ import com.example.AsmGD1.entity.XuatXu;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.XuatXuRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +20,16 @@ public class XuatXuService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    public Page<XuatXu> getAllXuatXu(Pageable pageable) {
+        return xuatXuRepository.findAll(pageable);
+    }
+
     public List<XuatXu> getAllXuatXu() {
         return xuatXuRepository.findAll();
     }
 
-    public List<XuatXu> searchXuatXu(String tenXuatXu) {
-        return xuatXuRepository.findByTenXuatXuContainingIgnoreCase(tenXuatXu);
+    public Page<XuatXu> searchXuatXu(String tenXuatXu, Pageable pageable) {
+        return xuatXuRepository.findByTenXuatXuContainingIgnoreCase(tenXuatXu, pageable);
     }
 
     public XuatXu getXuatXuById(UUID id) {
