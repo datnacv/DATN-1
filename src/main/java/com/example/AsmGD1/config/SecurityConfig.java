@@ -1,6 +1,8 @@
 package com.example.AsmGD1.config;
 
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.CustomUserDetailsService;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,12 +13,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.AccessDeniedHandlerImpl;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.io.PrintWriter;
 
 @Configuration
 public class SecurityConfig {
@@ -56,7 +61,6 @@ public class SecurityConfig {
         };
     }
 
-    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
@@ -64,37 +68,53 @@ public class SecurityConfig {
             response.sendRedirect("/customers/login");
         };
     }
+    // ✅ BỔ SUNG MỚI: JSON entry point cho các API (ví dụ /verify-success)
+    @Bean
+    public AuthenticationEntryPoint jsonAuthEntryPoint() {
+        return (request, response, authException) -> {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            PrintWriter writer = response.getWriter();
+            writer.write("{\"success\": false, \"message\": \"Unauthorized\"}");
+            writer.flush();
+        };
+    }
+
 
     @Bean
     public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http,
-                                                           CustomerAccessBlockFilter blockFilter) throws Exception {
+                                                           CustomerAccessBlockFilter blockFilter,
+                                                           FaceVerificationFilter faceVerificationFilter,
+                                                           NguoiDungService nguoiDungService) throws Exception {
         http
                 .securityMatcher("/acvstore/**")
                 .addFilterBefore(blockFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(faceVerificationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login").permitAll()
+                        .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
+                        .requestMatchers("/acvstore/verify-success").authenticated()
                         .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
-                        .requestMatchers("/api/get-descriptor").permitAll()
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
-                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/register-face").permitAll()
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
-                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/acvstore/login")
                         .loginProcessingUrl("/acvstore/login")
-                        .defaultSuccessUrl("/acvstore/redirect", true)
-                        .failureUrl("/acvstore/login?error=invalidCredentials")
-                        .loginPage("/acvstore/login")
-                        .loginProcessingUrl("/acvstore/login")
                         .successHandler((request, response, authentication) -> {
-                            boolean isAdmin = authentication.getAuthorities().stream()
-                                    .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
-                            if (isAdmin) {
-                                response.sendRedirect("/acvstore/employees/verify-face");
+                            String tenDangNhap = authentication.getName();
+                            NguoiDung nguoiDung = nguoiDungService.findByTenDangNhap(tenDangNhap);
+                            request.getSession().setAttribute("faceVerified", false);
+
+                            if (nguoiDung != null) {
+                                byte[] descriptor = nguoiDung.getFaceDescriptor();
+                                if (descriptor == null || descriptor.length == 0) {
+                                    response.sendRedirect("/acvstore/register-face");
+                                } else {
+                                    response.sendRedirect("/acvstore/verify-face");
+                                }
                             } else {
-                                response.sendRedirect("/acvstore/redirect");
+                                response.sendRedirect("/acvstore/login?error=notfound");
                             }
                         })
                         .failureUrl("/acvstore/login?error=invalidCredentials")
@@ -111,8 +131,17 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(employeeAuthEntryPoint())
+                        .defaultAuthenticationEntryPointFor(
+                                jsonAuthEntryPoint(),
+                                new AntPathRequestMatcher("/acvstore/verify-success", "POST")
+                        )
+                        // Dành cho các route còn lại của /acvstore/**
+                        .defaultAuthenticationEntryPointFor(
+                                employeeAuthEntryPoint(),
+                                new AntPathRequestMatcher("/acvstore/**")
+                        )
                         .accessDeniedHandler(accessDeniedHandlerEmployees())
+
                 )
                 .sessionManagement(session -> session
                         .sessionConcurrency(concurrency -> concurrency
@@ -172,22 +201,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/**") // ✅ Áp dụng cho các API
+                .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll() // ✅ Cho phép toàn bộ API truy cập công khai
+                        .anyRequest().permitAll()
                 )
                 .csrf(csrf -> csrf.disable());
 
         return http.build();
     }
 
-
-    // SecurityFilterChain mặc định cho tất cả các đường dẫn khác
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login", "/acvstore/employees/verify-face", "/acvstore/customers/login").permitAll()
+                        .requestMatchers("/acvstore/login", "/acvstore/verify-face").permitAll()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -238,6 +265,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // ⚠️ Dùng BCrypt trong môi trường thực tế
+        return NoOpPasswordEncoder.getInstance(); // ⚠️ Đổi thành BCrypt trong thực tế
     }
 }
