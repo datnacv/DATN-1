@@ -113,7 +113,6 @@ public class SanPhamController {
 
             sanPhamService.save(existingSanPham);
 
-            // Tạo DTO để trả về (tránh lỗi recursion)
             SanPhamDto dto = new SanPhamDto();
             dto.setId(existingSanPham.getId());
             dto.setMaSanPham(existingSanPham.getMaSanPham());
@@ -132,7 +131,6 @@ public class SanPhamController {
             response.put("message", "Lưu sản phẩm thành công!");
             response.put("sanPham", dto);
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
             System.err.println("Exception: " + e.getMessage());
             response.put("success", false);
@@ -183,5 +181,33 @@ public class SanPhamController {
         }
 
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/update-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UUID id = UUID.fromString((String) payload.get("id"));
+            Boolean trangThai = (Boolean) payload.get("trangThai");
+
+            SanPham sanPham = sanPhamService.findById(id);
+            if (sanPham == null) {
+                response.put("success", false);
+                response.put("message", "Sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            sanPham.setTrangThai(trangThai != null ? trangThai : false);
+            sanPhamService.save(sanPham);
+
+            response.put("success", true);
+            response.put("message", "Cập nhật trạng thái thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }
