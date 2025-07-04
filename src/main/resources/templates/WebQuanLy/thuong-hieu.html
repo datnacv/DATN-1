@@ -6,14 +6,30 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
-        /* Ensure content is not overlapped by the fixed navbar */
-        /*.content {*/
-        /*    margin-top: 70px; !* Adjust based on navbar height *!*/
-        /*    max-width: 1200px; !* Optional: Limit content width *!*/
-        /*    margin-left: auto;*/
-        /*    margin-right: auto;*/
-        /*}*/
+        .navbar {
+            margin-left: 250px; /* Dời navbar sang phải theo chiều rộng của sidebar */
+            z-index: 1020; /* Đảm bảo nằm trên nội dung nhưng không đè sidebar */
+            width: calc(100% - 260px); /* Để không đè sang sidebar */
+            transition: all 0.3s ease;
+        }
+
+        .sidebar.hidden + .navbar {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sidebar.hidden ~ .content {
+            margin-left: 0;
+        }
+
+        .content {
+            margin-left: 260px; /* Adjust based on sidebar width + some padding */
+            margin-top: 70px; /* Adjust based on navbar height */
+            padding: 20px;
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -21,111 +37,116 @@
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-        <!-- Các phần tử khác bên trái (nếu có) -->
-
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
-    <!-- Nội dung chính bên phải -->
+
     <div class="content" id="content">
-    <h2 class="text-center my-4">Danh sách Thương hiệu</h2>
+        <h2 class="text-center my-4">Danh sách Thương hiệu</h2>
 
-    <!-- Thanh tìm kiếm -->
-    <div class="mb-3 d-flex justify-content-center">
-        <form th:action="@{/acvstore/thuong-hieu}" method="get" class="d-flex w-50">
-            <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm theo tên thương hiệu..." th:value="${param.search}">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-search"></i> Tìm
-            </button>
-        </form>
-    </div>
+        <!-- Hiển thị thông báo lỗi -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
 
-    <!-- Nút Thêm Thương hiệu Mới -->
-    <div class="mb-3 text-center">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#thuongHieuModal" onclick="resetModal()">
-            <i class="fas fa-plus"></i> Thêm Thương hiệu Mới
-        </button>
-    </div>
-
-    <!-- Bảng Thương hiệu -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Tên thương hiệu</th>
-                <th>Hành động</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="thuongHieu, stat : ${thuongHieuList}">
-                <td th:text="${stat.count}"></td>
-                <td th:text="${thuongHieu.tenThuongHieu}"></td>
-                <td>
-                    <button class="btn btn-warning btn-sm btn-custom"
-                            data-bs-toggle="modal"
-                            data-bs-target="#thuongHieuModal"
-                            th:attr="data-id=${thuongHieu.id},data-name=${thuongHieu.tenThuongHieu}"
-                            onclick="fillModal(this)">
-                        <i class="fas fa-edit"></i> Sửa
-                    </button>
-                    <a th:href="@{/acvstore/thuong-hieu/delete/{id}(id=${thuongHieu.id})}"
-                       class="btn btn-danger btn-sm"
-                       onclick="return confirm('Bạn có chắc chắn muốn xóa?');">
-                        <i class="fas fa-trash-alt"></i> Xóa
-                    </a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Modal Thêm/Sửa Thương hiệu -->
-<div class="modal fade" id="thuongHieuModal" tabindex="-1" aria-labelledby="thuongHieuModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="thuongHieuModalLabel">Thêm Thương hiệu Mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form th:action="@{/acvstore/thuong-hieu/save}" method="post">
-                <div class="modal-body">
-                    <input type="hidden" name="id" id="thuongHieuId">
-                    <div class="mb-3">
-                        <label for="thuongHieuName" class="form-label">Tên thương hiệu</label>
-                        <input type="text" name="tenThuongHieu" id="thuongHieuName" class="form-control" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Đóng
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Lưu
-                    </button>
-                </div>
+        <!-- Thanh tìm kiếm -->
+        <div class="mb-3 d-flex justify-content-center">
+            <form th:action="@{/acvstore/thuong-hieu}" method="get" class="d-flex w-50">
+                <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm theo tên thương hiệu..." th:value="${param.search}">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Tìm
+                </button>
             </form>
+        </div>
+
+        <!-- Nút Thêm Thương hiệu Mới -->
+        <div class="mb-3 text-center">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#thuongHieuModal" onclick="resetModal()">
+                <i class="fas fa-plus"></i> Thêm Thương hiệu Mới
+            </button>
+        </div>
+
+        <!-- Bảng Thương hiệu -->
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Tên thương hiệu</th>
+                    <th>Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="thuongHieu, stat : ${thuongHieuList}">
+                    <td th:text="${stat.count}"></td>
+                    <td th:text="${thuongHieu.tenThuongHieu}"></td>
+                    <td>
+                        <button class="btn btn-warning btn-sm btn-custom"
+                                data-bs-toggle="modal"
+                                data-bs-target="#thuongHieuModal"
+                                th:attr="data-id=${thuongHieu.id},data-name=${thuongHieu.tenThuongHieu}"
+                                onclick="fillModal(this)">
+                            <i class="fas fa-edit"></i> Sửa
+                        </button>
+                        <a th:href="@{/acvstore/thuong-hieu/delete/{id}(id=${thuongHieu.id})}"
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('Bạn có chắc chắn muốn xóa?');">
+                            <i class="fas fa-trash-alt"></i> Xóa
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal Thêm/Sửa Thương hiệu -->
+    <div class="modal fade" id="thuongHieuModal" tabindex="-1" aria-labelledby="thuongHieuModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="thuongHieuModalLabel">Thêm Thương hiệu Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form th:action="@{/acvstore/thuong-hieu/save}" method="post">
+                    <div class="modal-body">
+                        <input type="hidden" name="id" id="thuongHieuId">
+                        <div class="mb-3">
+                            <label for="thuongHieuName" class="form-label">Tên thương hiệu</label>
+                            <input type="text" name="tenThuongHieu" id="thuongHieuName" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i> Đóng
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Lưu
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script th:src="@{/js/sidebar.js}" defer></script>
-<script>
-    function resetModal() {
-        document.getElementById('thuongHieuModalLabel').textContent = 'Thêm Thương hiệu Mới';
-        document.getElementById('thuongHieuId').value = '';
-        document.getElementById('thuongHieuName').value = '';
-    }
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/sidebar.js}" defer></script>
+    <script>
+        function resetModal() {
+            document.getElementById('thuongHieuModalLabel').textContent = 'Thêm Thương hiệu Mới';
+            document.getElementById('thuongHieuId').value = '';
+            document.getElementById('thuongHieuName').value = '';
+        }
 
-    function fillModal(button) {
-        document.getElementById('thuongHieuModalLabel').textContent = 'Sửa Thương hiệu';
-        const id = button.getAttribute('data-id');
-        const name = button.getAttribute('data-name');
-        document.getElementById('thuongHieuId').value = id;
-        document.getElementById('thuongHieuName').value = name;
-    }
-</script>
+        function fillModal(button) {
+            document.getElementById('thuongHieuModalLabel').textContent = 'Sửa Thương hiệu';
+            const id = button.getAttribute('data-id');
+            const name = button.getAttribute('data-name');
+            document.getElementById('thuongHieuId').value = id;
+            document.getElementById('thuongHieuName').value = name;
+        }
+    </script>
 </body>
 </html>

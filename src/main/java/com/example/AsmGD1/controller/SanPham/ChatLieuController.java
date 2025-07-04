@@ -23,30 +23,49 @@ public class ChatLieuController {
     private NguoiDungService nguoiDungService;
 
     @GetMapping("/chat-lieu")
-    public String listChatLieu(@RequestParam(value = "search", required = false) String search, Model model) {
+    public String listChatLieu(@RequestParam(value = "search", required = false) String search,
+                               @RequestParam(value = "error", required = false) String errorMessage,
+                               Model model) {
         List<ChatLieu> chatLieuList;
         if (search != null && !search.trim().isEmpty()) {
             chatLieuList = chatLieuService.searchChatLieu(search);
         } else {
             chatLieuList = chatLieuService.getAllChatLieu();
         }
-        // Reverse the list to show newest entries first (assumes database order is oldest first)
         Collections.reverse(chatLieuList);
         model.addAttribute("chatLieuList", chatLieuList);
         List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
         model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        if (errorMessage != null && !errorMessage.isEmpty()) {
+            model.addAttribute("errorMessage", errorMessage);
+        }
         return "WebQuanLy/chat-lieu";
     }
 
     @PostMapping("/chat-lieu/save")
-    public String saveChatLieu(@ModelAttribute ChatLieu chatLieu) {
-        chatLieuService.saveChatLieu(chatLieu);
-        return "redirect:/acvstore/chat-lieu";
+    public String saveChatLieu(@ModelAttribute ChatLieu chatLieu, Model model) {
+        try {
+            chatLieuService.saveChatLieu(chatLieu);
+            return "redirect:/acvstore/chat-lieu";
+        } catch (IllegalArgumentException e) {
+            List<ChatLieu> chatLieuList = chatLieuService.getAllChatLieu();
+            Collections.reverse(chatLieuList);
+            model.addAttribute("chatLieuList", chatLieuList);
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("errorMessage", e.getMessage());
+            return "WebQuanLy/chat-lieu";
+        }
     }
 
     @GetMapping("/chat-lieu/delete/{id}")
-    public String deleteChatLieu(@PathVariable UUID id) {
-        chatLieuService.deleteChatLieu(id);
-        return "redirect:/acvstore/chat-lieu";
+    public String deleteChatLieu(@PathVariable UUID id, Model model) {
+        try {
+            chatLieuService.deleteChatLieu(id);
+            return "redirect:/acvstore/chat-lieu";
+        } catch (IllegalStateException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return listChatLieu(null, e.getMessage(), model);
+        }
     }
 }

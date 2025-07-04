@@ -89,4 +89,12 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                 (Boolean) params.get("status")
         );
     }
+    boolean existsByXuatXuId(UUID xuatXuId);
+    boolean existsByThuongHieuId(UUID thuongHieuId);
+    boolean existsByTayAoId(UUID tayAoId);
+    boolean existsByMauSacId(UUID mauSacId);
+    boolean existsByKieuDangId(UUID kieuDangId);
+    boolean existsByKichCoId(UUID kichCoId);
+    boolean existsByCoAoId(UUID coAoId);
+    boolean existsByChatLieuId(UUID chatLieuId);
 }

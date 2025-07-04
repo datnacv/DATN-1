@@ -19,33 +19,53 @@ public class CoAoController {
     @Autowired
     private CoAoService coAoService;
 
-    @Autowired private NguoiDungService nguoiDungService;
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     @GetMapping("/co-ao")
-    public String listCoAo(@RequestParam(value = "search", required = false) String search, Model model) {
+    public String listCoAo(@RequestParam(value = "search", required = false) String search,
+                           @RequestParam(value = "error", required = false) String errorMessage,
+                           Model model) {
         List<CoAo> coAoList;
         if (search != null && !search.trim().isEmpty()) {
             coAoList = coAoService.searchCoAo(search);
         } else {
             coAoList = coAoService.getAllCoAo();
         }
-        // Reverse the list to show newest entries first (assumes database order is oldest first)
         Collections.reverse(coAoList);
         model.addAttribute("coAoList", coAoList);
         List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
         model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        if (errorMessage != null && !errorMessage.isEmpty()) {
+            model.addAttribute("errorMessage", errorMessage);
+        }
         return "WebQuanLy/co-ao";
     }
 
     @PostMapping("/co-ao/save")
-    public String saveCoAo(@ModelAttribute CoAo coAo) {
-        coAoService.saveCoAo(coAo);
-        return "redirect:/acvstore/co-ao";
+    public String saveCoAo(@ModelAttribute CoAo coAo, Model model) {
+        try {
+            coAoService.saveCoAo(coAo);
+            return "redirect:/acvstore/co-ao";
+        } catch (IllegalArgumentException e) {
+            List<CoAo> coAoList = coAoService.getAllCoAo();
+            Collections.reverse(coAoList);
+            model.addAttribute("coAoList", coAoList);
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("errorMessage", e.getMessage());
+            return "WebQuanLy/co-ao";
+        }
     }
 
     @GetMapping("/co-ao/delete/{id}")
-    public String deleteCoAo(@PathVariable UUID id) {
-        coAoService.deleteCoAo(id);
-        return "redirect:/acvstore/co-ao";
+    public String deleteCoAo(@PathVariable UUID id, Model model) {
+        try {
+            coAoService.deleteCoAo(id);
+            return "redirect:/acvstore/co-ao";
+        } catch (IllegalStateException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return listCoAo(null, e.getMessage(), model);
+        }
     }
 }
