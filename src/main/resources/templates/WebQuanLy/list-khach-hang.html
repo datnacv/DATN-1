@@ -7,235 +7,507 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             background: #ffffff;
-            color: #000000;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #1a1a1a;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
         }
 
         /* Main Content */
         .content {
             margin-left: 250px;
-            padding: 20px;
+            padding: 32px;
+            padding-top: 100px; /* Space for fixed navbar */
             min-height: 100vh;
             background: #ffffff;
+            transition: all 0.3s ease;
         }
 
         .content.full-width {
             margin-left: 0;
             width: 100%;
+            padding-top: 100px; /* Space for fixed navbar when sidebar is hidden */
         }
 
-        /* Navbar */
-        .custom-navbar {
-            background: #ffffff;
-            border-bottom: 1px solid #e0e0e0;
+        /*!* Navbar - Fixed positioning *!*/
+        /*.custom-navbar {*/
+        /*    background: #ffffff;*/
+        /*    border-bottom: 1px solid #e5e7eb;*/
+        /*    backdrop-filter: blur(10px);*/
+        /*    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);*/
+        /*    position: fixed;*/
+        /*    top: 0;*/
+        /*    right: 0;*/
+        /*    left: 70px; !* Account for sidebar width *!*/
+        /*    z-index: 1030;*/
+        /*    height: 70px;*/
+        /*    display: flex;*/
+        /*    align-items: center;*/
+        /*}*/
+
+        /*!* When sidebar is collapsed/hidden *!*/
+        /*.custom-navbar.full-width {*/
+        /*    left: 0;*/
+        /*}*/
+
+        /* Page Header */
+        .page-title {
+            color: #111827;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 2.25rem;
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
-        /* Table Styling */
-        .table-container {
-            background: #ffffff;
+        .page-title i {
+            background: linear-gradient(135deg, #000000 0%, #374151 100%);
+            color: white;
+            padding: 12px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            overflow-x: auto; /* Ensure horizontal scrolling */
-            margin-top: 20px;
-            -webkit-overflow-scrolling: touch;
+            font-size: 1.25rem;
         }
 
-        .table {
-            min-width: 1200px; /* Enforce minimum width to trigger scrollbar */
-            width: 100%;
-            table-layout: auto; /* Allow columns to adjust naturally */
+        .page-subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+            font-weight: 400;
         }
 
-        .table th {
-            background: #f5f5f5;
-            border: none;
-            font-weight: 500;
-            color: #000000;
-            padding: 16px;
-            text-transform: uppercase;
+        /* Cards */
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Search Section */
+        .search-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Form Controls */
+        .form-control, .form-select {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            color: #111827;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            font-weight: 400;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #000000;
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+            background: #ffffff;
+            color: #111827;
+            outline: none;
+        }
+
+        .input-group-text {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            color: #6b7280;
+            border-radius: 12px 0 0 12px;
+            border-right: none;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+        }
+
+        .form-label {
+            color: #374151;
+            font-weight: 600;
             font-size: 0.9rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
             letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-
-        .table td {
-            padding: 14px 16px;
-            vertical-align: middle;
-            color: #333333;
-            border-bottom: 1px solid #e0e0e0;
-            white-space: nowrap; /* Prevent text wrapping to ensure scrollbar */
-        }
-
-        .table tr:hover {
-            Bathrooms: 1;
-            background: #f9f9f9;
         }
 
         /* Buttons */
-        .btn-action {
-            padding: 6px 12px;
-            margin: 0 4px;
-            border-radius: 6px;
-            font-size: 0.85rem;
+        .btn {
+            border-radius: 12px;
+            font-weight: 600;
+            padding: 12px 24px;
+            font-size: 0.9rem;
             transition: all 0.2s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary {
-            background: #000000;
+            background: linear-gradient(135deg, #000000 0%, #374151 100%);
             color: #ffffff;
-            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-primary:hover {
-            background: #333333;
+            background: linear-gradient(135deg, #374151 0%, #000000 100%);
             color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
         .btn-success {
-            background: #000000;
+            background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
             color: #ffffff;
-            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-success:hover {
-            background: #333333;
+            background: linear-gradient(135deg, #1f2937 0%, #000000 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
         .btn-danger {
-            background: #ff4d4d;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             color: #ffffff;
-            border: none;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
         }
 
         .btn-danger:hover {
-            background: #e04343;
+            background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
         }
 
         .btn-secondary {
-            background: #666666;
-            color: #ffffff;
-            border: none;
+            background: #f3f4f6;
+            color: #374151;
+            border: 2px solid #e5e7eb;
         }
 
         .btn-secondary:hover {
-            background: #555555;
+            background: #e5e7eb;
+            color: #111827;
+            transform: translateY(-2px);
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            margin: 0 4px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* Table Styling with Horizontal Scroll */
+        .table-container {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow-x: auto; /* Enable horizontal scrolling */
+            overflow-y: visible;
+            margin-top: 24px;
+            border: 1px solid #e5e7eb;
+            max-width: 100%;
+        }
+
+        .table {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+            min-width: 1200px; /* Minimum width to trigger horizontal scroll */
+            width: 100%;
+        }
+
+        .table th {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: none;
+            font-weight: 700;
+            color: #111827;
+            padding: 20px 16px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid #e5e7eb;
+            white-space: nowrap; /* Prevent text wrapping in headers */
+        }
+
+        .table td {
+            padding: 16px;
+            vertical-align: middle;
+            color: #374151;
+            border-bottom: 1px solid #f3f4f6;
+            font-weight: 400;
+            white-space: nowrap; /* Prevent text wrapping in cells */
+        }
+
+        .table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .table tbody tr:hover {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            transform: scale(1.01);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Address column with text truncation */
+        .address-cell {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Modal Styling */
         .modal-content {
             background: #ffffff;
             border: none;
-            border-radius: 12px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
         }
 
         .modal-header {
-            background: #000000;
+            background: linear-gradient(135deg, #000000 0%, #374151 100%);
             color: #ffffff;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: none;
+            padding: 24px 32px;
+        }
+
+        .modal-header .modal-title {
+            font-weight: 700;
+            font-size: 1.25rem;
         }
 
         .modal-header .btn-close {
             filter: invert(1);
+            opacity: 0.8;
+        }
+
+        .modal-header .btn-close:hover {
+            opacity: 1;
         }
 
         .modal-body {
             background: #ffffff;
-            color: #333333;
+            color: #374151;
+            padding: 32px;
         }
 
-        /* Form Styling */
-        .card {
-            background: #ffffff;
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .form-control {
-            background: #ffffff;
-            border: 1px solid #cccccc;
-            color: #000000;
-            border-radius: 6px;
-        }
-
-        .form-control:focus {
-            border-color: #000000;
-            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.2);
-            background: #ffffff;
-            color: #000000;
-        }
-
-        .form-select {
-            background: #ffffff;
-            border: 1px solid #cccccc;
-            color: #000000;
-            border-radius: 6px;
-        }
-
-        .form-select:focus {
-            border-color: #000000;
-            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.2);
-        }
-
-        .input-group-text {
-            background: #f5f5f5;
-            border: 1px solid #cccccc;
-            color: #000000;
-        }
-
-        .form-label {
-            color: #333333;
-            font-weight: 500;
-        }
-
-        /* Page Title */
-        .page-title {
-            color: #000000;
-            margin-bottom: 30px;
-            font-weight: 600;
-            font-size: 1.8rem;
+        .modal-dialog-lg {
+            max-width: 900px;
         }
 
         /* Alerts */
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 16px 20px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
         .alert-success {
-            background: #ffffff;
-            color: #4caf50;
-            border: 1px solid #4caf50;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            color: #065f46;
+            border-left: 4px solid #10b981;
         }
 
         .alert-danger {
-            background: #ffffff;
-            color: #ff4d4d;
-            border: 1px solid #ff4d4d;
+            background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%);
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
         }
 
         /* Pagination */
+        .pagination {
+            gap: 8px;
+        }
+
         .pagination .page-link {
-            color: #000000;
+            color: #374151;
             background: #ffffff;
-            border: 1px solid #cccccc;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .pagination .page-link:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+            transform: translateY(-2px);
         }
 
         .pagination .page-item.active .page-link {
-            background: #000000;
+            background: linear-gradient(135deg, #000000 0%, #374151 100%);
             color: #ffffff;
             border-color: #000000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         .pagination .page-item.disabled .page-link {
-            background: #f5f5f5;
-            color: #999999;
-            border-color: #cccccc;
+            background: #f9fafb;
+            color: #9ca3af;
+            border-color: #e5e7eb;
         }
 
         /* Badges */
+        .badge {
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .badge.bg-primary {
-            background: #000000 !important;
+            background: linear-gradient(135deg, #000000 0%, #374151 100%) !important;
             color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Action Buttons Container */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        /* Custom Scrollbar for table */
+        .table-container::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+            border-radius: 6px;
+            border: 2px solid #f1f5f9;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+                padding: 16px;
+                padding-top: 90px; /* Adjust for mobile */
+            }
+
+            .custom-navbar {
+                left: 0;
+                height: 60px; /* Smaller height on mobile */
+            }
+
+            .page-title {
+                font-size: 1.75rem;
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.8rem;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+
+            .table {
+                min-width: 800px; /* Smaller minimum width on mobile */
+            }
+        }
+
+        /* Loading Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card, .table-container {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        /* Delete Modal Specific Styling */
+        .modal-header.bg-danger {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+        }
+
+        /* Form Row Spacing */
+        .row {
+            margin-bottom: 16px;
+        }
+
+        .row:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Text Colors */
+        .text-danger {
+            color: #dc2626 !important;
+        }
+
+        .text-muted {
+            color: #6b7280 !important;
+        }
+
+        .text-warning {
+            color: #f59e0b !important;
+        }
+
+        /* Button Close Custom */
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .btn-close:hover {
+            opacity: 1;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -246,30 +518,34 @@
     <!-- Include sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+    <!-- Fixed Navbar -->
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
     <!-- Nội dung chính bên phải -->
     <div class="content" id="mainContent">
         <h2 class="page-title">
-            <i class="fa-solid fa-users"></i> Quản lý khách hàng
+            <i class="fa-solid fa-users"></i>
+            <span>Quản lý khách hàng</span>
         </h2>
+        <p class="page-subtitle">Quản lý thông tin khách hàng của hệ thống một cách hiệu quả</p>
 
         <!-- Hiển thị thông báo -->
         <div th:if="${message}" class="alert mb-4" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
-            <i class="fa-solid fa-check-circle" th:if="${messageType == 'success'}"></i>
-            <i class="fa-solid fa-exclamation-triangle" th:if="${messageType != 'success'}"></i>
+            <i class="fa-solid fa-check-circle me-2" th:if="${messageType == 'success'}"></i>
+            <i class="fa-solid fa-exclamation-triangle me-2" th:if="${messageType != 'success'}"></i>
             <span th:text="${message}"></span>
             <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
         <!-- Form tìm kiếm -->
-        <div class="card mb-4">
+        <div class="card search-card mb-4">
             <div class="card-body">
                 <form th:action="@{/acvstore/customers}" method="get">
-                    <div class="row">
+                    <div class="row align-items-end">
                         <div class="col-md-10">
+                            <label class="form-label">Tìm kiếm khách hàng</label>
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fa-solid fa-search"></i>
@@ -281,7 +557,7 @@
                         </div>
                         <div class="col-md-2">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="fa-solid fa-search"></i> Tìm kiếm
+                                <i class="fa-solid fa-search me-2"></i> Tìm kiếm
                             </button>
                         </div>
                     </div>
@@ -290,53 +566,74 @@
         </div>
 
         <!-- Nút thêm khách hàng -->
-        <div class="mb-3">
+        <div class="mb-4 d-flex justify-content-between align-items-center">
+            <div class="text-muted">
+                <i class="fa-solid fa-info-circle me-1"></i>
+                Hiển thị <strong th:text="${#lists.size(customers)}">0</strong> khách hàng
+            </div>
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
-                <i class="fa-solid fa-plus"></i> Thêm khách hàng
+                <i class="fa-solid fa-plus me-2"></i> Thêm khách hàng mới
             </button>
         </div>
 
-        <!-- Bảng danh sách khách hàng -->
+        <!-- Bảng danh sách khách hàng với thanh cuộn ngang -->
         <div class="table-container">
             <table class="table table-hover mb-0">
                 <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Họ tên</th>
-                    <th>Tên đăng nhập</th>
-                    <th>Mật khẩu</th>
-                    <th>Email</th>
-                    <th>Số điện thoại</th>
-                    <th>Địa chỉ</th>
-                    <th>Vai trò</th>
-                    <th>Hành động</th>
+                    <th><i class="fa-solid fa-hashtag me-2"></i>ID</th>
+                    <th><i class="fa-solid fa-user me-2"></i>Họ tên</th>
+                    <th><i class="fa-solid fa-user-circle me-2"></i>Tên đăng nhập</th>
+                    <th><i class="fa-solid fa-lock me-2"></i>Mật khẩu</th>
+                    <th><i class="fa-solid fa-envelope me-2"></i>Email</th>
+                    <th><i class="fa-solid fa-phone me-2"></i>Số điện thoại</th>
+                    <th><i class="fa-solid fa-map-marker-alt me-2"></i>Địa chỉ</th>
+                    <th><i class="fa-solid fa-tag me-2"></i>Vai trò</th>
+                    <th><i class="fa-solid fa-cogs me-2"></i>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="customer, customerStat : ${customers}">
-                    <td th:text="${customerStat.index + 1}"></td>
-                    <td th:text="${customer.hoTen}"></td>
-                    <td th:text="${customer.tenDangNhap}"></td>
-                    <td th:text="${customer.matKhau}"></td>
-                    <td th:text="${customer.email}"></td>
-                    <td th:text="${customer.soDienThoai}"></td>
+                    <td><strong th:text="${customerStat.index + 1}"></strong></td>
                     <td>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-size: 0.9rem; font-weight: 600;">
+                                <span th:text="${#strings.substring(customer.hoTen, 0, 1)}"></span>
+                            </div>
+                            <strong th:text="${customer.hoTen}"></strong>
+                        </div>
+                    </td>
+                    <td th:text="${customer.tenDangNhap}"></td>
+                    <td>
+                        <span class="text-muted">••••••••</span>
+                    </td>
+                    <td>
+                        <a th:href="'mailto:' + ${customer.email}" class="text-decoration-none" th:text="${customer.email}"></a>
+                    </td>
+                    <td>
+                        <a th:href="'tel:' + ${customer.soDienThoai}" class="text-decoration-none" th:text="${customer.soDienThoai}"></a>
+                    </td>
+                    <td class="address-cell" th:title="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.diaChi}">
                         <span th:text="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.diaChi}"></span>
                     </td>
                     <td>
                         <span class="badge bg-primary" th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></span>
                     </td>
                     <td>
-                        <button type="button" class="btn btn-primary btn-sm btn-action"
-                                data-bs-toggle="modal"
-                                th:data-bs-target="'#editCustomerModal' + ${customer.id}">
-                            <i class="fa-solid fa-edit"></i> Sửa
-                        </button>
-                        <button type="button" class="btn btn-danger btn-sm btn-action"
-                                data-bs-toggle="modal"
-                                th:data-bs-target="'#deleteCustomerModal' + ${customer.id}">
-                            <i class="fa-solid fa-trash"></i> Xóa
-                        </button>
+                        <div class="action-buttons">
+                            <button type="button" class="btn btn-primary btn-sm btn-action"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#editCustomerModal' + ${customer.id}"
+                                    title="Chỉnh sửa">
+                                <i class="fa-solid fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm btn-action"
+                                    data-bs-toggle="modal"
+                                    th:data-bs-target="'#deleteCustomerModal' + ${customer.id}"
+                                    title="Xóa">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 </tbody>
@@ -344,11 +641,11 @@
         </div>
 
         <!-- Phân trang -->
-        <nav aria-label="Phân trang" class="mt-4">
+        <nav aria-label="Phân trang" class="mt-5">
             <ul class="pagination justify-content-center">
                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                     <a class="page-link" th:href="@{/acvstore/customers(page=${currentPage - 1}, keyword=${keyword})}">
-                        <i class="fa-solid fa-chevron-left"></i> Trước
+                        <i class="fa-solid fa-chevron-left me-1"></i> Trước
                     </a>
                 </li>
                 <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
@@ -357,7 +654,7 @@
                 </li>
                 <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
                     <a class="page-link" th:href="@{/acvstore/customers(page=${currentPage + 1}, keyword=${keyword})}">
-                        Sau <i class="fa-solid fa-chevron-right"></i>
+                        Sau <i class="fa-solid fa-chevron-right ms-1"></i>
                     </a>
                 </li>
             </ul>
@@ -369,7 +666,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="addCustomerModalLabel">
-                            <i class="fa-solid fa-user-plus"></i> Thêm khách hàng mới
+                            <i class="fa-solid fa-user-plus me-2"></i> Thêm khách hàng mới
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -474,12 +771,12 @@
                                 </div>
                             </div>
 
-                            <div class="text-end">
-                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                                    <i class="fa-solid fa-times"></i> Hủy
+                            <div class="text-end pt-3 border-top">
+                                <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-times me-2"></i> Hủy bỏ
                                 </button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fa-solid fa-save"></i> Lưu
+                                    <i class="fa-solid fa-save me-2"></i> Lưu thông tin
                                 </button>
                             </div>
                         </form>
@@ -496,7 +793,7 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" th:id="'editCustomerModalLabel' + ${customer.id}">
-                                <i class="fa-solid fa-user-edit"></i> Sửa thông tin khách hàng
+                                <i class="fa-solid fa-user-edit me-2"></i> Sửa thông tin khách hàng
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
@@ -610,12 +907,12 @@
                                     </div>
                                 </div>
 
-                                <div class="text-end">
-                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                                        <i class="fa-solid fa-times"></i> Hủy
+                                <div class="text-end pt-3 border-top">
+                                    <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+                                        <i class="fa-solid fa-times me-2"></i> Hủy bỏ
                                     </button>
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-save"></i> Cập nhật
+                                        <i class="fa-solid fa-save me-2"></i> Cập nhật
                                     </button>
                                 </div>
                             </form>
@@ -633,29 +930,32 @@
                     <div class="modal-content">
                         <div class="modal-header bg-danger text-white">
                             <h5 class="modal-title" th:id="'deleteCustomerModalLabel' + ${customer.id}">
-                                <i class="fa-solid fa-trash"></i> Xác nhận xóa
+                                <i class="fa-solid fa-exclamation-triangle me-2"></i> Xác nhận xóa
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="text-center">
-                                <i class="fa-solid fa-exclamation-triangle text-warning" style="font-size: 48px;"></i>
-                                <h5 class="mt-3">Bạn có chắc chắn muốn xóa?</h5>
-                                <p class="text-muted">
-                                    Khách hàng: <strong th:text="${customer.hoTen}"></strong><br>
-                                    Email: <strong th:text="${customer.email}"></strong>
-                                </p>
-                                <p class="text-danger small">
-                                    <i class="fa-solid fa-warning"></i> Hành động này không thể hoàn tác!
-                                </p>
+                            <div class="text-center py-4">
+                                <div class="mb-4">
+                                    <i class="fa-solid fa-exclamation-triangle text-warning" style="font-size: 64px;"></i>
+                                </div>
+                                <h4 class="mb-3 text-dark">Bạn có chắc chắn muốn xóa?</h4>
+                                <div class="bg-light p-3 rounded mb-4">
+                                    <p class="mb-2"><strong>Khách hàng:</strong> <span th:text="${customer.hoTen}" class="text-primary"></span></p>
+                                    <p class="mb-0"><strong>Email:</strong> <span th:text="${customer.email}" class="text-primary"></span></p>
+                                </div>
+                                <div class="alert alert-warning">
+                                    <i class="fa-solid fa-warning me-2"></i>
+                                    <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!
+                                </div>
                             </div>
 
                             <form th:action="@{/acvstore/customers/delete/{id}(id=${customer.id})}" method="post" class="text-center">
-                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                                    <i class="fa-solid fa-times"></i> Hủy
+                                <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-times me-2"></i> Hủy bỏ
                                 </button>
                                 <button type="submit" class="btn btn-danger">
-                                    <i class="fa-solid fa-trash"></i> Xóa
+                                    <i class="fa-solid fa-trash me-2"></i> Xác nhận xóa
                                 </button>
                             </form>
                         </div>
