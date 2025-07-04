@@ -11,6 +11,7 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -61,6 +62,7 @@ public class SecurityConfig {
         };
     }
 
+    // AuthenticationEntryPoint mặc định cho các đường dẫn khác
     @Bean
     public AuthenticationEntryPoint defaultAuthEntryPoint() {
         return (request, response, authException) -> {
@@ -93,7 +95,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
                         .requestMatchers("/acvstore/verify-success").authenticated()
-                        .requestMatchers("/acvstore/thong-ke").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/**").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
                         .anyRequest().authenticated()
@@ -141,9 +143,9 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/acvstore/**")
                         )
                         .accessDeniedHandler(accessDeniedHandlerEmployees())
-
                 )
                 .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/acvstore/login?expired")
@@ -186,6 +188,7 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandlerCustomers())
                 )
                 .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/customers/login?expired")
@@ -214,6 +217,8 @@ public class SecurityConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/acvstore/login", "/acvstore/verify-face", "/acvstore/login", "/customers/login", "/api/cart/check-auth", "/api/cart/get-user").permitAll()
+                        .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .requestMatchers("/acvstore/login", "/acvstore/verify-face").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -238,6 +243,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(defaultAuthEntryPoint())
                 )
                 .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/customers/login?expired")
@@ -265,6 +271,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return NoOpPasswordEncoder.getInstance(); // ⚠️ Đổi thành BCrypt trong thực tế
+        return NoOpPasswordEncoder.getInstance(); // ⚠️ Dùng BCrypt trong môi trường thực tế
     }
 }

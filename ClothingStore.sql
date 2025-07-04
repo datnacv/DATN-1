@@ -326,27 +326,7 @@ CREATE TABLE chi_tiet_thong_bao_nhom (
                                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
 );
 
--- Bước 3: Tạo trigger để tự động gửi thông báo đến tất cả admin có trạng thái hoạt động
-CREATE TRIGGER tr_don_hang_thong_bao_nhom
-    ON don_hang
-    AFTER INSERT
-AS
-BEGIN
-    DECLARE @id_don_hang UNIQUEIDENTIFIER, @ma_don_hang NVARCHAR(50), @id_thong_bao_nhom UNIQUEIDENTIFIER;
-SELECT @id_don_hang = id, @ma_don_hang = ma_don_hang FROM inserted;
-SET @id_thong_bao_nhom = NEWID();
 
-    -- Chèn thông báo nhóm
-INSERT INTO thong_bao_nhom (id, id_don_hang, vai_tro_nhan, tieu_de, noi_dung, thoi_gian_tao, trang_thai)
-VALUES (@id_thong_bao_nhom, @id_don_hang, N'admin', N'Đơn hàng mới',
-        N'Có đơn hàng mới với mã ' + @ma_don_hang, GETDATE(), N'Mới');
-
--- Chèn chi tiết thông báo cho từng admin có trạng thái hoạt động
-INSERT INTO chi_tiet_thong_bao_nhom (id, id_thong_bao_nhom, id_nguoi_dung, da_xem)
-SELECT NEWID(), @id_thong_bao_nhom, id, 0
-FROM nguoi_dung
-WHERE vai_tro = N'admin' AND trang_thai = 1;
-END;
 -- Insert data with explicit UUIDs
 -- 1. Insert vào bảng chat_lieu
 INSERT INTO chat_lieu (id, ten_chat_lieu) VALUES

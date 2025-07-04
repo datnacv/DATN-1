@@ -149,12 +149,13 @@ public class KhachhangSanPhamService {
         dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
         dto.setThoiGianTao(sanPham.getThoiGianTao());
 
-        // Ánh xạ dữ liệu giá và khuyến mãi
+        // Ánh xạ dữ liệu flash sale
         BigDecimal minPrice = khachHangSanPhamRepository.findMinPriceBySanPhamId(sanPham.getId());
         dto.setPrice(minPrice != null ? minPrice.toString() : "0");
-        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10000")).toString() : "0"); // Giả lập giá cũ
-        dto.setDiscount("10%"); // Giả lập giảm giá
-        dto.setProgress(50); // Giả lập tiến độ
+        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10")).toString() : "0");
+        dto.setDiscount("10%");
+        dto.setSold("50");
+        dto.setProgress(50);
 
         return dto;
     }

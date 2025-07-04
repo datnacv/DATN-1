@@ -3,8 +3,14 @@ package com.example.AsmGD1.service.NguoiDung;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.*;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.Collections;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -16,11 +22,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         NguoiDung user = nguoiDungRepository.findByTenDangNhap(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + username));
-
         return User.builder()
                 .username(user.getTenDangNhap())
                 .password(user.getMatKhau())
-                .roles(user.getVaiTro().toUpperCase())
+                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getVaiTro().toUpperCase())))
                 .build();
     }
 }
