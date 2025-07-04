@@ -1,3 +1,4 @@
+
 package com.example.AsmGD1.service.HoaDon;
 
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
@@ -16,7 +17,9 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -77,32 +80,35 @@ public class HoaDonService {
         hoaDon.setTongTien(refreshedDonHang.getTongTien());
         hoaDon.setTienGiam(refreshedDonHang.getTienGiam() != null ? refreshedDonHang.getTienGiam() : BigDecimal.ZERO);
         hoaDon.setPhuongThucThanhToan(refreshedDonHang.getPhuongThucThanhToan());
-        hoaDon.setTrangThai(refreshedDonHang.getTrangThaiThanhToan() != null ? refreshedDonHang.getTrangThaiThanhToan() :
-                "Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang()));
+        boolean isTaiQuay = "Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang());
+        hoaDon.setTrangThai(isTaiQuay || refreshedDonHang.getTrangThaiThanhToan() != null ? true : false);
         hoaDon.setNgayTao(refreshedDonHang.getThoiGianTao() != null ? refreshedDonHang.getThoiGianTao() : LocalDateTime.now());
-        hoaDon.setGhiChu(refreshedDonHang.getDiaChiGiaoHang() != null ? refreshedDonHang.getDiaChiGiaoHang() : "");
+        hoaDon.setGhiChu(isTaiQuay ? "Hoàn thành (Tại quầy)" : refreshedDonHang.getDiaChiGiaoHang() != null ? refreshedDonHang.getDiaChiGiaoHang() : "");
 
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
-        lichSu.setTrangThai(hoaDon.getTrangThai() ? "Đã xác nhận" : "Chưa xác nhận");
+        lichSu.setTrangThai(isTaiQuay ? "Hoàn thành" : (hoaDon.getTrangThai() ? "Đã xác nhận" : "Chưa xác nhận"));
         lichSu.setThoiGian(LocalDateTime.now());
-        lichSu.setGhiChu("Hóa đơn được tạo");
+        lichSu.setGhiChu(isTaiQuay ? "Hoàn thành tự động (Tại quầy)" : "Hóa đơn được tạo");
         hoaDon.getLichSuHoaDons().add(lichSu);
 
         hoaDonRepository.saveAndFlush(hoaDon);
     }
 
     public Page<HoaDon> findAll(String search, Boolean trangThai, Pageable pageable) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "ngayTao");
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
+
         if (search != null && !search.isEmpty()) {
             if (trangThai != null) {
-                return hoaDonRepository.findBySearchAndTrangThai(search, trangThai, pageable);
+                return hoaDonRepository.findBySearchAndTrangThai(search, trangThai, sortedPageable);
             }
-            return hoaDonRepository.searchByKeyword(search, pageable);
+            return hoaDonRepository.searchByKeyword(search, sortedPageable);
         }
         if (trangThai != null) {
-            return hoaDonRepository.findByTrangThai(trangThai, pageable);
+            return hoaDonRepository.findByTrangThai(trangThai, sortedPageable);
         }
-        return hoaDonRepository.findAll(pageable);
+        return hoaDonRepository.findAll(sortedPageable);
     }
 
     public HoaDonDTO getHoaDonDetail(String id) {
@@ -115,8 +121,8 @@ public class HoaDonService {
                     (hoaDon.getTrangThai() == null || !hoaDon.getTrangThai())) {
                 hoaDon.setTrangThai(true);
                 hoaDon.setNgayThanhToan(LocalDateTime.now());
-                hoaDon.setGhiChu("Đã xác nhận tự động (Tại quầy)");
-                addLichSuHoaDon(hoaDon, "Đã xác nhận", "Đã xác nhận tự động (Tại quầy)");
+                hoaDon.setGhiChu("Hoàn thành (Tại quầy)");
+                addLichSuHoaDon(hoaDon, "Hoàn thành", "Hoàn thành tự động (Tại quầy)");
                 save(hoaDon);
             }
 
@@ -126,7 +132,6 @@ public class HoaDonService {
             dto.setTenKhachHang(hoaDon.getNguoiDung().getHoTen());
             dto.setSoDienThoaiKhachHang(hoaDon.getNguoiDung().getSoDienThoai());
             dto.setTongTienHang(hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
-            dto.setTienGiam(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO);
             dto.setTongTien(hoaDon.getTongTien());
             dto.setPhiVanChuyen(hoaDon.getDonHang().getPhiVanChuyen() != null ? hoaDon.getDonHang().getPhiVanChuyen() : BigDecimal.ZERO);
             dto.setPhuongThucThanhToan(hoaDon.getPhuongThucThanhToan() != null ? hoaDon.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
@@ -248,13 +253,12 @@ public class HoaDonService {
         }
     }
 
-    // Phương thức định dạng tiền tệ với dấu chấm làm dấu phân cách nghìn và loại bỏ chữ số thập phân
     private String formatCurrency(BigDecimal amount) {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
-        symbols.setGroupingSeparator('.'); // Sử dụng dấu chấm làm dấu phân cách nghìn
-        symbols.setDecimalSeparator(','); // Không sử dụng dấu phẩy thập phân
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
         DecimalFormat df = new DecimalFormat("#,##0", symbols);
-        df.setGroupingSize(3); // Định dạng theo nhóm 3 chữ số
+        df.setGroupingSize(3);
         return df.format(amount.setScale(0, RoundingMode.HALF_UP)) + " VNĐ";
     }
 
@@ -281,7 +285,9 @@ public class HoaDonService {
     }
 
     public String getCurrentStatus(HoaDon hoaDon) {
-        if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Hoàn thành")) {
+        if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
+            return "Hoàn thành";
+        } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Hoàn thành")) {
             return "Hoàn thành";
         } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Vận chuyển thành công")) {
             return "Vận chuyển thành công";

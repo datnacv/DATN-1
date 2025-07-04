@@ -884,6 +884,13 @@
           <i class="fas fa-box fs-3 text-primary"></i>
           <h3 class="fs-3 fw-bold text-dark">Danh sách sản phẩm</h3>
         </div>
+        <!-- Tìm kiếm sản phẩm -->
+        <div class="mb-4">
+          <div class="floating-label">
+            <label for="productSearch">Tìm kiếm sản phẩm</label>
+            <input type="text" id="productSearch" class="form-control" placeholder="Nhập tên sản phẩm">
+          </div>
+        </div>
         <div id="productList" class="overflow-auto" style="max-height: 400px;"></div>
         <div id="productSpinner" class="spinner mt-4"></div>
         <button onclick="document.getElementById('productModal').style.display='none'" class="btn btn-secondary w-100 mt-3">
@@ -2036,7 +2043,7 @@
     const cashAmountInput = document.getElementById('cashAmount');
     const orderData = {
       soDienThoaiKhachHang: tab.customerPhone,
-      phiVanChuyen: tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0, // Chỉ gửi phí vận chuyển nếu là Giao hàng
+      phiVanChuyen: tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0,
       phuongThucThanhToan: tab.paymentMethod,
       soTienKhachDua: parseFloat(cashAmountInput ? cashAmountInput.value : 0) || 0,
       phuongThucBanHang: tab.saleMethod,
@@ -2106,7 +2113,34 @@
         }
 
         const data = await response.json();
-        showToast(`Đơn hàng ${data.maDonHang} đã được tạo thành công!`, 'success');
+        // Cập nhật thông báo thành công
+        showToast(`Hóa đơn ${data.maDonHang} đã được tạo và in hóa đơn thành công!`, 'success');
+
+        // Xử lý file PDF nếu có
+        if (data.pdfData) {
+          try {
+            const byteCharacters = atob(data.pdfData);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+            // Tạo URL và kích hoạt tải xuống
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `HoaDon_${data.maDonHang}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+          } catch (error) {
+            console.error('Lỗi khi xử lý file PDF:', error);
+            showToast('Lỗi khi in hóa đơn PDF.', 'error');
+          }
+        }
 
         // Xóa tab hiện tại và tạo tab mới
         tabs = tabs.filter(t => t.id !== currentTabId);
@@ -2122,6 +2156,7 @@
         loadTabContent(currentTabId);
       }
     } catch (error) {
+      console.error('Lỗi khi tạo đơn hàng:', error);
       showToast('Lỗi khi tạo đơn hàng: ' + error.message, 'error');
     }
   }
@@ -2202,21 +2237,19 @@
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
   }
 
-  async function fetchProducts() {
+  document.getElementById('productSearch').addEventListener('input', function() {
+    const keyword = this.value.trim();
+    fetchProducts(keyword);
+  });
+
+  async function fetchProducts(keyword = '') {
     const productSpinner = document.getElementById('productSpinner');
     if (productSpinner) productSpinner.style.display = 'block';
 
     try {
-      const response = await fetch(`${BASE_URL}/products`);
+      const response = await fetch(`${BASE_URL}/products?keyword=${encodeURIComponent(keyword)}`);
       if (!response.ok) {
-        let errorMessage = "Lỗi khi tải danh sách sản phẩm.";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
+        throw new Error("Lỗi khi tải danh sách sản phẩm.");
       }
 
       const data = await response.json();
@@ -2238,14 +2271,14 @@
           div.className = 'p-3 border rounded cursor-pointer mb-2';
           div.style.cursor = 'pointer';
           div.innerHTML = `
-            <div class="d-flex align-items-center gap-3">
-              <i class="fas fa-box fs-3 text-success"></i>
-              <div>
-                <div class="fw-semibold text-dark">${productName}</div>
-                <div class="small text-muted">Nhấn để chọn biến thể</div>
-              </div>
+          <div class="d-flex align-items-center gap-3">
+            <i class="fas fa-box fs-3 text-success"></i>
+            <div>
+              <div class="fw-semibold text-dark">${productName}</div>
+              <div class="small text-muted">Nhấn để chọn biến thể</div>
             </div>
-          `;
+          </div>
+        `;
           div.onmouseover = () => div.classList.add('bg-light');
           div.onmouseout = () => div.classList.remove('bg-light');
           div.onclick = () => showVariantModal(productsByName[productName][0].idChiTietSanPham);
@@ -2258,6 +2291,7 @@
       if (productSpinner) productSpinner.style.display = 'none';
     }
   }
+
 
   function showProductModal() {
     const productModal = document.getElementById('productModal');

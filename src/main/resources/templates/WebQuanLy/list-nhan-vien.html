@@ -9,101 +9,372 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
+        :root {
+            --primary-black: #000000;
+            --secondary-black: #292929;
+            --tertiary-black: #2d2d2d;
+            --quaternary-black: #404040;
+            --primary-white: #ffffff;
+            --secondary-white: #f8f9fa;
+            --tertiary-white: #e9ecef;
+            --accent-gray: #6c757d;
+            --border-gray: #dee2e6;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-heavy: rgba(0, 0, 0, 0.25);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--secondary-black);
+        }
+
         .content {
             margin-left: 260px;
-            padding: 20px;
+            padding: 30px;
             min-height: 100vh;
-            background: #f8f9fa;
+            background: transparent;
         }
 
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            margin-top: 20px;
+        .navbar {
+            background: var(--primary-white) !important;
+            border-bottom: 1px solid var(--border-gray);
+            box-shadow: 0 2px 20px var(--shadow-light);
         }
 
-        .table th {
-            background: #f8f9fa;
-            border: none;
-            font-weight: 600;
-            color: #495057;
-            padding: 15px;
+        .navbar-brand {
+            color: var(--primary-black) !important;
+            font-weight: 700;
+            font-size: 1.5rem;
         }
 
-        .table td {
-            padding: 12px 15px;
-            vertical-align: middle;
+        .page-title {
+            color: var(--primary-black);
+            margin-bottom: 40px;
+            font-weight: 700;
+            font-size: 2.2rem;
+            position: relative;
+            padding-bottom: 15px;
         }
 
-        .btn-action {
-            padding: 5px 10px;
-            margin: 0 2px;
-            border-radius: 5px;
-            font-size: 0.875rem;
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .modal-header .btn-close {
-            filter: invert(1);
+        .page-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-black), var(--accent-gray));
+            border-radius: 2px;
         }
 
         .card {
             border: none;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-radius: 10px;
+            box-shadow: 0 8px 30px var(--shadow-light);
+            border-radius: 16px;
+            background: var(--primary-white);
+            transition: all 0.3s ease;
+            overflow: hidden;
         }
 
-        .page-title {
-            color: #495057;
-            margin-bottom: 30px;
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px var(--shadow-medium);
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .table-container {
+            background: var(--primary-white);
+            border-radius: 16px;
+            box-shadow: 0 8px 30px var(--shadow-light);
+            overflow: hidden;
+            margin-top: 30px;
+            border: 1px solid var(--border-gray);
+        }
+
+        .table {
+            margin-bottom: 0;
+            min-width: 1200px;
+        }
+
+        .table thead th {
+            background: var(--secondary-black);
+            color: var(--primary-white);
+            border: none;
             font-weight: 600;
+            padding: 20px 15px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        .table tbody tr {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--tertiary-white);
+        }
+
+        .table tbody tr:hover {
+            background: var(--secondary-white);
+            transform: scale(1.001);
+        }
+
+        .table td {
+            padding: 18px 15px;
+            vertical-align: middle;
+            border: none;
+            color: var(--secondary-black);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+            background: var(--primary-black);
+            color: var(--primary-white);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            background: var(--secondary-black);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
-        .pagination .page-link {
-            color: #667eea;
-            border-color: #dee2e6;
+        .btn-success {
+            background: var(--secondary-black);
+            color: var(--primary-white);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
 
-        .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-color: #667eea;
+        .btn-success:hover {
+            background: var(--tertiary-black);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-danger {
+            background: var(--primary-black);
+            color: var(--primary-white);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: var(--secondary-black);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--tertiary-white);
+            color: var(--secondary-black);
+            border: 1px solid var(--border-gray);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-gray);
+            color: var(--primary-black);
+            transform: translateY(-1px);
+        }
+
+        .btn-action {
+            padding: 8px 12px;
+            margin: 0 3px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            min-width: 40px;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid var(--tertiary-white);
+            border-radius: 8px;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+            background: var(--primary-white);
+            color: var(--secondary-black);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-black);
+            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+            background: var(--primary-white);
+        }
+
+        .input-group-text {
+            background: var(--secondary-black);
+            color: var(--primary-white);
+            border: 2px solid var(--secondary-black);
+            border-radius: 8px 0 0 8px;
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px var(--shadow-heavy);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: var(--primary-black);
+            color: var(--primary-white);
+            border: none;
+            padding: 25px 30px;
+        }
+
+        .modal-header .btn-close {
+            filter: invert(1);
+            opacity: 0.8;
+        }
+
+        .modal-header .btn-close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: 30px;
+            background: var(--primary-white);
+        }
+
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+
+        .alert {
+            border: none;
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px var(--shadow-light);
+        }
+
+        .alert-success {
+            background: var(--secondary-white);
+            color: var(--secondary-black);
+            border-left: 4px solid var(--primary-black);
+        }
+
+        .alert-danger {
+            background: var(--secondary-white);
+            color: var(--secondary-black);
+            border-left: 4px solid var(--primary-black);
         }
 
         .status-badge {
-            padding: 4px 12px;
+            padding: 6px 16px;
             border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-active {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #28a745;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
         }
 
         .status-inactive {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #6c757d;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .bg-info {
+            background-color: #17a2b8 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+        }
+
+        /* Additional green variations for better visual hierarchy */
+        .badge.bg-success {
+            background-color: #28a745 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        .badge.bg-primary-green {
+            background-color: #20c997 !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(32, 201, 151, 0.3);
+        }
+
+        .pagination {
+            margin-top: 40px;
+        }
+
+        .pagination .page-link {
+            color: var(--secondary-black);
+            border: 2px solid var(--tertiary-white);
+            border-radius: 8px;
+            margin: 0 3px;
+            padding: 12px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--secondary-black);
+            color: var(--primary-white);
+            border-color: var(--secondary-black);
+            transform: translateY(-2px);
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--primary-black);
+            border-color: var(--primary-black);
+            color: var(--primary-white);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: var(--accent-gray);
+            background: var(--tertiary-white);
+            border-color: var(--tertiary-white);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--secondary-black);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .text-danger {
+            color: var(--primary-black) !important;
+            font-weight: 500;
         }
 
         .table-container {
@@ -113,41 +384,114 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        .table thead th {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background: #f8f9fa;
+        /* Custom scrollbar */
+        .table-container::-webkit-scrollbar {
+            height: 8px;
         }
 
-        .table {
-            min-width: 1200px;
+        .table-container::-webkit-scrollbar-track {
+            background: var(--tertiary-white);
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: var(--accent-gray);
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-black);
+        }
+
+        /* Enhanced modal styling */
+        .modal-header.bg-danger {
+            background: var(--primary-black) !important;
+        }
+
+        .text-warning {
+            color: var(--secondary-black) !important;
+        }
+
+        /* Improved form styling */
+        .row .col-md-6, .row .col-md-4, .row .col-md-3, .row .col-md-12 {
+            margin-bottom: 0;
+        }
+
+        .mb-3 {
+            margin-bottom: 25px !important;
+        }
+
+        /* Enhanced button group */
+        .text-end {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--tertiary-white);
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+
+            .card-body {
+                padding: 20px;
+            }
+
+            .modal-body {
+                padding: 20px;
+            }
+        }
+
+        /* Loading animation for better UX */
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Enhanced focus states */
+        .btn:focus, .form-control:focus, .form-select:focus {
+            outline: none;
+        }
+
+        /* Improved table responsiveness */
+        @media (max-width: 1200px) {
+            .table {
+                font-size: 0.85rem;
+            }
+
+            .table td, .table th {
+                padding: 12px 8px;
+            }
         }
     </style>
 </head>
 <body>
 <div class="d-flex">
     <!-- Include sidebar fragment -->
-    <div th:replace="~{fragments/sidebar :: sidebar}"></div>
+    <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-        <a class="navbar-brand fw-bold text-primary" href="#">
-            <i class="fas fa-store-alt me-2"></i>ACV Admin
-        </a>
-        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+        <!-- Các phần tử khác bên trái (nếu có) -->
+
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
     <!-- Nội dung chính bên phải -->
     <div class="content" id="content">
         <h2 class="page-title">
-            <i class="fa-solid fa-users-gear"></i> Quản lý nhân sự
+            <i class="fa-solid fa-users-gear me-3"></i>Quản lý nhân sự
         </h2>
 
         <!-- Hiển thị thông báo -->
         <div th:if="${message}" class="alert mb-4" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
-            <i class="fa-solid fa-check-circle" th:if="${messageType == 'success'}"></i>
-            <i class="fa-solid fa-exclamation-triangle" th:if="${messageType != 'success'}"></i>
+            <i class="fa-solid fa-check-circle me-2" th:if="${messageType == 'success'}"></i>
+            <i class="fa-solid fa-exclamation-triangle me-2" th:if="${messageType != 'success'}"></i>
             <span th:text="${message}"></span>
             <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
@@ -156,7 +500,7 @@
         <div class="card mb-4">
             <div class="card-body">
                 <form th:action="@{/acvstore/employees}" method="get">
-                    <div class="row">
+                    <div class="row g-3">
                         <div class="col-md-6">
                             <div class="input-group">
                                 <span class="input-group-text">
@@ -179,7 +523,7 @@
                         </div>
                         <div class="col-md-3">
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="fa-solid fa-search"></i> Tìm kiếm
+                                <i class="fa-solid fa-search me-2"></i>Tìm kiếm
                             </button>
                         </div>
                     </div>
@@ -188,9 +532,9 @@
         </div>
 
         <!-- Nút thêm nhân viên -->
-        <div class="mb-3">
+        <div class="mb-4">
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-                <i class="fa-solid fa-plus"></i> Thêm nhân sự
+                <i class="fa-solid fa-plus me-2"></i>Thêm nhân sự
             </button>
         </div>
 
@@ -248,7 +592,7 @@
             <ul class="pagination justify-content-center">
                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
                     <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage - 1}, keyword=${keyword}, vaiTro=${vaiTro})}">
-                        <i class="fa-solid fa-chevron-left"></i> Trước
+                        <i class="fa-solid fa-chevron-left me-1"></i>Trước
                     </a>
                 </li>
                 <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
@@ -257,7 +601,7 @@
                 </li>
                 <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
                     <a class="page-link" th:href="@{/acvstore/employees(page=${currentPage + 1}, keyword=${keyword}, vaiTro=${vaiTro})}">
-                        Sau <i class="fa-solid fa-chevron-right"></i>
+                        Sau<i class="fa-solid fa-chevron-right ms-1"></i>
                     </a>
                 </li>
             </ul>
@@ -269,7 +613,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="addEmployeeModalLabel">
-                            <i class="fa-solid fa-user-plus"></i> Thêm nhân sự mới
+                            <i class="fa-solid fa-user-plus me-2"></i>Thêm nhân sự mới
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -361,11 +705,11 @@
                                 </div>
                             </div>
                             <div class="text-end">
-                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                                    <i class="fa-solid fa-times"></i> Hủy
+                                <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-times me-2"></i>Hủy
                                 </button>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fa-solid fa-save"></i> Lưu
+                                    <i class="fa-solid fa-save me-2"></i>Lưu
                                 </button>
                             </div>
                         </form>
@@ -382,7 +726,7 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" th:id="'editEmployeeModalLabel' + ${employee.id}">
-                                <i class="fa-solid fa-user-edit"></i> Sửa thông tin nhân sự
+                                <i class="fa-solid fa-user-edit me-2"></i>Sửa thông tin nhân sự
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
@@ -476,11 +820,11 @@
                                     </div>
                                 </div>
                                 <div class="text-end">
-                                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                                        <i class="fa-solid fa-times"></i> Hủy
+                                    <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+                                        <i class="fa-solid fa-times me-2"></i>Hủy
                                     </button>
                                     <button type="submit" class="btn btn-primary">
-                                        <i class="fa-solid fa-save"></i> Cập nhật
+                                        <i class="fa-solid fa-save me-2"></i>Cập nhật
                                     </button>
                                 </div>
                             </form>
@@ -498,7 +842,7 @@
                     <div class="modal-content">
                         <div class="modal-header bg-danger text-white">
                             <h5 class="modal-title" th:id="'deleteEmployeeModalLabel' + ${employee.id}">
-                                <i class="fa-solid fa-trash"></i> Xác nhận xóa
+                                <i class="fa-solid fa-trash me-2"></i>Xác nhận xóa
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
@@ -511,15 +855,15 @@
                                     Email: <strong th:text="${employee.email}"></strong>
                                 </p>
                                 <p class="text-danger small">
-                                    <i class="fa-solid fa-warning"></i> Hành động này không thể hoàn tác!
+                                    <i class="fa-solid fa-warning me-1"></i>Hành động này không thể hoàn tác!
                                 </p>
                             </div>
                             <form th:action="@{/acvstore/employees/delete/{id}(id=${employee.id})}" method="post" class="text-center">
-                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">
-                                    <i class="fa-solid fa-times"></i> Hủy
+                                <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
+                                    <i class="fa-solid fa-times me-2"></i>Hủy
                                 </button>
                                 <button type="submit" class="btn btn-danger">
-                                    <i class="fa-solid fa-trash"></i> Xóa
+                                    <i class="fa-solid fa-trash me-2"></i>Xóa
                                 </button>
                             </form>
                         </div>

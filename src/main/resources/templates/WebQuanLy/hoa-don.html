@@ -11,7 +11,6 @@
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <script th:src="@{/js/sidebar.js}" defer></script>
   <style>
-    /* Giữ nguyên CSS gốc và chỉ thêm cải tiến */
     :root {
       --bg-light: #f8f8f8;
       --bg-medium: #e0e0e0;
@@ -23,6 +22,8 @@
       --button-primary-hover-bg: #333333;
       --status-confirmed-bg: #28a745;
       --status-confirmed-text: #ffffff;
+      --status-completed-bg: #17a2b8;
+      --status-completed-text: #ffffff;
       --table-header-bg: #f0f0f0;
       --table-row-hover-bg: #f9f9f9;
       --toast-success-bg: #28a745;
@@ -45,7 +46,6 @@
       transition: margin-left 0.3s ease;
     }
 
-    /* Navbar styling */
     .navbar {
       background-color: #ffffff;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
@@ -59,7 +59,6 @@
       z-index: 1000;
     }
 
-    /* Sidebar container styling */
     .sidebar-container {
       background-color: #222222;
       color: #ffffff;
@@ -83,7 +82,6 @@
       font-size: 2.25rem;
     }
 
-    /* Cải tiến Search Bar */
     .search-bar {
       display: flex;
       gap: 15px;
@@ -136,7 +134,6 @@
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
-    /* Cải tiến Table Container với Scrollbar */
     .table-container {
       background: #ffffff;
       border-radius: 12px;
@@ -147,14 +144,12 @@
       position: relative;
     }
 
-    /* Thêm thanh cuộn cho bảng */
     .table-scroll-wrapper {
       max-height: 600px;
       overflow-y: auto;
       overflow-x: auto;
     }
 
-    /* Custom Scrollbar */
     .table-scroll-wrapper::-webkit-scrollbar {
       width: 8px;
       height: 8px;
@@ -175,7 +170,6 @@
       background: var(--button-primary-hover-bg);
     }
 
-    /* Firefox scrollbar */
     .table-scroll-wrapper {
       scrollbar-width: thin;
       scrollbar-color: var(--button-primary-bg) var(--bg-light);
@@ -222,7 +216,6 @@
       background-color: var(--button-primary-hover-bg);
     }
 
-    /* Cải tiến Action Button */
     .action-btn {
       padding: 8px 12px;
       background-color: var(--bg-light);
@@ -248,7 +241,6 @@
       margin-right: 0;
     }
 
-    /* Cải tiến Pagination */
     .pagination {
       display: flex;
       justify-content: center;
@@ -310,7 +302,6 @@
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
-    /* Cải tiến Toast */
     .toast {
       position: fixed;
       top: 20px;
@@ -343,10 +334,19 @@
       color: #fff;
     }
 
-    /* Cải tiến Status Badge */
     .status-confirmed-bg {
       background-color: var(--status-confirmed-bg);
       color: var(--status-confirmed-text);
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .status-completed-bg {
+      background-color: var(--status-completed-bg);
+      color: var(--status-completed-text);
       padding: 6px 12px;
       border-radius: 20px;
       display: inline-block;
@@ -374,7 +374,6 @@
       font-size: 0.85rem;
     }
 
-    /* Dropdown menu styling */
     .dropdown-menu {
       background-color: #ffffff;
       border: 1px solid var(--border-light);
@@ -393,7 +392,6 @@
       color: var(--text-primary);
     }
 
-    /* Scroll to top button */
     .scroll-to-top {
       position: fixed;
       bottom: 30px;
@@ -420,7 +418,6 @@
       transform: translateY(-2px);
     }
 
-    /* Responsive */
     @media (max-width: 768px) {
       .search-bar {
         flex-direction: column;
@@ -449,18 +446,20 @@
 </head>
 <body>
 <div class="d-flex">
-  <div th:replace="~{fragments/sidebar :: sidebar}" class="sidebar-container"></div>
-  <nav class="navbar navbar-expand-lg navbar-light shadow-sm px-4 justify-content-between fixed top-0 right-0">
-    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
+
+  <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+    <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
   </nav>
-  <div class="content" id="content">
+
+  <div class="content mt-16" id="mainContent">
     <h1>Quản Lý Hóa Đơn</h1>
     <div class="search-bar">
       <input id="searchInput" type="text" placeholder="🔍 Tìm kiếm hóa đơn (mã, tên, số điện thoại)..." onkeyup="loadHoaDonList(0, 5, this.value, $('#statusFilter').val())">
       <select id="statusFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), this.value)">
         <option value="">Tất cả trạng thái</option>
         <option value="false">Chưa xác nhận</option>
-        <option value="true">Đã xác nhận</option>
+        <option value="true">Đã xác nhận/Hoàn thành</option>
       </select>
       <button onclick="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val())">
         <i class="fas fa-search"></i>
@@ -491,7 +490,6 @@
   </div>
 </div>
 
-<!-- Scroll to top button -->
 <button class="scroll-to-top" id="scrollToTop" onclick="scrollToTop()">
   <i class="fas fa-chevron-up"></i>
 </button>
@@ -511,10 +509,8 @@
     const container = document.getElementById("toastContainer");
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-
     const icon = type === "success" ? "fas fa-check-circle" :
             type === "error" ? "fas fa-exclamation-triangle" : "fas fa-info-circle";
-
     toast.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
     container.appendChild(toast);
     toast.classList.add("show");
@@ -569,7 +565,6 @@
     pagination.appendChild(last);
   }
 
-  // Scroll handling
   function initScrollHandling() {
     const scrollWrapper = document.querySelector('.table-scroll-wrapper');
     const scrollToTopBtn = document.getElementById('scrollToTop');
@@ -613,16 +608,18 @@
             let trangThaiText;
             let statusClass = '';
 
-            if (isConfirmedStatus) {
+            if (hoaDon.phuongThucBanHang === "Tại quầy") {
+              trangThaiText = "Hoàn thành";
+              statusClass = 'status-completed-bg';
+            } else if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Vận chuyển thành công")) {
+              trangThaiText = "Vận chuyển thành công";
               statusClass = 'status-confirmed-bg';
-              if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Vận chuyển thành công")) {
-                trangThaiText = "Vận chuyển thành công";
-              } else if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Đang vận chuyển")) {
-                trangThaiText = "Đang vận chuyển";
-                statusClass = 'status-shipping';
-              } else {
-                trangThaiText = "Đã xác nhận";
-              }
+            } else if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Đang vận chuyển")) {
+              trangThaiText = "Đang vận chuyển";
+              statusClass = 'status-shipping';
+            } else if (isConfirmedStatus) {
+              trangThaiText = "Đã xác nhận";
+              statusClass = 'status-confirmed-bg';
             } else {
               trangThaiText = "Chưa xác nhận";
               statusClass = 'status-pending';
@@ -644,8 +641,7 @@
                         </button>
                         <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
                             <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                            <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${hoaDon.trangThai === true ? 'style="display:none;"' : ''}>Xác nhận hóa đơn</button></li>
-                            <li><button class="dropdown-item" onclick="deleteHoaDon('${hoaDon.id}')">Xóa</button></li>
+                            <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${hoaDon.trangThai === true && hoaDon.phuongThucBanHang !== "Giao hàng" ? 'style="display:none;"' : ''}>Xác nhận hóa đơn</button></li>
                         </ul>
                     </div>
                 </td>
@@ -665,27 +661,6 @@
     });
   }
 
-  function deleteHoaDon(id) {
-    if (confirm("Bạn có chắc chắn muốn xóa hóa đơn này? Hành động này không thể hoàn tác!")) {
-      $("#invoiceSpinner").show();
-      $.ajax({
-        url: `/acvstore/hoa-don/delete/${id}`,
-        type: "DELETE",
-        success: function (response) {
-          showToast("Hóa đơn đã được xóa thành công.", "success");
-          loadHoaDonList(0, 5, $("#searchInput").val(), $("#statusFilter").val());
-        },
-        error: function (error) {
-          console.error("Lỗi khi xóa hóa đơn:", error);
-          showToast("Lỗi khi xóa hóa đơn: " + (error.responseJSON?.error || "Không xác định"), "error");
-        },
-        complete: function () {
-          $("#invoiceSpinner").hide();
-        }
-      });
-    }
-  }
-
   function confirmHoaDon(id) {
     if (confirm("Bạn có chắc chắn muốn xác nhận đơn hàng này?")) {
       $("#invoiceSpinner").show();
@@ -695,7 +670,7 @@
         data: JSON.stringify({ ghiChu: "Đã xác nhận" }),
         contentType: "application/json",
         success: function (response) {
-          showToast("Đơn hàng đã được xác nhận thành công.", "success");
+          showToast("Đơn hàng đã được " + response.currentStatus.toLowerCase() + " thành công.", "success");
           loadHoaDonList(0, 5, $("#searchInput").val(), $("#statusFilter").val());
         },
         error: function (error) {

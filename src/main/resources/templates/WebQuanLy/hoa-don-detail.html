@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -640,11 +641,10 @@
 <div class="d-flex">
     <div th:replace="~{fragments/sidebar :: sidebar}" class="sidebar-container"></div>
 
-    <nav class="navbar navbar-expand-lg navbar-light shadow-sm px-4 justify-content-between fixed-top">
-        <a class="navbar-brand fw-bold" href="#">
-            <i class="fas fa-store-alt me-2"></i>ACV Admin
-        </a>
-        <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+        <!-- Các phần tử khác bên trái (nếu có) -->
+
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
     <div class="content" id="content">
@@ -657,7 +657,7 @@
                 </a>
                 <div th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
                     <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
-                            th:disabled="${hoaDon.trangThai != null and hoaDon.trangThai or hoaDon.ghiChu != null and hoaDon.ghiChu.contains('Hoàn thành')}">
+                            th:disabled="${hoaDon.trangThai != null and hoaDon.trangThai}">
                         <i class="fas fa-check"></i> Xác nhận đơn hàng
                     </button>
                     <button id="deliveryButton" class="btn-custom btn-delivery" onclick="confirmDelivery()"
@@ -670,9 +670,10 @@
                     </button>
                     <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
                             th:disabled="${hoaDon.ghiChu == null or !hoaDon.ghiChu.contains('Vận chuyển thành công') or hoaDon.ghiChu.contains('Hoàn thành')}">
-                        <i class="fas fa-flags-checkered"></i> Hoàn thành
+                        <i class="fas fa-flag-checkered"></i> Hoàn thành
                     </button>
                 </div>
+                <!-- Chỉ hiển thị nút xác nhận nếu đơn hàng "Tại quầy" chưa được xác nhận -->
                 <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
                         th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy') and (hoaDon.trangThai == null or !hoaDon.trangThai)}">
                     <i class="fas fa-check"></i> Xác nhận đơn hàng
@@ -710,6 +711,12 @@
                             <i class="fas fa-map-marker-alt"></i> Địa chỉ:
                         </span>
                         <span class="info-value" th:text="${hoaDon.nguoiDung.tinhThanhPho + ', ' + hoaDon.nguoiDung.quanHuyen + ', ' + hoaDon.nguoiDung.phuongXa + ', ' + hoaDon.nguoiDung.diaChi}"></span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-info-circle"></i> Trạng thái:
+                        </span>
+                        <span id="statusBadge" class="status-badge"></span>
                     </div>
 
                     <div id="editForm" class="edit-form">
@@ -847,7 +854,7 @@
                             <tr th:each="lichSu : ${hoaDon.lichSuHoaDons}">
                                 <td th:text="${#temporals.format(lichSu.thoiGian, 'dd/MM/yyyy HH:mm:ss')}"></td>
                                 <td>
-                                    <span class="status-badge status-confirmed" th:text="${lichSu.trangThai}"></span>
+                                    <span class="status-badge" th:classappend="${lichSu.trangThai == 'Chưa xác nhận' ? 'status-pending' : lichSu.trangThai == 'Đã xác nhận' ? 'status-confirmed' : lichSu.trangThai == 'Đang vận chuyển' ? 'status-shipping' : lichSu.trangThai == 'Vận chuyển thành công' ? 'status-delivered' : 'status-complete'}" th:text="${lichSu.trangThai}"></span>
                                 </td>
                                 <td th:text="${lichSu.ghiChu ?: 'Không có'}"></td>
                             </tr>
@@ -894,7 +901,7 @@
                 url: `/acvstore/hoa-don/confirm/${hoaDonId}`,
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đã xác nhận" }),
+                data: JSON.stringify({ ghiChu: "Hoàn thành" }), // Cập nhật ghi chú cho "Tại quầy"
                 success: function (response) {
                     showToast(response.message, "success");
                     window.location.reload();
@@ -1164,7 +1171,9 @@
         const trangThai = /*[[${hoaDon.trangThai}]]*/ false;
 
         let trangThaiGiaoHang = "Chưa xác nhận";
-        if (trangThai) {
+        if (phuongThucBanHang === "Tại quầy") {
+            trangThaiGiaoHang = "Hoàn thành"; // Đặt trạng thái "Hoàn thành" cho đơn hàng "Tại quầy"
+        } else if (trangThai) {
             if (ghiChu && ghiChu.includes("Hoàn thành")) {
                 trangThaiGiaoHang = "Hoàn thành";
             } else if (ghiChu && ghiChu.includes("Vận chuyển thành công")) {
@@ -1176,7 +1185,7 @@
             }
         }
 
-        const statusElement = document.createElement("span");
+        const statusElement = document.getElementById("statusBadge");
         statusElement.className = `status-badge ${
             trangThaiGiaoHang === "Chưa xác nhận" ? "status-pending" :
                 trangThaiGiaoHang === "Đã xác nhận" ? "status-confirmed" :
@@ -1185,7 +1194,6 @@
                             "status-complete"
         }`;
         statusElement.textContent = trangThaiGiaoHang.normalize("NFC");
-        document.querySelector(".info-card").appendChild(statusElement);
     });
 </script>
 </body>
