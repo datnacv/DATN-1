@@ -273,6 +273,7 @@
             font-size: 0.95rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            text-align: center;
         }
 
         .table td {
@@ -293,8 +294,8 @@
         }
 
         .product-image {
-            max-width: 80px;
-            max-height: 80px;
+            max-width: 50px; /* Further reduced size */
+            max-height: 50px; /* Further reduced size */
             object-fit: cover;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -321,11 +322,10 @@
             justify-content: center;
         }
 
-        /* Enhanced status toggle switch - made much longer */
         .form-check-input {
             cursor: pointer;
-            width: 1000000em; /* Increased significantly from 4.5em */
-            height: 1.0em; /* Increased from 2.2em */
+            width: 1000000em;
+            height: 1.0em;
             border-radius: 2em;
             transition: all 0.3s ease;
             border: 2px solid var(--border-color);
@@ -394,7 +394,6 @@
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
-        /* Enhanced modal styling */
         .modal-content {
             border-radius: 24px;
             border: none;
@@ -484,7 +483,6 @@
             transform: translateY(0);
         }
 
-        /* Enhanced floating labels */
         .floating-label {
             position: relative;
             margin-bottom: 2rem;
@@ -523,7 +521,6 @@
             border-radius: 4px;
         }
 
-        /* Enhanced search section */
         .search-section {
             background: var(--glass-bg);
             backdrop-filter: blur(20px);
@@ -549,7 +546,6 @@
             color: var(--primary-color);
         }
 
-        /* Fixed alignment for search form */
         .search-form-row {
             display: flex;
             align-items: end;
@@ -564,7 +560,6 @@
             margin-bottom: 0;
         }
 
-        /* Image preview enhancements */
         #imagePreviewContainer {
             background: rgba(248,249,250,0.8);
             border-radius: 16px;
@@ -622,8 +617,8 @@
             }
 
             .product-image {
-                max-width: 60px;
-                max-height: 60px;
+                max-width: 40px; /* Further reduced for mobile */
+                max-height: 40px; /* Further reduced for mobile */
             }
 
             .action-buttons {
@@ -638,7 +633,6 @@
                 padding: 8px 12px;
             }
 
-            /* Smaller toggle on mobile */
             .form-check-input {
                 width: 10em;
                 height: 2em;
@@ -686,8 +680,6 @@
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-        <!-- Các phần tử khác bên trái (nếu có) -->
-
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <div class="content" id="content">
@@ -695,7 +687,6 @@
             <h2 class="page-title">QUẢN LÝ SẢN PHẨM</h2>
         </div>
         <div th:fragment="content">
-            <!-- Enhanced Search Section -->
             <div class="search-section">
                 <div class="section-header">
                     <i class="fas fa-search section-icon"></i>
@@ -732,7 +723,6 @@
                 </form>
             </div>
 
-            <!-- Product List Card -->
             <div class="card">
                 <div class="card-header">
                     <div class="d-flex align-items-center gap-3">
@@ -761,7 +751,7 @@
                                 <span class="fw-bold" th:text="${iter.count + (currentPage * 5)}"></span>
                             </td>
                             <td>
-                                <code class="fw-bold" th:text="${sp.maSanPham}"></code>
+                                <span class="fw-bold fs-8" th:text="${sp.maSanPham}"></span>
                             </td>
                             <td>
                                 <div class="d-flex justify-content-center">
@@ -771,7 +761,7 @@
                                          alt="Product Image">
                                     <div th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}"
                                          class="d-flex align-items-center justify-content-center bg-light rounded"
-                                         style="width: 80px; height: 80px;">
+                                         style="width: 60px; height: 60px;">
                                         <i class="fas fa-image text-muted fs-3"></i>
                                     </div>
                                 </div>
@@ -783,7 +773,7 @@
                                 <span class="badge badge-success" th:text="${sp.danhMuc != null ? sp.danhMuc.tenDanhMuc : 'N/A'}"></span>
                             </td>
                             <td>
-                                <span class="fw-bold fs-5" th:text="${sp.tongSoLuong}"></span>
+                                <span class="fw-bold fs-8" th:text="${sp.tongSoLuong}"></span>
                             </td>
                             <td>
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
@@ -797,7 +787,7 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="text-muted" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
+                                <span class="fw-bold" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
                             </td>
                             <td class="action-buttons">
                                 <button class="btn btn-warning btn-sm"
@@ -818,7 +808,6 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
                 <nav aria-label="Page navigation" class="mt-4">
                     <ul class="pagination pagination-custom">
                         <li class="page-item" th:class="${currentPage == 0 ? 'disabled' : ''}">
@@ -840,7 +829,6 @@
                 </nav>
             </div>
 
-            <!-- Enhanced Edit Product Modal -->
             <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-xl">
                     <div class="modal-content">
@@ -889,7 +877,7 @@
                                             </label>
                                             <div class="d-flex align-items-center gap-3 mb-3">
                                                 <button type="button" class="btn btn-primary" id="openCloudinaryWidget">
-                                                    <i class="fas fa-cloud-upload-alt me-2"></i>Chọn ảnh từ Cloud
+                                                    <i class="fas fa-cloud-upload-alt me-2"></i>Chọn ảnh
                                                 </button>
                                                 <input type="hidden" id="editUrlHinhAnh" name="urlHinhAnh">
                                                 <span id="imageNameDisplay" class="text-muted fw-medium">Chưa chọn ảnh</span>
@@ -932,12 +920,10 @@
     </div>
 </div>
 
-<!-- Toast Container -->
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
 <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
-    // Toast notification function
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
         if (!container) return;
@@ -974,7 +960,6 @@
 
         container.appendChild(toast);
 
-        // Remove toast after 4 seconds
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.remove();
@@ -997,7 +982,6 @@
             trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
         }
 
-        // Hàm cập nhật ảnh
         function updateImagePreview(imageUrl = urlHinhAnhInput.value) {
             if (imageUrl && imageUrl.trim() !== '' && isValidImageUrl(imageUrl)) {
                 imagePreview.src = imageUrl;
@@ -1011,7 +995,6 @@
             }
         }
 
-        // Hàm kiểm tra URL hợp lệ
         function isValidImageUrl(url) {
             try {
                 new URL(url);
@@ -1038,7 +1021,6 @@
                 modalTitle.innerHTML = `<i class="fas fa-edit"></i> Chỉnh sửa sản phẩm #${sanPhamId}`;
                 sanPhamIdInput.value = sanPhamId;
 
-                // Reset form
                 maSanPhamInput.value = '';
                 tenSanPhamInput.value = '';
                 moTaInput.value = '';
@@ -1046,7 +1028,7 @@
                 trangThaiInput.checked = false;
                 updateTrangThaiLabel();
                 urlHinhAnhInput.value = '';
-                updateImagePreview(); // Cập nhật ảnh dựa trên giá trị mặc định
+                updateImagePreview();
 
                 fetch(`/acvstore/san-pham/get/${sanPhamId}`)
                     .then(response => {
@@ -1056,7 +1038,7 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Received data:', data); // Debug log
+                        console.log('Received data:', data);
                         maSanPhamInput.value = data.maSanPham || '';
                         tenSanPhamInput.value = data.tenSanPham || '';
                         moTaInput.value = data.moTa || '';
@@ -1064,11 +1046,10 @@
                         trangThaiInput.checked = data.trangThai != null ? data.trangThai : false;
                         updateTrangThaiLabel();
 
-                        // Cập nhật URL ảnh
                         const imageUrl = data.urlHinhAnh || '';
                         urlHinhAnhInput.value = imageUrl;
-                        console.log('Image URL:', imageUrl); // Debug log
-                        updateImagePreview(imageUrl); // Cập nhật ảnh từ dữ liệu server
+                        console.log('Image URL:', imageUrl);
+                        updateImagePreview(imageUrl);
                     })
                     .catch(error => {
                         console.error('Error fetching san pham data:', error);
@@ -1133,7 +1114,7 @@
                                 row.cells[1].innerHTML = `<code class="fw-bold">${sanPham.maSanPham || ''}</code>`;
                                 row.cells[2].innerHTML = sanPham.urlHinhAnh
                                     ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image"></div>`
-                                    : `<div class="d-flex justify-content-center"><div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 80px; height: 80px;"><i class="fas fa-image text-muted fs-3"></i></div></div>`;
+                                    : `<div class="d-flex justify-content-center"><div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 60px; height: 60px;"><i class="fas fa-image text-muted fs-3"></i></div></div>`;
                                 row.cells[3].innerHTML = `<div class="fw-semibold text-dark">${sanPham.tenSanPham || ''}</div>`;
                                 row.cells[4].innerHTML = `<span class="badge badge-success">${sanPham.tenDanhMuc || 'N/A'}</span>`;
                                 row.cells[5].innerHTML = `<span class="fw-bold fs-5">${sanPham.tongSoLuong || 0}</span>`;
@@ -1175,7 +1156,7 @@
                     if (!error && result && result.event === 'success') {
                         const imageUrl = result.info.secure_url;
                         urlHinhAnhInput.value = imageUrl;
-                        updateImagePreview(imageUrl); // Cập nhật ngay sau khi tải ảnh lên
+                        updateImagePreview(imageUrl);
                         showToast('Tải ảnh lên thành công!', 'success');
                     } else if (error) {
                         console.error('Cloudinary upload error:', error);
@@ -1189,7 +1170,6 @@
             }, false);
         }
 
-        // Status toggle functionality
         document.querySelectorAll('.status-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const sanPhamId = this.getAttribute('data-id');
