@@ -24,6 +24,7 @@ public class NguoiDungService {
         Pageable pageable = PageRequest.of(page, size);
         return nguoiDungRepository.findByVaiTroNotCustomer(keyword != null ? keyword : "", pageable);
     }
+
     public Page<NguoiDung> findUsersByVaiTro(String vaiTro, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return nguoiDungRepository.findByVaiTroAndKeyword(vaiTro, keyword != null ? keyword : "", pageable);
@@ -43,14 +44,14 @@ public class NguoiDungService {
                 throw new RuntimeException("Tên đăng nhập đã tồn tại.");
             }
 
-            // Mã hóa mật khẩu khi tạo mới
-            nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            // Không mã hóa mật khẩu, lưu trực tiếp dưới dạng plaintext
+            // nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
         } else {
-            // Nếu đang cập nhật user, chỉ mã hóa nếu mật khẩu thay đổi
-            Optional<NguoiDung> existing = nguoiDungRepository.findById(nguoiDung.getId());
-            if (existing.isPresent() && !existing.get().getMatKhau().equals(nguoiDung.getMatKhau())) {
-                nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
-            }
+            // Nếu đang cập nhật user, không mã hóa mật khẩu
+            // Optional<NguoiDung> existing = nguoiDungRepository.findById(nguoiDung.getId());
+            // if (existing.isPresent() && !existing.get().getMatKhau().equals(nguoiDung.getMatKhau())) {
+            //     nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            // }
         }
         return nguoiDungRepository.save(nguoiDung);
     }
