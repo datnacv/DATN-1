@@ -617,27 +617,27 @@
             }
 
             tbody.append(`
-              <tr>
-                <td>${hoaDon.maHoaDon}</td>
-                <td>${hoaDon.tenKhachHang}</td>
-                <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
-                <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
-                <td>${hoaDon.phuongThucThanhToan}</td>
-                <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
-                <td><span class="${statusClass}">${trangThaiText}</span></td>
-                <td>
-                    <div class="dropdown">
-                        <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                            <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                            <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${hoaDon.trangThai === true && hoaDon.phuongThucBanHang !== "Giao hàng" ? 'style="display:none;"' : ''}>Xác nhận hóa đơn</button></li>
-                        </ul>
-                    </div>
-                </td>
-              </tr>
-            `);
+                        <tr>
+                            <td>${hoaDon.maHoaDon}</td>
+                            <td>${hoaDon.tenKhachHang}</td>
+                            <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
+                            <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+                            <td>${hoaDon.phuongThucThanhToan}</td>
+                            <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+                            <td><span class="${statusClass}">${trangThaiText}</span></td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+                                        <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
+                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${!isConfirmedStatus ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
           });
         }
         updatePagination(response.totalPages, response.currentPage, search, trangThai);
