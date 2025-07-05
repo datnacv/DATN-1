@@ -251,7 +251,7 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStockQuantity() > 0 ? true : updateDto.getStatus() != null ? updateDto.getStatus() : false);
+        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
         logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
         chiTietSanPhamRepo.save(existingDetail);
@@ -259,13 +259,6 @@ public class ChiTietSanPhamService {
         if (imageFiles != null && imageFiles.length > 0) {
             saveImagesToCloudinary(existingDetail, List.of(imageFiles));
         }
-    }
-
-    @Transactional
-    public void deleteById(UUID id) {
-        ChiTietSanPham pd = chiTietSanPhamRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + id));
-        chiTietSanPhamRepo.delete(pd);
     }
 
     @Transactional

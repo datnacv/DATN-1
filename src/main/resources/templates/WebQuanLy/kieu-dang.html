@@ -6,30 +6,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
-        /* Fix navbar and sidebar overlap */
-
-        /*.sidebar {*/
-        /*    position: fixed;*/
-        /*    top: 70px; !* Match navbar height *!*/
-        /*    left: 0;*/
-        /*    height: calc(100% - 70px);*/
-        /*    width: 250px;*/
-        /*    background-color: #212529;*/
-        /*    padding-top: 20px;*/
-        /*    z-index: 900;*/
-        /*}*/
-        /*.content {*/
-        /*    margin-left: 260px; !* Adjust based on sidebar width + some padding *!*/
-        /*    margin-top: 70px; !* Adjust based on navbar height *!*/
-        /*    padding: 20px;*/
-        /*    max-width: 100%;*/
-        /*}*/
-        /*!* Ensure table responsiveness *!*/
-        /*.table-responsive {*/
-        /*    margin-top: 20px;*/
-        /*}*/
-
         .navbar {
             margin-left: 250px; /* Dời navbar sang phải theo chiều rộng của sidebar */
             z-index: 1020; /* Đảm bảo nằm trên nội dung nhưng không đè sidebar */
@@ -46,6 +24,12 @@
             margin-left: 0;
         }
 
+        .content {
+            margin-left: 260px; /* Adjust based on sidebar width + some padding */
+            margin-top: 70px; /* Adjust based on navbar height */
+            padding: 20px;
+            max-width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -53,13 +37,17 @@
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-        <!-- Các phần tử khác bên trái (nếu có) -->
-
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <!-- Nội dung chính bên phải -->
     <div class="content" id="content">
         <h2 class="text-center my-4">Danh sách Kiểu dáng</h2>
+
+        <!-- Hiển thị thông báo lỗi -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
 
         <!-- Thanh tìm kiếm -->
         <div class="mb-3 d-flex justify-content-center">
@@ -160,3 +148,5 @@
         document.getElementById('kieuDangName').value = name;
     }
 </script>
+</body>
+</html>

@@ -263,7 +263,9 @@
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <div class="content" id="content">
-        <h2 class="mb-4 page-title">QUẢN LÝ CHI TIẾT SẢN PHẨM</h2>
+        <div class="text-center mb-2 mt-3">
+            <h2 class="page-title">QUẢN LÝ CHI TIẾT SẢN PHẨM</h2>
+        </div>
         <div class="card mb-4">
             <div class="card-body">
                 <form th:action="@{/acvstore/chi-tiet-san-pham}" method="get">
@@ -415,12 +417,6 @@
                             <button class="btn btn-warning btn-sm edit-btn" th:data-id="${pd.id}" data-bs-toggle="modal" data-bs-target="#editChiTietSanPhamModal" title="Sửa">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <form th:action="@{'/acvstore/chi-tiet-san-pham/delete/' + ${pd.id}}" method="post" style="display: inline;">
-                                <input type="hidden" name="productId" th:value="${selectedProductId}"/>
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa chi tiết này?');" title="Xóa">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </form>
                         </td>
                     </tr>
                     </tbody>

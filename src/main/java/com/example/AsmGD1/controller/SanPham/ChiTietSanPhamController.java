@@ -209,25 +209,6 @@ public class ChiTietSanPhamController {
         }
     }
 
-    @PostMapping("/delete/{id}")
-    public String xoaChiTietSanPham(@PathVariable UUID id, @RequestParam(value = "productId", required = false) UUID productId) {
-        try {
-            chiTietSanPhamService.deleteById(id);
-            String redirectUrl = "/acvstore/chi-tiet-san-pham";
-            if (productId != null) {
-                redirectUrl += "?productId=" + productId;
-            }
-            return "redirect:" + redirectUrl + "&success=Xóa thành công";
-        } catch (Exception e) {
-            logger.error("Lỗi khi xóa chi tiết sản phẩm ID {}: ", id, e);
-            String redirectUrl = "/acvstore/chi-tiet-san-pham?error=" + e.getMessage();
-            if (productId != null) {
-                redirectUrl += "&productId=" + productId;
-            }
-            return "redirect:" + redirectUrl;
-        }
-    }
-
     @PostMapping("/delete-image/{imageId}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> xoaAnh(@PathVariable UUID imageId) {

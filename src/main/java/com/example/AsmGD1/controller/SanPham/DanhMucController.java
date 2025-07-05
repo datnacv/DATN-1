@@ -23,30 +23,49 @@ public class DanhMucController {
     private NguoiDungService nguoiDungService;
 
     @GetMapping("/danh-muc")
-    public String listDanhMuc(@RequestParam(value = "search", required = false) String search, Model model) {
+    public String listDanhMuc(@RequestParam(value = "search", required = false) String search,
+                              @RequestParam(value = "error", required = false) String errorMessage,
+                              Model model) {
         List<DanhMuc> danhMucList;
         if (search != null && !search.trim().isEmpty()) {
             danhMucList = danhMucService.searchDanhMuc(search);
         } else {
             danhMucList = danhMucService.getAllDanhMuc();
         }
-        // Reverse the list to show newest entries first
         Collections.reverse(danhMucList);
         model.addAttribute("danhMucList", danhMucList);
         List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
         model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        if (errorMessage != null && !errorMessage.isEmpty()) {
+            model.addAttribute("errorMessage", errorMessage);
+        }
         return "WebQuanLy/danh-muc";
     }
 
     @PostMapping("/danh-muc/save")
-    public String saveDanhMuc(@ModelAttribute DanhMuc danhMuc) {
-        danhMucService.saveDanhMuc(danhMuc);
-        return "redirect:/acvstore/danh-muc";
+    public String saveDanhMuc(@ModelAttribute DanhMuc danhMuc, Model model) {
+        try {
+            danhMucService.saveDanhMuc(danhMuc);
+            return "redirect:/acvstore/danh-muc";
+        } catch (IllegalArgumentException e) {
+            List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
+            Collections.reverse(danhMucList);
+            model.addAttribute("danhMucList", danhMucList);
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("errorMessage", e.getMessage());
+            return "WebQuanLy/danh-muc";
+        }
     }
 
     @GetMapping("/danh-muc/delete/{id}")
-    public String deleteDanhMuc(@PathVariable UUID id) {
-        danhMucService.deleteDanhMuc(id);
-        return "redirect:/acvstore/danh-muc";
+    public String deleteDanhMuc(@PathVariable UUID id, Model model) {
+        try {
+            danhMucService.deleteDanhMuc(id);
+            return "redirect:/acvstore/danh-muc";
+        } catch (IllegalStateException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return listDanhMuc(null, e.getMessage(), model);
+        }
     }
 }

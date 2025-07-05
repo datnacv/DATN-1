@@ -22,30 +22,49 @@ public class MauSacController {
     private NguoiDungService nguoiDungService;
 
     @GetMapping("/mau-sac")
-    public String listMauSac(@RequestParam(value = "search", required = false) String search, Model model) {
+    public String listMauSac(@RequestParam(value = "search", required = false) String search,
+                             @RequestParam(value = "error", required = false) String errorMessage,
+                             Model model) {
         List<MauSac> mauSacList;
         if (search != null && !search.trim().isEmpty()) {
             mauSacList = mauSacService.searchMauSac(search);
         } else {
             mauSacList = mauSacService.getAllMauSac();
         }
-        // Reverse the list to show newest entries first (assumes database order is oldest first)
         Collections.reverse(mauSacList);
         model.addAttribute("mauSacList", mauSacList);
         List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
         model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        if (errorMessage != null && !errorMessage.isEmpty()) {
+            model.addAttribute("errorMessage", errorMessage);
+        }
         return "WebQuanLy/mau-sac";
     }
 
     @PostMapping("/mau-sac/save")
-    public String saveMauSac(@ModelAttribute MauSac mauSac) {
-        mauSacService.saveMauSac(mauSac);
-        return "redirect:/acvstore/mau-sac";
+    public String saveMauSac(@ModelAttribute MauSac mauSac, Model model) {
+        try {
+            mauSacService.saveMauSac(mauSac);
+            return "redirect:/acvstore/mau-sac";
+        } catch (IllegalArgumentException e) {
+            List<MauSac> mauSacList = mauSacService.getAllMauSac();
+            Collections.reverse(mauSacList);
+            model.addAttribute("mauSacList", mauSacList);
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("errorMessage", e.getMessage());
+            return "WebQuanLy/mau-sac";
+        }
     }
 
     @GetMapping("/mau-sac/delete/{id}")
-    public String deleteMauSac(@PathVariable UUID id) {
-        mauSacService.deleteMauSac(id);
-        return "redirect:/acvstore/mau-sac";
+    public String deleteMauSac(@PathVariable UUID id, Model model) {
+        try {
+            mauSacService.deleteMauSac(id);
+            return "redirect:/acvstore/mau-sac";
+        } catch (IllegalStateException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            return listMauSac(null, e.getMessage(), model);
+        }
     }
 }
