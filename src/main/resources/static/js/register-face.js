@@ -90,7 +90,7 @@ function startFaceDetection() {
                     stopVideoStream();
                     clearInterval(interval);
                     setTimeout(() => {
-                        window.location.href = "/xac-thuc-khuon-mat";
+                        window.location.href = "/acvstore/verify-face";
                     }, 1500);
                 } else {
                     throw new Error("Lỗi khi lưu descriptor");

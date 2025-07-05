@@ -1,16 +1,12 @@
-package com.example.AsmGD1.service.NguoiDung;
+package com.example.AsmGD1.service.NguoiDung; // Hoặc package tương ứng của bạn
 
-import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.entity.NguoiDung; // Đảm bảo import đúng lớp NguoiDung
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -20,12 +16,12 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Tìm người dùng trong cơ sở dữ liệu
         NguoiDung user = nguoiDungRepository.findByTenDangNhap(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy người dùng: " + username));
-        return User.builder()
-                .username(user.getTenDangNhap())
-                .password(user.getMatKhau())
-                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getVaiTro().toUpperCase())))
-                .build();
+
+        // TRẢ VỀ TRỰC TIẾP ĐỐI TƯỢNG NGUOIDUNG CỦA BẠN
+        // Vì NguoiDung đã implement UserDetails, bạn có thể trả về nó ở đây.
+        return user;
     }
 }
