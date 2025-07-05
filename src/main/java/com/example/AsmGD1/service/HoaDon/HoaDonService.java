@@ -33,6 +33,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -192,57 +193,118 @@ public class HoaDonService {
             }
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            Document document = new Document();
+            Document document = new Document(PageSize.A4, 36, 36, 36, 36); // Thiết lập lề
             PdfWriter.getInstance(document, baos);
             document.open();
 
+            // Tải font hỗ trợ tiếng Việt
             BaseFont bf;
             try {
                 bf = BaseFont.createFont("/fonts/DejaVuSans.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
             } catch (Exception e) {
-                System.err.println("Không thể tải font DejaVuSans, sử dụng font fallback Helvetica: " + e.getMessage());
+                System.err.println("Không thể tải font DejaVuSans, sử dụng font Helvetica: " + e.getMessage());
                 bf = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, BaseFont.EMBEDDED);
             }
-            Font fontTitle = new Font(bf, 16, Font.BOLD);
-            Font fontNormal = new Font(bf, 12);
-            Font fontBold = new Font(bf, 12, Font.BOLD);
+            Font fontTitle = new Font(bf, 18, Font.BOLD, BaseColor.BLACK);
+            Font fontHeader = new Font(bf, 14, Font.BOLD, BaseColor.DARK_GRAY);
+            Font fontNormal = new Font(bf, 12, Font.NORMAL, BaseColor.BLACK);
+            Font fontBold = new Font(bf, 12, Font.BOLD, BaseColor.BLACK);
+            Font fontFooter = new Font(bf, 10, Font.ITALIC, BaseColor.GRAY);
 
+            // Thêm logo (nếu có)
+            try {
+                Image logo = Image.getInstance("src/main/resources/static/images/acv-logo.png"); // Thay bằng đường dẫn tới logo của bạn
+                logo.scaleToFit(100, 100);
+                logo.setAlignment(Element.ALIGN_CENTER);
+                document.add(logo);
+                document.add(Chunk.NEWLINE);
+            } catch (Exception e) {
+                System.err.println("Không thể tải logo: " + e.getMessage());
+            }
+
+            // Tiêu đề cửa hàng
+            Paragraph storeInfo = new Paragraph();
+            storeInfo.setAlignment(Element.ALIGN_CENTER);
+            storeInfo.add(new Phrase("CỬA HÀNG ACV STORE\n", fontHeader));
+            storeInfo.add(new Phrase("Địa chỉ: Thanh Oai, TP. Hà Nội\n", fontNormal));
+            storeInfo.add(new Phrase("Hotline: 0866 716 384 | Email: datn.acv@gmail.com\n", fontNormal));
+            document.add(storeInfo);
+            document.add(Chunk.NEWLINE);
+
+            // Tiêu đề hóa đơn
             Paragraph title = new Paragraph("HÓA ĐƠN BÁN HÀNG", fontTitle);
             title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(10f);
             document.add(title);
-            document.add(new Paragraph("Mã hóa đơn: " + donHang.getMaDonHang(), fontNormal));
-            document.add(new Paragraph("Ngày tạo: " + hoaDon.getNgayTao().toString(), fontNormal));
-            document.add(new Paragraph("\n"));
 
-            document.add(new Paragraph("Khách hàng: " + (hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Không rõ"), fontNormal));
-            document.add(new Paragraph("Số điện thoại: " + (hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ"), fontNormal));
-            if (hoaDon.getGhiChu() != null && !hoaDon.getGhiChu().isEmpty()) {
-                document.add(new Paragraph("Địa chỉ: " + hoaDon.getNguoiDung().getDiaChi(), fontNormal));
+            // Thông tin hóa đơn
+            PdfPTable infoTable = new PdfPTable(2);
+            infoTable.setWidthPercentage(100);
+            infoTable.setWidths(new float[]{1, 3});
+            infoTable.setSpacingAfter(10f);
+
+            addInfoCell(infoTable, fontBold, fontNormal, "Mã hóa đơn:", donHang.getMaDonHang());
+            addInfoCell(infoTable, fontBold, fontNormal, "Ngày tạo:", hoaDon.getNgayTao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
+            addInfoCell(infoTable, fontBold, fontNormal, "Khách hàng:", hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Khách lẻ");
+            addInfoCell(infoTable, fontBold, fontNormal, "Số điện thoại:", hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ");
+
+            // Thêm trường địa chỉ
+            String address = "Không rõ";
+            if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                address = hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getDiaChi() != null
+                        ? hoaDon.getNguoiDung().getDiaChi()
+                        : "Mua tại quầy";
+            } else {
+                address = hoaDon.getGhiChu() != null && !hoaDon.getGhiChu().isEmpty()
+                        ? hoaDon.getGhiChu()
+                        : (donHang.getDiaChiGiaoHang() != null ? donHang.getDiaChiGiaoHang() : "Không rõ");
             }
-            document.add(new Paragraph("\n"));
+            addInfoCell(infoTable, fontBold, fontNormal, "Địa chỉ:", address);
 
-            PdfPTable table = new PdfPTable(5);
+            document.add(infoTable);
+            document.add(Chunk.NEWLINE);
+
+            // Bảng chi tiết sản phẩm
+            PdfPTable table = new PdfPTable(6);
             table.setWidthPercentage(100);
-            table.setWidths(new float[]{1, 3, 1, 2, 2});
+            table.setWidths(new float[]{0.5f, 2.5f, 1, 1, 1.5f, 1.5f});
+            table.setSpacingBefore(10f);
+            table.setSpacingAfter(10f);
 
-            addTableHeader(table, fontBold, "STT", "Sản phẩm", "SL", "Đơn giá", "Thành tiền");
+            // Header bảng
+            addTableHeader(table, fontBold, BaseColor.LIGHT_GRAY, "STT", "Sản phẩm", "Màu", "Kích cỡ", "Đơn giá", "Thành tiền");
+
+            // Dữ liệu sản phẩm
             int index = 1;
             for (ChiTietDonHang chiTiet : donHang.getChiTietDonHangs()) {
-                table.addCell(new PdfPCell(new Phrase(String.valueOf(index++), fontNormal)));
-                table.addCell(new PdfPCell(new Phrase(chiTiet.getTenSanPham() + " (" + (chiTiet.getGhiChu() != null ? chiTiet.getGhiChu() : "") + ")", fontNormal)));
-                table.addCell(new PdfPCell(new Phrase(String.valueOf(chiTiet.getSoLuong()), fontNormal)));
-                table.addCell(new PdfPCell(new Phrase(formatCurrency(chiTiet.getGia()), fontNormal)));
-                table.addCell(new PdfPCell(new Phrase(formatCurrency(chiTiet.getThanhTien()), fontNormal)));
+                table.addCell(createCell(String.valueOf(index++), fontNormal, Element.ALIGN_CENTER));
+                table.addCell(createCell(chiTiet.getTenSanPham(), fontNormal, Element.ALIGN_LEFT));
+                table.addCell(createCell(chiTiet.getChiTietSanPham().getMauSac().getTenMau(), fontNormal, Element.ALIGN_CENTER));
+                table.addCell(createCell(chiTiet.getChiTietSanPham().getKichCo().getTen(), fontNormal, Element.ALIGN_CENTER));
+                table.addCell(createCell(formatCurrency(chiTiet.getGia()), fontNormal, Element.ALIGN_RIGHT));
+                table.addCell(createCell(formatCurrency(chiTiet.getThanhTien()), fontNormal, Element.ALIGN_RIGHT));
             }
-
             document.add(table);
-            document.add(new Paragraph("\n"));
+
+            // Tổng kết
+            PdfPTable summaryTable = new PdfPTable(2);
+            summaryTable.setWidthPercentage(50);
+            summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            summaryTable.setSpacingBefore(10f);
 
             BigDecimal tongTienHang = hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO);
-            document.add(new Paragraph("Tổng tiền hàng: " + formatCurrency(tongTienHang), fontNormal));
-            document.add(new Paragraph("Phí vận chuyển: " + formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO), fontNormal));
-            document.add(new Paragraph("Giảm giá: " + formatCurrency(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO), fontNormal));
-            document.add(new Paragraph("Tổng tiền: " + formatCurrency(hoaDon.getTongTien()), fontBold));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền hàng:", formatCurrency(tongTienHang));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Phí vận chuyển:", formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền:", formatCurrency(hoaDon.getTongTien()));
+
+            document.add(summaryTable);
+
+            // Footer
+            Paragraph footer = new Paragraph("Cảm ơn quý khách đã mua sắm tại ACV Store!\nVui lòng kiểm tra kỹ thông tin hóa đơn.", fontFooter);
+            footer.setAlignment(Element.ALIGN_CENTER);
+            footer.setSpacingBefore(20f);
+            document.add(footer);
 
             document.close();
             return baos.toByteArray();
@@ -253,22 +315,43 @@ public class HoaDonService {
         }
     }
 
+    // Helper methods
+    private void addInfoCell(PdfPTable table, Font fontBold, Font fontNormal, String label, String value) {
+        table.addCell(createCell(label, fontBold, Element.ALIGN_LEFT));
+        table.addCell(createCell(value, fontNormal, Element.ALIGN_LEFT));
+    }
+
+    private void addSummaryCell(PdfPTable table, Font fontBold, Font fontNormal, String label, String value) {
+        table.addCell(createCell(label, fontBold, Element.ALIGN_LEFT));
+        table.addCell(createCell(value, fontNormal, Element.ALIGN_RIGHT));
+    }
+
+    private void addTableHeader(PdfPTable table, Font font, BaseColor bgColor, String... headers) {
+        for (String header : headers) {
+            PdfPCell cell = new PdfPCell(new Phrase(header, font));
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setBackgroundColor(bgColor);
+            cell.setPadding(5);
+            table.addCell(cell);
+        }
+    }
+
+    private PdfPCell createCell(String content, Font font, int alignment) {
+        PdfPCell cell = new PdfPCell(new Phrase(content, font));
+        cell.setHorizontalAlignment(alignment);
+        cell.setPadding(5);
+        return cell;
+    }
+
     private String formatCurrency(BigDecimal amount) {
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         symbols.setDecimalSeparator(',');
-        DecimalFormat df = new DecimalFormat("#,##0", symbols);
+        DecimalFormat df = new DecimalFormat("#,##0 VNĐ", symbols);
         df.setGroupingSize(3);
-        return df.format(amount.setScale(0, RoundingMode.HALF_UP)) + " VNĐ";
+        return df.format(amount.setScale(0, RoundingMode.HALF_UP));
     }
 
-    private void addTableHeader(PdfPTable table, Font font, String... headers) {
-        for (String header : headers) {
-            PdfPCell cell = new PdfPCell(new Phrase(header, font));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            table.addCell(cell);
-        }
-    }
 
     public Optional<HoaDon> findById(UUID id) {
         return hoaDonRepository.findById(id);

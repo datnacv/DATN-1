@@ -547,9 +547,15 @@ public class BanHangController {
 
     @GetMapping("/products")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> getAllProducts() {
+    public ResponseEntity<Map<String, Object>> getAllProducts(@RequestParam(required = false, defaultValue = "") String keyword) {
         try {
-            List<ChiTietSanPham> products = chiTietSanPhamService.findAllByTrangThai();
+            List<ChiTietSanPham> products;
+            if (keyword.isEmpty()) {
+                products = chiTietSanPhamService.findAllByTrangThai();
+            } else {
+                products = chiTietSanPhamService.findAllByTrangThaiAndKeyword(keyword);
+            }
+
             List<Map<String, Object>> productList = products.stream().map(product -> {
                 Map<String, Object> productMap = new HashMap<>();
                 productMap.put("idChiTietSanPham", product.getId());
@@ -560,11 +566,13 @@ public class BanHangController {
                 productMap.put("availableStock", getAvailableStock(product.getId(), product.getSoLuongTonKho()));
                 return productMap;
             }).collect(Collectors.toList());
+
             return ResponseEntity.ok(Map.of("products", productList));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy danh sách sản phẩm: " + e.getMessage()));
         }
     }
+
 
 
     @GetMapping("/product-detail/{productDetailId}")
