@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -382,6 +384,11 @@ public class BanHangController {
             }
             model.addAttribute("orderTabs", tabs);
             model.addAttribute("orderCounter", heldOrders.size());
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+                NguoiDung user = (NguoiDung) auth.getPrincipal();
+                model.addAttribute("user", user);
+            }
 
             return "WebQuanLy/ban-hang";
         } catch (Exception e) {
