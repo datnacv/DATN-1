@@ -1,4 +1,3 @@
-
 package com.example.AsmGD1.service.HoaDon;
 
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
@@ -96,20 +95,16 @@ public class HoaDonService {
         hoaDonRepository.saveAndFlush(hoaDon);
     }
 
-    public Page<HoaDon> findAll(String search, Boolean trangThai, Pageable pageable) {
+    public Page<HoaDon> findAll(String search, String trangThai, String paymentMethod, String salesMethod, Pageable pageable) {
         Sort sort = Sort.by(Sort.Direction.DESC, "ngayTao");
         Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort);
-
-        if (search != null && !search.isEmpty()) {
-            if (trangThai != null) {
-                return hoaDonRepository.findBySearchAndTrangThai(search, trangThai, sortedPageable);
-            }
-            return hoaDonRepository.searchByKeyword(search, sortedPageable);
-        }
-        if (trangThai != null) {
-            return hoaDonRepository.findByTrangThai(trangThai, sortedPageable);
-        }
-        return hoaDonRepository.findAll(sortedPageable);
+        return hoaDonRepository.searchByKeywordAndFilters(
+                search != null && !search.isEmpty() ? search : null,
+                trangThai != null && !trangThai.isEmpty() ? trangThai : null,
+                paymentMethod != null && !paymentMethod.isEmpty() ? paymentMethod : null,
+                salesMethod != null && !salesMethod.isEmpty() ? salesMethod : null,
+                sortedPageable
+        );
     }
 
     public HoaDonDTO getHoaDonDetail(String id) {
@@ -118,13 +113,16 @@ public class HoaDonService {
             HoaDon hoaDon = hoaDonRepository.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại."));
 
-            if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
-                    (hoaDon.getTrangThai() == null || !hoaDon.getTrangThai())) {
+            // Kiểm tra và đồng bộ trạng thái từ lịch sử
+            String currentStatus = getCurrentStatus(hoaDon);
+            if ("Đang vận chuyển".equals(currentStatus) && !hoaDon.getTrangThai()) {
                 hoaDon.setTrangThai(true);
                 hoaDon.setNgayThanhToan(LocalDateTime.now());
-                hoaDon.setGhiChu("Hoàn thành (Tại quầy)");
-                addLichSuHoaDon(hoaDon, "Hoàn thành", "Hoàn thành tự động (Tại quầy)");
-                save(hoaDon);
+                save(hoaDon); // Cập nhật trạng thái
+            } else if ("Hoàn thành".equals(currentStatus) && !hoaDon.getTrangThai()) {
+                hoaDon.setTrangThai(true);
+                hoaDon.setNgayThanhToan(LocalDateTime.now());
+                save(hoaDon); // Cập nhật trạng thái
             }
 
             HoaDonDTO dto = new HoaDonDTO();
@@ -265,19 +263,20 @@ public class HoaDonService {
             document.add(Chunk.NEWLINE);
 
             // Bảng chi tiết sản phẩm
-            PdfPTable table = new PdfPTable(6);
+            PdfPTable table = new PdfPTable(7); // Tăng số cột lên 7 để thêm mã sản phẩm
             table.setWidthPercentage(100);
-            table.setWidths(new float[]{0.5f, 2.5f, 1, 1, 1.5f, 1.5f});
+            table.setWidths(new float[]{0.5f, 1f, 2f, 1f, 1f, 1.5f, 1.5f}); // Điều chỉnh độ rộng cột
             table.setSpacingBefore(10f);
             table.setSpacingAfter(10f);
 
             // Header bảng
-            addTableHeader(table, fontBold, BaseColor.LIGHT_GRAY, "STT", "Sản phẩm", "Màu", "Kích cỡ", "Đơn giá", "Thành tiền");
+            addTableHeader(table, fontBold, BaseColor.LIGHT_GRAY, "STT", "Mã sản phẩm", "Sản phẩm", "Màu", "Kích cỡ", "Đơn giá", "Thành tiền");
 
             // Dữ liệu sản phẩm
             int index = 1;
             for (ChiTietDonHang chiTiet : donHang.getChiTietDonHangs()) {
                 table.addCell(createCell(String.valueOf(index++), fontNormal, Element.ALIGN_CENTER));
+                table.addCell(createCell(chiTiet.getChiTietSanPham().getSanPham().getMaSanPham() != null ? chiTiet.getChiTietSanPham().getSanPham().getMaSanPham() : "N/A", fontNormal, Element.ALIGN_CENTER));
                 table.addCell(createCell(chiTiet.getTenSanPham(), fontNormal, Element.ALIGN_LEFT));
                 table.addCell(createCell(chiTiet.getChiTietSanPham().getMauSac().getTenMau(), fontNormal, Element.ALIGN_CENTER));
                 table.addCell(createCell(chiTiet.getChiTietSanPham().getKichCo().getTen(), fontNormal, Element.ALIGN_CENTER));
@@ -352,7 +351,6 @@ public class HoaDonService {
         return df.format(amount.setScale(0, RoundingMode.HALF_UP));
     }
 
-
     public Optional<HoaDon> findById(UUID id) {
         return hoaDonRepository.findById(id);
     }
@@ -370,11 +368,11 @@ public class HoaDonService {
     public String getCurrentStatus(HoaDon hoaDon) {
         if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
             return "Hoàn thành";
-        } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Hoàn thành")) {
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
             return "Hoàn thành";
-        } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Vận chuyển thành công")) {
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai()))) {
             return "Vận chuyển thành công";
-        } else if (hoaDon.getGhiChu() != null && hoaDon.getGhiChu().contains("Đang vận chuyển")) {
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang vận chuyển".equals(ls.getTrangThai()))) {
             return "Đang vận chuyển";
         } else if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai()) {
             return "Đã xác nhận";

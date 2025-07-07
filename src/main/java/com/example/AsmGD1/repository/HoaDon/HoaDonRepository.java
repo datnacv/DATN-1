@@ -9,7 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,16 +16,22 @@ import java.util.UUID;
 public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
     Optional<HoaDon> findByDonHangId(UUID donHangId);
 
-    // Tìm hóa đơn theo mã đơn hàng
     HoaDon findByDonHang_MaDonHang(String maDonHang);
 
-    // Tìm kiếm hóa đơn theo nhiều tiêu chí (mã đơn hàng, tên khách hàng, số điện thoại)
     @Query("SELECT h FROM HoaDon h JOIN h.donHang d JOIN h.nguoiDung n " +
-            "WHERE UPPER(d.maDonHang) LIKE UPPER(CONCAT('%', :keyword, '%')) " +
+            "LEFT JOIN h.lichSuHoaDons ls " +
+            "WHERE (:keyword IS NULL OR UPPER(d.maDonHang) LIKE UPPER(CONCAT('%', :keyword, '%')) " +
             "OR UPPER(n.hoTen) LIKE UPPER(CONCAT('%', :keyword, '%')) " +
-            "OR UPPER(n.soDienThoai) LIKE UPPER(CONCAT('%', :keyword, '%'))")
-    Page<HoaDon> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
-
+            "OR UPPER(n.soDienThoai) LIKE UPPER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:trangThai IS NULL OR ls.trangThai = :trangThai) " +
+            "AND (:paymentMethod IS NULL OR h.phuongThucThanhToan.tenPhuongThuc = :paymentMethod) " +
+            "AND (:salesMethod IS NULL OR d.phuongThucBanHang = :salesMethod) " +
+            "AND (ls.thoiGian = (SELECT MAX(ls2.thoiGian) FROM LichSuHoaDon ls2 WHERE ls2.hoaDon = h) OR ls.thoiGian IS NULL)")
+    Page<HoaDon> searchByKeywordAndFilters(@Param("keyword") String keyword,
+                                           @Param("trangThai") String trangThai,
+                                           @Param("paymentMethod") String paymentMethod,
+                                           @Param("salesMethod") String salesMethod,
+                                           Pageable pageable);
 
     Optional<HoaDon> findByDonHang(DonHang donHang);
 
@@ -34,11 +39,4 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
     Page<HoaDon> findByDonHangMaDonHangContainingIgnoreCase(@Param("value") String maDonHang, Pageable pageable);
 
     Optional<HoaDon> findByDonHangMaDonHang(String maDonHang);
-    @Query("SELECT h FROM HoaDon h WHERE (h.donHang.maDonHang LIKE %:search% OR h.nguoiDung.hoTen LIKE %:search% OR h.nguoiDung.soDienThoai LIKE %:search%) AND h.trangThai = :trangThai")
-    Page<HoaDon> findBySearchAndTrangThai(@Param("search") String search, @Param("trangThai") Boolean trangThai, Pageable pageable);
-
-    @Query("SELECT h FROM HoaDon h WHERE h.trangThai = :trangThai")
-    Page<HoaDon> findByTrangThai(@Param("trangThai") Boolean trangThai, Pageable pageable);
-
-
 }
