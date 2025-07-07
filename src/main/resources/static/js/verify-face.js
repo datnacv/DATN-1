@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
 
-    const username = "admin"; // 👉 truyền từ backend nếu cần
+    const username = document.body.getAttribute("data-username");
+
 
     console.log("🚀 Bắt đầu xác minh khuôn mặt cho:", username);
 
