@@ -11,8 +11,6 @@
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <script th:src="@{/js/sidebar.js}" defer></script>
   <style>
-
-
     :root {
       --bg-light: #f8f8f8;
       --bg-medium: #e0e0e0;
@@ -48,8 +46,6 @@
       transition: margin-left 0.3s ease;
     }
 
-
-
     .sidebar-container {
       background-color: #222222;
       color: #ffffff;
@@ -75,6 +71,7 @@
 
     .search-bar {
       display: flex;
+      flex-direction: column;
       gap: 15px;
       margin-bottom: 25px;
       padding: 20px;
@@ -82,14 +79,34 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       border: 1px solid var(--border-light);
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
       align-items: center;
+      width: 100%;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 15px;
       flex-wrap: wrap;
     }
 
-    .search-bar input,
+    .search-bar input {
+      padding: 12px 16px;
+      flex-grow: 1;
+      border: 2px solid var(--border-light);
+      border-radius: 8px;
+      font-size: 1rem;
+      box-shadow: none;
+      transition: all 0.3s ease;
+    }
+
     .search-bar select {
       padding: 12px 16px;
-      width: 300px;
+      width: 250px;
       border: 2px solid var(--border-light);
       border-radius: 8px;
       font-size: 1rem;
@@ -117,6 +134,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      white-space: nowrap;
     }
 
     .search-bar button:hover {
@@ -415,9 +433,22 @@
         align-items: stretch;
       }
 
+      .search-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
       .search-bar input,
       .search-bar select {
         width: 100%;
+      }
+
+      .search-bar button {
+        width: 100%;
+      }
+
+      .filter-row {
+        flex-direction: column;
       }
 
       .content {
@@ -446,16 +477,33 @@
   <div class="content mt-16" id="mainContent">
     <h1>Quản Lý Hóa Đơn</h1>
     <div class="search-bar">
-      <input id="searchInput" type="text" placeholder="🔍 Tìm kiếm hóa đơn (mã, tên, số điện thoại)..." onkeyup="loadHoaDonList(0, 5, this.value, $('#statusFilter').val())">
-      <select id="statusFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), this.value)">
-        <option value="">Tất cả trạng thái</option>
-        <option value="false">Chưa xác nhận</option>
-        <option value="true">Đã xác nhận/Hoàn thành</option>
-      </select>
-      <button onclick="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val())">
-        <i class="fas fa-search"></i>
-        Tìm kiếm
-      </button>
+      <div class="search-row">
+        <input id="searchInput" type="text" placeholder="🔍 Tìm kiếm hóa đơn (mã, tên, số điện thoại)..." onkeyup="loadHoaDonList(0, 5, this.value, $('#statusFilter').val(), $('#paymentMethodFilter').val(), $('#salesMethodFilter').val())">
+        <button onclick="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val(), $('#paymentMethodFilter').val(), $('#salesMethodFilter').val())">
+          <i class="fas fa-search"></i>
+          Tìm kiếm
+        </button>
+      </div>
+      <div class="filter-row">
+        <select id="statusFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), this.value, $('#paymentMethodFilter').val(), $('#salesMethodFilter').val())">
+          <option value="">Tất cả trạng thái</option>
+          <option value="Chưa xác nhận">Chưa xác nhận</option>
+          <option value="Đã xác nhận">Đã xác nhận</option>
+          <option value="Hoàn thành">Hoàn thành</option>
+          <option value="Đang vận chuyển">Đang vận chuyển</option>
+          <option value="Vận chuyển thành công">Vận chuyển thành công</option>
+        </select>
+        <select id="paymentMethodFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val(), this.value, $('#salesMethodFilter').val())">
+          <option value="">Tất cả phương thức thanh toán</option>
+          <option value="Tiền mặt">Tiền mặt</option>
+          <option value="Chuyển khoản">Chuyển khoản</option>
+        </select>
+        <select id="salesMethodFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val(), $('#paymentMethodFilter').val(), this.value)">
+          <option value="">Tất cả phương thức bán hàng</option>
+          <option value="Tại quầy">Tại quầy</option>
+          <option value="Giao hàng">Giao hàng</option>
+        </select>
+      </div>
     </div>
     <div class="table-container">
       <div class="table-scroll-wrapper">
@@ -511,7 +559,7 @@
     }, 3000);
   }
 
-  function updatePagination(totalPages, currentPage, search = "", trangThai = "") {
+  function updatePagination(totalPages, currentPage, search = "", trangThai = "", paymentMethod = "", salesMethod = "") {
     const pagination = document.getElementById("pagination");
     pagination.innerHTML = "";
     if (totalPages <= 1) return;
@@ -519,13 +567,13 @@
     const first = document.createElement("a");
     first.innerText = "«";
     first.className = `px-3 py-1 border rounded ${currentPage === 0 ? "disabled" : ""}`;
-    if (currentPage > 0) first.onclick = () => loadHoaDonList(0, 5, search, trangThai);
+    if (currentPage > 0) first.onclick = () => loadHoaDonList(0, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(first);
 
     const prev = document.createElement("a");
     prev.innerText = "Trước";
     prev.className = `px-3 py-1 border rounded ${currentPage === 0 ? "disabled" : ""}`;
-    if (currentPage > 0) prev.onclick = () => loadHoaDonList(currentPage - 1, 5, search, trangThai);
+    if (currentPage > 0) prev.onclick = () => loadHoaDonList(currentPage - 1, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(prev);
 
     let startPage = Math.max(0, currentPage - 2);
@@ -539,20 +587,20 @@
       const page = document.createElement(i === currentPage ? "span" : "a");
       page.innerText = i + 1;
       page.className = `px-3 py-1 border rounded ${i === currentPage ? "active" : ""}`;
-      if (i !== currentPage) page.onclick = () => loadHoaDonList(i, 5, search, trangThai);
+      if (i !== currentPage) page.onclick = () => loadHoaDonList(i, 5, search, trangThai, paymentMethod, salesMethod);
       pagination.appendChild(page);
     }
 
     const next = document.createElement("a");
     next.innerText = "Sau";
     next.className = `px-3 py-1 border rounded ${currentPage === totalPages - 1 ? "disabled" : ""}`;
-    if (currentPage < totalPages - 1) next.onclick = () => loadHoaDonList(currentPage + 1, 5, search, trangThai);
+    if (currentPage < totalPages - 1) next.onclick = () => loadHoaDonList(currentPage + 1, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(next);
 
     const last = document.createElement("a");
     last.innerText = "»";
     last.className = `px-3 py-1 border rounded ${currentPage === totalPages - 1 ? "disabled" : ""}`;
-    if (currentPage < totalPages - 1) last.onclick = () => loadHoaDonList(totalPages - 1, 5, search, trangThai);
+    if (currentPage < totalPages - 1) last.onclick = () => loadHoaDonList(totalPages - 1, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(last);
   }
 
@@ -581,12 +629,19 @@
     }
   }
 
-  function loadHoaDonList(page = 0, size = 5, search = "", trangThai = "") {
+  function loadHoaDonList(page = 0, size = 5, search = "", trangThai = "", paymentMethod = "", salesMethod = "") {
     $("#invoiceSpinner").show();
     $.ajax({
       url: "/acvstore/hoa-don/list",
       type: "GET",
-      data: { page, size, search, trangThai: trangThai === "" ? null : trangThai === "true" },
+      data: {
+        page,
+        size,
+        search,
+        trangThai: trangThai === "" ? null : trangThai,
+        paymentMethod: paymentMethod === "" ? null : paymentMethod,
+        salesMethod: salesMethod === "" ? null : salesMethod
+      },
       success: function (response) {
         const hoaDonList = response.hoaDon;
         const tbody = $("#invoiceList");
@@ -595,7 +650,6 @@
           tbody.append('<tr><td colspan="8" class="text-center py-4" style="color: var(--text-secondary);">Không có hóa đơn nào.</td></tr>');
         } else {
           hoaDonList.forEach(hoaDon => {
-            const isConfirmedStatus = hoaDon.trangThai === true;
             let trangThaiText;
             let statusClass = '';
 
@@ -608,7 +662,7 @@
             } else if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Đang vận chuyển")) {
               trangThaiText = "Đang vận chuyển";
               statusClass = 'status-shipping';
-            } else if (isConfirmedStatus) {
+            } else if (hoaDon.trangThai) {
               trangThaiText = "Đã xác nhận";
               statusClass = 'status-confirmed-bg';
             } else {
@@ -617,30 +671,30 @@
             }
 
             tbody.append(`
-                        <tr>
-                            <td>${hoaDon.maHoaDon}</td>
-                            <td>${hoaDon.tenKhachHang}</td>
-                            <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
-                            <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
-                            <td>${hoaDon.phuongThucThanhToan}</td>
-                            <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
-                            <td><span class="${statusClass}">${trangThaiText}</span></td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                                        <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${!isConfirmedStatus ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
-                    `);
+              <tr>
+                <td>${hoaDon.maHoaDon}</td>
+                <td>${hoaDon.tenKhachHang}</td>
+                <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
+                <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+                <td>${hoaDon.phuongThucThanhToan}</td>
+                <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+                <td><span class="${statusClass}">${trangThaiText}</span></td>
+                <td>
+                  <div class="dropdown">
+                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+                      <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
+                      <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${trangThaiText === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+            `);
           });
         }
-        updatePagination(response.totalPages, response.currentPage, search, trangThai);
+        updatePagination(response.totalPages, response.currentPage, search, trangThai, paymentMethod, salesMethod);
         initScrollHandling();
         $("#invoiceSpinner").hide();
       },
@@ -662,7 +716,7 @@
         contentType: "application/json",
         success: function (response) {
           showToast("Đơn hàng đã được " + response.currentStatus.toLowerCase() + " thành công.", "success");
-          loadHoaDonList(0, 5, $("#searchInput").val(), $("#statusFilter").val());
+          loadHoaDonList(0, 5, $("#searchInput").val(), $("#statusFilter").val(), $("#paymentMethodFilter").val(), $('#salesMethodFilter').val());
         },
         error: function (error) {
           console.error("Lỗi khi xác nhận hóa đơn:", error);
@@ -675,7 +729,7 @@
     }
   }
 
-  window.onload = () => loadHoaDonList(0, 5, "", "");
+  window.onload = () => loadHoaDonList(0, 5, "", "", "", "");
 </script>
 </body>
 </html>
