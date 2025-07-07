@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "giohang")
+@Table(name = "gio_hang")
 @Data
 public class GioHang {
     @Id
@@ -36,9 +36,4 @@ public class GioHang {
     @OneToMany(mappedBy = "gioHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<ChiTietGioHang> gioHangChiTiets;
-
-    public void addGioHangChiTiet(ChiTietGioHang chiTiet) {
-        gioHangChiTiets.add(chiTiet);
-        chiTiet.setGioHang(this);
-    }
 }

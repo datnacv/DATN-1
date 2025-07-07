@@ -19,7 +19,7 @@ public class ChiTietGioHang {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_giohang", nullable = false)
+    @JoinColumn(name = "id_gio_hang", nullable = false)
     @JsonIgnore
     private GioHang gioHang;
 
