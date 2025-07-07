@@ -66,7 +66,7 @@ public class SanPhamController {
         model.addAttribute("danhMucList", danhMucList);
         List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
         model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        return "/WebQuanLy/san-pham-list-form";
+        return "WebQuanLy/san-pham-list-form";
     }
 
     @GetMapping("/edit/{id}")
@@ -76,7 +76,7 @@ public class SanPhamController {
         model.addAttribute("sanPham", sanPham);
         model.addAttribute("sanPhamList", sanPhamService.findAll());
         model.addAttribute("danhMucList", danhMucList);
-        return "/WebQuanLy/san-pham-list-form";
+        return "WebQuanLy/san-pham-list-form";
     }
 
     @PostMapping("/save")

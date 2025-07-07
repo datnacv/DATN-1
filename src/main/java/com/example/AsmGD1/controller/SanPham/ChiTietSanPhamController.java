@@ -124,7 +124,7 @@ public class ChiTietSanPhamController {
                 model.addAttribute("selectedProductId", productId);
                 model.addAttribute("sanPhamDaChon", sanPhamDaChon);
             }
-            return "/WebQuanLy/add-chi-tiet-san-pham-form";
+            return "WebQuanLy/add-chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang thêm chi tiết sản phẩm: ", e);
             model.addAttribute("error", "Lỗi khi tải trang: " + e.getMessage());
@@ -142,7 +142,7 @@ public class ChiTietSanPhamController {
         } catch (Exception e) {
             logger.error("Lỗi khi lưu chi tiết sản phẩm: ", e);
             model.addAttribute("error", "Lỗi khi lưu chi tiết sản phẩm: " + e.getMessage());
-            return "/WebQuanLy/add-chi-tiet-san-pham-form";
+            return "WebQuanLy/add-chi-tiet-san-pham-form";
         }
     }
 
@@ -154,7 +154,7 @@ public class ChiTietSanPhamController {
         } catch (Exception e) {
             logger.error("Lỗi khi lưu batch chi tiết sản phẩm: ", e);
             model.addAttribute("error", "Lỗi khi lưu chi tiết sản phẩm: " + e.getMessage());
-            return "/WebQuanLy/add-chi-tiet-san-pham-form";
+            return "WebQuanLy/add-chi-tiet-san-pham-form";
         }
     }
 
