@@ -6,6 +6,7 @@ import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.PhieuGiamGia;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +36,9 @@ public class PhieuGiamGiaController {
 
     @Autowired
     private GuiMailService guiMailService;
+
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     @GetMapping
     public String list(@RequestParam(required = false) String search,
@@ -78,6 +82,9 @@ public class PhieuGiamGiaController {
         model.addAttribute("formats", formats);
         model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
 
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+
         // Phân trang
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", pageResult.getTotalPages());
@@ -107,6 +114,8 @@ public class PhieuGiamGiaController {
     public String createForm(Model model) {
         model.addAttribute("voucher", new PhieuGiamGia());
         model.addAttribute("customers", phieuService.layTatCaKhachHang());
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         return "WebQuanLy/voucher-create";
     }
 
@@ -242,6 +251,9 @@ public class PhieuGiamGiaController {
             }
         }
 
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+
         redirectAttributes.addFlashAttribute("successMessage", "Tạo phiếu giảm giá thành công!");
         return "redirect:/acvstore/phieu-giam-gia";
     }
@@ -282,6 +294,9 @@ public class PhieuGiamGiaController {
         model.addAttribute("currentCustomerPage", page);
         model.addAttribute("totalCustomerPages", customerPage.getTotalPages());
         model.addAttribute("search", search);
+
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
 
         return "WebQuanLy/voucher-edit";
     }
@@ -434,6 +449,9 @@ public class PhieuGiamGiaController {
                 }
             }
         }
+
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
 
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật phiếu giảm giá thành công!");
         return "redirect:/acvstore/phieu-giam-gia";
