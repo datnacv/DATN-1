@@ -1,25 +1,36 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
+import com.example.AsmGD1.controller.SanPham.ChiTietSanPhamController;
+import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
+import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import com.example.AsmGD1.service.WebKhachHang.KhachhangSanPhamService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
 public class HomeController {
+    private static final Logger logger = LoggerFactory.getLogger(ChiTietSanPhamController.class);
 
     private final KhachhangSanPhamService khachhangSanPhamService;
     private final KhachHangGioHangService khachHangGioHangService;
+    @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository;
 
     @Autowired
     public HomeController(KhachhangSanPhamService khachhangSanPhamService, KhachHangGioHangService khachHangGioHangService) {
@@ -87,5 +98,26 @@ public class HomeController {
             model.addAttribute("error", "Không thể tải giỏ hàng: " + e.getMessage());
         }
         return "WebKhachHang/cart";
+    }
+    @GetMapping("/api/getChiTietSanPham")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getChiTietSanPhamId(
+            @RequestParam("sanPhamId") UUID sanPhamId,
+            @RequestParam("sizeId") UUID sizeId,
+            @RequestParam("colorId") UUID colorId) {
+        try {
+            ChiTietSanPham chiTiet = khachHangSanPhamRepository.findBySanPhamIdAndSizeIdAndColorId(sanPhamId, sizeId, colorId);
+            if (chiTiet == null) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại"));
+            }
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", chiTiet.getId());
+            response.put("gia", chiTiet.getGia());
+            response.put("soLuongTonKho", chiTiet.getSoLuongTonKho());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy chi tiết sản phẩm với sanPhamId={}, sizeId={}, colorId={}: ", sanPhamId, sizeId, colorId, e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy chi tiết sản phẩm: " + e.getMessage()));
+        }
     }
 }
