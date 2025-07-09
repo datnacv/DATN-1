@@ -3,6 +3,7 @@ package com.example.AsmGD1.service.ThongKe;
 import com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO;
 import com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO;
 import com.example.AsmGD1.dto.ThongKe.ThongKeDoanhThuDTO;
+import com.example.AsmGD1.repository.SanPham.HinhAnhSanPhamRepository;
 import com.example.AsmGD1.repository.ThongKe.ThongKeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,9 @@ public class ThongKeService {
 
     @Autowired
     private ThongKeRepository thongKeRepository;
+
+    @Autowired
+    private HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
 
     public ThongKeDoanhThuDTO layThongKeDoanhThu(String boLoc, LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         ThongKeDoanhThuDTO thongKe = new ThongKeDoanhThuDTO();
@@ -50,7 +54,6 @@ public class ThongKeService {
             }
         }
 
-        // Áp dụng defaultBigDecimal / defaultInteger để tránh null
         BigDecimal doanhThuNgay = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay, homNay));
         BigDecimal doanhThuThang = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
         BigDecimal doanhThuNam = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfYear(1), homNay));
@@ -73,7 +76,6 @@ public class ThongKeService {
                 homNay.minusMonths(1).withDayOfMonth(homNay.minusMonths(1).lengthOfMonth())
         ));
 
-        // Gán lại vào DTO
         thongKe.setDoanhThuNgay(doanhThuNgay);
         thongKe.setDoanhThuThang(doanhThuThang);
         thongKe.setDoanhThuNam(doanhThuNam);
@@ -115,14 +117,30 @@ public class ThongKeService {
                 if (ngayBatDau.isAfter(ngayKetThuc))
                     throw new IllegalArgumentException("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
             }
+            default -> throw new IllegalArgumentException("Bộ lọc không hợp lệ.");
         }
 
-        return thongKeRepository.laySanPhamBanChay(ngayBatDau, ngayKetThuc);
+        List<SanPhamBanChayDTO> list = thongKeRepository.laySanPhamBanChay(ngayBatDau, ngayKetThuc);
+        for (SanPhamBanChayDTO dto : list) {
+            String img = hinhAnhSanPhamRepository
+                    .findFirstImageByChiTietSanPham(dto.getIdChiTietSanPham())
+                    .orElse("/img/default.png"); // ảnh mặc định nếu không có
+            dto.setImageUrl(img);
+        }
+        return list;
     }
 
     public List<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap() {
-        return thongKeRepository.laySanPhamTonKhoThap(30);
+        List<SanPhamTonKhoThapDTO> list = thongKeRepository.laySanPhamTonKhoThap(30);
+        for (SanPhamTonKhoThapDTO dto : list) {
+            String img = hinhAnhSanPhamRepository
+                    .findFirstImageByChiTietSanPham(dto.getIdChiTietSanPham())
+                    .orElse("/img/default.png"); // ảnh mặc định nếu không có
+            dto.setImageUrl(img);
+        }
+        return list;
     }
+
 
     public Double layPhanTramTrangThaiDonHang(Boolean trangThai, LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         LocalDateTime startDateTime = ngayBatDau.atStartOfDay();

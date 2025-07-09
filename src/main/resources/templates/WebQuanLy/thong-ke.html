@@ -160,7 +160,13 @@
               <tbody>
               <tr th:each="item, stat : ${topSellingProducts}">
                 <td th:text="${stat.index + 1}">1</td>
-                <td><img th:src="@{'/images/' + ${item.imageUrl}}" style="height:60px;" alt="ảnh" th:if="${item.imageUrl != null}" /></td>
+                <td>
+                  <img th:if="${item.imageUrl != null}"
+                       th:src="${item.imageUrl}"
+                       style="height: 60px;"
+                       alt="ảnh"/>
+                </td>
+
                 <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
                 <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
                 <td th:text="${item.soLuongDaBan}"></td>
@@ -207,7 +213,12 @@
               <tbody>
               <tr th:each="item, stat : ${lowStockProducts}">
                 <td th:text="${stat.index + 1}">1</td>
-                <td><img th:src="@{'/images/' + ${item.imageUrl}}" style="height:60px;" alt="ảnh" th:if="${item.imageUrl != null}" /></td>
+                <td>
+                  <img th:if="${item.imageUrl != null}"
+                       th:src="${item.imageUrl}"
+                       style="height: 60px;"
+                       alt="ảnh"/>
+                </td>
                 <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
                 <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
                 <td th:text="${item.soLuongTonKho}"></td>
