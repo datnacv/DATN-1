@@ -4,14 +4,15 @@ import com.example.AsmGD1.entity.ChiTietSanPham;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Map;
 import java.util.UUID;
+import java.util.Map;
 
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, UUID> {
@@ -23,8 +24,22 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
             "JOIN FETCH ct.mauSac ms " +
+            "LEFT JOIN FETCH ct.chienDichGiamGia cdg " +
             "WHERE sp.id = :idSanPham")
     List<ChiTietSanPham> findBySanPhamId(@Param("idSanPham") UUID idSanPham);
+
+    @Query("SELECT ct FROM ChiTietSanPham ct WHERE ct.chienDichGiamGia.id = :chienDichGiamGiaId")
+    List<ChiTietSanPham> findByChienDichGiamGiaId(@Param("chienDichGiamGiaId") UUID chienDichGiamGiaId);
+
+    @Query("SELECT CASE WHEN COUNT(ct) > 0 THEN true ELSE false END " +
+            "FROM ChiTietSanPham ct WHERE ct.id = :chiTietId AND ct.chienDichGiamGia IS NOT NULL")
+    boolean isParticipatingInCampaign(@Param("chiTietId") UUID chiTietId);
+
+    boolean existsByChienDichGiamGiaId(UUID chienDichGiamGiaId);
+
+    @Modifying
+    @Query("UPDATE ChiTietSanPham ct SET ct.chienDichGiamGia = null WHERE ct.chienDichGiamGia.id = :chienDichGiamGiaId")
+    void removeChienDichGiamGiaById(@Param("chienDichGiamGiaId") UUID chienDichGiamGiaId);
 
     @Query("SELECT ct FROM ChiTietSanPham ct JOIN ct.sanPham sp WHERE ct.trangThai = true AND sp.trangThai = true")
     List<ChiTietSanPham> findAllByTrangThai();
@@ -36,13 +51,16 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             @Param("mauSacId") UUID mauSacId,
             @Param("kichCoId") UUID kichCoId);
 
-
-    // hoadon
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.id = :id")
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<ChiTietSanPham> findById(@Param("id") UUID id, LockModeType lockMode);
 
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.id = :id AND c.chienDichGiamGia.id = :chienDichGiamGiaId")
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<ChiTietSanPham> findByIdAndChienDichGiamGiaId(@Param("id") UUID id, @Param("chienDichGiamGiaId") UUID chienDichGiamGiaId, LockModeType lockMode);
+
     Optional<ChiTietSanPham> findById(UUID id);
+
     @Query("SELECT ct FROM ChiTietSanPham ct " +
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
@@ -89,6 +107,14 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                 (Boolean) params.get("status")
         );
     }
+    @Query("SELECT ct FROM ChiTietSanPham ct " +
+            "JOIN FETCH ct.sanPham sp " +
+            "JOIN FETCH ct.kichCo kc " +
+            "JOIN FETCH ct.mauSac ms " +
+            "WHERE sp.id = :idSanPham AND ct.chienDichGiamGia IS NULL")
+    List<ChiTietSanPham> findAvailableBySanPhamId(@Param("idSanPham") UUID idSanPham);
+
+
     boolean existsByXuatXuId(UUID xuatXuId);
     boolean existsByThuongHieuId(UUID thuongHieuId);
     boolean existsByTayAoId(UUID tayAoId);

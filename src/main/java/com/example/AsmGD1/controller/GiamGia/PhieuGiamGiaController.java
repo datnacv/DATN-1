@@ -55,18 +55,14 @@ public class PhieuGiamGiaController {
         Pageable pageable = PageRequest.of(page, size);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        // Chuyển đổi ngày từ String sang LocalDate
         LocalDate from = (fromDate != null && !fromDate.isEmpty()) ? LocalDate.parse(fromDate, formatter) : null;
         LocalDate to = (toDate != null && !toDate.isEmpty()) ? LocalDate.parse(toDate, formatter) : null;
 
-        // Lấy danh sách có filter
         Page<PhieuGiamGia> pageResult = phieuGiamGiaRepository.findAll(
                 PhieuGiamGiaSpecification.filter(search, type, status, from, to), pageable
         );
 
         List<PhieuGiamGia> vouchers = pageResult.getContent();
-
-        // Format giá trị giảm
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
         Map<UUID, Map<String, String>> formats = new HashMap<>();
         for (PhieuGiamGia v : vouchers) {
@@ -79,25 +75,19 @@ public class PhieuGiamGiaController {
             formats.put(v.getId(), map);
         }
 
-        // Truyền dữ liệu sang view
         model.addAttribute("vouchers", vouchers);
         model.addAttribute("formats", formats);
         model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             model.addAttribute("user", user);
         }
 
-        // Phân trang
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", pageResult.getTotalPages());
         model.addAttribute("pageSize", size);
-
-        // Truyền lại filter cho form
         model.addAttribute("search", search);
         model.addAttribute("fromDate", fromDate);
         model.addAttribute("toDate", toDate);
@@ -109,20 +99,27 @@ public class PhieuGiamGiaController {
 
     private String getTrangThai(PhieuGiamGia v) {
         LocalDateTime now = LocalDateTime.now();
-        if (v.getNgayBatDau() != null && v.getNgayKetThuc() != null) {
-            if (now.isBefore(v.getNgayBatDau().atStartOfDay())) return "Sắp diễn ra";
-            else if (!now.isAfter(v.getNgayKetThuc().atTime(23, 59))) return "Đang diễn ra";
-            else return "Đã kết thúc";
+        if (v.getNgayBatDau() == null || v.getNgayKetThuc() == null) {
+            return "Không xác định";
         }
-        return "Không xác định";
+        if (now.isBefore(v.getNgayBatDau().atStartOfDay())) {
+            return "Sắp diễn ra";
+        } else if (!now.isAfter(v.getNgayKetThuc().atTime(23, 59))) {
+            return "Đang diễn ra";
+        } else {
+            return "Đã kết thúc";
+        }
     }
 
     @GetMapping("/create")
     public String createForm(Model model) {
         model.addAttribute("voucher", new PhieuGiamGia());
         model.addAttribute("customers", phieuService.layTatCaKhachHang());
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
         return "WebQuanLy/voucher-create";
     }
 
@@ -143,9 +140,7 @@ public class PhieuGiamGiaController {
             errors.add("Mã phiếu không được để trống.");
         } else {
             voucher.setMa(voucher.getMa().trim());
-            boolean exists = phieuGiamGiaRepository.findAll().stream()
-                    .anyMatch(v -> v.getMa() != null && v.getMa().equalsIgnoreCase(voucher.getMa()));
-            if (exists) {
+            if (phieuGiamGiaRepository.existsByMaIgnoreCase(voucher.getMa())) {
                 errors.add("Mã phiếu đã tồn tại.");
             }
         }
@@ -162,7 +157,7 @@ public class PhieuGiamGiaController {
 
         // Validate giá trị giảm
         try {
-            BigDecimal giaTri = new BigDecimal(giaTriGiam.replace(",", "").replace(".", ""));
+            BigDecimal giaTri = new BigDecimal(giaTriGiam.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
             if (giaTri.compareTo(BigDecimal.ZERO) <= 0) {
                 errors.add("Giá trị giảm phải lớn hơn 0.");
             } else {
@@ -172,7 +167,7 @@ public class PhieuGiamGiaController {
             if ("PERCENT".equalsIgnoreCase(voucher.getLoai()) && giaTri.compareTo(new BigDecimal("100")) > 0) {
                 errors.add("Giảm theo % không được vượt quá 100.");
             }
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             errors.add("Giá trị giảm không hợp lệ.");
         }
 
@@ -180,7 +175,7 @@ public class PhieuGiamGiaController {
         if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
             try {
                 if (giaTriGiamToiDa != null && !giaTriGiamToiDa.isEmpty()) {
-                    BigDecimal gtd = new BigDecimal(giaTriGiamToiDa.replace(",", "").replace(".", ""));
+                    BigDecimal gtd = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
                     if (gtd.compareTo(BigDecimal.ZERO) <= 0) {
                         errors.add("Giá trị giảm tối đa phải lớn hơn 0.");
                     } else {
@@ -189,7 +184,7 @@ public class PhieuGiamGiaController {
                 } else {
                     errors.add("Phải nhập giá trị giảm tối đa khi giảm theo %.");
                 }
-            } catch (Exception e) {
+            } catch (NumberFormatException e) {
                 errors.add("Giá trị giảm tối đa không hợp lệ.");
             }
         } else {
@@ -199,14 +194,14 @@ public class PhieuGiamGiaController {
         // Validate đơn tối thiểu
         try {
             if (giaTriGiamToiThieu != null && !giaTriGiamToiThieu.isEmpty()) {
-                BigDecimal min = new BigDecimal(giaTriGiamToiThieu.replace(",", "").replace(".", ""));
+                BigDecimal min = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
                 if (min.compareTo(BigDecimal.ZERO) < 0) {
                     errors.add("Đơn tối thiểu phải >= 0.");
                 } else {
                     voucher.setGiaTriGiamToiThieu(min);
                 }
             }
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ.");
         }
 
@@ -236,7 +231,6 @@ public class PhieuGiamGiaController {
             return "WebQuanLy/voucher-create";
         }
 
-        // Gán lượt sử dụng = 1 nếu là phiếu cá nhân
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
             voucher.setGioiHanSuDung(1);
         }
@@ -258,9 +252,6 @@ public class PhieuGiamGiaController {
             }
         }
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-
         redirectAttributes.addFlashAttribute("successMessage", "Tạo phiếu giảm giá thành công!");
         return "redirect:/acvstore/phieu-giam-gia";
     }
@@ -271,7 +262,8 @@ public class PhieuGiamGiaController {
                                @RequestParam(defaultValue = "5") int size,
                                @RequestParam(required = false) String search,
                                Model model) {
-        PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id).orElseThrow();
+        PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
         String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
@@ -295,15 +287,18 @@ public class PhieuGiamGiaController {
         model.addAttribute("giaTriGiamToiDaStr", giaTriGiamToiDaStr);
         model.addAttribute("giaTriGiamToiThieuStr", giaTriGiamToiThieuStr);
         model.addAttribute("gioiHanSuDungStr", gioiHanSuDungStr);
-
         model.addAttribute("customers", customerPage.getContent());
         model.addAttribute("selectedCustomerIds", selectedCustomerIds);
         model.addAttribute("currentCustomerPage", page);
         model.addAttribute("totalCustomerPages", customerPage.getTotalPages());
         model.addAttribute("search", search);
+        model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
 
         return "WebQuanLy/voucher-edit";
     }
@@ -320,11 +315,15 @@ public class PhieuGiamGiaController {
                          RedirectAttributes redirectAttributes) {
 
         voucher.setId(id);
+        PhieuGiamGia existing = phieuGiamGiaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+        String status = getTrangThai(existing);
+        if ("Đang diễn ra".equals(status) || "Không xác định".equals(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể chỉnh sửa phiếu giảm giá đang diễn ra hoặc không xác định.");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
 
-        // ✅ FIX lỗi: lấy lại thời gian tạo cũ để tránh null
-        PhieuGiamGia existing = phieuGiamGiaRepository.findById(id).orElseThrow();
         voucher.setThoiGianTao(existing.getThoiGianTao());
-
         List<String> errors = new ArrayList<>();
 
         // Validate mã phiếu
@@ -332,10 +331,7 @@ public class PhieuGiamGiaController {
             errors.add("Mã phiếu không được để trống");
         } else {
             String trimmedMa = voucher.getMa().trim();
-            Optional<PhieuGiamGia> sameCode = phieuGiamGiaRepository.findAll().stream()
-                    .filter(v -> v.getMa() != null && v.getMa().equalsIgnoreCase(trimmedMa) && !v.getId().equals(id))
-                    .findFirst();
-            if (sameCode.isPresent()) {
+            if (phieuGiamGiaRepository.existsByMaIgnoreCase(trimmedMa) && !trimmedMa.equalsIgnoreCase(existing.getMa())) {
                 errors.add("Mã phiếu đã tồn tại");
             }
             voucher.setMa(trimmedMa);
@@ -350,19 +346,19 @@ public class PhieuGiamGiaController {
 
         // Giá trị giảm
         try {
-            BigDecimal value = new BigDecimal(giaTriGiam.replaceAll("[^\\d,]", "").replace(",", "."));
+            BigDecimal value = new BigDecimal(giaTriGiam.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
             if (value.compareTo(BigDecimal.ZERO) <= 0) {
                 errors.add("Giá trị giảm phải lớn hơn 0");
             }
             voucher.setGiaTriGiam(value);
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             errors.add("Giá trị giảm không hợp lệ");
         }
 
         // Giá trị giảm tối đa
         try {
             if (giaTriGiamToiDa != null && !giaTriGiamToiDa.trim().isEmpty()) {
-                BigDecimal max = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d,]", "").replace(",", "."));
+                BigDecimal max = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
                 if ("PERCENT".equalsIgnoreCase(voucher.getLoai()) && max.compareTo(BigDecimal.ZERO) <= 0) {
                     errors.add("Giá trị giảm tối đa phải lớn hơn 0");
                 }
@@ -370,28 +366,28 @@ public class PhieuGiamGiaController {
             } else if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
                 errors.add("Phải nhập giá trị giảm tối đa khi chọn giảm theo %");
             }
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             errors.add("Giá trị giảm tối đa không hợp lệ");
         }
 
         // Đơn tối thiểu
         try {
             if (giaTriGiamToiThieu != null && !giaTriGiamToiThieu.trim().isEmpty()) {
-                BigDecimal min = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d,]", "").replace(",", "."));
+                BigDecimal min = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
                 if (min.compareTo(BigDecimal.ZERO) < 0) {
                     errors.add("Đơn tối thiểu không được âm");
                 }
                 voucher.setGiaTriGiamToiThieu(min);
             }
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ");
         }
 
         // Validate loại giảm
         if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
-            if (voucher.getGiaTriGiam().compareTo(BigDecimal.ZERO) <= 0) {
+            if (voucher.getGiaTriGiam() != null && voucher.getGiaTriGiam().compareTo(BigDecimal.ZERO) <= 0) {
                 errors.add("Giảm theo % phải lớn hơn 0");
-            } else if (voucher.getGiaTriGiam().compareTo(new BigDecimal("100")) > 0) {
+            } else if (voucher.getGiaTriGiam() != null && voucher.getGiaTriGiam().compareTo(new BigDecimal("100")) > 0) {
                 errors.add("Giảm theo % không được vượt quá 100");
             }
         }
@@ -414,7 +410,6 @@ public class PhieuGiamGiaController {
             errors.add("Vui lòng chọn khách hàng áp dụng cho phiếu cá nhân");
         }
 
-        // Nếu có lỗi thì quay lại form
         if (!errors.isEmpty()) {
             model.addAttribute("errorMessage", String.join("<br>", errors));
             model.addAttribute("voucher", voucher);
@@ -430,15 +425,12 @@ public class PhieuGiamGiaController {
             return "WebQuanLy/voucher-edit";
         }
 
-        // ✅ Nếu là phiếu cá nhân: set lượt sử dụng = 1
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
             voucher.setGioiHanSuDung(1);
         }
 
-        // Lưu
         PhieuGiamGia savedVoucher = phieuGiamGiaRepository.save(voucher);
 
-        // Gán và gửi mail
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) && selectedCustomerIds != null) {
             List<NguoiDung> selectedUsers = phieuService.layNguoiDungTheoIds(selectedCustomerIds);
             for (NguoiDung user : selectedUsers) {
@@ -457,22 +449,23 @@ public class PhieuGiamGiaController {
             }
         }
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-
         redirectAttributes.addFlashAttribute("successMessage", "Cập nhật phiếu giảm giá thành công!");
         return "redirect:/acvstore/phieu-giam-gia";
     }
 
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+        PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+        String status = getTrangThai(voucher);
+        if ("Đang diễn ra".equals(status) || "Không xác định".equals(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể xóa phiếu giảm giá sắp diễn ra hoặc đã kết thúc.");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
+
         try {
-            // Xóa trước các bản ghi liên kết
             phieuService.xoaTatCaGanKetTheoPhieu(id);
-
-            // Sau đó xóa chính phiếu
             phieuGiamGiaRepository.deleteById(id);
-
             redirectAttributes.addFlashAttribute("successMessage", "Xóa phiếu giảm giá thành công!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());

@@ -51,12 +51,20 @@ public class ChienDichGiamGiaController {
         model.addAttribute("currentPage", pageResult.getNumber());
         model.addAttribute("totalPages", pageResult.getTotalPages());
         model.addAttribute("totalItems", pageResult.getTotalElements());
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("status", status);
+        model.addAttribute("discountLevel", discountLevel);
+        model.addAttribute("pageSize", size);
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             model.addAttribute("user", user);
+        } else {
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         }
 
         return "WebQuanLy/discount-campaign-list";
@@ -70,6 +78,13 @@ public class ChienDichGiamGiaController {
         model.addAttribute("productPage", productPage);
         model.addAttribute("currentProductPage", productPage.getNumber());
         model.addAttribute("totalProductPages", productPage.getTotalPages());
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
+
         return "WebQuanLy/discount-campaign-form";
     }
 
@@ -81,13 +96,28 @@ public class ChienDichGiamGiaController {
         String error = validateChienDich(chienDich, danhSachChiTietId, true, null);
         if (error != null) {
             model.addAttribute("errorMessage", error);
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            model.addAttribute("productPage", productPage);
+            model.addAttribute("currentProductPage", productPage.getNumber());
+            model.addAttribute("totalProductPages", productPage.getTotalPages());
             return "WebQuanLy/discount-campaign-form";
         }
 
         chienDich.setId(null);
         chienDich.setThoiGianTao(LocalDateTime.now());
-        chienDichService.taoMoiChienDichKemChiTiet(chienDich, danhSachChiTietId);
-        redirectAttributes.addFlashAttribute("successMessage", "Tạo chiến dịch thành công!");
+        try {
+            chienDichService.taoMoiChienDichKemChiTiet(chienDich, danhSachChiTietId);
+            redirectAttributes.addFlashAttribute("successMessage", "Tạo chiến dịch thành công!");
+        } catch (RuntimeException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            model.addAttribute("productPage", productPage);
+            model.addAttribute("currentProductPage", productPage.getNumber());
+            model.addAttribute("totalProductPages", productPage.getTotalPages());
+            return "WebQuanLy/discount-campaign-form";
+        }
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
 
@@ -99,15 +129,15 @@ public class ChienDichGiamGiaController {
                                    Model model) {
         ChienDichGiamGia chienDich = chienDichService.timTheoId(id).orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
-        List<ChiTietSanPhamChienDichGiamGia> lienKets = chienDichService.layLienKetChiTietTheoChienDich(id).stream()
-                .filter(lk -> lk.getChiTietSanPham() != null
-                        && lk.getChiTietSanPham().getSanPham() != null
-                        && lk.getChiTietSanPham().getMauSac() != null
-                        && lk.getChiTietSanPham().getKichCo() != null)
-                .toList();
+        String status = getStatus(chienDich);
+        model.addAttribute("isReadOnly", "ONGOING".equals(status)); // Set read-only mode for ONGOING campaigns
+        model.addAttribute("chienDich", chienDich);
 
-        List<ChiTietSanPham> chiTietDaChon = lienKets.stream().map(ChiTietSanPhamChienDichGiamGia::getChiTietSanPham).toList();
-        Set<UUID> selectedProductIds = chiTietDaChon.stream().map(ct -> ct.getSanPham().getId()).collect(Collectors.toSet());
+        List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
+        Set<UUID> selectedProductIds = chiTietDaChon.stream()
+                .filter(ct -> ct.getSanPham() != null)
+                .map(ct -> ct.getSanPham().getId())
+                .collect(Collectors.toSet());
 
         if (selectedProductIdsStr != null && !selectedProductIdsStr.isEmpty()) {
             selectedProductIds.addAll(Arrays.stream(selectedProductIdsStr.split(",")).map(UUID::fromString).collect(Collectors.toSet()));
@@ -116,8 +146,7 @@ public class ChienDichGiamGiaController {
         Pageable pageable = PageRequest.of(page, size);
         Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
 
-        model.addAttribute("chienDich", chienDich);
-        model.addAttribute("selectedDetails", lienKets);
+        model.addAttribute("selectedDetails", chiTietDaChon);
         model.addAttribute("selectedProductIds", selectedProductIds);
         model.addAttribute("productPage", productPage);
         model.addAttribute("currentProductPage", productPage.getNumber());
@@ -133,19 +162,44 @@ public class ChienDichGiamGiaController {
 
         ChienDichGiamGia chienDichCu = chienDichService.timTheoId(chienDich.getId()).orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
-        if (chienDichCu.getNgayKetThuc().isBefore(LocalDate.now())) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không thể cập nhật chiến dịch đã kết thúc.");
+        if (getStatus(chienDichCu).equals("ONGOING")) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Không thể cập nhật chiến dịch đang diễn ra.");
             return "redirect:/acvstore/chien-dich-giam-gia";
         }
 
         String error = validateChienDich(chienDich, danhSachChiTietId, false, chienDichCu);
         if (error != null) {
             model.addAttribute("errorMessage", error);
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            model.addAttribute("productPage", productPage);
+            model.addAttribute("currentProductPage", productPage.getNumber());
+            model.addAttribute("totalProductPages", productPage.getTotalPages());
+            model.addAttribute("selectedDetails", chienDichService.layChiTietDaChonTheoChienDich(chienDich.getId()));
+            model.addAttribute("selectedProductIds", danhSachChiTietId.stream()
+                    .map(id -> chienDichService.layChiTietTheoId(id).getSanPham().getId())
+                    .collect(Collectors.toSet()));
+            model.addAttribute("isReadOnly", false);
             return "WebQuanLy/discount-campaign-edit";
         }
 
-        chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
-        redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chiến dịch thành công!");
+        try {
+            chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chiến dịch thành công!");
+        } catch (RuntimeException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            Pageable pageable = PageRequest.of(0, 10);
+            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            model.addAttribute("productPage", productPage);
+            model.addAttribute("currentProductPage", productPage.getNumber());
+            model.addAttribute("totalProductPages", productPage.getTotalPages());
+            model.addAttribute("selectedDetails", chienDichService.layChiTietDaChonTheoChienDich(chienDich.getId()));
+            model.addAttribute("selectedProductIds", danhSachChiTietId.stream()
+                    .map(id -> chienDichService.layChiTietTheoId(id).getSanPham().getId())
+                    .collect(Collectors.toSet()));
+            model.addAttribute("isReadOnly", false);
+            return "WebQuanLy/discount-campaign-edit";
+        }
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
 
@@ -174,7 +228,6 @@ public class ChienDichGiamGiaController {
             }
         }
 
-        // Validate phần trăm giảm
         if (chienDich.getPhanTramGiam() == null) {
             return "Phần trăm giảm không được để trống.";
         }
@@ -210,7 +263,6 @@ public class ChienDichGiamGiaController {
         return null;
     }
 
-
     @GetMapping("/chi-tiet-san-pham")
     @ResponseBody
     public List<ChiTietSanPham> layChiTietSanPhamTheoSanPham(@RequestParam("idSanPham") UUID idSanPham) {
@@ -233,8 +285,13 @@ public class ChienDichGiamGiaController {
     }
 
     @GetMapping("/delete/{id}")
-    public String xoaChienDich(@PathVariable("id") UUID id) {
-        chienDichService.xoaChienDich(id);
+    public String xoaChienDich(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        try {
+            chienDichService.xoaChienDich(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa chiến dịch thành công!");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
 
@@ -249,5 +306,16 @@ public class ChienDichGiamGiaController {
             return sanPhamService.getPagedProducts(pageable);
         }
         return sanPhamService.searchByTenOrMa(keyword, pageable);
+    }
+
+    private String getStatus(ChienDichGiamGia chienDich) {
+        LocalDate today = LocalDate.now();
+        if (chienDich.getNgayBatDau().isAfter(today)) {
+            return "UPCOMING";
+        } else if (chienDich.getNgayKetThuc().isBefore(today)) {
+            return "ENDED";
+        } else {
+            return "ONGOING";
+        }
     }
 }

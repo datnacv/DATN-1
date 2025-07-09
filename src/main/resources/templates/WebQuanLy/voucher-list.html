@@ -7,37 +7,67 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
+        body {
+            background-color: #f5f5f5; /* Tông xám trắng nhạt */
+            color: #333;
+        }
         .form-label {
             font-weight: 500;
             color: #333;
         }
         .form-control, .form-select {
             border-radius: 0.375rem;
+            border: 1px solid #d1d3e2;
+            background-color: #fff;
             transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
         .form-control:focus, .form-select:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+            border-color: #6b7280; /* Màu xám đậm */
+            box-shadow: 0 0 0 0.25rem rgba(107, 114, 128, 0.25);
         }
         .btn-primary, .btn-secondary, .btn-danger, .btn-outline-info, .btn-outline-primary, .btn-outline-danger {
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
             border-radius: 0.375rem;
+            background-color: #1f2937; /* Nút màu đen */
+            border-color: #1f2937;
+            color: #fff;
+            transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
         }
         .btn-sm {
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
+            min-width: 40px; /* Đảm bảo các nút có kích thước ngang bằng */
+            text-align: center;
         }
         .btn-primary:hover, .btn-secondary:hover, .btn-danger:hover, .btn-outline-info:hover, .btn-outline-primary:hover, .btn-outline-danger:hover {
+            background-color: #374151; /* Màu đen nhạt hơn khi hover */
+            border-color: #374151;
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        .btn.disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+            background-color: #6b7280; /* Xám đậm cho nút disabled */
+            border-color: #6b7280;
+        }
         .table-responsive {
             border-radius: 0.375rem;
-            overflow: hidden;
+            overflow-x: auto; /* Cho phép cuộn ngang */
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .table {
+            min-width: 1200px; /* Đảm bảo bảng đủ rộng để cần cuộn ngang nếu dài */
         }
         .table th, .table td {
             vertical-align: middle;
+            border-color: #e5e7eb; /* Viền xám nhạt */
+        }
+        .table th {
+            background-color: #f9fafb; /* Tông trắng nhạt cho tiêu đề bảng */
+            color: #1f2937;
         }
         .content {
             padding: 2rem;
@@ -51,13 +81,14 @@
             background-color: #fff;
             padding: 0.75rem 2rem;
             margin: -2rem -2rem 1rem -2rem;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid #e5e7eb;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .sticky-header h2 {
-            font-weight: bold;
+            font-weight: 700;
+            color: #1f2937;
             margin: 0;
         }
         .toast-container {
@@ -66,31 +97,45 @@
             right: 1rem;
             z-index: 9999;
         }
-        /* Modal styling */
         .modal-content {
             border-radius: 0.5rem;
+            background-color: #fff;
         }
         .modal-header {
-            background-color: #dc3545;
-            color: white;
+            background-color: #1f2937; /* Đen cho header modal */
+            color: #fff;
         }
         .modal-footer .btn {
             padding: 0.5rem 1.5rem;
             font-size: 1rem;
         }
+        .badge {
+            font-size: 0.875rem;
+            padding: 0.5em 0.75em;
+        }
+        .pagination .page-link {
+            color: #1f2937;
+            border-color: #e5e7eb;
+        }
+        .pagination .page-item.active .page-link {
+            background-color: #1f2937;
+            border-color: #1f2937;
+            color: #fff;
+        }
+        .pagination .page-item.disabled .page-link {
+            color: #6b7280;
+            background-color: #f9fafb;
+        }
     </style>
     <script th:src="@{/js/sidebar.js}" defer></script>
 </head>
-<body class="bg-light">
+<body>
 <div class="d-flex">
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
-
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
-
     <div class="content" id="content">
-        <!-- Toasts -->
         <div class="toast-container">
             <div class="toast align-items-center text-bg-success border-0" role="alert" id="successToast" aria-live="assertive" aria-atomic="true" th:if="${successMessage}">
                 <div class="d-flex">
@@ -110,18 +155,22 @@
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
+            <div class="toast align-items-center text-bg-info border-0" role="alert" id="infoToast" aria-live="assertive" aria-atomic="true" th:if="${mailMessage}">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span th:text="${mailMessage}"></span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
-
-        <!-- Header -->
         <div class="sticky-header">
             <h2><i class="fas fa-ticket-alt me-2"></i>Phiếu Giảm Giá</h2>
         </div>
-
-        <!-- Filter + Create Button -->
         <div class="d-flex justify-content-end align-items-center mb-4">
             <a href="/acvstore/phieu-giam-gia/create" class="btn btn-primary">+ Tạo Mới</a>
         </div>
-
         <form method="get" th:action="@{/acvstore/phieu-giam-gia}" class="row g-3 mb-4" id="filterForm">
             <div class="col-md-3">
                 <input type="text" name="search" class="form-control" placeholder="Tìm theo mã hoặc tên..." th:value="${search}">
@@ -148,8 +197,6 @@
                 </select>
             </div>
         </form>
-
-        <!-- Table -->
         <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle bg-white">
                 <thead class="table-light">
@@ -190,57 +237,56 @@
                             <span th:case="'Sắp diễn ra'" class="badge bg-warning text-dark">Sắp diễn ra</span>
                             <span th:case="'Đang diễn ra'" class="badge bg-success">Đang diễn ra</span>
                             <span th:case="'Đã kết thúc'" class="badge bg-secondary">Đã kết thúc</span>
-                            <span th:case="*" class="badge bg-light text-dark border">Không xác định</span>
+                            <span th:case="'Không xác định'" class="badge bg-light text-dark border">Không xác định</span>
                         </span>
                     </td>
-                    <td class="text-center">
-                        <a th:href="@{'/acvstore/phieu-giam-gia/detail/' + ${v.id}}" class="btn btn-sm btn-outline-info me-1">📄</a>
-                        <a th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${v.id}}" class="btn btn-sm btn-outline-primary me-1">✏️</a>
-                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn" data-voucher-id="${v.id}" data-bs-toggle="modal" data-bs-target="#deleteModal">🗑</button>
+                    <td class="text-center d-flex justify-content-center gap-1">
+                        <a th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${v.id}}"
+                           class="btn btn-sm btn-outline-primary"
+                           th:attr="title=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'Xem chi tiết phiếu giảm giá (chỉ xem)' : 'Chỉnh sửa phiếu giảm giá'">🔍</a>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger delete-btn"
+                                th:classappend="${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'disabled'"
+                                th:attr="data-voucher-id=${v.id},
+                                        data-bs-toggle=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? '' : 'modal',
+                                        data-bs-target=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? '' : '#deleteModal',
+                                        title=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'Không thể xóa do phiếu đang diễn ra hoặc không xác định' : 'Xóa phiếu giảm giá'"
+                                th:onclick="${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'return false;' : ''">🗑</button>
                     </td>
                 </tr>
                 </tbody>
             </table>
-            <!-- Pagination -->
-            <nav>
-                <ul class="pagination justify-content-end">
-                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                        <a class="page-link"
-                           th:href="@{/acvstore/phieu-giam-gia(page=${currentPage - 1}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}">«</a>
-                    </li>
-                    <li class="page-item"
-                        th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                        th:classappend="${i == currentPage} ? 'active'">
-                        <a class="page-link"
-                           th:href="@{/acvstore/phieu-giam-gia(page=${i}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}"
-                           th:text="${i + 1}">1</a>
-                    </li>
-                    <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
-                        <a class="page-link"
-                           th:href="@{/acvstore/phieu-giam-gia(page=${currentPage + 1}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}">»</a>
-                    </li>
-                    <li class="ms-2">
-                        <form method="get" th:action="@{/acvstore/phieu-giam-gia}" class="d-inline">
-                            <select name="size" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option th:value="5" th:selected="${pageSize == 5}">5 / trang</option>
-                                <option th:value="10" th:selected="${pageSize == 10}">10 / trang</option>
-                                <option th:value="20" th:selected="${pageSize == 20}">20 / trang</option>
-                            </select>
-                            <input type="hidden" name="page" th:value="${currentPage}">
-                            <input type="hidden" name="search" th:value="${search}">
-                            <input type="hidden" name="fromDate" th:value="${fromDate}">
-                            <input type="hidden" name="toDate" th:value="${toDate}">
-                            <input type="hidden" name="type" th:value="${type}">
-                            <input type="hidden" name="status" th:value="${status}">
-                        </form>
-                    </li>
-                </ul>
-            </nav>
         </div>
+        <nav>
+            <ul class="pagination justify-content-end">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/acvstore/phieu-giam-gia(page=${currentPage - 1}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}">«</a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}" th:classappend="${i == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/acvstore/phieu-giam-gia(page=${i}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}" th:text="${i + 1}">1</a>
+                </li>
+                <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
+                    <a class="page-link" th:href="@{/acvstore/phieu-giam-gia(page=${currentPage + 1}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}">»</a>
+                </li>
+                <li class="ms-2">
+                    <form method="get" th:action="@{/acvstore/phieu-giam-gia}" class="d-inline">
+                        <select name="size" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option th:value="5" th:selected="${pageSize == 5}">5 / trang</option>
+                            <option th:value="10" th:selected="${pageSize == 10}">10 / trang</option>
+                            <option th:value="20" th:selected="${pageSize == 20}">20 / trang</option>
+                        </select>
+                        <input type="hidden" name="page" th:value="${currentPage}">
+                        <input type="hidden" name="search" th:value="${search}">
+                        <input type="hidden" name="fromDate" th:value="${fromDate}">
+                        <input type="hidden" name="toDate" th:value="${toDate}">
+                        <input type="hidden" name="type" th:value="${type}">
+                        <input type="hidden" name="status" th:value="${status}">
+                    </form>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
-
-<!-- Modal Confirm Delete -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -249,7 +295,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Bạn có chắc chắn muốn xóa phiếu giảm giá với mã <span id="voucherCode"></span> không? Hành động này không thể hoàn tác!
+                Bạn có chắc chắn muốn xóa phiếu giảm giá với mã <span id="voucherCode"></span> không?
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
@@ -260,7 +306,6 @@
         </div>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -268,8 +313,9 @@
         if (toastEl) new bootstrap.Toast(toastEl).show();
         const errorToastEl = document.getElementById('errorToast');
         if (errorToastEl) new bootstrap.Toast(errorToastEl).show();
+        const infoToastEl = document.getElementById('infoToast');
+        if (infoToastEl) new bootstrap.Toast(infoToastEl).show();
 
-        // Auto-submit filter form
         const form = document.getElementById("filterForm");
         form.querySelectorAll("select, input[type='date']").forEach(el => {
             el.addEventListener("change", () => form.submit());
@@ -282,14 +328,15 @@
             typingTimer = setTimeout(() => form.submit(), 500);
         });
 
-        // Handle delete confirmation
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function () {
-                const voucherId = this.getAttribute('data-voucher-id');
-                const voucherCode = this.closest('tr').querySelector('td:nth-child(2)').textContent;
-                document.getElementById('voucherCode').textContent = voucherCode;
-                const deleteForm = document.getElementById('deleteForm');
-                deleteForm.action = `/acvstore/phieu-giam-gia/delete/${voucherId}`;
+                if (!this.classList.contains('disabled')) {
+                    const voucherId = this.getAttribute('data-voucher-id');
+                    const voucherCode = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                    document.getElementById('voucherCode').textContent = voucherCode;
+                    const deleteForm = document.getElementById('deleteForm');
+                    deleteForm.action = `/acvstore/phieu-giam-gia/delete/${voucherId}`;
+                }
             });
         });
     });
