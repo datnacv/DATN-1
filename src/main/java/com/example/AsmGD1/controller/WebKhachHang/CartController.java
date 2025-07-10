@@ -3,6 +3,7 @@ package com.example.AsmGD1.controller.WebKhachHang;
 import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public class CartController {
 
     @Autowired
     private ChiTietGioHangService chiTietGioHangService;
+
+    @Autowired
+    private NguoiDungRepository nguoiDungRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCart(Authentication authentication) {
@@ -113,9 +117,24 @@ public class CartController {
     }
 
     private UUID getNguoiDungIdFromAuthentication(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof NguoiDung) {
-            return ((NguoiDung) authentication.getPrincipal()).getId();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
         }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof NguoiDung) {
+            return ((NguoiDung) principal).getId();
+        }
+
+        // Nếu principal là String (username), thì fetch từ DB
+        if (principal instanceof String) {
+            NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhap((String) principal)
+                    .orElse(null);
+            return nguoiDung != null ? nguoiDung.getId() : null;
+        }
+
         return null;
     }
+
 }
