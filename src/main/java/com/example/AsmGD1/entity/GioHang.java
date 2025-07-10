@@ -13,7 +13,7 @@ import java.util.UUID;
 @Data
 public class GioHang {
     @Id
-    @GeneratedValue
+//    @GeneratedValue bỏ trường này
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 

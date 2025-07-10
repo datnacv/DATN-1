@@ -6,6 +6,7 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.GioHang.ChiTietGioHangRepository;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,9 @@ public class KhachHangGioHangService {
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
+    @Autowired
+    private NguoiDungRepository nguoiDungRepository;
+
     public GioHang getOrCreateGioHang(UUID nguoiDungId) {
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDungId);
         if (gioHang == null) {
@@ -38,13 +42,17 @@ public class KhachHangGioHangService {
             gioHang.setTongTien(BigDecimal.ZERO);
             gioHang.setThoiGianTao(LocalDateTime.now());
             gioHang.setTrangThai(true);
-            NguoiDung nguoiDung = new NguoiDung();
-            nguoiDung.setId(nguoiDungId);
+
+            // Thay vì tạo đối tượng giả
+            NguoiDung nguoiDung = nguoiDungRepository.findById(nguoiDungId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
             gioHang.setNguoiDung(nguoiDung);
+
             gioHang = gioHangRepository.save(gioHang);
         }
         return gioHang;
     }
+
 
     @Transactional
     public ChiTietGioHang addToGioHang(UUID gioHangId, UUID chiTietSanPhamId, Integer soLuong) {
@@ -78,7 +86,7 @@ public class KhachHangGioHangService {
         }
 
         ChiTietGioHang chiTiet = new ChiTietGioHang();
-//        chiTiet.setId(UUID.randomUUID());
+        chiTiet.setId(UUID.randomUUID());
         chiTiet.setGioHang(gioHang);
         chiTiet.setChiTietSanPham(chiTietSanPham);
         chiTiet.setSoLuong(soLuong);

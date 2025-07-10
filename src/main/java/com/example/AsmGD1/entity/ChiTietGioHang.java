@@ -14,7 +14,7 @@ import java.util.UUID;
 @Data
 public class ChiTietGioHang {
     @Id
-    @GeneratedValue
+//    @GeneratedValue bỏ trường này
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 

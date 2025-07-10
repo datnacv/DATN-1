@@ -278,7 +278,7 @@ CREATE TABLE gio_hang (
 
 CREATE TABLE gio_hang_chi_tiet (
                                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-                                   id_giohang UNIQUEIDENTIFIER NOT NULL,
+                                   id_gio_hang UNIQUEIDENTIFIER NOT NULL,
                                    id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
                                    so_luong INT NOT NULL DEFAULT 1,
                                    gia DECIMAL(10, 2) NOT NULL,
@@ -286,7 +286,7 @@ CREATE TABLE gio_hang_chi_tiet (
                                    ghi_chu NVARCHAR(MAX),
                                    thoi_gian_them DATETIME NOT NULL DEFAULT GETDATE(),
                                    trang_thai BIT NOT NULL DEFAULT 1,
-                                   FOREIGN KEY (id_giohang) REFERENCES gio_hang(id) ON DELETE CASCADE,
+                                   FOREIGN KEY (id_gio_hang) REFERENCES gio_hang(id) ON DELETE CASCADE,
                                    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
 CREATE TABLE thong_ke_doanh_thu_chi_tiet (
@@ -542,12 +542,3 @@ INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
                                                                            ('550e8400-e29b-41d4-a716-446655440046', '550e8400-e29b-41d4-a716-446655440043', N'https://example.com/shirt1.jpg'),
                                                                            ('550e8400-e29b-41d4-a716-446655440047', '550e8400-e29b-41d4-a716-446655440044', N'https://example.com/hoodie1.jpg'),
                                                                            ('550e8400-e29b-41d4-a716-446655440048', '550e8400-e29b-41d4-a716-446655440045', N'https://example.com/jacket1.jpg');
-
-
-
-
--- Bước 4: Kiểm tra bằng cách chèn một đơn hàng mới
-INSERT INTO don_hang (id, id_nguoi_dung, ma_don_hang, trang_thai_thanh_toan, phi_van_chuyen, id_phuong_thuc_thanh_toan, so_tien_khach_dua, thoi_gian_thanh_toan, thoi_gian_tao, tien_giam, tong_tien, phuong_thuc_ban_hang)
-VALUES (NEWID(), '550E8400-E29B-41D4-A716-446655440014', N'DH006', 1, 30000.00, '550E8400-E29B-41D4-A716-446655440017', 230000.00, GETDATE(), GETDATE(), 20000.00, 230000.00, N'Giao hàng');
-
-select * from nguoi_dung
