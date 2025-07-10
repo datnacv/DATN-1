@@ -3,6 +3,7 @@ package com.example.AsmGD1.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,8 +14,8 @@ import java.util.UUID;
 @Data
 public class GioHang {
     @Id
-//    @GeneratedValue bỏ trường này
-    @Column(columnDefinition = "UNIQUEIDENTIFIER")
+    @GeneratedValue(generator = "UUID")
+    @Column(columnDefinition = "UNIQUEIDENTIFIER", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne
