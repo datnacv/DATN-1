@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
+import com.example.AsmGD1.dto.BanHang.CartAddDto;
 import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
@@ -41,8 +42,7 @@ public class CartController {
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
             Map<String, Object> response = new HashMap<>();
             response.put("gioHangId", gioHang.getId());
-            response.put("chiTietGioHang", khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) != null
-                    ? khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) : java.util.Collections.emptyList());
+            response.put("chiTietGioHang", khachHangGioHangService.getGioHangChiTiets(gioHang.getId()));
             response.put("tongTien", gioHang.getTongTien() != null ? gioHang.getTongTien() : BigDecimal.ZERO);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -51,49 +51,49 @@ public class CartController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(@RequestBody Map<String, String> payload, Authentication authentication) {
+    public ResponseEntity<Map<String, Object>> addToCart(@RequestBody CartAddDto payload, Authentication authentication) {
         try {
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
             if (nguoiDungId == null) {
-                return ResponseEntity.badRequest().body("Vui lòng đăng nhập để thêm sản phẩm");
+                return ResponseEntity.badRequest().body(Map.of("error", "Vui lòng đăng nhập để thêm sản phẩm"));
             }
 
-            UUID chiTietSanPhamId = UUID.fromString(payload.get("id"));
-            int quantity = Integer.parseInt(payload.get("quantity"));
+            UUID chiTietSanPhamId = payload.getId();
+            int quantity = payload.getQuantity();
 
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
             khachHangGioHangService.addToGioHang(gioHang.getId(), chiTietSanPhamId, quantity);
-            return ResponseEntity.ok("Sản phẩm đã được thêm vào giỏ hàng");
+            return ResponseEntity.ok(Map.of("message", "Sản phẩm đã được thêm vào giỏ hàng"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Lỗi khi thêm sản phẩm: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi thêm sản phẩm: " + e.getMessage()));
         }
     }
 
     @PutMapping("/update-quantity/{chiTietGioHangId}")
-    public ResponseEntity<String> updateQuantity(@PathVariable UUID chiTietGioHangId, @RequestParam Integer quantity, Authentication authentication) {
+    public ResponseEntity<Map<String, Object>> updateQuantity(@PathVariable UUID chiTietGioHangId, @RequestParam Integer quantity, Authentication authentication) {
         try {
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
             if (nguoiDungId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để cập nhật giỏ hàng");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Vui lòng đăng nhập để cập nhật giỏ hàng"));
             }
             chiTietGioHangService.updateSoLuong(chiTietGioHangId, quantity);
-            return ResponseEntity.ok("Cập nhật số lượng thành công");
+            return ResponseEntity.ok(Map.of("message", "Cập nhật số lượng thành công"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Lỗi khi cập nhật số lượng: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật số lượng: " + e.getMessage()));
         }
     }
 
     @DeleteMapping("/remove")
-    public ResponseEntity<String> removeFromCart(@RequestParam UUID gioHangId, @RequestParam UUID chiTietSanPhamId, Authentication authentication) {
+    public ResponseEntity<Map<String, Object>> removeFromCart(@RequestParam UUID gioHangId, @RequestParam UUID chiTietSanPhamId, Authentication authentication) {
         try {
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
             if (nguoiDungId == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xóa sản phẩm");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Vui lòng đăng nhập để xóa sản phẩm"));
             }
             chiTietGioHangService.removeChiTietGioHang(gioHangId, chiTietSanPhamId);
-            return ResponseEntity.ok("Xóa sản phẩm thành công");
+            return ResponseEntity.ok(Map.of("message", "Xóa sản phẩm thành công"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Lỗi khi xóa sản phẩm: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xóa sản phẩm: " + e.getMessage()));
         }
     }
 

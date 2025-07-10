@@ -14,12 +14,12 @@ import java.util.UUID;
 @Data
 public class ChiTietGioHang {
     @Id
-    @GeneratedValue
+//    @GeneratedValue bỏ trường này
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_giohang", nullable = false)
+    @JoinColumn(name = "id_gio_hang", nullable = false)
     @JsonIgnore
     private GioHang gioHang;
 
