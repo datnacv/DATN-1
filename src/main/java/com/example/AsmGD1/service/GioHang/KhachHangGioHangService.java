@@ -37,7 +37,7 @@ public class KhachHangGioHangService {
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDungId);
         if (gioHang == null) {
             gioHang = new GioHang();
-            gioHang.setId(UUID.randomUUID());
+//            gioHang.setId(UUID.randomUUID());
             gioHang.setMaGioHang("GH" + UUID.randomUUID().toString().substring(0, 8));
             gioHang.setTongTien(BigDecimal.ZERO);
             gioHang.setThoiGianTao(LocalDateTime.now());
@@ -86,7 +86,7 @@ public class KhachHangGioHangService {
         }
 
         ChiTietGioHang chiTiet = new ChiTietGioHang();
-        chiTiet.setId(UUID.randomUUID());
+//        chiTiet.setId(UUID.randomUUID());
         chiTiet.setGioHang(gioHang);
         chiTiet.setChiTietSanPham(chiTietSanPham);
         chiTiet.setSoLuong(soLuong);
