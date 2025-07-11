@@ -1,10 +1,9 @@
 package com.example.AsmGD1.entity;
 
-import com.example.AsmGD1.entity.ChiTietSanPham;
-import com.example.AsmGD1.entity.GioHang;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,12 +13,12 @@ import java.util.UUID;
 @Data
 public class ChiTietGioHang {
     @Id
-    @GeneratedValue
-    @Column(columnDefinition = "UNIQUEIDENTIFIER")
+    @GeneratedValue(generator = "UUID")
+    @Column(columnDefinition = "UNIQUEIDENTIFIER", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_giohang", nullable = false)
+    @JoinColumn(name = "id_gio_hang", nullable = false)
     @JsonIgnore
     private GioHang gioHang;
 

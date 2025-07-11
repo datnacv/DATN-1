@@ -100,7 +100,7 @@ public class ChiTietSanPhamController {
             } else {
                 model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
             }
-            return "/WebQuanLy/chi-tiet-san-pham-form";
+            return "WebQuanLy/chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang chi tiết sản phẩm: ", e);
             model.addAttribute("error", "Lỗi khi tải trang: " + e.getMessage());

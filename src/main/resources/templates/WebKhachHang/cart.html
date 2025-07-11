@@ -155,26 +155,36 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     window.addEventListener('load', async () => {
-        const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
-        const data = await response.json();
-        const userSection = document.getElementById('userSection');
-        const userInfo = document.getElementById('userInfo');
-        const loginButton = document.getElementById('loginButton');
-        const logoutButton = document.getElementById('logoutButton');
+        try {
+            const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
+            const data = await response.json();
+            const userSection = document.getElementById('userSection');
+            const userInfo = document.getElementById('userInfo');
+            const loginButton = document.getElementById('loginButton');
+            const logoutButton = document.getElementById('logoutButton');
 
-        if (data.isAuthenticated) {
-            const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
-            const userData = await userResponse.json();
-            if (userData.hoTen && userData.tenDangNhap) {
-                userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
-                userInfo.classList.add('active');
-                loginButton.style.display = 'none';
-                logoutButton.style.display = 'inline';
+            if (data.isAuthenticated) {
+                const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
+                if (userResponse.status === 401) {
+                    window.location.href = '/customers/login';
+                    return;
+                }
+                const userData = await userResponse.json();
+                if (userData.hoTen && userData.tenDangNhap) {
+                    userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
+                    userInfo.classList.add('active');
+                    loginButton.style.display = 'none';
+                    logoutButton.style.display = 'inline';
+                }
+            } else {
+                userInfo.classList.remove('active');
+                loginButton.style.display = 'inline';
+                logoutButton.style.display = 'none';
+                window.location.href = '/customers/login'; // Redirect nếu không xác thực
             }
-        } else {
-            userInfo.classList.remove('active');
-            loginButton.style.display = 'inline';
-            logoutButton.style.display = 'none';
+        } catch (error) {
+            console.error('Error checking authentication:', error);
+            window.location.href = '/customers/login';
         }
     });
 
@@ -194,6 +204,7 @@
                 document.getElementById('cart-count').textContent = cartCount;
             } else if (response.status === 401) {
                 document.getElementById('cart-count').textContent = 0;
+                window.location.href = '/customers/login';
             }
         } catch (error) {
             console.error('Error updating cart count:', error);
@@ -223,6 +234,8 @@
 
                 if (response.ok) {
                     window.location.reload();
+                } else if (response.status === 401) {
+                    window.location.href = '/customers/login';
                 } else {
                     const errorData = await response.json();
                     Swal.fire({
@@ -260,6 +273,8 @@
 
                 if (response.ok) {
                     window.location.reload();
+                } else if (response.status === 401) {
+                    window.location.href = '/customers/login';
                 } else {
                     const errorData = await response.json();
                     Swal.fire({
@@ -299,6 +314,8 @@
                         timer: 1500
                     });
                     window.location.reload();
+                } else if (response.status === 401) {
+                    window.location.href = '/customers/login';
                 } else {
                     const errorData = await response.json();
                     Swal.fire({

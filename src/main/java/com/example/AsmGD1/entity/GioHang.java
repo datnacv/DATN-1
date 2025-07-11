@@ -3,18 +3,19 @@ package com.example.AsmGD1.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "giohang")
+@Table(name = "gio_hang")
 @Data
 public class GioHang {
     @Id
-    @GeneratedValue
-    @Column(columnDefinition = "UNIQUEIDENTIFIER")
+    @GeneratedValue(generator = "UUID")
+    @Column(columnDefinition = "UNIQUEIDENTIFIER", updatable = false, nullable = false)
     private UUID id;
 
     @ManyToOne
@@ -36,9 +37,4 @@ public class GioHang {
     @OneToMany(mappedBy = "gioHang", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<ChiTietGioHang> gioHangChiTiets;
-
-    public void addGioHangChiTiet(ChiTietGioHang chiTiet) {
-        gioHangChiTiets.add(chiTiet);
-        chiTiet.setGioHang(this);
-    }
 }

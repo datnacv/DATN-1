@@ -296,20 +296,28 @@
                 }
 
                 try {
-                    // Gửi yêu cầu API để lấy chiTietSanPhamId
-                    const response = await fetch(`/api/getChiTietSanPham?sanPhamId=${button.dataset.s-describedby}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
-                    if (!response.ok) {
-                        throw new Error('Không tìm thấy sản phẩm với kích cỡ và màu sắc này!');
-                    }
-                    const chiTietSanPham = await response.json();
+                    // Gửi yêu cầu GET để lấy chiTietSanPhamId
+                    const response = await fetch(`/api/getChiTietSanPham?sanPhamId=${button.dataset.sanPhamId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+                    const data = await response.json();
 
-                    // Gửi yêu cầu thêm vào giỏ hàng
+                    if (!response.ok) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: data.error || 'Có lỗi xảy ra khi lấy thông tin sản phẩm!',
+                        });
+                        return;
+                    }
+
+                    const chiTietSanPham = data;
+
+                    // Gửi yêu cầu POST để thêm vào giỏ hàng
                     const payload = {
                         id: chiTietSanPham.id,
                         quantity: quantity
                     };
                     const addResponse = await fetch('/api/cart/add', {
-                        method: 'POST',
+                        method: 'POST', // Đảm bảo sử dụng POST
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
@@ -336,7 +344,7 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi',
-                        text: error.message,
+                        text: 'Có lỗi xảy ra: ' + error.message,
                     });
                 }
             };
