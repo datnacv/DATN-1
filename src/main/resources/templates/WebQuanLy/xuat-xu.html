@@ -2,125 +2,751 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Danh sách Xuất xứ</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Xuất Xứ - ACV Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
-        /* Ensure content is not overlapped by the fixed navbar */
-        .content {
-            margin-top: 70px; /* Adjust based on navbar height */
-            max-width: 1200px; /* Optional: Limit content width */
-            margin-left: auto;
-            margin-right: auto;
+        :root {
+            --primary-color: #000000;
+            --primary-hover: #333333;
+            --secondary-color: #666666;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-gray: #f8f9fa;
+            --border-color: #dee2e6;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow-medium: 0 12px 40px rgba(0, 0, 0, 0.15);
+            --shadow-heavy: 0 20px 60px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #000;
+            min-height: 100vh;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-light);
+            border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-title {
+            background: linear-gradient(135deg, #000000, #333333);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .page-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            border-radius: 2px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: var(--shadow-light);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #000000, #333333);
+            color: white;
+            border-bottom: none;
+            padding: 1.5rem 2rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .card-header:hover::before {
+            left: 100%;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .form-control {
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            padding: 12px 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+        .input-group-text {
+            background: var(--light-gray);
+            border: 2px solid var(--border-color);
+            border-right: none;
+            border-radius: 12px 0 0 12px;
+            color: var(--secondary-color);
+        }
+
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+        }
+
+        /*.btn {*/
+        /*    border-radius: 12px;*/
+        /*    padding: 12px 24px;*/
+        /*    font-weight: nơi bạn cần điều chỉnh để phù hợp với giao diện SanPham:*/
+
+        /*```html*/
+        /*    padding: 12px 24px;*/
+        /*    font-weight: 600;*/
+        /*    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);*/
+        /*    position: relative;*/
+        /*    overflow: hidden;*/
+        /*    border: none;*/
+        /*}*/
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #000000, #333333);
+            color: white;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #333333, #555555);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #ffca2c);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #ffca2c, #ffd43b);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #34ce57);
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #34ce57, #40d865);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #e85d75);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #e85d75, #f08ba4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #868e96);
+            color: white;
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #868e96, #adb5bd);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            width: 44px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+
+        .table {
+            margin-bottom: 0;
+            border-color: var(--border-color);
+            vertical-align: middle;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-light);
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, var(--light-gray), #e9ecef);
+            color: var(--primary-color);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .table th {
+            padding: 1.5rem 1rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .table td {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .table-hover > tbody > tr {
+            transition: all 0.3s ease;
+        }
+
+        .table-hover > tbody > tr:hover {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.05));
+            transform: scale(1.01);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            height: 100%;
+            min-height: 90px;
+        }
+
+        .pagination-custom {
+            padding: 1rem 0;
+            justify-content: center;
+        }
+
+        .pagination-custom .page-item {
+            margin: 0 0.3rem;
+        }
+
+        .pagination-custom .page-link {
+            color: var(--primary-color);
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px 18px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination-custom .page-link:hover {
+            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .pagination-custom .page-item.active .page-link {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: var(--shadow-heavy);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            color: white;
+            border-bottom: none;
+            border-radius: 24px 24px 0 0;
+            padding: 2rem 2.5rem;
+            position: relative;
+        }
+
+        .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .modal-header:hover::before {
+            left: 100%;
+        }
+
+        .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+            font-size: 1.2rem;
+            padding: 0.5rem;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .modal-body {
+            padding: 2.5rem;
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(248,249,250,0.95));
+        }
+
+        .modal-footer {
+            border-top: 2px solid var(--border-color);
+            padding: 2rem 2.5rem;
+            border-radius: 0 0 24px 24px;
+            background: rgba(248,249,250,0.8);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            min-width: 140px;
+            padding: 12px 24px;
+            font-weight: 600;
+            border-radius: 12px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-medium);
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .floating-label {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .floating-label input {
+            padding-top: 1.75rem;
+            padding-bottom: 0.75rem;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .floating-label input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .floating-label label {
+            position: absolute;
+            left: 1rem;
+            top: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: white;
+            padding: 0 0.5rem;
+            border-radius: 4px;
+        }
+
+        .search-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-light);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .section-icon {
+            width: 32px;
+            height: 32px;
+            color: var(--primary-color);
+        }
+
+        .search-form-row {
+            display: flex;
+            align-items: end;
+            gap: 1.5rem;
+        }
+
+        .search-form-row .col-md-4 {
+            flex: 1;
+        }
+
+        .search-form-row .floating-label {
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .card-body, .modal-body {
+                padding: 1.5rem;
+            }
+
+            .search-section {
+                padding: 1.5rem;
+            }
+
+            .search-form-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-form-row .floating-label {
+                margin-bottom: 1.5rem;
+            }
+
+            .table th,
+            .table td {
+                font-size: 0.875rem;
+                padding: 1rem 0.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 8px;
+                min-height: auto;
+            }
+
+            .btn-sm {
+                width: 100%;
+                height: auto;
+                padding: 8px 12px;
+            }
         }
     </style>
 </head>
 <body>
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-    <a class="navbar-brand fw-bold text-primary" href="#">
-        <i class="fas fa-store-alt me-2"></i>ACV Admin
-    </a>
-    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
-</nav>
+<div class="d-flex">
+    <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
-<!-- Content -->
-<div class="content p-4">
-    <h2 class="text-center my-4">Danh sách Xuất xứ</h2>
-
-    <!-- Thanh tìm kiếm -->
-    <div class="mb-3 d-flex justify-content-center">
-        <form th:action="@{/acvstore/xuat-xu}" method="get" class="d-flex w-50">
-            <input type="text" name="search" class="form-control me-2" placeholder="Tìm kiếm theo tên xuất xứ..." th:value="${param.search}">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-search"></i> Tìm
-            </button>
-        </form>
-    </div>
-
-    <!-- Nút Thêm Xuất xứ Mới -->
-    <div class="mb-3 text-center">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#xuatXuModal" onclick="resetModal()">
-            <i class="fas fa-plus"></i> Thêm Xuất xứ Mới
-        </button>
-    </div>
-
-    <!-- Bảng Xuất xứ -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Tên xuất xứ</th>
-                <th>Hành động</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="xuatXu, stat : ${xuatXuList}">
-                <td th:text="${stat.count}"></td>
-                <td th:text="${xuatXu.tenXuatXu}"></td>
-                <td>
-                    <button class="btn btn-warning btn-sm btn-custom"
-                            data-bs-toggle="modal"
-                            data-bs-target="#xuatXuModal"
-                            th:attr="data-id=${xuatXu.id},data-name=${xuatXu.tenXuatXu}"
-                            onclick="fillModal(this)">
-                        <i class="fas fa-edit"></i> Sửa
-                    </button>
-                    <a th:href="@{/acvstore/xuat-xu/delete/{id}(id=${xuatXu.id})}"
-                       class="btn btn-danger btn-sm"
-                       onclick="return confirm('Bạn có chắc chắn muốn xóa?');">
-                        <i class="fas fa-trash-alt"></i> Xóa
-                    </a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Modal Thêm/Sửa Xuất xứ -->
-<div class="modal fade" id="xuatXuModal" tabindex="-1" aria-labelledby="xuatXuModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="xuatXuModalLabel">Thêm Xuất xứ Mới</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    </nav>
+    <div class="content" id="content">
+        <div class="text-center mb-2 mt-3">
+            <h2 class="page-title">QUẢN LÝ XUẤT XỨ</h2>
+        </div>
+        <div th:fragment="content">
+            <!-- Hiển thị thông báo lỗi -->
+            <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <form th:action="@{/acvstore/xuat-xu/save}" method="post">
-                <div class="modal-body">
-                    <input type="hidden" name="id" id="xuatXuId">
-                    <div class="mb-3">
-                        <label for="xuatXuName" class="form-label">Tên xuất xứ</label>
-                        <input type="text" name="tenXuatXu" id="xuatXuName" class="form-control" required>
+
+            <div class="search-section">
+                <div class="section-header">
+                    <i class="fas fa-search section-icon"></i>
+                    <h3 class="fs-4 fw-bold text-dark mb-0">Tìm kiếm</h3>
+                </div>
+                <form th:action="@{/acvstore/xuat-xu}" method="get">
+                    <div class="search-form-row">
+                        <div class="col-md-4">
+                            <div class="floating-label">
+                                <label for="searchInput">Tìm kiếm xuất xứ</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" class="form-control" id="searchInput" name="search" th:value="${search}" placeholder="Nhập tên xuất xứ...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#xuatXuModal" onclick="resetModal()" style="height: 58px;">
+                                <i class="fas fa-plus"></i>
+                                <span class="fw-semibold">Thêm xuất xứ mới</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <i class="fas fa-list fs-4"></i>
+                        <span class="fs-5 fw-bold">Danh sách xuất xứ</span>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Đóng
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Lưu
-                    </button>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="xuatXuTable">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Tên xuất xứ</th>
+                            <th>Thao tác</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="xuatXu, stat : ${xuatXuList}" th:data-id="${xuatXu.id}">
+                            <td>
+                                <span class="fw-bold" th:text="${stat.count + (currentPage * 5)}"></span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark" th:text="${xuatXu.tenXuatXu}"></div>
+                            </td>
+                            <td class="action-buttons">
+                                <button class="btn btn-warning btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#xuatXuModal"
+                                        th:attr="data-id=${xuatXu.id},data-name=${xuatXu.tenXuatXu}"
+                                        onclick="fillModal(this)"
+                                        title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a th:href="@{/acvstore/xuat-xu/delete/{id}(id=${xuatXu.id})}"
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Bạn có chắc chắn muốn xóa?');"
+                                   title="Xóa">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination pagination-custom">
+                        <li class="page-item" th:class="${currentPage == 0 ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/acvstore/xuat-xu(page=${currentPage - 1}, search=${search})}" aria-label="Previous">
+                                <i class="fas fa-chevron-left me-1"></i>Trước
+                            </a>
+                        </li>
+                        <li class="page-item" th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:class="${p == currentPage ? 'active' : ''}">
+                            <a class="page-link" th:href="@{/acvstore/xuat-xu(page=${p}, search=${search})}"
+                               th:text="${p + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:class="${currentPage == totalPages - 1 ? 'disabled' : ''}">
+                            <a class="page-link" th:href="@{/acvstore/xuat-xu(page=${currentPage + 1}, search=${search})}" aria-label="Next">
+                                Sau<i class="fas fa-chevron-right ms-1"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- Modal Thêm/Sửa Xuất xứ -->
+            <div class="modal fade" id="xuatXuModal" tabindex="-1" aria-labelledby="xuatXuModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="xuatXuModalLabel">
+                                <i class="fas fa-plus"></i> Thêm xuất xứ mới
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form id="xuatXuForm" th:action="@{/acvstore/xuat-xu/save}" method="post">
+                            <div class="modal-body">
+                                <input type="hidden" name="id" id="xuatXuId">
+                                <div class="floating-label">
+                                    <label for="xuatXuName">Tên xuất xứ</label>
+                                    <input type="text" name="tenXuatXu" id="xuatXuName" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-2"></i>Hủy bỏ
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Lưu thay đổi
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script th:src="@{/js/sidebar.js}" defer></script>
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
 <script>
+    function showToast(message, type = "info") {
+        const container = document.getElementById("toastContainer");
+        if (!container) return;
+
+        const toast = document.createElement("div");
+        const colors = {
+            success: "bg-success",
+            error: "bg-danger",
+            warning: "bg-warning",
+            info: "bg-primary"
+        };
+
+        toast.className = `toast show align-items-center text-white ${colors[type] || colors.info} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+
+        const icon = {
+            success: "fas fa-check-circle",
+            error: "fas fa-exclamation-circle",
+            warning: "fas fa-exclamation-triangle",
+            info: "fas fa-info-circle"
+        };
+
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="${icon[type] || icon.info}"></i>
+                    <span class="fw-medium">${message}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 4000);
+    }
+
     function resetModal() {
-        document.getElementById('xuatXuModalLabel').textContent = 'Thêm Xuất xứ Mới';
+        document.getElementById('xuatXuModalLabel').innerHTML = '<i class="fas fa-plus"></i> Thêm xuất xứ mới';
         document.getElementById('xuatXuId').value = '';
         document.getElementById('xuatXuName').value = '';
     }
 
     function fillModal(button) {
-        document.getElementById('xuatXuModalLabel').textContent = 'Sửa Xuất xứ';
+        document.getElementById('xuatXuModalLabel').innerHTML = '<i class="fas fa-edit"></i> Sửa xuất xứ';
         const id = button.getAttribute('data-id');
         const name = button.getAttribute('data-name');
         document.getElementById('xuatXuId').value = id;

@@ -8,13 +8,20 @@ import java.util.UUID;
 
 @Data
 public class DonHangDTO {
-    private UUID khachHangDaChon;
-    private BigDecimal phiVanChuyen;
-    private UUID phuongThucThanhToan;
-    private String phuongThucBanHang;
-    private BigDecimal soTienKhachDua;
-    private List<GioHangItemDTO> danhSachSanPham;
-    private UUID idPhieuGiamGia;
-    private String tong;
+    private UUID id;
+    private String maDonHang;
+    private UUID khachHangId;
     private String soDienThoaiKhachHang;
+    private String tenKhachHang;
+    private String diaChiGiaoHang;
+    private String phuongThucThanhToan;
+    private String phuongThucBanHang;
+    private BigDecimal tongTienHang;
+    private BigDecimal giamGia;
+    private UUID idPhieuGiamGia;
+    private BigDecimal phiVanChuyen;
+    private BigDecimal tong;
+    private BigDecimal soTienKhachDua;
+    private String tabId;
+    private List<GioHangItemDTO> danhSachSanPham;
 }

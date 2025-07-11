@@ -10,5 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface DonHangTamRepository extends JpaRepository<DonHangTam, UUID> {
-    Optional<DonHangTam> findByMaDonHangTam(String maDonHangTam);
+    Optional<DonHangTam> findByTabId(String tabId);
+    void deleteByTabId(String tabId);
 }

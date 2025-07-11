@@ -53,6 +53,10 @@ public class ChiTietSanPham {
     @JoinColumn(name = "id_thuong_hieu", nullable = false)
     private ThuongHieu thuongHieu;
 
+    @ManyToOne
+    @JoinColumn(name = "id_chien_dich_giam_gia") // Thêm khóa ngoại đến chien_dich_giam_gia
+    private ChienDichGiamGia chienDichGiamGia; // Mối quan hệ một-nhiều
+
     @Column(name = "gia", nullable = false, precision = 10, scale = 2)
     private BigDecimal gia;
 

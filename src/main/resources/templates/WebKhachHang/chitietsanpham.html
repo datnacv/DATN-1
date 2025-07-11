@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ACV Store - Chi tiết sản phẩm</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
+        .product-img { width: 100%; max-height: 500px; object-fit: cover; }
+        .thumbnail-img { width: 80px; height: 80px; object-fit: cover; cursor: pointer; }
+        .thumbnail-img:hover { opacity: 0.8; }
+        .size-option.active, .color-option.active { background-color: #f97316; color: white; }
+        .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+        .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        body { padding-top: 100px; }
+        @media (max-width: 640px) {
+            .product-img { max-height: 300px; }
+            .thumbnail-img { width: 60px; height: 60px; }
+            .dropdown-menu { width: 100%; left: 0; }
+            body { padding-top: 80px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+<!-- Ticker -->
+<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+    <marquee behavior="scroll" direction="left" scrollamount="5">
+        🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+    </marquee>
+</div>
+
+<!-- Header -->
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+    <div class="container mx-auto flex items-center justify-between py-2 px-4">
+        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+        <div class="relative dropdown">
+            <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
+                Danh mục <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nam</a>
+                <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nữ</a>
+                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100">Phụ kiện</a>
+                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
+            </div>
+        </div>
+        <div class="flex-1 mx-4 max-w-2xl">
+            <div class="relative">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <a href="/cart" class="text-white text-xl relative">
+            <i class="fas fa-shopping-cart"></i>
+            <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+        </a>
+    </div>
+</nav>
+
+<!-- Modal Thêm vào giỏ hàng -->
+<div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-lg">
+            <div class="modal-header bg-orange-500 text-white">
+                <h5 class="modal-title" id="addToCartModalLabel">Thêm vào giỏ hàng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="modal-product-info flex items-center space-x-4">
+                    <img id="modalProductImage" src="" alt="Product Image" class="w-20 h-20 object-cover rounded">
+                    <div>
+                        <h6 id="modalProductName" class="font-semibold"></h6>
+                        <p id="modalProductPrice" class="text-orange-600 font-bold"></p>
+                    </div>
+                </div>
+                <div class="size-selection mt-4">
+                    <h6 class="font-semibold">Chọn size:</h6>
+                    <div class="size-options flex space-x-2 mt-2">
+                        <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" th:attr="data-size-id=${size.id}" class="size-option px-4 py-2 border rounded hover:bg-orange-100"></button>
+                    </div>
+                </div>
+                <div class="color-selection mt-4">
+                    <h6 class="font-semibold">Chọn màu sắc:</h6>
+                    <div class="color-options flex space-x-2 mt-2">
+                        <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" th:attr="data-color-id=${color.id}" class="color-option px-4 py-2 border rounded hover:bg-orange-100"></button>
+                    </div>
+                </div>
+                <div class="quantity-selection mt-4">
+                    <h6 class="font-semibold">Số lượng:</h6>
+                    <div class="quantity-control flex items-center space-x-2 mt-2">
+                        <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded">-</button>
+                        <input type="number" value="1" min="1" th:max="${productDetail.soLuongTonKho}" class="quantity-input w-16 text-center border rounded">
+                        <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn bg-orange-500 text-white hover:bg-orange-600" id="confirmAddToCart">Thêm vào giỏ</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Detail Section -->
+<section class="container mx-auto py-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Product Images -->
+        <div>
+            <img th:src="${productDetail.urlHinhAnh}" th:alt="${productDetail.tenSanPham}" class="product-img rounded-lg"/>
+            <div class="flex space-x-2 mt-4">
+                <img th:if="${productDetail.hinhAnhList != null and not #lists.isEmpty(productDetail.hinhAnhList)}" th:each="image : ${productDetail.hinhAnhList}"
+                     th:src="${image}" th:alt="${productDetail.tenSanPham}" class="thumbnail-img rounded"/>
+                <img th:unless="${productDetail.hinhAnhList != null and not #lists.isEmpty(productDetail.hinhAnhList)}" th:src="${productDetail.urlHinhAnh}"
+                     th:alt="${productDetail.tenSanPham}" class="thumbnail-img rounded"/>
+            </div>
+        </div>
+        <!-- Product Info -->
+        <div>
+            <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-4"></h1>
+            <p class="text-orange-600 font-bold text-2xl mb-4" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')} + ' VNĐ'"></p>
+            <p class="text-gray-600 mb-4" th:text="${productDetail.moTa}"></p>
+            <p class="text-gray-600 mb-2">Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span></p>
+            <p class="text-gray-600 mb-2">Số lượng tồn kho: <span th:text="${productDetail.soLuongTonKho}"></span></p>
+            <div class="size-selection mb-4">
+                <h6 class="font-semibold">Kích cỡ:</h6>
+                <div class="size-options flex space-x-2 mt-2">
+                    <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" th:attr="data-size-id=${size.id}" class="size-option px-4 py-2 border rounded hover:bg-orange-100"></button>
+                </div>
+            </div>
+            <div class="color-selection mb-4">
+                <h6 class="font-semibold">Màu sắc:</h6>
+                <div class="color-options flex space-x-2 mt-2">
+                    <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" th:attr="data-color-id=${color.id}" class="color-option px-4 py-2 border rounded hover:bg-orange-100"></button>
+                </div>
+            </div>
+            <div class="button-group mt-4">
+                <button class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded add-to-cart"
+                        th:attr="data-product-id=${productDetail.id},data-san-pham-id=${productDetail.sanPhamId},data-product-name=${productDetail.tenSanPham},data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},data-product-img=${productDetail.urlHinhAnh}">
+                    <i class="fas fa-shopping-cart"></i> Thêm vào giỏ hàng
+                </button>
+                <button class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-2 rounded buy-now"
+                        th:attr="data-product-id=${productDetail.id},
+                 data-san-pham-id=${productDetail.sanPhamId},
+                 data-product-name=${productDetail.tenSanPham},
+                 data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},
+                 data-product-img=${productDetail.urlHinhAnh}">
+                    <i class="fas fa-bolt"></i> Mua ngay
+                </button>
+
+                <a href="/" class="btn bg-gray-500 text-white hover:bg-gray-600 px-6 py-2 rounded">
+                    <i class="fas fa-home"></i> Quay lại trang chủ
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-800 text-white py-8">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+            <h3 class="text-lg font-bold mb-4">ACV Store</h3>
+            <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
+            <ul class="space-y-2">
+                <li><a href="#" class="hover:text-orange-500">Sản phẩm mới</a></li>
+                <li><a href="#" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
+                <li><a href="#" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+            <p class="text-sm">Email: support@160store.com</p>
+            <p class="text-sm">Hotline: 0123 456 789</p>
+            <div class="flex space-x-4 mt-4">
+                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+</footer>
+
+<!-- JavaScript Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.querySelectorAll('.buy-now').forEach(button => {
+        button.addEventListener('click', async () => {
+            const selectedSize = document.querySelector('.size-selection .size-option.active');
+            const selectedColor = document.querySelector('.color-selection .color-option.active');
+
+            if (!selectedSize || !selectedColor) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Thiếu thông tin',
+                    text: 'Vui lòng chọn kích cỡ và màu sắc!',
+                });
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/getChiTietSanPham?sanPhamId=${button.dataset.sanPhamId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+                const data = await response.json();
+                console.log('API /getChiTietSanPham Response:', data); // Log dữ liệu API
+
+                if (!response.ok || !data.id) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: data.error || 'Không thể lấy thông tin sản phẩm!',
+                    });
+                    return;
+                }
+
+                const orderItem = {
+                    chiTietSanPhamId: data.id,
+                    tenSanPham: button.dataset.productName,
+                    gia: data.gia,
+                    soLuong: 1,
+                    urlHinhAnh: button.dataset.productImg
+                };
+                console.log('Saving to localStorage:', orderItem); // Log dữ liệu trước khi lưu
+                localStorage.setItem('checkoutItem', JSON.stringify(orderItem));
+                window.location.href = "/thanh-toan";
+            } catch (error) {
+                console.error('Error in buy-now:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Đã xảy ra lỗi: ' + error.message,
+                });
+            }
+        });
+    });
+
+    // Update cart count
+    async function updateCartCount() {
+        try {
+            const response = await fetch('/api/cart');
+            if (response.ok) {
+                const data = await response.json();
+                const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
+                document.getElementById('cart-count').textContent = cartCount;
+            } else if (response.status === 401) {
+                document.getElementById('cart-count').textContent = 0;
+            }
+        } catch (error) {
+            console.error('Error updating cart count:', error);
+        }
+    }
+
+    // Call updateCartCount when page loads
+    document.addEventListener('DOMContentLoaded', updateCartCount);
+
+    // Quantity controls in modal
+    const modalMinusBtn = document.querySelector('.quantity-btn.minus');
+    const modalPlusBtn = document.querySelector('.quantity-btn.plus');
+    const modalInput = document.querySelector('.quantity-input');
+
+    modalMinusBtn.addEventListener('click', () => {
+        if (modalInput.value > 1) modalInput.value--;
+    });
+
+    modalPlusBtn.addEventListener('click', () => {
+        if (modalInput.value < modalInput.max) modalInput.value++;
+    });
+
+    // Size and Color selection in modal
+    const modalSizeOptions = document.querySelectorAll('.size-option');
+    const modalColorOptions = document.querySelectorAll('.color-option');
+    modalSizeOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            modalSizeOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
+    modalColorOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            modalColorOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
+
+    // Size and Color selection on main page
+    const sizeOptions = document.querySelectorAll('.size-selection .size-option');
+    const colorOptions = document.querySelectorAll('.color-selection .color-option');
+    sizeOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            sizeOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
+    colorOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            colorOptions.forEach(opt => opt.classList.remove('active'));
+            option.classList.add('active');
+        });
+    });
+
+    // Thumbnail image click to update main image
+    document.querySelectorAll('.thumbnail-img').forEach(thumbnail => {
+        thumbnail.addEventListener('click', () => {
+            const mainImage = document.querySelector('.product-img');
+            mainImage.src = thumbnail.src;
+        });
+    });
+
+    // Add to cart
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', async () => {
+            const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
+            document.getElementById('modalProductImage').src = button.dataset.productImg;
+            document.getElementById('modalProductName').textContent = button.dataset.productName;
+            document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
+
+            const confirmButton = document.querySelector('#confirmAddToCart');
+            confirmButton.onclick = async () => {
+                const selectedSize = document.querySelector('.size-option.active');
+                const selectedColor = document.querySelector('.color-option.active');
+                const quantity = parseInt(modalInput.value);
+
+                if (!selectedSize || !selectedColor) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lỗi',
+                        text: 'Vui lòng chọn kích cỡ và màu sắc!',
+                    });
+                    return;
+                }
+
+                if (quantity > parseInt(modalInput.max)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lỗi',
+                        text: 'Số lượng vượt quá tồn kho!',
+                    });
+                    return;
+                }
+
+                try {
+                    // Gửi yêu cầu GET để lấy chiTietSanPhamId
+                    const response = await fetch(`/api/getChiTietSanPham?sanPhamId=${button.dataset.sanPhamId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: data.error || 'Có lỗi xảy ra khi lấy thông tin sản phẩm!',
+                        });
+                        return;
+                    }
+
+                    const chiTietSanPham = data;
+
+                    // Gửi yêu cầu POST để thêm vào giỏ hàng
+                    const payload = {
+                        id: chiTietSanPham.id,
+                        quantity: quantity
+                    };
+                    const addResponse = await fetch('/api/cart/add', {
+                        method: 'POST', // Đảm bảo sử dụng POST
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (addResponse.ok) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: 'Đã thêm vào giỏ hàng!',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        updateCartCount();
+                        modal.hide();
+                    } else {
+                        const errorData = await addResponse.json();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: errorData.error || 'Có lỗi xảy ra khi thêm vào giỏ hàng!',
+                        });
+                    }
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Có lỗi xảy ra: ' + error.message,
+                    });
+                }
+            };
+
+            modal.show();
+        });
+    });
+</script>
+</body>
+</html>

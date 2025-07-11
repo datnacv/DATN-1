@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Chi tiết Hóa đơn - ACV Store</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <script th:src="@{/js/sidebar.js}" defer></script>
+  <style>
+    body { padding: 20px; }
+    .detail-section { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+<div class="d-flex">
+  <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
+
+  <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+    <!-- Các phần tử khác bên trái (nếu có) -->
+
+    <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
+<div class="container">
+  <h1 class="mb-4">Chi tiết Hóa đơn</h1>
+
+  <div class="detail-section">
+    <h4>Thông tin Hóa đơn</h4>
+    <p><strong>Mã Hóa đơn:</strong> <span th:text="${hoaDon.id}"></span></p>
+    <p><strong>Mã Đơn hàng:</strong> <span th:text="${hoaDon.donHang.maDonHang}"></span></p>
+    <p><strong>Khách hàng:</strong> <span th:text="${hoaDon.nguoiDung.hoTen}"></span></p>
+    <p><strong>Email:</strong> <span th:text="${hoaDon.nguoiDung.email}"></span></p>
+    <p><strong>Số điện thoại:</strong> <span th:text="${hoaDon.nguoiDung.soDienThoai}"></span></p>
+    <p><strong>Phương thức thanh toán:</strong> <span th:text="${hoaDon.phuongThucThanhToan != null ? hoaDon.phuongThucThanhToan.tenPhuongThuc : 'Chưa chọn'}"></span></p>
+    <p><strong>Trạng thái:</strong> <span th:text="${hoaDon.trangThai ? 'Đã thanh toán' : 'Chưa thanh toán'}"></span></p>
+    <p><strong>Ngày tạo:</strong> <span th:text="${hoaDon.ngayTao}"></span></p>
+    <p><strong>Ngày thanh toán:</strong> <span th:text="${hoaDon.ngayThanhToan != null ? hoaDon.ngayThanhToan : 'Chưa thanh toán'}"></span></p>
+    <p><strong>Ghi chú:</strong> <span th:text="${hoaDon.ghiChu != null ? hoaDon.ghiChu : 'Không có'}"></span></p>
+  </div>
+
+  <div class="detail-section">
+    <h4>Chi tiết Sản phẩm</h4>
+    <table class="table table-bordered">
+      <thead class="thead-dark">
+      <tr>
+        <th>Tên sản phẩm</th>
+        <th>Số lượng</th>
+        <th>Giá</th>
+        <th>Thành tiền</th>
+        <th>Ghi chú</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}">
+        <td th:text="${chiTiet.tenSanPham}"></td>
+        <td th:text="${chiTiet.soLuong}"></td>
+        <td th:text="${#numbers.formatDecimal(chiTiet.gia, 0, 'COMMA', 2, 'POINT')} + ' VNĐ'"></td>
+        <td th:text="${#numbers.formatDecimal(chiTiet.thanhTien, 0, 'COMMA', 2, 'POINT')} + ' VNĐ'"></td>
+        <td th:text="${chiTiet.ghiChu != null ? chiTiet.ghiChu : ''}"></td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="detail-section">
+    <h4>Tổng kết</h4>
+    <p><strong>Tổng tiền hàng:</strong> <span th:text="${#numbers.formatDecimal(hoaDon.tongTien + (hoaDon.tienGiam != null ? hoaDon.tienGiam : 0) - (hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0), 0, 'COMMA', 2, 'POINT')} + ' VNĐ'"></span></p>
+    <p><strong>Phí vận chuyển:</strong> <span th:text="${hoaDon.donHang.phiVanChuyen != null ? #numbers.formatDecimal(hoaDon.donHang.phiVanChuyen, 0, 'COMMA', 2, 'POINT') + ' VNĐ' : '0 VNĐ'}"></span></p>
+    <p><strong>Giảm giá:</strong> <span th:text="${hoaDon.tienGiam != null ? #numbers.formatDecimal(hoaDon.tienGiam, 0, 'COMMA', 2, 'POINT') + ' VNĐ' : '0 VNĐ'}"></span></p>
+    <p><strong>Tổng tiền:</strong> <span th:text="${#numbers.formatDecimal(hoaDon.tongTien, 0, 'COMMA', 2, 'POINT')} + ' VNĐ'"></span></p>
+  </div>
+
+  <a th:href="@{/acvstore/hoa-don}" class="btn btn-secondary">Quay lại</a>
+  <a th:href="@{/acvstore/hoa-don/download/{maDonHang}(maDonHang=${hoaDon.donHang.maDonHang})}" class="btn btn-success">Tải Hóa đơn PDF</a>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

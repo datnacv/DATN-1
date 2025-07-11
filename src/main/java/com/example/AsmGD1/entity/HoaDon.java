@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -15,11 +17,12 @@ public class HoaDon {
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
+
     @ManyToOne
     @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL) // Thêm cascade
     @JoinColumn(name = "id_don_hang", nullable = false)
     private DonHang donHang;
 
@@ -44,8 +47,15 @@ public class HoaDon {
     private PhuongThucThanhToan phuongThucThanhToan;
 
     @Column(name = "trang_thai", nullable = false)
-    private Boolean trangThai;
+    private String  trangThai;
 
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
+
+    @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<LichSuHoaDon> lichSuHoaDons = new ArrayList<>();
+
+//    @Version
+//    @Column(name = "version")
+//    private Long version;
 }

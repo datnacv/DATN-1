@@ -20,6 +20,11 @@ public class NguoiDungService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    public Page<NguoiDung> findUsersByVaiTroNotCustomer(String keyword, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return nguoiDungRepository.findByVaiTroNotCustomer(keyword != null ? keyword : "", pageable);
+    }
+
     public Page<NguoiDung> findUsersByVaiTro(String vaiTro, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         return nguoiDungRepository.findByVaiTroAndKeyword(vaiTro, keyword != null ? keyword : "", pageable);
@@ -35,16 +40,29 @@ public class NguoiDungService {
             nguoiDung.setThoiGianTao(LocalDateTime.now());
             nguoiDung.setTrangThai(true);
 
+            // Kiểm tra tên đăng nhập trùng lặp
             if (nguoiDungRepository.findByTenDangNhap(nguoiDung.getTenDangNhap()).isPresent()) {
                 throw new RuntimeException("Tên đăng nhập đã tồn tại.");
             }
 
-            // Mã hóa mật khẩu khi tạo mới
-            nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            // Kiểm tra email trùng lặp
+            if (nguoiDung.getEmail() != null && nguoiDungRepository.existsByEmail(nguoiDung.getEmail())) {
+                throw new RuntimeException("Email đã tồn tại.");
+            }
+
+            // Kiểm tra số điện thoại trùng lặp
+            if (nguoiDung.getSoDienThoai() != null && nguoiDungRepository.existsBySoDienThoai(nguoiDung.getSoDienThoai())) {
+                throw new RuntimeException("Số điện thoại đã tồn tại.");
+            }
+
+            // Mã hóa mật khẩu nếu có
+            if (nguoiDung.getMatKhau() != null && !nguoiDung.getMatKhau().isEmpty()) {
+                nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            }
         } else {
-            // Nếu đang cập nhật user, chỉ mã hóa nếu mật khẩu thay đổi
+            // Khi cập nhật, chỉ mã hóa mật khẩu nếu nó thay đổi
             Optional<NguoiDung> existing = nguoiDungRepository.findById(nguoiDung.getId());
-            if (existing.isPresent() && !existing.get().getMatKhau().equals(nguoiDung.getMatKhau())) {
+            if (existing.isPresent() && nguoiDung.getMatKhau() != null && !nguoiDung.getMatKhau().isEmpty()) {
                 nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
             }
         }
@@ -65,6 +83,9 @@ public class NguoiDungService {
     }
 
     public NguoiDung getUserByEmail(String email) {
+        return nguoiDungRepository.findByEmail(email).orElse(null);
+    }
+    public NguoiDung findByEmail(String email) {
         return nguoiDungRepository.findByEmail(email).orElse(null);
     }
 }

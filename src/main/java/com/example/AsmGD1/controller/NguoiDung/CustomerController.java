@@ -4,11 +4,14 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -28,7 +31,16 @@ public class CustomerController {
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
-        return "WebQuanly/list-khach-hang";
+
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
+
+        return "WebQuanLy/list-khach-hang";
     }
 
     @PostMapping("/add")
@@ -76,11 +88,11 @@ public class CustomerController {
     public String showDashboard(Model model) {
         model.addAttribute("message", "Chào mừng đến với dashboard!");
         model.addAttribute("messageType", "success");
-        return "WebQuanly/customer-dashboard";
+        return "WebQuanLy/customer-dashboard";
     }
 
     @GetMapping("/login")
     public String showLoginForm() {
-        return "WebQuanly/customer-login"; // Spring Security xử lý form login
+        return "WebQuanLy/customer-login"; // Spring Security xử lý form login
     }
 }

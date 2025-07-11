@@ -1,8 +1,10 @@
 package com.example.AsmGD1.controller.SanPham;
 
-import com.example.AsmGD1.dto.SanPhamDto;
+import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.DanhMuc;
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
 import com.example.AsmGD1.util.CloudinaryUtil;
@@ -11,6 +13,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -34,13 +38,16 @@ public class SanPhamController {
     @Autowired
     private CloudinaryUtil cloudinaryUtil;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping
     public String viewSanPhamPage(
             Model model,
             @RequestParam(value = "searchName", required = false) String searchName,
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
             @RequestParam(value = "page", defaultValue = "0") int page) {
-        Pageable pageable = PageRequest.of(page, 10);
+        Pageable pageable = PageRequest.of(page, 5);
         Page<SanPham> sanPhamPage;
 
         if (searchName != null && !searchName.isEmpty()) {
@@ -59,7 +66,14 @@ public class SanPhamController {
         model.addAttribute("selectedTrangThai", trangThai);
         model.addAttribute("sanPham", new SanPham());
         model.addAttribute("danhMucList", danhMucList);
-        return "/WebQuanLy/san-pham-list-form";
+        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
+        return "WebQuanLy/san-pham-list-form";
     }
 
     @GetMapping("/edit/{id}")
@@ -69,7 +83,7 @@ public class SanPhamController {
         model.addAttribute("sanPham", sanPham);
         model.addAttribute("sanPhamList", sanPhamService.findAll());
         model.addAttribute("danhMucList", danhMucList);
-        return "/WebQuanLy/san-pham-list-form";
+        return "WebQuanLy/san-pham-list-form";
     }
 
     @PostMapping("/save")
@@ -113,7 +127,6 @@ public class SanPhamController {
 
             sanPhamService.save(existingSanPham);
 
-            // Tạo DTO để trả về (tránh lỗi recursion)
             SanPhamDto dto = new SanPhamDto();
             dto.setId(existingSanPham.getId());
             dto.setMaSanPham(existingSanPham.getMaSanPham());
@@ -122,6 +135,7 @@ public class SanPhamController {
             dto.setUrlHinhAnh(existingSanPham.getUrlHinhAnh());
             dto.setTrangThai(existingSanPham.getTrangThai());
             dto.setThoiGianTao(existingSanPham.getThoiGianTao());
+            dto.setTongSoLuong(existingSanPham.getTongSoLuong());
 
             if (existingSanPham.getDanhMuc() != null) {
                 dto.setDanhMucId(existingSanPham.getDanhMuc().getId());
@@ -132,7 +146,6 @@ public class SanPhamController {
             response.put("message", "Lưu sản phẩm thành công!");
             response.put("sanPham", dto);
             return ResponseEntity.ok(response);
-
         } catch (Exception e) {
             System.err.println("Exception: " + e.getMessage());
             response.put("success", false);
@@ -177,11 +190,40 @@ public class SanPhamController {
         dto.setUrlHinhAnh(sp.getUrlHinhAnh());
         dto.setTrangThai(sp.getTrangThai());
         dto.setThoiGianTao(sp.getThoiGianTao());
+        dto.setTongSoLuong(sp.getTongSoLuong());
         if (sp.getDanhMuc() != null) {
             dto.setDanhMucId(sp.getDanhMuc().getId());
             dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());
         }
 
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/update-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            UUID id = UUID.fromString((String) payload.get("id"));
+            Boolean trangThai = (Boolean) payload.get("trangThai");
+
+            SanPham sanPham = sanPhamService.findById(id);
+            if (sanPham == null) {
+                response.put("success", false);
+                response.put("message", "Sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            sanPham.setTrangThai(trangThai != null ? trangThai : false);
+            sanPhamService.save(sanPham);
+
+            response.put("success", true);
+            response.put("message", "Cập nhật trạng thái thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 }

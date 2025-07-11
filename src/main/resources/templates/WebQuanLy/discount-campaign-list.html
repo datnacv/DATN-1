@@ -41,7 +41,15 @@
 </head>
 <body>
 <div class="d-flex">
-  <div class="content mt-4">
+  <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
+
+  <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+    <!-- Các phần tử khác bên trái (nếu có) -->
+
+    <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
+  <!-- Nội dung chính bên phải -->
+  <div class="content" id="content">
     <div class="card mb-4 filter-box">
       <div class="card-header">
         <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Bộ lọc</h5>
@@ -117,7 +125,9 @@
             <td th:text="${iterStat.count + currentPage * 10}"></td>
             <td th:text="${campaign.ma}"></td>
             <td th:text="${campaign.ten}" class="text-start"></td>
-            <td th:text="${campaign.phanTramGiam + '%'}"></td>
+            <td th:utext="${campaign.phanTramGiam % 1 == 0} ? ${campaign.phanTramGiam.intValue()} + '&#37;' : ${campaign.phanTramGiam} + '&#37;'"></td>
+
+
             <td th:text="${#temporals.format(campaign.ngayBatDau, 'dd/MM/yyyy')}"></td>
             <td th:text="${#temporals.format(campaign.ngayKetThuc, 'dd/MM/yyyy')}"></td>
             <td>
@@ -181,7 +191,6 @@
       </div>
       <div class="modal-body">
         <p>Bạn có chắc chắn muốn xóa chiến dịch <span id="campaignNameToDelete" class="fw-bold"></span>?</p>
-        <p class="text-danger mb-0">Hành động này không thể hoàn tác.</p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
@@ -249,6 +258,36 @@
       });
     });
   });
+  document.addEventListener('DOMContentLoaded', function () {
+    // Toast thông báo nếu có
+    const success = /*[[${successMessage}]]*/ null;
+    const error = /*[[${errorMessage}]]*/ null;
+
+    const toastEl = document.getElementById('toastMessage');
+    const toastBody = toastEl.querySelector('.toast-body');
+
+    if (success) {
+      toastEl.classList.remove('bg-danger');
+      toastEl.classList.add('bg-success');
+      toastBody.textContent = success;
+      new bootstrap.Toast(toastEl).show();
+    } else if (error) {
+      toastEl.classList.remove('bg-success');
+      toastEl.classList.add('bg-danger');
+      toastBody.textContent = error;
+      new bootstrap.Toast(toastEl).show();
+    }
+  });
 </script>
+<!-- Toast thông báo -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
+  <div id="toastMessage" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

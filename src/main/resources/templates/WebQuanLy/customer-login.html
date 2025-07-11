@@ -7,66 +7,66 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background: linear-gradient(to right, #4facfe, #00f2fe); /* Màu nền mới */
-            font-family: 'Inter', sans-serif; /* Font chữ hiện đại hơn */
-            min-height: 100vh; /* Đảm bảo chiều cao tối thiểu để căn giữa */
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
             display: flex;
-            align-items: center; /* Căn giữa theo chiều dọc */
-            justify-content: center; /* Căn giữa theo chiều ngang */
+            align-items: center;
+            justify-content: center;
             margin: 0;
         }
         .login-box {
-            max-width: 480px; /* Tăng chiều rộng tối đa một chút */
-            width: 90%; /* Đảm bảo responsive tốt hơn trên màn hình nhỏ */
-            padding: 45px; /* Tăng padding */
+            max-width: 480px;
+            width: 90%;
+            padding: 45px;
             background: white;
-            border-radius: 15px; /* Bo tròn góc hơn */
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18); /* Đổ bóng mạnh và mềm hơn */
-            animation: fadeIn 0.8s ease-out; /* Hiệu ứng fade-in khi tải trang */
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18);
+            animation: fadeIn 0.8s ease-out;
         }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .form-title {
-            font-size: 30px; /* Tăng kích thước tiêu đề */
-            font-weight: 700; /* Đậm hơn */
+            font-size: 30px;
+            font-weight: 700;
             margin-bottom: 30px;
             text-align: center;
-            color: #2c3e50; /* Màu tối hơn cho tiêu đề */
+            color: #2c3e50;
         }
         .form-label {
-            font-weight: 500; /* Chữ label đậm hơn */
+            font-weight: 500;
             color: #555;
-            margin-bottom: 8px; /* Khoảng cách dưới label */
+            margin-bottom: 8px;
         }
         .form-control {
-            border-radius: 10px; /* Bo tròn góc input */
-            padding: 12px 18px; /* Tăng padding input */
+            border-radius: 10px;
+            padding: 12px 18px;
             border: 1px solid #e0e0e0;
-            transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt mà */
+            transition: all 0.3s ease;
         }
         .form-control:focus {
-            border-color: #4facfe; /* Màu viền khi focus */
-            box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25); /* Đổ bóng khi focus */
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.25rem rgba(79, 172, 254, 0.25);
         }
         .btn-login {
             width: 100%;
-            background: linear-gradient(to right, #4facfe, #00f2fe); /* Gradient cho nút */
+            background: linear-gradient(to right, #4facfe, #00f2fe);
             border: none;
             color: white;
-            padding: 14px 0; /* Tăng padding nút */
-            border-radius: 10px; /* Bo tròn góc nút */
-            font-size: 19px; /* Kích thước chữ nút lớn hơn */
+            padding: 14px 0;
+            border-radius: 10px;
+            font-size: 19px;
             font-weight: 600;
             margin-top: 15px;
-            transition: all 0.3s ease; /* Hiệu ứng chuyển động mượt mà */
-            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3); /* Đổ bóng cho nút */
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.3);
         }
         .btn-login:hover {
-            transform: translateY(-3px); /* Nâng nút lên một chút khi hover */
-            box-shadow: 0 8px 20px rgba(0, 242, 254, 0.4); /* Đổ bóng mạnh hơn khi hover */
-            background: linear-gradient(to right, #00f2fe, #4facfe); /* Đổi hướng gradient khi hover */
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 242, 254, 0.4);
+            background: linear-gradient(to right, #00f2fe, #4facfe);
         }
         .alert {
             margin-top: 25px;
@@ -99,12 +99,39 @@
             color: #00f2fe;
             text-decoration: underline;
         }
+        .oauth-btn {
+            width: 100%;
+            padding: 12px 0;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 500;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            text-align: center;
+            color: white;
+            text-decoration: none;
+            display: block;
+        }
+        .google-btn {
+            background: #db4437;
+        }
+        .google-btn:hover {
+            background: #c1351d;
+            transform: translateY(-3px);
+        }
+        .facebook-btn {
+            background: #3b5998;
+        }
+        .facebook-btn:hover {
+            background: #2f477a;
+            transform: translateY(-3px);
+        }
     </style>
 </head>
 <body>
 <div class="login-box">
     <div class="form-title">Chào mừng trở lại</div>
-    <form method="post" action="/acvstore/customers/login">
+    <form method="post" action="/customers/login">
         <div class="mb-3">
             <label for="tenDangNhap" class="form-label">Tên đăng nhập</label>
             <input type="text" class="form-control" id="tenDangNhap" name="tenDangNhap" required>
@@ -129,6 +156,11 @@
             <a href="#">Đăng ký ngay</a>
         </div>
     </form>
+
+    <div class="mt-3">
+        <a href="/oauth2/authorization/google" class="oauth-btn google-btn">Đăng nhập bằng Google</a>
+        <a href="/oauth2/authorization/facebook" class="oauth-btn facebook-btn">Đăng nhập bằng Facebook</a>
+    </div>
 </div>
 </body>
 </html>

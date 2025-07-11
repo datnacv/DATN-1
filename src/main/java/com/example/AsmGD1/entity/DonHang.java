@@ -2,6 +2,7 @@ package com.example.AsmGD1.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -51,6 +52,17 @@ public class DonHang {
 
     @Column(name = "phuong_thuc_ban_hang", nullable = false, length = 50)
     private String phuongThucBanHang;
+
+    @Column(name = "dia_chi_giao_hang", columnDefinition = "NVARCHAR(MAX)")
+    private String diaChiGiaoHang;
+
+    @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
+    private String ghiChu;
+
+    @ManyToOne
+    @JoinColumn(name = "id_phieu_giam_gia")
+    private PhieuGiamGia phieuGiamGia;
+
 
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();

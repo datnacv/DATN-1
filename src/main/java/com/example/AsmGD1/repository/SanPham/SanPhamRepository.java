@@ -26,4 +26,8 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
 
     Page<SanPham> findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(String ten, String ma, Pageable pageable);
 
+    @Query("SELECT sp FROM SanPham sp WHERE sp.trangThai = true")
+    List<SanPham> findAllByTrangThai();
+
+    boolean existsByDanhMucId(UUID danhMucId);
 }

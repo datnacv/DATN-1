@@ -1,6 +1,5 @@
 package com.example.AsmGD1.dto.BanHang;
 
-
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,9 +9,9 @@ import java.util.UUID;
 @Data
 public class GioHangDTO {
     private List<GioHangItemDTO> danhSachSanPham;
-    private String tongTienHang;
-    private String giamGia;
-    private String tong;
+    private BigDecimal tongTienHang; // Giữ định dạng
+    private BigDecimal giamGia; // Giữ định dạng
+    private BigDecimal tong; // Giữ định dạng
     private boolean daXoaPhieuGiamGia;
     private String giamGiaDaXoa;
     private boolean daApDungPhieuGiamGia;
@@ -22,5 +21,7 @@ public class GioHangDTO {
     private String phuongThucBanHang;
     private String phuongThucThanhToan;
     private String soDienThoaiKhachHang;
-
+    private String tabId;
+    private BigDecimal soTienKhachDua;
+    private BigDecimal changeAmount;
 }

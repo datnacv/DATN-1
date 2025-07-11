@@ -2,157 +2,802 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Chỉnh Sửa Phiếu Giảm Giá</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${getStatus.apply(voucher) == 'Sắp diễn ra'} ? 'Chỉnh Sửa Phiếu Giảm Giá' : 'Xem Chi Tiết Phiếu Giảm Giá'"></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --warning-color: #d97706;
+            --danger-color: #dc2626;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --border-radius: 12px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+            color: var(--gray-800);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+        }
+
+        /* Header Improvements */
+        .sticky-header {
+            position: sticky;
+            top: 60px;
+            z-index: 1000;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            margin: -2rem -2rem 2rem -2rem;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .sticky-header h2 {
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sticky-header .header-icon {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.75rem;
+            border-radius: 50%;
+            font-size: 1.25rem;
+        }
+
+        /* Content Layout */
+        .content {
+            padding: 2rem;
+            margin-left: 256px;
+            margin-top: 70px;
+            max-width: 1400px;
+        }
+
+        /* Card Improvements */
+        .main-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--gray-200);
+            overflow: hidden;
+        }
+
+        .card-section {
+            padding: 2rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .card-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-icon {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        /* Form Improvements */
+        .form-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid var(--gray-200);
+            background-color: white;
+            transition: all 0.2s ease;
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        .form-control:disabled, .form-control[readonly] {
+            background-color: var(--gray-50);
+            border-color: var(--gray-200);
+            color: var(--gray-600);
+        }
+
+        /* Radio Button Improvements */
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .radio-option:hover {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .radio-option input[type="radio"]:checked + label,
+        .radio-option:has(input[type="radio"]:checked) {
+            border-color: var(--primary-color);
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        /* Button Improvements */
+        .btn {
+            border-radius: 8px;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+            background: linear-gradient(135deg, var(--primary-hover) 0%, #1e40af 100%);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Alert Improvements */
+        .alert {
+            border-radius: var(--border-radius);
+            border: none;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        /* Table Improvements */
+        .table-container {
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-200);
+        }
+
+        .table {
+            margin: 0;
+        }
+
+        .table th {
+            background: var(--gray-50);
+            color: var(--gray-700);
+            font-weight: 600;
+            border: none;
+            padding: 1rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-color: var(--gray-200);
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        /* Search Input */
+        .search-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            padding-left: 2.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-400);
+        }
+
+        /* Checkbox Improvements */
+        .form-check {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-check-input {
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid var(--gray-300);
+            border-radius: 4px;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Toast Improvements */
+        .toast {
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            border: none;
+        }
+
+        /* Modal Improvements */
+        .modal-content {
+            border-radius: var(--border-radius);
+            border: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-900) 100%);
+            color: white;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            padding: 1.5rem;
+        }
+
+        .modal-body {
+            padding: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .sticky-header {
+                margin: -1rem -1rem 1rem -1rem;
+                padding: 1rem;
+            }
+
+            .card-section {
+                padding: 1.5rem;
+            }
+
+            .radio-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Loading States */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background: var(--warning-color);
+            color: white;
+        }
+
+        /* Input Group Improvements */
+        .input-group-text {
+            background: var(--gray-50);
+            border: 2px solid var(--gray-200);
+            color: var(--gray-600);
+            font-weight: 600;
+        }
+
+        .input-group .form-control {
+            border-right: none;
+        }
+
+        .input-group .form-control:focus + .input-group-text {
+            border-color: var(--primary-color);
+        }
+    </style>
+    <script th:src="@{/js/sidebar.js}" defer></script>
 </head>
 <body>
-<div class="container mt-5 pt-3">
-    <h2 class="mb-4">Chỉnh Sửa Phiếu Giảm Giá</h2>
+<div class="d-flex">
+    <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
+    <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+    </nav>
 
-    <div th:if="${errorMessage}" class="alert alert-danger" th:utext="${errorMessage}"></div>
-    <div th:if="${mailMessage}" class="alert alert-info" th:text="${mailMessage}"></div>
-
-    <form th:action="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id}}" th:object="${voucher}" method="post">
-        <div class="mb-3">
-            <label class="form-label">Mã phiếu:</label>
-            <input type="text" th:field="*{ma}" class="form-control" readonly/>
+    <div class="content" id="content">
+        <!-- Toast Notifications -->
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+            <div class="toast align-items-center text-bg-success border-0" role="alert" id="successToast" aria-live="assertive" aria-atomic="true" th:if="${successMessage}">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span th:text="${successMessage}"></span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast align-items-center text-bg-danger border-0" role="alert" id="errorToast" aria-live="assertive" aria-atomic="true" th:if="${errorMessage}">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span th:text="${errorMessage}"></span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast align-items-center text-bg-info border-0" role="alert" id="infoToast" aria-live="assertive" aria-atomic="true" th:if="${mailMessage}">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span th:text="${mailMessage}"></span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Tên phiếu:</label>
-            <input type="text" th:field="*{ten}" class="form-control" required/>
+        <!-- Header -->
+        <div class="sticky-header">
+            <h2>
+                <span class="header-icon">
+                    <i class="fas fa-ticket-alt"></i>
+                </span>
+                <span th:text="${getStatus.apply(voucher) == 'Sắp diễn ra'} ? 'Chỉnh Sửa Phiếu Giảm Giá' : 'Xem Chi Tiết Phiếu Giảm Giá'"></span>
+            </h2>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Kiểu giảm:</label>
+        <!-- Status Alert -->
+        <div th:if="${getStatus.apply(voucher) != 'Sắp diễn ra'}" class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-circle"></i>
             <div>
-                <label><input type="radio" th:field="*{loai}" value="PERCENT" onchange="toggleDiscountFields()"> Giảm theo %</label>
-                <label class="ms-3"><input type="radio" th:field="*{loai}" value="CASH" onchange="toggleDiscountFields()"> Giảm theo tiền mặt</label>
+                <strong>Lưu ý:</strong> Phiếu giảm giá đang ở trạng thái
+                <span class="status-badge" th:text="${getStatus.apply(voucher)}"></span>
+                và không thể chỉnh sửa.
             </div>
         </div>
 
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Giá trị giảm:</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="giaTriGiam" name="giaTriGiam"
-                           th:value="${giaTriGiamStr}" oninput="this.value=this.value.replace(/[^0-9,]/g,'')">
-                    <span class="input-group-text" id="discountUnit">%</span>
+        <!-- Main Form Card -->
+        <div class="main-card">
+            <form id="editVoucherForm" th:action="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id}}" th:object="${voucher}" method="post">
+
+                <!-- Basic Information Section -->
+                <div class="card-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-info-circle section-icon"></i>
+                        Thông tin cơ bản
+                    </h3>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-barcode"></i>
+                                Mã phiếu
+                            </label>
+                            <input type="text" th:field="*{ma}" class="form-control" readonly/>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-tag"></i>
+                                Tên phiếu <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" th:field="*{ten}" class="form-control"
+                                   th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                   required placeholder="Nhập tên phiếu giảm giá"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discount Configuration Section -->
+                <div class="card-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-percentage section-icon"></i>
+                        Cấu hình giảm giá
+                    </h3>
+
+                    <div class="mb-4">
+                        <label class="form-label">Kiểu giảm giá</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{loai}" value="PERCENT"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onchange="toggleDiscountFields()" id="percent">
+                                <label for="percent">
+                                    <i class="fas fa-percentage me-1"></i>
+                                    Giảm theo phần trăm
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{loai}" value="CASH"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onchange="toggleDiscountFields()" id="cash">
+                                <label for="cash">
+                                    <i class="fas fa-money-bill me-1"></i>
+                                    Giảm theo tiền mặt
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                Giá trị giảm <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="giaTriGiam" name="giaTriGiam"
+                                       th:value="${giaTriGiamStr}"
+                                       th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       oninput="this.value=this.value.replace(/[^0-9,]/g,'')"
+                                       placeholder="0" required>
+                                <span class="input-group-text" id="discountUnit">%</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3" id="maxDiscountGroup">
+                            <label class="form-label">Giá trị giảm tối đa</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="giaTriGiamToiDa" name="giaTriGiamToiDa"
+                                       th:value="${giaTriGiamToiDaStr}"
+                                       th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       oninput="this.value=this.value.replace(/[^0-9,]/g,'')"
+                                       placeholder="0">
+                                <span class="input-group-text">₫</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Đơn hàng tối thiểu</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="giaTriGiamToiThieu" name="giaTriGiamToiThieu"
+                                       th:value="${giaTriGiamToiThieuStr}"
+                                       th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       oninput="this.value=this.value.replace(/[^0-9,]/g,'')"
+                                       placeholder="0">
+                                <span class="input-group-text">₫</span>
+                            </div>
+                            <small class="text-muted">Giá trị đơn hàng tối thiểu để áp dụng voucher</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voucher Type Section -->
+                <div class="card-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-users section-icon"></i>
+                        Loại phiếu và sử dụng
+                    </h3>
+
+                    <div class="mb-4">
+                        <label class="form-label">Loại phiếu giảm giá</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{kieuPhieu}" value="cong_khai"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onclick="toggleUsageCount()" id="public">
+                                <label for="public">
+                                    <i class="fas fa-globe me-1"></i>
+                                    Công khai
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{kieuPhieu}" value="ca_nhan"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onclick="toggleUsageCount()" id="private">
+                                <label for="private">
+                                    <i class="fas fa-user me-1"></i>
+                                    Cá nhân
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-redo"></i>
+                                Số lượt sử dụng
+                            </label>
+                            <input type="text" class="form-control" id="gioiHanSuDung" name="gioiHanSuDung"
+                                   th:value="${gioiHanSuDungStr}"
+                                   th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra' and kieuPhieu != 'cong_khai'}"
+                                   inputmode="numeric"
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                                   placeholder="Nhập số lượt sử dụng">
+                            <small class="text-muted" id="caNhanNote" style="display: none;">
+                                <i class="fas fa-info-circle"></i>
+                                Phiếu cá nhân chỉ áp dụng 1 lượt sử dụng
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-alt"></i>
+                                Ngày bắt đầu <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" th:field="*{ngayBatDau}" class="form-control"
+                                   th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-check"></i>
+                                Ngày kết thúc <span class="text-danger">*</span>
+                            </label>
+                            <input type="date" th:field="*{ngayKetThuc}" class="form-control"
+                                   th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Selection Section -->
+                <div id="customerSelection" class="card-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-user-check section-icon"></i>
+                        Chọn khách hàng áp dụng
+                    </h3>
+
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" class="form-control search-input" id="searchCustomerInput"
+                               placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+                               th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}">
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="selectAllCheckbox"
+                               th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}">
+                        <label class="form-check-label" for="selectAllCheckbox">
+                            <i class="fas fa-check-double me-1"></i>
+                            Chọn tất cả khách hàng
+                        </label>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                            <tr>
+                                <th width="60">Chọn</th>
+                                <th>Họ tên</th>
+                                <th>Email</th>
+                                <th>Số điện thoại</th>
+                            </tr>
+                            </thead>
+                            <tbody id="customerTableBody">
+                            <tr th:each="customer : ${customers}" th:if="${customer != null}">
+                                <td>
+                                    <input type="checkbox" name="selectedCustomerIds" th:value="${customer.id}"
+                                           th:checked="${selectedCustomerIds != null and selectedCustomerIds.contains(customer.id)}"
+                                           th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                           class="form-check-input"/>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-placeholder me-2">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <span th:text="${customer.hoTen}"></span>
+                                    </div>
+                                </td>
+                                <td th:text="${customer.email}"></td>
+                                <td th:text="${customer.soDienThoai}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted">
+                            Hiển thị khách hàng từ <strong th:text="${currentCustomerPage * 10 + 1}"></strong>
+                            đến <strong th:text="${(currentCustomerPage + 1) * 10}"></strong>
+                        </small>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item" th:classappend="${currentCustomerPage == 0} ? 'disabled'">
+                                    <a class="page-link"
+                                       th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage - 1} + '&search=' + ${search}}"
+                                       aria-label="Previous">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalCustomerPages - 1)}"
+                                    th:classappend="${i == currentCustomerPage} ? 'active'">
+                                    <a class="page-link"
+                                       th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id} + '?page=' + ${i} + '&search=' + ${search}}"
+                                       th:text="${i + 1}"></a>
+                                </li>
+                                <li class="page-item" th:classappend="${currentCustomerPage + 1 >= totalCustomerPages} ? 'disabled'">
+                                    <a class="page-link"
+                                       th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage + 1} + '&search=' + ${search}}"
+                                       aria-label="Next">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="sendMail" name="sendMail"
+                               th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}">
+                        <label class="form-check-label" for="sendMail">
+                            <i class="fas fa-envelope me-1"></i>
+                            Gửi email thông báo cho khách hàng được chọn
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="card-section">
+                    <div class="d-flex justify-content-end gap-3">
+                        <a th:href="@{/acvstore/phieu-giam-gia}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Quay lại
+                        </a>
+                        <button type="submit" class="btn btn-primary"
+                                th:if="${getStatus.apply(voucher) == 'Sắp diễn ra' or kieuPhieu == 'cong_khai'}"
+                                id="saveButton">
+                            <i class="fas fa-save"></i>
+                            Lưu thay đổi
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal fade" id="confirmEditModal" tabindex="-1" aria-labelledby="confirmEditModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmEditModalLabel">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Xác nhận lưu thay đổi
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center">
+                            <i class="fas fa-question-circle text-warning" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <p class="mb-0">Bạn có chắc chắn muốn lưu các thay đổi cho phiếu giảm giá này không?</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times"></i>
+                            Hủy bỏ
+                        </button>
+                        <button type="button" class="btn btn-primary" id="confirmEditButton">
+                            <i class="fas fa-save"></i>
+                            Xác nhận lưu
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-6" id="maxDiscountGroup">
-                <label class="form-label">Giá trị giảm tối đa:</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="giaTriGiamToiDa" name="giaTriGiamToiDa"
-                           th:value="${giaTriGiamToiDaStr}" oninput="this.value=this.value.replace(/[^0-9,]/g,'')">
-                    <span class="input-group-text">₫</span>
-                </div>
-            </div>
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">Loại phiếu:</label>
-            <div>
-                <label><input type="radio" th:field="*{kieuPhieu}" value="cong_khai" onclick="toggleUsageCount()"> Công khai</label>
-                <label class="ms-3"><input type="radio" th:field="*{kieuPhieu}" value="ca_nhan" onclick="toggleUsageCount()"> Cá nhân</label>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Lượt sử dụng:</label>
-                <input type="text" class="form-control" id="gioiHanSuDung" name="gioiHanSuDung"
-                       th:value="${gioiHanSuDungStr}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                <small class="text-muted" id="caNhanNote" style="display: none;">* Phiếu cá nhân chỉ áp dụng 1 lượt sử dụng</small>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Đơn tối thiểu áp dụng:</label>
-                <div class="input-group">
-                    <input type="text" class="form-control" id="giaTriGiamToiThieu" name="giaTriGiamToiThieu"
-                           th:value="${giaTriGiamToiThieuStr}" oninput="this.value=this.value.replace(/[^0-9,]/g,'')">
-                    <span class="input-group-text">₫</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-md-6">
-                <label class="form-label">Ngày bắt đầu:</label>
-                <input type="date" th:field="*{ngayBatDau}" class="form-control">
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Ngày kết thúc:</label>
-                <input type="date" th:field="*{ngayKetThuc}" class="form-control">
-            </div>
-        </div>
-
-        <div id="customerSelection" class="mb-3">
-            <label class="form-label">Chọn khách hàng áp dụng:</label>
-            <input type="text" class="form-control mb-2" id="searchCustomerInput" placeholder="Tìm khách hàng...">
-            <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="selectAllCheckbox">
-                <label class="form-check-label" for="selectAllCheckbox">Chọn tất cả</label>
-            </div>
-            <table class="table table-bordered">
-                <thead>
-                <tr>
-                    <th>Chọn</th>
-                    <th>Họ tên</th>
-                    <th>Email</th>
-                    <th>SĐT</th>
-                </tr>
-                </thead>
-                <tbody id="customerTableBody">
-                <tr th:each="customer : ${customers}" th:if="${customer != null}">
-                    <td><input type="checkbox" name="selectedCustomerIds" th:value="${customer.id}"
-                               th:checked="${selectedCustomerIds != null and selectedCustomerIds.contains(customer.id)}"/></td>
-                    <td th:text="${customer.hoTen}"></td>
-                    <td th:text="${customer.email}"></td>
-                    <td th:text="${customer.soDienThoai}"></td>
-                </tr>
-                </tbody>
-            </table>
-
-            <div class="d-flex justify-content-end mt-2">
-                <nav>
-                    <ul class="pagination">
-                        <li class="page-item" th:classappend="${currentCustomerPage == 0} ? 'disabled'">
-                            <a class="page-link"
-                               th:href="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage - 1} + '&search=' + ${search}}"
-                               aria-label="Previous"><span aria-hidden="true">«</span></a>
-                        </li>
-                        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalCustomerPages - 1)}"
-                            th:classappend="${i == currentCustomerPage} ? 'active'">
-                            <a class="page-link"
-                               th:href="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id} + '?page=' + ${i} + '&search=' + ${search}}"
-                               th:text="${i + 1}"></a>
-                        </li>
-                        <li class="page-item" th:classappend="${currentCustomerPage + 1 >= totalCustomerPages} ? 'disabled'">
-                            <a class="page-link"
-                               th:href="@{'/acvstore/voucher/vouchers/edit/' + ${voucher.id} + '?page=' + ${currentCustomerPage + 1} + '&search=' + ${search}}"
-                               aria-label="Next"><span aria-hidden="true">»</span></a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-
-            <div class="form-check mt-2">
-                <input class="form-check-input" type="checkbox" id="sendMail" name="sendMail">
-                <label class="form-check-label" for="sendMail">Gửi Email cho khách hàng</label>
-            </div>
-        </div>
-
-        <div class="d-flex justify-content-between">
-            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-            <a th:href="@{/acvstore/voucher/vouchers}" class="btn btn-secondary">Quay lại</a>
-        </div>
-    </form>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Enhanced JavaScript with better UX
     function formatNumberVN(value, allowDecimal) {
         if (!value) return '';
         value = value.replace(/[^\d,]/g, '').replace(/\./g, '').replace(/,/g, '.');
@@ -168,46 +813,162 @@
         return value.replace(/[.,]/g, '');
     }
 
+    function showLoading(element) {
+        element.classList.add('loading');
+        const originalText = element.innerHTML;
+        element.innerHTML = '<span class="spinner me-2"></span>Đang xử lý...';
+        return originalText;
+    }
+
+    function hideLoading(element, originalText) {
+        element.classList.remove('loading');
+        element.innerHTML = originalText;
+    }
+
     $(document).ready(function () {
         toggleDiscountFields();
         toggleUsageCount();
 
-        $('input[name="loai"]').on('change', toggleDiscountFields);
-        $('input[name="kieuPhieu"]').on('change', toggleUsageCount);
+        const isEditable = [[${getStatus.apply(voucher) == 'Sắp diễn ra'}]];
+        const isPublicVoucher = [[${kieuPhieu == 'cong_khai'}]];
 
-        $('#searchCustomerInput').on('keyup', function () {
-            const keyword = $(this).val().toLowerCase();
-            $('#customerTableBody tr').each(function () {
-                $(this).toggle($(this).text().toLowerCase().indexOf(keyword) > -1);
-            });
-        });
+        if (isEditable || isPublicVoucher) {
+            const fields = [
+                { id: '#giaTriGiam', allowDecimal: true, editable: isEditable },
+                { id: '#giaTriGiamToiDa', allowDecimal: true, editable: isEditable },
+                { id: '#giaTriGiamToiThieu', allowDecimal: true, editable: isEditable },
+                { id: '#gioiHanSuDung', allowDecimal: false, editable: isEditable || isPublicVoucher }
+            ];
 
-        const fields = [
-            { id: '#giaTriGiam', allowDecimal: true },
-            { id: '#giaTriGiamToiDa', allowDecimal: true },
-            { id: '#giaTriGiamToiThieu', allowDecimal: true },
-            { id: '#gioiHanSuDung', allowDecimal: false }
-        ];
-
-        fields.forEach(function (field) {
-            $(field.id).on('blur', function () {
-                const formatted = formatNumberVN($(this).val(), field.allowDecimal);
-                $(this).val(formatted);
-            });
-        });
-
-        $('form').on('submit', function () {
             fields.forEach(function (field) {
-                const $el = $(field.id);
-                $el.val(parseNumber($el.val()));
+                if (field.editable) {
+                    $(field.id).on('blur', function () {
+                        const formatted = formatNumberVN($(this).val(), field.allowDecimal);
+                        $(this).val(formatted);
+                    });
+
+                    // Real-time validation
+                    $(field.id).on('input', function () {
+                        $(this).removeClass('is-invalid');
+                    });
+                }
             });
+
+            // Enhanced form submission with loading state
+            const $form = $('#editVoucherForm');
+            const $saveButton = $('#saveButton');
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
+
+            $form.on('submit', function (e) {
+                e.preventDefault();
+
+                // Form validation
+                if (!validateForm()) {
+                    return;
+                }
+
+                confirmModal.show();
+            });
+
+            $('#confirmEditButton').on('click', function () {
+                const originalText = showLoading(this);
+
+                fields.forEach(function (field) {
+                    if (field.editable) {
+                        const $el = $(field.id);
+                        $el.val(parseNumber($el.val()));
+                    }
+                });
+
+                setTimeout(() => {
+                    $form[0].submit();
+                }, 500);
+            });
+        }
+
+        if (isEditable) {
+            // Enhanced search with debounce
+            let searchTimeout;
+            $('#searchCustomerInput').on('keyup', function () {
+                clearTimeout(searchTimeout);
+                const keyword = $(this).val().toLowerCase();
+
+                searchTimeout = setTimeout(() => {
+                    $('#customerTableBody tr').each(function () {
+                        const text = $(this).text().toLowerCase();
+                        $(this).toggle(text.indexOf(keyword) > -1);
+                    });
+
+                    // Update select all checkbox state
+                    updateSelectAllState();
+                }, 300);
+            });
+
+            // Enhanced select all functionality
+            $('#selectAllCheckbox').on('change', function () {
+                const checked = $(this).is(':checked');
+                $('#customerTableBody tr:visible input[type="checkbox"]').prop('checked', checked);
+            });
+
+            // Update select all state when individual checkboxes change
+            $(document).on('change', '#customerTableBody input[type="checkbox"]', function () {
+                updateSelectAllState();
+            });
+        }
+
+        // Enhanced toast display
+        showToasts();
+
+        // Auto-hide alerts after 5 seconds
+        setTimeout(() => {
+            $('.alert').fadeOut();
+        }, 5000);
+    });
+
+    function validateForm() {
+        let isValid = true;
+        const requiredFields = ['input[name="ten"]', '#giaTriGiam', 'input[name="ngayBatDau"]', 'input[name="ngayKetThuc"]'];
+
+        requiredFields.forEach(selector => {
+            const $field = $(selector);
+            if (!$field.val().trim()) {
+                $field.addClass('is-invalid');
+                isValid = false;
+            } else {
+                $field.removeClass('is-invalid');
+            }
         });
 
-        $('#selectAllCheckbox').on('change', function () {
-            const checked = $(this).is(':checked');
-            $('#customerTableBody input[type="checkbox"]').prop('checked', checked);
-        });
-    });
+        // Date validation
+        const startDate = new Date($('input[name="ngayBatDau"]').val());
+        const endDate = new Date($('input[name="ngayKetThuc"]').val());
+
+        if (startDate >= endDate) {
+            $('input[name="ngayKetThuc"]').addClass('is-invalid');
+            showToast('Ngày kết thúc phải sau ngày bắt đầu!', 'error');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            showToast('Vui lòng điền đầy đủ thông tin bắt buộc!', 'error');
+        }
+
+        return isValid;
+    }
+
+    function updateSelectAllState() {
+        const $visibleCheckboxes = $('#customerTableBody tr:visible input[type="checkbox"]');
+        const $checkedBoxes = $visibleCheckboxes.filter(':checked');
+        const $selectAll = $('#selectAllCheckbox');
+
+        if ($checkedBoxes.length === 0) {
+            $selectAll.prop('indeterminate', false).prop('checked', false);
+        } else if ($checkedBoxes.length === $visibleCheckboxes.length) {
+            $selectAll.prop('indeterminate', false).prop('checked', true);
+        } else {
+            $selectAll.prop('indeterminate', true);
+        }
+    }
 
     function toggleDiscountFields() {
         const type = $('input[name="loai"]:checked').val();
@@ -227,9 +988,41 @@
         if (isCaNhan) {
             $luot.val('1').prop('readonly', true);
         } else {
-            // ✅ Không reset về rỗng – giữ nguyên giá trị gốc đã được truyền từ controller
-            $luot.prop('readonly', false);
+            $luot.prop('readonly', [[${getStatus.apply(voucher) != 'Sắp diễn ra' and kieuPhieu != 'cong_khai'}]]);
         }
+    }
+
+    function showToasts() {
+        const toasts = ['#successToast', '#errorToast', '#infoToast'];
+        toasts.forEach(id => {
+            const toastEl = document.querySelector(id);
+            if (toastEl) {
+                new bootstrap.Toast(toastEl, { delay: 5000 }).show();
+            }
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        const toastHtml = `
+            <div class="toast align-items-center text-bg-${type === 'error' ? 'danger' : type} border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+
+        const $container = $('.position-fixed.bottom-0.end-0');
+        const $toast = $(toastHtml).appendTo($container);
+        new bootstrap.Toast($toast[0], { delay: 4000 }).show();
+
+        // Remove toast element after it's hidden
+        $toast.on('hidden.bs.toast', function () {
+            $(this).remove();
+        });
     }
 </script>
 </body>

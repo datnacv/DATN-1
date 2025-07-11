@@ -9,6 +9,8 @@
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script th:src="@{/js/sidebar.js}" defer></script>
 
   <style>
     .card-box {
@@ -88,13 +90,16 @@
   </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 justify-content-between fixed-top">
-  <div class="d-flex align-items-center">
-    <div th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
-  </div>
-</nav>
 <div class="d-flex">
-  <div class="content container mt-5 pt-3">
+  <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
+
+  <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
+    <!-- Các phần tử khác bên trái (nếu có) -->
+
+    <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+  </nav>
+  <!-- Nội dung chính bên phải -->
+  <div class="content" id="content">
     <h1 style="text-align: center">THỐNG KÊ</h1>
     <!-- Hiển thị thông báo lỗi -->
     <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>
@@ -155,7 +160,13 @@
               <tbody>
               <tr th:each="item, stat : ${topSellingProducts}">
                 <td th:text="${stat.index + 1}">1</td>
-                <td><img th:src="@{'/images/' + ${item.imageUrl}}" style="height:60px;" alt="ảnh" th:if="${item.imageUrl != null}" /></td>
+                <td>
+                  <img th:if="${item.imageUrl != null}"
+                       th:src="${item.imageUrl}"
+                       style="height: 60px;"
+                       alt="ảnh"/>
+                </td>
+
                 <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
                 <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
                 <td th:text="${item.soLuongDaBan}"></td>
@@ -171,7 +182,7 @@
       <div class="col-md-6">
         <!-- Trạng thái đơn hàng tháng này -->
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Trạng thái đơn hàng tháng này 😊</h5>
+          <h5 class="fw-bold mb-3">Trạng thái đơn hàng </h5>
           <div class="row">
             <div class="col-md-6">
               <ul class="status-list">
@@ -202,7 +213,12 @@
               <tbody>
               <tr th:each="item, stat : ${lowStockProducts}">
                 <td th:text="${stat.index + 1}">1</td>
-                <td><img th:src="@{'/images/' + ${item.imageUrl}}" style="height:60px;" alt="ảnh" th:if="${item.imageUrl != null}" /></td>
+                <td>
+                  <img th:if="${item.imageUrl != null}"
+                       th:src="${item.imageUrl}"
+                       style="height: 60px;"
+                       alt="ảnh"/>
+                </td>
                 <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
                 <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
                 <td th:text="${item.soLuongTonKho}"></td>
@@ -338,7 +354,7 @@
 </script>
 
 <!-- Filter form ẩn -->
-<form id="filterForm" method="get" th:action="@{/acvstore/thongke}" style="display: none;">
+<form id="filterForm" method="get" th:action="@{/acvstore/thong-ke}" style="display: none;">
   <input type="hidden" name="boLoc" id="filterInput">
   <input type="hidden" name="ngayBatDau" id="startDateInput">
   <input type="hidden" name="ngayKetThuc" id="endDateInput">
@@ -433,10 +449,10 @@
   }
 
   function exportExcel() {
-    window.location.href = '/acvstore/thongke/export?' + new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
+    window.location.href = '/acvstore/thong-ke/export?' + new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
   }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

@@ -1,8 +1,8 @@
 package com.example.AsmGD1.service.SanPham;
 
-import com.example.AsmGD1.dto.ChiTietSanPhamBatchDto;
-import com.example.AsmGD1.dto.ChiTietSanPhamUpdateDto;
-import com.example.AsmGD1.dto.ChiTietSanPhamVariationDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
+import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamVariationDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.SanPham.*;
 import com.example.AsmGD1.util.CloudinaryUtil;
@@ -21,8 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +43,9 @@ public class ChiTietSanPhamService {
 
     private final String UPLOAD_DIR;
 
+    public List<ChiTietSanPham> findAllByTrangThaiAndKeyword(String keyword) {
+        return chiTietSanPhamRepo.findAllByTrangThaiAndKeyword(keyword);
+    }
     public ChiTietSanPhamService() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {
@@ -63,9 +65,62 @@ public class ChiTietSanPhamService {
         }
     }
 
+    public List<ChiTietSanPham> findByFilters(UUID productId, UUID colorId, UUID sizeId, UUID originId, UUID materialId,
+                                              UUID styleId, UUID sleeveId, UUID collarId, UUID brandId, String gender, Boolean status) {
+        StringBuilder query = new StringBuilder("SELECT ct FROM ChiTietSanPham ct " +
+                "JOIN FETCH ct.sanPham sp " +
+                "JOIN FETCH ct.kichCo kc " +
+                "JOIN FETCH ct.mauSac ms " +
+                "WHERE sp.id = :productId");
+        Map<String, Object> params = new HashMap<>();
+        params.put("productId", productId);
+
+        if (colorId != null) {
+            query.append(" AND ct.mauSac.id = :colorId");
+            params.put("colorId", colorId);
+        }
+        if (sizeId != null) {
+            query.append(" AND ct.kichCo.id = :sizeId");
+            params.put("sizeId", sizeId);
+        }
+        if (originId != null) {
+            query.append(" AND ct.xuatXu.id = :originId");
+            params.put("originId", originId);
+        }
+        if (materialId != null) {
+            query.append(" AND ct.chatLieu.id = :materialId");
+            params.put("materialId", materialId);
+        }
+        if (styleId != null) {
+            query.append(" AND ct.kieuDang.id = :styleId");
+            params.put("styleId", styleId);
+        }
+        if (sleeveId != null) {
+            query.append(" AND ct.tayAo.id = :sleeveId");
+            params.put("sleeveId", sleeveId);
+        }
+        if (collarId != null) {
+            query.append(" AND ct.coAo.id = :collarId");
+            params.put("collarId", collarId);
+        }
+        if (brandId != null) {
+            query.append(" AND ct.thuongHieu.id = :brandId");
+            params.put("brandId", brandId);
+        }
+        if (gender != null && !gender.isEmpty()) {
+            query.append(" AND ct.gioiTinh = :gender");
+            params.put("gender", gender);
+        }
+        if (status != null) {
+            query.append(" AND ct.trangThai = :status");
+            params.put("status", status);
+        }
+
+        return chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
+    }
 
     @Transactional
-    public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto, List<MultipartFile> imageFiles) {
+    public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
         SanPham sanPham = sanPhamRepo.findById(batchDto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại ID: " + batchDto.getProductId()));
         XuatXu xuatXu = xuatXuRepo.findById(batchDto.getOriginId())
@@ -84,7 +139,7 @@ public class ChiTietSanPhamService {
         for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
             if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
                     variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
-                continue; // Bỏ qua các biến thể không hợp lệ
+                continue;
             }
 
             MauSac mauSac = mauSacRepo.findById(variationDto.getColorId())
@@ -106,19 +161,22 @@ public class ChiTietSanPhamService {
             pd.setSoLuongTonKho(variationDto.getStockQuantity());
             pd.setGioiTinh(batchDto.getGender());
             pd.setThoiGianTao(LocalDateTime.now());
-            pd.setTrangThai(true);
+            pd.setTrangThai(variationDto.getStockQuantity() > 0);
 
             ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
             try {
                 QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
             } catch (IOException | WriterException e) {
-                System.err.println("❌ Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId());
-                e.printStackTrace();
+                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId(), e);
             }
 
-            if (imageFiles != null && !imageFiles.isEmpty()) {
-                saveImagesToCloudinary(savedDetail, imageFiles.stream().limit(3).collect(Collectors.toList()));
+            // Lưu ảnh cho biến thể dựa trên colorId
+            List<MultipartFile> variationImages = batchDto.getColorImages() != null
+                    ? batchDto.getColorImages().getOrDefault(variationDto.getColorId(), new ArrayList<>())
+                    : new ArrayList<>();
+            if (!variationImages.isEmpty()) {
+                saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
         }
     }
@@ -158,7 +216,7 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(true);
+        pd.setTrangThai(dto.getStockQuantity() > 0 ? true : dto.getStatus() != null ? dto.getStatus() : true);
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -193,20 +251,14 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(true);
+        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
+        logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
         chiTietSanPhamRepo.save(existingDetail);
 
         if (imageFiles != null && imageFiles.length > 0) {
             saveImagesToCloudinary(existingDetail, List.of(imageFiles));
         }
-    }
-
-    @Transactional
-    public void deleteById(UUID id) {
-        ChiTietSanPham pd = chiTietSanPhamRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + id));
-        chiTietSanPhamRepo.delete(pd);
     }
 
     @Transactional
@@ -223,14 +275,14 @@ public class ChiTietSanPhamService {
         }
     }
 
-    private void saveImagesToCloudinary(ChiTietSanPham ChiTietSanPham, List<MultipartFile> imageFiles) {
-        List<MultipartFile> limitedImages = imageFiles.stream().limit(3).collect(Collectors.toList());
-        for (MultipartFile file : limitedImages) {
+    private void saveImagesToCloudinary(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
+        for (int i = 0; i < imageFiles.size() && i < 3; i++) {
+            MultipartFile file = imageFiles.get(i);
             if (file != null && !file.isEmpty()) {
                 try {
                     String imageUrl = cloudinaryUtil.uploadImage(file);
                     HinhAnhSanPham img = new HinhAnhSanPham();
-                    img.setChiTietSanPham(ChiTietSanPham);
+                    img.setChiTietSanPham(chiTietSanPham);
                     img.setUrlHinhAnh(imageUrl);
                     hinhAnhSanPhamRepo.save(img);
                 } catch (IOException e) {
@@ -292,6 +344,10 @@ public class ChiTietSanPhamService {
         return list;
     }
 
+    public List<ChiTietSanPham> findAllByTrangThai() {
+        return chiTietSanPhamRepo.findAllByTrangThai();
+    }
+
     @Transactional
     public void saveChiTietSanPhamWithImages(ChiTietSanPham pd, MultipartFile[] imageFiles) {
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
@@ -306,7 +362,7 @@ public class ChiTietSanPhamService {
         saveImagesForChiTietSanPham(savedDetail, imageFiles);
     }
 
-    private void saveImagesForChiTietSanPham(ChiTietSanPham ChiTietSanPham, MultipartFile[] imageFiles) {
+    private void saveImagesForChiTietSanPham(ChiTietSanPham chiTietSanPham, MultipartFile[] imageFiles) {
         if (imageFiles != null) {
             for (MultipartFile file : imageFiles) {
                 if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
@@ -320,7 +376,7 @@ public class ChiTietSanPhamService {
                         Files.write(filePath, file.getBytes());
 
                         HinhAnhSanPham img = new HinhAnhSanPham();
-                        img.setChiTietSanPham(ChiTietSanPham);
+                        img.setChiTietSanPham(chiTietSanPham);
                         img.setUrlHinhAnh(filename);
                         hinhAnhSanPhamRepo.save(img);
                     } catch (IOException e) {
@@ -330,5 +386,26 @@ public class ChiTietSanPhamService {
                 }
             }
         }
+    }
+
+    /* Hàm xét số lượng về 0 khi bán hàng tại quầy */
+    @Transactional
+    public ChiTietSanPham updateStockAndStatus(UUID productDetailId, int quantityChange) {
+        ChiTietSanPham productDetail = chiTietSanPhamRepo.findById(productDetailId)
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + productDetailId));
+
+        // Cập nhật số lượng tồn kho
+        int newStock = productDetail.getSoLuongTonKho() + quantityChange;
+        if (newStock < 0) {
+            throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + productDetail.getSanPham().getTenSanPham());
+        }
+
+        productDetail.setSoLuongTonKho(newStock);
+
+        // Tự động cập nhật trạng thái
+        productDetail.setTrangThai(newStock > 0);
+
+        // Lưu thay đổi vào cơ sở dữ liệu
+        return chiTietSanPhamRepo.save(productDetail);
     }
 }
