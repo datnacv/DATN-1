@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -113,7 +112,7 @@
                 <div class="d-flex">
                     <div class="alert-body">
                         <i class="fas fa-info-circle me-2"></i>
-                        Chiến dịch đang diễn ra, chỉ có thể xem thông tin.
+                        Chiến dịch đang diễn ra hoặc đã kết thúc, chỉ có thể xem thông tin.
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -251,7 +250,6 @@
     const selectedProductIds = new Set([[${selectedProductIds}]].map(String));
     const selectedDetailIds = new Set([[${#strings.listJoin(selectedDetails.![id], ',')}]].split(",").filter(id => id));
 
-    // Hàm định dạng giá tiền trong JavaScript
     function formatPrice(price) {
         if (price == null) return 'Không có giá';
         return new Intl.NumberFormat('vi-VN', {
@@ -259,7 +257,6 @@
             maximumFractionDigits: 0
         }).format(price) + ' VNĐ';
     }
-
 
     function updateSelectAll(selector, masterId) {
         const all = document.querySelectorAll(selector);
@@ -280,14 +277,12 @@
     function loadProductDetails() {
         const container = document.getElementById("productDetailTableBody");
         if ([[${isReadOnly}]]) {
-            // For ONGOING campaigns, rely on Thymeleaf-rendered selectedDetails
             if ([[${selectedDetails}]].length === 0) {
                 container.innerHTML = `<tr><td colspan="6" class="text-error">Chưa có chi tiết sản phẩm nào được chọn</td></tr>`;
             }
             return;
         }
 
-        // For non-ONGOING campaigns, fetch additional details if products are selected
         if (selectedProductIds.size === 0) {
             container.innerHTML = `<tr><td colspan="6" class="text-error">Chưa chọn sản phẩm nào</td></tr>`;
             return;

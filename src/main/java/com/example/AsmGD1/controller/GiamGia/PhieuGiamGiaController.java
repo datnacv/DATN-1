@@ -318,8 +318,8 @@ public class PhieuGiamGiaController {
         PhieuGiamGia existing = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
         String status = getTrangThai(existing);
-        if ("Đang diễn ra".equals(status) || "Không xác định".equals(status)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không thể chỉnh sửa phiếu giảm giá đang diễn ra hoặc không xác định.");
+        if (!"Sắp diễn ra".equals(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể chỉnh sửa phiếu giảm giá ở trạng thái 'Sắp diễn ra'.");
             return "redirect:/acvstore/phieu-giam-gia";
         }
 

@@ -130,7 +130,7 @@ public class ChienDichGiamGiaController {
         ChienDichGiamGia chienDich = chienDichService.timTheoId(id).orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
         String status = getStatus(chienDich);
-        model.addAttribute("isReadOnly", "ONGOING".equals(status)); // Set read-only mode for ONGOING campaigns
+        model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status)); // Set read-only for ONGOING or ENDED
         model.addAttribute("chienDich", chienDich);
 
         List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
@@ -160,13 +160,18 @@ public class ChienDichGiamGiaController {
                                    @RequestParam("selectedProductDetailIds") List<UUID> danhSachChiTietId,
                                    Model model, RedirectAttributes redirectAttributes) {
 
-        ChienDichGiamGia chienDichCu = chienDichService.timTheoId(chienDich.getId()).orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
+        // Lấy chiến dịch cũ từ CSDL
+        ChienDichGiamGia chienDichCu = chienDichService.timTheoId(chienDich.getId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
-        if (getStatus(chienDichCu).equals("ONGOING")) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Không thể cập nhật chiến dịch đang diễn ra.");
+        // Kiểm tra trạng thái - chỉ cho phép chỉnh sửa nếu là UPCOMING
+        String currentStatus = getStatus(chienDichCu);
+        if (!"UPCOMING".equals(currentStatus)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể chỉnh sửa chiến dịch sắp diễn ra. Chiến dịch đang diễn ra hoặc đã kết thúc không thể chỉnh sửa.");
             return "redirect:/acvstore/chien-dich-giam-gia";
         }
 
+        // Validate dữ liệu
         String error = validateChienDich(chienDich, danhSachChiTietId, false, chienDichCu);
         if (error != null) {
             model.addAttribute("errorMessage", error);
@@ -183,6 +188,7 @@ public class ChienDichGiamGiaController {
             return "WebQuanLy/discount-campaign-edit";
         }
 
+        // Tiến hành cập nhật
         try {
             chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chiến dịch thành công!");
@@ -200,6 +206,7 @@ public class ChienDichGiamGiaController {
             model.addAttribute("isReadOnly", false);
             return "WebQuanLy/discount-campaign-edit";
         }
+
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
 
