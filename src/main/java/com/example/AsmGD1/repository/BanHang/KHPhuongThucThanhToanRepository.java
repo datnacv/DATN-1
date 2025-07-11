@@ -1,4 +1,4 @@
-package com.example.AsmGD1.repository.WebKhachHang;
+package com.example.AsmGD1.repository.BanHang;
 
 import com.example.AsmGD1.entity.PhuongThucThanhToan;
 import org.springframework.data.jpa.repository.JpaRepository;

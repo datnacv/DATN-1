@@ -188,6 +188,8 @@ CREATE TABLE don_hang (
                           FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
 
+select * from don_hang where ma_don_hang = 'DH05764A27'
+
 -- 18. Bảng chi tiết đơn hàng
 CREATE TABLE chi_tiet_don_hang (
                                    id UNIQUEIDENTIFIER PRIMARY KEY,
@@ -452,6 +454,7 @@ SELECT * FROM chi_tiet_don_hang;
 SELECT * FROM hoa_don;
 SELECT * FROM phieu_giam_gia_cua_nguoi_dung;
 SELECT * FROM chi_tiet_san_pham_chien_dich_giam_gia;
+ALTER TABLE don_hang ADD ghi_chu NVARCHAR(MAX);
 ALTER TABLE phieu_giam_gia ADD gia_tri_giam_toi_da DECIMAL(10, 2);
 ALTER TABLE phieu_giam_gia ADD ma VARCHAR(50);
 ALTER TABLE chien_dich_giam_gia
