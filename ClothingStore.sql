@@ -612,4 +612,3 @@ SET so_luong_ton_kho = so_luong_ton_kho + @so_luong
 WHERE id = @id_chi_tiet_san_pham;
 END
 END;
-SELECT * FROM nguoi_dung

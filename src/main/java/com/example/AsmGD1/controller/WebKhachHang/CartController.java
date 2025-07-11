@@ -4,6 +4,7 @@ import com.example.AsmGD1.dto.BanHang.CartAddDto;
 import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
@@ -29,6 +30,9 @@ public class CartController {
 
     @Autowired
     private ChiTietGioHangService chiTietGioHangService;
+
+    @Autowired
+    private NguoiDungRepository nguoiDungRepository;
 
     @Autowired
     private NguoiDungService nguoiDungService;
@@ -156,5 +160,24 @@ public class CartController {
 
         return null;
     }
-
+//    private UUID getNguoiDungIdFromAuthentication(Authentication authentication) {
+//        if (authentication == null || !authentication.isAuthenticated()) {
+//            return null;
+//        }
+//
+//        Object principal = authentication.getPrincipal();
+//
+//        if (principal instanceof NguoiDung) {
+//            return ((NguoiDung) principal).getId();
+//        }
+//
+//        // Nếu principal là String (username), thì fetch từ DB
+//        if (principal instanceof String) {
+//            NguoiDung nguoiDung = nguoiDungRepository.findByTenDangNhap((String) principal)
+//                    .orElse(null);
+//            return nguoiDung != null ? nguoiDung.getId() : null;
+//        }
+//
+//        return null;
+//    }
 }

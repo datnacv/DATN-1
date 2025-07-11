@@ -1,6 +1,5 @@
 package com.example.AsmGD1.entity;
 
-
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -17,7 +16,7 @@ public class DonHangTam {
     private UUID id;
 
     @Column(name = "tabId")
-    private String tabId; // Thêm trường này
+    private String tabId;
 
     @Column(name = "id_khach_hang")
     private UUID khachHang;
@@ -48,6 +47,18 @@ public class DonHangTam {
 
     @Column(name = "id_phieu_giam_gia")
     private UUID phieuGiamGia;
+
+    @Column(name = "diaChiGiaoHang")
+    private String diaChiGiaoHang; // Thêm cột địa chỉ giao hàng
+
+    @Column(name = "ghiChu")
+    private String ghiChu; // Thêm cột ghi chú
+
+    @Column(name = "trang_thai")
+    private Boolean trangThai; // Thêm cột trạng thái (0: chưa hoàn tất, 1: đã xác nhận)
+
+    @Column(name = "phuongThucVanChuyen")
+    private String phuongThucVanChuyen; // Thêm cột phương thức vận chuyển
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_khach_hang", referencedColumnName = "id", insertable = false, updatable = false)
