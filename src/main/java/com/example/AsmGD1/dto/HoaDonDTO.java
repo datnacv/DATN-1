@@ -15,12 +15,14 @@
         private String maHoaDon;
         private String tenKhachHang;
         private String soDienThoaiKhachHang;
+        private String diaChi; // Thêm trường diaChi
         private BigDecimal tongTienHang;
         private BigDecimal tienGiam;
         private BigDecimal tongTien;
         private String phuongThucThanhToan;
-        private boolean trangThaiThanhToan;
+        private String trangThaiThanhToan;
         private LocalDateTime thoiGianTao;
+        private LocalDateTime ngayThanhToan; // Thêm trường này
         private String ghiChu; // Thay diaChiGiaoHang bằng ghiChu
         private List<GioHangItemDTO> danhSachSanPham;
         private BigDecimal phiVanChuyen; // Thêm trường này

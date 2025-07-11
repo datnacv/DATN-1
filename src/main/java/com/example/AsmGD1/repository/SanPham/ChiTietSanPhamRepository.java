@@ -20,6 +20,10 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.trangThai = true AND (c.sanPham.tenSanPham LIKE %:keyword% OR c.mauSac.tenMau LIKE %:keyword% OR c.kichCo.ten LIKE %:keyword%)")
     List<ChiTietSanPham> findAllByTrangThaiAndKeyword(@Param("keyword") String keyword);
 
+    @Modifying
+    @Query("UPDATE ChiTietSanPham c SET c.soLuongTonKho = c.soLuongTonKho + :quantity WHERE c.id = :id")
+    void updateStock(UUID id, int quantity);
+
     @Query("SELECT ct FROM ChiTietSanPham ct " +
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +

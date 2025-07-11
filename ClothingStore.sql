@@ -202,6 +202,11 @@ CREATE TABLE chi_tiet_don_hang (
                                    FOREIGN KEY (id_don_hang) REFERENCES don_hang(id) ON DELETE CASCADE,
                                    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
+ALTER TABLE chi_tiet_don_hang
+    ADD ly_do_tra_hang NVARCHAR(MAX);
+
+
+
 
 -- 19. Bảng hóa đơn
 CREATE TABLE hoa_don (
@@ -214,7 +219,7 @@ CREATE TABLE hoa_don (
                          tong_tien DECIMAL(10,2) NOT NULL,
                          tien_giam DECIMAL(10,2),
                          id_phuong_thuc_thanh_toan UNIQUEIDENTIFIER,
-                         trang_thai BIT NOT NULL,
+                         trang_thai NVARCHAR(50) NOT NULL,
                          ghi_chu NVARCHAR(MAX),
                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id),
                          FOREIGN KEY (id_don_hang) REFERENCES don_hang(id),
@@ -229,6 +234,20 @@ CREATE TABLE lich_su_hoa_don (
                                  ghi_chu NVARCHAR(MAX),
                                  FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id)
 );
+
+CREATE TABLE lich_su_tra_hang (
+                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                  id_chi_tiet_don_hang UNIQUEIDENTIFIER NOT NULL,
+                                  id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+                                  so_luong INT NOT NULL,
+                                  tong_tien_hoan DECIMAL(10,2) NOT NULL,
+                                  ly_do_tra_hang NVARCHAR(MAX),
+                                  thoi_gian_tra DATETIME NOT NULL DEFAULT GETDATE(),
+                                  trang_thai NVARCHAR(50) NOT NULL DEFAULT N'Đã trả',
+                                  FOREIGN KEY (id_chi_tiet_don_hang) REFERENCES chi_tiet_don_hang(id),
+                                  FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id)
+);
+
 
 -- 20. Bảng ticket giảm giá của người dùng
 CREATE TABLE phieu_giam_gia_cua_nguoi_dung (
@@ -418,9 +437,31 @@ INSERT INTO chi_tiet_don_hang (id, id_don_hang, id_chi_tiet_san_pham, so_luong, 
     ('550E8400-E29B-41D4-A716-446655440029', '550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440022', 2, 100000.00, N'Áo thun nam cổ tròn', 200000.00, N'Kích cỡ S, màu đen', 0);
 
 -- 19. Insert vào bảng hoa_don
-INSERT INTO hoa_don (id, id_nguoi_dung, id_don_hang, id_ma_giam_gia, ngay_tao, ngay_thanh_toan, tong_tien, tien_giam, id_phuong_thuc_thanh_toan, trang_thai, ghi_chu) VALUES
-    ('550E8400-E29B-41D4-A716-446655440030', '550E8400-E29B-41D4-A716-446655440014', '550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440019', GETDATE(), GETDATE(), 230000.00, 20000.00, '550E8400-E29B-41D4-A716-446655440017', 1, N'Hoàn tất');
-
+INSERT INTO hoa_don (
+    id,
+    id_nguoi_dung,
+    id_don_hang,
+    id_ma_giam_gia,
+    ngay_tao,
+    ngay_thanh_toan,
+    tong_tien,
+    tien_giam,
+    id_phuong_thuc_thanh_toan,
+    trang_thai,
+    ghi_chu
+) VALUES (
+             '550E8400-E29B-41D4-A716-446655440030',
+             '550E8400-E29B-41D4-A716-446655440014',
+             '550E8400-E29B-41D4-A716-446655440028',
+             '550E8400-E29B-41D4-A716-446655440019',
+             GETDATE(),
+             GETDATE(),
+             230000.00,
+             20000.00,
+             '550E8400-E29B-41D4-A716-446655440017',
+             N'Hoàn tất',
+             N'Hoàn tất'
+         );
 -- 20. Insert vào bảng phieu_giam_gia_cua_nguoi_dung
 INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_nguoi_dung, id_phieu_giam_gia, da_gui_mail) VALUES
     ('550E8400-E29B-41D4-A716-446655440031', '550E8400-E29B-41D4-A716-446655440014', '550E8400-E29B-41D4-A716-446655440016', 0);
@@ -551,3 +592,26 @@ INSERT INTO don_hang (id, id_nguoi_dung, ma_don_hang, trang_thai_thanh_toan, phi
 VALUES (NEWID(), '550E8400-E29B-41D4-A716-446655440014', N'DH006', 1, 30000.00, '550E8400-E29B-41D4-A716-446655440017', 230000.00, GETDATE(), GETDATE(), 20000.00, 230000.00, N'Giao hàng');
 
 select * from nguoi_dung
+
+select * from chi_tiet_don_hang
+
+
+
+    Go
+CREATE TRIGGER trg_update_inventory_on_return
+    ON chi_tiet_don_hang
+    AFTER UPDATE
+              AS
+BEGIN
+    IF UPDATE(trang_thai_hoan_tra)
+BEGIN
+        DECLARE @id_chi_tiet_san_pham UNIQUEIDENTIFIER, @so_luong INT;
+SELECT @id_chi_tiet_san_pham = i.id_chi_tiet_san_pham, @so_luong = i.so_luong
+FROM inserted i
+WHERE i.trang_thai_hoan_tra = 1;
+
+UPDATE chi_tiet_san_pham
+SET so_luong_ton_kho = so_luong_ton_kho + @so_luong
+WHERE id = @id_chi_tiet_san_pham;
+END
+END;

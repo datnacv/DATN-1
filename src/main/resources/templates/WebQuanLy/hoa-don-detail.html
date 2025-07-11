@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -67,6 +66,7 @@
             margin-top: 80px;
             min-height: calc(100vh - 80px);
         }
+
         .sidebar-container {
             background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
             color: #ffffff;
@@ -504,7 +504,7 @@
             color: #000;
         }
 
-        .status-confirmed {
+        .status-confirmed-bg {
             background: linear-gradient(135deg, #198754 0%, #157347 100%);
             color: #fff;
         }
@@ -519,8 +519,28 @@
             color: #fff;
         }
 
-        .status-complete {
+        .status-completed-bg {
             background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: #fff;
+        }
+
+        /* Thêm style cho badge để tăng kích thước */
+        .badge {
+            padding: 0.75rem 1.25rem; /* Tăng padding */
+            font-size: 1rem; /* Tăng kích thước chữ */
+            border-radius: 10px; /* Điều chỉnh bo góc */
+            font-weight: 600; /* Tăng độ đậm chữ */
+            min-width: 60px; /* Đặt độ rộng tối thiểu */
+            text-align: center; /* Căn giữa văn bản */
+        }
+
+        .badge.bg-success {
+            background: linear-gradient(135deg, #198754 0%, #157347 100%); /* Giữ gradient */
+            color: #fff;
+        }
+
+        .badge.bg-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); /* Giữ gradient */
             color: #fff;
         }
 
@@ -587,6 +607,12 @@
             table {
                 min-width: 600px;
             }
+
+            .badge {
+                padding: 0.5rem 1rem; /* Giảm padding trên màn hình nhỏ */
+                font-size: 0.9rem; /* Giảm kích thước chữ */
+                min-width: 60px; /* Giảm độ rộng tối thiểu */
+            }
         }
 
         @media print {
@@ -617,8 +643,6 @@
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-        <!-- Các phần tử khác bên trái (nếu có) -->
-
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <div class="content" id="content">
@@ -631,25 +655,24 @@
                 </a>
                 <div th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
                     <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
-                            th:disabled="${hoaDon.trangThai != null and hoaDon.trangThai}">
+                            th:disabled="${hoaDon.trangThai != 'Chưa xác nhận'}">
                         <i class="fas fa-check"></i> Xác nhận đơn hàng
                     </button>
                     <button id="deliveryButton" class="btn-custom btn-delivery" onclick="confirmDelivery()"
-                            th:disabled="${hoaDon.trangThai == null or !hoaDon.trangThai or hoaDon.ghiChu != null and (hoaDon.ghiChu.contains('Đang vận chuyển') or hoaDon.ghiChu.contains('Vận chuyển thành công') or hoaDon.ghiChu.contains('Hoàn thành'))}">
+                            th:disabled="${hoaDon.trangThai != 'Đã xác nhận'}">
                         <i class="fas fa-truck"></i> Đang vận chuyển
                     </button>
                     <button id="deliveredButton" class="btn-custom btn-delivered" onclick="confirmDelivered()"
-                            th:disabled="${hoaDon.ghiChu == null or !hoaDon.ghiChu.contains('Đang vận chuyển') or hoaDon.ghiChu.contains('Vận chuyển thành công') or hoaDon.ghiChu.contains('Hoàn thành')}">
+                            th:disabled="${hoaDon.trangThai != 'Đang vận chuyển'}">
                         <i class="fas fa-check-circle"></i> Vận chuyển thành công
                     </button>
                     <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
-                            th:disabled="${hoaDon.ghiChu == null or !hoaDon.ghiChu.contains('Vận chuyển thành công') or hoaDon.ghiChu.contains('Hoàn thành')}">
+                            th:disabled="${hoaDon.trangThai != 'Vận chuyển thành công'}">
                         <i class="fas fa-flag-checkered"></i> Hoàn thành
                     </button>
                 </div>
-                <!-- Chỉ hiển thị nút xác nhận nếu đơn hàng "Tại quầy" chưa được xác nhận -->
                 <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
-                        th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy') and (hoaDon.trangThai == null or !hoaDon.trangThai)}">
+                        th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy') and hoaDon.trangThai == 'Chưa xác nhận'}">
                     <i class="fas fa-check"></i> Xác nhận đơn hàng
                 </button>
                 <a id="downloadPdfLink" class="btn-custom btn-primary"
@@ -757,7 +780,7 @@
                             <tr>
                                 <td><strong th:text="${hoaDon.donHang.maDonHang}"></strong></td>
                                 <td th:text="${hoaDon.donHang.phuongThucBanHang ?: 'Không rõ'}"></td>
-                                <td><strong th:text="${#numbers.formatDecimal(hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0, 0, 0, 'POINT')} + ' VNĐ'"></strong></td>
+                                <td><strong id="phiVanChuyen" class="text-right" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0}"></strong></td>
                                 <td th:text="${#temporals.format(hoaDon.ngayTao, 'dd/MM/yyyy HH:mm:ss')}"></td>
                             </tr>
                             </tbody>
@@ -780,6 +803,7 @@
                                 <th class="text-right">Thành tiền</th>
                                 <th class="text-right">Tổng tiền</th>
                                 <th>Ghi chú</th>
+                                <th class="text-center">Hành động</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -793,12 +817,21 @@
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <span class="status-badge status-confirmed" th:text="${item.soLuong}"></span>
+                                    <span class="status-badge status-confirmed-bg" th:text="${item.soLuong}"></span>
                                 </td>
-                                <td class="text-right"><strong th:text="${#numbers.formatDecimal(item.gia, 0, 0, 'POINT')} + ' VNĐ'"></strong></td>
-                                <td class="text-right"><strong style="color: var(--btn-confirm-bg);" th:text="${#numbers.formatDecimal(item.thanhTien, 0, 0, 'POINT')} + ' VNĐ'"></strong></td>
-                                <td class="text-right"><strong th:text="${#numbers.formatDecimal(hoaDon.tongTien, 0, 0, 'POINT')} + ' VNĐ'"></strong></td>
+                                <td class="text-right"><strong id="donGia" th:attr="data-value=${item.gia}"></strong></td>
+                                <td class="text-right"><strong id="thanhTien" th:attr="data-value=${item.thanhTien}" style="color: var(--btn-confirm-bg);"></strong></td>
+                                <td class="text-right"><strong id="tongTien" th:attr="data-value=${hoaDon.tongTien}"></strong></td>
                                 <td th:text="${item.ghiChu ?: 'Không có'}"></td>
+                                <td class="text-center">
+                                    <div th:with="isReturnable=${(hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công') and (item.trangThaiHoanTra == false or item.trangThaiHoanTra == null)}">
+                                        <a th:if="${isReturnable}" class="btn btn-sm btn-primary" th:href="@{/acvstore/tra-hang/{hoaDonId}(hoaDonId=${hoaDon.id},chiTietDonHangId=${item.id})}">
+                                            <i class="fas fa-undo"></i> Trả hàng
+                                        </a>
+                                        <span th:if="${item.trangThaiHoanTra == true}" class="badge bg-success">Đã trả</span>
+                                        <span th:unless="${isReturnable or item.trangThaiHoanTra == true}" class="badge bg-secondary">Không thể trả</span>
+                                    </div>
+                                </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(hoaDon.donHang.chiTietDonHangs)}">
                                 <td colspan="7" class="text-center py-4" style="color: var(--text-muted);">
@@ -828,7 +861,7 @@
                             <tr th:each="lichSu : ${hoaDon.lichSuHoaDons}">
                                 <td th:text="${#temporals.format(lichSu.thoiGian, 'dd/MM/yyyy HH:mm:ss')}"></td>
                                 <td>
-                                    <span class="status-badge" th:classappend="${lichSu.trangThai == 'Chưa xác nhận' ? 'status-pending' : lichSu.trangThai == 'Đã xác nhận' ? 'status-confirmed' : lichSu.trangThai == 'Đang vận chuyển' ? 'status-shipping' : lichSu.trangThai == 'Vận chuyển thành công' ? 'status-delivered' : 'status-complete'}" th:text="${lichSu.trangThai}"></span>
+                                    <span class="status-badge" th:classappend="${lichSu.trangThai == 'Chưa xác nhận' ? 'status-pending' : lichSu.trangThai == 'Đã xác nhận' ? 'status-confirmed-bg' : lichSu.trangThai == 'Đang vận chuyển' ? 'status-shipping' : lichSu.trangThai == 'Vận chuyển thành công' ? 'status-delivered' : 'status-completed-bg'}" th:text="${lichSu.trangThai}"></span>
                                 </td>
                                 <td th:text="${lichSu.ghiChu ?: 'Không có'}"></td>
                             </tr>
@@ -852,6 +885,23 @@
 
 <script th:inline="javascript">
     const hoaDonId = /*[[${hoaDon.id}]]*/ null;
+    const trangThai = /*[[${hoaDon.trangThai}]]*/ '';
+    const phuongThucBanHang = /*[[${hoaDon.donHang.phuongThucBanHang}]]*/ '';
+
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('vi-VN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value) + ' VNĐ';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Format currency for price fields
+        document.querySelectorAll('#phiVanChuyen, #donGia, #thanhTien, #tongTien').forEach(element => {
+            const value = parseInt(element.getAttribute('data-value')) || 0;
+            element.textContent = formatCurrency(value);
+        });
+    });
 
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
@@ -865,7 +915,7 @@
         setTimeout(() => {
             toast.classList.remove("show");
             setTimeout(() => toast.remove(), 300);
-        }, 5000);
+        }, 3000);
     }
 
     function confirmHoaDon() {
@@ -875,7 +925,7 @@
                 url: `/acvstore/hoa-don/confirm/${hoaDonId}`,
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Hoàn thành" }), // Cập nhật ghi chú cho "Tại quầy"
+                data: JSON.stringify({ ghiChu: "Đã xác nhận đơn hàng" }),
                 success: function (response) {
                     showToast(response.message, "success");
                     window.location.reload();
@@ -897,7 +947,7 @@
                 url: `/acvstore/hoa-don/confirm-delivery/${hoaDonId}`,
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đang vận chuyển" }),
+                data: JSON.stringify({ ghiChu: "Đang vận chuyển đơn hàng" }),
                 success: function (response) {
                     showToast(response.message, "success");
                     window.location.reload();
@@ -941,7 +991,7 @@
                 url: `/acvstore/hoa-don/complete/${hoaDonId}`,
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Hoàn thành" }),
+                data: JSON.stringify({ ghiChu: "Đơn hàng hoàn thành" }),
                 success: function (response) {
                     showToast(response.message, "success");
                     window.location.reload();
@@ -1001,7 +1051,6 @@
         });
     });
 
-    // Hàm tải tỉnh/thành phố
     async function fetchProvinces() {
         try {
             let response = await fetch("https://provinces.open-api.vn/api/p/");
@@ -1023,7 +1072,6 @@
         }
     }
 
-    // Hàm tải quận/huyện
     async function fetchDistricts(provinceCode, districtSelect, wardSelect) {
         try {
             let response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
@@ -1043,7 +1091,6 @@
         }
     }
 
-    // Hàm tải phường/xã
     async function fetchWards(districtCode, wardSelect) {
         try {
             let response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
@@ -1062,7 +1109,6 @@
         }
     }
 
-    // Hàm thiết lập giá trị hiện tại cho select
     function setSelectValue(selectElement, value) {
         if (value && selectElement) {
             const options = selectElement.querySelectorAll('option');
@@ -1075,7 +1121,6 @@
         }
     }
 
-    // Hàm thiết lập địa chỉ khi form chỉnh sửa được hiển thị
     function setupEditForm() {
         const provinceSelect = document.getElementById('tinhThanhPho');
         const districtSelect = document.getElementById('quanHuyen');
@@ -1109,7 +1154,6 @@
         }
     }
 
-    // Xử lý sự kiện thay đổi tỉnh/thành phố và quận/huyện
     document.addEventListener('DOMContentLoaded', function () {
         const provinceSelect = document.getElementById('tinhThanhPho');
         const districtSelect = document.getElementById('quanHuyen');
@@ -1139,33 +1183,14 @@
         }
 
         // Khởi tạo trạng thái giao hàng
-        const hoaDonId = /*[[${hoaDon.id}]]*/ null;
-        const ghiChu = /*[[${hoaDon.ghiChu}]]*/ '';
-        const phuongThucBanHang = /*[[${hoaDon.donHang.phuongThucBanHang}]]*/ '';
-        const trangThai = /*[[${hoaDon.trangThai}]]*/ false;
-
-        let trangThaiGiaoHang = "Chưa xác nhận";
-        if (phuongThucBanHang === "Tại quầy") {
-            trangThaiGiaoHang = "Hoàn thành"; // Đặt trạng thái "Hoàn thành" cho đơn hàng "Tại quầy"
-        } else if (trangThai) {
-            if (ghiChu && ghiChu.includes("Hoàn thành")) {
-                trangThaiGiaoHang = "Hoàn thành";
-            } else if (ghiChu && ghiChu.includes("Vận chuyển thành công")) {
-                trangThaiGiaoHang = "Vận chuyển thành công";
-            } else if (ghiChu && ghiChu.includes("Đang vận chuyển")) {
-                trangThaiGiaoHang = "Đang vận chuyển";
-            } else {
-                trangThaiGiaoHang = "Đã xác nhận";
-            }
-        }
-
         const statusElement = document.getElementById("statusBadge");
+        let trangThaiGiaoHang = trangThai || "Chưa xác nhận";
         statusElement.className = `status-badge ${
             trangThaiGiaoHang === "Chưa xác nhận" ? "status-pending" :
-                trangThaiGiaoHang === "Đã xác nhận" ? "status-confirmed" :
+                trangThaiGiaoHang === "Đã xác nhận" ? "status-confirmed-bg" :
                     trangThaiGiaoHang === "Đang vận chuyển" ? "status-shipping" :
                         trangThaiGiaoHang === "Vận chuyển thành công" ? "status-delivered" :
-                            "status-complete"
+                            "status-completed-bg"
         }`;
         statusElement.textContent = trangThaiGiaoHang.normalize("NFC");
     });

@@ -47,7 +47,7 @@ public class HoaDon {
     private PhuongThucThanhToan phuongThucThanhToan;
 
     @Column(name = "trang_thai", nullable = false)
-    private Boolean trangThai;
+    private String  trangThai;
 
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
