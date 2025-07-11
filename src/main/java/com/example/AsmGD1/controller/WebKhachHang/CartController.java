@@ -6,10 +6,13 @@ import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -27,12 +30,16 @@ public class CartController {
     @Autowired
     private ChiTietGioHangService chiTietGioHangService;
 
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCart(Authentication authentication) {
         try {
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            System.out.println("Authenticated user ID: " + nguoiDungId); // Debug
             if (nguoiDungId == null) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Vui lòng đăng nhập để xem giỏ hàng"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Vui lòng đăng nhập để xem giỏ hàng"));
             }
 
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
@@ -50,8 +57,9 @@ public class CartController {
     public ResponseEntity<Map<String, Object>> addToCart(@RequestBody CartAddDto payload, Authentication authentication) {
         try {
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            System.out.println("NguoiDungId: " + nguoiDungId);
             if (nguoiDungId == null) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Vui lòng đăng nhập để thêm sản phẩm"));
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Vui lòng đăng nhập để thêm sản phẩm"));
             }
 
             UUID chiTietSanPhamId = payload.getId();
@@ -96,26 +104,57 @@ public class CartController {
     @GetMapping("/check-auth")
     public ResponseEntity<Map<String, Boolean>> checkAuthentication(Authentication authentication) {
         Map<String, Boolean> response = new HashMap<>();
+        System.out.println("Check-auth: Authentication = " + authentication);
+        if (authentication != null) {
+            System.out.println("Principal = " + authentication.getPrincipal());
+            System.out.println("IsAuthenticated = " + authentication.isAuthenticated());
+        }
         response.put("isAuthenticated", authentication != null && authentication.isAuthenticated());
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/get-user")
-    public ResponseEntity<Map<String, Object>> getUser(Authentication authentication) {
+    public ResponseEntity<?> getUser(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Không có người dùng được xác thực"));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập");
         }
-        NguoiDung user = (NguoiDung) authentication.getPrincipal();
-        Map<String, Object> response = new HashMap<>();
-        response.put("hoTen", user.getHoTen());
-        response.put("tenDangNhap", user.getTenDangNhap());
-        return ResponseEntity.ok(response);
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof UserDetails) {
+            return ResponseEntity.ok((NguoiDung) principal);
+        } else if (principal instanceof OAuth2User) {
+            String email = ((OAuth2User) principal).getAttribute("email");
+            if (email == null) {
+                return ResponseEntity.badRequest().body("Email không được tìm thấy");
+            }
+            NguoiDung nguoiDung = nguoiDungService.getUserByEmail(email);
+            if (nguoiDung == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Người dùng không tồn tại");
+            }
+            return ResponseEntity.ok(nguoiDung);
+        }
+        return ResponseEntity.badRequest().body("Không thể xác định người dùng");
     }
 
     private UUID getNguoiDungIdFromAuthentication(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof NguoiDung) {
-            return ((NguoiDung) authentication.getPrincipal()).getId();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
         }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails userDetails) {
+            NguoiDung nguoiDung = nguoiDungService.findByTenDangNhap(userDetails.getUsername());
+            return nguoiDung != null ? nguoiDung.getId() : null;
+        }
+
+        if (principal instanceof OAuth2User oAuth2User) {
+            String email = oAuth2User.getAttribute("email");
+            NguoiDung nguoiDung = nguoiDungService.findByEmail(email);
+            return nguoiDung != null ? nguoiDung.getId() : null;
+        }
+
         return null;
     }
+
 }

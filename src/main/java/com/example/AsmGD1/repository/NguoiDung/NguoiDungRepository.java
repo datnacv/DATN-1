@@ -15,21 +15,15 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = :vaiTro AND (u.hoTen LIKE %:keyword% OR u.email LIKE %:keyword% OR u.soDienThoai LIKE %:keyword%)")
     Page<NguoiDung> findByVaiTroAndKeyword(String vaiTro, String keyword, Pageable pageable);
 
-    //nam
-    // Thêm phương thức này
-//    Optional<NguoiDung> findByTenDangNhap(String tenDangNhap);
-
-    // Các phương thức khác giữ nguyên
     List<NguoiDung> findByVaiTro(String vaiTro);
     List<NguoiDung> findByVaiTroAndTrangThai(String vaiTro, boolean trangThai);
-    // Tìm kiếm KHÔNG phân trang
+
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = 'CUSTOMER' AND u.trangThai = true AND (" +
             "LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(u.soDienThoai) LIKE LOWER(CONCAT('%', :keyword, '%')) )")
     List<NguoiDung> searchByKeywordNoPaging(@Param("keyword") String keyword);
 
-    // Tìm kiếm CÓ phân trang
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = 'CUSTOMER' AND u.trangThai = true AND (" +
             "LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
             "LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
@@ -40,7 +34,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
 
     Page<NguoiDung> findByHoTenContainingIgnoreCaseAndVaiTroAndTrangThaiTrue(String hoTen, String vaiTro, Pageable pageable);
 
-    // Thêm phương thức kiểm tra số điện thoại tồn tại
     boolean existsBySoDienThoai(String soDienThoai);
 
     Optional<NguoiDung> findBySoDienThoai(String soDienThoai);
@@ -49,6 +42,9 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     Optional<NguoiDung> findByTenDangNhap(@Param("tenDangNhap") String tenDangNhap);
 
     Optional<NguoiDung> findByEmail(String email);
+
+    // Thêm phương thức kiểm tra email tồn tại
+    boolean existsByEmail(String email);
 
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro IN ('employee', 'admin') AND (u.hoTen LIKE %:keyword% OR u.email LIKE %:keyword% OR u.soDienThoai LIKE %:keyword%)")
     Page<NguoiDung> findByVaiTroNotCustomer(@Param("keyword") String keyword, Pageable pageable);

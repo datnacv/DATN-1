@@ -40,18 +40,31 @@ public class NguoiDungService {
             nguoiDung.setThoiGianTao(LocalDateTime.now());
             nguoiDung.setTrangThai(true);
 
+            // Kiểm tra tên đăng nhập trùng lặp
             if (nguoiDungRepository.findByTenDangNhap(nguoiDung.getTenDangNhap()).isPresent()) {
                 throw new RuntimeException("Tên đăng nhập đã tồn tại.");
             }
 
-            // Không mã hóa mật khẩu, lưu trực tiếp dưới dạng plaintext
-            // nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            // Kiểm tra email trùng lặp
+            if (nguoiDung.getEmail() != null && nguoiDungRepository.existsByEmail(nguoiDung.getEmail())) {
+                throw new RuntimeException("Email đã tồn tại.");
+            }
+
+            // Kiểm tra số điện thoại trùng lặp
+            if (nguoiDung.getSoDienThoai() != null && nguoiDungRepository.existsBySoDienThoai(nguoiDung.getSoDienThoai())) {
+                throw new RuntimeException("Số điện thoại đã tồn tại.");
+            }
+
+            // Mã hóa mật khẩu nếu có
+            if (nguoiDung.getMatKhau() != null && !nguoiDung.getMatKhau().isEmpty()) {
+                nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            }
         } else {
-            // Nếu đang cập nhật user, không mã hóa mật khẩu
-            // Optional<NguoiDung> existing = nguoiDungRepository.findById(nguoiDung.getId());
-            // if (existing.isPresent() && !existing.get().getMatKhau().equals(nguoiDung.getMatKhau())) {
-            //     nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
-            // }
+            // Khi cập nhật, chỉ mã hóa mật khẩu nếu nó thay đổi
+            Optional<NguoiDung> existing = nguoiDungRepository.findById(nguoiDung.getId());
+            if (existing.isPresent() && nguoiDung.getMatKhau() != null && !nguoiDung.getMatKhau().isEmpty()) {
+                nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
+            }
         }
         return nguoiDungRepository.save(nguoiDung);
     }
@@ -70,6 +83,9 @@ public class NguoiDungService {
     }
 
     public NguoiDung getUserByEmail(String email) {
+        return nguoiDungRepository.findByEmail(email).orElse(null);
+    }
+    public NguoiDung findByEmail(String email) {
         return nguoiDungRepository.findByEmail(email).orElse(null);
     }
 }
