@@ -44,4 +44,6 @@ public class ChiTietGioHang {
 
     @Column(name = "trang_thai", nullable = false)
     private Boolean trangThai;
+
+
 }

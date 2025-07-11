@@ -83,7 +83,7 @@ public class HoaDonController {
                         hoaDonInfo.put("tongTien", row.getTongTien());
                         hoaDonInfo.put("thoiGianTao", row.getNgayTao());
                         hoaDonInfo.put("phuongThucThanhToan", row.getPhuongThucThanhToan() != null ? row.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
-                        hoaDonInfo.put("trangThai", row.getTrangThai() != null ? row.getTrangThai() : false);
+                        hoaDonInfo.put("trangThai", row.getTrangThai());
                         hoaDonInfo.put("phuongThucBanHang", row.getDonHang().getPhuongThucBanHang());
                         return hoaDonInfo;
                     })
@@ -112,8 +112,9 @@ public class HoaDonController {
 
             // Kiểm tra và tự động hoàn thành nếu phương thức bán hàng là "Tại quầy"
             if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
-                    (hoaDon.getTrangThai() == null || !hoaDon.getTrangThai())) {
+                    !"Hoàn thành".equals(hoaDon.getTrangThai())) {
                 hoaDon.setGhiChu("Hoàn thành (Tại quầy)");
+                hoaDon.setTrangThai("Hoàn thành");
                 hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Hoàn thành tự động (Tại quầy)");
                 hoaDonService.save(hoaDon);
             }
@@ -155,7 +156,6 @@ public class HoaDonController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
 
-            // Validate request data
             String hoTen = request.get("hoTen");
             String soDienThoai = request.get("soDienThoai");
             String tinhThanhPho = request.get("tinhThanhPho");
@@ -170,7 +170,6 @@ public class HoaDonController {
                 throw new IllegalArgumentException("Thông tin khách hàng không được để trống.");
             }
 
-            // Update information
             hoaDon.getNguoiDung().setHoTen(hoTen);
             hoaDon.getNguoiDung().setSoDienThoai(soDienThoai);
             hoaDon.getNguoiDung().setTinhThanhPho(tinhThanhPho);
@@ -229,13 +228,15 @@ public class HoaDonController {
             donHang = donHangRepository.findById(donHang.getId())
                     .orElseThrow(() -> new RuntimeException("Đơn hàng không tìm thấy trong cơ sở dữ liệu."));
 
-            if (hoaDon.getTrangThai() != null && hoaDon.getTrangThai()) {
-                throw new RuntimeException("Hóa đơn đã được xác nhận hoặc hoàn thành trước đó.");
+            // Kiểm tra trạng thái hiện tại
+            if (!"Chưa xác nhận".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Chưa xác nhận' để xác nhận.");
             }
 
             String trangThai = "Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang()) ? "Hoàn thành" : "Đã xác nhận";
             hoaDon.setGhiChu(ghiChu);
             hoaDon.setNgayThanhToan(LocalDateTime.now());
+            hoaDon.setTrangThai(trangThai);
 
             donHang.setTrangThaiThanhToan(true);
             donHang.setThoiGianThanhToan(LocalDateTime.now());
@@ -274,10 +275,15 @@ public class HoaDonController {
             if (donHang == null) {
                 throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
             }
+            if (!"Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Giao hàng' mới có thể chuyển sang trạng thái 'Đang vận chuyển'.");
+            }
+            if (!"Đã xác nhận".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đã xác nhận' để chuyển sang 'Đang vận chuyển'.");
+            }
 
-            // Cập nhật trạng thái hóa đơn
             hoaDon.setGhiChu(ghiChu);
-            hoaDon.setTrangThai(true); // Đã xác nhận
+            hoaDon.setTrangThai("Đang vận chuyển");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDonService.addLichSuHoaDon(hoaDon, "Đang vận chuyển", ghiChu);
             hoaDonService.save(hoaDon);
@@ -306,9 +312,19 @@ public class HoaDonController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
 
-            // Cập nhật trạng thái hóa đơn
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Giao hàng' mới có thể chuyển sang trạng thái 'Vận chuyển thành công'.");
+            }
+            if (!"Đang vận chuyển".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đang vận chuyển' để chuyển sang 'Vận chuyển thành công'.");
+            }
+
             hoaDon.setGhiChu(ghiChu);
-            hoaDon.setTrangThai(true); // Đã xác nhận
+            hoaDon.setTrangThai("Vận chuyển thành công");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDonService.addLichSuHoaDon(hoaDon, "Vận chuyển thành công", ghiChu);
             hoaDonService.save(hoaDon);
@@ -337,9 +353,19 @@ public class HoaDonController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
 
-            // Cập nhật trạng thái hóa đơn
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Giao hàng' mới có thể chuyển sang trạng thái 'Hoàn thành'.");
+            }
+            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Vận chuyển thành công' để chuyển sang 'Hoàn thành'.");
+            }
+
             hoaDon.setGhiChu(ghiChu);
-            hoaDon.setTrangThai(true); // Đã xác nhận
+            hoaDon.setTrangThai("Hoàn thành");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", ghiChu);
             hoaDonService.save(hoaDon);
