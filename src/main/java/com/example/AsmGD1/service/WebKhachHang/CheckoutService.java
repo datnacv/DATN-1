@@ -73,7 +73,7 @@ public class CheckoutService {
         donHang.setThoiGianTao(LocalDateTime.now());
         donHang.setTrangThaiThanhToan(false);
         donHang.setPhuongThucBanHang("Giao hàng");
-        donHang.setPhiVanChuyen(BigDecimal.valueOf("EXPRESS".equals(request.getShippingMethod()) ? 30000 : 15000));
+        donHang.setPhiVanChuyen(request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.valueOf(15000));
 
         // 2. Lấy phương thức thanh toán từ repository
         if (request.getPaymentMethodId() != null) {
