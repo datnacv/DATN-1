@@ -4,13 +4,9 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>ACV Store - Thanh toán</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-    <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: linear-gradient(to bottom, #f8fafc, #e2e8f0); }
@@ -39,7 +35,6 @@
     </style>
 </head>
 <body>
-<!-- Header -->
 <nav class="navbar fixed-top">
     <div class="container mx-auto flex items-center justify-between py-4 px-6">
         <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
@@ -52,13 +47,10 @@
     </div>
 </nav>
 
-<!-- Checkout Section -->
 <section class="container mx-auto py-24">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">Thanh toán</h1>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Left Column: Customer Info, Shipping, Payment, Note -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Customer Information -->
             <div class="section-box">
                 <h2 class="section-title mb-4"><i class="fas fa-user mr-2"></i> Thông tin khách hàng</h2>
                 <form id="checkout-form">
@@ -79,7 +71,6 @@
                 </form>
             </div>
 
-            <!-- Shipping Method -->
             <div class="section-box">
                 <h2 class="section-title mb-4"><i class="fas fa-truck mr-2"></i> Phương thức vận chuyển</h2>
                 <select id="shippingMethod" name="shippingMethod" class="form-control w-full" required>
@@ -88,7 +79,6 @@
                 </select>
             </div>
 
-            <!-- Payment Method -->
             <div class="section-box">
                 <h2 class="section-title mb-4"><i class="fas fa-credit-card mr-2"></i> Phương thức thanh toán</h2>
                 <div class="payment-method active" data-value="COD">
@@ -105,14 +95,12 @@
                 </div>
             </div>
 
-            <!-- Note -->
             <div class="section-box">
                 <h2 class="section-title mb-4"><i class="fas fa-sticky-note mr-2"></i> Ghi chú</h2>
                 <textarea id="note" name="note" class="form-control w-full" rows="4" placeholder="Ghi chú cho đơn hàng (tùy chọn)"></textarea>
             </div>
         </div>
 
-        <!-- Right Column: Order Summary -->
         <div class="section-box">
             <h2 class="section-title mb-4"><i class="fas fa-shopping-bag mr-2"></i> Đơn hàng</h2>
             <div id="order-items" class="space-y-4 mb-6"></div>
@@ -148,7 +136,6 @@
     </div>
 </section>
 
-<!-- JavaScript Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -157,30 +144,46 @@
         return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(number) + ' VNĐ';
     }
 
-    // Load order items from localStorage or cart API
+    // Check if the checkout is from cart
+    function isFromCart() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('from') === 'cart';
+    }
+
+    // Load order items
     async function loadOrderItems() {
         const orderItemsContainer = document.getElementById('order-items');
         let subtotal = 0;
         let items = [];
+        let source = '';
 
-        // Check if there's a checkout item from "Mua ngay"
-        const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
-        if (checkoutItem) {
-            console.log('Sản phẩm từ "Mua ngay" (localStorage):', checkoutItem); // Log sản phẩm từ localStorage
-            items.push(checkoutItem);
-            subtotal += checkoutItem.gia * checkoutItem.soLuong;
-        } else {
-            console.log('Không có sản phẩm từ "Mua ngay" trong localStorage');
-            // Load from cart API if no checkout item
+        if (isFromCart()) {
+            // Fetch cart items from database for cart-based checkout
             try {
-                const response = await fetch('/api/cart');
+                const response = await fetch('/api/cart', { credentials: 'include' });
                 if (response.ok) {
                     const cartData = await response.json();
-                    items = cartData.chiTietGioHang || [];
-                    console.log('Sản phẩm từ giỏ hàng (API /cart):', items); // Log sản phẩm từ giỏ hàng
+                    items = cartData.chiTietGioHang.map(item => ({
+                        chiTietSanPhamId: item.chiTietSanPham.id,
+                        tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
+                        soLuong: item.soLuong,
+                        gia: item.gia,
+                        urlHinhAnh: item.chiTietSanPham.urlHinhAnh || '/images/default-product.jpg',
+                        sizeId: item.chiTietSanPham.kichCo.id,
+                        colorId: item.chiTietSanPham.mauSac.id,
+                        sizeName: item.chiTietSanPham.kichCo.ten,
+                        colorName: item.chiTietSanPham.mauSac.tenMau
+                    }));
                     subtotal = items.reduce((sum, item) => sum + item.gia * item.soLuong, 0);
+                    source = 'Giỏ hàng (API /cart)';
+                    console.log('Nguồn dữ liệu:', source, items);
                 } else {
                     console.log('Không thể tải giỏ hàng từ API /cart. Trạng thái:', response.status);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Không thể tải giỏ hàng!',
+                    });
                 }
             } catch (error) {
                 console.error('Lỗi khi tải giỏ hàng:', error);
@@ -190,29 +193,39 @@
                     text: 'Không thể tải giỏ hàng!',
                 });
             }
+        } else {
+            // Check for single item from "Buy Now" in chitietsanpham.html
+            const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
+            if (checkoutItem) {
+                items = [checkoutItem];
+                subtotal = checkoutItem.gia * checkoutItem.soLuong;
+                source = 'Mua ngay (localStorage.checkoutItem)';
+                console.log('Nguồn dữ liệu:', source, items);
+            }
         }
 
-        // Kiểm tra xem có sản phẩm nào hay không
         if (items.length === 0) {
-            console.log('Không có sản phẩm nào trong đơn hàng.');
-        } else {
-            console.log(`Tổng cộng ${items.length} sản phẩm trong đơn hàng.`);
+            orderItemsContainer.innerHTML = `<p class="text-gray-600">Không có sản phẩm trong ${isFromCart() ? 'giỏ hàng' : 'đơn hàng'}.</p>`;
+            document.getElementById('submit-order').disabled = true;
+            return;
         }
 
         // Render order items
         orderItemsContainer.innerHTML = items.map(item => `
-        <div class="order-item flex items-center space-x-4">
-            <img src="${item.urlHinhAnh}" alt="${item.tenSanPham}" class="order-item-img"/>
-            <div class="flex-1">
-                <h6 class="font-semibold text-gray-800">${item.tenSanPham}</h6>
-                <p class="text-gray-600 text-sm">Số lượng: ${item.soLuong}</p>
-                <p class="text-gray-600 text-sm">Đơn giá: ${formatVND(item.gia)}</p>
-                <p class="text-orange-600 font-bold">Thành tiền: ${formatVND(item.gia * item.soLuong)}</p>
+            <div class="order-item flex items-center space-x-4">
+                <img src="${item.urlHinhAnh}" alt="${item.tenSanPham}" class="order-item-img"/>
+                <div class="flex-1">
+                    <h6 class="font-semibold text-gray-800">${item.tenSanPham}</h6>
+                    <p class="text-gray-600 text-sm">Kích cỡ: ${item.sizeName || 'N/A'}</p>
+                    <p class="text-gray-600 text-sm">Màu sắc: ${item.colorName || 'N/A'}</p>
+                    <p class="text-gray-600 text-sm">Số lượng: ${item.soLuong}</p>
+                    <p class="text-gray-600 text-sm">Đơn giá: ${formatVND(item.gia)}</p>
+                    <p class="text-orange-600 font-bold">Thành tiền: ${formatVND(item.gia * item.soLuong)}</p>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
 
-        // Update subtotal, shipping fee, and total
+        // Update totals
         const shippingFee = document.getElementById('shippingMethod').value === 'EXPRESS' ? 30000 : 15000;
         document.getElementById('subtotal').textContent = formatVND(subtotal);
         document.getElementById('shipping-fee').textContent = formatVND(shippingFee);
@@ -234,7 +247,8 @@
         try {
             const response = await fetch(`/api/checkout/apply-voucher?voucher=${voucherCode}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
             });
             const data = await response.json();
 
@@ -283,7 +297,7 @@
     // Load user information
     async function loadUserInfo() {
         try {
-            const response = await fetch('/api/checkout/get-user');
+            const response = await fetch('/api/checkout/get-user', { credentials: 'include' });
             if (response.ok) {
                 const data = await response.json();
                 const user = data.data;
@@ -297,11 +311,16 @@
                     text: 'Vui lòng đăng nhập để tiếp tục!',
                     confirmButtonText: 'Đăng nhập',
                 }).then(() => {
-                    window.location.href = '/login';
+                    window.location.href = '/customers/login';
                 });
             }
         } catch (error) {
-            console.error('Error loading user info:', error);
+            console.error('Lỗi khi tải thông tin người dùng:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Không thể tải thông tin người dùng!',
+            });
         }
     }
 
@@ -309,52 +328,117 @@
     document.getElementById('submit-order').addEventListener('click', async (e) => {
         e.preventDefault();
 
-        // ✅ Bước 1: Lấy sản phẩm từ localStorage hoặc từ giỏ hàng
-        const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
-        const itemsRaw = checkoutItem ? [checkoutItem] : (await (await fetch('/api/cart')).json()).chiTietGioHang;
+        // Validate form inputs
+        const fullName = document.getElementById('fullName').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const address = document.getElementById('address').value.trim();
+        if (!fullName || !phone || !address) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Lỗi',
+                text: 'Vui lòng điền đầy đủ thông tin khách hàng!',
+            });
+            return;
+        }
 
-        // ✅ Bước 2: Map đúng format cho backend
-        const orderItems = itemsRaw.map(item => ({
-            chiTietSanPhamId: item.chiTietSanPhamId,
-            soLuong: item.soLuong
-        }));
+        // Get items
+        let items = [];
+        let source = '';
+        if (isFromCart()) {
+            // Fetch cart items from database for cart-based checkout
+            try {
+                const response = await fetch('/api/cart', { credentials: 'include' });
+                if (response.ok) {
+                    const cartData = await response.json();
+                    items = cartData.chiTietGioHang.map(item => ({
+                        chiTietSanPhamId: item.chiTietSanPham.id,
+                        soLuong: item.soLuong,
+                        sizeId: item.chiTietSanPham.kichCo.id,
+                        colorId: item.chiTietSanPham.mauSac.id
+                    }));
+                    source = 'Giỏ hàng (API /cart)';
+                    console.log('Gửi đơn hàng với sản phẩm từ:', source, items);
+                } else {
+                    console.log('Không thể tải giỏ hàng từ API /cart. Trạng thái:', response.status);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: 'Không thể tải giỏ hàng!',
+                    });
+                    return;
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải giỏ hàng:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Không thể tải giỏ hàng!',
+                });
+                return;
+            }
+        } else {
+            // Check for single item from "Buy Now"
+            const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
+            if (checkoutItem) {
+                items = [checkoutItem];
+                source = 'Mua ngay (localStorage.checkoutItem)';
+                console.log('Gửi đơn hàng với sản phẩm từ:', source, items);
+            }
+        }
 
-        // ✅ Bước 3: Map phương thức thanh toán (chuỗi → UUID)
+        if (items.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Lỗi',
+                text: `Không có sản phẩm trong ${isFromCart() ? 'giỏ hàng' : 'đơn hàng'}! Vui lòng thêm sản phẩm trước khi thanh toán.`,
+            });
+            return;
+        }
+
+        // Map payment methods to UUIDs
         const paymentMethodMap = {
-            COD: "550e8400-e29b-41d4-a716-446655440017",    // Tiền mặt
-            BANK: "550e8400-e29b-41d4-a716-446655440018",   // Chuyển khoản
-            ONLINE: "550e8400-e29b-41d4-a716-446655440019"  // Nếu có ONLINE, thêm vào DB và sửa UUID
+            COD: "550e8400-e29b-41d4-a716-446655440017",
+            BANK: "550e8400-e29b-41d4-a716-446655440018",
+            ONLINE: "550e8400-e29b-41d4-a716-446655440019"
         };
 
         const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'COD';
         const paymentMethodId = paymentMethodMap[selectedMethod];
 
-        // ✅ Bước 4: Tạo payload request
+        // Create payload
         const request = {
-            fullName: document.getElementById('fullName').value,
-            phone: document.getElementById('phone').value,
-            address: document.getElementById('address').value,
+            fullName: fullName,
+            phone: phone,
+            address: address,
             shippingMethod: document.getElementById('shippingMethod').value,
             paymentMethodId: paymentMethodId,
             notes: document.getElementById('note').value,
             voucher: document.getElementById('voucher').value,
-            orderItems: orderItems
+            orderItems: items.map(item => ({
+                chiTietSanPhamId: item.chiTietSanPhamId,
+                soLuong: item.soLuong
+            }))
         };
 
-        console.log("📦 Payload gửi đi:", request); // debug
+        console.log("📦 Payload gửi đi:", request);
 
-        // ✅ Bước 5: Gửi request
+        // Submit order
         try {
             const response = await fetch('/api/checkout/submit', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(request)
+                body: JSON.stringify(request),
+                credentials: 'include'
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                localStorage.removeItem('checkoutItem');
+                if (source === 'Mua ngay (localStorage.checkoutItem)') {
+                    localStorage.removeItem('checkoutItem');
+                } else {
+                    localStorage.removeItem('cartItems'); // Xóa cartItems nếu có
+                }
                 Swal.fire({
                     icon: 'success',
                     title: 'Thành công',
@@ -367,11 +451,11 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi',
-                    text: data.message || 'Không thể đặt hàng',
+                    text: data.message || 'Không thể đặt hàng! Vui lòng thử lại.',
                 });
             }
         } catch (error) {
-            console.error("❌ Lỗi gửi đơn hàng:", error);
+            console.error("Lỗi gửi đơn hàng:", error);
             Swal.fire({
                 icon: 'error',
                 title: 'Lỗi',
@@ -383,7 +467,7 @@
     // Update cart count
     async function updateCartCount() {
         try {
-            const response = await fetch('/api/cart');
+            const response = await fetch('/api/cart', { credentials: 'include' });
             if (response.ok) {
                 const data = await response.json();
                 const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
@@ -392,7 +476,7 @@
                 document.getElementById('cart-count').textContent = 0;
             }
         } catch (error) {
-            console.error('Error updating cart count:', error);
+            console.error('Lỗi khi cập nhật số lượng giỏ hàng:', error);
         }
     }
 
