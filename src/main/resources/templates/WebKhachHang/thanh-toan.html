@@ -79,7 +79,6 @@
                             <option value="">-- Chọn phường/xã --</option>
                         </select>
                     </div>
-
                 </form>
             </div>
 
@@ -150,7 +149,6 @@
     let provinceList = [];
     let districtList = [];
 
-
     // Format number to VND
     function formatVND(number) {
         return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(number) + ' VNĐ';
@@ -169,9 +167,9 @@
             const json = await response.json();
             if (!json || !json.data) throw new Error("No data field in response");
 
-            const result = JSON.parse(json.data); // đây là chuỗi JSON thực
+            const result = JSON.parse(json.data);
             const provinces = result.data;
-            provinceList = provinces; // ✅ Lưu lại danh sách để sử dụng sau
+            provinceList = provinces;
 
             const provinceSelect = document.getElementById('province');
             provinces.forEach(p => {
@@ -190,7 +188,6 @@
         }
     }
 
-
     document.addEventListener('DOMContentLoaded', () => {
         loadProvinces();
     });
@@ -198,13 +195,13 @@
     // Load quận/huyện dựa vào tỉnh được chọn
     async function loadDistricts(provinceId) {
         try {
-            const response = await fetch(`/api/ghn/districts?provinceId=${provinceId}`)
+            const response = await fetch(`/api/ghn/districts?provinceId=${provinceId}`);
             const json = await response.json();
             if (!json || !json.data) throw new Error("No data field in district response");
 
             const result = JSON.parse(json.data);
             const districts = result.data;
-            districtList = districts; // ✅ Lưu lại danh sách
+            districtList = districts;
 
             const select = document.getElementById('district');
             select.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
@@ -215,7 +212,6 @@
                 select.appendChild(opt);
             });
 
-            // Reset ward
             document.getElementById('ward').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
         } catch (err) {
             console.error(err);
@@ -256,12 +252,12 @@
     }
 
     document.getElementById('province').addEventListener('change', (e) => {
-        const provinceId = parseInt(e.target.value); // ✅ ép kiểu
+        const provinceId = parseInt(e.target.value);
         if (provinceId) loadDistricts(provinceId);
     });
 
     document.getElementById('district').addEventListener('change', async (e) => {
-        const districtId = parseInt(e.target.value); // ✅ ép kiểu
+        const districtId = parseInt(e.target.value);
         if (!districtId) return;
 
         await loadWards(districtId);
@@ -269,7 +265,7 @@
     });
 
     async function loadShippingServices(toDistrictId) {
-        const fromDistrictId = 1542; // kho mặc định
+        const fromDistrictId = 1542;
 
         try {
             const res = await fetch(`/api/ghn/available-services?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}`);
@@ -277,7 +273,7 @@
             const services = JSON.parse(json.data).data;
 
             const select = document.getElementById('shippingMethod');
-            select.innerHTML = ''; // Clear cũ
+            select.innerHTML = '';
 
             services.forEach(service => {
                 const opt = document.createElement('option');
@@ -286,7 +282,6 @@
                 select.appendChild(opt);
             });
 
-            // Tính phí cho dịch vụ đầu tiên
             if (services.length > 0) {
                 select.value = services[0].service_id;
                 await calculateShipping();
@@ -296,7 +291,6 @@
             Swal.fire({ icon: 'error', title: 'Không lấy được dịch vụ vận chuyển', text: err.message });
         }
     }
-
 
     async function calculateShipping() {
         const toDistrictId = document.getElementById('district').value;
@@ -341,10 +335,10 @@
             const normalize = str =>
                 str
                     ?.toLowerCase()
-                    .replace(/(tỉnh|thành phố)/gi, "") // loại bỏ từ khóa thừa
+                    .replace(/(tỉnh|thành phố)/gi, "")
                     .replace(/[\s\.\-]/g, "")
                     .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, ""); // bỏ dấu tiếng Việt
+                    .replace(/[\u0300-\u036f]/g, "");
 
             const provinceRes = await fetch("/api/ghn/provinces");
             const provinceJson = await provinceRes.json();
@@ -356,10 +350,8 @@
 
             if (!province) throw new Error("Không tìm thấy tỉnh tương ứng");
 
-            // Gán vào DOM
             document.querySelector("#province").value = province.ProvinceID;
 
-            // Load quận/huyện
             await loadDistricts(province.ProvinceID);
             const districtRes = await fetch(`/api/ghn/districts?provinceId=${province.ProvinceID}`);
             const districtJson = await districtRes.json();
@@ -371,7 +363,6 @@
             if (!district) throw new Error("Không tìm thấy quận/huyện tương ứng");
             document.querySelector("#district").value = district.DistrictID;
 
-            // Load phường/xã
             await loadWards(district.DistrictID);
             const wardRes = await fetch(`/api/ghn/wards?districtId=${district.DistrictID}`);
             const wardJson = await wardRes.json();
@@ -383,13 +374,10 @@
             if (!ward) throw new Error("Không tìm thấy phường/xã tương ứng");
             document.querySelector("#ward").value = ward.WardCode;
 
-            // Gán chi tiết địa chỉ
             document.querySelector("#address").value = data.chiTietDiaChi || "";
 
-            // ⚠️ Load dịch vụ vận chuyển và tính phí
             await loadShippingServices(district.DistrictID);
             await calculateShipping();
-
         } catch (err) {
             console.error("Lỗi khi tải địa chỉ:", err);
             Swal.fire({
@@ -400,19 +388,16 @@
         }
     }
 
-
     document.addEventListener('DOMContentLoaded', () => {
         loadSavedAddress();
     });
 
     async function getShippingFee() {
         try {
-            const fromDistrictId = 1542; // ví dụ cố định hoặc từ địa chỉ kho
+            const fromDistrictId = 1542;
             const toDistrictId = parseInt(document.getElementById("district").value);
             const toWardCode = document.getElementById("ward").value;
 
-
-            // Gọi API lấy service_id
             const res = await fetch(`/api/ghn/available-services?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}`);
             const serviceData = await res.json();
             const serviceList = JSON.parse(serviceData.data).data;
@@ -420,18 +405,15 @@
 
             if (!serviceId) throw new Error("Không tìm thấy dịch vụ GHN");
 
-            // Gọi API tính phí
             const shippingRes = await fetch(`/api/ghn/shipping-fee?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}&toWardCode=${toWardCode}&weight=500&length=20&width=15&height=10&serviceId=${serviceId}&insuranceValue=100000`);
             const json = await shippingRes.json();
 
             const fee = JSON.parse(json.data).data.total;
             document.getElementById("shippingFee").innerText = fee.toLocaleString("vi-VN") + " VND";
-
         } catch (error) {
             alert("Lỗi tính phí vận chuyển: " + error.message);
         }
     }
-
 
     // Load order items
     async function loadOrderItems() {
@@ -441,7 +423,6 @@
         let source = '';
 
         if (isFromCart()) {
-            // Fetch cart items from database for cart-based checkout
             try {
                 const response = await fetch('/api/cart', { credentials: 'include' });
                 if (response.ok) {
@@ -477,7 +458,6 @@
                 });
             }
         } else {
-            // Check for single item from "Buy Now" in chitietsanpham.html
             const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
             if (checkoutItem) {
                 items = [checkoutItem];
@@ -493,7 +473,6 @@
             return;
         }
 
-        // Render order items
         orderItemsContainer.innerHTML = items.map(item => `
             <div class="order-item flex items-center space-x-4">
                 <img src="${item.urlHinhAnh}" alt="${item.tenSanPham}" class="order-item-img"/>
@@ -508,7 +487,6 @@
             </div>
         `).join('');
 
-        // Update totals
         const shippingFee = parseFloat(document.getElementById('shipping-fee').textContent.replace(/[^\d]/g, '')) || 0;
         const discount = parseFloat(document.getElementById('discount').textContent.replace(/[^\d]/g, '')) || 0;
         document.getElementById('subtotal').textContent = formatVND(subtotal);
@@ -570,7 +548,6 @@
     });
     document.getElementById('shippingMethod').addEventListener('change', calculateShipping);
 
-
     // Handle payment method selection
     document.querySelectorAll('.payment-method').forEach(method => {
         method.addEventListener('click', () => {
@@ -590,7 +567,6 @@
                 document.getElementById('fullName').value = user.hoTen || '';
                 document.getElementById('phone').value = user.soDienThoai || '';
                 document.getElementById('address').value = user.diaChi || '';
-
             } else if (response.status === 401) {
                 Swal.fire({
                     icon: 'warning',
@@ -611,7 +587,7 @@
         }
     }
 
-    // Handle checkout form submission
+    // Handle checkout form submission with confirmation
     document.getElementById('submit-order').addEventListener('click', async (e) => {
         e.preventDefault();
 
@@ -700,12 +676,36 @@
             paymentMethodId: paymentMethodId,
             notes: document.getElementById('note').value,
             voucher: document.getElementById('voucher').value,
-            shippingFee: shippingFee, // ✅ thêm dòng này
+            shippingFee: shippingFee,
             orderItems: items.map(item => ({
                 chiTietSanPhamId: item.chiTietSanPhamId,
                 soLuong: item.soLuong
             }))
         };
+
+        // Confirmation dialog with cancel button
+        const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace(/[^\d]/g, '')) || 0;
+        const discount = parseFloat(document.getElementById('discount').textContent.replace(/[^\d]/g, '')) || 0;
+        const totalAmount = subtotal + shippingFee - discount;
+
+        const confirmResult = await Swal.fire({
+            icon: 'question',
+            title: 'Xác nhận thanh toán',
+            html: `
+                <p><strong>Tổng tiền:</strong> ${formatVND(totalAmount)}</p>
+                <p><strong>Phương thức thanh toán:</strong> ${paymentMethodId === '550E8400-E29B-41D4-A716-446655440017' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng'}</p>
+                <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#f97316',
+            cancelButtonColor: '#d33',
+        });
+
+        if (!confirmResult.isConfirmed) {
+            return;
+        }
 
         console.log("📦 Payload gửi đi:", orderData);
 
@@ -713,11 +713,6 @@
         try {
             if (paymentMethodId === '550E8400-E29B-41D4-A716-446655440018') {
                 // Bank transfer - redirect to payment link
-                const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace(/[^\d]/g, '')) || 0;
-                const shippingFee = parseFloat(document.getElementById('shipping-fee').textContent.replace(/[^\d]/g, '')) || 0;
-                const discount = parseFloat(document.getElementById('discount').textContent.replace(/[^\d]/g, '')) || 0;
-                const totalAmount = subtotal + shippingFee - discount;
-
                 if (totalAmount <= 0) {
                     Swal.fire({
                         icon: 'warning',

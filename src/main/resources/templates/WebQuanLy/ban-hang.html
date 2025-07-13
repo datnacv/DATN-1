@@ -960,7 +960,7 @@
 </div>
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   const BASE_URL = '/acvstore/ban-hang';
   let tabs = [];
@@ -2053,11 +2053,37 @@
       tabId: String(currentTabId)
     };
 
+    // Tính tổng tiền
+    const totalAmount = (tab.total || 0) + (tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0);
+
+    // Hiển thị hộp thoại xác nhận SweetAlert2
+    const confirmResult = await Swal.fire({
+      icon: 'question',
+      title: 'Xác nhận thanh toán',
+      html: `
+            <p><strong>Tổng tiền:</strong> ${totalAmount.toLocaleString('vi-VN')} VNĐ</p>
+            <p><strong>Phương thức thanh toán:</strong> ${
+              tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018'
+                      ? 'Chuyển khoản ngân hàng'
+                      : 'Thanh toán tiền mặt'
+      }</p>
+            <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
+        `,
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#f97316',
+      cancelButtonColor: '#d33',
+    });
+
+    // Nếu người dùng không xác nhận, thoát hàm
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
     try {
       if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
         // Thanh toán chuyển khoản - chuyển hướng đến VNPay
-        let totalAmount = (tab.total || 0) + (tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0);
-
         if (totalAmount <= 0) {
           showToast('Tổng tiền phải lớn hơn 0.', 'warning');
           return;
