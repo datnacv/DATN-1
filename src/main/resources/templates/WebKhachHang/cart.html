@@ -114,7 +114,6 @@
         </table>
         <div class="mt-6 text-right">
             <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 0, 'COMMA')} + ' VNĐ'"></span></p>
-<!--            <button id="checkout-btn" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded mt-4">Thanh toán</button>-->
             <a href="/thanh-toan?from=cart" id="checkout-btn" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded mt-4">Thanh toán</a>
         </div>
     </div>
@@ -187,7 +186,8 @@
                 userInfo.classList.remove('active');
                 loginButton.style.display = 'inline';
                 logoutButton.style.display = 'none';
-                window.location.href = '/customers/login';
+                // Không redirect ngay, để người dùng thấy thông báo "Vui lòng đăng nhập"
+                // window.location.href = '/customers/login';
             }
         } catch (error) {
             console.error('Error checking authentication:', error);
@@ -196,191 +196,204 @@
     });
 
     // Logout
-    document.getElementById('logoutButton').addEventListener('click', (e) => {
-        e.preventDefault();
-        fetch('/logout', { method: 'POST', credentials: 'include' }).then(() => {
-            window.location.href = '/customers/login';
-        });
-    });
-
-    // Update cart count
-    async function updateCartCount() {
-        try {
-            const response = await fetch('/api/cart', { credentials: 'include' });
-            if (response.ok) {
-                const data = await response.json();
-                const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
-                document.getElementById('cart-count').textContent = cartCount;
-            } else if (response.status === 401) {
-                document.getElementById('cart-count').textContent = 0;
-                window.location.href = '/customers/login';
-            }
-        } catch (error) {
-            console.error('Error updating cart count:', error);
-        }
-    }
-
-    // Handle checkout button click
-    document.getElementById('checkout-btn').addEventListener('click', async () => {
-        try {
-            const response = await fetch('/api/cart', { credentials: 'include' });
-            if (response.ok) {
-                const data = await response.json();
-                const cartItems = data.chiTietGioHang || [];
-                // Map cart items to the format expected by thanh-toan.html
-                const checkoutItems = cartItems.map(item => ({
-                    chiTietSanPhamId: item.chiTietSanPham.id,
-                    tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
-                    soLuong: item.soLuong,
-                    gia: item.gia,
-                    urlHinhAnh: item.chiTietSanPham.urlHinhAnh || '/images/default-product.jpg'
-                }));
-                localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
-                window.location.href = '/thanh-toan';
-            } else if (response.status === 401) {
-                window.location.href = '/customers/login';
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: 'Không thể tải giỏ hàng!',
+    document.addEventListener('DOMContentLoaded', () => {
+        const logoutButton = document.getElementById('logoutButton');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                fetch('/logout', { method: 'POST', credentials: 'include' }).then(() => {
+                    window.location.href = '/customers/login';
                 });
-            }
-        } catch (error) {
-            console.error('Error fetching cart for checkout:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi',
-                text: 'Đã xảy ra lỗi khi chuyển sang thanh toán!',
             });
         }
-    });
 
-    // Quantity update
-    document.querySelectorAll('.quantity-btn').forEach(button => {
-        button.addEventListener('click', async () => {
-            const itemId = button.dataset.itemId;
-            const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
-            let quantity = parseInt(input.value);
-
-            if (button.classList.contains('minus') && quantity > 1) {
-                quantity--;
-            } else if (button.classList.contains('plus')) {
-                quantity++;
-            }
-
+        // Update cart count
+        async function updateCartCount() {
             try {
-                const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
-
+                const response = await fetch('/api/cart', { credentials: 'include' });
                 if (response.ok) {
-                    window.location.reload();
+                    const data = await response.json();
+                    const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
+                    document.getElementById('cart-count').textContent = cartCount;
                 } else if (response.status === 401) {
+                    document.getElementById('cart-count').textContent = 0;
                     window.location.href = '/customers/login';
-                } else {
-                    const errorData = await response.json();
+                }
+            } catch (error) {
+                console.error('Error updating cart count:', error);
+            }
+        }
+
+        // Handle checkout button click
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/cart', { credentials: 'include' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const cartItems = data.chiTietGioHang || [];
+                        const checkoutItems = cartItems.map(item => ({
+                            chiTietSanPhamId: item.chiTietSanPham.id,
+                            tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
+                            soLuong: item.soLuong,
+                            gia: item.gia,
+                            urlHinhAnh: item.chiTietSanPham.urlHinhAnh || '/images/default-product.jpg'
+                        }));
+                        localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
+                        window.location.href = '/thanh-toan';
+                    } else if (response.status === 401) {
+                        window.location.href = '/customers/login';
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Không thể tải giỏ hàng!',
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching cart for checkout:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi',
-                        text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
+                        text: 'Đã xảy ra lỗi khi chuyển sang thanh toán!',
                     });
                 }
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+            });
+        }
+
+        // Quantity update
+        document.querySelectorAll('.quantity-btn').forEach(button => {
+            if (button) {
+                button.addEventListener('click', async () => {
+                    const itemId = button.dataset.itemId;
+                    const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
+                    let quantity = parseInt(input.value);
+
+                    if (button.classList.contains('minus') && quantity > 1) {
+                        quantity--;
+                    } else if (button.classList.contains('plus')) {
+                        quantity++;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include'
+                        });
+
+                        if (response.ok) {
+                            window.location.reload();
+                        } else if (response.status === 401) {
+                            window.location.href = '/customers/login';
+                        } else {
+                            const errorData = await response.json();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
+                            });
+                        }
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+                        });
+                    }
                 });
             }
         });
-    });
 
-    // Quantity input change
-    document.querySelectorAll('.quantity-input').forEach(input => {
-        input.addEventListener('change', async () => {
-            const itemId = input.dataset.itemId;
-            const quantity = parseInt(input.value);
+        // Quantity input change
+        document.querySelectorAll('.quantity-input').forEach(input => {
+            if (input) {
+                input.addEventListener('change', async () => {
+                    const itemId = input.dataset.itemId;
+                    const quantity = parseInt(input.value);
 
-            if (quantity < 1) {
-                input.value = 1;
-                return;
-            }
+                    if (quantity < 1) {
+                        input.value = 1;
+                        return;
+                    }
 
-            try {
-                const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
+                    try {
+                        const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include'
+                        });
 
-                if (response.ok) {
-                    window.location.reload();
-                } else if (response.status === 401) {
-                    window.location.href = '/customers/login';
-                } else {
-                    const errorData = await response.json();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi',
-                        text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
-                    });
-                }
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: 'Có lỗi xảy ra khi cập nhật số lượng!',
-                });
-            }
-        });
-    });
-
-    // Remove item
-    document.querySelectorAll('.remove-item').forEach(button => {
-        button.addEventListener('click', async () => {
-            const gioHangId = button.dataset.gioHangId;
-            const chiTietSanPhamId = button.dataset.chiTietSanPhamId;
-
-            try {
-                const response = await fetch(`/api/cart/remove?gioHangId=${gioHangId}&chiTietSanPhamId=${chiTietSanPhamId}`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Thành công',
-                        text: 'Đã xóa sản phẩm khỏi giỏ hàng!',
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                    window.location.reload();
-                } else if (response.status === 401) {
-                    window.location.href = '/customers/login';
-                } else {
-                    const errorData = await response.json();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi',
-                        text: errorData.error || 'Có lỗi xảy ra khi xóa sản phẩm!',
-                    });
-                }
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: 'Có lỗi xảy ra khi xóa sản phẩm!',
+                        if (response.ok) {
+                            window.location.reload();
+                        } else if (response.status === 401) {
+                            window.location.href = '/customers/login';
+                        } else {
+                            const errorData = await response.json();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
+                            });
+                        }
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+                        });
+                    }
                 });
             }
         });
-    });
 
-    document.addEventListener('DOMContentLoaded', updateCartCount);
+        // Remove item
+        document.querySelectorAll('.remove-item').forEach(button => {
+            if (button) {
+                button.addEventListener('click', async () => {
+                    const gioHangId = button.dataset.gioHangId;
+                    const chiTietSanPhamId = button.dataset.chiTietSanPhamId;
+
+                    try {
+                        const response = await fetch(`/api/cart/remove?gioHangId=${gioHangId}&chiTietSanPhamId=${chiTietSanPhamId}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include'
+                        });
+
+                        if (response.ok) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: 'Đã xóa sản phẩm khỏi giỏ hàng!',
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            window.location.reload();
+                        } else if (response.status === 401) {
+                            window.location.href = '/customers/login';
+                        } else {
+                            const errorData = await response.json();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: errorData.error || 'Có lỗi xảy ra khi xóa sản phẩm!',
+                            });
+                        }
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Có lỗi xảy ra khi xóa sản phẩm!',
+                        });
+                    }
+                });
+            }
+        });
+
+        updateCartCount();
+    });
 </script>
 </body>
 </html>
