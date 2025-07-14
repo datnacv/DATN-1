@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class GioHangService {
-
     @Autowired
     private ChiTietSanPhamService chiTietSanPhamService;
 
@@ -91,7 +90,6 @@ public class GioHangService {
     public GioHangDTO themVaoGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee, String tabId) {
         System.out.println("--- themVaoGioHang: Bắt đầu, tabId: " + tabId + " ---");
         List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
-
         GioHangItemDTO existingItem = currentCart.stream()
                 .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
                 .findFirst()
@@ -163,6 +161,7 @@ public class GioHangService {
         System.out.println("--- layGioHang: Bắt đầu, tabId: " + tabId + " ---");
         List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
         GioHangDTO gioHangDTO = new GioHangDTO();
+
         capNhatTongGioHang(gioHangDTO, currentCart, shippingFee, tabId);
 
         List<GioHangItemDTO> updatedCartItems = currentCart.stream().map(item -> {
@@ -172,6 +171,7 @@ public class GioHangService {
             }
             return item;
         }).collect(Collectors.toList());
+
         gioHangDTO.setDanhSachSanPham(updatedCartItems);
 
         System.out.println("Debug - layGioHang: TongTienHang: " + gioHangDTO.getTongTienHang());
@@ -185,7 +185,6 @@ public class GioHangService {
     public GioHangDTO capNhatGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee, String tabId) {
         System.out.println("--- capNhatGioHang: Bắt đầu, tabId: " + tabId + " ---");
         List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
-
         GioHangItemDTO existingItem = currentCart.stream()
                 .filter(item -> item.getIdChiTietSanPham().equals(productDetailId))
                 .findFirst()
@@ -238,6 +237,7 @@ public class GioHangService {
         } else {
             System.out.println("--- xoaKhoiGioHang: Không tìm thấy sản phẩm để xóa ---");
         }
+
         return layGioHang(shippingFee, tabId);
     }
 
@@ -245,7 +245,6 @@ public class GioHangService {
         System.out.println("--- xoaTatCaGioHang: Bắt đầu, tabId: " + tabId + " ---");
         List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
         currentCart.clear();
-
         saveCart(tabId, currentCart);
         getSession().removeAttribute(getDiscountSessionKey(tabId));
         getSession().removeAttribute(getVoucherIdSessionKey(tabId));
@@ -255,6 +254,7 @@ public class GioHangService {
 
     public GioHangDTO apDungPhieuGiamGia(UUID voucherId, BigDecimal shippingFee, GioHangDTO gioHang, String tabId) {
         System.out.println("--- apDungPhieuGiamGia: Bắt đầu, voucherId: " + voucherId + ", shippingFee: " + shippingFee + ", tabId: " + tabId + " ---");
+
         BigDecimal tongTienHang = gioHang.getTongTienHang();
         System.out.println("Debug - Tổng tiền hàng từ giỏ: " + tongTienHang);
 
@@ -264,21 +264,37 @@ public class GioHangService {
         if (voucherId != null) {
             PhieuGiamGia phieu = phieuGiamGiaRepository.findById(voucherId)
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
+
             LocalDate today = LocalDate.now();
             System.out.println("Debug - Voucher info: " + phieu.getMa() + ", NgayBatDau: " + phieu.getNgayBatDau() +
                     ", NgayKetThuc: " + phieu.getNgayKetThuc() + ", SoLuong: " + phieu.getSoLuong() +
-                    ", GiaTriGiamToiThieu: " + phieu.getGiaTriGiamToiThieu());
+                    ", GiaTriGiamToiThieu: " + phieu.getGiaTriGiamToiThieu() + ", Loai: " + phieu.getLoai());
 
-            if (phieu.getNgayBatDau() != null && phieu.getNgayBatDau().isAfter(today) ||
-                    phieu.getNgayKetThuc() != null && phieu.getNgayKetThuc().isBefore(today) ||
-                    phieu.getSoLuong() != null && phieu.getSoLuong() <= 0 ||
-                    phieu.getGiaTriGiamToiThieu() != null && tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
-                System.out.println("Debug - Voucher không hợp lệ: " +
-                        "NgayBatDau: " + (phieu.getNgayBatDau() != null && phieu.getNgayBatDau().isAfter(today)) +
-                        ", NgayKetThuc: " + (phieu.getNgayKetThuc() != null && phieu.getNgayKetThuc().isBefore(today)) +
-                        ", SoLuong: " + (phieu.getSoLuong() != null && phieu.getSoLuong() <= 0) +
-                        ", GiaTriGiamToiThieu: " + (tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) < 0));
-            } else if ("PERCENT".equals(phieu.getLoai())) {
+            // Kiểm tra tính hợp lệ của voucher
+            boolean isValidDate = (phieu.getNgayBatDau() == null || !phieu.getNgayBatDau().isAfter(today)) &&
+                    (phieu.getNgayKetThuc() == null || !phieu.getNgayKetThuc().isBefore(today));
+            boolean hasQuantity = phieu.getSoLuong() == null || phieu.getSoLuong() > 0;
+            boolean meetsMinimum = phieu.getGiaTriGiamToiThieu() == null ||
+                    tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) >= 0;
+
+            System.out.println("Debug - Voucher validation: isValidDate=" + isValidDate +
+                    ", hasQuantity=" + hasQuantity + ", meetsMinimum=" + meetsMinimum);
+
+            if (!isValidDate) {
+                throw new RuntimeException("Phiếu giảm giá đã hết hạn hoặc chưa đến thời gian sử dụng.");
+            }
+
+            if (!hasQuantity) {
+                throw new RuntimeException("Phiếu giảm giá đã hết lượt sử dụng.");
+            }
+
+            if (!meetsMinimum) {
+                String minAmountFormatted = formatCurrency(phieu.getGiaTriGiamToiThieu());
+                throw new RuntimeException("Đơn hàng chưa đạt giá trị tối thiểu " + minAmountFormatted + " để sử dụng phiếu giảm giá này.");
+            }
+
+            // Tính toán giảm giá dựa trên loại voucher
+            if ("Phần trăm".equals(phieu.getLoai()) || "PERCENT".equals(phieu.getLoai())) {
                 giamGia = tongTienHang.multiply(phieu.getGiaTriGiam())
                         .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
                 if (phieu.getGiaTriGiamToiDa() != null && giamGia.compareTo(phieu.getGiaTriGiamToiDa()) > 0) {
@@ -286,22 +302,29 @@ public class GioHangService {
                 }
                 appliedVoucherId = voucherId;
                 System.out.println("Debug - Áp dụng giảm giá %: " + giamGia);
-            } else if ("CASH".equals(phieu.getLoai())) {
+            } else if ("Tiền mặt".equals(phieu.getLoai()) || "CASH".equals(phieu.getLoai())) {
                 giamGia = phieu.getGiaTriGiam();
                 if (giamGia.compareTo(tongTienHang) > 0) {
                     giamGia = tongTienHang;
                 }
                 appliedVoucherId = voucherId;
                 System.out.println("Debug - Áp dụng giảm giá tiền mặt: " + giamGia);
+            } else {
+                System.out.println("Debug - Loại voucher không được hỗ trợ: " + phieu.getLoai());
+                throw new RuntimeException("Loại phiếu giảm giá không được hỗ trợ.");
             }
         } else {
             System.out.println("Debug - Không có voucherId, không áp dụng giảm giá.");
         }
 
+        // Lưu thông tin giảm giá vào session
         getSession().setAttribute(getDiscountSessionKey(tabId), giamGia);
         getSession().setAttribute(getVoucherIdSessionKey(tabId), appliedVoucherId);
         System.out.println("Debug - Giảm giá lưu session: " + giamGia + ", Voucher ID: " + appliedVoucherId);
+
+        // Cập nhật lại tổng giỏ hàng
         capNhatTongGioHang(gioHang, gioHang.getDanhSachSanPham(), shippingFee, tabId);
+
         System.out.println("--- apDungPhieuGiamGia: Kết thúc, Tổng tiền sau giảm: " + gioHang.getTong() + " ---");
         return gioHang;
     }
@@ -310,6 +333,7 @@ public class GioHangService {
         try {
             DonHangTam donHangTam = donHangTamRepository.findByTabId(tabId)
                     .orElse(new DonHangTam());
+
             donHangTam.setId(donHangTam.getId() != null ? donHangTam.getId() : UUID.randomUUID());
             donHangTam.setKhachHang(khachHangId);
             donHangTam.setMaDonHangTam("TEMP_" + System.currentTimeMillis());
@@ -322,6 +346,7 @@ public class GioHangService {
             donHangTam.setSoDienThoaiKhachHang(soDienThoai);
             donHangTam.setPhieuGiamGia(gioHangDTO.getIdPhieuGiamGia());
             donHangTam.setTabId(tabId);
+
             donHangTamRepository.save(donHangTam);
         } catch (Exception e) {
             System.err.println("Lỗi khi lưu đơn hàng tạm: " + e.getMessage());

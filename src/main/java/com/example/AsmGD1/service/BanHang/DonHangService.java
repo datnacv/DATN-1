@@ -39,30 +39,43 @@ import java.util.stream.Collectors;
 public class DonHangService {
     @Autowired
     private DonHangRepository donHangRepository;
+
     @Autowired
     private ChiTietDonHangRepository chiTietDonHangRepository;
+
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
+
     @Autowired
     private PhieuGiamGiaCuaNguoiDungRepository phieuGiamGiaCuaNguoiDungRepository;
+
     @Autowired
     private PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+
     @Autowired
     private DonHangTamRepository donHangTamRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
+
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
+
     @Autowired
     private HoaDonService hoaDonService;
+
     @Autowired
     private NguoiDungService nguoiDungService;
+
     @Autowired
     private ThongKeRepository thongKeRepository;
+
     @Autowired
     private ThongBaoService thongBaoService;
+
     @Autowired
     private ChiTietSanPhamService chiTietSanPhamService;
 
@@ -129,31 +142,34 @@ public class DonHangService {
             chiTietDonHang.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
             chiTietDonHang.setThanhTien(item.getThanhTien());
             chiTietDonHang.setGhiChu(item.getMauSac() + ", " + item.getKichCo());
+
             donHang.addChiTietDonHang(chiTietDonHang);
 
             // Sử dụng updateStockAndStatus để cập nhật tồn kho và trạng thái
             ChiTietSanPham updatedChiTiet = chiTietSanPhamService.updateStockAndStatus(chiTiet.getId(), -item.getSoLuong());
-
             tongTien = tongTien.add(item.getThanhTien());
             soLuongTonKho.put(chiTiet.getId(), updatedChiTiet.getSoLuongTonKho());
         }
 
+        // Xử lý phiếu giảm giá
         if (donHangDTO.getIdPhieuGiamGia() != null) {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
 
-            if ("Phần trăm".equals(phieuGiamGia.getLoai())) {
+            // Sửa lại logic tính toán giảm giá để khớp với GioHangService
+            if ("Phần trăm".equals(phieuGiamGia.getLoai()) || "PERCENT".equals(phieuGiamGia.getLoai())) {
                 tienGiam = tongTien.multiply(phieuGiamGia.getGiaTriGiam())
                         .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
                 if (phieuGiamGia.getGiaTriGiamToiDa() != null && tienGiam.compareTo(phieuGiamGia.getGiaTriGiamToiDa()) > 0) {
                     tienGiam = phieuGiamGia.getGiaTriGiamToiDa();
                 }
-            } else {
+            } else if ("Tiền mặt".equals(phieuGiamGia.getLoai()) || "CASH".equals(phieuGiamGia.getLoai())) {
                 tienGiam = phieuGiamGia.getGiaTriGiam().min(tongTien);
             }
 
             PhieuGiamGiaCuaNguoiDung phieuGiam = phieuGiamGiaCuaNguoiDungRepository
                     .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
+
             if (phieuGiam != null && phieuGiam.getSoLuotConLai() > 0) {
                 phieuGiam.setSoLuotConLai(phieuGiam.getSoLuotConLai() - 1);
                 phieuGiamGiaCuaNguoiDungRepository.save(phieuGiam);
@@ -191,7 +207,6 @@ public class DonHangService {
             thongBaoService.taoThongBaoChoAdmin(donHang);
             for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
                 ChiTietSanPham chiTiet = chiTietDonHang.getChiTietSanPham();
-
                 ThongKe thongKe = new ThongKe();
                 thongKe.setId(UUID.randomUUID());
                 thongKe.setNgayThanhToan(donHang.getThoiGianThanhToan().toLocalDate());
@@ -205,7 +220,6 @@ public class DonHangService {
                 thongKe.setDoanhThu(chiTietDonHang.getThanhTien());
                 thongKe.setSoLuongTonKho(chiTiet.getSoLuongTonKho());
                 thongKe.setImageUrl(chiTiet.getSanPham().getUrlHinhAnh());
-
                 thongKeRepository.save(thongKe);
             }
         }
@@ -222,8 +236,7 @@ public class DonHangService {
         return ketQua;
     }
 
-
-    // Các phương thức khác giữ nguyên, chỉ thêm logging nếu cần
+    // Các phương thức khác giữ nguyên
     @Transactional
     public DonHangDTO giuDonHang(DonHangDTO donHangDTO) {
         log.info("Giữ đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
@@ -237,10 +250,13 @@ public class DonHangService {
             if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
                 throw new RuntimeException("Số điện thoại khách hàng không được để trống.");
             }
+
             NguoiDung khachHang = nguoiDungRepository.findBySoDienThoai(soDienThoai)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + soDienThoai));
+
             donHangTam.setKhachHang(khachHang.getId());
             donHangTam.setSoDienThoaiKhachHang(donHangDTO.getSoDienThoaiKhachHang());
+
             BigDecimal tongTien = BigDecimal.ZERO;
             if (donHangDTO.getDanhSachSanPham() != null && !donHangDTO.getDanhSachSanPham().isEmpty()) {
                 List<GioHangItemDTO> enhancedItems = new ArrayList<>();
@@ -248,6 +264,7 @@ public class DonHangService {
                     if (item.getTenSanPham() == null || item.getMauSac() == null || item.getKichCo() == null) {
                         ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham())
                                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
+
                         item.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
                         item.setMauSac(chiTiet.getMauSac().getTenMau());
                         item.setKichCo(chiTiet.getKichCo().getTen());
@@ -262,11 +279,13 @@ public class DonHangService {
 
             BigDecimal phiVanChuyen = donHangDTO.getPhiVanChuyen() != null ? donHangDTO.getPhiVanChuyen() : BigDecimal.ZERO;
             BigDecimal giamGia = BigDecimal.ZERO;
+
             if (donHangDTO.getIdPhieuGiamGia() != null) {
                 PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
                         .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
                 giamGia = phieuGiamGia.getGiaTriGiam().min(tongTien);
             }
+
             donHangTam.setTong(tongTien.add(phiVanChuyen).subtract(giamGia));
             donHangTam.setPhiVanChuyen(phiVanChuyen);
 
