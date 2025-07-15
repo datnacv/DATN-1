@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đơn mua của tôi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .order-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        .order-status {
+            font-weight: bold;
+            color: #f97316;
+        }
+
+        .order-product-img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .nav-tabs .nav-link.active {
+            background-color: #f97316;
+            color: white;
+        }
+
+        .text-orange-600 {
+            color: #f97316 !important;
+        }
+
+        .rounded-pill {
+            border-radius: 50rem !important;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg sticky-top shadow-sm" style="background-color: #f97316;">
+    <div class="container d-flex justify-content-between align-items-center py-2">
+        <!-- Logo -->
+        <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
+
+        <!-- Dropdown Danh mục -->
+        <div class="dropdown me-3">
+            <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Danh mục
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="/category/nam">Thời trang Nam</a></li>
+                <li><a class="dropdown-item" href="/category/nu">Thời trang Nữ</a></li>
+                <li><a class="dropdown-item" href="/category/phu-kien">Phụ kiện</a></li>
+                <li><a class="dropdown-item" href="/category/gia-dung">Gia dụng</a></li>
+            </ul>
+        </div>
+
+        <!-- Tìm kiếm -->
+        <form class="flex-grow-1 mx-3" style="max-width: 600px;">
+            <div class="input-group">
+                <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm...">
+                <button class="btn btn-light rounded-end-pill px-4" type="submit">
+                    <i class="fas fa-search text-orange-600"></i>
+                </button>
+            </div>
+        </form>
+
+        <!-- Giỏ hàng + Người dùng -->
+        <div class="d-flex align-items-center gap-3">
+            <!-- Giỏ hàng -->
+            <a th:href="@{/cart}" class="text-white fs-5 position-relative">
+                <i class="fas fa-shopping-cart"></i>
+            </a>
+
+            <!-- Nếu đã đăng nhập -->
+            <div th:if="${user != null}" class="dropdown">
+                <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
+                    <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" th:href="@{/logout}">Đăng xuất</a></li>
+                </ul>
+            </div>
+
+            <!-- Nếu chưa đăng nhập -->
+            <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3">
+                Đăng nhập
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Nội dung đơn mua -->
+<div class="container mt-3">
+
+    <h3>Đơn mua của bạn</h3>
+
+    <!-- Tabs trạng thái -->
+    <ul class="nav nav-tabs mt-3" id="orderTabs">
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'"
+               th:href="@{/dsdon-mua(status='tat-ca')}">Tất cả</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'"
+               th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chờ xác nhận</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'dang-giao'} ? ' active'"
+               th:href="@{/dsdon-mua(status='dang-giao')}">Đang giao</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'hoan-thanh'} ? ' active'"
+               th:href="@{/dsdon-mua(status='hoan-thanh')}">Hoàn thành</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'da-huy'} ? ' active'"
+               th:href="@{/dsdon-mua(status='da-huy')}">Đã hủy</a>
+        </li>
+    </ul>
+
+    <!-- Danh sách đơn hàng -->
+    <div class="mt-4" th:if="${danhSachHoaDon != null and !#lists.isEmpty(danhSachHoaDon)}">
+        <div th:each="hoaDon : ${danhSachHoaDon}" class="order-card">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>Mã đơn:</strong> <span th:text="${hoaDon.donHang.maDonHang}"></span><br/>
+                    <small th:text="${hoaDon.ngayTao.toLocalDate()} + ' ' + ${hoaDon.ngayTao.toLocalTime()}"></small>
+                </div>
+                <div class="order-status" th:text="${hoaDon.trangThai}"></div>
+            </div>
+            <hr>
+            <div th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}" class="d-flex mb-2">
+                <div>
+                    <div th:text="${chiTiet.tenSanPham}"></div>
+                    <small>Số lượng: <span th:text="${chiTiet.soLuong}"></span></small><br/>
+                    <small>Giá: <span th:text="${chiTiet.formattedGia} + ' đ'"></span></small>
+                </div>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Tổng tiền:</strong>
+                    <span class="text-danger fs-5" th:text="${hoaDon.formattedTongTien} + ' đ'"></span>
+                </div>
+                <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nếu không có đơn -->
+    <div th:if="${danhSachHoaDon == null or #lists.isEmpty(danhSachHoaDon)}" class="text-center mt-5">
+        <p>Không có đơn hàng nào.</p>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,4 +40,8 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
     Page<HoaDon> findByDonHangMaDonHangContainingIgnoreCase(@Param("value") String maDonHang, Pageable pageable);
 
     Optional<HoaDon> findByDonHangMaDonHang(String maDonHang);
+    List<HoaDon> findByDonHang_NguoiDungId(UUID nguoiDungId);
+
+    List<HoaDon> findByDonHang_NguoiDungIdAndTrangThai(UUID nguoiDungId, String trangThai);
+
 }

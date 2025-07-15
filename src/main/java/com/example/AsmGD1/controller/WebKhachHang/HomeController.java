@@ -53,7 +53,10 @@ public class HomeController {
                 if (email != null) {
                     NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                             .orElseThrow(() -> new RuntimeException("Người dùng với email " + email + " không tồn tại"));
+
                     model.addAttribute("loggedInUser", nguoiDung);
+                    model.addAttribute("user", nguoiDung); // ✅ Thêm dòng này
+
                     if ("customer".equals(nguoiDung.getVaiTro())) {
                         GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
                         model.addAttribute("gioHangId", gioHang.getId());
@@ -67,7 +70,9 @@ public class HomeController {
             }
         } else {
             model.addAttribute("loggedInUser", null);
+            model.addAttribute("user", null); // 👈 để tránh lỗi null trong navbar
         }
+
         return "WebKhachHang/index";
     }
 
@@ -80,6 +85,15 @@ public class HomeController {
         }
         model.addAttribute("productDetail", productDetail);
         return "WebKhachHang/chitietsanpham";
+    }
+    @GetMapping("/don-mua")
+    public String donMuaPage(Model model, Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof NguoiDung user) {
+            model.addAttribute("user", user);
+            // model.addAttribute("orders", donHangService.findByCustomerId(user.getId()));
+            return "WebKhachHang/don-mua"; // trang hiển thị đơn hàng đã mua
+        }
+        return "redirect:/customers/login";
     }
 
     @GetMapping("/cart")

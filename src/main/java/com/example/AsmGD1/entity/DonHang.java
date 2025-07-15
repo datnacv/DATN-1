@@ -59,6 +59,11 @@ public class DonHang {
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
 
+    @Column(name = "trang_thai", nullable = false)
+    private String trangThai = "CHO_XAC_NHAN";
+
+
+
     @ManyToOne
     @JoinColumn(name = "id_phieu_giam_gia")
     private PhieuGiamGia phieuGiamGia;

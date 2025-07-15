@@ -37,33 +37,58 @@
   </marquee>
 </div>
 
-<nav class="navbar fixed-top shadow-lg mt-10 z-40">
-  <div class="container mx-auto flex items-center justify-between py-2 px-4">
-    <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
-    <div class="relative dropdown">
-      <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
-        Danh mục <i class="fas fa-caret-down"></i>
+<nav class="navbar navbar-expand-lg sticky-top shadow-sm" style="background-color: #f97316;">
+  <div class="container d-flex justify-content-between align-items-center py-2">
+    <!-- Logo -->
+    <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
+
+    <!-- Dropdown Danh mục -->
+    <div class="dropdown me-3">
+      <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        Danh mục
       </button>
-      <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
-        <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nam</a>
-        <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nữ</a>
-        <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100">Phụ kiện</a>
-        <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
-      </div>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="/category/nam">Thời trang Nam</a></li>
+        <li><a class="dropdown-item" href="/category/nu">Thời trang Nữ</a></li>
+        <li><a class="dropdown-item" href="/category/phu-kien">Phụ kiện</a></li>
+        <li><a class="dropdown-item" href="/category/gia-dung">Gia dụng</a></li>
+      </ul>
     </div>
-    <div class="flex-1 mx-4 max-w-2xl">
-      <div class="relative">
-        <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
-        <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
-          <i class="fas fa-search"></i>
+
+    <!-- Tìm kiếm -->
+    <form class="flex-grow-1 mx-3" style="max-width: 600px;">
+      <div class="input-group">
+        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm...">
+        <button class="btn btn-light rounded-end-pill px-4" type="submit">
+          <i class="fas fa-search text-orange-600"></i>
         </button>
       </div>
-    </div>
-    <div class="flex items-center space-x-4" id="userSection">
-      <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
-      <div class="user-info" id="userInfo"></div>
-      <a href="/customers/login" id="loginButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none">Đăng nhập</a>
-      <a href="/logout" id="logoutButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none" style="display: none;">Đăng xuất</a>
+    </form>
+
+    <!-- Giỏ hàng + Người dùng -->
+    <div class="d-flex align-items-center gap-3">
+      <!-- Giỏ hàng -->
+      <a th:href="@{/cart}" class="text-white fs-5 position-relative">
+        <i class="fas fa-shopping-cart"></i>
+      </a>
+
+      <!-- Nếu đã đăng nhập -->
+      <div th:if="${user != null}" class="dropdown">
+        <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+          <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
+          <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item text-danger" th:href="@{/logout}">Đăng xuất</a></li>
+        </ul>
+      </div>
+
+      <!-- Nếu chưa đăng nhập -->
+      <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3">
+        Đăng nhập
+      </a>
     </div>
   </div>
 </nav>

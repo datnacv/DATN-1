@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+<!-- Fragment navbar tái sử dụng -->
+<nav class="navbar fixed-top shadow-lg mt-10 z-40 bg-orange-500" th:fragment="navbar(user)">
+    <div class="container mx-auto flex items-center justify-between py-2 px-4">
+        <!-- Logo -->
+        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+
+        <!-- Dropdown danh mục -->
+        <div class="relative group">
+            <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
+                Danh mục <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 hidden group-hover:block">
+                <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100 text-gray-800">Thời trang Nam</a>
+                <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100 text-gray-800">Thời trang Nữ</a>
+                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100 text-gray-800">Phụ kiện</a>
+                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100 text-gray-800">Gia dụng</a>
+            </div>
+        </div>
+
+        <!-- Thanh tìm kiếm -->
+        <div class="flex-1 mx-4 max-w-2xl">
+            <div class="relative">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..."
+                       class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+                <button
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Giỏ hàng và tài khoản -->
+        <div class="flex items-center space-x-4" id="userSection">
+            <!-- Giỏ hàng -->
+            <a th:href="@{/cart}" class="text-white text-xl">
+                <i class="fas fa-shopping-cart"></i>
+            </a>
+
+            <!-- Nếu đã đăng nhập -->
+            <div class="relative group" th:if="${user != null}">
+                <div class="flex items-center text-white cursor-pointer">
+                    <i class="fas fa-user-circle fa-lg text-white"></i>
+                    <span th:text="${user.hoTen}" class="ml-1">Tên người dùng</span>
+                </div>
+                <div
+                        class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 hidden group-hover:block">
+                    <a href="/account/profile"
+                       class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Tài Khoản Của Tôi</a>
+                    <a th:href="@{/WebKhachHang/don-mua}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Đơn Mua</a>
+
+                    <a th:href="@{/logout}"
+                       class="block px-4 py-2 text-red-600 hover:bg-gray-100">Đăng Xuất</a>
+                </div>
+            </div>
+
+            <!-- Nếu chưa đăng nhập -->
+            <a th:if="${user == null}" th:href="@{/customers/login}"
+               class="text-white font-semibold hover:text-orange-200 focus:outline-none">
+                Đăng nhập
+            </a>
+        </div>
+    </div>
+</nav>
+</body>
+</html>
