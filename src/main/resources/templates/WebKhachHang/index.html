@@ -226,7 +226,7 @@
     </div>
     <div>
       <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-      <p class="text-sm">Email: support@160store.com</p>
+      <p class="text-sm">Email: acvstore@gmail.com</p>
       <p class="text-sm">Hotline: 0123 456 789</p>
       <div class="flex space-x-4 mt-4">
         <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
@@ -274,8 +274,8 @@
 
   document.getElementById('logoutButton').addEventListener('click', (e) => {
     e.preventDefault();
-    fetch('/logout', { method: 'POST', credentials: 'include' }).then(() => {
-      window.location.href = '/customers/login';
+    fetch('/customers/logout', { method: 'POST', credentials: 'include' }).then(() => {
+      window.location.href = '/';
     });
   });
 
