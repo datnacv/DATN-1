@@ -175,7 +175,7 @@ public class HoaDonController {
             hoaDon.getNguoiDung().setTinhThanhPho(tinhThanhPho);
             hoaDon.getNguoiDung().setQuanHuyen(quanHuyen);
             hoaDon.getNguoiDung().setPhuongXa(phuongXa);
-            hoaDon.getNguoiDung().setDiaChi(chiTietDiaChi);
+            hoaDon.getNguoiDung().setChiTietDiaChi(chiTietDiaChi);
 
             hoaDonService.save(hoaDon);
 

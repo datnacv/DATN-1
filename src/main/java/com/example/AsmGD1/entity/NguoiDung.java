@@ -37,8 +37,6 @@ public class NguoiDung implements UserDetails { // Thêm "implements UserDetails
     @Column(name = "so_dien_thoai", nullable = false, length = 20, unique = true)
     private String soDienThoai;
 
-    @Column(name = "dia_chi", columnDefinition = "NVARCHAR(MAX)")
-    private String diaChi;
 
     @Column(name = "vai_tro", length = 50)
     private String vaiTro; // Ví dụ: "CUSTOMER", "ADMIN", "EMPLOYEE"

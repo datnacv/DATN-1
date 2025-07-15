@@ -125,7 +125,9 @@ public class HoaDonService {
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại."));
 
             String currentStatus = getCurrentStatus(hoaDon);
-            if (("Đang vận chuyển".equals(currentStatus) || "Hoàn thành".equals(currentStatus)) && !"Hoàn thành".equals(hoaDon.getTrangThai())) {
+            if (("Đang vận chuyển".equals(currentStatus) || "Hoàn thành".equals(currentStatus) ||
+                    "Đã trả hàng".equals(currentStatus) || "Đã trả hàng một phần".equals(currentStatus)) &&
+                    !hoaDon.getTrangThai().equals(currentStatus)) {
                 hoaDon.setTrangThai(currentStatus);
                 hoaDon.setNgayThanhToan(LocalDateTime.now());
                 save(hoaDon);
@@ -136,7 +138,7 @@ public class HoaDonService {
             dto.setMaHoaDon(hoaDon.getDonHang().getMaDonHang());
             dto.setTenKhachHang(hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Khách lẻ");
             dto.setSoDienThoaiKhachHang(hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ");
-            dto.setDiaChi(hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getDiaChi() != null ? hoaDon.getNguoiDung().getDiaChi() : hoaDon.getGhiChu() != null ? hoaDon.getGhiChu() : "Không rõ");
+            dto.setDiaChi(hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getChiTietDiaChi() != null ? hoaDon.getNguoiDung().getChiTietDiaChi() : hoaDon.getGhiChu() != null ? hoaDon.getGhiChu() : "Không rõ");
             dto.setTongTienHang(hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
             dto.setTongTien(hoaDon.getTongTien());
             dto.setPhiVanChuyen(hoaDon.getDonHang().getPhiVanChuyen() != null ? hoaDon.getDonHang().getPhiVanChuyen() : BigDecimal.ZERO);
@@ -252,8 +254,8 @@ public class HoaDonService {
 
             String address = "Không rõ";
             if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
-                address = hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getDiaChi() != null
-                        ? hoaDon.getNguoiDung().getDiaChi()
+                address = hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getChiTietDiaChi() != null
+                        ? hoaDon.getNguoiDung().getChiTietDiaChi()
                         : "Mua tại quầy";
             } else {
                 address = hoaDon.getNguoiDung().getChiTietDiaChi() != null && !hoaDon.getNguoiDung().getChiTietDiaChi().isEmpty()
@@ -363,10 +365,19 @@ public class HoaDonService {
     }
 
     public String getCurrentStatus(HoaDon hoaDon) {
-        if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
+        List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
+        long totalItems = chiTietDonHangs.size();
+        long returnedItems = chiTietDonHangs.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
+                .count();
+
+        if (returnedItems > 0 && returnedItems == totalItems) {
+            return "Đã trả hàng";
+        } else if (returnedItems > 0) {
+            return "Đã trả hàng một phần";
+        } else if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
             return "Hoàn thành";
-        }
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
             return "Hoàn thành";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai()))) {
             return "Vận chuyển thành công";
@@ -383,8 +394,8 @@ public class HoaDonService {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
 
-        if (!"Hoàn thành".equals(hoaDon.getTrangThai())) {
-            throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành' để thực hiện trả hàng.");
+        if (!"Hoàn thành".equals(hoaDon.getTrangThai()) && !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+            throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành' hoặc 'Vận chuyển thành công' để thực hiện trả hàng.");
         }
 
         if (chiTietDonHangIds == null || chiTietDonHangIds.isEmpty()) {
@@ -392,7 +403,6 @@ public class HoaDonService {
         }
 
         BigDecimal tongTienHoan = BigDecimal.ZERO;
-
         for (UUID chiTietId : chiTietDonHangIds) {
             ChiTietDonHang chiTiet = chiTietDonHangRepository.findById(chiTietId)
                     .orElseThrow(() -> new RuntimeException("Chi tiết đơn hàng không tồn tại với ID: " + chiTietId));
@@ -420,9 +430,21 @@ public class HoaDonService {
             tongTienHoan = tongTienHoan.add(chiTiet.getThanhTien());
         }
 
-        String ghiChu = "Trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn: " + formatCurrency(tongTienHoan);
-        addLichSuHoaDon(hoaDon, "Trả hàng", ghiChu);
+        // Cập nhật tổng tiền của hóa đơn
+        hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
+
+        // Xác định trạng thái trả hàng
+        List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
+        long totalItems = chiTietDonHangs.size();
+        long returnedItems = chiTietDonHangs.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
+                .count();
+
+        String trangThaiTraHang = returnedItems == totalItems ? "Đã trả hàng" : "Đã trả hàng một phần";
+        String ghiChu = "Lý do trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn trả: " + formatCurrency(tongTienHoan);
+        addLichSuHoaDon(hoaDon, trangThaiTraHang, ghiChu);
         hoaDon.setGhiChu(ghiChu);
+        hoaDon.setTrangThai(trangThaiTraHang);
         save(hoaDon);
     }
 

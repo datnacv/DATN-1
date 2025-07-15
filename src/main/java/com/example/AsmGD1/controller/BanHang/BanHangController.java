@@ -135,8 +135,8 @@ public class BanHangController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
 
             List<String> addresses = new ArrayList<>();
-            if (nguoiDung.getDiaChi() != null && !nguoiDung.getDiaChi().trim().isEmpty()) {
-                addresses.add(nguoiDung.getDiaChi());
+            if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().trim().isEmpty()) {
+                addresses.add(nguoiDung.getChiTietDiaChi());
             }
             String detailedAddress = constructDetailedAddress(nguoiDung);
             if (detailedAddress != null && !addresses.contains(detailedAddress)) {
