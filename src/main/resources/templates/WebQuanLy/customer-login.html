@@ -35,7 +35,6 @@
             overflow-x: hidden;
         }
 
-        /* Geometric Background Pattern */
         body::before {
             content: '';
             position: absolute;
@@ -55,7 +54,6 @@
             100% { background-position: 60px 60px, -60px 60px; }
         }
 
-        /* Floating geometric shapes */
         body::after {
             content: '';
             position: absolute;
@@ -79,7 +77,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 10px;
             position: relative;
             z-index: 1;
         }
@@ -90,7 +88,6 @@
             position: relative;
         }
 
-        /* Additional floating elements */
         .login-container::before {
             content: '';
             position: absolute;
@@ -129,7 +126,7 @@
             background: var(--white);
             border: 1px solid var(--medium-gray);
             border-radius: 16px;
-            padding: 50px 40px;
+            padding: 30px 25px;
             box-shadow: var(--shadow-medium);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
@@ -154,13 +151,13 @@
 
         .brand-section {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
         }
 
         .brand-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px;
             display: block;
             border-radius: 12px;
             box-shadow: var(--shadow-light);
@@ -172,31 +169,31 @@
         }
 
         .welcome-title {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: 800;
             color: var(--primary-color);
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             letter-spacing: -0.5px;
         }
 
         .welcome-subtitle {
             color: var(--dark-gray);
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
         }
 
         .form-floating {
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             position: relative;
         }
 
         .form-floating .form-control {
-            height: 60px;
+            height: 50px;
             border: 2px solid var(--medium-gray);
-            border-radius: 12px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 500;
-            padding-left: 55px;
+            padding-left: 45px;
             transition: all 0.3s ease;
             background: var(--white);
             color: var(--primary-color);
@@ -209,18 +206,19 @@
         }
 
         .form-floating label {
-            padding-left: 55px;
+            padding-left: 45px;
             color: var(--dark-gray);
             font-weight: 500;
+            font-size: 14px;
         }
 
         .input-icon {
             position: absolute;
-            left: 18px;
+            left: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: var(--accent-color);
-            font-size: 18px;
+            font-size: 16px;
             z-index: 5;
             transition: color 0.3s ease;
         }
@@ -231,13 +229,13 @@
 
         .password-toggle {
             position: absolute;
-            right: 18px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
             color: var(--accent-color);
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
             z-index: 5;
             transition: color 0.3s ease;
@@ -249,18 +247,18 @@
 
         .btn-login {
             width: 100%;
-            height: 56px;
+            height: 48px;
             background: var(--primary-color);
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             color: var(--white);
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             letter-spacing: 0.5px;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
 
         .btn-login::before {
@@ -290,10 +288,10 @@
 
         .alert {
             border: none;
-            border-radius: 12px;
-            padding: 16px 20px;
+            border-radius: 10px;
+            padding: 12px 15px;
             font-weight: 500;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
             position: relative;
             overflow: hidden;
         }
@@ -315,7 +313,7 @@
         .divider {
             position: relative;
             text-align: center;
-            margin: 32px 0;
+            margin: 20px 0;
         }
 
         .divider::before {
@@ -330,17 +328,17 @@
 
         .divider span {
             background: var(--white);
-            padding: 0 20px;
+            padding: 0 15px;
             color: var(--dark-gray);
             font-weight: 500;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .oauth-btn {
             width: 100%;
-            height: 52px;
+            height: 45px;
             border: 2px solid var(--medium-gray);
-            border-radius: 12px;
+            border-radius: 10px;
             background: var(--white);
             color: var(--primary-color);
             font-weight: 600;
@@ -348,7 +346,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
@@ -364,8 +362,8 @@
         }
 
         .oauth-btn i {
-            margin-right: 12px;
-            font-size: 20px;
+            margin-right: 8px;
+            font-size: 18px;
         }
 
         .google-btn i {
@@ -378,8 +376,8 @@
 
         .footer-links {
             text-align: center;
-            margin-top: 32px;
-            padding-top: 24px;
+            margin-top: 20px;
+            padding-top: 16px;
             border-top: 1px solid var(--medium-gray);
         }
 
@@ -387,7 +385,7 @@
             color: var(--primary-color);
             text-decoration: none;
             font-weight: 600;
-            font-size: 15px;
+            font-size: 13px;
             transition: all 0.3s ease;
             position: relative;
         }
@@ -414,10 +412,9 @@
 
         .separator {
             color: var(--accent-color);
-            margin: 0 12px;
+            margin: 0 8px;
         }
 
-        /* Loading Animation */
         .btn-loading {
             pointer-events: none;
             opacity: 0.8;
@@ -425,37 +422,35 @@
 
         .spinner {
             display: inline-block;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border: 2px solid rgba(255,255,255,0.3);
             border-radius: 50%;
             border-top-color: white;
             animation: spin 1s ease-in-out infinite;
-            margin-right: 8px;
+            margin-right: 6px;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* Responsive Design */
         @media (max-width: 576px) {
             .login-card {
-                padding: 40px 30px;
-                margin: 10px;
+                padding: 25px 20px;
+                margin: 5px;
             }
 
             .welcome-title {
-                font-size: 28px;
+                font-size: 20px;
             }
 
             .brand-logo {
-                width: 60px;
-                height: 60px;
+                width: 50px;
+                height: 50px;
             }
         }
 
-        /* Accessibility */
         .form-control:focus {
             outline: none;
         }
@@ -465,7 +460,6 @@
             outline-offset: 2px;
         }
 
-        /* Animation for form validation */
         .was-validated .form-control:invalid {
             border-color: #dc3545;
             animation: shake 0.5s ease-in-out;
@@ -482,16 +476,13 @@
 <div class="container-fluid">
     <div class="login-container">
         <div class="login-card">
-            <!-- Brand Section -->
             <div class="brand-section">
                 <img src="/images/faces/admin.jpg" alt="Company Logo" class="brand-logo">
                 <h1 class="welcome-title">Chào mừng trở lại</h1>
                 <p class="welcome-subtitle">Đăng nhập để tận hưởng niềm vui mua sắm tại ACVStore</p>
             </div>
 
-            <!-- Login Form -->
             <form method="post" action="/customers/login" class="needs-validation" novalidate>
-                <!-- Username Field -->
                 <div class="form-floating">
                     <input type="text"
                            class="form-control"
@@ -503,7 +494,6 @@
                     <i class="fas fa-user input-icon"></i>
                 </div>
 
-                <!-- Password Field -->
                 <div class="form-floating">
                     <input type="password"
                            class="form-control"
@@ -518,7 +508,6 @@
                     </button>
                 </div>
 
-                <!-- Error/Success Messages -->
                 <div th:if="${param.error}" class="alert alert-danger">
                     <i class="fas fa-exclamation-circle me-2"></i>
                     <span th:text="${param.error == 'accessDenied'} ? 'Bạn không có quyền truy cập.' : 'Tên đăng nhập hoặc mật khẩu không đúng.'">
@@ -531,12 +520,10 @@
                     Bạn đã đăng xuất thành công.
                 </div>
 
-                <!-- Login Button -->
                 <button type="submit" class="btn btn-login" onclick="showLoading(this)">
                     <span class="btn-text">Đăng nhập</span>
                 </button>
 
-                <!-- Footer Links -->
                 <div class="footer-links">
                     <a href="#">Quên mật khẩu?</a>
                     <span class="separator">|</span>
@@ -544,12 +531,10 @@
                 </div>
             </form>
 
-            <!-- Divider -->
             <div class="divider">
                 <span>Hoặc đăng nhập bằng</span>
             </div>
 
-            <!-- OAuth Buttons -->
             <div class="oauth-section">
                 <a href="/oauth2/authorization/google" class="oauth-btn google-btn">
                     <i class="fab fa-google"></i>
@@ -564,12 +549,9 @@
     </div>
 </div>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Custom JavaScript -->
 <script>
-    // Password Toggle
     function togglePassword() {
         const passwordInput = document.getElementById('matKhau');
         const toggleIcon = document.getElementById('toggleIcon');
@@ -585,13 +567,11 @@
         }
     }
 
-    // Loading Button
     function showLoading(button) {
         button.classList.add('btn-loading');
         button.innerHTML = '<span class="spinner"></span>Đang đăng nhập...';
     }
 
-    // Form Validation
     (function() {
         'use strict';
         window.addEventListener('load', function() {
@@ -608,7 +588,6 @@
         }, false);
     })();
 
-    // Auto-hide alerts after 5 seconds
     document.addEventListener('DOMContentLoaded', function() {
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(function(alert) {
@@ -622,7 +601,6 @@
         });
     });
 
-    // Add floating animation to input icons
     document.querySelectorAll('.form-control').forEach(function(input) {
         input.addEventListener('focus', function() {
             this.parentElement.classList.add('focused');
@@ -635,5 +613,3 @@
         });
     });
 </script>
-</body>
-</html>
