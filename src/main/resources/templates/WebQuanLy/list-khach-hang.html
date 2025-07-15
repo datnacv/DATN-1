@@ -38,27 +38,6 @@
             padding-top: 100px; /* Space for fixed navbar when sidebar is hidden */
         }
 
-        /*!* Navbar - Fixed positioning *!*/
-        /*.custom-navbar {*/
-        /*    background: #ffffff;*/
-        /*    border-bottom: 1px solid #e5e7eb;*/
-        /*    backdrop-filter: blur(10px);*/
-        /*    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);*/
-        /*    position: fixed;*/
-        /*    top: 0;*/
-        /*    right: 0;*/
-        /*    left: 70px; !* Account for sidebar width *!*/
-        /*    z-index: 1030;*/
-        /*    height: 70px;*/
-        /*    display: flex;*/
-        /*    align-items: center;*/
-        /*}*/
-
-        /*!* When sidebar is collapsed/hidden *!*/
-        /*.custom-navbar.full-width {*/
-        /*    left: 0;*/
-        /*}*/
-
         /* Page Header */
         .page-title {
             color: #111827;
@@ -613,8 +592,8 @@
                     <td>
                         <a th:href="'tel:' + ${customer.soDienThoai}" class="text-decoration-none" th:text="${customer.soDienThoai}"></a>
                     </td>
-                    <td class="address-cell" th:title="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.diaChi}">
-                        <span th:text="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.diaChi}"></span>
+                    <td class="address-cell" th:title="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.chiTietDiaChi}">
+                        <span th:text="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.chiTietDiaChi}"></span>
                     </td>
                     <td>
                         <span class="badge bg-primary" th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></span>
@@ -765,8 +744,8 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="mb-3">
-                                        <label for="addDiaChi" class="form-label">Địa chỉ chi tiết</label>
-                                        <input type="text" class="form-control" id="addDiaChi" th:field="*{diaChi}">
+                                        <label for="addChiTietDiaChi" class="form-label">Địa chỉ chi tiết</label>
+                                        <input type="text" class="form-control" id="addChiTietDiaChi" th:field="*{chiTietDiaChi}">
                                     </div>
                                 </div>
                             </div>
@@ -901,8 +880,8 @@
                                     <div class="col-md-12">
                                         <div class="mb-3">
                                             <label class="form-label">Địa chỉ chi tiết</label>
-                                            <input type="text" class="form-control" name="diaChi"
-                                                   th:value="${customer.diaChi}">
+                                            <input type="text" class="form-control" name="chiTietDiaChi"
+                                                   th:value="${customer.chiTietDiaChi}">
                                         </div>
                                     </div>
                                 </div>

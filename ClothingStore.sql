@@ -66,12 +66,11 @@ CREATE TABLE thuong_hieu (
 -- 10. Bảng người dùng
 CREATE TABLE nguoi_dung (
                             id UNIQUEIDENTIFIER PRIMARY KEY,
-                            ten_dang_nhap NVARCHAR(50) ,
-                            mat_khau NVARCHAR(100) ,
+                            ten_dang_nhap NVARCHAR(50),
+                            mat_khau NVARCHAR(100),
                             ho_ten NVARCHAR(100) NOT NULL,
                             email NVARCHAR(100) NOT NULL,
-                            so_dien_thoai NVARCHAR(20) unique ,
-                            dia_chi NVARCHAR(MAX),
+                            so_dien_thoai NVARCHAR(20) UNIQUE,
                             vai_tro NVARCHAR(50) CHECK (vai_tro IN (N'admin', N'customer', N'employee')),
                             ngay_sinh DATE,
                             gioi_tinh BIT,
@@ -393,11 +392,10 @@ INSERT INTO thuong_hieu (id, ten_thuong_hieu) VALUES
                                                   ('550E8400-E29B-41D4-A716-446655440037', N'Adidas');
 
 -- 10. Insert vào bảng nguoi_dung
-INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, dia_chi, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
-                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440013', N'admin', N'admin123', N'Nguyễn Văn Admin', N'admin1@example.com', N'0901234567', N'123 Đường ABC, Hà Nội', N'admin', '1985-01-01', 1, N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 123, Đường ABC', GETDATE(), N'QR123', NULL, 1),
-                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440014', N'customer1', N'customer123', N'Trần Thị Customer', N'customer1@example.com', N'0912345678', N'456 Đường XYZ, TP.HCM', N'customer', '1995-05-10', 0, N'TP.HCM', N'Quận 1', N'Bến Nghé', N'Số 456, Đường XYZ', GETDATE(), N'QR456', NULL, 1),
-                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440015', N'employee1', N'employee123', N'Lê Văn Employee', N'employee1@example.com', N'0923456789', N'789 Đường KLM, Đà Nẵng', N'employee', '1990-03-15', 1, N'Đà Nẵng', N'Hải Châu', N'Hải Châu I', N'Số 789, Đường KLM', GETDATE(), N'QR789', NULL, 1);
-
+INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
+                                                                                                                                                                                                                                                   ('550E8400-E29B-41D4-A716-446655440013', N'admin', N'admin123', N'Nguyễn Văn Admin', N'admin1@example.com', N'0901234567', N'admin', '1985-01-01', 1, N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 123, Đường ABC', GETDATE(), N'QR123', NULL, 1),
+                                                                                                                                                                                                                                                   ('550E8400-E29B-41D4-A716-446655440014', N'customer1', N'customer123', N'Trần Thị Customer', N'customer1@example.com', N'0912345678', N'customer', '1995-05-10', 0, N'TP.HCM', N'Quận 1', N'Bến Nghé', N'Số 456, Đường XYZ', GETDATE(), N'QR456', NULL, 1),
+                                                                                                                                                                                                                                                   ('550E8400-E29B-41D4-A716-446655440015', N'employee1', N'employee123', N'Lê Văn Employee', N'employee1@example.com', N'0923456789', N'employee', '1990-03-15', 1, N'Đà Nẵng', N'Hải Châu', N'Hải Châu I', N'Số 789, Đường KLM', GETDATE(), N'QR789', NULL, 1);
 -- 11. Insert vào bảng phieu_giam_gia
 INSERT INTO phieu_giam_gia (id, ten, loai, gia_tri_giam, gia_tri_giam_toi_thieu, so_luong, gioi_han_su_dung, cong_khai, ngay_bat_dau, ngay_ket_thuc, thoi_gian_tao, kieu_phieu) VALUES
     ('550E8400-E29B-41D4-A716-446655440016', N'Giảm 10% áo nam', N'Phần trăm', 10.00, 500000.00, 100, 1, 1, '2025-05-24', '2025-06-24', GETDATE(), N'cong_khai');
@@ -518,28 +516,20 @@ VALUES (
 
 
 SELECT id, ho_ten, email, vai_tro, trang_thai FROM nguoi_dung WHERE vai_tro = 'CUSTOMER';
-INSERT INTO nguoi_dung (
-    id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, dia_chi,
-    vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa,
-    chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai
-)
-VALUES
-    (NEWID(), N'adminlong', N'admin123', N'Phạm Đức Long', 'duclong0910@gmail.com', '0911006045', N'654 JKL, Hải Phòng', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'adminluc', N'admin123', N'Nguyễn Xuân Lực', 'nguyenxuanlucthanhoai@gmail.com', '0866716384', N'654 JKL, Hải Phòng', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'adminmanh', N'admin123', N'Phạm Duy Mạnh', 'pdm25122006@gmail.com', '0358187642', N'654 JKL, Hải Phòng', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'adminnam', N'admin123', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com', '0969469018', N'654 JKL, Hải Phòng', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'adminsy', N'admin123', N'Sỹ Lê Minh Hiếu', 'sy@gmail.com', '0978790099', N'654 JKL, Hải Phòng', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
+                                                                                                                                                                                                                                                   (NEWID(), N'adminlong', N'admin123', N'Phạm Đức Long', 'duclong0910@gmail.com', '0911006045', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminluc', N'admin123', N'Nguyễn Xuân Lực', 'nguyenxuanlucthanhoai@gmail.com', '0866716384', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminmanh', N'admin123', N'Phạm Duy Mạnh', 'pdm25122006@gmail.com', '0358187642', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminnam', N'admin123', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com', '0969469018', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminsy', N'admin123', N'Sỹ Lê Minh Hiếu', 'sy@gmail.com', '0978790099', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'khachle', N'khachle', N'Khách lẻ', 'khachle@example.com', '0999999999', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer2', N'123456', N'Nguyễn Thị A', 'customer2@example.com', '0911111111', 'customer', '1990-01-01', 0, N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'Số 1, Phố A', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer3', N'123456', N'Lê Văn B', 'customer3@example.com', '0922222222', 'customer', '1992-02-02', 1, N'TP.HCM', N'Quận 5', N'Phường 5', N'Số 2, Phố B', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555556', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
 
-    (NEWID(), N'khachle', N'khachle', N'Khách lẻ', 'khachle@example.com', '0999999999', N'khách lẻ', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer6', N'123456', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-
-    (NEWID(), N'customer2', N'123456', N'Nguyễn Thị A', 'customer2@example.com', '0911111111', N'123 ABC, Hà Nội', 'customer', '1990-01-01', 0, N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'Số 1, Phố A', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer3', N'123456', N'Lê Văn B', 'customer3@example.com', '0922222222', N'456 XYZ, TP.HCM', 'customer', '1992-02-02', 1, N'TP.HCM', N'Quận 5', N'Phường 5', N'Số 2, Phố B', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', N'789 DEF, Đà Nẵng', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', N'321 GHI, Cần Thơ', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555556', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
-ALTER TABLE phieu_giam_gia_cua_nguoi_dung
-    ADD so_luot_con_lai INT DEFAULT 0;
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_con_lai INT DEFAULT 0;
 ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
 
 select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
@@ -612,3 +602,5 @@ SET so_luong_ton_kho = so_luong_ton_kho + @so_luong
 WHERE id = @id_chi_tiet_san_pham;
 END
 END;
+
+select * from nguoi_dung

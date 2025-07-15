@@ -76,7 +76,7 @@ public class OAuth2RegistrationController {
         nguoiDung.setTenDangNhap(tenDangNhap);
         nguoiDung.setMatKhau(matKhau);
         nguoiDung.setSoDienThoai(soDienThoai);
-        nguoiDung.setDiaChi(diaChi);
+        nguoiDung.setChiTietDiaChi(diaChi);
         nguoiDung.setTinhThanhPho(tinhThanhPho);
         nguoiDung.setQuanHuyen(quanHuyen);
         nguoiDung.setPhuongXa(phuongXa);
