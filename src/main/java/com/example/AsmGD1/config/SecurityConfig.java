@@ -16,12 +16,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -30,10 +25,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+
 
 import java.io.PrintWriter;
 
@@ -208,7 +200,7 @@ public class SecurityConfig implements ApplicationContextAware {
                             } else {
                                 // Đảm bảo chuyển hướng đến /cart với session hợp lệ
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
-                                response.sendRedirect("/cart");
+                                response.sendRedirect("/");
                             }
                         })
                 )
@@ -256,7 +248,7 @@ public class SecurityConfig implements ApplicationContextAware {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user").permitAll()
+                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -277,7 +269,7 @@ public class SecurityConfig implements ApplicationContextAware {
                             if (session.getAttribute("pendingUser") != null) {
                                 response.sendRedirect("/customers/oauth2/register");
                             } else {
-                                response.sendRedirect("/cart"); // Redirect trực tiếp đến /cart
+                                response.sendRedirect("/"); // Redirect trực tiếp đến /cart
                             }
                         })
                 )
@@ -312,7 +304,7 @@ public class SecurityConfig implements ApplicationContextAware {
             if (session.getAttribute("pendingUser") != null) {
                 response.sendRedirect("/customers/oauth2/register");
             } else {
-                response.sendRedirect("/cart"); // Redirect trực tiếp đến /cart
+                response.sendRedirect("/"); // Redirect trực tiếp đến /cart
             }
         };
     }
