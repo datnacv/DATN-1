@@ -836,7 +836,7 @@
                 <div class="table-wrapper">
                     <div class="table-header">
                         <h6><i class="fas fa-box"></i> Danh sách sản phẩm</h6>
-                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công'}"
+                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần'}"
                            th:href="@{/acvstore/tra-hang/{hoaDonId}(hoaDonId=${hoaDon.id})}"
                            class="btn-custom btn-return btn-sm">
                             <i class="fas fa-undo"></i> Trả hàng
