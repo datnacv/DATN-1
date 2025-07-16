@@ -565,7 +565,6 @@
     document.getElementById('submit-order').addEventListener('click', async (e) => {
         e.preventDefault();
 
-        // Validate form inputs
         const fullName = document.getElementById('fullName').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const address = document.getElementById('address').value.trim();
@@ -578,7 +577,6 @@
             return;
         }
 
-        // Get items
         let items = [];
         let source = '';
         if (isFromCart()) {
@@ -588,14 +586,12 @@
                     const cartData = await response.json();
                     items = cartData.chiTietGioHang.map(item => ({
                         chiTietSanPhamId: item.chiTietSanPham.id,
+                        tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
                         soLuong: item.soLuong,
-                        sizeId: item.chiTietSanPham.kichCo.id,
-                        colorId: item.chiTietSanPham.mauSac.id
+                        gia: item.gia
                     }));
                     source = 'Giỏ hàng (API /cart)';
-                    console.log('Gửi đơn hàng với sản phẩm từ:', source, items);
                 } else {
-                    console.log('Không thể tải giỏ hàng từ API /cart. Trạng thái:', response.status);
                     Swal.fire({
                         icon: 'error',
                         title: 'Lỗi',
@@ -604,7 +600,6 @@
                     return;
                 }
             } catch (error) {
-                console.error('Lỗi khi tải giỏ hàng:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi',
@@ -617,7 +612,6 @@
             if (checkoutItem) {
                 items = [checkoutItem];
                 source = 'Mua ngay (localStorage.checkoutItem)';
-                console.log('Gửi đơn hàng với sản phẩm từ:', source, items);
             }
         }
 
@@ -625,49 +619,39 @@
             Swal.fire({
                 icon: 'warning',
                 title: 'Lỗi',
-                text: `Không có sản phẩm trong ${isFromCart() ? 'giỏ hàng' : 'đơn hàng'}! Vui lòng thêm sản phẩm trước khi thanh toán.`,
+                text: `Không có sản phẩm trong ${isFromCart() ? 'giỏ hàng' : 'đơn hàng'}!`,
             });
             return;
         }
 
-        // Map payment methods to UUIDs
-        const paymentMethodMap = {
-            "550E8400-E29B-41D4-A716-446655440017": "550E8400-E29B-41D4-A716-446655440017",
-            "550E8400-E29B-41D4-A716-446655440018": "550E8400-E29B-41D4-A716-446655440018"
-        };
-
         const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
-        const paymentMethodId = paymentMethodMap[selectedMethod];
-
-        // Create payload
         const shippingFee = parseFloat(document.getElementById('shipping-fee').textContent.replace(/[^\d]/g, '')) || 0;
+        const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace(/[^\d]/g, '')) || 0;
+        const discount = parseFloat(document.getElementById('discount').textContent.replace(/[^\d]/g, '')) || 0;
+        const totalAmount = subtotal + shippingFee - discount;
 
         const orderData = {
             fullName: fullName,
             phone: phone,
             address: address,
             shippingMethod: document.getElementById('shippingMethod').value,
-            paymentMethodId: paymentMethodId,
+            paymentMethodId: selectedMethod,
             notes: document.getElementById('note').value,
             voucher: document.getElementById('voucher').value,
             shippingFee: shippingFee,
             orderItems: items.map(item => ({
                 chiTietSanPhamId: item.chiTietSanPhamId,
                 soLuong: item.soLuong
-            }))
+            })),
+            source: source
         };
-
-        // Confirmation dialog with cancel button
-        const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace(/[^\d]/g, '')) || 0;
-        const discount = parseFloat(document.getElementById('discount').textContent.replace(/[^\d]/g, '')) || 0;
-        const totalAmount = subtotal + shippingFee - discount;
 
         const confirmResult = await Swal.fire({
             icon: 'question',
             title: 'Xác nhận thanh toán',
             html: `
                 <p><strong>Tổng tiền:</strong> ${formatVND(totalAmount)}</p>
-                <p><strong>Phương thức thanh toán:</strong> ${paymentMethodId === '550E8400-E29B-41D4-A716-446655440017' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng'}</p>
+                <p><strong>Phương thức thanh toán:</strong> ${selectedMethod === '550E8400-E29B-41D4-A716-446655440017' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng'}</p>
                 <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
             `,
             showCancelButton: true,
@@ -681,12 +665,8 @@
             return;
         }
 
-        console.log("📦 Payload gửi đi:", orderData);
-
-        // Handle submission based on payment method
         try {
-            if (paymentMethodId === '550E8400-E29B-41D4-A716-446655440018') {
-                // Bank transfer - redirect to payment link
+            if (selectedMethod === '550E8400-E29B-41D4-A716-446655440018') {
                 if (totalAmount <= 0) {
                     Swal.fire({
                         icon: 'warning',
@@ -698,7 +678,7 @@
 
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = '/create-payment-link';
+                form.action = '/kh-payment/kh-create-payment-link';
                 form.style.display = 'none';
 
                 const productNameInput = document.createElement('input');
@@ -724,7 +704,6 @@
                 document.body.appendChild(form);
                 form.submit();
             } else {
-                // COD payment
                 const response = await fetch('/api/checkout/submit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
