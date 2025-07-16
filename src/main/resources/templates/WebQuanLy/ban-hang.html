@@ -2401,13 +2401,35 @@
 
               // Thêm sự kiện sau khi modal đã render
               if (colorSelect && sizeSelect) {
-                colorSelect.onchange = fetchVariants;
+                colorSelect.onchange = () => {
+                  filterSizesByColor(); // <== thêm dòng này
+                  fetchVariants();
+                };
                 sizeSelect.onchange = fetchVariants;
               }
             })
             .catch(error => {
               showToast('Lỗi khi lấy thông tin sản phẩm: ' + error.message, 'error');
             });
+  }
+
+  function filterSizesByColor() {
+    const selectedColorId = document.getElementById("colorSelect").value;
+    const sizeSelect = document.getElementById("sizeSelect");
+
+    if (!selectedColorId || !window.productVariants || !sizeSelect) return;
+
+    const filteredVariants = window.productVariants.filter(v => v.colorId === selectedColorId);
+    const uniqueSizes = [...new Set(filteredVariants.map(v => JSON.stringify({ id: v.sizeId, ten: v.kichCo })))]
+            .map(str => JSON.parse(str));
+
+    sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
+    uniqueSizes.forEach(size => {
+      const option = document.createElement("option");
+      option.value = size.id;
+      option.text = size.ten;
+      sizeSelect.appendChild(option);
+    });
   }
 
   async function fetchProductVariants() {

@@ -10,6 +10,7 @@ import com.example.AsmGD1.service.BanHang.DonHangService;
 import com.example.AsmGD1.service.BanHang.GioHangService;
 import com.example.AsmGD1.service.BanHang.QRCodeService;
 import com.example.AsmGD1.service.BanHang.VNPayService;
+import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
@@ -87,6 +88,9 @@ public class BanHangController {
 
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
+
+    @Autowired
+    private ChienDichGiamGiaService chienDichGiamGiaService;
 
     @Autowired
     private HttpSession session;
@@ -240,7 +244,7 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // Validate stock before creating order
+            // Kiểm tra tồn kho trước khi tạo đơn
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet == null) {
@@ -252,23 +256,34 @@ public class BanHangController {
                 }
             }
 
-            // Create order and update actual stock
+            // Tạo đơn hàng
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
+
+            // Cập nhật tồn kho & số lượng chiến dịch nếu có
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet != null) {
+                    // Trừ tồn kho
                     chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
                     chiTietSanPhamService.save(chiTiet);
+
+                    // Trừ số lượng chiến dịch giảm giá nếu có
+                    ChienDichGiamGia cdgg = chiTiet.getChienDichGiamGia();
+                    if (cdgg != null && "ONGOING".equals(cdgg.getStatus())) {
+                        chienDichGiamGiaService.truSoLuong(cdgg.getId(), item.getSoLuong());
+                    }
                 }
             }
 
+            // Dọn dẹp dữ liệu tạm
             donHangTamRepository.deleteByTabId(donHangDTO.getTabId());
             session.removeAttribute("tempStockChanges");
 
-            // Generate PDF
+            // Tạo hóa đơn PDF
             byte[] pdfData = hoaDonService.taoHoaDon(ketQua.getMaDonHang());
             String pdfBase64 = Base64.getEncoder().encodeToString(pdfData);
 
+            // Trả về kết quả
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Tạo đơn hàng thành công!");
             response.put("maDonHang", ketQua.getMaDonHang());
@@ -278,6 +293,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
 
     private int getAvailableStock(UUID productDetailId, int originalStock) {
         @SuppressWarnings("unchecked")
