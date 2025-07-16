@@ -201,8 +201,8 @@
         if (logoutButton) {
             logoutButton.addEventListener('click', (e) => {
                 e.preventDefault();
-                fetch('/logout', { method: 'POST', credentials: 'include' }).then(() => {
-                    window.location.href = '/customers/login';
+                fetch('/customers/logout', { method: 'POST', credentials: 'include' }).then(() => {
+                    window.location.href = '/';
                 });
             });
         }
