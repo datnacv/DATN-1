@@ -960,7 +960,7 @@
 </div>
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   const BASE_URL = '/acvstore/ban-hang';
   let tabs = [];
@@ -1043,6 +1043,8 @@
       const currentQuantity = parseInt(item.soLuong || 0);
       const price = parseFloat(item.gia || 0);
       const totalPrice = parseFloat(item.thanhTien || 0);
+      const originalPrice = parseFloat(item.originalPrice || item.gia); // Giá gốc
+      const phanTramGiam = parseFloat(item.phanTramGiam || 0); // Phần trăm giảm giá
 
       const isMinQuantity = currentQuantity <= 1;
       const isMaxQuantity = currentQuantity >= actualStock;
@@ -1051,6 +1053,12 @@
       const stockWarning = isOverStock
               ? `<div class="stock-warning"><i class="fas fa-exclamation-triangle"></i>Vượt quá tồn kho khả dụng (${actualStock})</div>`
               : "";
+
+      const priceDisplay = phanTramGiam > 0
+              ? `<span class="fw-bold text-dark">${price.toLocaleString("vi-VN")} VNĐ</span>
+               <div class="small text-muted text-decoration-line-through">${originalPrice.toLocaleString("vi-VN")} VNĐ</div>
+               <div class="small text-success">Giảm ${phanTramGiam}%</div>`
+              : `<span class="fw-bold text-dark">${price.toLocaleString("vi-VN")} VNĐ</span>`;
 
       row.innerHTML = `
       <td>
@@ -1075,7 +1083,7 @@
         </span>
       </td>
       <td>
-        <span class="fw-bold text-dark">${price.toLocaleString("vi-VN")} VNĐ</span>
+        ${priceDisplay}
       </td>
       <td>
         <div class="quantity-controls" data-index="${index}">
@@ -2053,11 +2061,37 @@
       tabId: String(currentTabId)
     };
 
+    // Tính tổng tiền
+    const totalAmount = (tab.total || 0) + (tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0);
+
+    // Hiển thị hộp thoại xác nhận SweetAlert2
+    const confirmResult = await Swal.fire({
+      icon: 'question',
+      title: 'Xác nhận thanh toán',
+      html: `
+            <p><strong>Tổng tiền:</strong> ${totalAmount.toLocaleString('vi-VN')} VNĐ</p>
+            <p><strong>Phương thức thanh toán:</strong> ${
+              tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018'
+                      ? 'Chuyển khoản ngân hàng'
+                      : 'Thanh toán tiền mặt'
+      }</p>
+            <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
+        `,
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#f97316',
+      cancelButtonColor: '#d33',
+    });
+
+    // Nếu người dùng không xác nhận, thoát hàm
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+
     try {
       if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
         // Thanh toán chuyển khoản - chuyển hướng đến VNPay
-        let totalAmount = (tab.total || 0) + (tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0);
-
         if (totalAmount <= 0) {
           showToast('Tổng tiền phải lớn hơn 0.', 'warning');
           return;
@@ -2300,7 +2334,8 @@
     fetchProducts();
   }
 
-  function showVariantModal(productDetailId) {
+  // Trong hàm showVariantModal, thêm sự kiện sau khi render xong
+  async function showVariantModal(productDetailId) {
     fetch(`${BASE_URL}/product-detail/${productDetailId}`)
             .then(async res => {
               if (!res.ok) {
@@ -2328,13 +2363,16 @@
 
               if (variantDetails) {
                 variantDetails.innerHTML = `
-            <div class="text-center">
-              <img src="${data.hinhAnh || 'https://via.placeholder.com/150x150?text=No+Image'}"
-                   alt="Hình ảnh" class="rounded shadow-lg mx-auto mb-3"
-                   style="width: 150px; height: 150px; object-fit: cover;"
-                   onerror="this.src='https://via.placeholder.com/150x150?text=No+Image'">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <div class="text-center" id="variantImage">
+                <img src="${data.hinhAnh || 'https://via.placeholder.com/150x150?text=No+Image'}"
+                     alt="Hình ảnh" class="rounded shadow-lg mx-auto mb-3"
+                     style="width: 150px; height: 150px; object-fit: cover;"
+                     onerror="this.src='https://via.placeholder.com/150x150?text=No+Image'">
+              </div>
             </div>
-            <div class="mt-3">
+            <div class="col-md-6">
               <div class="mb-3 d-flex justify-content-between">
                 <span class="fw-medium">Giá:</span>
                 <span id="variantPrice" class="fw-bold text-primary"></span>
@@ -2348,7 +2386,8 @@
                 <input type="number" id="variantQuantity" min="1" value="1" class="form-control">
               </div>
             </div>
-          `;
+          </div>
+        `;
               }
 
               // Đặt lại combobox về trạng thái mặc định
@@ -2359,10 +2398,38 @@
               if (variantDetails) variantDetails.classList.add('d-none');
 
               await fetchProductVariants();
+
+              // Thêm sự kiện sau khi modal đã render
+              if (colorSelect && sizeSelect) {
+                colorSelect.onchange = () => {
+                  filterSizesByColor(); // <== thêm dòng này
+                  fetchVariants();
+                };
+                sizeSelect.onchange = fetchVariants;
+              }
             })
             .catch(error => {
               showToast('Lỗi khi lấy thông tin sản phẩm: ' + error.message, 'error');
             });
+  }
+
+  function filterSizesByColor() {
+    const selectedColorId = document.getElementById("colorSelect").value;
+    const sizeSelect = document.getElementById("sizeSelect");
+
+    if (!selectedColorId || !window.productVariants || !sizeSelect) return;
+
+    const filteredVariants = window.productVariants.filter(v => v.colorId === selectedColorId);
+    const uniqueSizes = [...new Set(filteredVariants.map(v => JSON.stringify({ id: v.sizeId, ten: v.kichCo })))]
+            .map(str => JSON.parse(str));
+
+    sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
+    uniqueSizes.forEach(size => {
+      const option = document.createElement("option");
+      option.value = size.id;
+      option.text = size.ten;
+      sizeSelect.appendChild(option);
+    });
   }
 
   async function fetchProductVariants() {
@@ -2423,114 +2490,77 @@
   }
 
   async function fetchVariants() {
-    const colorSelect = document.getElementById('colorSelect');
-    const sizeSelect = document.getElementById('sizeSelect');
+    const colorSelect = document.getElementById("colorSelect");
+    const sizeSelect = document.getElementById("sizeSelect");
+    const variantDetails = document.getElementById("variantDetails");
+    const variantSpinner = document.getElementById("variantSpinner");
+    const variantPrice = document.getElementById("variantPrice");
+    const variantStock = document.getElementById("variantStock");
+    const variantImage = document.getElementById("variantImage");
+    const variantQuantity = document.getElementById("variantQuantity");
 
-    if (!colorSelect || !sizeSelect) return;
-
-    const colorId = colorSelect.value;
-    const sizeId = sizeSelect.value;
-
-    if (!colorId && !sizeId) {
-      const uniqueColors = [...new Set(window.productVariants.map(v => JSON.stringify({ id: v.colorId, tenMau: v.mauSac })))].map(str => JSON.parse(str));
-      const uniqueSizes = [...new Set(window.productVariants.map(v => JSON.stringify({ id: v.sizeId, ten: v.kichCo })))].map(str => JSON.parse(str));
-
-      colorSelect.innerHTML = '<option value="">Chọn màu sắc</option>';
-      uniqueColors.forEach(color => {
-        const option = document.createElement('option');
-        option.value = color.id;
-        option.text = color.tenMau;
-        colorSelect.appendChild(option);
-      });
-
-      sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
-      uniqueSizes.forEach(size => {
-        const option = document.createElement('option');
-        option.value = size.id;
-        option.text = size.ten;
-        sizeSelect.appendChild(option);
-      });
-
-      const variantDetails = document.getElementById('variantDetails');
-      if (variantDetails) variantDetails.classList.add('d-none');
+    if (!colorSelect || !sizeSelect || !variantDetails || !variantSpinner || !variantPrice || !variantStock || !variantImage || !variantQuantity) {
+      showToast("Một số phần tử không được tìm thấy trong DOM.", "error");
+      console.error("Missing elements:", { colorSelect, sizeSelect, variantDetails, variantSpinner, variantPrice, variantStock, variantImage, variantQuantity });
       return;
     }
 
-    if (colorId) {
-      const selectedSize = sizeSelect.value;
-      sizeSelect.innerHTML = '<option value="">Chọn kích cỡ</option>';
-      const availableSizes = window.productVariants
-              .filter(v => v.colorId === colorId)
-              .map(v => ({ id: v.sizeId, ten: v.kichCo }));
-      const uniqueSizes = [...new Set(availableSizes.map(s => JSON.stringify(s)))].map(str => JSON.parse(str));
-      uniqueSizes.forEach(size => {
-        const option = document.createElement('option');
-        option.value = size.id;
-        option.text = size.ten;
-        if (size.id === selectedSize) option.selected = true;
-        sizeSelect.appendChild(option);
-      });
+    if (!colorSelect.value || !sizeSelect.value) {
+      variantDetails.classList.add("d-none");
+      return;
     }
 
-    if (sizeId) {
-      const selectedColor = colorSelect.value;
-      colorSelect.innerHTML = '<option value="">Chọn màu sắc</option>';
-      const availableColors = window.productVariants
-              .filter(v => v.sizeId === sizeId)
-              .map(v => ({ id: v.colorId, tenMau: v.mauSac }));
-      const uniqueColors = [...new Set(availableColors.map(c => JSON.stringify(c)))].map(str => JSON.parse(str));
-      uniqueColors.forEach(color => {
-        const option = document.createElement('option');
-        option.value = color.id;
-        option.text = color.tenMau;
-        if (color.id === selectedColor) option.selected = true;
-        colorSelect.appendChild(option);
-      });
-    }
+    variantSpinner.style.display = "block";
+    variantDetails.classList.add("d-none");
 
-    if (colorId && sizeId) {
-      const variantSpinner = document.getElementById('variantSpinner');
-      if (variantSpinner) variantSpinner.style.display = 'block';
+    try {
+      const response = await fetch(
+              `${BASE_URL}/product/variant?productId=${currentProductId}&colorId=${colorSelect.value}&sizeId=${sizeSelect.value}`
+      );
+      const data = await response.json();
 
-      try {
-        const response = await fetch(`${BASE_URL}/product/variant?productId=${currentProductId}&colorId=${colorId}&sizeId=${sizeId}`);
-        if (!response.ok) {
-          let errorMessage = "Lỗi khi lấy chi tiết biến thể.";
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch (e) {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          }
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-        const variantPrice = document.getElementById('variantPrice');
-        const variantStock = document.getElementById('variantStock');
-        const variantQuantity = document.getElementById('variantQuantity');
-        const variantDetails = document.getElementById('variantDetails');
-
-        if (variantPrice) variantPrice.innerText = data.price.toLocaleString('vi-VN') + ' VNĐ';
-        if (variantStock) variantStock.innerText = data.availableStock !== undefined ? data.availableStock : data.stockQuantity;
-        if (variantQuantity) {
-          variantQuantity.max = data.availableStock !== undefined ? data.availableStock : data.stockQuantity;
-          variantQuantity.value = 1;
-        }
-        if (variantDetails) {
-          variantDetails.classList.remove('d-none');
-          variantDetails.dataset.productDetailId = data.productDetailId;
-        }
-      } catch (error) {
-        showToast('Lỗi khi lấy chi tiết biến thể: ' + error.message, 'error');
-        const variantDetails = document.getElementById('variantDetails');
-        if (variantDetails) variantDetails.classList.add('d-none');
-      } finally {
-        if (variantSpinner) variantSpinner.style.display = 'none';
+      if (data.error) {
+        showToast(data.error, "error");
+        return;
       }
-    } else {
-      const variantDetails = document.getElementById('variantDetails');
-      if (variantDetails) variantDetails.classList.add('d-none');
+
+      const price = parseFloat(data.price);
+      const discountedPrice = parseFloat(data.discountedPrice);
+      const phanTramGiam = parseFloat(data.phanTramGiam);
+      const stock = parseInt(data.availableStock);
+
+      if (variantPrice) {
+        variantPrice.innerHTML = phanTramGiam > 0
+                ? `<span class="text-decoration-line-through">${price.toLocaleString("vi-VN")} VNĐ</span><br>
+           <span class="text-primary">${discountedPrice.toLocaleString("vi-VN")} VNĐ</span><br>
+           <span class="text-success">Giảm ${phanTramGiam}%</span>`
+                : `<span class="text-primary">${price.toLocaleString("vi-VN")} VNĐ</span>`;
+      }
+      if (variantStock) variantStock.textContent = stock;
+      if (variantQuantity) variantQuantity.max = stock;
+      if (variantImage) {
+        const imgElement = variantImage.querySelector("img");
+        if (imgElement) {
+          imgElement.src = data.hinhAnh || "https://via.placeholder.com/150x150?text=No+Image";
+          imgElement.onerror = () => (imgElement.src = "https://via.placeholder.com/150x150?text=No+Image");
+        } else {
+          variantImage.innerHTML = `
+          <img src="${data.hinhAnh || "https://via.placeholder.com/150x150?text=No+Image"}"
+               alt="Hình ảnh"
+               class="rounded shadow-sm"
+               style="width: 100%; max-width: 150px; height: auto;"
+               onerror="this.src='https://via.placeholder.com/150x150?text=No+Image'">
+        `;
+        }
+      }
+      if (variantDetails) {
+        variantDetails.dataset.productDetailId = data.productDetailId;
+        variantDetails.classList.remove("d-none");
+      }
+    } catch (error) {
+      showToast("Lỗi khi lấy thông tin biến thể: " + error.message, "error");
+    } finally {
+      if (variantSpinner) variantSpinner.style.display = "none";
     }
   }
 

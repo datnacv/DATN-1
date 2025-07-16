@@ -104,7 +104,7 @@ public class KHCheckoutController {
             return ResponseEntity.ok(new APIResponse("Đặt hàng thành công", donHang.getMaDonHang()));
         } catch (RuntimeException e) {
             logger.error("Error submitting order: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(new APIResponse("Lỗi đặt hàng: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new APIResponse(e.getMessage())); // Trả về thông báo lỗi cụ thể
         } catch (Exception e) {
             logger.error("Unexpected error: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(new APIResponse("Lỗi không xác định: " + e.getMessage()));

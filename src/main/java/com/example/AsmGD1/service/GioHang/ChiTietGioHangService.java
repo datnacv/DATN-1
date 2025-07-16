@@ -1,14 +1,16 @@
 package com.example.AsmGD1.service.GioHang;
 
 import com.example.AsmGD1.entity.ChiTietGioHang;
-import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.repository.GioHang.ChiTietGioHangRepository;
 import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -92,5 +94,15 @@ public class ChiTietGioHangService {
 
     public Optional<ChiTietGioHang> getChiTietGioHang(UUID chiTietGioHangId) {
         return chiTietGioHangRepository.findById(chiTietGioHangId);
+    }
+
+    // ✅ THÊM MỚI: Lấy danh sách chi tiết giỏ hàng theo ID giỏ hàng
+    public List<ChiTietGioHang> getGioHangChiTietList(UUID gioHangId) {
+        return chiTietGioHangRepository.findByGioHangId(gioHangId);
+    }
+
+    // ✅ THÊM MỚI: Xóa toàn bộ chi tiết giỏ hàng theo ID giỏ hàng
+    public void clearGioHang(UUID gioHangId) {
+        chiTietGioHangRepository.deleteByGioHang_Id(gioHangId);
     }
 }

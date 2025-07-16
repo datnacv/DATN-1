@@ -12,11 +12,11 @@ import java.util.UUID;
 @Repository
 public interface HinhAnhSanPhamRepository extends JpaRepository<HinhAnhSanPham, UUID> {
     @Query("""
-    SELECT ha.urlHinhAnh 
-    FROM HinhAnhSanPham ha 
-    WHERE ha.chiTietSanPham.id = :idChiTietSanPham
-    ORDER BY ha.id ASC
-""")
+       SELECT ha.urlHinhAnh 
+       FROM HinhAnhSanPham ha 
+       WHERE ha.chiTietSanPham.id = :idChiTietSanPham
+       ORDER BY RAND()
+       LIMIT 1
+       """)
     Optional<String> findFirstImageByChiTietSanPham(@Param("idChiTietSanPham") UUID idChiTietSanPham);
-
 }

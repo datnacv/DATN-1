@@ -1,5 +1,6 @@
 package com.example.AsmGD1.repository.SanPham;
 
+import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.ChiTietSanPham;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;

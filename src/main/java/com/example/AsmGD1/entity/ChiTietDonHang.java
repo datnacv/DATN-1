@@ -38,8 +38,12 @@ public class ChiTietDonHang {
     private String ghiChu;
 
     @Column(name = "trang_thai_hoan_tra", nullable = false)
-    private Boolean trangThaiHoanTra = false; // Đặt mặc định là false
+    private Boolean trangThaiHoanTra = false;
 
-    @Column(name="ly_do_tra_hang")
-    private String  lyDoTraHang;
+    @Column(name = "ly_do_tra_hang")
+    private String lyDoTraHang;
+
+    // Trường mới để lưu giá đã định dạng
+    @Transient
+    private String formattedGia;
 }

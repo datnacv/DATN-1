@@ -535,6 +535,28 @@
         pointer-events: none;
       }
     }
+
+    .status-returned {
+      background: #10b981; /* Màu xanh lá cây cho "Đã trả hàng" */
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .status-partial-returned {
+      background: #f59e0b; /* Màu cam cho "Đã trả hàng một phần" */
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
@@ -561,6 +583,8 @@
           <option value="Hoàn thành">Hoàn thành</option>
           <option value="Đang vận chuyển">Đang vận chuyển</option>
           <option value="Vận chuyển thành công">Vận chuyển thành công</option>
+          <option value="Đã trả hàng">Đã trả hàng</option>
+          <option value="Đã trả hàng một phần">Đã trả hàng một phần</option>
         </select>
         <select id="paymentMethodFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val(), this.value, $('#salesMethodFilter').val())">
           <option value="">Tất cả phương thức thanh toán</option>
@@ -721,32 +745,39 @@
               case 'Hoàn thành':
                 statusClass = 'status-completed-bg';
                 break;
+              case 'Đã trả hàng':
+                statusClass = 'status-returned'; // Có thể tùy chỉnh màu
+                break;
+              case 'Đã trả hàng một phần':
+                statusClass = 'status-partial-returned'; // Tùy chỉnh màu cho một phần
+                break;
               default:
-                trangThaiText = 'Không rõ';
+                trangThaiText = hoaDon.trangThai; // Giữ nguyên nếu không khớp
                 statusClass = 'status-pending';
             }
             tbody.append(`
-              <tr>
-                <td>${hoaDon.maHoaDon}</td>
-                <td>${hoaDon.tenKhachHang}</td>
-                <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
-                <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
-                <td>${hoaDon.phuongThucThanhToan}</td>
-                <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
-                <td><span class="${statusClass}">${trangThaiText}</span></td>
-                <td>
-                  <div class="dropdown">
-                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                      <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                      <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
-                    </ul>
-                  </div>
-                </td>
-              </tr>
-            `);
+                        <tr>
+                            <td>${hoaDon.maHoaDon}</td>
+                            <td>${hoaDon.tenKhachHang}</td>
+                            <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
+                            <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+                            <td>${hoaDon.phuongThucThanhToan}</td>
+                            <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+                            <td><span class="${statusClass}">${trangThaiText}</span></td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+                                        <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
+                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
+                                        <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}')" ${hoaDon.trangThai === 'Hoàn thành' ? '' : 'style="display:none;"'}>Trả hàng</button></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
           });
         }
         updatePagination(response.totalPages, response.currentPage, search, trangThai, paymentMethod, salesMethod);

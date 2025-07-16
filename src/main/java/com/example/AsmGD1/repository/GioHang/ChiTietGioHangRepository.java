@@ -14,4 +14,6 @@ public interface ChiTietGioHangRepository extends JpaRepository<ChiTietGioHang, 
     void deleteByGioHangIdAndChiTietSanPhamId(UUID gioHangId, UUID chiTietSanPhamId);
 
     Optional<ChiTietGioHang> findByGioHangIdAndChiTietSanPhamId(UUID gioHangId, UUID chiTietSanPhamId);
+    void deleteByGioHang_Id(UUID gioHangId);
+
 }
