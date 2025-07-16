@@ -3,7 +3,9 @@ package com.example.AsmGD1.controller.WebKhachHang;
 import com.example.AsmGD1.dto.BanHang.CartAddDto;
 import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.GioHang;
+import com.example.AsmGD1.entity.HoaDon;
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
@@ -32,7 +34,7 @@ public class CartController {
     private ChiTietGioHangService chiTietGioHangService;
 
     @Autowired
-    private NguoiDungRepository nguoiDungRepository;
+    private HoaDonRepository hoaDonRepository;
 
     @Autowired
     private NguoiDungService nguoiDungService;
@@ -180,4 +182,18 @@ public class CartController {
 //
 //        return null;
 //    }
+@GetMapping("/cart/add-from-order/{id}")
+public String addToCartFromOrder(@PathVariable("id") UUID id, Authentication authentication) {
+    if (authentication == null || !authentication.isAuthenticated()) {
+        return "redirect:/dang-nhap";
+    }
+    NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+    HoaDon hoaDon = hoaDonRepository.findById(id).orElse(null);
+    if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+        return "redirect:/dsdon-mua";
+    }
+    // Logic để thêm các sản phẩm từ hoaDon.donHang.chiTietDonHangs vào giỏ hàng
+    // (Cần thêm service để xử lý giỏ hàng)
+    return "redirect:/cart";
+}
 }

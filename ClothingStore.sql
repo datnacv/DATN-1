@@ -604,3 +604,5 @@ END
 END;
 
 select * from nguoi_dung
+ALTER TABLE don_hang
+    ADD trang_thai NVARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN';
