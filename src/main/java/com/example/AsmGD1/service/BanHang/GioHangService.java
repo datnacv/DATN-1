@@ -3,6 +3,7 @@ package com.example.AsmGD1.service.BanHang;
 import com.example.AsmGD1.dto.BanHang.GioHangDTO;
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.ChienDichGiamGia;
 import com.example.AsmGD1.entity.DonHangTam;
 import com.example.AsmGD1.entity.PhieuGiamGia;
 import com.example.AsmGD1.repository.BanHang.DonHangTamRepository;
@@ -72,6 +73,20 @@ public class GioHangService {
         return attr.getRequest().getSession();
     }
 
+    // Tính giá sau giảm dựa trên chiến dịch giảm giá
+    private BigDecimal tinhGiaSauGiam(ChiTietSanPham chiTiet) {
+        BigDecimal gia = chiTiet.getGia();
+        ChienDichGiamGia chienDich = chiTiet.getChienDichGiamGia();
+        if (chienDich != null && "ONGOING".equals(chienDich.getStatus()) && (chienDich.getSoLuong() == null || chienDich.getSoLuong() > 0)) {
+            BigDecimal phanTramGiam = chienDich.getPhanTramGiam();
+            if (phanTramGiam != null) {
+                BigDecimal giamGia = gia.multiply(phanTramGiam).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+                return gia.subtract(giamGia);
+            }
+        }
+        return gia;
+    }
+
     public List<GioHangItemDTO> getCurrentCart(String tabId) {
         HttpSession session = getSession();
         List<GioHangItemDTO> cart = (List<GioHangItemDTO>) session.getAttribute(getCartSessionKey(tabId));
@@ -101,14 +116,16 @@ public class GioHangService {
             throw new RuntimeException("Không tìm thấy biến thể sản phẩm với ID: " + productDetailId);
         }
 
+        BigDecimal giaSauGiam = tinhGiaSauGiam(chiTiet); // Tính giá sau giảm
+
         if (existingItem != null) {
             int newQuantity = existingItem.getSoLuong() + quantity;
             if (newQuantity > chiTiet.getSoLuongTonKho()) {
-                System.err.println("LỖI: Số lượng tồn kho không đủ sau khi cộng dồn. Còn: " + chiTiet.getSoLuongTonKho() + ", Yêu cầu: " + newQuantity);
+                System.err.println("LỖI: Số lượng tồn copa stock không đủ. Còn: " + chiTiet.getSoLuongTonKho() + ", Yêu cầu: " + newQuantity);
                 throw new RuntimeException("Số lượng tồn kho không đủ sau khi cộng dồn: chỉ còn " + chiTiet.getSoLuongTonKho());
             }
             existingItem.setSoLuong(newQuantity);
-            existingItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(newQuantity)));
+            existingItem.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(newQuantity)));
         } else {
             if (quantity > chiTiet.getSoLuongTonKho()) {
                 System.err.println("LỖI: Số lượng tồn kho không đủ. Còn: " + chiTiet.getSoLuongTonKho() + ", Yêu cầu: " + quantity);
@@ -120,9 +137,10 @@ public class GioHangService {
             newItem.setMauSac(chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTenMau() : "Không rõ");
             newItem.setKichCo(chiTiet.getKichCo() != null ? chiTiet.getKichCo().getTen() : "Không rõ");
             newItem.setSoLuong(quantity);
-            newItem.setGia(chiTiet.getGia());
-            newItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+            newItem.setGia(giaSauGiam); // Sử dụng giá đã giảm
+            newItem.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(quantity)));
             newItem.setHinhAnh(chiTiet.getSanPham().getUrlHinhAnh() != null ? chiTiet.getSanPham().getUrlHinhAnh() : "https://via.placeholder.com/50");
+            newItem.setAvailableStock(chiTiet.getSoLuongTonKho()); // Thêm thông tin tồn kho
             currentCart.add(newItem);
         }
 
@@ -162,17 +180,18 @@ public class GioHangService {
         List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
         GioHangDTO gioHangDTO = new GioHangDTO();
 
-        capNhatTongGioHang(gioHangDTO, currentCart, shippingFee, tabId);
-
         List<GioHangItemDTO> updatedCartItems = currentCart.stream().map(item -> {
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
             if (chiTiet != null) {
-                item.setStockQuantity(chiTiet.getSoLuongTonKho());
+                BigDecimal giaSauGiam = tinhGiaSauGiam(chiTiet); // Tính giá sau giảm
+                item.setGia(giaSauGiam); // Cập nhật giá đã giảm
+                item.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(item.getSoLuong())));
+                item.setAvailableStock(chiTiet.getSoLuongTonKho());
             }
             return item;
         }).collect(Collectors.toList());
 
-        gioHangDTO.setDanhSachSanPham(updatedCartItems);
+        capNhatTongGioHang(gioHangDTO, updatedCartItems, shippingFee, tabId);
 
         System.out.println("Debug - layGioHang: TongTienHang: " + gioHangDTO.getTongTienHang());
         System.out.println("Debug - layGioHang: GiamGia: " + gioHangDTO.getGiamGia());
@@ -196,13 +215,17 @@ public class GioHangService {
             throw new RuntimeException("Không tìm thấy biến thể sản phẩm với ID: " + productDetailId);
         }
 
+        BigDecimal giaSauGiam = tinhGiaSauGiam(chiTiet); // Tính giá sau giảm
+
         if (quantity > chiTiet.getSoLuongTonKho()) {
             throw new RuntimeException("Số lượng tồn kho không đủ: chỉ còn " + chiTiet.getSoLuongTonKho());
         }
 
         if (existingItem != null) {
             existingItem.setSoLuong(quantity);
-            existingItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+            existingItem.setGia(giaSauGiam); // Cập nhật giá đã giảm
+            existingItem.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(quantity)));
+            existingItem.setAvailableStock(chiTiet.getSoLuongTonKho()); // Cập nhật tồn kho
         } else {
             System.out.println("CẢNH BÁO: Sản phẩm " + productDetailId + " không có trong giỏ, đang thêm mới khi cập nhật.");
             GioHangItemDTO newItem = new GioHangItemDTO();
@@ -211,9 +234,10 @@ public class GioHangService {
             newItem.setMauSac(chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTenMau() : "Không rõ");
             newItem.setKichCo(chiTiet.getKichCo() != null ? chiTiet.getKichCo().getTen() : "Không rõ");
             newItem.setSoLuong(quantity);
-            newItem.setGia(chiTiet.getGia());
-            newItem.setThanhTien(chiTiet.getGia().multiply(BigDecimal.valueOf(quantity)));
+            newItem.setGia(giaSauGiam); // Sử dụng giá đã giảm
+            newItem.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(quantity)));
             newItem.setHinhAnh(chiTiet.getSanPham().getUrlHinhAnh() != null ? chiTiet.getSanPham().getUrlHinhAnh() : "https://via.placeholder.com/50");
+            newItem.setAvailableStock(chiTiet.getSoLuongTonKho());
             currentCart.add(newItem);
         }
 
