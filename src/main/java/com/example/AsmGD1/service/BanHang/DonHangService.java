@@ -89,13 +89,14 @@ public class DonHangService {
         log.info("Bắt đầu tạo đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
 
         String soDienThoai = donHangDTO.getSoDienThoaiKhachHang();
+        String hoTen = donHangDTO.getTenKhachHang();
         if (soDienThoai == null || soDienThoai.trim().isEmpty()) {
             throw new RuntimeException("Số điện thoại khách hàng không được để trống.");
         }
 
         if ("Giao hàng".equals(donHangDTO.getPhuongThucBanHang()) &&
                 (donHangDTO.getDiaChiGiaoHang() == null || donHangDTO.getDiaChiGiaoHang().trim().isEmpty()) &&
-                !soDienThoai.equals("0999999999")) {
+                !hoTen.equals("Khách lẻ")) {
             throw new RuntimeException("Địa chỉ giao hàng không được để trống khi chọn phương thức giao hàng.");
         }
 

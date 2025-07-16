@@ -66,16 +66,19 @@ public class CheckoutService {
 
     @Transactional
     public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request) {
-        // 1. Tạo đối tượng đơn hàng
+        // 1. Tạo đơn hàng
         DonHang donHang = new DonHang();
         donHang.setNguoiDung(nguoiDung);
         donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         donHang.setThoiGianTao(LocalDateTime.now());
-        donHang.setTrangThaiThanhToan(false);
+        donHang.setTrangThaiThanhToan(true); // Giả sử thanh toán ngay (COD, chuyển khoản...)
+        donHang.setThoiGianThanhToan(LocalDateTime.now());
         donHang.setPhuongThucBanHang("Giao hàng");
         donHang.setPhiVanChuyen(request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.valueOf(15000));
+        donHang.setDiaChiGiaoHang(request.getAddress());
+        donHang.setGhiChu(request.getNotes());
 
-        // 2. Lấy phương thức thanh toán từ repository
+        // 2. Thiết lập phương thức thanh toán
         if (request.getPaymentMethodId() != null) {
             PhuongThucThanhToan pttt = phuongThucThanhToanRepository
                     .findById(request.getPaymentMethodId())
@@ -83,19 +86,14 @@ public class CheckoutService {
             donHang.setPhuongThucThanhToan(pttt);
         }
 
-        donHang.setDiaChiGiaoHang(request.getAddress());
-        donHang.setGhiChu(request.getNotes());
-
-        // 3. Tính tổng tiền và tạo chi tiết đơn hàng
+        // 3. Tính tiền và chi tiết
         BigDecimal tongTien = BigDecimal.ZERO;
         List<ChiTietDonHang> chiTietList = new ArrayList<>();
 
-        // Kiểm tra số lượng tồn kho và cập nhật
         for (CheckoutRequest.OrderItem item : request.getOrderItems()) {
             ChiTietSanPham chiTietSP = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại: " + item.getChiTietSanPhamId()));
 
-            // Kiểm tra số lượng tồn kho
             if (chiTietSP.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Sản phẩm " + chiTietSP.getSanPham().getTenSanPham() + " không đủ số lượng trong kho. Còn lại: " + chiTietSP.getSoLuongTonKho());
             }
@@ -117,25 +115,29 @@ public class CheckoutService {
             chiTietList.add(chiTiet);
             tongTien = tongTien.add(thanhTien);
 
-            // Giảm số lượng tồn kho
+            // Giảm tồn kho
             chiTietSP.setSoLuongTonKho(chiTietSP.getSoLuongTonKho() - soLuong);
             chiTietSanPhamRepository.save(chiTietSP);
-            logger.info("Đã giảm số lượng tồn kho cho sản phẩm {}: {} -> {}",
-                    chiTietSP.getSanPham().getTenSanPham(),
-                    chiTietSP.getSoLuongTonKho() + soLuong,
-                    chiTietSP.getSoLuongTonKho());
+            logger.info("Đã giảm tồn kho: {} -> {}", chiTietSP.getSanPham().getTenSanPham(), chiTietSP.getSoLuongTonKho());
         }
 
-        // 4. Áp dụng giảm giá nếu có
+        // 4. Áp dụng mã giảm giá nếu có
         BigDecimal giamGia = BigDecimal.ZERO;
         if (request.getVoucher() != null && !request.getVoucher().isEmpty()) {
             PhieuGiamGia voucher = phieuGiamGiaRepository.findByMa(request.getVoucher())
                     .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ"));
+
+            if (voucher.getSoLuong() <= 0 || voucher.getNgayKetThuc().isBefore(LocalDateTime.now().toLocalDate())) {
+                throw new RuntimeException("Mã giảm giá đã hết hạn hoặc không còn số lượng");
+            }
+
             giamGia = voucher.getGiaTriGiam().min(tongTien);
             donHang.setPhieuGiamGia(voucher);
+            voucher.setSoLuong(voucher.getSoLuong() - 1); // giảm số lượng còn lại
+            phieuGiamGiaRepository.save(voucher);
         }
 
-        // 5. Gán tổng tiền
+        // 5. Gán tổng tiền, tiền giảm
         donHang.setTienGiam(giamGia);
         donHang.setTongTien(tongTien.add(donHang.getPhiVanChuyen()).subtract(giamGia));
 
@@ -147,15 +149,14 @@ public class CheckoutService {
         // 7. Tạo hóa đơn
         hoaDonService.createHoaDonFromDonHang(donHang);
 
-        // 8. Xóa sản phẩm đã thanh toán khỏi giỏ hàng
+        // 8. Xoá sản phẩm khỏi giỏ hàng
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDung.getId());
         if (gioHang != null) {
             for (CheckoutRequest.OrderItem item : request.getOrderItems()) {
                 chiTietGioHangRepository.deleteByGioHangIdAndChiTietSanPhamId(gioHang.getId(), item.getChiTietSanPhamId());
-                logger.info("Đã xóa sản phẩm {} khỏi giỏ hàng sau khi thanh toán", item.getChiTietSanPhamId());
+                logger.info("Đã xoá sản phẩm {} khỏi giỏ hàng", item.getChiTietSanPhamId());
             }
         }
-
 
         return donHang;
     }
