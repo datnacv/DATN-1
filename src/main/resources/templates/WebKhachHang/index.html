@@ -28,6 +28,33 @@
     }
     .user-info { display: none; color: white; }
     .user-info.active { display: inline; }
+    .chatbot-msg-user {
+      background-color: #f97316;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 20px;
+      max-width: 80%;
+      margin-left: auto;
+      margin-bottom: 10px;
+      text-align: right;
+      font-size: 15px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    .chatbot-msg-bot {
+      background-color: #f1f5f9;
+      color: #111827;
+      padding: 10px 14px;
+      border-radius: 20px;
+      max-width: 80%;
+      margin-right: auto;
+      margin-bottom: 10px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+
   </style>
 </head>
 <body class="bg-gray-100">
@@ -223,17 +250,51 @@
   </div>
 </section>
 
-<script type="text/javascript">
-  (function(d, m){
-    var kommunicateSettings =
-            {"appId":"20a19e8ec21190f7ec5621374f7a576ef","popupWidget":true,"automaticChatOpenOnNavigation":true};
-    var s = document.createElement("script"); s.type = "text/javascript"; s.async = true;
-    s.src = "https://widget.kommunicate.io/v2/kommunicate.app";
-    var h = document.getElementsByTagName("head")[0]; h.appendChild(s);
-    window.kommunicate = m; m._globals = kommunicateSettings;
-  })(document, window.kommunicate || {});
-  /* NOTE : Use web server to view HTML files as real-time update will not work if you directly open the HTML file in the browser. */
-</script>
+<!-- Floating Chatbot Icon -->
+<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #ea580c; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+  <i class="fas fa-robot fa-lg text-white"></i>
+</div>
+
+<!-- Chatbot Box -->
+<div id="chatbot-box" style="
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 420px;
+  max-height: 620px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 10000;
+  font-family: 'Segoe UI', sans-serif;
+">
+  <!-- Header -->
+  <div style="background-color: #ea580c; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+    <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
+    <div style="font-weight: bold;">ACV ChatBot</div>
+    <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">&times;</span>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;"></div>
+
+  <!-- Input -->
+  <div style="padding: 10px; border-top: 1px solid #eee;">
+    <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #ccc;
+      border-radius: 24px;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.2s ease-in-out;
+    ">
+  </div>
+</div>
+
 
 <footer class="bg-gray-800 text-white py-8">
   <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -266,6 +327,87 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script>
+  // Toggle widget
+  const toggleBtn = document.getElementById('chatbot-toggle');
+  const chatBox = document.getElementById('chatbot-box');
+  const closeBtn = document.getElementById('chatbot-close');
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+
+  // Show/hide chat
+  toggleBtn.onclick = () => {
+    chatBox.style.display = "flex";
+    chatInput.focus();
+    restoreHistory();
+  };
+  closeBtn.onclick = () => {
+    chatBox.style.display = "none";
+  };
+
+  // Lưu lịch sử vào sessionStorage
+  function saveToHistory(role, msg) {
+    const current = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+    current.push({ role, msg });
+    sessionStorage.setItem("chat_history", JSON.stringify(current));
+  }
+
+  // Phục hồi lịch sử khi mở lại
+  function restoreHistory() {
+    chatMessages.innerHTML = '';
+    const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+    for (const item of items) {
+      const div = document.createElement('div');
+      div.className = item.role === 'user' ? 'chatbot-msg-user' : 'chatbot-msg-bot';
+      div.innerHTML = item.msg;
+      chatMessages.appendChild(div);
+    }
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Gửi tin nhắn
+  chatInput.addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      // Người dùng
+      const userDiv = document.createElement('div');
+      userDiv.className = 'chatbot-msg-user';
+      userDiv.textContent = message;
+      chatMessages.appendChild(userDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      saveToHistory('user', message);
+      chatInput.value = '';
+
+      try {
+        const res = await fetch("https://duclong0910.app.n8n.cloud/webhook/website-chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: { from: "user_123", message } })
+        });
+
+        const contentType = res.headers.get("content-type");
+        const data = contentType && contentType.includes("json") ? await res.json() : { message: "Bot không phản hồi." };
+
+        let formattedMsg = data.message || "Không có phản hồi.";
+
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chatbot-msg-bot';
+        botDiv.innerHTML = formattedMsg;  // <-- cho phép HTML
+        chatMessages.appendChild(botDiv);
+        saveToHistory('bot', botDiv.innerHTML);
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } catch (e) {
+        const botErr = document.createElement('div');
+        botErr.className = 'chatbot-msg-bot';
+        botErr.textContent = "Lỗi kết nối. Vui lòng thử lại.";
+        chatMessages.appendChild(botErr);
+        saveToHistory('bot', botErr.textContent);
+      }
+    }
+  });
+
   new Swiper('.banner-slider', {
     loop: true,
     autoplay: { delay: 5000 },
