@@ -20,4 +20,7 @@ public class GioHangItemDTO {
     private Integer availableStock; // Added to reflect available stock after reservations
 
     private Boolean trangThaiHoanTra; // Thêm trường này
+
+    private BigDecimal originalPrice; // Giá gốc
+    private BigDecimal phanTramGiam;
 }

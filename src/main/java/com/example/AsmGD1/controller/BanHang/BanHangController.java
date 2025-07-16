@@ -10,6 +10,7 @@ import com.example.AsmGD1.service.BanHang.DonHangService;
 import com.example.AsmGD1.service.BanHang.GioHangService;
 import com.example.AsmGD1.service.BanHang.QRCodeService;
 import com.example.AsmGD1.service.BanHang.VNPayService;
+import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -86,6 +88,9 @@ public class BanHangController {
 
     @Autowired
     private PhieuGiamGiaRepository phieuGiamGiaRepository;
+
+    @Autowired
+    private ChienDichGiamGiaService chienDichGiamGiaService;
 
     @Autowired
     private HttpSession session;
@@ -239,7 +244,7 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // Validate stock before creating order
+            // Kiểm tra tồn kho trước khi tạo đơn
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet == null) {
@@ -251,23 +256,34 @@ public class BanHangController {
                 }
             }
 
-            // Create order and update actual stock
+            // Tạo đơn hàng
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
+
+            // Cập nhật tồn kho & số lượng chiến dịch nếu có
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet != null) {
+                    // Trừ tồn kho
                     chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
                     chiTietSanPhamService.save(chiTiet);
+
+                    // Trừ số lượng chiến dịch giảm giá nếu có
+                    ChienDichGiamGia cdgg = chiTiet.getChienDichGiamGia();
+                    if (cdgg != null && "ONGOING".equals(cdgg.getStatus())) {
+                        chienDichGiamGiaService.truSoLuong(cdgg.getId(), item.getSoLuong());
+                    }
                 }
             }
 
+            // Dọn dẹp dữ liệu tạm
             donHangTamRepository.deleteByTabId(donHangDTO.getTabId());
             session.removeAttribute("tempStockChanges");
 
-            // Generate PDF
+            // Tạo hóa đơn PDF
             byte[] pdfData = hoaDonService.taoHoaDon(ketQua.getMaDonHang());
             String pdfBase64 = Base64.getEncoder().encodeToString(pdfData);
 
+            // Trả về kết quả
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Tạo đơn hàng thành công!");
             response.put("maDonHang", ketQua.getMaDonHang());
@@ -277,6 +293,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
 
     private int getAvailableStock(UUID productDetailId, int originalStock) {
         @SuppressWarnings("unchecked")
@@ -471,7 +488,7 @@ public class BanHangController {
     public ResponseEntity<Map<String, Object>> getProductVariants(@PathVariable UUID productId) {
         try {
             List<ChiTietSanPham> variants = chiTietSanPhamService.findByProductId(productId).stream()
-                    .filter(v -> v.getTrangThai() == true) // Chỉ lấy các biến thể có trạng thái = 1
+                    .filter(v -> v.getTrangThai() == true)
                     .collect(Collectors.toList());
             if (variants.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy biến thể hợp lệ cho sản phẩm."));
@@ -484,7 +501,11 @@ public class BanHangController {
                 variantMap.put("mauSac", variant.getMauSac().getTenMau());
                 variantMap.put("kichCo", variant.getKichCo().getTen());
                 variantMap.put("productDetailId", variant.getId());
+                BigDecimal giaSauGiam = tinhGiaSauGiam(variant); // Tính giá sau giảm
                 variantMap.put("price", variant.getGia());
+                variantMap.put("discountedPrice", giaSauGiam); // Giá sau giảm
+                variantMap.put("phanTramGiam", variant.getChienDichGiamGia() != null && "ONGOING".equals(variant.getChienDichGiamGia().getStatus())
+                        ? variant.getChienDichGiamGia().getPhanTramGiam() : BigDecimal.ZERO);
                 variantMap.put("stockQuantity", variant.getSoLuongTonKho());
                 return variantMap;
             }).collect(Collectors.toList());
@@ -517,10 +538,9 @@ public class BanHangController {
             }
 
             if (variant != null) {
-                // Lấy số lượng tồn kho thực tế (có thể trừ đi số lượng đã được giữ tạm thời)
                 int actualStock = variant.getSoLuongTonKho();
+                BigDecimal giaSauGiam = tinhGiaSauGiam(variant); // Tính giá sau giảm
 
-                // Kiểm tra số lượng đã được giữ tạm thời trong session
                 @SuppressWarnings("unchecked")
                 Map<UUID, Map<String, Integer>> tempStockChanges =
                         (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
@@ -530,9 +550,12 @@ public class BanHangController {
                     actualStock = Math.max(0, actualStock - reservedQuantity);
                 }
 
-                result.put("stockQuantity", variant.getSoLuongTonKho()); // Tồn kho gốc
-                result.put("availableStock", actualStock); // Tồn kho khả dụng
+                result.put("stockQuantity", variant.getSoLuongTonKho());
+                result.put("availableStock", actualStock);
                 result.put("price", variant.getGia());
+                result.put("discountedPrice", giaSauGiam); // Giá sau giảm
+                result.put("phanTramGiam", variant.getChienDichGiamGia() != null && "ONGOING".equals(variant.getChienDichGiamGia().getStatus())
+                        ? variant.getChienDichGiamGia().getPhanTramGiam() : BigDecimal.ZERO);
                 result.put("productDetailId", variant.getId());
                 result.put("tenSanPham", variant.getSanPham().getTenSanPham());
                 result.put("mauSac", variant.getMauSac().getTenMau());
@@ -550,6 +573,19 @@ public class BanHangController {
             result.put("error", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(500).body(result);
         }
+    }
+
+    private BigDecimal tinhGiaSauGiam(ChiTietSanPham chiTiet) {
+        BigDecimal gia = chiTiet.getGia();
+        ChienDichGiamGia chienDich = chiTiet.getChienDichGiamGia();
+        if (chienDich != null && "ONGOING".equals(chienDich.getStatus()) && (chienDich.getSoLuong() == null || chienDich.getSoLuong() > 0)) {
+            BigDecimal phanTramGiam = chienDich.getPhanTramGiam();
+            if (phanTramGiam != null) {
+                BigDecimal giamGia = gia.multiply(phanTramGiam).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+                return gia.subtract(giamGia);
+            }
+        }
+        return gia;
     }
 
     @GetMapping("/products")

@@ -175,4 +175,16 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
         return chiTietSanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm với ID: " + id));
     }
+
+    @Override
+    @Transactional
+    public void truSoLuong(UUID idChienDich, int soLuongTru) {
+        ChienDichGiamGia cdgg = chienDichRepository.findById(idChienDich)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch giảm giá với ID: " + idChienDich));
+        if (cdgg.getSoLuong() != null && cdgg.getSoLuong() > 0) {
+            int moi = Math.max(0, cdgg.getSoLuong() - soLuongTru);
+            cdgg.setSoLuong(moi);
+            chienDichRepository.save(cdgg);
+        }
+    }
 }

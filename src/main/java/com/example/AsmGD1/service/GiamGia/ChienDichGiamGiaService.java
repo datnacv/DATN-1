@@ -45,4 +45,6 @@ public interface ChienDichGiamGiaService {
 
     // Tìm chi tiết sản phẩm theo ID
     ChiTietSanPham layChiTietTheoId(UUID id);
+
+    void truSoLuong(UUID idChienDich, int soLuongTru);
 }
