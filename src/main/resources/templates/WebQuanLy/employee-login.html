@@ -50,8 +50,6 @@
       <input type="password" class="form-control" id="matKhau" name="matKhau" required>
     </div>
     <button type="submit" class="btn btn-login">Đăng nhập</button>
-    <a href="/acvstore/employees/register-face" class="btn btn-register-face">Đăng ký khuôn mặt</a>
-
     <div class="mt-3">
       <div th:if="${param.error}" class="alert alert-danger"
            th:text="${param.error == 'accessDenied'} ? 'Bạn không có quyền truy cập.' : 'Tên đăng nhập hoặc mật khẩu không đúng.'">
