@@ -159,4 +159,14 @@ public class KhachhangSanPhamService {
 
         return dto;
     }
+
+    public List<SanPhamDto> searchProducts(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getNewProducts(); // Nếu không có từ khóa, trả về sản phẩm mới
+        }
+        List<SanPham> sanPhams = khachHangSanPhamRepository.searchProductsByKeyword(keyword.trim());
+        return sanPhams.stream()
+                .map(this::convertToSanPhamDto)
+                .collect(Collectors.toList());
+    }
 }

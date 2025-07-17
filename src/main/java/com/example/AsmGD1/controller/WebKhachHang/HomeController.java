@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
+import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
@@ -20,9 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Controller
 public class HomeController {
@@ -156,5 +155,17 @@ public class HomeController {
             return user.getEmail();
         }
         return null; // Trường hợp không xác định được email
+    }
+
+    @GetMapping("/api/search")
+    @ResponseBody
+    public ResponseEntity<List<SanPhamDto>> searchProducts(@RequestParam("keyword") String keyword) {
+        try {
+            List<SanPhamDto> results = khachhangSanPhamService.searchProducts(keyword);
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            logger.error("Lỗi khi tìm kiếm sản phẩm với từ khóa {}: {}", keyword, e.getMessage());
+            return ResponseEntity.badRequest().body(Collections.emptyList());
+        }
     }
 }
