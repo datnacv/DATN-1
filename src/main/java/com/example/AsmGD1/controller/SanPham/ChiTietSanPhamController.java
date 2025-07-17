@@ -67,6 +67,7 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
+
             List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
             model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -121,8 +122,15 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
+
             List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
             model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+                NguoiDung user = (NguoiDung) auth.getPrincipal();
+                model.addAttribute("user", user);
+            }
+
             List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
             logger.info("Số lượng danh mục: {}", danhMucList.size());
             model.addAttribute("danhMucList", danhMucList);
