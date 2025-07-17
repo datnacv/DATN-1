@@ -46,7 +46,7 @@ public class ChiTietSanPhamService {
         if (os.contains("win")) {
             UPLOAD_DIR = "C:\\DATN\\Uploads\\";
         } else {
-            UPLOAD_DIR = System.getProperty("user.home") + "/DATN/images/";
+            UPLOAD_DIR = System.getProperty("user.home") + "/DATN/uploads/";
         }
 
         try {
@@ -398,22 +398,22 @@ public class ChiTietSanPhamService {
         return savedDetail;
     }
 
-    public List<ChiTietSanPham> getAllChiTietSanPhamsWithQR() {
-        List<ChiTietSanPham> list = chiTietSanPhamRepo.findAll();
-        for (ChiTietSanPham pd : list) {
-            try {
-                String qrDir = "C:\\DATN\\QRCodes\\";
-                new File(qrDir).mkdirs();
-                String path = qrDir + "qr_" + pd.getId() + ".png";
-                QRCodeUtil.generateQRCodeImage(String.valueOf(pd.getId()), 200, 200, path);
-                List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId());
-                pd.setHinhAnhSanPhams(images);
-            } catch (WriterException | IOException e) {
-                logger.error("Failed to generate QR code for product detail ID: {}", pd.getId(), e);
-            }
-        }
-        return list;
-    }
+//    public List<ChiTietSanPham> getAllChiTietSanPhamsWithQR() {
+//        List<ChiTietSanPham> list = chiTietSanPhamRepo.findAll();
+//        for (ChiTietSanPham pd : list) {
+//            try {
+//                String qrDir = "C:\\DATN\\QRCodes\\";
+//                new File(qrDir).mkdirs();
+//                String path = qrDir + "qr_" + pd.getId() + ".png";
+//                QRCodeUtil.generateQRCodeImage(String.valueOf(pd.getId()), 200, 200, path);
+//                List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId());
+//                pd.setHinhAnhSanPhams(images);
+//            } catch (WriterException | IOException e) {
+//                logger.error("Failed to generate QR code for product detail ID: {}", pd.getId(), e);
+//            }
+//        }
+//        return list;
+//    }
 
     public List<ChiTietSanPham> findAllByTrangThai() {
         List<ChiTietSanPham> chiTietSanPhams = chiTietSanPhamRepo.findAllByTrangThai();
