@@ -8,6 +8,7 @@ import com.example.AsmGD1.repository.SanPham.*;
 import com.example.AsmGD1.util.CloudinaryUtil;
 import com.example.AsmGD1.util.QRCodeUtil;
 import com.google.zxing.WriterException;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,69 @@ public class ChiTietSanPhamService {
             throw new RuntimeException("Could not create upload directory: " + UPLOAD_DIR, e);
         }
     }
+
+    @PostConstruct
+    public void syncAllProductDetailsQRCode() {
+        List<ChiTietSanPham> allDetails = chiTietSanPhamRepo.findAll();
+
+        Set<String> validFileNames = allDetails.stream()
+                .map(detail -> "qr_" + detail.getId() + ".png")
+                .collect(Collectors.toSet());
+
+        File qrDirectory = new File(QRCodeUtil.getBaseDir());
+
+        if (qrDirectory.exists() && qrDirectory.isDirectory()) {
+            // 1. Xoá các file QR không còn liên kết với ChiTietSanPham nào
+            File[] existingFiles = qrDirectory.listFiles((dir, name) -> name.endsWith(".png"));
+            if (existingFiles != null) {
+                for (File file : existingFiles) {
+                    if (!validFileNames.contains(file.getName())) {
+                        boolean deleted = file.delete();
+                        if (deleted) {
+                            logger.info("🗑️ Đã xóa file QR không còn hợp lệ: {}", file.getName());
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Tạo file QR mới nếu chưa tồn tại
+        for (ChiTietSanPham detail : allDetails) {
+            String qrFileName = "qr_" + detail.getId() + ".png";
+            Path qrFilePath = Paths.get(QRCodeUtil.getBaseDir(), qrFileName);
+
+            if (!Files.exists(qrFilePath)) {
+                try {
+                    QRCodeUtil.generateQRCodeImage(detail.getId().toString(), 250, 250, qrFileName);
+                    logger.info("✅ QR code created for product detail ID: {}", detail.getId());
+                } catch (Exception e) {
+                    logger.error("❌ Lỗi khi tạo QR cho ID: {}", detail.getId(), e);
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void deleteChiTietSanPham(UUID id) {
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm với ID: " + id));
+
+        // Xoá file QR nếu tồn tại
+        String qrFileName = "qr_" + chiTiet.getId() + ".png";
+        Path qrPath = Paths.get(QRCodeUtil.getBaseDir(), qrFileName);
+        try {
+            if (Files.exists(qrPath)) {
+                Files.delete(qrPath);
+                logger.info("🗑️ Đã xoá QR Code file: {}", qrPath);
+            }
+        } catch (IOException e) {
+            logger.error("❌ Lỗi khi xóa QR Code file: {}", qrPath, e);
+        }
+
+        // Xoá bản ghi DB
+        chiTietSanPhamRepo.delete(chiTiet);
+    }
+
 
     public List<ChiTietSanPham> findByFilters(UUID productId, UUID colorId, UUID sizeId, UUID originId, UUID materialId,
                                               UUID styleId, UUID sleeveId, UUID collarId, UUID brandId, String gender, Boolean status) {
