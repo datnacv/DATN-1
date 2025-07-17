@@ -11,11 +11,13 @@ import com.example.AsmGD1.service.WebKhachHang.KhachhangSanPhamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -166,6 +168,76 @@ public class HomeController {
         } catch (Exception e) {
             logger.error("Lỗi khi tìm kiếm sản phẩm với từ khóa {}: {}", keyword, e.getMessage());
             return ResponseEntity.badRequest().body(Collections.emptyList());
+        }
+    }
+
+    @GetMapping("/api/search-with-history")
+    @ResponseBody
+    public ResponseEntity<List<SanPhamDto>> searchProductsWithHistory(@RequestParam("keyword") String keyword, Authentication authentication) {
+        try {
+            NguoiDung nguoiDung = null;
+            if (authentication != null && authentication.isAuthenticated()) {
+                String email = extractEmailFromAuthentication(authentication);
+                if (email != null) {
+                    nguoiDung = nguoiDungRepository.findByEmail(email)
+                            .orElse(null);
+                }
+            }
+            List<SanPhamDto> results = khachhangSanPhamService.searchProductsWithHistory(keyword, nguoiDung);
+            return ResponseEntity.ok(results);
+        } catch (Exception e) {
+            logger.error("Lỗi khi tìm kiếm sản phẩm với từ khóa {}: {}", keyword, e.getMessage());
+            return ResponseEntity.badRequest().body(Collections.emptyList());
+        }
+    }
+
+    // Phương thức mới: Lấy lịch sử tìm kiếm
+    @GetMapping("/api/search-history")
+    @ResponseBody
+    public ResponseEntity<List<String>> getSearchHistory(Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+            String email = extractEmailFromAuthentication(authentication);
+            if (email == null) {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+            List<String> history = khachhangSanPhamService.getSearchHistory(nguoiDung.getId());
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy lịch sử tìm kiếm: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Collections.emptyList());
+        }
+    }
+
+    @GetMapping("/search")
+    public String searchProducts(@RequestParam("keyword") String keyword, Model model, Authentication authentication) {
+        try {
+            NguoiDung nguoiDung = null;
+            if (authentication != null && authentication.isAuthenticated()) {
+                String email = extractEmailFromAuthentication(authentication);
+                if (email != null) {
+                    nguoiDung = nguoiDungRepository.findByEmail(email)
+                            .orElse(null);
+                    model.addAttribute("loggedInUser", nguoiDung);
+                    model.addAttribute("user", nguoiDung);
+                }
+            } else {
+                model.addAttribute("loggedInUser", null);
+                model.addAttribute("user", null);
+            }
+
+            List<SanPhamDto> products = khachhangSanPhamService.searchProductsWithHistory(keyword, nguoiDung);
+            model.addAttribute("products", products);
+            model.addAttribute("keyword", keyword);
+            return "WebKhachHang/search-results";
+        } catch (Exception e) {
+            logger.error("Lỗi khi tìm kiếm sản phẩm với từ khóa {}: {}", keyword, e.getMessage());
+            model.addAttribute("error", "Lỗi khi tìm kiếm sản phẩm: " + e.getMessage());
+            return "WebKhachHang/error";
         }
     }
 }

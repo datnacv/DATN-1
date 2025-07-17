@@ -152,10 +152,13 @@
       z-index: 1000;
       max-height: 300px;
       overflow-y: auto;
-      display: none;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
     }
     .search-suggestions.active {
-      display: block;
+      opacity: 1;
+      visibility: visible;
     }
     .suggestion-item {
       display: flex;
@@ -174,6 +177,15 @@
       object-fit: cover;
       margin-right: 10px;
       border-radius: 4px;
+    }
+    .history-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .history-item:hover {
+      background-color: #f1f5f9;
     }
   </style>
 </head>
@@ -205,7 +217,7 @@
     <!-- Tìm kiếm -->
     <form class="flex-grow-1 mx-3 position-relative" style="max-width: 600px;" action="/search" method="get">
       <div class="input-group">
-        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" name="keyword" id="searchInput">
+        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" name="keyword" id="searchInput" th:value="${keyword}" autocomplete="off">
         <button class="btn btn-light rounded-end-pill px-4" type="submit">
           <i class="fas fa-search text-blue-800"></i>
         </button>
@@ -505,22 +517,19 @@
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(async () => {
       const keyword = searchInput.value.trim();
+      searchSuggestions.innerHTML = '';
       if (keyword.length < 2) {
-        searchSuggestions.classList.remove('active');
-        searchSuggestions.innerHTML = '';
+        showSearchHistory();
         return;
       }
 
       try {
-        const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
+        const response = await fetch(`/api/search-with-history?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
         const products = await response.json();
         searchSuggestions.innerHTML = '';
         if (products.length === 0) {
-          searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm</div>';
-          searchSuggestions.classList.add('active');
-          return;
+          searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
         }
-
         products.forEach(product => {
           const suggestion = document.createElement('div');
           suggestion.className = 'suggestion-item';
@@ -528,7 +537,7 @@
             <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}"/>
             <div>
               <div class="font-semibold">${product.tenSanPham}</div>
-              <div class="text-blue-800">${product.price} VNĐ</div>
+              <div class="text-blue-800">${product.price.toLocaleString('vi-VN')} VNĐ</div>
             </div>
           `;
           suggestion.addEventListener('click', () => {
@@ -545,12 +554,47 @@
     }, 300);
   });
 
+  // Show search history when input is focused
+  searchInput.addEventListener('focus', async () => {
+    if (searchInput.value.trim().length < 2) {
+      showSearchHistory();
+    }
+  });
+
   // Hide suggestions when clicking outside
   document.addEventListener('click', (e) => {
     if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
       searchSuggestions.classList.remove('active');
     }
   });
+
+  // Function to show search history
+  async function showSearchHistory() {
+    try {
+      const response = await fetch('/api/search-history', { credentials: 'include' });
+      const history = await response.json();
+      searchSuggestions.innerHTML = '';
+      if (history.length === 0) {
+        searchSuggestions.innerHTML = '<div class="history-item">Không có lịch sử tìm kiếm</div>';
+      } else {
+        history.forEach(keyword => {
+          const historyItem = document.createElement('div');
+          historyItem.className = 'history-item';
+          historyItem.innerHTML = `<i class="fas fa-history mr-2"></i>${keyword}`;
+          historyItem.addEventListener('click', () => {
+            searchInput.value = keyword;
+            searchInput.dispatchEvent(new Event('input'));
+          });
+          searchSuggestions.appendChild(historyItem);
+        });
+      }
+      searchSuggestions.classList.add('active');
+    } catch (error) {
+      console.error('Error fetching search history:', error);
+      searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi tải lịch sử tìm kiếm</div>';
+      searchSuggestions.classList.add('active');
+    }
+  }
 
   // Toggle chatbot
   const toggleBtn = document.getElementById('chatbot-toggle');

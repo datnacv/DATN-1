@@ -2,6 +2,8 @@ package com.example.AsmGD1.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -15,4 +17,7 @@ public class DanhMuc {
 
     @Column(name = "ten_danh_muc", nullable = false, length = 100)
     private String tenDanhMuc;
+
+    @OneToMany(mappedBy = "danhMuc", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<SanPham> sanPhams;
 }
