@@ -115,8 +115,16 @@ public class ChiTietSanPhamService {
             params.put("status", status);
         }
 
-        return chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
+        List<ChiTietSanPham> result = chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
+
+        // GÁN ẢNH CHO MỖI CHI TIẾT SẢN PHẨM THEO THỨ TỰ
+        for (ChiTietSanPham pd : result) {
+            pd.setHinhAnhSanPhams(hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId()));
+        }
+
+        return result;
     }
+
 
     @Transactional
     public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
