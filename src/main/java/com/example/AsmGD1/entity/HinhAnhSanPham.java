@@ -19,4 +19,7 @@ public class HinhAnhSanPham {
 
     @Column(name = "url_hinh_anh", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String urlHinhAnh;
+
+    @Column(name = "thu_tu")
+    private Integer thuTu;
 }

@@ -18,12 +18,12 @@ public class WebConfig implements WebMvcConfigurer {
         String directoryPath;
 
         if (os.contains("win")) {
-            uploadPath = "file:/C:/DATN/uploads/";
-            directoryPath = "C:/DATN/uploads/";
+            uploadPath = "file:///C:\\DATN\\uploads\\"; // Đường dẫn tuyệt đối cho Windows
+            directoryPath = "C:\\DATN\\uploads\\";
         } else {
             String userHome = System.getProperty("user.home");
-            uploadPath = "file:" + userHome + "/DATN/uploads/";
-            directoryPath = userHome + "/DATN/uploads/"; // Sửa đường dẫn tại đây
+            uploadPath = "file://" + userHome + "/DATN/uploads/"; // Đường dẫn cho hệ điều hành khác
+            directoryPath = userHome + "/DATN/uploads/";
         }
 
         // Tạo thư mục nếu chưa tồn tại
@@ -32,12 +32,15 @@ public class WebConfig implements WebMvcConfigurer {
             if (!Files.exists(path)) {
                 Files.createDirectories(path);
                 System.out.println("Đã tạo thư mục: " + path);
+            } else {
+                System.out.println("Thư mục đã tồn tại: " + path);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Không thể tạo thư mục tải lên: " + directoryPath, e);
+            throw new RuntimeException("Không thể tạo hoặc truy cập thư mục tải lên: " + directoryPath, e);
         }
 
-        registry.addResourceHandler("/Uploads/**")
+        // Ánh xạ /images/** đến thư mục uploads
+        registry.addResourceHandler("/images/**")
                 .addResourceLocations(uploadPath)
                 .setCachePeriod(0);
     }
