@@ -5,7 +5,9 @@ import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
+import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import com.example.AsmGD1.service.WebKhachHang.KhachhangSanPhamService;
 import org.slf4j.Logger;
@@ -17,10 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -34,7 +33,10 @@ public class HomeController {
     @Autowired
     private KhachHangSanPhamRepository khachHangSanPhamRepository;
     @Autowired
-    private com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository nguoiDungRepository; // Thêm repository
+    private NguoiDungRepository nguoiDungRepository; // Thêm repository
+
+    @Autowired
+    private LichSuTimKiemRepository lichSuTimKiemRepository;
 
     @Autowired
     public HomeController(KhachhangSanPhamService khachhangSanPhamService, KhachHangGioHangService khachHangGioHangService) {
@@ -238,6 +240,48 @@ public class HomeController {
             logger.error("Lỗi khi tìm kiếm sản phẩm với từ khóa {}: {}", keyword, e.getMessage());
             model.addAttribute("error", "Lỗi khi tìm kiếm sản phẩm: " + e.getMessage());
             return "WebKhachHang/error";
+        }
+    }
+
+    @DeleteMapping("/api/search-history")
+    @ResponseBody
+    public ResponseEntity<String> clearSearchHistory(Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập!");
+            }
+            String email = extractEmailFromAuthentication(authentication);
+            if (email == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Không thể xác định người dùng!");
+            }
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+            lichSuTimKiemRepository.deleteByNguoiDungId(nguoiDung.getId());
+            return ResponseEntity.ok("Đã xóa lịch sử tìm kiếm!");
+        } catch (Exception e) {
+            logger.error("Lỗi khi xóa lịch sử tìm kiếm: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xóa lịch sử tìm kiếm!");
+        }
+    }
+
+    @PostMapping("/api/save-search-history")
+    @ResponseBody
+    public ResponseEntity<String> saveSearchHistory(@RequestParam("keyword") String keyword, Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để lưu lịch sử tìm kiếm!");
+            }
+            String email = extractEmailFromAuthentication(authentication);
+            if (email == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Không thể xác định người dùng!");
+            }
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+            khachhangSanPhamService.saveSearchHistory(nguoiDung, keyword);
+            return ResponseEntity.ok("Đã lưu lịch sử tìm kiếm!");
+        } catch (Exception e) {
+            logger.error("Lỗi khi lưu lịch sử tìm kiếm: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu lịch sử tìm kiếm!");
         }
     }
 }

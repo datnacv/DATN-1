@@ -10,88 +10,22 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    .navbar {
-      background: linear-gradient(to right, #153054, #1e4066);
-      padding: 12px 0;
-    }
-    .navbar-brand, .btn, .dropdown-toggle, .cart-icon {
-      padding: 12px 16px;
-    }
-    .product-card {
-      transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .product-card:hover {
-      transform: translateY(-10px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    }
-    .badge-new {
-      background-color: #153054;
-    }
-    .size-option, .color-option {
-      padding: 8px 16px;
-      border: 2px solid #ccc;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .size-option.active, .color-option.active {
-      background-color: #153054;
-      color: white;
-      border-color: #153054;
-    }
-    .color-option {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      border: 2px solid transparent;
-    }
-    .color-option.active {
-      border-color: #153054;
-    }
-    .swiper-slide img {
-      object-fit: cover;
-      height: 600px;
-      width: 100%;
-      loading: lazy;
-    }
-    .ticker {
-      background-color: #9FD5F7;
-      color: #153054;
-      font-weight: bold;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      z-index: 1050;
-    }
-    .navbar {
-      position: fixed;
-      top: 40px;
-      left: 0;
-      width: 100%;
-      z-index: 1040;
-    }
-    .dropdown-menu {
-      display: none;
-      position: absolute;
-      background-color: white;
-      min-width: 160px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-      z-index: 1000;
-    }
-    .dropdown:hover .dropdown-menu {
-      display: block;
-    }
-    body {
-      padding-top: 140px;
-    }
-    .user-info {
-      display: none;
-      color: white;
-    }
-    .user-info.active {
-      display: inline;
-    }
+    .navbar { background: linear-gradient(to right, #153054, #1e4066); }
+    .product-card { transition: transform 0.3s, box-shadow 0.3s; }
+    .product-card:hover { transform: translateY(-10px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .badge-new { background-color: #153054; }
+    .size-option, .color-option { padding: 8px 16px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .size-option.active, .color-option.active { background-color: #153054; color: white; border-color: #153054; }
+    .color-option { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; }
+    .color-option.active { border-color: #153054; }
+    .swiper-slide img { object-fit: cover; height: 400px; width: 100%; }
+    .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
+    .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
+    .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
+    .dropdown:hover .dropdown-menu { display: block; }
+    body { padding-top: 140px; }
+    .user-info { display: none; color: white; }
+    .user-info.active { display: inline; }
     .chatbot-msg-user {
       background-color: #153054;
       color: white;
@@ -139,7 +73,6 @@
       opacity: 0;
       pointer-events: none;
     }
-    /* Gợi ý tìm kiếm */
     .search-suggestions {
       position: absolute;
       top: 100%;
@@ -183,16 +116,28 @@
       border-bottom: 1px solid #eee;
       cursor: pointer;
       transition: background 0.2s;
+      background-color: #f8fafc;
     }
     .history-item:hover {
-      background-color: #f1f5f9;
+      background-color: #e2e8f0;
+    }
+    .history-item .highlight {
+      background-color: #9FD5F7;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    @media (max-width: 640px) {
+      .swiper-slide img { height: 200px; }
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+      .dropdown-menu { width: 100%; left: 0; }
+      body { padding-top: 120px; }
     }
   </style>
 </head>
 <body class="bg-gray-100">
 <div class="ticker py-1 overflow-hidden" style="height: 40px;">
   <marquee behavior="scroll" direction="left" scrollamount="5">
-    🎉 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+    🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
   </marquee>
 </div>
 
@@ -240,7 +185,7 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
-          <li><a class="dropdown-item" th:href="@{/don-mua}">Đơn mua</a></li>
+          <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
         </ul>
@@ -367,7 +312,7 @@
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
+  <div class="see-all text-center mt dirigida6">
     <a href="/all" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
@@ -483,8 +428,8 @@
     </div>
     <div>
       <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-      <p class="text-sm">Email: datn.acv@gmail.com</p>
-      <p class="text-sm">Hotline: 1900 8686</p>
+      <p class="text-sm">Email: acvstore@gmail.com</p>
+      <p class="text-sm">Hotline: 0123 456 789</p>
       <div class="flex space-x-4 mt-4">
         <a href="#" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
         <a href="#" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
@@ -502,12 +447,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script>
-  // Toggle search bar on mobile
-  document.querySelector('.fa-search').addEventListener('click', (e) => {
-    e.preventDefault();
-    document.querySelector('.input-group').classList.toggle('active');
-  });
-
   // Search suggestions
   const searchInput = document.getElementById('searchInput');
   const searchSuggestions = document.getElementById('searchSuggestions');
@@ -519,12 +458,11 @@
       const keyword = searchInput.value.trim();
       searchSuggestions.innerHTML = '';
       if (keyword.length < 2) {
-        showSearchHistory();
+        showSearchHistory(keyword);
         return;
       }
-
       try {
-        const response = await fetch(`/api/search-with-history?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
+        const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
         const products = await response.json();
         searchSuggestions.innerHTML = '';
         if (products.length === 0) {
@@ -534,12 +472,12 @@
           const suggestion = document.createElement('div');
           suggestion.className = 'suggestion-item';
           suggestion.innerHTML = `
-            <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}"/>
-            <div>
-              <div class="font-semibold">${product.tenSanPham}</div>
-              <div class="text-blue-800">${product.price.toLocaleString('vi-VN')} VNĐ</div>
-            </div>
-          `;
+                    <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}"/>
+                    <div>
+                        <div class="font-semibold">${product.tenSanPham}</div>
+                        <div class="text-blue-800">${product.price.toLocaleString('vi-VN')} VNĐ</div>
+                    </div>
+                `;
           suggestion.addEventListener('click', () => {
             window.location.href = `/chitietsanpham?id=${product.id}`;
           });
@@ -554,33 +492,60 @@
     }, 300);
   });
 
-  // Show search history when input is focused
   searchInput.addEventListener('focus', async () => {
-    if (searchInput.value.trim().length < 2) {
-      showSearchHistory();
+    const keyword = searchInput.value.trim();
+    showSearchHistory(keyword);
+  });
+
+  searchInput.addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      const keyword = searchInput.value.trim();
+      if (!keyword) return;
+
+      try {
+        const response = await fetch(`/api/save-search-history?keyword=${encodeURIComponent(keyword)}`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          console.error('Error saving search history:', await response.text());
+        }
+        // Chuyển hướng đến trang kết quả tìm kiếm
+        window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
+      } catch (error) {
+        console.error('Error saving search history:', error);
+      }
     }
   });
 
-  // Hide suggestions when clicking outside
   document.addEventListener('click', (e) => {
     if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
       searchSuggestions.classList.remove('active');
     }
   });
 
-  // Function to show search history
-  async function showSearchHistory() {
+  async function showSearchHistory(filterKeyword = '') {
     try {
       const response = await fetch('/api/search-history', { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error(response.status === 401 ? 'Vui lòng đăng nhập để xem lịch sử tìm kiếm' : 'Lỗi khi tải lịch sử tìm kiếm');
+      }
       const history = await response.json();
       searchSuggestions.innerHTML = '';
-      if (history.length === 0) {
+      const filteredHistory = filterKeyword
+              ? history.filter(kw => kw.toLowerCase().includes(filterKeyword.toLowerCase()))
+              : history;
+      if (filteredHistory.length === 0) {
         searchSuggestions.innerHTML = '<div class="history-item">Không có lịch sử tìm kiếm</div>';
       } else {
-        history.forEach(keyword => {
+        filteredHistory.forEach(keyword => {
           const historyItem = document.createElement('div');
           historyItem.className = 'history-item';
-          historyItem.innerHTML = `<i class="fas fa-history mr-2"></i>${keyword}`;
+          historyItem.innerHTML = `<i class="fas fa-history mr-2"></i>${
+                  filterKeyword
+                          ? keyword.replace(new RegExp(filterKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), match => `<span class="highlight">${match}</span>`)
+                          : keyword
+          }`;
           historyItem.addEventListener('click', () => {
             searchInput.value = keyword;
             searchInput.dispatchEvent(new Event('input'));
@@ -591,7 +556,7 @@
       searchSuggestions.classList.add('active');
     } catch (error) {
       console.error('Error fetching search history:', error);
-      searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi tải lịch sử tìm kiếm</div>';
+      searchSuggestions.innerHTML = `<div class="history-item">${error.message}</div>`;
       searchSuggestions.classList.add('active');
     }
   }
@@ -612,14 +577,12 @@
     chatBox.style.display = "none";
   };
 
-  // Save chat history
   function saveToHistory(role, msg) {
     const current = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
     current.push({ role, msg });
     sessionStorage.setItem("chat_history", JSON.stringify(current));
   }
 
-  // Restore chat history
   function restoreHistory() {
     chatMessages.innerHTML = '<div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>';
     const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
@@ -632,7 +595,6 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
-  // Quick replies
   document.querySelectorAll('.quick-reply').forEach(btn => {
     btn.addEventListener('click', () => {
       chatInput.value = btn.textContent;
@@ -640,7 +602,6 @@
     });
   });
 
-  // Send chat message
   chatInput.addEventListener('keydown', async (event) => {
     if (event.key === 'Enter') {
       const message = chatInput.value.trim();
@@ -656,7 +617,7 @@
 
       document.getElementById('typing-indicator').classList.remove('hidden');
       try {
-        const res = await fetch("https://duclong0911.app.n8n.cloud/webhook/website-chatbot", {
+        const res = await fetch("https://duclong0910.app.n8n.cloud/webhook/website-chatbot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ body: { from: "user_123", message } })
@@ -686,7 +647,6 @@
     }
   });
 
-  // Swiper initialization
   new Swiper('.banner-slider', {
     loop: true,
     autoplay: { delay: 5000 },
@@ -694,7 +654,6 @@
     pagination: { el: '.swiper-pagination', clickable: true },
   });
 
-  // User authentication check
   window.addEventListener('load', async () => {
     const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
     const data = await response.json();
@@ -715,7 +674,6 @@
     }
   });
 
-  // Logout
   document.getElementById('logoutButton')?.addEventListener('click', (e) => {
     e.preventDefault();
     fetch('/customers/logout', { method: 'POST', credentials: 'include' }).then(() => {
@@ -723,7 +681,6 @@
     });
   });
 
-  // Add to cart
   document.querySelectorAll('.cart-icon').forEach(button => {
     button.addEventListener('click', () => {
       const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
@@ -786,7 +743,7 @@
         modalError.classList.add('hidden');
         confirmButton.classList.add('loading');
 
-        const response = await fetch(`/api/getChiTietSanPham?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
+        const response = await fetch(`/acvstore/chi-tiet-san-pham/api?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
         const chiTietSanPham = await response.json();
         if (!chiTietSanPham.id) {
           alert('Sản phẩm với kích cỡ và màu sắc này không tồn tại!');
@@ -802,7 +759,7 @@
           return;
         }
 
-        const payload = { id: chiTietSanPham.id, quantity: parseInt(input.value) };
+        const payload = { id:  chiTietSanPham.id, quantity: parseInt(input.value) };
         const addResponse = await fetch('/api/cart/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -823,7 +780,6 @@
     });
   });
 
-  // Quick view
   document.querySelectorAll('.quick-view-btn').forEach(button => {
     button.addEventListener('click', async () => {
       const productId = button.dataset.productId;
@@ -855,7 +811,6 @@
     });
   });
 
-  // Update cart count
   async function updateCartCount() {
     try {
       const response = await fetch('/api/cart', { credentials: 'include' });
@@ -871,7 +826,6 @@
     }
   }
 
-  // Back to top
   const backToTop = document.getElementById('back-to-top');
   window.addEventListener('scroll', () => {
     backToTop.classList.toggle('hidden', window.scrollY < 200);

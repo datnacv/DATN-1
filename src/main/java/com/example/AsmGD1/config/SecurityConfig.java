@@ -234,7 +234,7 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user").permitAll()
+                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

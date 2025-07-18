@@ -184,11 +184,16 @@ public class KhachhangSanPhamService {
     // Lưu lịch sử tìm kiếm
     public void saveSearchHistory(NguoiDung nguoiDung, String keyword) {
         if (nguoiDung != null && keyword != null && !keyword.trim().isEmpty()) {
-            LichSuTimKiem lichSu = LichSuTimKiem.builder()
-                    .tuKhoa(keyword.trim())
-                    .nguoiDung(nguoiDung)
-                    .build();
-            lichSuTimKiemRepository.save(lichSu);
+            boolean exists = lichSuTimKiemRepository.findByNguoiDungIdOrderByThoiGianTimKiemDesc(nguoiDung.getId())
+                    .stream()
+                    .anyMatch(lichSu -> lichSu.getTuKhoa().equalsIgnoreCase(keyword.trim()));
+            if (!exists) {
+                LichSuTimKiem lichSu = LichSuTimKiem.builder()
+                        .tuKhoa(keyword.trim())
+                        .nguoiDung(nguoiDung)
+                        .build();
+                lichSuTimKiemRepository.save(lichSu);
+            }
         }
     }
 
@@ -206,9 +211,6 @@ public class KhachhangSanPhamService {
         if (keyword == null || keyword.trim().isEmpty()) {
             return getNewProducts();
         }
-
-        // Lưu lịch sử tìm kiếm
-        saveSearchHistory(nguoiDung, keyword);
 
         List<SanPham> sanPhams = khachHangSanPhamRepository.searchProductsByKeyword(keyword.trim());
         if (sanPhams.isEmpty()) {
