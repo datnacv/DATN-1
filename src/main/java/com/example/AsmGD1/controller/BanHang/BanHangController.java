@@ -263,10 +263,6 @@ public class BanHangController {
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet != null) {
-                    // Trừ tồn kho
-                    chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
-                    chiTietSanPhamService.save(chiTiet);
-
                     // Trừ số lượng chiến dịch giảm giá nếu có
                     ChienDichGiamGia cdgg = chiTiet.getChienDichGiamGia();
                     if (cdgg != null && "ONGOING".equals(cdgg.getStatus())) {
