@@ -264,12 +264,13 @@ public class HomeController {
         }
     }
 
-    @PostMapping("/api/save-search-history")
+    // Trong HomeController.java
+    @DeleteMapping("/api/search-history/delete")
     @ResponseBody
-    public ResponseEntity<String> saveSearchHistory(@RequestParam("keyword") String keyword, Authentication authentication) {
+    public ResponseEntity<String> deleteSearchHistoryItem(@RequestParam("keyword") String keyword, Authentication authentication) {
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để lưu lịch sử tìm kiếm!");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xóa lịch sử tìm kiếm!");
             }
             String email = extractEmailFromAuthentication(authentication);
             if (email == null) {
@@ -277,11 +278,38 @@ public class HomeController {
             }
             NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+            lichSuTimKiemRepository.deleteByTuKhoaAndNguoiDungId(keyword, nguoiDung.getId());
+            return ResponseEntity.ok("Đã xóa mục lịch sử tìm kiếm!");
+        } catch (Exception e) {
+            logger.error("Lỗi khi xóa mục lịch sử tìm kiếm: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xóa mục lịch sử tìm kiếm!");
+        }
+    }
+
+    @PostMapping("/api/save-search-history")
+    @ResponseBody
+    public ResponseEntity<String> saveSearchHistory(@RequestParam("keyword") String keyword, Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                logger.warn("Unauthorized attempt to save search history");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để lưu lịch sử tìm kiếm!");
+            }
+            String email = extractEmailFromAuthentication(authentication);
+            if (email == null) {
+                logger.warn("Email extracted from authentication is null");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Không thể xác định người dùng!");
+            }
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                    .orElse(null);
+            if (nguoiDung == null) {
+                logger.warn("User not found for email: {}", email);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Người dùng không tồn tại!");
+            }
             khachhangSanPhamService.saveSearchHistory(nguoiDung, keyword);
             return ResponseEntity.ok("Đã lưu lịch sử tìm kiếm!");
         } catch (Exception e) {
-            logger.error("Lỗi khi lưu lịch sử tìm kiếm: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu lịch sử tìm kiếm!");
+            logger.error("Lỗi khi lưu lịch sử tìm kiếm cho từ khóa '{}': {}", keyword, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu lịch sử tìm kiếm: " + e.getMessage());
         }
     }
 }

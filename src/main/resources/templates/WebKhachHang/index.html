@@ -18,12 +18,12 @@
     .size-option.active, .color-option.active { background-color: #153054; color: white; border-color: #153054; }
     .color-option { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; }
     .color-option.active { border-color: #153054; }
-    .swiper-slide img { object-fit: cover; height: 400px; width: 100%; }
+    .swiper-slide img { object-fit: cover; height: 500px; width: 100%; }
     .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
     .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
     .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
     .dropdown:hover .dropdown-menu { display: block; }
-    body { padding-top: 140px; }
+    body { padding-top: 118px; }
     .user-info { display: none; color: white; }
     .user-info.active { display: inline; }
     .chatbot-msg-user {
@@ -117,6 +117,9 @@
       cursor: pointer;
       transition: background 0.2s;
       background-color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .history-item:hover {
       background-color: #e2e8f0;
@@ -125,6 +128,16 @@
       background-color: #9FD5F7;
       padding: 2px 4px;
       border-radius: 4px;
+    }
+    .history-item .delete-btn {
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s;
+    }
+    .history-item .delete-btn:hover {
+      color: #b91c1c;
     }
     @media (max-width: 640px) {
       .swiper-slide img { height: 200px; }
@@ -241,7 +254,7 @@
   </div>
 </div>
 
-<div class="mt-0">
+<div class="container mx-auto py-8">
   <div class="swiper banner-slider">
     <div class="swiper-wrapper">
       <div class="swiper-slide"><img loading="lazy" src="https://file.hstatic.net/200000503583/collection/ao-nam-2022_71fff4523ebe4fbd9722928187580776.jpg" alt="Banner thời trang nam" class="w-full h-full object-cover"/></div>
@@ -541,14 +554,38 @@
         filteredHistory.forEach(keyword => {
           const historyItem = document.createElement('div');
           historyItem.className = 'history-item';
-          historyItem.innerHTML = `<i class="fas fa-history mr-2"></i>${
+          historyItem.innerHTML = `
+                    <span class="keyword">${
                   filterKeyword
                           ? keyword.replace(new RegExp(filterKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), match => `<span class="highlight">${match}</span>`)
                           : keyword
-          }`;
-          historyItem.addEventListener('click', () => {
+          }</span>
+                    <i class="fas fa-times delete-btn" title="Xóa mục này"></i>
+                `;
+          // Sự kiện click vào từ khóa để tìm kiếm
+          historyItem.querySelector('.keyword').addEventListener('click', () => {
             searchInput.value = keyword;
             searchInput.dispatchEvent(new Event('input'));
+          });
+          // Sự kiện click vào nút xóa
+          historyItem.querySelector('.delete-btn').addEventListener('click', async () => {
+            try {
+              const response = await fetch(`/api/search-history/delete?keyword=${encodeURIComponent(keyword)}`, {
+                method: 'DELETE',
+                credentials: 'include'
+              });
+              if (response.ok) {
+                // Cập nhật lại danh sách lịch sử sau khi xóa
+                showSearchHistory(filterKeyword);
+              } else {
+                searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử</div>';
+                searchSuggestions.classList.add('active');
+              }
+            } catch (error) {
+              console.error('Error deleting search history item:', error);
+              searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử tìm kiếm</div>';
+              searchSuggestions.classList.add('active');
+            }
           });
           searchSuggestions.appendChild(historyItem);
         });
