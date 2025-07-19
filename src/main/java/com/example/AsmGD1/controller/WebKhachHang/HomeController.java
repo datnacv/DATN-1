@@ -22,6 +22,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.*;
 
 @Controller
@@ -86,6 +87,10 @@ public class HomeController {
             model.addAttribute("error", "Sản phẩm không tồn tại hoặc đã bị xóa!");
             return "WebKhachHang/error";
         }
+        NumberFormat format = NumberFormat.getInstance(new Locale("vi", "VN"));
+        String giaFormatted = format.format(productDetail.getGia()) + " VNĐ";
+        model.addAttribute("giaFormatted", giaFormatted);
+
         model.addAttribute("productDetail", productDetail);
         return "WebKhachHang/chitietsanpham";
     }

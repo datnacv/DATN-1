@@ -78,7 +78,7 @@
         </div>
         <div>
             <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-4"></h1>
-            <p class="text-[#153054] font-bold text-2xl mb-4" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')} + ' VNĐ'"></p>
+            <p class="text-[#153054] font-bold text-2xl mb-4" th:text="${giaFormatted}"></p>
             <p class="text-gray-600 mb-4" th:text="${productDetail.moTa}"></p>
             <p class="text-gray-600 mb-2">Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span></p>
             <p class="text-gray-600 mb-2">Số lượng tồn kho: <span th:text="${productDetail.soLuongTonKho}"></span></p>
