@@ -14,4 +14,6 @@ public class CreatePaymentLinkRequestBody {
     private int price;
     private String cancelUrl;
 
+    private int productPrice;
+    private int shippingFee;
 }

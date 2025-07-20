@@ -56,6 +56,19 @@ public class DonHang {
     @Column(name = "dia_chi_giao_hang", columnDefinition = "NVARCHAR(MAX)")
     private String diaChiGiaoHang;
 
+    @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
+    private String ghiChu;
+
+    @Column(name = "trang_thai", nullable = false)
+    private String trangThai = "CHO_XAC_NHAN";
+
+
+
+    @ManyToOne
+    @JoinColumn(name = "id_phieu_giam_gia")
+    private PhieuGiamGia phieuGiamGia;
+
+
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
 

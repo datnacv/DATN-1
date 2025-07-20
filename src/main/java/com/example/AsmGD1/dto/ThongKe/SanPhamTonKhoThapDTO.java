@@ -14,12 +14,12 @@ public class SanPhamTonKhoThapDTO {
     private String mauSac;
     private String kichCo;
     private BigDecimal gia;
-    private Integer soLuongTonKho; // Giữ Integer vì tk.soLuongTonKho là int
+    private Integer soLuongTonKho;
     private String imageUrl;
 
     public SanPhamTonKhoThapDTO(UUID idChiTietDonHang, UUID idChiTietSanPham, UUID idSanPham,
                                 String tenSanPham, String mauSac, String kichCo,
-                                BigDecimal gia, Integer soLuongTonKho, String imageUrl) {
+                                BigDecimal gia, Integer soLuongTonKho) {
         this.idChiTietDonHang = idChiTietDonHang;
         this.idChiTietSanPham = idChiTietSanPham;
         this.idSanPham = idSanPham;
@@ -28,6 +28,5 @@ public class SanPhamTonKhoThapDTO {
         this.kichCo = kichCo;
         this.gia = gia;
         this.soLuongTonKho = soLuongTonKho;
-        this.imageUrl = imageUrl;
     }
 }

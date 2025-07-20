@@ -7,115 +7,64 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
+        .form-label {
+            font-weight: 500;
+            color: #333;
+        }
+        .form-control, .form-select {
+            border-radius: 0.375rem;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        }
+        .btn-primary, .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 0.375rem;
+        }
+        .btn-primary:hover, .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .table-responsive {
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .input-group-text {
+            background-color: #f8f9fa;
+            border-radius: 0 0.375rem 0.375rem 0;
+        }
+        .form-check-label {
+            cursor: pointer;
+        }
         .content {
-            padding: 2.5rem;
+            padding: 2rem;
             margin-left: 256px;
             margin-top: 70px;
-            background-color: #f8f9fa;
         }
         .sticky-header {
             position: sticky;
             top: 60px;
             z-index: 1000;
             background-color: #fff;
-            padding: 1rem 2.5rem;
-            margin: -2.5rem -2.5rem 1.5rem -2.5rem;
+            padding: 0.75rem 2rem;
+            margin: -2rem -2rem 1rem -2rem;
             border-bottom: 1px solid #dee2e6;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
         .sticky-header h2 {
-            font-weight: 700;
+            font-weight: bold;
             margin: 0;
-            color: #1a3c8a;
         }
-        .detail-card {
-            background-color: #fff;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            transition: transform 0.2s ease-in-out;
-        }
-        .detail-card:hover {
-            transform: translateY(-2px);
-        }
-        .detail-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-        }
-        .detail-value {
-            margin-bottom: 1.5rem;
-            color: #444;
-            font-size: 1rem;
-            font-weight: 400;
-        }
-        .badge {
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            border-radius: 0.25rem;
-            font-weight: 500;
-        }
-        .badge.bg-warning {
-            background-color: #ffe066 !important;
-            color: #333 !important;
-        }
-        .badge.bg-success {
-            background-color: #28a745 !important;
-        }
-        .badge.bg-secondary {
-            background-color: #6c757d !important;
-        }
-        .table-responsive {
-            border-radius: 0.5rem;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        .table th, .table td {
-            vertical-align: middle;
-            padding: 1rem;
-        }
-        .table thead {
-            background-color: #f1f3f5;
-        }
-        .table tbody tr:hover {
-            background-color: #f8f9fa;
-            transition: background-color 0.2s ease-in-out;
-        }
-        .action-buttons {
-            margin-top: 2rem;
-            text-align: right;
-        }
-        .btn-secondary {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
+        .alert {
             border-radius: 0.375rem;
-            background-color: #6c757d;
-            border-color: #6c757d;
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-secondary:hover {
-            background-color: #5a6268;
-            border-color: #5a6268;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .toast-container {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 9999;
-        }
-        .toast {
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .toast-body {
-            font-size: 0.95rem;
         }
     </style>
     <script th:src="@{/js/sidebar.js}" defer></script>
@@ -130,8 +79,8 @@
 
     <div class="content" id="content">
         <!-- Toasts -->
-        <div class="toast-container">
-            <div class="toast align-items-center text-bg-success border-0" role="alert" id="successToast" aria-live="assertive" aria-atomic="true" th:if="${successMessage}" data-bs-autohide="true" data-bs-delay="5000">
+        <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+            <div class="toast align-items-center text-bg-success border-0" role="alert" id="successToast" aria-live="assertive" aria-atomic="true" th:if="${successMessage}">
                 <div class="d-flex">
                     <div class="toast-body">
                         <i class="fas fa-check-circle me-2"></i>
@@ -140,11 +89,20 @@
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
             </div>
-            <div class="toast align-items-center text-bg-danger border-0" role="alert" id="errorToast" aria-live="assertive" aria-atomic="true" th:if="${errorMessage}" data-bs-autohide="true" data-bs-delay="5000">
+            <div class="toast align-items-center text-bg-danger border-0" role="alert" id="errorToast" aria-live="assertive" aria-atomic="true" th:if="${errorMessage}">
                 <div class="d-flex">
                     <div class="toast-body">
-                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <i class="fas fa-exclamation-triangle me-2"></i>
                         <span th:text="${errorMessage}"></span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast align-items-center text-bg-info border-0" role="alert" id="infoToast" aria-live="assertive" aria-atomic="true" th:if="${mailMessage}">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <span th:text="${mailMessage}"></span>
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
@@ -156,114 +114,243 @@
             <h2><i class="fas fa-ticket-alt me-2"></i>Chi Tiết Phiếu Giảm Giá</h2>
         </div>
 
-        <!-- Detail Card -->
-        <div class="detail-card">
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="detail-label">Mã phiếu</div>
-                    <div class="detail-value" th:text="${voucher.ma}"></div>
+        <!-- Notification for Active or Undefined Voucher -->
+        <div th:if="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            Phiếu giảm giá đang ở trạng thái "<span th:text="${getStatus.apply(voucher)}"></span>", vì vậy không thể chỉnh sửa.
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white p-4 rounded shadow-sm">
+            <form id="detailVoucherForm" th:object="${voucher}" method="post">
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-barcode me-2"></i>Mã phiếu:</label>
+                    <input type="text" th:field="*{ma}" class="form-control" readonly/>
                 </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Tên phiếu</div>
-                    <div class="detail-value" th:text="${voucher.ten}"></div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-tag me-2"></i>Tên phiếu:</label>
+                    <input type="text" th:field="*{ten}" class="form-control" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" placeholder="Tên phiếu giảm giá"/>
                 </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Kiểu giảm</div>
-                    <div class="detail-value" th:text="${voucher.loai == 'PERCENT' ? '%' : 'Tiền mặt'}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Loại phiếu</div>
-                    <div class="detail-value" th:text="${voucher.kieuPhieu == 'cong_khai' ? 'Công khai' : 'Cá nhân'}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Giá trị giảm</div>
-                    <div class="detail-value" th:text="${formats[voucher.id]['giaTriGiam']}"></div>
-                </div>
-                <div class="col-md-6" th:if="${voucher.loai == 'PERCENT'}">
-                    <div class="detail-label">Giá trị giảm tối đa</div>
-                    <div class="detail-value" th:text="${formats[voucher.id]['giaTriGiamToiDa']}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Đơn tối thiểu áp dụng</div>
-                    <div class="detail-value" th:text="${formats[voucher.id]['giaTriGiamToiThieu']}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Lượt sử dụng</div>
-                    <div class="detail-value" th:text="${voucher.gioiHanSuDung}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Ngày bắt đầu</div>
-                    <div class="detail-value" th:text="${#temporals.format(voucher.ngayBatDau, 'dd/MM/yyyy')}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Ngày kết thúc</div>
-                    <div class="detail-value" th:text="${#temporals.format(voucher.ngayKetThuc, 'dd/MM/yyyy')}"></div>
-                </div>
-                <div class="col-md-6">
-                    <div class="detail-label">Trạng thái</div>
-                    <div class="detail-value">
-                        <span th:switch="${voucherStatus}" data-bs-toggle="tooltip" data-bs-placement="top" th:attr="data-bs-title=${voucherStatus}">
-                            <span th:case="'Sắp diễn ra'" class="badge bg-warning text-dark">Sắp diễn ra</span>
-                            <span th:case="'Đang diễn ra'" class="badge bg-success">Đang diễn ra</span>
-                            <span th:case="'Đã kết thúc'" class="badge bg-secondary">Đã kết thúc</span>
-                            <span th:case="*" class="badge bg-light text-dark border">Không xác định</span>
-                        </span>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-percentage me-2"></i>Kiểu giảm:</label>
+                    <div>
+                        <label class="form-check-label me-3">
+                            <input type="radio" th:field="*{loai}" value="PERCENT" th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" onchange="toggleDiscountFields()"> Giảm theo %
+                        </label>
+                        <label class="form-check-label">
+                            <input type="radio" th:field="*{loai}" value="CASH" th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" onchange="toggleDiscountFields()"> Giảm theo tiền mặt
+                        </label>
                     </div>
                 </div>
-                <div class="col-md-6" th:if="${voucher.kieuPhieu == 'ca_nhan'}">
-                    <div class="detail-label">Thời gian tạo</div>
-                    <div class="detail-value" th:text="${#temporals.format(voucher.thoiGianTao, 'dd/MM/yyyy HH:mm')}"></div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Giá trị giảm:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="giaTriGiam" name="giaTriGiam"
+                                   th:value="${giaTriGiamStr}" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
+                            <span class="input-group-text" id="discountUnit">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6" id="maxDiscountGroup">
+                        <label class="form-label">Giá trị giảm tối đa:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="giaTriGiamToiDa" name="giaTriGiamToiDa"
+                                   th:value="${giaTriGiamToiDaStr}" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
+                            <span class="input-group-text">₫</span>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div th:if="${voucher.kieuPhieu == 'ca_nhan'}" class="mt-5">
-                <div class="detail-label mb-3">Khách hàng áp dụng</div>
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle bg-white">
-                        <thead class="table-light">
-                        <tr>
-                            <th scope="col">STT</th>
-                            <th scope="col">Họ tên</th>
-                            <th scope="col">Email</th>
-                            <th scope="col">SĐT</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:if="${customers.isEmpty()}">
-                            <td colspan="4" class="text-center text-muted">Không có khách hàng nào.</td>
-                        </tr>
-                        <tr th:each="customer, stat : ${customers}">
-                            <td th:text="${stat.index + 1}"></td>
-                            <td th:text="${customer.hoTen}"></td>
-                            <td th:text="${customer.email}"></td>
-                            <td th:text="${customer.soDienThoai}"></td>
-                        </tr>
-                        </tbody>
-                    </table>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-users me-2"></i>Loại phiếu:</label>
+                    <div>
+                        <label class="form-check-label me-3">
+                            <input type="radio" th:field="*{kieuPhieu}" value="cong_khai" th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" onclick="toggleUsageCount()"> Công khai
+                        </label>
+                        <label class="form-check-label">
+                            <input type="radio" th:field="*{kieuPhieu}" value="ca_nhan" th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" onclick="toggleUsageCount()"> Cá nhân
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <!-- Back Button -->
-            <div class="action-buttons">
-                <a th:href="@{/acvstore/phieu-giam-gia}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Quay lại
-                </a>
-            </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Lượt sử dụng:</label>
+                        <input type="text" class="form-control" id="gioiHanSuDung" name="gioiHanSuDung"
+                               th:value="${gioiHanSuDungStr}" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="Số lượt sử dụng">
+                        <small class="text-muted" id="caNhanNote" style="display: none;">* Phiếu cá nhân chỉ áp dụng 1 lượt sử dụng</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Đơn tối thiểu áp dụng:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="giaTriGiamToiThieu" name="giaTriGiamToiThieu"
+                                   th:value="${giaTriGiamToiThieuStr}" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
+                            <span class="input-group-text">₫</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="fas fa-calendar-alt me-2"></i>Ngày bắt đầu:</label>
+                        <input type="date" th:field="*{ngayBatDau}" class="form-control" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="fas fa-calendar-check me-2"></i>Ngày kết thúc:</label>
+                        <input type="date" th:field="*{ngayKetThuc}" class="form-control" th:readonly="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}">
+                    </div>
+                </div>
+
+                <div id="customerSelection" class="mb-3">
+                    <label class="form-label"><i class="fas fa-user-check me-2"></i>Chọn khách hàng áp dụng:</label>
+                    <input type="text" class="form-control mb-2" id="searchCustomerInput" placeholder="Tìm kiếm theo tên, email, SĐT..." th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="selectAllCheckbox" th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}">
+                        <label class="form-check-label" for="selectAllCheckbox">Chọn tất cả</label>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle bg-white">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Chọn</th>
+                                <th>Họ tên</th>
+                                <th>Email</th>
+                                <th>SĐT</th>
+                            </tr>
+                            </thead>
+                            <tbody id="customerTableBody">
+                            <tr th:each="customer : ${customers}" th:if="${customer != null}">
+                                <td><input type="checkbox" name="selectedCustomerIds" th:value="${customer.id}"
+                                           th:checked="${selectedCustomerIds != null and selectedCustomerIds.contains(customer.id)}"
+                                           th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}"/></td>
+                                <td th:text="${customer.hoTen}"></td>
+                                <td th:text="${customer.email}"></td>
+                                <td th:text="${customer.soDienThoai}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-2">
+                        <nav>
+                            <ul class="pagination">
+                                <li class="page-item" th:classappend="${currentCustomerPage == 0} ? 'disabled'">
+                                    <a class="page-link"
+                                       th:href="@{'/acvstore/phieu-giam-gia/detail/' + ${voucher.id} + '?page=' + ${currentCustomerPage - 1} + '&search=' + ${search}}"
+                                       aria-label="Previous"><span aria-hidden="true">«</span></a>
+                                </li>
+                                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalCustomerPages - 1)}"
+                                    th:classappend="${i == currentCustomerPage} ? 'active'">
+                                    <a class="page-link"
+                                       th:href="@{'/acvstore/phieu-giam-gia/detail/' + ${voucher.id} + '?page=' + ${i} + '&search=' + ${search}}"
+                                       th:text="${i + 1}"></a>
+                                </li>
+                                <li class="page-item" th:classappend="${currentCustomerPage + 1 >= totalCustomerPages} ? 'disabled'">
+                                    <a class="page-link"
+                                       th:href="@{'/acvstore/phieu-giam-gia/detail/' + ${voucher.id} + '?page=' + ${currentCustomerPage + 1} + '&search=' + ${search}}"
+                                       aria-label="Next"><span aria-hidden="true">»</span></a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="sendMail" name="sendMail" th:disabled="${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}">
+                        <label class="form-check-label" for="sendMail">Gửi Email cho khách hàng</label>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <a th:href="@{/acvstore/phieu-giam-gia}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Quay lại</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Initialize toasts
+    function formatNumberVN(value, allowDecimal) {
+        if (!value) return '';
+        value = value.replace(/[^\d,]/g, '').replace(/\./g, '').replace(/,/g, '.');
+        let number = parseFloat(value);
+        if (isNaN(number)) return '';
+        return number.toLocaleString('vi-VN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: allowDecimal ? 2 : 0
+        });
+    }
+
+    $(document).ready(function () {
+        toggleDiscountFields();
+        toggleUsageCount();
+
+        const isReadOnly = [[${getStatus.apply(voucher) == 'Đang diễn ra' || getStatus.apply(voucher) == 'Không xác định'}]];
+        if (!isReadOnly) {
+            $('input[name="loai"]').on('change', toggleDiscountFields);
+            $('input[name="kieuPhieu"]').on('change', toggleUsageCount);
+
+            $('#searchCustomerInput').on('keyup', function () {
+                const keyword = $(this).val().toLowerCase();
+                $('#customerTableBody tr').each(function () {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(keyword) > -1);
+                });
+            });
+
+            const fields = [
+                { id: '#giaTriGiam', allowDecimal: true },
+                { id: '#giaTriGiamToiDa', allowDecimal: true },
+                { id: '#giaTriGiamToiThieu', allowDecimal: true },
+                { id: '#gioiHanSuDung', allowDecimal: false }
+            ];
+
+            fields.forEach(function (field) {
+                $(field.id).on('blur', function () {
+                    const formatted = formatNumberVN($(this).val(), field.allowDecimal);
+                    $(this).val(formatted);
+                });
+            });
+
+            $('#selectAllCheckbox').on('change', function () {
+                const checked = $(this).is(':checked');
+                $('#customerTableBody input[type="checkbox"]').prop('checked', checked);
+            });
+        }
+
+        // Hiển thị toast nếu có
         const toastEl = document.getElementById('successToast');
         if (toastEl) new bootstrap.Toast(toastEl).show();
         const errorToastEl = document.getElementById('errorToast');
         if (errorToastEl) new bootstrap.Toast(errorToastEl).show();
-
-        // Initialize tooltips
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        [...tooltipTriggerList].forEach(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        const infoToastEl = document.getElementById('infoToast');
+        if (infoToastEl) new bootstrap.Toast(infoToastEl).show();
     });
+
+    function toggleDiscountFields() {
+        const type = $('input[name="loai"]:checked').val();
+        const isPercent = type === 'PERCENT';
+        $('#discountUnit').text(isPercent ? '%' : '₫');
+        $('#maxDiscountGroup').toggle(isPercent);
+        $('#giaTriGiamToiDa').prop('readonly', !isPercent);
+        if (!isPercent) $('#giaTriGiamToiDa').val('');
+    }
+
+    function toggleUsageCount() {
+        const isCaNhan = $('input[name="kieuPhieu"]:checked').val() === 'ca_nhan';
+        $('#customerSelection').toggle(isCaNhan);
+        $('#caNhanNote').toggle(isCaNhan);
+        const $luot = $('#gioiHanSuDung');
+
+        if (isCaNhan) {
+            $luot.val('1').prop('readonly', true);
+        } else {
+            $luot.prop('readonly', false);
+        }
+    }
 </script>
 </body>
 </html>

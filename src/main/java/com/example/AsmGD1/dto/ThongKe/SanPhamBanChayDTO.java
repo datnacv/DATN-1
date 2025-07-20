@@ -14,11 +14,11 @@ public class SanPhamBanChayDTO {
     private String kichCo;
     private BigDecimal gia;
     private Long soLuongDaBan;
-    private String imageUrl;
+    private String imageUrl; // Gán sau trong service
 
     public SanPhamBanChayDTO(UUID idChiTietSanPham, UUID idSanPham,
                              String tenSanPham, String mauSac, String kichCo,
-                             BigDecimal gia, Long soLuongDaBan, String imageUrl) {
+                             BigDecimal gia, Long soLuongDaBan) {
         this.idChiTietSanPham = idChiTietSanPham;
         this.idSanPham = idSanPham;
         this.tenSanPham = tenSanPham;
@@ -26,7 +26,5 @@ public class SanPhamBanChayDTO {
         this.kichCo = kichCo;
         this.gia = gia;
         this.soLuongDaBan = soLuongDaBan;
-        this.imageUrl = imageUrl;
     }
 }
-

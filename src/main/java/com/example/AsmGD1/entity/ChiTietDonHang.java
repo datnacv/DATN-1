@@ -37,6 +37,13 @@ public class ChiTietDonHang {
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
 
-    @Column(name = "trang_thai_hoan_tra")
-    private Boolean trangThaiHoanTra;
+    @Column(name = "trang_thai_hoan_tra", nullable = false)
+    private Boolean trangThaiHoanTra = false;
+
+    @Column(name = "ly_do_tra_hang")
+    private String lyDoTraHang;
+
+    // Trường mới để lưu giá đã định dạng
+    @Transient
+    private String formattedGia;
 }

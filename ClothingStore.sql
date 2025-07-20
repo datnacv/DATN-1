@@ -66,12 +66,11 @@ CREATE TABLE thuong_hieu (
 -- 10. Bảng người dùng
 CREATE TABLE nguoi_dung (
                             id UNIQUEIDENTIFIER PRIMARY KEY,
-                            ten_dang_nhap NVARCHAR(50) NOT NULL,
-                            mat_khau NVARCHAR(100) NOT NULL,
+                            ten_dang_nhap NVARCHAR(50),
+                            mat_khau NVARCHAR(100),
                             ho_ten NVARCHAR(100) NOT NULL,
                             email NVARCHAR(100) NOT NULL,
-                            so_dien_thoai NVARCHAR(20) NOT NULL,
-                            dia_chi NVARCHAR(MAX),
+                            so_dien_thoai NVARCHAR(20) UNIQUE,
                             vai_tro NVARCHAR(50) CHECK (vai_tro IN (N'admin', N'customer', N'employee')),
                             ngay_sinh DATE,
                             gioi_tinh BIT,
@@ -188,6 +187,8 @@ CREATE TABLE don_hang (
                           FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
 
+select * from don_hang where ma_don_hang = 'DH05764A27'
+
 -- 18. Bảng chi tiết đơn hàng
 CREATE TABLE chi_tiet_don_hang (
                                    id UNIQUEIDENTIFIER PRIMARY KEY,
@@ -203,6 +204,10 @@ CREATE TABLE chi_tiet_don_hang (
                                    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
 
+ALTER TABLE chi_tiet_don_hang
+    ADD ly_do_tra_hang NVARCHAR(MAX);
+
+
 -- 19. Bảng hóa đơn
 CREATE TABLE hoa_don (
                          id UNIQUEIDENTIFIER PRIMARY KEY,
@@ -214,7 +219,7 @@ CREATE TABLE hoa_don (
                          tong_tien DECIMAL(10,2) NOT NULL,
                          tien_giam DECIMAL(10,2),
                          id_phuong_thuc_thanh_toan UNIQUEIDENTIFIER,
-                         trang_thai BIT NOT NULL,
+                         trang_thai NVARCHAR(50) NOT NULL,
                          ghi_chu NVARCHAR(MAX),
                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id),
                          FOREIGN KEY (id_don_hang) REFERENCES don_hang(id),
@@ -228,6 +233,19 @@ CREATE TABLE lich_su_hoa_don (
                                  thoi_gian DATETIME NOT NULL,
                                  ghi_chu NVARCHAR(MAX),
                                  FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id)
+);
+
+CREATE TABLE lich_su_tra_hang (
+                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                  id_chi_tiet_don_hang UNIQUEIDENTIFIER NOT NULL,
+                                  id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+                                  so_luong INT NOT NULL,
+                                  tong_tien_hoan DECIMAL(10,2) NOT NULL,
+                                  ly_do_tra_hang NVARCHAR(MAX),
+                                  thoi_gian_tra DATETIME NOT NULL DEFAULT GETDATE(),
+                                  trang_thai NVARCHAR(50) NOT NULL DEFAULT N'Đã trả',
+                                  FOREIGN KEY (id_chi_tiet_don_hang) REFERENCES chi_tiet_don_hang(id),
+                                  FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id)
 );
 
 -- 20. Bảng ticket giảm giá của người dùng
@@ -278,7 +296,7 @@ CREATE TABLE gio_hang (
 
 CREATE TABLE gio_hang_chi_tiet (
                                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
-                                   id_giohang UNIQUEIDENTIFIER NOT NULL,
+                                   id_gio_hang UNIQUEIDENTIFIER NOT NULL,
                                    id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
                                    so_luong INT NOT NULL DEFAULT 1,
                                    gia DECIMAL(10, 2) NOT NULL,
@@ -286,7 +304,7 @@ CREATE TABLE gio_hang_chi_tiet (
                                    ghi_chu NVARCHAR(MAX),
                                    thoi_gian_them DATETIME NOT NULL DEFAULT GETDATE(),
                                    trang_thai BIT NOT NULL DEFAULT 1,
-                                   FOREIGN KEY (id_giohang) REFERENCES gio_hang(id) ON DELETE CASCADE,
+                                   FOREIGN KEY (id_gio_hang) REFERENCES gio_hang(id) ON DELETE CASCADE,
                                    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
 CREATE TABLE thong_ke_doanh_thu_chi_tiet (
@@ -374,11 +392,10 @@ INSERT INTO thuong_hieu (id, ten_thuong_hieu) VALUES
                                                   ('550E8400-E29B-41D4-A716-446655440037', N'Adidas');
 
 -- 10. Insert vào bảng nguoi_dung
-INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, dia_chi, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
-                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440013', N'admin', N'admin123', N'Nguyễn Văn Admin', N'admin1@example.com', N'0901234567', N'123 Đường ABC, Hà Nội', N'admin', '1985-01-01', 1, N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 123, Đường ABC', GETDATE(), N'QR123', NULL, 1),
-                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440014', N'customer1', N'customer123', N'Trần Thị Customer', N'customer1@example.com', N'0912345678', N'456 Đường XYZ, TP.HCM', N'customer', '1995-05-10', 0, N'TP.HCM', N'Quận 1', N'Bến Nghé', N'Số 456, Đường XYZ', GETDATE(), N'QR456', NULL, 1),
-                                                                                                                                                                                                                                                            ('550E8400-E29B-41D4-A716-446655440015', N'employee1', N'employee123', N'Lê Văn Employee', N'employee1@example.com', N'0923456789', N'789 Đường KLM, Đà Nẵng', N'employee', '1990-03-15', 1, N'Đà Nẵng', N'Hải Châu', N'Hải Châu I', N'Số 789, Đường KLM', GETDATE(), N'QR789', NULL, 1);
-
+INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
+                                                                                                                                                                                                                                                   ('550E8400-E29B-41D4-A716-446655440013', N'admin', N'admin123', N'Nguyễn Văn Admin', N'admin1@example.com', N'0901234567', N'admin', '1985-01-01', 1, N'Hà Nội', N'Cầu Giấy', N'Dịch Vọng', N'Số 123, Đường ABC', GETDATE(), N'QR123', NULL, 1),
+                                                                                                                                                                                                                                                   ('550E8400-E29B-41D4-A716-446655440014', N'customer1', N'customer123', N'Trần Thị Customer', N'customer1@example.com', N'0912345678', N'customer', '1995-05-10', 0, N'TP.HCM', N'Quận 1', N'Bến Nghé', N'Số 456, Đường XYZ', GETDATE(), N'QR456', NULL, 1),
+                                                                                                                                                                                                                                                   ('550E8400-E29B-41D4-A716-446655440015', N'employee1', N'employee123', N'Lê Văn Employee', N'employee1@example.com', N'0923456789', N'employee', '1990-03-15', 1, N'Đà Nẵng', N'Hải Châu', N'Hải Châu I', N'Số 789, Đường KLM', GETDATE(), N'QR789', NULL, 1);
 -- 11. Insert vào bảng phieu_giam_gia
 INSERT INTO phieu_giam_gia (id, ten, loai, gia_tri_giam, gia_tri_giam_toi_thieu, so_luong, gioi_han_su_dung, cong_khai, ngay_bat_dau, ngay_ket_thuc, thoi_gian_tao, kieu_phieu) VALUES
     ('550E8400-E29B-41D4-A716-446655440016', N'Giảm 10% áo nam', N'Phần trăm', 10.00, 500000.00, 100, 1, 1, '2025-05-24', '2025-06-24', GETDATE(), N'cong_khai');
@@ -418,8 +435,32 @@ INSERT INTO chi_tiet_don_hang (id, id_don_hang, id_chi_tiet_san_pham, so_luong, 
     ('550E8400-E29B-41D4-A716-446655440029', '550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440022', 2, 100000.00, N'Áo thun nam cổ tròn', 200000.00, N'Kích cỡ S, màu đen', 0);
 
 -- 19. Insert vào bảng hoa_don
-INSERT INTO hoa_don (id, id_nguoi_dung, id_don_hang, id_ma_giam_gia, ngay_tao, ngay_thanh_toan, tong_tien, tien_giam, id_phuong_thuc_thanh_toan, trang_thai, ghi_chu) VALUES
-    ('550E8400-E29B-41D4-A716-446655440030', '550E8400-E29B-41D4-A716-446655440014', '550E8400-E29B-41D4-A716-446655440028', '550E8400-E29B-41D4-A716-446655440019', GETDATE(), GETDATE(), 230000.00, 20000.00, '550E8400-E29B-41D4-A716-446655440017', 1, N'Hoàn tất');
+INSERT INTO hoa_don (
+    id,
+    id_nguoi_dung,
+    id_don_hang,
+    id_ma_giam_gia,
+    ngay_tao,
+    ngay_thanh_toan,
+    tong_tien,
+    tien_giam,
+    id_phuong_thuc_thanh_toan,
+    trang_thai,
+    ghi_chu
+) VALUES (
+             '550E8400-E29B-41D4-A716-446655440030',
+             '550E8400-E29B-41D4-A716-446655440014',
+             '550E8400-E29B-41D4-A716-446655440028',
+             '550E8400-E29B-41D4-A716-446655440019',
+             GETDATE(),
+             GETDATE(),
+             230000.00,
+             20000.00,
+             '550E8400-E29B-41D4-A716-446655440017',
+             N'Hoàn thành',
+             N'Hoàn thành'
+         );
+
 
 -- 20. Insert vào bảng phieu_giam_gia_cua_nguoi_dung
 INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_nguoi_dung, id_phieu_giam_gia, da_gui_mail) VALUES
@@ -452,6 +493,7 @@ SELECT * FROM chi_tiet_don_hang;
 SELECT * FROM hoa_don;
 SELECT * FROM phieu_giam_gia_cua_nguoi_dung;
 SELECT * FROM chi_tiet_san_pham_chien_dich_giam_gia;
+ALTER TABLE don_hang ADD ghi_chu NVARCHAR(MAX);
 ALTER TABLE phieu_giam_gia ADD gia_tri_giam_toi_da DECIMAL(10, 2);
 ALTER TABLE phieu_giam_gia ADD ma VARCHAR(50);
 ALTER TABLE chien_dich_giam_gia
@@ -474,22 +516,20 @@ VALUES (
 
 
 SELECT id, ho_ten, email, vai_tro, trang_thai FROM nguoi_dung WHERE vai_tro = 'CUSTOMER';
-INSERT INTO nguoi_dung (
-    id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, dia_chi,
-    vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa,
-    chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai
-)
-VALUES
-    (NEWID(), N'khachle', N'khachle', N'Khách lẻ', 'khachle@example.com', '0999999999', N'khách lẻ', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer6', N'123456', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+INSERT INTO nguoi_dung (id, ten_dang_nhap, mat_khau, ho_ten, email, so_dien_thoai, vai_tro, ngay_sinh, gioi_tinh, tinh_thanh_pho, quan_huyen, phuong_xa, chi_tiet_dia_chi, thoi_gian_tao, id_qr_gioi_thieu, thoi_gian_bat_han_otp, trang_thai) VALUES
+                                                                                                                                                                                                                                                   (NEWID(), N'adminlong', N'admin123', N'Phạm Đức Long', 'duclong0910@gmail.com', '0911006045', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminluc', N'admin123', N'Nguyễn Xuân Lực', 'nguyenxuanlucthanhoai@gmail.com', '0866716384', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminmanh', N'admin123', N'Phạm Duy Mạnh', 'pdm25122006@gmail.com', '0358187642', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminnam', N'admin123', N'Hoàng Hải Nam', 'namhaihoang3103@gmail.com', '0969469018', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'adminsy', N'admin123', N'Sỹ Lê Minh Hiếu', 'sy@gmail.com', '0978790099', 'admin', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'khachle', N'khachle', N'Khách lẻ', 'khachle@example.com', '0999999999', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer2', N'123456', N'Nguyễn Thị A', 'customer2@example.com', '0911111111', 'customer', '1990-01-01', 0, N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'Số 1, Phố A', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer3', N'123456', N'Lê Văn B', 'customer3@example.com', '0922222222', 'customer', '1992-02-02', 1, N'TP.HCM', N'Quận 5', N'Phường 5', N'Số 2, Phố B', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
+                                                                                                                                                                                                                                                   (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555556', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
 
-    (NEWID(), N'customer2', N'123456', N'Nguyễn Thị A', 'customer2@example.com', '0911111111', N'123 ABC, Hà Nội', 'customer', '1990-01-01', 0, N'Hà Nội', N'Ba Đình', N'Phúc Xá', N'Số 1, Phố A', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer3', N'123456', N'Lê Văn B', 'customer3@example.com', '0922222222', N'456 XYZ, TP.HCM', 'customer', '1992-02-02', 1, N'TP.HCM', N'Quận 5', N'Phường 5', N'Số 2, Phố B', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer4', N'123456', N'Trần Thị C', 'customer4@example.com', '0933333333', N'789 DEF, Đà Nẵng', 'customer', '1995-03-03', 0, N'Đà Nẵng', N'Hải Châu', N'Thanh Bình', N'Số 3, Phố C', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer5', N'123456', N'Phạm Văn D', 'customer5@example.com', '0944444444', N'321 GHI, Cần Thơ', 'customer', '1998-04-04', 1, N'Cần Thơ', N'Ninh Kiều', N'An Cư', N'Số 4, Phố D', GETDATE(), NULL, NULL, 1),
-    (NEWID(), N'customer6', N'123456', N'Hoàng Thị E', 'customer6@example.com', '0955555555', N'654 JKL, Hải Phòng', 'customer', '2000-05-05', 0, N'Hải Phòng', N'Lê Chân', N'An Biên', N'Số 5, Phố E', GETDATE(), NULL, NULL, 1);
-ALTER TABLE phieu_giam_gia_cua_nguoi_dung
-    ADD so_luot_con_lai INT DEFAULT 0;
+ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_con_lai INT DEFAULT 0;
 ALTER TABLE phieu_giam_gia_cua_nguoi_dung ADD so_luot_duoc_su_dung INT DEFAULT 1;
 
 select * from chi_tiet_san_pham where id_san_pham = '550e8400-e29b-41d4-a716-446655440021'
@@ -544,10 +584,24 @@ INSERT INTO hinh_anh_san_pham (id, id_chi_tiet_san_pham, url_hinh_anh) VALUES
                                                                            ('550e8400-e29b-41d4-a716-446655440048', '550e8400-e29b-41d4-a716-446655440045', N'https://example.com/jacket1.jpg');
 
 
+Go
+CREATE TRIGGER trg_update_inventory_on_return
+    ON chi_tiet_don_hang
+    AFTER UPDATE
+              AS
+BEGIN
+    IF UPDATE(trang_thai_hoan_tra)
+BEGIN
+        DECLARE @id_chi_tiet_san_pham UNIQUEIDENTIFIER, @so_luong INT;
+SELECT @id_chi_tiet_san_pham = i.id_chi_tiet_san_pham, @so_luong = i.so_luong
+FROM inserted i
+WHERE i.trang_thai_hoan_tra = 1;
 
+UPDATE chi_tiet_san_pham
+SET so_luong_ton_kho = so_luong_ton_kho + @so_luong
+WHERE id = @id_chi_tiet_san_pham;
+END
+END;
 
--- Bước 4: Kiểm tra bằng cách chèn một đơn hàng mới
-INSERT INTO don_hang (id, id_nguoi_dung, ma_don_hang, trang_thai_thanh_toan, phi_van_chuyen, id_phuong_thuc_thanh_toan, so_tien_khach_dua, thoi_gian_thanh_toan, thoi_gian_tao, tien_giam, tong_tien, phuong_thuc_ban_hang)
-VALUES (NEWID(), '550E8400-E29B-41D4-A716-446655440014', N'DH006', 1, 30000.00, '550E8400-E29B-41D4-A716-446655440017', 230000.00, GETDATE(), GETDATE(), 20000.00, 230000.00, N'Giao hàng');
-
-select * from nguoi_dung
+ALTER TABLE don_hang
+    ADD trang_thai NVARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN';

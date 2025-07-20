@@ -17,12 +17,11 @@ public class HoaDon {
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
-
     @ManyToOne
     @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 
-    @ManyToOne(cascade = CascadeType.ALL) // Thêm cascade
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "id_don_hang", nullable = false)
     private DonHang donHang;
 
@@ -47,7 +46,7 @@ public class HoaDon {
     private PhuongThucThanhToan phuongThucThanhToan;
 
     @Column(name = "trang_thai", nullable = false)
-    private Boolean trangThai;
+    private String trangThai;
 
     @Column(name = "ghi_chu", columnDefinition = "NVARCHAR(MAX)")
     private String ghiChu;
@@ -55,7 +54,16 @@ public class HoaDon {
     @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<LichSuHoaDon> lichSuHoaDons = new ArrayList<>();
 
-//    @Version
-//    @Column(name = "version")
-//    private Long version;
+    // Trường mới để lưu tổng tiền đã định dạng
+    @Transient
+    private String formattedTongTien;
+
+    // Getter và Setter cho formattedTongTien
+    public String getFormattedTongTien() {
+        return formattedTongTien;
+    }
+
+    public void setFormattedTongTien(String formattedTongTien) {
+        this.formattedTongTien = formattedTongTien;
+    }
 }

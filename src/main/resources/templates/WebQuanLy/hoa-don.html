@@ -12,42 +12,46 @@
   <script th:src="@{/js/sidebar.js}" defer></script>
   <style>
     :root {
-      --bg-light: #f8f8f8;
-      --bg-medium: #e0e0e0;
-      --bg-dark: #cccccc;
-      --text-primary: #333333;
-      --text-secondary: #555555;
-      --border-light: #dddddd;
-      --button-primary-bg: #555555;
-      --button-primary-hover-bg: #333333;
-      --status-confirmed-bg: #28a745;
-      --status-confirmed-text: #ffffff;
-      --status-completed-bg: #17a2b8;
-      --status-completed-text: #ffffff;
-      --table-header-bg: #f0f0f0;
-      --table-row-hover-bg: #f9f9f9;
-      --toast-success-bg: #28a745;
-      --toast-error-bg: #dc3545;
-      --link-color: #555555;
-      --link-hover-color: #333333;
-      --dropdown-hover-bg: #f0f0f0;
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --danger-color: #ef4444;
+      --info-color: #06b6d4;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
-      background: linear-gradient(135deg, var(--bg-light) 0%, var(--bg-medium) 100%);
-      color: var(--text-primary);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #ffffff;
+      color: var(--gray-800);
+      font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
+      line-height: 1.6;
     }
 
     .content {
       margin-left: 250px;
-      padding: 20px;
+      padding: 2rem;
       transition: margin-left 0.3s ease;
+      min-height: 100vh;
+      background-color: #ffffff;
     }
 
     .sidebar-container {
-      background-color: #222222;
+      background: linear-gradient(180deg, var(--gray-900) 0%, var(--gray-800) 100%);
       color: #ffffff;
       position: fixed;
       top: 0;
@@ -55,250 +59,353 @@
       height: 100%;
       width: 250px;
       z-index: 1000;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     }
 
     .content {
-      margin-top: 50px;
+      margin-top: 70px;
     }
 
+    /* Header Styling */
     h1 {
-      color: var(--text-primary);
-      font-weight: bold;
+      color: var(--gray-900);
+      font-weight: 700;
       text-align: center;
-      margin-bottom: 24px;
-      font-size: 2.25rem;
+      margin-bottom: 2rem;
+      font-size: 2.5rem;
+      position: relative;
+      padding-bottom: 1rem;
     }
 
+    h1::before {
+      content: "📋";
+      margin-right: 0.5rem;
+    }
+
+    h1::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 4px;
+      background: var(--primary-color);
+      border-radius: 2px;
+    }
+
+    /* Search Bar */
     .search-bar {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      margin-bottom: 25px;
-      padding: 20px;
       background: #ffffff;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--border-light);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
     }
 
     .search-row {
       display: flex;
-      gap: 10px;
+      gap: 1rem;
       align-items: center;
       width: 100%;
+      margin-bottom: 1rem;
     }
 
     .filter-row {
       display: flex;
-      gap: 15px;
+      gap: 1rem;
       flex-wrap: wrap;
     }
 
     .search-bar input {
-      padding: 12px 16px;
+      padding: 0.75rem 1rem;
       flex-grow: 1;
-      border: 2px solid var(--border-light);
+      border: 1px solid var(--gray-300);
       border-radius: 8px;
-      font-size: 1rem;
-      box-shadow: none;
-      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      background: #ffffff;
+      transition: all 0.2s ease;
     }
 
-    .search-bar select {
-      padding: 12px 16px;
-      width: 250px;
-      border: 2px solid var(--border-light);
-      border-radius: 8px;
-      font-size: 1rem;
-      box-shadow: none;
-      transition: all 0.3s ease;
-    }
-
-    .search-bar input:focus,
-    .search-bar select:focus {
-      border-color: var(--button-primary-bg);
-      box-shadow: 0 0 0 3px rgba(85, 85, 85, 0.1);
+    .search-bar input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
       outline: none;
     }
 
+    .search-bar select {
+      padding: 0.75rem 1rem;
+      min-width: 200px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      background: #ffffff;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .search-bar select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      outline: none;
+    }
+
+    /* Button tìm kiếm màu đen */
     .search-bar button {
-      padding: 12px 24px;
-      background-color: var(--button-primary-bg);
+      padding: 0.75rem 1.5rem;
+      background: #000000;
       color: #fff;
       border: none;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 500;
-      transition: all 0.3s ease;
-      font-size: 1rem;
+      font-size: 0.875rem;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
       white-space: nowrap;
+      transition: all 0.2s ease;
     }
 
     .search-bar button:hover {
-      background-color: var(--button-primary-hover-bg);
+      background: #333333;
       transform: translateY(-1px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
 
+    /* Table Container với Scroll ngang */
     .table-container {
       background: #ffffff;
       border-radius: 12px;
-      padding: 0;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      border: 1px solid var(--border-light);
       overflow: hidden;
-      position: relative;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--gray-200);
     }
 
     .table-scroll-wrapper {
-      max-height: 600px;
-      overflow-y: auto;
       overflow-x: auto;
+      overflow-y: auto;
+      max-height: 600px;
+      min-width: 100%;
     }
 
+    /* Custom Scrollbar màu trắng */
     .table-scroll-wrapper::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
 
     .table-scroll-wrapper::-webkit-scrollbar-track {
-      background: var(--bg-light);
+      background: #f0f0f0;
       border-radius: 4px;
     }
 
     .table-scroll-wrapper::-webkit-scrollbar-thumb {
-      background: var(--button-primary-bg);
+      background: #ffffff;
+      border: 1px solid #d0d0d0;
       border-radius: 4px;
       transition: background 0.3s ease;
     }
 
     .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-      background: var(--button-primary-hover-bg);
+      background: #f5f5f5;
+      border-color: #b0b0b0;
     }
 
+    .table-scroll-wrapper::-webkit-scrollbar-corner {
+      background: #f0f0f0;
+    }
+
+    /* Firefox scrollbar màu trắng */
     .table-scroll-wrapper {
       scrollbar-width: thin;
-      scrollbar-color: var(--button-primary-bg) var(--bg-light);
+      scrollbar-color: #ffffff #f0f0f0;
     }
 
+    /* Table Styling */
     table {
       width: 100%;
+      min-width: 1200px;
       border-collapse: separate;
       border-spacing: 0;
       margin: 0;
     }
 
     th, td {
-      padding: 15px 12px;
+      padding: 1rem;
       text-align: left;
-      border-bottom: 1px solid var(--border-light);
+      border-bottom: 1px solid var(--gray-200);
+      vertical-align: middle;
+      white-space: nowrap;
     }
 
     th {
-      background-color: var(--table-header-bg);
+      background: var(--gray-50);
       font-weight: 600;
-      color: var(--text-secondary);
+      color: var(--gray-700);
       position: sticky;
       top: 0;
       z-index: 10;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
+
+    /* Đặt width cố định cho các cột */
+    th:nth-child(1), td:nth-child(1) { min-width: 120px; }
+    th:nth-child(2), td:nth-child(2) { min-width: 150px; }
+    th:nth-child(3), td:nth-child(3) { min-width: 120px; }
+    th:nth-child(4), td:nth-child(4) { min-width: 140px; }
+    th:nth-child(5), td:nth-child(5) { min-width: 180px; }
+    th:nth-child(6), td:nth-child(6) { min-width: 180px; }
+    th:nth-child(7), td:nth-child(7) { min-width: 140px; }
+    th:nth-child(8), td:nth-child(8) { min-width: 100px; }
 
     tr:hover {
-      background-color: var(--table-row-hover-bg);
+      background: var(--gray-50);
     }
 
-    .btn-primary {
-      padding: 10px 20px;
-      background-color: var(--button-primary-bg);
-      color: #fff;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 500;
-      transition: background-color 0.3s ease;
-      font-size: 1rem;
+    /* Status Badges */
+    .status-confirmed-bg {
+      background: var(--success-color);
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
     }
 
-    .btn-primary:hover {
-      background-color: var(--button-primary-hover-bg);
+    .status-completed-bg {
+      background: var(--info-color);
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
     }
 
+    .status-pending {
+      background: var(--warning-color);
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .status-shipping {
+      background: var(--primary-color);
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    /* Action Button */
     .action-btn {
-      padding: 8px 12px;
-      background-color: var(--bg-light);
-      color: var(--text-primary);
-      border: 2px solid var(--border-light);
-      border-radius: 8px;
+      padding: 0.5rem;
+      background: #ffffff;
+      color: var(--gray-600);
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
       cursor: pointer;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      font-size: 1rem;
-      width: auto;
-      text-align: center;
+      transition: all 0.2s ease;
     }
 
     .action-btn:hover {
-      background-color: var(--button-primary-bg);
-      color: #ffffff;
-      border-color: var(--button-primary-bg);
-      transform: translateY(-1px);
+      background: var(--gray-100);
+      border-color: var(--gray-400);
     }
 
-    .action-btn i {
-      margin-right: 0;
+    /* Dropdown Menu */
+    .dropdown-menu {
+      background: #ffffff;
+      border: 1px solid var(--gray-200);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      padding: 0.5rem 0;
     }
 
+    .dropdown-item {
+      color: var(--gray-700);
+      padding: 0.5rem 1rem;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+    }
+
+    .dropdown-item:hover {
+      background: var(--gray-100);
+      color: var(--gray-900);
+    }
+
+    /* Pagination màu đen */
     .pagination {
       display: flex;
       justify-content: center;
-      gap: 8px;
-      margin-top: 20px;
-      padding: 20px;
-      background: var(--bg-light);
-      border-top: 1px solid var(--border-light);
+      gap: 0.5rem;
+      margin-top: 0;
+      padding: 1.5rem;
+      background: var(--gray-50);
+      border-top: 1px solid var(--gray-200);
     }
 
     .pagination a, .pagination span {
-      padding: 10px 15px;
-      border: 1px solid var(--border-light);
-      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
       text-decoration: none;
-      color: var(--link-color);
+      color: var(--gray-600);
       font-weight: 500;
-      font-size: 1rem;
-      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
       background: #ffffff;
+      min-width: 40px;
+      text-align: center;
     }
 
+    /* Pagination hover và active màu đen */
     .pagination a:hover {
-      background-color: var(--button-primary-bg);
+      background: #000000; /* Đổi thành màu đen */
       color: #ffffff;
-      border-color: var(--button-primary-bg);
-      transform: translateY(-1px);
+      border-color: #000000;
     }
 
     .pagination .active {
-      background-color: var(--button-primary-bg);
+      background: #000000; /* Đổi thành màu đen */
       color: #fff;
-      border-color: var(--button-primary-bg);
+      border-color: #000000;
     }
 
     .pagination .disabled {
-      color: var(--bg-dark);
+      color: var(--gray-400);
       cursor: not-allowed;
-      opacity: 0.6;
+      opacity: 0.5;
     }
 
+    /* Currency styling */
+    td:nth-child(3) {
+      font-weight: 600;
+      color: var(--success-color);
+    }
+
+    /* Loading Spinner */
     .spinner {
       display: none;
       position: fixed;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      border: 4px solid var(--border-light);
-      border-top: 4px solid var(--button-primary-bg);
+      border: 4px solid var(--gray-200);
+      border-top: 4px solid var(--primary-color);
       border-radius: 50%;
       width: 40px;
       height: 40px;
@@ -311,11 +418,12 @@
       100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
+    /* Toast Notifications */
     .toast {
       position: fixed;
       top: 20px;
       right: 20px;
-      padding: 15px 20px;
+      padding: 1rem 1.5rem;
       border-radius: 8px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       z-index: 9999;
@@ -324,8 +432,9 @@
       transform: translateX(100%);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 0.75rem;
       min-width: 300px;
+      font-weight: 500;
     }
 
     .toast.show {
@@ -334,78 +443,21 @@
     }
 
     .toast.success {
-      background-color: var(--toast-success-bg);
+      background: var(--success-color);
       color: #fff;
     }
 
     .toast.error {
-      background-color: var(--toast-error-bg);
+      background: var(--danger-color);
       color: #fff;
     }
 
-    .status-confirmed-bg {
-      background-color: var(--status-confirmed-bg);
-      color: var(--status-confirmed-text);
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-block;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-
-    .status-completed-bg {
-      background-color: var(--status-completed-bg);
-      color: var(--status-completed-text);
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-block;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-
-    .status-pending {
-      background-color: #ffc107;
-      color: #000000;
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-block;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-
-    .status-shipping {
-      background-color: #0d6efd;
-      color: #ffffff;
-      padding: 6px 12px;
-      border-radius: 20px;
-      display: inline-block;
-      font-weight: 600;
-      font-size: 0.85rem;
-    }
-
-    .dropdown-menu {
-      background-color: #ffffff;
-      border: 1px solid var(--border-light);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      border-radius: 8px;
-    }
-
-    .dropdown-item {
-      color: var(--text-primary);
-      padding: 10px 15px;
-      transition: all 0.3s ease;
-    }
-
-    .dropdown-item:hover {
-      background-color: var(--dropdown-hover-bg);
-      color: var(--text-primary);
-    }
-
+    /* Scroll to Top Button */
     .scroll-to-top {
       position: fixed;
       bottom: 30px;
       right: 30px;
-      background: var(--button-primary-bg);
+      background: var(--primary-color);
       color: white;
       border: none;
       border-radius: 50%;
@@ -423,14 +475,19 @@
     }
 
     .scroll-to-top:hover {
-      background: var(--button-primary-hover-bg);
+      background: var(--primary-hover);
       transform: translateY(-2px);
     }
 
+    /* Mobile Responsiveness */
     @media (max-width: 768px) {
+      .content {
+        margin-left: 0;
+        padding: 1rem;
+      }
+
       .search-bar {
-        flex-direction: column;
-        align-items: stretch;
+        padding: 1rem;
       }
 
       .search-row {
@@ -439,10 +496,7 @@
       }
 
       .search-bar input,
-      .search-bar select {
-        width: 100%;
-      }
-
+      .search-bar select,
       .search-bar button {
         width: 100%;
       }
@@ -451,29 +505,66 @@
         flex-direction: column;
       }
 
-      .content {
-        margin-left: 0;
-        padding: 15px;
+      h1 {
+        font-size: 1.75rem;
       }
 
-      .navbar {
-        width: 100%;
+      table {
+        min-width: 800px;
       }
 
-      .sidebar-container {
-        transform: translateX(-100%);
+      th, td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.75rem;
       }
+    }
+
+    /* Scroll indicator cho mobile */
+    @media (max-width: 768px) {
+      .table-container::after {
+        content: "← Vuốt để xem thêm →";
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: var(--primary-color);
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        opacity: 0.8;
+        pointer-events: none;
+      }
+    }
+
+    .status-returned {
+      background: #10b981; /* Màu xanh lá cây cho "Đã trả hàng" */
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    .status-partial-returned {
+      background: #f59e0b; /* Màu cam cho "Đã trả hàng một phần" */
+      color: #ffffff;
+      padding: 0.375rem 0.75rem;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
     }
   </style>
 </head>
 <body>
 <div class="d-flex">
   <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
-
   <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
     <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
   </nav>
-
   <div class="content mt-16" id="mainContent">
     <h1>Quản Lý Hóa Đơn</h1>
     <div class="search-bar">
@@ -492,6 +583,8 @@
           <option value="Hoàn thành">Hoàn thành</option>
           <option value="Đang vận chuyển">Đang vận chuyển</option>
           <option value="Vận chuyển thành công">Vận chuyển thành công</option>
+          <option value="Đã trả hàng">Đã trả hàng</option>
+          <option value="Đã trả hàng một phần">Đã trả hàng một phần</option>
         </select>
         <select id="paymentMethodFilter" onchange="loadHoaDonList(0, 5, $('#searchInput').val(), $('#statusFilter').val(), this.value, $('#salesMethodFilter').val())">
           <option value="">Tất cả phương thức thanh toán</option>
@@ -528,13 +621,10 @@
     </div>
   </div>
 </div>
-
 <button class="scroll-to-top" id="scrollToTop" onclick="scrollToTop()">
   <i class="fas fa-chevron-up"></i>
 </button>
-
 <div id="toastContainer"></div>
-
 <script>
   function formatCurrency(value) {
     const formatter = new Intl.NumberFormat('vi-VN', {
@@ -543,7 +633,6 @@
     });
     return formatter.format(value) + ' VNĐ';
   }
-
   function showToast(message, type = "info") {
     const container = document.getElementById("toastContainer");
     const toast = document.createElement("div");
@@ -558,56 +647,46 @@
       setTimeout(() => toast.remove(), 300);
     }, 3000);
   }
-
   function updatePagination(totalPages, currentPage, search = "", trangThai = "", paymentMethod = "", salesMethod = "") {
     const pagination = document.getElementById("pagination");
     pagination.innerHTML = "";
     if (totalPages <= 1) return;
-
     const first = document.createElement("a");
     first.innerText = "«";
-    first.className = `px-3 py-1 border rounded ${currentPage === 0 ? "disabled" : ""}`;
+    first.className = `${currentPage === 0 ? "disabled" : ""}`;
     if (currentPage > 0) first.onclick = () => loadHoaDonList(0, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(first);
-
     const prev = document.createElement("a");
     prev.innerText = "Trước";
-    prev.className = `px-3 py-1 border rounded ${currentPage === 0 ? "disabled" : ""}`;
+    prev.className = `${currentPage === 0 ? "disabled" : ""}`;
     if (currentPage > 0) prev.onclick = () => loadHoaDonList(currentPage - 1, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(prev);
-
     let startPage = Math.max(0, currentPage - 2);
     let endPage = Math.min(totalPages - 1, startPage + 4);
-
     if (endPage - startPage < 4 && endPage < totalPages - 1) {
       startPage = Math.max(0, endPage - 4);
     }
-
     for (let i = startPage; i <= endPage; i++) {
       const page = document.createElement(i === currentPage ? "span" : "a");
       page.innerText = i + 1;
-      page.className = `px-3 py-1 border rounded ${i === currentPage ? "active" : ""}`;
+      page.className = `${i === currentPage ? "active" : ""}`;
       if (i !== currentPage) page.onclick = () => loadHoaDonList(i, 5, search, trangThai, paymentMethod, salesMethod);
       pagination.appendChild(page);
     }
-
     const next = document.createElement("a");
     next.innerText = "Sau";
-    next.className = `px-3 py-1 border rounded ${currentPage === totalPages - 1 ? "disabled" : ""}`;
+    next.className = `${currentPage === totalPages - 1 ? "disabled" : ""}`;
     if (currentPage < totalPages - 1) next.onclick = () => loadHoaDonList(currentPage + 1, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(next);
-
     const last = document.createElement("a");
     last.innerText = "»";
-    last.className = `px-3 py-1 border rounded ${currentPage === totalPages - 1 ? "disabled" : ""}`;
+    last.className = `${currentPage === totalPages - 1 ? "disabled" : ""}`;
     if (currentPage < totalPages - 1) last.onclick = () => loadHoaDonList(totalPages - 1, 5, search, trangThai, paymentMethod, salesMethod);
     pagination.appendChild(last);
   }
-
   function initScrollHandling() {
     const scrollWrapper = document.querySelector('.table-scroll-wrapper');
     const scrollToTopBtn = document.getElementById('scrollToTop');
-
     if (scrollWrapper) {
       scrollWrapper.addEventListener('scroll', function() {
         if (this.scrollTop > 200) {
@@ -618,7 +697,6 @@
       });
     }
   }
-
   function scrollToTop() {
     const scrollWrapper = document.querySelector('.table-scroll-wrapper');
     if (scrollWrapper) {
@@ -628,7 +706,6 @@
       });
     }
   }
-
   function loadHoaDonList(page = 0, size = 5, search = "", trangThai = "", paymentMethod = "", salesMethod = "") {
     $("#invoiceSpinner").show();
     $.ajax({
@@ -647,51 +724,60 @@
         const tbody = $("#invoiceList");
         tbody.empty();
         if (hoaDonList.length === 0) {
-          tbody.append('<tr><td colspan="8" class="text-center py-4" style="color: var(--text-secondary);">Không có hóa đơn nào.</td></tr>');
+          tbody.append('<tr><td colspan="8" class="text-center py-4" style="color: var(--gray-500);">Không có hóa đơn nào.</td></tr>');
         } else {
           hoaDonList.forEach(hoaDon => {
-            let trangThaiText;
+            let trangThaiText = hoaDon.trangThai;
             let statusClass = '';
-
-            if (hoaDon.phuongThucBanHang === "Tại quầy") {
-              trangThaiText = "Hoàn thành";
-              statusClass = 'status-completed-bg';
-            } else if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Vận chuyển thành công")) {
-              trangThaiText = "Vận chuyển thành công";
-              statusClass = 'status-confirmed-bg';
-            } else if (hoaDon.ghiChu && hoaDon.ghiChu.includes("Đang vận chuyển")) {
-              trangThaiText = "Đang vận chuyển";
-              statusClass = 'status-shipping';
-            } else if (hoaDon.trangThai) {
-              trangThaiText = "Đã xác nhận";
-              statusClass = 'status-confirmed-bg';
-            } else {
-              trangThaiText = "Chưa xác nhận";
-              statusClass = 'status-pending';
+            switch (hoaDon.trangThai) {
+              case 'Chưa xác nhận':
+                statusClass = 'status-pending';
+                break;
+              case 'Đã xác nhận':
+                statusClass = 'status-confirmed-bg';
+                break;
+              case 'Đang vận chuyển':
+                statusClass = 'status-shipping';
+                break;
+              case 'Vận chuyển thành công':
+                statusClass = 'status-confirmed-bg';
+                break;
+              case 'Hoàn thành':
+                statusClass = 'status-completed-bg';
+                break;
+              case 'Đã trả hàng':
+                statusClass = 'status-returned'; // Có thể tùy chỉnh màu
+                break;
+              case 'Đã trả hàng một phần':
+                statusClass = 'status-partial-returned'; // Tùy chỉnh màu cho một phần
+                break;
+              default:
+                trangThaiText = hoaDon.trangThai; // Giữ nguyên nếu không khớp
+                statusClass = 'status-pending';
             }
-
             tbody.append(`
-              <tr>
-                <td>${hoaDon.maHoaDon}</td>
-                <td>${hoaDon.tenKhachHang}</td>
-                <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
-                <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
-                <td>${hoaDon.phuongThucThanhToan}</td>
-                <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
-                <td><span class="${statusClass}">${trangThaiText}</span></td>
-                <td>
-                  <div class="dropdown">
-                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                      <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                      <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${trangThaiText === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
-                    </ul>
-                  </div>
-                </td>
-              </tr>
-            `);
+                        <tr>
+                            <td>${hoaDon.maHoaDon}</td>
+                            <td>${hoaDon.tenKhachHang}</td>
+                            <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
+                            <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+                            <td>${hoaDon.phuongThucThanhToan}</td>
+                            <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+                            <td><span class="${statusClass}">${trangThaiText}</span></td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+                                        <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
+                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
+                                        <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}')" ${hoaDon.trangThai === 'Hoàn thành' ? '' : 'style="display:none;"'}>Trả hàng</button></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
           });
         }
         updatePagination(response.totalPages, response.currentPage, search, trangThai, paymentMethod, salesMethod);
@@ -705,7 +791,6 @@
       }
     });
   }
-
   function confirmHoaDon(id) {
     if (confirm("Bạn có chắc chắn muốn xác nhận đơn hàng này?")) {
       $("#invoiceSpinner").show();
@@ -715,7 +800,7 @@
         data: JSON.stringify({ ghiChu: "Đã xác nhận" }),
         contentType: "application/json",
         success: function (response) {
-          showToast("Đơn hàng đã được " + response.currentStatus.toLowerCase() + " thành công.", "success");
+          showToast(response.message, "success");
           loadHoaDonList(0, 5, $("#searchInput").val(), $("#statusFilter").val(), $("#paymentMethodFilter").val(), $('#salesMethodFilter').val());
         },
         error: function (error) {
@@ -728,7 +813,6 @@
       });
     }
   }
-
   window.onload = () => loadHoaDonList(0, 5, "", "", "", "");
 </script>
 </body>

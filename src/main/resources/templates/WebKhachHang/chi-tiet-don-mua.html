@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Chi tiết đơn mua</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
+    .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+    .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
+    .dropdown:hover .dropdown-menu { display: block; }
+    body { padding-top: 100px; background-color: #f5f5f5; }
+    @media (max-width: 640px) {
+      .dropdown-menu { width: 100%; left: 0; }
+      body { padding-top: 80px; }
+    }
+    .order-status { font-weight: bold; color: #f97316; font-size: 1.2rem; }
+    .product-img { width: 80px; height: 80px; object-fit: cover; border: 1px solid #ddd; border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px; text-align: left; vertical-align: middle; }
+    th { background-color: #f97316; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .payment-info { display: grid; grid-template-columns: 1fr 1fr; padding: 10px 0; border-bottom: 1px dashed #eee; }
+    .payment-info:last-child { border-bottom: none; }
+    .payment-label { font-weight: 600; color: #333; padding-right: 15px; }
+    .payment-value { color: #f97316; text-align: right; }
+    .payment-summary { padding: 15px; background-color: #fff; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .payment-note { color: #999; font-size: 0.9rem; text-align: right; margin-top: 5px; }
+    .total-row { font-size: 1.5rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+  <marquee behavior="scroll" direction="left" scrollamount="5">
+    🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+  </marquee>
+</div>
+
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+  <div class="container mx-auto flex items-center justify-between py-2 px-4">
+    <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+    <div class="relative dropdown">
+      <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
+        Danh mục <i class="fas fa-caret-down"></i>
+      </button>
+      <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+        <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nam</a>
+        <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nữ</a>
+        <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100">Phụ kiện</a>
+        <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
+      </div>
+    </div>
+    <div class="flex-1 mx-4 max-w-2xl">
+      <div class="relative">
+        <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+        <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </div>
+    <div class="flex items-center space-x-4" id="userSection">
+      <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
+      <div class="user-info" id="userInfo" th:text="${user != null} ? 'Chào ' + ${user.hoTen} + ' (' + ${user.tenDangNhap} + ')' : ''"></div>
+      <a href="/customers/login" id="loginButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none" th:classappend="${user == null} ? '' : 'd-none'">Đăng nhập</a>
+      <a href="/logout" id="logoutButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none" th:classappend="${user != null} ? '' : 'd-none'">Đăng xuất</a>
+    </div>
+  </div>
+</nav>
+
+<section class="container mx-auto py-8">
+  <h1 class="text-3xl font-bold text-gray-800 mb-6">Chi tiết đơn mua</h1>
+
+  <div class="mb-4">
+    <a th:href="@{/dsdon-mua}" class="btn bg-orange-500 text-white hover:bg-orange-600 px-4 py-2 rounded">
+      <i class="fas fa-arrow-left me-1"></i> Quay lại danh sách đơn mua
+    </a>
+  </div>
+
+  <div th:if="${hoaDon == null}" class="bg-white p-6 rounded-lg shadow-md">
+    <p class="text-gray-600 text-center">Không tìm thấy đơn hàng.</p>
+    <div class="text-center mt-4">
+      <a href="/dsdon-mua" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded">Quay lại danh sách đơn mua</a>
+    </div>
+  </div>
+
+  <div th:unless="${hoaDon == null}" class="bg-white p-6 rounded-lg shadow-md">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h3><strong>Mã đơn:</strong> <span th:text="${hoaDon.donHang.maDonHang}"></span></h3>
+        <p><small th:text="${hoaDon.ngayTao.toLocalDate()} + ' ' + ${hoaDon.ngayTao.toLocalTime()}"></small></p>
+      </div>
+      <div class="order-status" th:text="${hoaDon.trangThai}"></div>
+    </div>
+
+    <!-- Thông tin giao hàng -->
+    <div class="mb-4">
+      <h4 class="font-bold">Thông tin giao hàng</h4>
+      <p><strong>Địa chỉ:</strong> <span th:text="${hoaDon.donHang.diaChiGiaoHang}"></span></p>
+      <p><strong>Phương thức bán hàng:</strong> <span th:text="${hoaDon.donHang.phuongThucBanHang}"></span></p>
+      <p><strong>Ghi chú:</strong> <span th:text="${hoaDon.donHang.ghiChu != null ? hoaDon.donHang.ghiChu : 'Không có'}"></span></p>
+    </div>
+
+    <!-- Danh sách sản phẩm -->
+    <h4 class="font-bold mb-3">Sản phẩm</h4>
+    <table>
+      <thead>
+      <tr>
+        <th>Sản phẩm</th>
+        <th>Số lượng</th>
+        <th>Giá</th>
+        <th>Thành tiền</th>
+        <th>Ghi chú</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}">
+        <td>
+          <div class="d-flex align-items-center">
+            <img th:src="${chiTiet.chiTietSanPham.hinhAnhSanPhams != null and !#lists.isEmpty(chiTiet.chiTietSanPham.hinhAnhSanPhams) ? chiTiet.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}" class="product-img me-3" alt="Ảnh"/>
+            <div>
+              <strong th:text="${chiTiet.tenSanPham}"></strong>
+              <p th:if="${chiTiet.chiTietSanPham.mauSac != null}"><small>Màu sắc: <span th:text="${chiTiet.chiTietSanPham.mauSac.tenMau}"></span></small></p>
+              <p th:if="${chiTiet.chiTietSanPham.kichCo != null}"><small>Kích cỡ: <span th:text="${chiTiet.chiTietSanPham.kichCo.ten}"></span></small></p>
+            </div>
+          </div>
+        </td>
+        <td th:text="${chiTiet.soLuong}"></td>
+        <td th:text="${chiTiet.formattedGia} + ' VNĐ'"></td>
+        <td th:text="${#numbers.formatDecimal(chiTiet.gia * chiTiet.soLuong, 0, 0, 'COMMA')} + ' VNĐ'"></td>
+        <td th:text="${chiTiet.ghiChu != null ? chiTiet.ghiChu : 'Không có'}"></td>
+      </tr>
+      </tbody>
+    </table>
+
+    <!-- Thông tin thanh toán -->
+    <div class="mt-4">
+      <h4 class="font-bold mb-3">Thông tin thanh toán</h4>
+      <div class="payment-info">
+        <span class="payment-label">Trạng thái thanh toán</span>
+        <span class="payment-value" th:text="${hoaDon.donHang.trangThaiThanhToan ? 'Đã thanh toán' : 'Chưa thanh toán'}"></span>
+      </div>
+      <div class="payment-info">
+        <span class="payment-label">Phí vận chuyển</span>
+        <span class="payment-value" th:text="${hoaDon.donHang.phiVanChuyen != null ? #numbers.formatDecimal(hoaDon.donHang.phiVanChuyen, 0, 0, 'COMMA') + ' VNĐ' : '36,501 VNĐ'}"></span>
+      </div>
+      <div class="payment-info">
+        <span class="payment-label">Giảm giá</span>
+        <span class="payment-value" th:text="${hoaDon.donHang.tienGiam != null ? #numbers.formatDecimal(hoaDon.donHang.tienGiam, 0, 0, 'COMMA') + ' VNĐ' : '0 VNĐ'}"></span>
+      </div>
+    </div>
+
+    <!-- Tổng tiền -->
+    <div class="mt-4 payment-summary">
+      <div class="payment-info total-row">
+        <span class="payment-label">Tổng tiền</span>
+        <span class="payment-value" th:text="${hoaDon.formattedTongTien} + ' VNĐ'"></span>
+      </div>
+      <p th:if="${!hoaDon.donHang.trangThaiThanhToan}" class="payment-note">Vui lòng thanh toán</p>
+    </div>
+
+    <!-- Phương thức thanh toán -->
+    <div class="mt-4">
+      <div class="payment-info">
+        <span class="payment-label">Phương thức thanh toán</span>
+        <span class="payment-value">Thanh toán khi nhận hàng</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="bg-gray-800 text-white py-8">
+  <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div>
+      <h3 class="text-lg font-bold mb-4">ACV Store</h3>
+      <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+    </div>
+    <div>
+      <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
+      <ul class="space-y-2">
+        <li><a href="/new" class="hover:text-orange-500">Sản phẩm mới</a></li>
+        <li><a href="/all" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
+        <li><a href="/bestsellers" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+      <p class="text-sm">Email: support@160store.com</p>
+      <p class="text-sm">Hotline: 0123 456 789</p>
+      <div class="flex space-x-4 mt-4">
+        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+      </div>
+    </div>
+  </div>
+  <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+  // Format number to VND
+  function formatVND(number) {
+    return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(number) + ' VNĐ';
+  }
+
+  // Authentication check
+  window.addEventListener('load', async () => {
+    try {
+      const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
+      const data = await response.json();
+      const userInfo = document.getElementById('userInfo');
+      const loginButton = document.getElementById('loginButton');
+      const logoutButton = document.getElementById('logoutButton');
+
+      if (data.isAuthenticated) {
+        const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
+        if (userResponse.status === 401) {
+          window.location.href = '/customers/login';
+          return;
+        }
+        const userData = await userResponse.json();
+        if (userData.hoTen && userData.tenDangNhap) {
+          userInfo.classList.add('active');
+          loginButton.style.display = 'none';
+          logoutButton.style.display = 'inline';
+        }
+      } else {
+        userInfo.classList.remove('active');
+        loginButton.style.display = 'inline';
+        logoutButton.style.display = 'none';
+      }
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      window.location.href = '/customers/login';
+    }
+  });
+
+  // Logout
+  document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+      logoutButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        fetch('/logout', { method: 'POST', credentials: 'include' }).then(() => {
+          window.location.href = '/customers/login';
+        });
+      });
+    }
+  });
+</script>
+</body>
+</html>

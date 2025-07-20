@@ -38,10 +38,10 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     @Query("SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO(" +
             "tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, " +
             "CASE WHEN SUM(tk.soLuongDaBan) > 0 THEN SUM(tk.doanhThu) / SUM(tk.soLuongDaBan) ELSE 0 END, " +
-            "SUM(tk.soLuongDaBan), tk.imageUrl) " +
+            "SUM(tk.soLuongDaBan)) " +
             "FROM ThongKe tk " +
             "WHERE tk.ngayThanhToan BETWEEN :startDate AND :endDate " +
-            "GROUP BY tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, tk.imageUrl " +
+            "GROUP BY tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo " +
             "ORDER BY SUM(tk.soLuongDaBan) DESC")
     List<SanPhamBanChayDTO> laySanPhamBanChay(@Param("startDate") LocalDate startDate,
                                               @Param("endDate") LocalDate endDate);
@@ -50,10 +50,11 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     @Query("SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO(" +
             "tk.idChiTietDonHang, tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, " +
             "CASE WHEN tk.soLuongDaBan > 0 THEN tk.doanhThu / tk.soLuongDaBan ELSE 0 END, " +
-            "tk.soLuongTonKho, tk.imageUrl) " +
+            "tk.soLuongTonKho) " +
             "FROM ThongKe tk " +
             "WHERE tk.soLuongTonKho < :threshold")
     List<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap(@Param("threshold") int threshold);
+
 
     // ✅ Sửa lỗi chia cho 0 trong truy vấn phần trăm trạng thái đơn hàng
     @Query("""

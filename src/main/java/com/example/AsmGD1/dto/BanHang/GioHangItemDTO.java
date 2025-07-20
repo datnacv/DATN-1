@@ -18,4 +18,9 @@ public class GioHangItemDTO {
     private String hinhAnh; // Thêm trường này
     private String ghiChu;
     private Integer availableStock; // Added to reflect available stock after reservations
+
+    private Boolean trangThaiHoanTra; // Thêm trường này
+
+    private BigDecimal originalPrice; // Giá gốc
+    private BigDecimal phanTramGiam;
 }
