@@ -768,7 +768,7 @@
 
           <div id="cashInput" class="d-none floating-label">
             <label for="cashAmount">Số tiền khách đưa</label>
-            <input type="number" id="cashAmount" value="0" class="form-control">
+            <input type="text" id="cashAmount" value="0" class="form-control" inputmode="numeric">
           </div>
         </div>
       </div>
@@ -2007,7 +2007,7 @@
     const totalWithShipping = total + (tab.saleMethod === 'Giao hàng' ? shippingFee : 0); // Chỉ cộng phí vận chuyển khi chọn Giao hàng
 
     const cashAmountInput = document.getElementById('cashAmount');
-    const cashAmount = parseFloat(cashAmountInput ? cashAmountInput.value : 0) || 0;
+    const cashAmount = parseFloat(cashAmountInput ? cashAmountInput.value.replace(/\./g, '') : 0) || 0;
     tab.cashAmount = cashAmount;
 
     const change = Math.max(0, cashAmount - totalWithShipping);
@@ -2053,7 +2053,7 @@
       soDienThoaiKhachHang: tab.customerPhone,
       phiVanChuyen: tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0,
       phuongThucThanhToan: tab.paymentMethod,
-      soTienKhachDua: parseFloat(cashAmountInput ? cashAmountInput.value : 0) || 0,
+      soTienKhachDua: parseFloat(cashAmountInput ? cashAmountInput.value.replace(/\./g, '') : 0) || 0,
       phuongThucBanHang: tab.saleMethod,
       idPhieuGiamGia: tab.voucherId || null,
       danhSachSanPham: tab.cart,
@@ -2564,14 +2564,25 @@
     }
   }
 
+  function formatCashInput(value) {
+    return value.replace(/\D/g, '') // chỉ lấy số
+            .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // thêm dấu chấm
+  }
+
   // Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
     const cashInput = document.getElementById('cashAmount');
+
     if (cashInput) {
-      cashInput.addEventListener('input', () => {
+      cashInput.addEventListener('input', (e) => {
+        const cursorPosition = e.target.selectionStart;
+        const rawValue = e.target.value.replace(/\./g, '');
+        const formattedValue = formatCashInput(rawValue);
+        e.target.value = formattedValue;
+
         const tab = tabs.find(t => t.id === currentTabId);
         if (tab) {
-          tab.cashAmount = parseFloat(cashInput.value) || 0;
+          tab.cashAmount = parseFloat(rawValue) || 0;
           updateSummary(tab);
           localStorage.setItem('orderTabs', JSON.stringify(tabs));
         }

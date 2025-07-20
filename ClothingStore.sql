@@ -605,3 +605,11 @@ END;
 
 ALTER TABLE don_hang
     ADD trang_thai NVARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN';
+
+CREATE TABLE LichSuTimKiem (
+                               id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                               id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                               tu_khoa NVARCHAR(100) NOT NULL,
+                               thoi_gian_tim_kiem DATETIME NOT NULL DEFAULT GETDATE(),
+                               FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
+);

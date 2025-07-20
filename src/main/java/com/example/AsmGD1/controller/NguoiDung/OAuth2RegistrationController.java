@@ -46,7 +46,6 @@ public class OAuth2RegistrationController {
             @RequestParam("tenDangNhap") String tenDangNhap,
             @RequestParam("matKhau") String matKhau,
             @RequestParam("soDienThoai") String soDienThoai,
-            @RequestParam("diaChi") String diaChi,
             @RequestParam("tinhThanhPho") String tinhThanhPho,
             @RequestParam("quanHuyen") String quanHuyen,
             @RequestParam("phuongXa") String phuongXa,
@@ -76,7 +75,6 @@ public class OAuth2RegistrationController {
         nguoiDung.setTenDangNhap(tenDangNhap);
         nguoiDung.setMatKhau(matKhau);
         nguoiDung.setSoDienThoai(soDienThoai);
-        nguoiDung.setChiTietDiaChi(diaChi);
         nguoiDung.setTinhThanhPho(tinhThanhPho);
         nguoiDung.setQuanHuyen(quanHuyen);
         nguoiDung.setPhuongXa(phuongXa);

@@ -3,12 +3,19 @@ package com.example.AsmGD1.service.WebKhachHang;
 import com.example.AsmGD1.dto.KhachHang.*;
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.LichSuTimKiem;
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
+import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -18,6 +25,11 @@ public class KhachhangSanPhamService {
 
     @Autowired
     private KhachHangSanPhamRepository khachHangSanPhamRepository;
+
+    @Autowired
+    private LichSuTimKiemRepository lichSuTimKiemRepository;
+
+    private static final Logger logger = LoggerFactory.getLogger(KhachhangSanPhamService.class);
 
     // Lấy danh sách sản phẩm mới
     public List<SanPhamDto> getNewProducts() {
@@ -149,6 +161,14 @@ public class KhachhangSanPhamService {
         dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
         dto.setThoiGianTao(sanPham.getThoiGianTao());
 
+        // Tính tổng soLuongTonKho từ ChiTietSanPham
+        List<ChiTietSanPham> chiTietSanPhams = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPham.getId());
+        Long tongSoLuong = chiTietSanPhams.stream()
+                .filter(chiTiet -> chiTiet.getTrangThai()) // Chỉ tính các chi tiết active
+                .mapToLong(ChiTietSanPham::getSoLuongTonKho)
+                .sum();
+        dto.setTongSoLuong(tongSoLuong != null ? tongSoLuong : 0L);
+
         // Ánh xạ dữ liệu flash sale
         BigDecimal minPrice = khachHangSanPhamRepository.findMinPriceBySanPhamId(sanPham.getId());
         dto.setPrice(minPrice != null ? minPrice.toString() : "0");
@@ -158,5 +178,69 @@ public class KhachhangSanPhamService {
         dto.setProgress(50);
 
         return dto;
+    }
+
+    public List<SanPhamDto> searchProducts(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getNewProducts(); // Nếu không có từ khóa, trả về sản phẩm mới
+        }
+        List<SanPham> sanPhams = khachHangSanPhamRepository.searchProductsByKeyword(keyword.trim());
+        return sanPhams.stream()
+                .map(this::convertToSanPhamDto)
+                .collect(Collectors.toList());
+    }
+
+    // Lưu lịch sử tìm kiếm
+    @Transactional
+    public void saveSearchHistory(NguoiDung nguoiDung, String keyword) {
+        if (nguoiDung == null || keyword == null || keyword.trim().isEmpty()) {
+            logger.warn("Cannot save search history: user or keyword is null/empty. User: {}, Keyword: {}", nguoiDung, keyword);
+            return;
+        }
+        logger.info("Attempting to save search history for user ID: {}, keyword: {}", nguoiDung.getId(), keyword);
+        boolean exists = lichSuTimKiemRepository.findByNguoiDungIdOrderByThoiGianTimKiemDesc(nguoiDung.getId())
+                .stream()
+                .anyMatch(lichSu -> lichSu.getTuKhoa().equalsIgnoreCase(keyword.trim()));
+        if (!exists) {
+            LichSuTimKiem lichSu = LichSuTimKiem.builder()
+                    .tuKhoa(keyword.trim())
+                    .nguoiDung(nguoiDung)
+                    .thoiGianTimKiem(LocalDateTime.now()) // Gán thời gian rõ ràng
+                    .build();
+            lichSuTimKiemRepository.save(lichSu);
+            logger.info("Saved search history for keyword: {}", keyword);
+        } else {
+            logger.info("Keyword '{}' already exists in search history for user ID: {}", keyword, nguoiDung.getId());
+        }
+    }
+
+    // Lấy lịch sử tìm kiếm
+    public List<String> getSearchHistory(UUID nguoiDungId) {
+        return lichSuTimKiemRepository.findByNguoiDungIdOrderByThoiGianTimKiemDesc(nguoiDungId)
+                .stream()
+                .map(LichSuTimKiem::getTuKhoa)
+                .limit(5)
+                .toList();
+    }
+
+    // Tìm kiếm sản phẩm với gợi ý theo danh mục khi không có kết quả
+    public List<SanPhamDto> searchProductsWithHistory(String keyword, NguoiDung nguoiDung) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return getNewProducts();
+        }
+
+        List<SanPham> sanPhams = khachHangSanPhamRepository.searchProductsByKeyword(keyword.trim());
+        if (sanPhams.isEmpty()) {
+            // Gợi ý sản phẩm từ danh mục phổ biến
+            return khachHangSanPhamRepository.findPopularCategoryProducts()
+                    .stream()
+                    .map(this::convertToSanPhamDto)
+                    .limit(5)
+                    .collect(Collectors.toList());
+        }
+
+        return sanPhams.stream()
+                .map(this::convertToSanPhamDto)
+                .collect(Collectors.toList());
     }
 }

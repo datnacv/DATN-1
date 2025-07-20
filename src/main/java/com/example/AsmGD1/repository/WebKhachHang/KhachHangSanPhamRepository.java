@@ -4,6 +4,7 @@ import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.entity.SanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -76,4 +77,18 @@ public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID>
     // Truy vấn giá thấp nhất
     @Query("SELECT MIN(c.gia) FROM ChiTietSanPham c WHERE c.sanPham.id = :sanPhamId AND c.trangThai = true")
     BigDecimal findMinPriceBySanPhamId(UUID sanPhamId);
+
+    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d " +
+            "WHERE p.trangThai = true " +
+            "AND EXISTS (SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = p.id AND c.trangThai = true) " +
+            "AND (LOWER(p.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(p.moTa) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+            "OR LOWER(d.tenDanhMuc) LIKE LOWER(CONCAT('%', :keyword, '%')))")
+    List<SanPham> searchProductsByKeyword(@Param("keyword") String keyword);
+
+    @Query("SELECT p FROM SanPham p JOIN p.danhMuc d " +
+            "WHERE p.trangThai = true " +
+            "AND EXISTS (SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = p.id AND c.trangThai = true) " +
+            "AND d.id = (SELECT d2.id FROM DanhMuc d2 JOIN d2.sanPhams sp GROUP BY d2.id ORDER BY COUNT(sp.id) DESC LIMIT 1)")
+    List<SanPham> findPopularCategoryProducts();
 }

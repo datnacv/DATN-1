@@ -4,47 +4,164 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ACV Store - Trang chủ</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
-    .product-card { transition: transform 0.3s; }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .badge-new { background-color: #f97316; }
-    .size-option.active, .color-option.active { background-color: #f97316; color: white; }
-    .swiper-slide img { object-fit: cover; height: 400px; }
-    .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+    .navbar { background: linear-gradient(to right, #153054, #1e4066); }
+    .product-card { transition: transform 0.3s, box-shadow 0.3s; }
+    .product-card:hover { transform: translateY(-10px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .badge-new { background-color: #153054; }
+    .size-option, .color-option { padding: 8px 16px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .size-option.active, .color-option.active { background-color: #153054; color: white; border-color: #153054; }
+    .color-option { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; }
+    .color-option.active { border-color: #153054; }
+    .swiper-slide img { object-fit: cover; height: 500px; width: 100%; }
+    .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
+    .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
     .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
     .dropdown:hover .dropdown-menu { display: block; }
-    body { padding-top: 100px; }
+    body { padding-top: 118px; }
+    .user-info { display: none; color: white; }
+    .user-info.active { display: inline; }
+    .chatbot-msg-user {
+      background-color: #153054;
+      color: white;
+      padding: 10px 14px;
+      border-radius: 20px;
+      max-width: 80%;
+      margin-left: auto;
+      margin-bottom: 10px;
+      text-align: right;
+      font-size: 15px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    .chatbot-msg-bot {
+      background-color: #9FD5F7;
+      color: #153054;
+      padding: 10px 14px;
+      border-radius: 20px;
+      max-width: 80%;
+      margin-right: auto;
+      margin-bottom: 10px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    #confirmAddToCart.loading::after {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #back-to-top {
+      transition: opacity 0.3s;
+    }
+    #back-to-top.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .search-suggestions.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .suggestion-item:hover {
+      background-color: #f1f5f9;
+    }
+    .suggestion-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+    .history-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+      background-color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-item:hover {
+      background-color: #e2e8f0;
+    }
+    .history-item .highlight {
+      background-color: #9FD5F7;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .history-item .delete-btn {
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s;
+    }
+    .history-item .delete-btn:hover {
+      color: #b91c1c;
+    }
     @media (max-width: 640px) {
       .swiper-slide img { height: 200px; }
       .product-grid { grid-template-columns: repeat(2, 1fr); }
       .dropdown-menu { width: 100%; left: 0; }
-      body { padding-top: 80px; }
+      body { padding-top: 120px; }
     }
-    .user-info { display: none; color: white; }
-    .user-info.active { display: inline; }
   </style>
 </head>
 <body class="bg-gray-100">
-<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+<div class="ticker py-1 overflow-hidden" style="height: 40px;">
   <marquee behavior="scroll" direction="left" scrollamount="5">
     🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
   </marquee>
 </div>
 
-<nav class="navbar navbar-expand-lg sticky-top shadow-sm" style="background-color: #f97316;">
+<nav class="navbar navbar-expand-lg sticky-top shadow-sm">
   <div class="container d-flex justify-content-between align-items-center py-2">
     <!-- Logo -->
     <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
 
     <!-- Dropdown Danh mục -->
     <div class="dropdown me-3">
-      <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+      <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
         Danh mục
       </button>
       <ul class="dropdown-menu">
@@ -56,37 +173,39 @@
     </div>
 
     <!-- Tìm kiếm -->
-    <form class="flex-grow-1 mx-3" style="max-width: 600px;">
+    <form class="flex-grow-1 mx-3 position-relative" style="max-width: 600px;" action="/search" method="get">
       <div class="input-group">
-        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm...">
+        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" name="keyword" id="searchInput" th:value="${keyword}" autocomplete="off">
         <button class="btn btn-light rounded-end-pill px-4" type="submit">
-          <i class="fas fa-search text-orange-600"></i>
+          <i class="fas fa-search text-blue-800"></i>
         </button>
       </div>
+      <div id="searchSuggestions" class="search-suggestions"></div>
     </form>
 
     <!-- Giỏ hàng + Người dùng -->
     <div class="d-flex align-items-center gap-3">
       <!-- Giỏ hàng -->
-      <a th:href="@{/cart}" class="text-white fs-5 position-relative">
+      <a th:href="@{/cart}" class="text-white fs-5 position-relative" aria-label="Giỏ hàng">
         <i class="fas fa-shopping-cart"></i>
+        <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
       </a>
 
       <!-- Nếu đã đăng nhập -->
       <div th:if="${user != null}" class="dropdown">
-        <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+        <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
           <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" th:href="@{/logout}">Đăng xuất</a></li>
+          <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
         </ul>
       </div>
 
       <!-- Nếu chưa đăng nhập -->
-      <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3">
+      <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3" id="loginButton">
         Đăng nhập
       </a>
     </div>
@@ -96,7 +215,7 @@
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-lg">
-      <div class="modal-header bg-orange-500 text-white">
+      <div class="modal-header" style="background-color: #153054; color: white;">
         <h5 class="modal-title" id="addToCartModalLabel">Thêm vào giỏ hàng</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -105,7 +224,8 @@
           <img id="modalProductImage" src="" alt="Product Image" class="w-20 h-20 object-cover rounded">
           <div>
             <h6 id="modalProductName" class="font-semibold"></h6>
-            <p id="modalProductPrice" class="text-orange-600 font-bold"></p>
+            <p id="modalProductPrice" class="text-blue-800 font-bold"></p>
+            <p id="modalProductStock" class="text-sm text-gray-600"></p>
           </div>
         </div>
         <div class="size-selection mt-4">
@@ -124,24 +244,25 @@
             <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
           </div>
         </div>
+        <div id="modalError" class="text-red-500 text-sm mt-2 hidden">Vui lòng chọn kích thước và màu sắc!</div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        <button type="button" class="btn bg-orange-500 text-white hover:bg-orange-600" id="confirmAddToCart">Thêm vào giỏ</button>
+        <button type="button" class="btn text-white" style="background-color: #153054;" id="confirmAddToCart">Thêm vào giỏ</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="mt-0">
+<div class="container mx-auto py-8">
   <div class="swiper banner-slider">
     <div class="swiper-wrapper">
-      <div class="swiper-slide"><img src="https://file.hstatic.net/200000503583/collection/ao-nam-2022_71fff4523ebe4fbd9722928187580776.jpg" alt="Banner 1" class="w-full"/></div>
-      <div class="swiper-slide"><img src="https://file.hstatic.net/1000253775/file/kt_dn_dk.jpg" alt="Banner 2" class="w-full"/></div>
-      <div class="swiper-slide"><img src="https://4menshop.com/images/thumbs/news/-602.jpg" alt="Banner 3" class="w-full"/></div>
+      <div class="swiper-slide"><img loading="lazy" src="https://file.hstatic.net/200000503583/collection/ao-nam-2022_71fff4523ebe4fbd9722928187580776.jpg" alt="Banner thời trang nam" class="w-full h-full object-cover"/></div>
+      <div class="swiper-slide"><img loading="lazy" src="https://file.hstatic.net/1000253775/file/kt_dn_dk.jpg" alt="Banner khuyến mãi" class="w-full h-full object-cover"/></div>
+      <div class="swiper-slide"><img loading="lazy" src="https://4menshop.com/images/thumbs/news/-602.jpg" alt="Banner sản phẩm mới" class="w-full h-full object-cover"/></div>
     </div>
-    <div class="swiper-button-next text-orange-500"></div>
-    <div class="swiper-button-prev text-orange-500"></div>
+    <div class="swiper-button-next text-blue-800"></div>
+    <div class="swiper-button-prev text-blue-800"></div>
     <div class="swiper-pagination"></div>
   </div>
 </div>
@@ -152,23 +273,27 @@
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${newProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-green-500">Mới</span>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList}">
-          <i class="fas fa-shopping-cart text-orange-500"></i>
+        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded">Mới</span>
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
+                aria-label="Thêm vào giỏ hàng">
+          <i class="fas fa-shopping-cart text-blue-800"></i>
         </button>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div class="price text-blue-800 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
         <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+        <div class="rating text-yellow-400 text-sm mt-1">
+          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        </div>
       </a>
     </div>
   </div>
   <div class="see-all text-center mt-6">
-    <a href="/new" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
+    <a href="/new" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
@@ -178,22 +303,30 @@
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${summerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList}">
-          <i class="fas fa-shopping-cart text-orange-500"></i>
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
+                aria-label="Thêm vào giỏ hàng">
+          <i class="fas fa-shopping-cart text-blue-800"></i>
+        </button>
+        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+          <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div class="price text-blue-800 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
         <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+        <div class="rating text-yellow-400 text-sm mt-1">
+          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        </div>
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
-    <a href="/all" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
+  <div class="see-all text-center mt dirigida6">
+    <a href="/all" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
@@ -203,69 +336,354 @@
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
         <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-red-500">Hot</span>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList}">
-          <i class="fas fa-shopping-cart text-orange-500"></i>
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
+                aria-label="Thêm vào giỏ hàng">
+          <i class="fas fa-shopping-cart text-blue-800"></i>
+        </button>
+        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+          <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
+        <div class="price text-blue-800 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
         <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+        <div class="rating text-yellow-400 text-sm mt-1">
+          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        </div>
       </a>
     </div>
   </div>
   <div class="see-all text-center mt-6">
-    <a href="/bestsellers" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
+    <a href="/bestsellers" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
-<script type="text/javascript">
-  (function(d, m){
-    var kommunicateSettings =
-            {"appId":"20a19e8ec21190f7ec5621374f7a576ef","popupWidget":true,"automaticChatOpenOnNavigation":true};
-    var s = document.createElement("script"); s.type = "text/javascript"; s.async = true;
-    s.src = "https://widget.kommunicate.io/v2/kommunicate.app";
-    var h = document.getElementsByTagName("head")[0]; h.appendChild(s);
-    window.kommunicate = m; m._globals = kommunicateSettings;
-  })(document, window.kommunicate || {});
-  /* NOTE : Use web server to view HTML files as real-time update will not work if you directly open the HTML file in the browser. */
-</script>
+<!-- Floating Chatbot Icon -->
+<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+  <i class="fas fa-robot fa-lg text-white"></i>
+</div>
 
-<footer class="bg-gray-800 text-white py-8">
+<!-- Chatbot Box -->
+<div id="chatbot-box" style="
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 420px;
+    max-height: 620px;
+    background: #fff;
+    border-radius: 7px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 10000;
+    font-family: 'Segoe UI', sans-serif;
+  ">
+  <!-- Header -->
+  <div style="background-color: #153054; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+    <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
+    <div style="font-weight: bold;">ACV Bot</div>
+    <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">×</span>
+  </div>
+
+  <!-- Messages -->
+  <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;">
+    <div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>
+  </div>
+
+  <!-- Quick Replies -->
+  <div id="quick-replies" class="flex flex-wrap gap-2 p-4">
+    <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Sản phẩm mới nhất</button>
+    <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Kiểm tra đơn hàng</button>
+    <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Chính sách đổi trả</button>
+  </div>
+
+  <!-- Input -->
+  <div style="padding: 10px; border-top: 1px solid #eee;">
+    <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #ccc;
+        border-radius: 24px;
+        font-size: 15px;
+        outline: none;
+        transition: border 0.2s ease-in-out;
+      ">
+  </div>
+</div>
+
+<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px">
   <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
     <div>
       <h3 class="text-lg font-bold mb-4">ACV Store</h3>
       <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+      <div class="mt-4">
+        <h4 class="text-sm font-semibold">Đăng ký nhận tin</h4>
+        <form class="flex gap-2 mt-2">
+          <input type="email" class="w-full p-2 rounded border" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Đăng ký</button>
+        </form>
+      </div>
     </div>
     <div>
       <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
       <ul class="space-y-2">
-        <li><a href="/new" class="hover:text-orange-500">Sản phẩm mới</a></li>
-        <li><a href="/all" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
-        <li><a href="/bestsellers" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+        <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
+        <li><a href="/all" class="hover:text-blue-300">Tủ đồ mùa hè</a></li>
+        <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
       </ul>
     </div>
     <div>
       <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-      <p class="text-sm">Email: acvstore@gmail.com</p>
-      <p class="text-sm">Hotline: 0123 456 789</p>
+      <p class="text-sm">Email: datn.acv@gmail.com</p>
+      <p class="text-sm">Hotline: 1900 8686</p>
       <div class="flex space-x-4 mt-4">
-        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
-        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
-        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+        <a href="#" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="#" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
       </div>
     </div>
   </div>
   <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<button id="back-to-top" class="fixed bottom-20 right-20 bg-blue-600 text-white p-3 rounded-full shadow-lg hidden" aria-label="Quay lại đầu trang">
+  <i class="fas fa-arrow-up"></i>
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script>
+  // Search suggestions
+  const searchInput = document.getElementById('searchInput');
+  const searchSuggestions = document.getElementById('searchSuggestions');
+  let debounceTimer;
+
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      const keyword = searchInput.value.trim();
+      searchSuggestions.innerHTML = '';
+      if (keyword.length < 2) {
+        showSearchHistory(keyword);
+        return;
+      }
+      try {
+        const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
+        const products = await response.json();
+        searchSuggestions.innerHTML = '';
+        if (products.length === 0) {
+          searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
+        }
+        products.forEach(product => {
+          const suggestion = document.createElement('div');
+          suggestion.className = 'suggestion-item';
+          suggestion.innerHTML = `
+                    <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}"/>
+                    <div>
+                        <div class="font-semibold">${product.tenSanPham}</div>
+                        <div class="text-blue-800">${product.price.toLocaleString('vi-VN')} VNĐ</div>
+                    </div>
+                `;
+          suggestion.addEventListener('click', () => {
+            window.location.href = `/chitietsanpham?id=${product.id}`;
+          });
+          searchSuggestions.appendChild(suggestion);
+        });
+        searchSuggestions.classList.add('active');
+      } catch (error) {
+        console.error('Error fetching search suggestions:', error);
+        searchSuggestions.innerHTML = '<div class="suggestion-item">Lỗi khi tải gợi ý</div>';
+        searchSuggestions.classList.add('active');
+      }
+    }, 300);
+  });
+
+  searchInput.addEventListener('focus', async () => {
+    const keyword = searchInput.value.trim();
+    showSearchHistory(keyword);
+  });
+
+  searchInput.addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      const keyword = searchInput.value.trim();
+      if (!keyword) return;
+
+      try {
+        const response = await fetch(`/api/save-search-history?keyword=${encodeURIComponent(keyword)}`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (!response.ok) {
+          console.error('Error saving search history:', await response.text());
+        }
+        // Chuyển hướng đến trang kết quả tìm kiếm
+        window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
+      } catch (error) {
+        console.error('Error saving search history:', error);
+      }
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+      searchSuggestions.classList.remove('active');
+    }
+  });
+
+  async function showSearchHistory(filterKeyword = '') {
+    try {
+      const response = await fetch('/api/search-history', { credentials: 'include' });
+      if (!response.ok) {
+        throw new Error(response.status === 401 ? 'Vui lòng đăng nhập để xem lịch sử tìm kiếm' : 'Lỗi khi tải lịch sử tìm kiếm');
+      }
+      const history = await response.json();
+      searchSuggestions.innerHTML = '';
+      const filteredHistory = filterKeyword
+              ? history.filter(kw => kw.toLowerCase().includes(filterKeyword.toLowerCase()))
+              : history;
+      if (filteredHistory.length === 0) {
+        searchSuggestions.innerHTML = '<div class="history-item">Không có lịch sử tìm kiếm</div>';
+      } else {
+        filteredHistory.forEach(keyword => {
+          const historyItem = document.createElement('div');
+          historyItem.className = 'history-item';
+          historyItem.innerHTML = `
+                    <span class="keyword">${
+                  filterKeyword
+                          ? keyword.replace(new RegExp(filterKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), match => `<span class="highlight">${match}</span>`)
+                          : keyword
+          }</span>
+                    <i class="fas fa-times delete-btn" title="Xóa mục này"></i>
+                `;
+          // Sự kiện click vào từ khóa để tìm kiếm
+          historyItem.querySelector('.keyword').addEventListener('click', () => {
+            searchInput.value = keyword;
+            searchInput.dispatchEvent(new Event('input'));
+          });
+          // Sự kiện click vào nút xóa
+          historyItem.querySelector('.delete-btn').addEventListener('click', async () => {
+            try {
+              const response = await fetch(`/api/search-history/delete?keyword=${encodeURIComponent(keyword)}`, {
+                method: 'DELETE',
+                credentials: 'include'
+              });
+              if (response.ok) {
+                // Cập nhật lại danh sách lịch sử sau khi xóa
+                showSearchHistory(filterKeyword);
+              } else {
+                searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử</div>';
+                searchSuggestions.classList.add('active');
+              }
+            } catch (error) {
+              console.error('Error deleting search history item:', error);
+              searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử tìm kiếm</div>';
+              searchSuggestions.classList.add('active');
+            }
+          });
+          searchSuggestions.appendChild(historyItem);
+        });
+      }
+      searchSuggestions.classList.add('active');
+    } catch (error) {
+      console.error('Error fetching search history:', error);
+      searchSuggestions.innerHTML = `<div class="history-item">${error.message}</div>`;
+      searchSuggestions.classList.add('active');
+    }
+  }
+
+  // Toggle chatbot
+  const toggleBtn = document.getElementById('chatbot-toggle');
+  const chatBox = document.getElementById('chatbot-box');
+  const closeBtn = document.getElementById('chatbot-close');
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+
+  toggleBtn.onclick = () => {
+    chatBox.style.display = "flex";
+    chatInput.focus();
+    restoreHistory();
+  };
+  closeBtn.onclick = () => {
+    chatBox.style.display = "none";
+  };
+
+  function saveToHistory(role, msg) {
+    const current = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+    current.push({ role, msg });
+    sessionStorage.setItem("chat_history", JSON.stringify(current));
+  }
+
+  function restoreHistory() {
+    chatMessages.innerHTML = '<div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>';
+    const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+    for (const item of items) {
+      const div = document.createElement('div');
+      div.className = item.role === 'user' ? 'chatbot-msg-user' : 'chatbot-msg-bot';
+      div.innerHTML = item.msg;
+      chatMessages.appendChild(div);
+    }
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  document.querySelectorAll('.quick-reply').forEach(btn => {
+    btn.addEventListener('click', () => {
+      chatInput.value = btn.textContent;
+      chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    });
+  });
+
+  chatInput.addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      const message = chatInput.value.trim();
+      if (!message) return;
+
+      const userDiv = document.createElement('div');
+      userDiv.className = 'chatbot-msg-user';
+      userDiv.textContent = message;
+      chatMessages.appendChild(userDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      saveToHistory('user', message);
+      chatInput.value = '';
+
+      document.getElementById('typing-indicator').classList.remove('hidden');
+      try {
+        const res = await fetch("https://duclong0910.app.n8n.cloud/webhook/website-chatbot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body: { from: "user_123", message } })
+        });
+
+        const contentType = res.headers.get("content-type");
+        const data = contentType && contentType.includes("json") ? await res.json() : { message: "Bot không phản hồi." };
+
+        let formattedMsg = data.message || "Không có phản hồi.";
+
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chatbot-msg-bot';
+        botDiv.innerHTML = formattedMsg;
+        chatMessages.appendChild(botDiv);
+        saveToHistory('bot', botDiv.innerHTML);
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      } catch (e) {
+        const botErr = document.createElement('div');
+        botErr.className = 'chatbot-msg-bot';
+        botErr.textContent = "Lỗi kết nối. Vui lòng thử lại.";
+        chatMessages.appendChild(botErr);
+        saveToHistory('bot', botErr.textContent);
+      } finally {
+        document.getElementById('typing-indicator').classList.add('hidden');
+      }
+    }
+  });
+
   new Swiper('.banner-slider', {
     loop: true,
     autoplay: { delay: 5000 },
@@ -276,10 +694,8 @@
   window.addEventListener('load', async () => {
     const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
     const data = await response.json();
-    const userSection = document.getElementById('userSection');
     const userInfo = document.getElementById('userInfo');
     const loginButton = document.getElementById('loginButton');
-    const logoutButton = document.getElementById('logoutButton');
 
     if (data.isAuthenticated) {
       const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
@@ -288,16 +704,14 @@
         userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
         userInfo.classList.add('active');
         loginButton.style.display = 'none';
-        logoutButton.style.display = 'inline';
       }
     } else {
       userInfo.classList.remove('active');
       loginButton.style.display = 'inline';
-      logoutButton.style.display = 'none';
     }
   });
 
-  document.getElementById('logoutButton').addEventListener('click', (e) => {
+  document.getElementById('logoutButton')?.addEventListener('click', (e) => {
     e.preventDefault();
     fetch('/customers/logout', { method: 'POST', credentials: 'include' }).then(() => {
       window.location.href = '/';
@@ -310,12 +724,13 @@
       document.getElementById('modalProductImage').src = button.dataset.productImg;
       document.getElementById('modalProductName').textContent = button.dataset.productName;
       document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
+      document.getElementById('modalProductStock').textContent = `Tồn kho: ${button.dataset.stock || 'N/A'}`;
 
       const sizeOptionsContainer = document.getElementById('modalSizeOptions');
       sizeOptionsContainer.innerHTML = '';
       JSON.parse(button.dataset.kichCo).forEach(size => {
         const sizeButton = document.createElement('button');
-        sizeButton.className = 'size-option px-4 py-2 border rounded hover:bg-orange-100';
+        sizeButton.className = 'size-option px-4 py-2 border rounded hover:bg-blue-100';
         sizeButton.textContent = size.ten;
         sizeButton.dataset.sizeId = size.id;
         sizeOptionsContainer.appendChild(sizeButton);
@@ -325,8 +740,8 @@
       colorOptionsContainer.innerHTML = '';
       JSON.parse(button.dataset.mauSac).forEach(color => {
         const colorButton = document.createElement('button');
-        colorButton.className = 'color-option px-4 py-2 border rounded hover:bg-orange-100';
-        colorButton.textContent = color.tenMau;
+        colorButton.className = 'color-option';
+        colorButton.style.backgroundColor = color.maMauHex || color.tenMau;
         colorButton.dataset.colorId = color.id;
         colorOptionsContainer.appendChild(colorButton);
       });
@@ -357,17 +772,19 @@
       confirmButton.onclick = async () => {
         const selectedSize = modal._element.querySelector('.size-option.active');
         const selectedColor = modal._element.querySelector('.color-option.active');
-        const quantity = input.value;
-
+        const modalError = modal._element.querySelector('#modalError');
         if (!selectedSize || !selectedColor) {
-          alert('Vui lòng chọn kích cỡ và màu sắc!');
+          modalError.classList.remove('hidden');
           return;
         }
+        modalError.classList.add('hidden');
+        confirmButton.classList.add('loading');
 
         const response = await fetch(`/acvstore/chi-tiet-san-pham/api?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
         const chiTietSanPham = await response.json();
         if (!chiTietSanPham.id) {
           alert('Sản phẩm với kích cỡ và màu sắc này không tồn tại!');
+          confirmButton.classList.remove('loading');
           return;
         }
 
@@ -375,10 +792,11 @@
         const authData = await authResponse.json();
         if (!authData.isAuthenticated) {
           alert('Vui lòng đăng nhập để thêm vào giỏ hàng!');
+          confirmButton.classList.remove('loading');
           return;
         }
 
-        const payload = { id: chiTietSanPham.id, quantity: parseInt(quantity) };
+        const payload = { id:  chiTietSanPham.id, quantity: parseInt(input.value) };
         const addResponse = await fetch('/api/cart/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -392,9 +810,41 @@
         } else {
           alert('Có lỗi xảy ra khi thêm vào giỏ hàng!');
         }
+        confirmButton.classList.remove('loading');
       };
 
       modal.show();
+    });
+  });
+
+  document.querySelectorAll('.quick-view-btn').forEach(button => {
+    button.addEventListener('click', async () => {
+      const productId = button.dataset.productId;
+      const response = await fetch(`/api/product/${productId}`);
+      const product = await response.json();
+      const quickViewModal = new bootstrap.Modal(document.createElement('div'));
+      quickViewModal._element.innerHTML = `
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header" style="background-color: #153054; color: white;">
+                <h5 class="modal-title">${product.tenSanPham}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}" class="w-full h-64 object-cover rounded mb-4">
+                <p class="text-blue-800 font-bold">${product.price} VNĐ</p>
+                <p class="text-sm text-gray-600">Tồn kho: ${product.tongSoLuong || 'N/A'}</p>
+                <p class="text-sm">${product.moTa || 'Không có mô tả'}</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <a href="/chitietsanpham?id=${product.id}" class="btn text-white" style="background-color: #153054;">Xem chi tiết</a>
+              </div>
+            </div>
+          </div>
+        `;
+      document.body.appendChild(quickViewModal._element);
+      quickViewModal.show();
     });
   });
 
@@ -412,6 +862,12 @@
       console.error('Error updating cart count:', error);
     }
   }
+
+  const backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    backToTop.classList.toggle('hidden', window.scrollY < 200);
+  });
+  backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   document.addEventListener('DOMContentLoaded', updateCartCount);
 </script>
