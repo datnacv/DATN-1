@@ -716,6 +716,24 @@
                         <i class="fas fa-flag-checkered"></i> Hoàn thành
                     </button>
                 </div>
+                <div th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Online')}">
+                    <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
+                            th:disabled="${hoaDon.trangThai != 'Chưa xác nhận'}">
+                        <i class="fas fa-check"></i> Xác nhận đơn hàng
+                    </button>
+                    <button id="onlineProcessingButton" class="btn-custom btn-online-processing" onclick="confirmOnlineProcessing()"
+                            th:disabled="${hoaDon.trangThai != 'Đã xác nhận Online'}">
+                        <i class="fas fa-cog"></i> Đang xử lý Online
+                    </button>
+                    <button id="onlineDeliveredButton" class="btn-custom btn-online-delivered" onclick="confirmOnlineDelivered()"
+                            th:disabled="${hoaDon.trangThai != 'Đang xử lý Online'}">
+                        <i class="fas fa-check-circle"></i> Đã giao thành công
+                    </button>
+                    <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
+                            th:disabled="${hoaDon.trangThai != 'Đã giao thành công'}">
+                        <i class="fas fa-flag-checkered"></i> Hoàn thành
+                    </button>
+                </div>
                 <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
                         th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy') and hoaDon.trangThai == 'Chưa xác nhận'}">
                     <i class="fas fa-check"></i> Xác nhận đơn hàng
@@ -836,7 +854,7 @@
                 <div class="table-wrapper">
                     <div class="table-header">
                         <h6><i class="fas fa-box"></i> Danh sách sản phẩm</h6>
-                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần'}"
+                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần' or hoaDon.trangThai == 'Đã giao thành công'}"
                            th:href="@{/acvstore/tra-hang/{hoaDonId}(hoaDonId=${hoaDon.id})}"
                            class="btn-custom btn-return btn-sm">
                             <i class="fas fa-undo"></i> Trả hàng
@@ -912,7 +930,11 @@
                                                           lichSu.trangThai == 'Đang vận chuyển' ? 'status-shipping' :
                                                           lichSu.trangThai == 'Vận chuyển thành công' ? 'status-delivered' :
                                                           lichSu.trangThai == 'Đã trả hàng' ? 'status-returned' :
-                                                          lichSu.trangThai == 'Đã trả hàng một phần' ? 'status-partial-returned' : 'status-completed-bg'}"
+                                                          lichSu.trangThai == 'Đã trả hàng một phần' ? 'status-partial-returned' :
+                                                          lichSu.trangThai == 'Đã xác nhận Online' ? 'status-online-confirmed' :
+                                                          lichSu.trangThai == 'Đang xử lý Online' ? 'status-online-processing' :
+                                                          lichSu.trangThai == 'Đã giao thành công' ? 'status-online-delivered' :
+                                                          'status-completed-bg'}"
                                           th:text="${lichSu.trangThai}"></span>
                                 </td>
                                 <td th:text="${lichSu.ghiChu ?: 'Không có'}"></td>
@@ -964,7 +986,10 @@
                         trangThaiGiaoHang === "Vận chuyển thành công" ? "status-delivered" :
                             trangThaiGiaoHang === "Đã trả hàng" ? "status-returned" :
                                 trangThaiGiaoHang === "Đã trả hàng một phần" ? "status-partial-returned" :
-                                    "status-completed-bg"
+                                    trangThaiGiaoHang === "Đã xác nhận Online" ? "status-online-confirmed" :
+                                        trangThaiGiaoHang === "Đang xử lý Online" ? "status-online-processing" :
+                                            trangThaiGiaoHang === "Đã giao thành công" ? "status-online-delivered" :
+                                                "status-completed-bg"
         }`;
         statusElement.textContent = trangThaiGiaoHang.normalize("NFC");
     });
@@ -991,7 +1016,7 @@
                 url: `/acvstore/hoa-don/confirm/${hoaDonId}`,
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đã xác nhận đơn hàng" }),
+                data: JSON.stringify({ ghiChu: phuongThucBanHang === "Online" ? "Đã xác nhận đơn hàng Online" : "Đã xác nhận đơn hàng" }),
                 success: function (response) {
                     showToast(response.message, "success");
                     window.location.reload();
@@ -1042,6 +1067,50 @@
                 },
                 error: function (error) {
                     showToast("Lỗi khi xác nhận vận chuyển: " + (error.responseJSON?.error || "Không xác định"), "error");
+                },
+                complete: function () {
+                    $("#invoiceSpinner").hide();
+                }
+            });
+        }
+    }
+
+    function confirmOnlineProcessing() {
+        if (confirm("Bạn có chắc chắn muốn xác nhận đang xử lý Online cho đơn hàng này?")) {
+            $("#invoiceSpinner").show();
+            $.ajax({
+                url: `/acvstore/hoa-don/confirm-online-processing/${hoaDonId}`,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ ghiChu: "Đang xử lý đơn hàng Online" }),
+                success: function (response) {
+                    showToast(response.message, "success");
+                    window.location.reload();
+                },
+                error: function (error) {
+                    showToast("Lỗi khi xác nhận xử lý Online: " + (error.responseJSON?.error || "Không xác định"), "error");
+                },
+                complete: function () {
+                    $("#invoiceSpinner").hide();
+                }
+            });
+        }
+    }
+
+    function confirmOnlineDelivered() {
+        if (confirm("Bạn có chắc chắn muốn xác nhận giao thành công cho đơn hàng này?")) {
+            $("#invoiceSpinner").show();
+            $.ajax({
+                url: `/acvstore/hoa-don/confirm-online-delivered/${hoaDonId}`,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ ghiChu: "Đã giao thành công" }),
+                success: function (response) {
+                    showToast(response.message, "success");
+                    window.location.reload();
+                },
+                error: function (error) {
+                    showToast("Lỗi khi xác nhận giao thành công: " + (error.responseJSON?.error || "Không xác định"), "error");
                 },
                 complete: function () {
                     $("#invoiceSpinner").hide();

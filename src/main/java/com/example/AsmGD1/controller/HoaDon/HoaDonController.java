@@ -233,7 +233,18 @@ public class HoaDonController {
                 throw new RuntimeException("Hóa đơn phải ở trạng thái 'Chưa xác nhận' để xác nhận.");
             }
 
-            String trangThai = "Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang()) ? "Hoàn thành" : "Đã xác nhận";
+            String trangThai;
+            if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                trangThai = "Hoàn thành";
+                ghiChu = "Hoàn thành (Tại quầy)";
+            } else if ("Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                trangThai = "Đã xác nhận Online";
+                ghiChu = "Đã xác nhận đơn hàng Online";
+            } else {
+                trangThai = "Đã xác nhận";
+                ghiChu = "Đã xác nhận đơn hàng Giao hàng";
+            }
+
             hoaDon.setGhiChu(ghiChu);
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setTrangThai(trangThai);
@@ -337,6 +348,88 @@ public class HoaDonController {
         }
     }
 
+    @PostMapping("/confirm-online-processing/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> confirmOnlineProcessing(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            HoaDon hoaDon = hoaDonService.findById(uuid)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Online' mới có thể chuyển sang trạng thái 'Đang xử lý Online'.");
+            }
+            if (!"Đã xác nhận Online".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đã xác nhận Online' để chuyển sang 'Đang xử lý Online'.");
+            }
+
+            hoaDon.setGhiChu(ghiChu);
+            hoaDon.setTrangThai("Đang xử lý Online");
+            hoaDon.setNgayThanhToan(LocalDateTime.now());
+            hoaDonService.addLichSuHoaDon(hoaDon, "Đang xử lý Online", ghiChu);
+            hoaDonService.save(hoaDon);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được xác nhận đang xử lý Online thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xác nhận xử lý Online: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/confirm-online-delivered/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> confirmOnlineDelivered(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            HoaDon hoaDon = hoaDonService.findById(uuid)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Online' mới có thể chuyển sang trạng thái 'Đã giao thành công'.");
+            }
+            if (!"Đang xử lý Online".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đang xử lý Online' để chuyển sang 'Đã giao thành công'.");
+            }
+
+            hoaDon.setGhiChu(ghiChu);
+            hoaDon.setTrangThai("Đã giao thành công");
+            hoaDon.setNgayThanhToan(LocalDateTime.now());
+            hoaDonService.addLichSuHoaDon(hoaDon, "Đã giao thành công", ghiChu);
+            hoaDonService.save(hoaDon);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được xác nhận giao thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xác nhận giao thành công: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/complete/{id}")
     @ResponseBody
     @Transactional(rollbackOn = Exception.class)
@@ -357,11 +450,13 @@ public class HoaDonController {
             if (donHang == null) {
                 throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
             }
-            if (!"Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
-                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Giao hàng' mới có thể chuyển sang trạng thái 'Hoàn thành'.");
+            if (!"Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang()) &&
+                    !"Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Giao hàng' hoặc 'Online' mới có thể chuyển sang trạng thái 'Hoàn thành'.");
             }
-            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
-                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Vận chuyển thành công' để chuyển sang 'Hoàn thành'.");
+            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai()) &&
+                    !"Đã giao thành công".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Vận chuyển thành công' hoặc 'Đã giao thành công' để chuyển sang 'Hoàn thành'.");
             }
 
             hoaDon.setGhiChu(ghiChu);

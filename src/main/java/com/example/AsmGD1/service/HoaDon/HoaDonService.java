@@ -297,16 +297,28 @@ public class HoaDonService {
         hoaDon.setTienGiam(refreshedDonHang.getTienGiam() != null ? refreshedDonHang.getTienGiam() : BigDecimal.ZERO);
         hoaDon.setPhuongThucThanhToan(refreshedDonHang.getPhuongThucThanhToan());
 
-        boolean isTaiQuay = "Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang());
-        hoaDon.setTrangThai(isTaiQuay ? "Hoàn thành" : "Chưa xác nhận");
+        String trangThai;
+        String ghiChu;
+        if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
+            trangThai = "Hoàn thành";
+            ghiChu = "Hoàn thành (Tại quầy)";
+        }else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
+            trangThai = "Chưa xác nhận";
+            ghiChu = "Hóa đơn Online được tạo";
+        } else {
+            trangThai = "Chưa xác nhận";
+            ghiChu = refreshedDonHang.getDiaChiGiaoHang() != null ? refreshedDonHang.getDiaChiGiaoHang() : "";
+        }
+
+        hoaDon.setTrangThai(trangThai);
         hoaDon.setNgayTao(refreshedDonHang.getThoiGianTao() != null ? refreshedDonHang.getThoiGianTao() : LocalDateTime.now());
-        hoaDon.setGhiChu(isTaiQuay ? "Hoàn thành (Tại quầy)" : refreshedDonHang.getDiaChiGiaoHang() != null ? refreshedDonHang.getDiaChiGiaoHang() : "");
+        hoaDon.setGhiChu(ghiChu);
 
         LichSuHoaDon lichSu = new LichSuHoaDon();
         lichSu.setHoaDon(hoaDon);
-        lichSu.setTrangThai(hoaDon.getTrangThai());
+        lichSu.setTrangThai(trangThai);
         lichSu.setThoiGian(LocalDateTime.now());
-        lichSu.setGhiChu(isTaiQuay ? "Hoàn thành tự động (Tại quầy)" : "Hóa đơn được tạo");
+        lichSu.setGhiChu(ghiChu);
         hoaDon.getLichSuHoaDons().add(lichSu);
 
         hoaDonRepository.saveAndFlush(hoaDon);
@@ -428,6 +440,12 @@ public class HoaDonService {
             return "Hoàn thành";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai()))) {
             return "Vận chuyển thành công";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã giao thành công".equals(ls.getTrangThai()))) {
+            return "Đã giao thành công";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang xử lý Online".equals(ls.getTrangThai()))) {
+            return "Đang xử lý Online";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận Online".equals(ls.getTrangThai()))) {
+            return "Đã xác nhận Online";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang vận chuyển".equals(ls.getTrangThai()))) {
             return "Đang vận chuyển";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận".equals(ls.getTrangThai()))) {
