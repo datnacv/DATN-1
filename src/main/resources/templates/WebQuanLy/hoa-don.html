@@ -583,6 +583,9 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="instore-tab" data-bs-toggle="tab" data-bs-target="#instore" type="button" role="tab" aria-controls="instore" aria-selected="false" onclick="loadHoaDonList(0, 5, $('#searchInputInstore').val(), $('#statusFilterInstore').val(), $('#paymentMethodFilterInstore').val(), 'Tại quầy', 'instore')">Tại quầy</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="online-tab" data-bs-toggle="tab" data-bs-target="#online" type="button" role="tab" aria-controls="online" aria-selected="false" onclick="loadHoaDonList(0, 5, $('#searchInputOnline').val(), $('#statusFilterOnline').val(), $('#paymentMethodFilterOnline').val(), 'Online', 'online')">Online</button>
+      </li>
     </ul>
     <div class="tab-content" id="salesMethodTabContent">
       <div class="tab-pane fade show active" id="delivery" role="tabpanel" aria-labelledby="delivery-tab">
@@ -679,6 +682,54 @@
           </div>
           <div id="invoiceSpinnerInstore" class="spinner"></div>
           <div id="paginationInstore" class="pagination"></div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="online" role="tabpanel" aria-labelledby="online-tab">
+        <div class="search-bar">
+          <div class="search-row">
+            <input id="searchInputOnline" type="text" placeholder="🔍 Tìm kiếm hóa đơn (mã, tên, số điện thoại)..." onkeyup="loadHoaDonList(0, 5, this.value, $('#statusFilterOnline').val(), $('#paymentMethodFilterOnline').val(), 'Online', 'online')">
+            <button onclick="loadHoaDonList(0, 5, $('#searchInputOnline').val(), $('#statusFilterOnline').val(), $('#paymentMethodFilterOnline').val(), 'Online', 'online')">
+              <i class="fas fa-search"></i> Tìm kiếm
+            </button>
+          </div>
+          <div class="filter-row">
+            <select id="statusFilterOnline" onchange="loadHoaDonList(0, 5, $('#searchInputOnline').val(), this.value, $('#paymentMethodFilterOnline').val(), 'Online', 'online')">
+              <option value="">Tất cả trạng thái</option>
+              <option value="Chưa xác nhận">Chưa xác nhận</option>
+              <option value="Đã xác nhận">Đã xác nhận</option>
+              <option value="Hoàn thành">Hoàn thành</option>
+              <option value="Đang vận chuyển">Đang vận chuyển</option>
+              <option value="Vận chuyển thành công">Vận chuyển thành công</option>
+              <option value="Đã trả hàng">Đã trả hàng</option>
+              <option value="Đã trả hàng một phần">Đã trả hàng một phần</option>
+            </select>
+            <select id="paymentMethodFilterOnline" onchange="loadHoaDonList(0, 5, $('#searchInputOnline').val(), $('#statusFilterOnline').val(), this.value, 'Online', 'online')">
+              <option value="">Tất cả phương thức thanh toán</option>
+              <option value="Tiền mặt">Tiền mặt</option>
+              <option value="Chuyển khoản">Chuyển khoản</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-container">
+          <div class="table-scroll-wrapper">
+            <table id="hoa-don-table-online">
+              <thead>
+              <tr>
+                <th>Mã đơn hàng</th>
+                <th>Khách hàng</th>
+                <th>Tổng tiền</th>
+                <th>Ngày tạo</th>
+                <th>Phương thức thanh toán</th>
+                <th>Phương thức bán hàng</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr>
+              </thead>
+              <tbody id="invoiceListOnline"></tbody>
+            </table>
+          </div>
+          <div id="invoiceSpinnerOnline" class="spinner"></div>
+          <div id="paginationOnline" class="pagination"></div>
         </div>
       </div>
     </div>
@@ -875,7 +926,7 @@
           const searchInput = $(`#searchInput${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).val();
           const statusFilter = $(`#statusFilter${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).val();
           const paymentMethodFilter = $(`#paymentMethodFilter${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).val();
-          loadHoaDonList(0, 5, searchInput, statusFilter, paymentMethodFilter, tabId === "delivery" ? "Giao hàng" : "Tại quầy", tabId);
+          loadHoaDonList(0, 5, searchInput, statusFilter, paymentMethodFilter, tabId === "delivery" ? "Giao hàng" : tabId === "instore" ? "Tại quầy" : "Online", tabId);
         },
         error: function (error) {
           console.error("Lỗi khi xác nhận hóa đơn:", error);
@@ -889,7 +940,6 @@
   }
 
   function showReturnModal(id, tabId = "delivery") {
-    // Giả định bạn đã có modal trả hàng, cập nhật để reload đúng tab
     console.log(`Mở modal trả hàng cho hóa đơn ${id} trên tab ${tabId}`);
     // Thêm logic để hiển thị modal và xử lý trả hàng
     // Sau khi trả hàng thành công, gọi lại loadHoaDonList với tabId tương ứng
