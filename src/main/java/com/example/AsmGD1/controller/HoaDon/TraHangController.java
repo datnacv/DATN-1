@@ -63,8 +63,10 @@ public class TraHangController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
 
-            if (!"Hoàn thành".equals(hoaDon.getTrangThai())) {
-                throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành' để thực hiện trả hàng.");
+            // Cho phép trả hàng khi trạng thái là "Hoàn thành", "Vận chuyển thành công" hoặc "Đã trả hàng một phần"
+            if (!"Hoàn thành".equals(hoaDon.getTrangThai()) && !"Vận chuyển thành công".equals(hoaDon.getTrangThai())
+                    && !"Đã trả hàng một phần".equals(hoaDon.getTrangThai())) {
+                throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành', 'Vận chuyển thành công' hoặc 'Đã trả hàng một phần' để thực hiện trả hàng.");
             }
 
             @SuppressWarnings("unchecked")
