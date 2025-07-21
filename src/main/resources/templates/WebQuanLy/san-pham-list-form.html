@@ -294,8 +294,8 @@
         }
 
         .product-image {
-            max-width: 50px; /* Further reduced size */
-            max-height: 50px; /* Further reduced size */
+            max-width: 50px;
+            max-height: 50px;
             object-fit: cover;
             border-radius: 12px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -324,8 +324,8 @@
 
         .form-check-input {
             cursor: pointer;
-            width: 1000000em;
-            height: 1.0em;
+            width: 3em;
+            height: 1.5em;
             border-radius: 2em;
             transition: all 0.3s ease;
             border: 2px solid var(--border-color);
@@ -584,6 +584,31 @@
             box-shadow: 0 12px 35px rgba(0,0,0,0.2);
         }
 
+        /* Role Badge Styles */
+        .role-badge {
+            position: fixed;
+            top: 20px;
+            left: 280px;
+            z-index: 1000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .role-admin {
+            background: linear-gradient(135deg, #28a745, #34ce57);
+            color: white;
+        }
+
+        .role-employee {
+            background: linear-gradient(135deg, #17a2b8, #20c997);
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -617,8 +642,8 @@
             }
 
             .product-image {
-                max-width: 40px; /* Further reduced for mobile */
-                max-height: 40px; /* Further reduced for mobile */
+                max-width: 40px;
+                max-height: 40px;
             }
 
             .action-buttons {
@@ -634,8 +659,13 @@
             }
 
             .form-check-input {
-                width: 10em;
-                height: 2em;
+                width: 2.5em;
+                height: 1.25em;
+            }
+
+            .role-badge {
+                left: 20px;
+                top: 80px;
             }
         }
 
@@ -682,6 +712,14 @@
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
+
+    <!-- Role Badge -->
+    <div th:if="${user != null}"
+         th:class="'role-badge ' + (${isAdmin} ? 'role-admin' : 'role-employee')">
+        <i class="fas fa-user-shield me-2"></i>
+        <span th:text="${isAdmin} ? 'Admin' : 'Employee'">Role</span>
+    </div>
+
     <div class="content" id="content">
         <div class="text-center mb-2 mt-3">
             <h2 class="page-title">QUẢN LÝ SẢN PHẨM</h2>
@@ -713,7 +751,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4" th:if="${isAdmin}">
                             <a th:href="@{/acvstore/chi-tiet-san-pham/add}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" style="height: 58px; margin-bottom: 6px;">
                                 <i class="fas fa-plus"></i>
                                 <span class="fw-semibold">Thêm sản phẩm mới</span>
@@ -740,9 +778,9 @@
                             <th>Tên sản phẩm</th>
                             <th>Danh mục</th>
                             <th>Tồn kho</th>
-                            <th>Trạng thái</th>
+                            <th th:if="${isAdmin}">Trạng thái</th>
                             <th>Ngày tạo</th>
-                            <th>Thao tác</th>
+                            <th th:if="${isAdmin}">Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -775,7 +813,7 @@
                             <td>
                                 <span class="fw-bold fs-8" th:text="${sp.tongSoLuong}"></span>
                             </td>
-                            <td>
+                            <td th:if="${isAdmin}">
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                     <input class="form-check-input status-toggle"
                                            type="checkbox"
@@ -789,7 +827,7 @@
                             <td>
                                 <span class="fw-bold" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
                             </td>
-                            <td class="action-buttons">
+                            <td class="action-buttons" th:if="${isAdmin}">
                                 <button class="btn btn-warning btn-sm"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editSanPhamModal"
@@ -829,7 +867,8 @@
                 </nav>
             </div>
 
-            <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true">
+            <!-- Modal chỉ hiển thị cho Admin -->
+            <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true" th:if="${isAdmin}">
                 <div class="modal-dialog modal-dialog-centered modal-xl">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -968,6 +1007,14 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Chỉ khởi tạo các event listener cho Admin
+        const isAdmin = document.querySelector('.role-admin') !== null;
+
+        if (!isAdmin) {
+            console.log('Employee user - Management functions disabled');
+            return;
+        }
+
         const editSanPhamModal = document.getElementById('editSanPhamModal');
         const editSanPhamForm = document.getElementById('editSanPhamForm');
         const openCloudinaryWidgetBtn = document.getElementById('openCloudinaryWidget');
@@ -979,10 +1026,14 @@
         const noImagePlaceholder = document.getElementById('noImagePlaceholder');
 
         function updateTrangThaiLabel() {
-            trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
+            if (trangThaiLabel && trangThaiInput) {
+                trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
+            }
         }
 
-        function updateImagePreview(imageUrl = urlHinhAnhInput.value) {
+        function updateImagePreview(imageUrl = urlHinhAnhInput?.value) {
+            if (!imagePreview || !noImagePlaceholder || !imageNameDisplay) return;
+
             if (imageUrl && imageUrl.trim() !== '' && isValidImageUrl(imageUrl)) {
                 imagePreview.src = imageUrl;
                 imagePreview.style.display = 'block';
@@ -1111,22 +1162,27 @@
                             const sanPham = data.sanPham;
                             let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
                             if (row) {
-                                row.cells[1].innerHTML = `<code class="fw-bold">${sanPham.maSanPham || ''}</code>`;
+                                row.cells[1].innerHTML = `<span class="fw-bold fs-8">${sanPham.maSanPham || ''}</span>`;
                                 row.cells[2].innerHTML = sanPham.urlHinhAnh
                                     ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image"></div>`
                                     : `<div class="d-flex justify-content-center"><div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 60px; height: 60px;"><i class="fas fa-image text-muted fs-3"></i></div></div>`;
                                 row.cells[3].innerHTML = `<div class="fw-semibold text-dark">${sanPham.tenSanPham || ''}</div>`;
                                 row.cells[4].innerHTML = `<span class="badge badge-success">${sanPham.tenDanhMuc || 'N/A'}</span>`;
-                                row.cells[5].innerHTML = `<span class="fw-bold fs-5">${sanPham.tongSoLuong || 0}</span>`;
-                                row.cells[6].innerHTML = `
-                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
-                                    <input class="form-check-input status-toggle"
-                                           type="checkbox"
-                                           ${sanPham.trangThai ? 'checked' : ''}
-                                           data-id="${sanPham.id}"
-                                           role="switch">
-                                    <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
-                                </div>`;
+                                row.cells[5].innerHTML = `<span class="fw-bold fs-8">${sanPham.tongSoLuong || 0}</span>`;
+
+                                // Cập nhật cột trạng thái (chỉ có cho admin)
+                                const statusCell = row.cells[6];
+                                if (statusCell) {
+                                    statusCell.innerHTML = `
+                                    <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                        <input class="form-check-input status-toggle"
+                                               type="checkbox"
+                                               ${sanPham.trangThai ? 'checked' : ''}
+                                               data-id="${sanPham.id}"
+                                               role="switch">
+                                        <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
+                                    </div>`;
+                                }
                             }
                             showToast("Cập nhật sản phẩm thành công!", "success");
                         } else {
@@ -1170,6 +1226,7 @@
             }, false);
         }
 
+        // Status toggle functionality - chỉ cho admin
         document.querySelectorAll('.status-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const sanPhamId = this.getAttribute('data-id');

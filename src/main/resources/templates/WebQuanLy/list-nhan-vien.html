@@ -53,7 +53,6 @@
         }
 
         /* ===== CUSTOM SCROLLBARS ===== */
-        /* Webkit browsers (Chrome, Safari, Edge) */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -322,7 +321,6 @@
             position: relative;
         }
 
-        /* Enhanced scrollbar for table */
         .table-wrapper::-webkit-scrollbar {
             width: 12px;
             height: 12px;
@@ -351,7 +349,6 @@
             border-radius: 6px;
         }
 
-        /* Scrollbar indicators */
         .table-wrapper::before {
             content: '';
             position: absolute;
@@ -422,7 +419,6 @@
             max-width: 200px;
         }
 
-        /* Tooltip for long text */
         .table td[title] {
             cursor: help;
         }
@@ -750,8 +746,7 @@
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-        <!-- Các phần tử khác bên trái (nếu có) -->
-        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${currentUser})}"></div>
     </nav>
 
     <!-- Nội dung chính bên phải -->
@@ -805,7 +800,8 @@
 
         <!-- Nút thêm nhân viên -->
         <div class="mb-4">
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal"
+                    th:disabled="${!isAdmin}">
                 <i class="fa-solid fa-plus me-2"></i>Thêm nhân sự
             </button>
         </div>
@@ -846,12 +842,14 @@
                         <td>
                             <button type="button" class="btn btn-primary btn-sm btn-action"
                                     data-bs-toggle="modal"
-                                    th:data-bs-target="'#editEmployeeModal' + ${employee.id}">
+                                    th:data-bs-target="'#editEmployeeModal' + ${employee.id}"
+                                    th:disabled="${!isAdmin}">
                                 <i class="fa-solid fa-edit"></i>
                             </button>
                             <button type="button" class="btn btn-danger btn-sm btn-action"
                                     data-bs-toggle="modal"
-                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}">
+                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}"
+                                    th:disabled="${!isAdmin}">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
@@ -982,7 +980,7 @@
                                 <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
                                     <i class="fa-solid fa-times me-2"></i>Hủy
                                 </button>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" th:disabled="${!isAdmin}">
                                     <i class="fa-solid fa-save me-2"></i>Lưu
                                 </button>
                             </div>
@@ -1097,7 +1095,7 @@
                                     <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
                                         <i class="fa-solid fa-times me-2"></i>Hủy
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary" th:disabled="${!isAdmin}">
                                         <i class="fa-solid fa-save me-2"></i>Cập nhật
                                     </button>
                                 </div>
@@ -1136,7 +1134,7 @@
                                 <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
                                     <i class="fa-solid fa-times me-2"></i>Hủy
                                 </button>
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn btn-danger" th:disabled="${!isAdmin}">
                                     <i class="fa-solid fa-trash me-2"></i>Xóa
                                 </button>
                             </form>

@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/acvstore/chi-tiet-san-pham")
 public class ChiTietSanPhamController {
+
     private static final Logger logger = LoggerFactory.getLogger(ChiTietSanPhamController.class);
 
     @Autowired private ChiTietSanPhamService chiTietSanPhamService;
@@ -40,8 +41,33 @@ public class ChiTietSanPhamController {
     @Autowired private KieuDangService kieuDangService;
     @Autowired private ThuongHieuService thuongHieuService;
     @Autowired private DanhMucService danhMucService;
-    @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository; // Thêm repository
+    @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository;
     @Autowired private NguoiDungService nguoiDungService;
+
+    // Helper method to check if current user is admin
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "admin".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    // Helper method to add user info to model
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+        } else {
+            // Fallback for testing
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("isAdmin", false);
+        }
+    }
 
     @GetMapping
     public String xemTatCa(Model model,
@@ -57,6 +83,9 @@ public class ChiTietSanPhamController {
                            @RequestParam(value = "gender", required = false) String gender,
                            @RequestParam(value = "status", required = false) Boolean status) {
         try {
+            // Add user info and role check
+            addUserInfoToModel(model);
+
             model.addAttribute("sanPham", new SanPham());
             model.addAttribute("sanPhams", sanPhamService.findAll());
             model.addAttribute("mauSacs", chiTietSanPhamService.findColorsByProductId(productId));
@@ -67,14 +96,6 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
-
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-                NguoiDung user = (NguoiDung) auth.getPrincipal();
-                model.addAttribute("user", user);
-            }
 
             if (productId != null) {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
@@ -101,6 +122,7 @@ public class ChiTietSanPhamController {
             } else {
                 model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
             }
+
             return "WebQuanLy/chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang chi tiết sản phẩm: ", e);
@@ -112,6 +134,14 @@ public class ChiTietSanPhamController {
     @GetMapping("/add")
     public String hienThiFormThem(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền truy cập chức năng này";
+            }
+
+            // Add user info and role check
+            addUserInfoToModel(model);
+
             model.addAttribute("sanPham", new SanPham());
             model.addAttribute("sanPhams", sanPhamService.findAll());
             model.addAttribute("mauSacs", mauSacService.getAllMauSac());
@@ -123,22 +153,16 @@ public class ChiTietSanPhamController {
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
 
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-                NguoiDung user = (NguoiDung) auth.getPrincipal();
-                model.addAttribute("user", user);
-            }
-
             List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
             logger.info("Số lượng danh mục: {}", danhMucList.size());
             model.addAttribute("danhMucList", danhMucList);
+
             if (productId != null) {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
                 model.addAttribute("selectedProductId", productId);
                 model.addAttribute("sanPhamDaChon", sanPhamDaChon);
             }
+
             return "WebQuanLy/add-chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang thêm chi tiết sản phẩm: ", e);
@@ -152,6 +176,11 @@ public class ChiTietSanPhamController {
                                        @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
                                        Model model) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
+            }
+
             chiTietSanPhamService.saveSingleChiTietSanPham(dto, imageFiles);
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + dto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
@@ -164,6 +193,11 @@ public class ChiTietSanPhamController {
     @PostMapping("/save-batch")
     public String luuChiTietSanPhamBatch(@ModelAttribute ChiTietSanPhamBatchDto batchDto, Model model) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
+            }
+
             chiTietSanPhamService.saveChiTietSanPhamVariationsDto(batchDto);
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + batchDto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
@@ -177,6 +211,11 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layChiTietSanPham(@PathVariable UUID id) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
+            }
+
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(id);
             if (chiTiet == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy chi tiết sản phẩm"));
@@ -214,6 +253,11 @@ public class ChiTietSanPhamController {
                                                                      @ModelAttribute ChiTietSanPhamUpdateDto updateDto,
                                                                      @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
+            }
+
             updateDto.setId(id);
             logger.info("Received updateDto with status: {}", updateDto.getStatus());
             chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles);
@@ -228,6 +272,11 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> xoaAnh(@PathVariable UUID imageId) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
+            }
+
             chiTietSanPhamService.deleteImage(imageId);
             return ResponseEntity.ok(Map.of("message", "Xóa ảnh thành công"));
         } catch (Exception e) {
@@ -238,9 +287,17 @@ public class ChiTietSanPhamController {
 
     @PostMapping("/save-auto-product")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(@ModelAttribute SanPham sanPham, @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId) {
+    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(@ModelAttribute SanPham sanPham,
+                                                                   @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId) {
         Map<String, Object> response = new HashMap<>();
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             SanPham newSanPham = new SanPham();
             newSanPham.setMaSanPham(sanPham.getMaSanPham());
             newSanPham.setTenSanPham(sanPham.getTenSanPham());
@@ -278,7 +335,7 @@ public class ChiTietSanPhamController {
         }
     }
 
-    // Thêm endpoint để lấy chiTietSanPhamId cho phía client
+    // API endpoint for client-side (no admin check needed for viewing)
     @GetMapping("/api")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getChiTietSanPhamId(
@@ -290,6 +347,7 @@ public class ChiTietSanPhamController {
             if (chiTiet == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại"));
             }
+
             Map<String, Object> response = new HashMap<>();
             response.put("id", chiTiet.getId());
             response.put("gia", chiTiet.getGia());

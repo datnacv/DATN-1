@@ -33,6 +33,29 @@ public class ChienDichGiamGiaController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    // RBAC Helper Methods
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "admin".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+        } else {
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("isAdmin", false);
+        }
+    }
+
     @GetMapping
     public String danhSach(
             @RequestParam(name = "keyword", required = false) String keyword,
@@ -58,20 +81,22 @@ public class ChienDichGiamGiaController {
         model.addAttribute("discountLevel", discountLevel);
         model.addAttribute("pageSize", size);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        } else {
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        }
+        addUserInfoToModel(model);
 
         return "WebQuanLy/discount-campaign-list";
     }
 
     @GetMapping("/create")
-    public String hienFormTaoMoi(Model model, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+    public String hienFormTaoMoi(Model model,
+                                 @RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(defaultValue = "10") int size,
+                                 RedirectAttributes redirectAttributes) {
+        // RBAC: Chỉ admin mới được tạo chiến dịch giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/chien-dich-giam-gia";
+        }
+
         model.addAttribute("chienDich", new ChienDichGiamGia());
         Pageable pageable = PageRequest.of(page, size);
         Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
@@ -79,11 +104,7 @@ public class ChienDichGiamGiaController {
         model.addAttribute("currentProductPage", productPage.getNumber());
         model.addAttribute("totalProductPages", productPage.getTotalPages());
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+        addUserInfoToModel(model);
 
         return "WebQuanLy/discount-campaign-form";
     }
@@ -93,6 +114,12 @@ public class ChienDichGiamGiaController {
                          @RequestParam("selectedProductDetailIds") List<UUID> danhSachChiTietId,
                          Model model, RedirectAttributes redirectAttributes) {
 
+        // RBAC: Chỉ admin mới được tạo chiến dịch giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/chien-dich-giam-gia";
+        }
+
         String error = validateChienDich(chienDich, danhSachChiTietId, true, null);
         if (error != null) {
             model.addAttribute("errorMessage", error);
@@ -101,6 +128,7 @@ public class ChienDichGiamGiaController {
             model.addAttribute("productPage", productPage);
             model.addAttribute("currentProductPage", productPage.getNumber());
             model.addAttribute("totalProductPages", productPage.getTotalPages());
+            addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-form";
         }
 
@@ -116,6 +144,7 @@ public class ChienDichGiamGiaController {
             model.addAttribute("productPage", productPage);
             model.addAttribute("currentProductPage", productPage.getNumber());
             model.addAttribute("totalProductPages", productPage.getTotalPages());
+            addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-form";
         }
         return "redirect:/acvstore/chien-dich-giam-gia";
@@ -126,11 +155,20 @@ public class ChienDichGiamGiaController {
                                    @RequestParam(defaultValue = "0") int page,
                                    @RequestParam(defaultValue = "10") int size,
                                    @RequestParam(name = "selectedProductIds", required = false) String selectedProductIdsStr,
-                                   Model model) {
+                                   Model model,
+                                   RedirectAttributes redirectAttributes) {
+
         ChienDichGiamGia chienDich = chienDichService.timTheoId(id).orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
         String status = getStatus(chienDich);
-        model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status)); // Set read-only for ONGOING or ENDED
+        boolean isAdmin = isCurrentUserAdmin();
+
+        // RBAC: Admin có thể chỉnh sửa, Employee chỉ có thể xem
+        if (!isAdmin) {
+            model.addAttribute("readOnly", true);
+        }
+
+        model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status) || !isAdmin);
         model.addAttribute("chienDich", chienDich);
 
         List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
@@ -152,6 +190,8 @@ public class ChienDichGiamGiaController {
         model.addAttribute("currentProductPage", productPage.getNumber());
         model.addAttribute("totalProductPages", productPage.getTotalPages());
 
+        addUserInfoToModel(model);
+
         return "WebQuanLy/discount-campaign-edit";
     }
 
@@ -159,6 +199,12 @@ public class ChienDichGiamGiaController {
     public String capNhatChienDich(@ModelAttribute("chienDich") ChienDichGiamGia chienDich,
                                    @RequestParam("selectedProductDetailIds") List<UUID> danhSachChiTietId,
                                    Model model, RedirectAttributes redirectAttributes) {
+
+        // RBAC: Chỉ admin mới được cập nhật chiến dịch giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/chien-dich-giam-gia";
+        }
 
         // Lấy chiến dịch cũ từ CSDL
         ChienDichGiamGia chienDichCu = chienDichService.timTheoId(chienDich.getId())
@@ -185,6 +231,7 @@ public class ChienDichGiamGiaController {
                     .map(id -> chienDichService.layChiTietTheoId(id).getSanPham().getId())
                     .collect(Collectors.toSet()));
             model.addAttribute("isReadOnly", false);
+            addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-edit";
         }
 
@@ -204,6 +251,7 @@ public class ChienDichGiamGiaController {
                     .map(id -> chienDichService.layChiTietTheoId(id).getSanPham().getId())
                     .collect(Collectors.toSet()));
             model.addAttribute("isReadOnly", false);
+            addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-edit";
         }
 
@@ -293,6 +341,12 @@ public class ChienDichGiamGiaController {
 
     @GetMapping("/delete/{id}")
     public String xoaChienDich(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        // RBAC: Chỉ admin mới được xóa chiến dịch giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/chien-dich-giam-gia";
+        }
+
         try {
             chienDichService.xoaChienDich(id);
             redirectAttributes.addFlashAttribute("successMessage", "Xóa chiến dịch thành công!");

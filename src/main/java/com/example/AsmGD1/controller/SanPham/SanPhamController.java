@@ -41,12 +41,41 @@ public class SanPhamController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    // Helper method to check if current user is admin
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "admin".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    // Helper method to add user info to model
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+        } else {
+            // Fallback for testing
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("isAdmin", false);
+        }
+    }
+
     @GetMapping
     public String viewSanPhamPage(
             Model model,
             @RequestParam(value = "searchName", required = false) String searchName,
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
             @RequestParam(value = "page", defaultValue = "0") int page) {
+
+        // Add user info and role check
+        addUserInfoToModel(model);
+
         Pageable pageable = PageRequest.of(page, 5);
         Page<SanPham> sanPhamPage;
 
@@ -59,6 +88,7 @@ public class SanPhamController {
         }
 
         List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
+
         model.addAttribute("sanPhamList", sanPhamPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", sanPhamPage.getTotalPages());
@@ -66,23 +96,27 @@ public class SanPhamController {
         model.addAttribute("selectedTrangThai", trangThai);
         model.addAttribute("sanPham", new SanPham());
         model.addAttribute("danhMucList", danhMucList);
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+
         return "WebQuanLy/san-pham-list-form";
     }
 
     @GetMapping("/edit/{id}")
     public String editSanPham(@PathVariable("id") UUID id, Model model) {
+        // Check admin permission
+        if (!isCurrentUserAdmin()) {
+            return "redirect:/acvstore/san-pham?error=Bạn không có quyền truy cập chức năng này";
+        }
+
+        // Add user info and role check
+        addUserInfoToModel(model);
+
         SanPham sanPham = sanPhamService.findById(id);
         List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
+
         model.addAttribute("sanPham", sanPham);
         model.addAttribute("sanPhamList", sanPhamService.findAll());
         model.addAttribute("danhMucList", danhMucList);
+
         return "WebQuanLy/san-pham-list-form";
     }
 
@@ -91,6 +125,13 @@ public class SanPhamController {
     public ResponseEntity<Map<String, Object>> saveSanPham(@RequestBody Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             System.out.println("Received payload: " + payload.toString());
 
             UUID id = UUID.fromString((String) payload.get("id"));
@@ -159,6 +200,13 @@ public class SanPhamController {
     public ResponseEntity<Map<String, Object>> uploadImage(@RequestParam("imageFile") MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             if (imageFile != null && !imageFile.isEmpty()) {
                 String imageUrl = cloudinaryUtil.uploadImage(imageFile);
                 response.put("success", true);
@@ -191,6 +239,7 @@ public class SanPhamController {
         dto.setTrangThai(sp.getTrangThai());
         dto.setThoiGianTao(sp.getThoiGianTao());
         dto.setTongSoLuong(sp.getTongSoLuong());
+
         if (sp.getDanhMuc() != null) {
             dto.setDanhMucId(sp.getDanhMuc().getId());
             dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());
@@ -204,6 +253,13 @@ public class SanPhamController {
     public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             UUID id = UUID.fromString((String) payload.get("id"));
             Boolean trangThai = (Boolean) payload.get("trangThai");
 

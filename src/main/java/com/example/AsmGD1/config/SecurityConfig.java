@@ -112,9 +112,11 @@ public class SecurityConfig implements ApplicationContextAware {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
                         .requestMatchers("/acvstore/verify-success").authenticated()
-                        .requestMatchers("/acvstore/**").hasRole("ADMIN")
-                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
+                        .requestMatchers("/acvstore/san-pham", "/acvstore/san-pham/get/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                        .requestMatchers("/acvstore/san-pham/save", "/acvstore/san-pham/update-status", "/acvstore/san-pham/upload-image").hasRole("ADMIN")
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
+                        .requestMatchers("/acvstore/thong-ke").hasAnyRole("ADMIN", "EMPLOYEE") // Cho phép cả ADMIN và EMPLOYEE truy cập
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -126,11 +128,17 @@ public class SecurityConfig implements ApplicationContextAware {
                             request.getSession().setAttribute("faceVerified", false);
 
                             if (nguoiDung != null) {
-                                byte[] descriptor = nguoiDung.getFaceDescriptor();
-                                if (descriptor == null || descriptor.length == 0) {
-                                    response.sendRedirect("/acvstore/register-face");
+                                String vaiTro = nguoiDung.getVaiTro();
+                                if ("EMPLOYEE".equalsIgnoreCase(vaiTro)) {
+                                    // Bỏ qua xác nhận khuôn mặt và redirect đến /acvstore/thong-ke cho EMPLOYEE
+                                    response.sendRedirect("/acvstore/thong-ke");
                                 } else {
-                                    response.sendRedirect("/acvstore/verify-face");
+                                    byte[] descriptor = nguoiDung.getFaceDescriptor();
+                                    if (descriptor == null || descriptor.length == 0) {
+                                        response.sendRedirect("/acvstore/register-face");
+                                    } else {
+                                        response.sendRedirect("/acvstore/verify-face");
+                                    }
                                 }
                             } else {
                                 response.sendRedirect("/acvstore/login?error=notfound");
@@ -234,7 +242,7 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet").permitAll()
+                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
@@ -248,7 +256,7 @@ public class SecurityConfig implements ApplicationContextAware {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/image/**").permitAll()
+                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
