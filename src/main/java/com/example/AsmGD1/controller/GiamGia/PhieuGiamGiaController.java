@@ -42,6 +42,29 @@ public class PhieuGiamGiaController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    // RBAC Helper Methods
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "admin".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+        } else {
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("isAdmin", false);
+        }
+    }
+
     @GetMapping
     public String list(@RequestParam(required = false) String search,
                        @RequestParam(required = false) String fromDate,
@@ -79,11 +102,7 @@ public class PhieuGiamGiaController {
         model.addAttribute("formats", formats);
         model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+        addUserInfoToModel(model);
 
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", pageResult.getTotalPages());
@@ -112,14 +131,16 @@ public class PhieuGiamGiaController {
     }
 
     @GetMapping("/create")
-    public String createForm(Model model) {
+    public String createForm(Model model, RedirectAttributes redirectAttributes) {
+        // RBAC: Chỉ admin mới được tạo phiếu giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
+
         model.addAttribute("voucher", new PhieuGiamGia());
         model.addAttribute("customers", phieuService.layTatCaKhachHang());
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+        addUserInfoToModel(model);
         return "WebQuanLy/voucher-create";
     }
 
@@ -132,6 +153,12 @@ public class PhieuGiamGiaController {
                          @RequestParam(required = false) List<UUID> selectedCustomerIds,
                          Model model,
                          RedirectAttributes redirectAttributes) {
+
+        // RBAC: Chỉ admin mới được tạo phiếu giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
 
         List<String> errors = new ArrayList<>();
 
@@ -228,6 +255,7 @@ public class PhieuGiamGiaController {
             model.addAttribute("errorMessage", String.join("<br>", errors));
             model.addAttribute("voucher", voucher);
             model.addAttribute("customers", phieuService.layTatCaKhachHang());
+            addUserInfoToModel(model);
             return "WebQuanLy/voucher-create";
         }
 
@@ -261,9 +289,18 @@ public class PhieuGiamGiaController {
                                @RequestParam(defaultValue = "0") int page,
                                @RequestParam(defaultValue = "5") int size,
                                @RequestParam(required = false) String search,
-                               Model model) {
+                               Model model,
+                               RedirectAttributes redirectAttributes) {
+
         PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+
+        // RBAC: Admin có thể chỉnh sửa, Employee chỉ có thể xem
+        boolean isAdmin = isCurrentUserAdmin();
+        if (!isAdmin) {
+            // Employee chỉ có thể xem, không được chỉnh sửa
+            model.addAttribute("readOnly", true);
+        }
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
         String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
@@ -294,11 +331,7 @@ public class PhieuGiamGiaController {
         model.addAttribute("search", search);
         model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+        addUserInfoToModel(model);
 
         return "WebQuanLy/voucher-edit";
     }
@@ -313,6 +346,12 @@ public class PhieuGiamGiaController {
                          @RequestParam(required = false) List<UUID> selectedCustomerIds,
                          Model model,
                          RedirectAttributes redirectAttributes) {
+
+        // RBAC: Chỉ admin mới được cập nhật phiếu giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
 
         voucher.setId(id);
         PhieuGiamGia existing = phieuGiamGiaRepository.findById(id)
@@ -422,6 +461,7 @@ public class PhieuGiamGiaController {
             model.addAttribute("giaTriGiamToiThieuStr", voucher.getGiaTriGiamToiThieu() != null ? nf.format(voucher.getGiaTriGiamToiThieu()) : "");
             model.addAttribute("gioiHanSuDungStr", voucher.getGioiHanSuDung() != null ? String.valueOf(voucher.getGioiHanSuDung()) : "");
 
+            addUserInfoToModel(model);
             return "WebQuanLy/voucher-edit";
         }
 
@@ -455,6 +495,12 @@ public class PhieuGiamGiaController {
 
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+        // RBAC: Chỉ admin mới được xóa phiếu giảm giá
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
+
         PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
         String status = getTrangThai(voucher);

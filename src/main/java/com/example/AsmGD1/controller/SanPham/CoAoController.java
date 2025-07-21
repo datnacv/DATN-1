@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/acvstore")
 public class CoAoController {
+
     @Autowired
     private CoAoService coAoService;
 
@@ -28,52 +30,109 @@ public class CoAoController {
     public String listCoAo(@RequestParam(value = "search", required = false) String search,
                            @RequestParam(value = "error", required = false) String errorMessage,
                            Model model) {
-        List<CoAo> coAoList;
-        if (search != null && !search.trim().isEmpty()) {
-            coAoList = coAoService.searchCoAo(search);
-        } else {
-            coAoList = coAoService.getAllCoAo();
+        List<CoAo> coAoList = Collections.emptyList();
+
+        try {
+            coAoList = search != null && !search.trim().isEmpty()
+                    ? coAoService.searchCoAo(search)
+                    : coAoService.getAllCoAo();
+
+            if (coAoList == null) coAoList = Collections.emptyList();
+            Collections.reverse(coAoList);
+
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Lỗi khi tải danh sách cổ áo: " + e.getMessage());
         }
-        Collections.reverse(coAoList);
+
         model.addAttribute("coAoList", coAoList);
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+
+        // Lấy thông tin user hiện tại và phân quyền
+        UserInfo userInfo = getCurrentUserInfo();
+        model.addAttribute("user", userInfo.getUser());
+        model.addAttribute("isAdmin", userInfo.isAdmin());
 
         if (errorMessage != null && !errorMessage.isEmpty()) {
             model.addAttribute("errorMessage", errorMessage);
         }
+
         return "WebQuanLy/co-ao";
     }
 
     @PostMapping("/co-ao/save")
-    public String saveCoAo(@ModelAttribute CoAo coAo, Model model) {
+    public String saveCoAo(@ModelAttribute CoAo coAo,
+                           RedirectAttributes redirectAttributes) {
+
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện thao tác này!");
+            return "redirect:/acvstore/co-ao";
+        }
+
         try {
             coAoService.saveCoAo(coAo);
-            return "redirect:/acvstore/co-ao";
+            String message = coAo.getId() != null ? "Cập nhật cổ áo thành công!" : "Thêm cổ áo thành công!";
+            redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
-            List<CoAo> coAoList = coAoService.getAllCoAo();
-            Collections.reverse(coAoList);
-            model.addAttribute("coAoList", coAoList);
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-            model.addAttribute("errorMessage", e.getMessage());
-            return "WebQuanLy/co-ao";
+            redirectAttributes.addFlashAttribute("errorMessage", "Lưu cổ áo thất bại: " + e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
         }
+
+        return "redirect:/acvstore/co-ao";
     }
 
     @GetMapping("/co-ao/delete/{id}")
-    public String deleteCoAo(@PathVariable UUID id, Model model) {
+    public String deleteCoAo(@PathVariable UUID id,
+                             RedirectAttributes redirectAttributes) {
+
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện thao tác này!");
+            return "redirect:/acvstore/co-ao";
+        }
+
         try {
             coAoService.deleteCoAo(id);
-            return "redirect:/acvstore/co-ao";
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa cổ áo thành công!");
         } catch (IllegalStateException e) {
-            model.addAttribute("errorMessage", e.getMessage());
-            return listCoAo(null, e.getMessage(), model);
+            redirectAttributes.addFlashAttribute("errorMessage", "Xóa cổ áo thất bại: " + e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
         }
+
+        return "redirect:/acvstore/co-ao";
+    }
+
+    // Helper methods
+    private boolean isCurrentUserAdmin() {
+        return getCurrentUserInfo().isAdmin();
+    }
+
+    private UserInfo getCurrentUserInfo() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung currentUser = (NguoiDung) auth.getPrincipal();
+            boolean isAdmin = "admin".equalsIgnoreCase(currentUser.getVaiTro());
+            return new UserInfo(currentUser, isAdmin);
+        }
+
+        // Fallback - tạo user mặc định
+        NguoiDung defaultUser = new NguoiDung();
+        defaultUser.setTenDangNhap("guest");
+        defaultUser.setVaiTro("employee");
+        return new UserInfo(defaultUser, false);
+    }
+
+    // Inner class để đóng gói thông tin user
+    private static class UserInfo {
+        private final NguoiDung user;
+        private final boolean isAdmin;
+
+        public UserInfo(NguoiDung user, boolean isAdmin) {
+            this.user = user;
+            this.isAdmin = isAdmin;
+        }
+
+        public NguoiDung getUser() { return user; }
+        public boolean isAdmin() { return isAdmin; }
     }
 }

@@ -21,10 +21,37 @@ public class CustomerController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    // Helper method để kiểm tra quyền admin
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung currentUser = (NguoiDung) auth.getPrincipal();
+            return "ADMIN".equalsIgnoreCase(currentUser.getVaiTro());
+        }
+        return false;
+    }
+
+    // Helper method để thêm thông tin user vào model
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung currentUser = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("currentUser", currentUser);
+            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(currentUser.getVaiTro()));
+            model.addAttribute("user", currentUser);
+        } else {
+            model.addAttribute("isAdmin", false);
+            model.addAttribute("user", new NguoiDung());
+        }
+    }
+
     @GetMapping
     public String listCustomers(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "") String keyword,
                                 Model model) {
+        // Thêm thông tin user và quyền vào model
+        addUserInfoToModel(model);
+
         Page<NguoiDung> customers = nguoiDungService.findUsersByVaiTro("customer", keyword, page, 5);
         model.addAttribute("customers", customers.getContent());
         model.addAttribute("currentPage", page);
@@ -32,19 +59,20 @@ public class CustomerController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
-
         return "WebQuanLy/list-khach-hang";
     }
 
     @PostMapping("/add")
-    public String addCustomer(@ModelAttribute("customer") NguoiDung customer, RedirectAttributes redirectAttributes) {
+    public String addCustomer(@ModelAttribute("customer") NguoiDung customer,
+                              RedirectAttributes redirectAttributes,
+                              Authentication authentication) {
+        // Kiểm tra quyền admin
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("message", "Bạn không có quyền thêm khách hàng!");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/acvstore/customers";
+        }
+
         try {
             customer.setVaiTro("customer");
             nguoiDungService.save(customer);
@@ -58,7 +86,16 @@ public class CustomerController {
     }
 
     @PostMapping("/edit")
-    public String editCustomer(@ModelAttribute("customer") NguoiDung customer, RedirectAttributes redirectAttributes) {
+    public String editCustomer(@ModelAttribute("customer") NguoiDung customer,
+                               RedirectAttributes redirectAttributes,
+                               Authentication authentication) {
+        // Kiểm tra quyền admin
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("message", "Bạn không có quyền sửa khách hàng!");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/acvstore/customers";
+        }
+
         try {
             customer.setVaiTro("customer");
             nguoiDungService.save(customer);
@@ -72,7 +109,16 @@ public class CustomerController {
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteCustomer(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    public String deleteCustomer(@PathVariable UUID id,
+                                 RedirectAttributes redirectAttributes,
+                                 Authentication authentication) {
+        // Kiểm tra quyền admin
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("message", "Bạn không có quyền xóa khách hàng!");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/acvstore/customers";
+        }
+
         try {
             nguoiDungService.deleteById(id);
             redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thành công!");
@@ -85,7 +131,8 @@ public class CustomerController {
     }
 
     @GetMapping("/dashboard")
-    public String showDashboard(Model model) {
+    public String showDashboard(Model model, Authentication authentication) {
+        addUserInfoToModel(model);
         model.addAttribute("message", "Chào mừng đến với dashboard!");
         model.addAttribute("messageType", "success");
         return "WebQuanLy/customer-dashboard";
@@ -93,6 +140,6 @@ public class CustomerController {
 
     @GetMapping("/login")
     public String showLoginForm() {
-        return "WebQuanLy/customer-login"; // Spring Security xử lý form login
+        return "WebQuanLy/customer-login";
     }
 }

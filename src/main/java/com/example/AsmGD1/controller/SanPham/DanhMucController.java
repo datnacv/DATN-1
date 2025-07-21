@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/acvstore")
 public class DanhMucController {
+
     @Autowired
     private DanhMucService danhMucService;
 
@@ -28,52 +30,109 @@ public class DanhMucController {
     public String listDanhMuc(@RequestParam(value = "search", required = false) String search,
                               @RequestParam(value = "error", required = false) String errorMessage,
                               Model model) {
-        List<DanhMuc> danhMucList;
-        if (search != null && !search.trim().isEmpty()) {
-            danhMucList = danhMucService.searchDanhMuc(search);
-        } else {
-            danhMucList = danhMucService.getAllDanhMuc();
+        List<DanhMuc> danhMucList = Collections.emptyList();
+
+        try {
+            danhMucList = search != null && !search.trim().isEmpty()
+                    ? danhMucService.searchDanhMuc(search)
+                    : danhMucService.getAllDanhMuc();
+
+            if (danhMucList == null) danhMucList = Collections.emptyList();
+            Collections.reverse(danhMucList);
+
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Lỗi khi tải danh sách danh mục: " + e.getMessage());
         }
-        Collections.reverse(danhMucList);
+
         model.addAttribute("danhMucList", danhMucList);
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+
+        // Lấy thông tin user hiện tại và phân quyền
+        UserInfo userInfo = getCurrentUserInfo();
+        model.addAttribute("user", userInfo.getUser());
+        model.addAttribute("isAdmin", userInfo.isAdmin());
 
         if (errorMessage != null && !errorMessage.isEmpty()) {
             model.addAttribute("errorMessage", errorMessage);
         }
+
         return "WebQuanLy/danh-muc";
     }
 
     @PostMapping("/danh-muc/save")
-    public String saveDanhMuc(@ModelAttribute DanhMuc danhMuc, Model model) {
+    public String saveDanhMuc(@ModelAttribute DanhMuc danhMuc,
+                              RedirectAttributes redirectAttributes) {
+
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện thao tác này!");
+            return "redirect:/acvstore/danh-muc";
+        }
+
         try {
             danhMucService.saveDanhMuc(danhMuc);
-            return "redirect:/acvstore/danh-muc";
+            String message = danhMuc.getId() != null ? "Cập nhật danh mục thành công!" : "Thêm danh mục thành công!";
+            redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
-            List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
-            Collections.reverse(danhMucList);
-            model.addAttribute("danhMucList", danhMucList);
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-            model.addAttribute("errorMessage", e.getMessage());
-            return "WebQuanLy/danh-muc";
+            redirectAttributes.addFlashAttribute("errorMessage", "Lưu danh mục thất bại: " + e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
         }
+
+        return "redirect:/acvstore/danh-muc";
     }
 
     @GetMapping("/danh-muc/delete/{id}")
-    public String deleteDanhMuc(@PathVariable UUID id, Model model) {
+    public String deleteDanhMuc(@PathVariable UUID id,
+                                RedirectAttributes redirectAttributes) {
+
+        if (!isCurrentUserAdmin()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện thao tác này!");
+            return "redirect:/acvstore/danh-muc";
+        }
+
         try {
             danhMucService.deleteDanhMuc(id);
-            return "redirect:/acvstore/danh-muc";
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa danh mục thành công!");
         } catch (IllegalStateException e) {
-            model.addAttribute("errorMessage", e.getMessage());
-            return listDanhMuc(null, e.getMessage(), model);
+            redirectAttributes.addFlashAttribute("errorMessage", "Xóa danh mục thất bại: " + e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Có lỗi xảy ra: " + e.getMessage());
         }
+
+        return "redirect:/acvstore/danh-muc";
+    }
+
+    // Helper methods
+    private boolean isCurrentUserAdmin() {
+        return getCurrentUserInfo().isAdmin();
+    }
+
+    private UserInfo getCurrentUserInfo() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung currentUser = (NguoiDung) auth.getPrincipal();
+            boolean isAdmin = "admin".equalsIgnoreCase(currentUser.getVaiTro());
+            return new UserInfo(currentUser, isAdmin);
+        }
+
+        // Fallback - tạo user mặc định
+        NguoiDung defaultUser = new NguoiDung();
+        defaultUser.setTenDangNhap("guest");
+        defaultUser.setVaiTro("employee");
+        return new UserInfo(defaultUser, false);
+    }
+
+    // Inner class để đóng gói thông tin user
+    private static class UserInfo {
+        private final NguoiDung user;
+        private final boolean isAdmin;
+
+        public UserInfo(NguoiDung user, boolean isAdmin) {
+            this.user = user;
+            this.isAdmin = isAdmin;
+        }
+
+        public NguoiDung getUser() { return user; }
+        public boolean isAdmin() { return isAdmin; }
     }
 }
