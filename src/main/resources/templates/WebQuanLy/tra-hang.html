@@ -543,8 +543,11 @@
             <div class="return-info-card payment-info">
                 <h4><i class="fas fa-credit-card"></i> Thông tin thanh toán</h4>
                 <p><strong>Phương thức thanh toán:</strong> <span th:text="${hoaDon.phuongThucThanhToan} ?: 'Chưa chọn'"></span></p>
+
                 <p><strong>Phí vận chuyển:</strong> <span th:text="${#numbers.formatCurrency(hoaDon.phiVanChuyen ?: 0)}"></span></p>
+
                 <p><strong>Giảm giá:</strong> <span th:text="${#numbers.formatCurrency(hoaDon.tienGiam ?: 0)}"></span></p>
+                <p><strong>Phí vận chuyển hoàn lại:</strong> <span id="phiVanChuyenHoan">0 VNĐ</span></p>
                 <p><strong>Tổng tiền hoàn lại:</strong> <span id="tongTienHoan">0 VNĐ</span></p>
             </div>
         </div>
@@ -588,6 +591,7 @@
     function updateTotal() {
         const checkboxes = document.querySelectorAll('.select-item:checked');
         let total = 0;
+        let phiVanChuyen = /*[[${hoaDon.phiVanChuyen ?: 0}]]*/ 0;
         const returnItemsBody = document.getElementById('returnItemsBody');
         returnItemsBody.innerHTML = '';
 
@@ -602,13 +606,22 @@
                 total += thanhTien;
 
                 const newRow = `<tr>
-                    <td class="text-center">${index + 1}</td>
-                    <td>${tenSanPham}</td>
-                    <td class="text-center">${soLuong}</td>
-                    <td class="text-right">${thanhTien.toLocaleString('vi-VN')} VNĐ</td>
-                </tr>`;
+                <td class="text-center">${index + 1}</td>
+                <td>${tenSanPham}</td>
+                <td class="text-center">${soLuong}</td>
+                <td class="text-right">${thanhTien.toLocaleString('vi-VN')} VNĐ</td>
+            </tr>`;
                 returnItemsBody.insertAdjacentHTML('beforeend', newRow);
             });
+        }
+
+        // Nếu chọn tất cả sản phẩm, cộng thêm phí vận chuyển
+        const totalItems = /*[[${returnableItems.size()}]]*/ 0;
+        if (checkboxes.length === totalItems && totalItems > 0) {
+            total += phiVanChuyen;
+            document.getElementById('phiVanChuyenHoan').innerText = phiVanChuyen.toLocaleString('vi-VN') + ' VNĐ';
+        } else {
+            document.getElementById('phiVanChuyenHoan').innerText = '0 VNĐ';
         }
 
         const formattedTotal = total.toLocaleString('vi-VN') + ' VNĐ';

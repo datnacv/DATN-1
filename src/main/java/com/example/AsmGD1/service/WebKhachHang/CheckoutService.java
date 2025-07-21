@@ -73,7 +73,7 @@ public class CheckoutService {
         donHang.setThoiGianTao(LocalDateTime.now());
         donHang.setTrangThaiThanhToan(true); // Giả sử thanh toán ngay (COD, chuyển khoản...)
         donHang.setThoiGianThanhToan(LocalDateTime.now());
-        donHang.setPhuongThucBanHang("Giao hàng");
+        donHang.setPhuongThucBanHang("Online");
         donHang.setPhiVanChuyen(request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.valueOf(15000));
         donHang.setDiaChiGiaoHang(request.getAddress());
         donHang.setGhiChu(request.getNotes());

@@ -200,12 +200,12 @@ CREATE TABLE chi_tiet_don_hang (
                                    thanh_tien DECIMAL(10,2) NOT NULL,
                                    ghi_chu NVARCHAR(MAX),
                                    trang_thai_hoan_tra BIT,
+                                   ly_do_tra_hang NVARCHAR(MAX),
                                    FOREIGN KEY (id_don_hang) REFERENCES don_hang(id) ON DELETE CASCADE,
                                    FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
 );
 
-ALTER TABLE chi_tiet_don_hang
-    ADD ly_do_tra_hang NVARCHAR(MAX);
+
 
 
 -- 19. Bảng hóa đơn
