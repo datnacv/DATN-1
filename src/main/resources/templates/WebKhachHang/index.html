@@ -640,7 +640,8 @@
   });
 
   chatInput.addEventListener('keydown', async (event) => {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.repeat) { // Add !event.repeat to avoid repeated triggers
+      event.preventDefault(); // Prevent default form submission if any
       const message = chatInput.value.trim();
       if (!message) return;
 

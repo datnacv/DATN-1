@@ -1,10 +1,15 @@
 package com.example.AsmGD1.service.SanPham;
 
 import com.example.AsmGD1.dto.ChatBot.ChiTietSanPhamDTO;
+import com.example.AsmGD1.dto.ChatBot.HoaDonSanPhamDTO;
 import com.example.AsmGD1.dto.ChatBot.SanPhamWithChiTietDTO;
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
+import com.example.AsmGD1.entity.ChiTietDonHang;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.HoaDon;
 import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
+import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.SanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -26,6 +32,12 @@ public class SanPhamService {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
+    @Autowired
+    private HoaDonRepository hoaDonRepository;
+
+    @Autowired
+    private ChiTietDonHangRepository chiTietDonHangRepository;
 
     public List<SanPham> findAll() {
         return sanPhamRepository.findAll();
@@ -145,6 +157,7 @@ public class SanPhamService {
             dto.setUrlHinhAnh(sp.getUrlHinhAnh());
             dto.setTongSoLuong(sp.getTongSoLuong());
 
+            // 1. Set chi tiết sản phẩm như cũ
             dto.setChiTietSanPhams(sp.getChiTietSanPhams().stream().map(ct -> {
                 ChiTietSanPhamDTO ctDto = new ChiTietSanPhamDTO();
                 ctDto.setId(ct.getId());
@@ -156,6 +169,28 @@ public class SanPhamService {
                 ctDto.setSoLuongTonKho(ct.getSoLuongTonKho());
                 return ctDto;
             }).collect(Collectors.toList()));
+
+            // 2. Lấy hóa đơn liên quan đến sản phẩm
+            List<ChiTietDonHang> donHangs = chiTietDonHangRepository.findBySanPhamId(sp.getId());
+
+            List<HoaDonSanPhamDTO> hoaDonDtos = donHangs.stream().map(ct -> {
+                HoaDon hoaDon = hoaDonRepository.findByDonHang_Id(ct.getDonHang().getId());
+                if (hoaDon == null) return null; // tránh null pointer nếu đơn hàng chưa có hóa đơn
+
+                HoaDonSanPhamDTO hdDto = new HoaDonSanPhamDTO();
+                hdDto.setIdHoaDon(hoaDon.getId());
+                hdDto.setIdDonHang(ct.getDonHang().getId());
+                hdDto.setIdChiTietSanPham(ct.getChiTietSanPham().getId());
+                hdDto.setTenSanPham(ct.getTenSanPham());
+                hdDto.setSoLuong(ct.getSoLuong());
+                hdDto.setGia(ct.getGia());
+                hdDto.setThanhTien(ct.getThanhTien());
+                hdDto.setGhiChu(ct.getGhiChu());
+                hdDto.setNgayTaoHoaDon(hoaDon.getNgayTao());
+                return hdDto;
+            }).filter(Objects::nonNull).collect(Collectors.toList());
+
+            dto.setHoaDonSanPhams(hoaDonDtos);
 
             return dto;
         }).collect(Collectors.toList());
