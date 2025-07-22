@@ -384,15 +384,6 @@ public class ChiTietSanPhamService {
                 }
             }
         }
-
-        // Cập nhật lại thứ tự của tất cả ảnh liên quan để đảm bảo liên tục
-        List<HinhAnhSanPham> updatedImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
-        for (int i = 0; i < updatedImages.size(); i++) {
-            HinhAnhSanPham image = updatedImages.get(i);
-            image.setThuTu(i + 1);
-            hinhAnhSanPhamRepo.save(image);
-            logger.info("Đã cập nhật thứ tự ảnh ID {} thành: {}", image.getId(), i + 1);
-        }
     }
 
     public List<HinhAnhSanPham> findHinhAnhSanPhamByChiTietSanPhamIdOrdered(UUID chiTietSanPhamId) {
@@ -409,11 +400,9 @@ public class ChiTietSanPhamService {
 
     public ChiTietSanPham findById(UUID id) {
         ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(id).orElse(null);
-        if (chiTiet != null && chiTiet.getHinhAnhSanPhams() != null) {
-            chiTiet.setHinhAnhSanPhams(findHinhAnhSanPhamByChiTietSanPhamIdOrdered(id));
-        }
         return chiTiet;
     }
+
     public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
         return chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(productId, mauSacId, kichCoId);
     }
