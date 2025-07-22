@@ -18,12 +18,12 @@ public class WebConfig implements WebMvcConfigurer {
         String directoryPath;
 
         if (os.contains("win")) {
-            uploadPath = "file:///C:\\DATN\\uploads\\"; // Đường dẫn tuyệt đối cho Windows
-            directoryPath = "C:\\DATN\\uploads\\";
+            uploadPath = "file:///C:/DATN/uploads/san_pham/"; // với 3 dấu / sau file:
+            directoryPath = "C:/DATN/uploads/san_pham/";
         } else {
             String userHome = System.getProperty("user.home");
-            uploadPath = "file://" + userHome + "/DATN/uploads/"; // Đường dẫn cho hệ điều hành khác
-            directoryPath = userHome + "/DATN/uploads/";
+            uploadPath = "file://" + userHome + "/DATN/uploads/san_pham/";
+            directoryPath = userHome + "/DATN/uploads/san_pham/";
         }
 
         // Tạo thư mục nếu chưa tồn tại

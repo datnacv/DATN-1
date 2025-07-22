@@ -44,7 +44,7 @@ public class ChiTietSanPhamService {
 
     public ChiTietSanPhamService() {
         String os = System.getProperty("os.name").toLowerCase();
-        UPLOAD_DIR = os.contains("win") ? "C:/DATN/uploads/" : System.getProperty("user.home") + "/DATN/uploads/";
+        UPLOAD_DIR = os.contains("win") ? "C:/DATN/uploads/san_pham/" : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
         try {
             Path uploadPath = Paths.get(UPLOAD_DIR);
             if (!Files.exists(uploadPath)) {
