@@ -1,5 +1,6 @@
 package com.example.AsmGD1.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -52,6 +53,7 @@ public class HoaDon {
     private String ghiChu;
 
     @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<LichSuHoaDon> lichSuHoaDons = new ArrayList<>();
 
     // Trường mới để lưu tổng tiền đã định dạng

@@ -356,7 +356,7 @@ public class ChiTietSanPhamService {
         }
 
         // Lưu ảnh mới với thứ tự chính xác
-        if (imageFiles != null) {
+        if (imageFiles != null && !imageFiles.isEmpty()) {
             for (int i = 0; i < imageFiles.size() && i < 3; i++) {
                 MultipartFile file = imageFiles.get(i);
                 if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
@@ -374,7 +374,7 @@ public class ChiTietSanPhamService {
                         HinhAnhSanPham img = new HinhAnhSanPham();
                         img.setChiTietSanPham(chiTietSanPham);
                         img.setUrlHinhAnh("/images/" + fileName);
-                        img.setThuTu(i + 1); // Gán thứ tự dựa trên vị trí trong danh sách
+                        img.setThuTu(i + 1); // Gán thứ tự từ 1 đến 3
                         hinhAnhSanPhamRepo.save(img);
                         logger.info("Đã lưu ảnh vào cơ sở dữ liệu: {} với thứ tự: {}", fileName, i + 1);
                     } catch (IOException e) {
@@ -384,6 +384,19 @@ public class ChiTietSanPhamService {
                 }
             }
         }
+
+        // Cập nhật lại thứ tự của tất cả ảnh liên quan để đảm bảo liên tục
+        List<HinhAnhSanPham> updatedImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
+        for (int i = 0; i < updatedImages.size(); i++) {
+            HinhAnhSanPham image = updatedImages.get(i);
+            image.setThuTu(i + 1);
+            hinhAnhSanPhamRepo.save(image);
+            logger.info("Đã cập nhật thứ tự ảnh ID {} thành: {}", image.getId(), i + 1);
+        }
+    }
+
+    public List<HinhAnhSanPham> findHinhAnhSanPhamByChiTietSanPhamIdOrdered(UUID chiTietSanPhamId) {
+        return hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPhamId);
     }
 
     public List<ChiTietSanPham> findAll() {
@@ -395,9 +408,12 @@ public class ChiTietSanPhamService {
     }
 
     public ChiTietSanPham findById(UUID id) {
-        return chiTietSanPhamRepo.findById(id).orElse(null);
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(id).orElse(null);
+        if (chiTiet != null && chiTiet.getHinhAnhSanPhams() != null) {
+            chiTiet.setHinhAnhSanPhams(findHinhAnhSanPhamByChiTietSanPhamIdOrdered(id));
+        }
+        return chiTiet;
     }
-
     public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
         return chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(productId, mauSacId, kichCoId);
     }

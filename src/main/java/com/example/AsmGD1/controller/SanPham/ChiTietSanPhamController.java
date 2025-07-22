@@ -18,10 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -83,7 +80,6 @@ public class ChiTietSanPhamController {
                            @RequestParam(value = "gender", required = false) String gender,
                            @RequestParam(value = "status", required = false) Boolean status) {
         try {
-            // Add user info and role check
             addUserInfoToModel(model);
 
             model.addAttribute("sanPham", new SanPham());
@@ -104,6 +100,12 @@ public class ChiTietSanPhamController {
                     model.addAttribute("sanPhamDaChon", sanPhamDaChon);
                     List<ChiTietSanPham> chiTietList = chiTietSanPhamService.findByFilters(
                             productId, colorId, sizeId, originId, materialId, styleId, sleeveId, collarId, brandId, gender, status);
+                    // Sắp xếp hinhAnhSanPhams cho mỗi ChiTietSanPham
+                    for (ChiTietSanPham pd : chiTietList) {
+                        if (pd.getHinhAnhSanPhams() != null) {
+                            pd.setHinhAnhSanPhams(chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId()));
+                        }
+                    }
                     chiTietList.forEach(pd -> logger.info("Product ID: {}, Status: {}", pd.getId(), pd.getTrangThai()));
                     model.addAttribute("chiTietSanPhamList", chiTietList);
                     model.addAttribute("selectedColorId", colorId);
@@ -211,7 +213,6 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layChiTietSanPham(@PathVariable UUID id) {
         try {
-            // Check admin permission
             if (!isCurrentUserAdmin()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
             }
@@ -237,7 +238,8 @@ public class ChiTietSanPhamController {
             response.put("gender", chiTiet.getGioiTinh());
             response.put("status", chiTiet.getTrangThai());
             response.put("images", chiTiet.getHinhAnhSanPhams().stream()
-                    .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh()))
+                    .sorted(Comparator.comparing(HinhAnhSanPham::getThuTu))
+                    .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh(), "thuTu", img.getThuTu()))
                     .collect(Collectors.toList()));
 
             return ResponseEntity.ok(response);

@@ -624,13 +624,15 @@
                     const existingImagesContainer = $('#existingImages');
                     existingImagesContainer.empty();
                     if (response.images && response.images.length > 0) {
+                        // Sắp xếp ảnh theo thuTu
+                        response.images.sort((a, b) => a.thuTu - b.thuTu);
                         response.images.forEach(image => {
                             const imageHtml = `
-                                <div class="image-preview">
-                                    <img src="${image.imageUrl}" alt="Ảnh sản phẩm">
-                                    <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
-                                </div>
-                            `;
+                        <div class="image-preview">
+                            <img src="${image.imageUrl}" alt="Ảnh sản phẩm">
+                            <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
+                        </div>
+                    `;
                             existingImagesContainer.append(imageHtml);
                         });
                     } else {
