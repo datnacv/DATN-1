@@ -17,6 +17,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -289,8 +292,10 @@ public class ChiTietSanPhamController {
 
     @PostMapping("/save-auto-product")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(@ModelAttribute SanPham sanPham,
-                                                                   @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId) {
+    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(
+            @ModelAttribute SanPham sanPham,
+            @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
         try {
             // Check admin permission
@@ -304,7 +309,6 @@ public class ChiTietSanPhamController {
             newSanPham.setMaSanPham(sanPham.getMaSanPham());
             newSanPham.setTenSanPham(sanPham.getTenSanPham());
             newSanPham.setMoTa(sanPham.getMoTa());
-            newSanPham.setUrlHinhAnh(sanPham.getUrlHinhAnh());
             newSanPham.setTrangThai(true);
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
@@ -323,7 +327,20 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Lưu trữ ảnh cục bộ
+            String UPLOAD_DIR = System.getProperty("os.name").toLowerCase().contains("win")
+                    ? "C:/DATN/uploads/san_pham/"
+                    : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
+            if (imageFile != null && !imageFile.isEmpty()) {
+                String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
+                Path filePath = Paths.get(UPLOAD_DIR, fileName);
+                Files.createDirectories(filePath.getParent());
+                Files.write(filePath, imageFile.getBytes());
+                newSanPham.setUrlHinhAnh("/images/" + fileName);
+            }
+
             sanPhamService.save(newSanPham);
+
             response.put("success", true);
             response.put("id", newSanPham.getId());
             response.put("tenSanPham", newSanPham.getTenSanPham());

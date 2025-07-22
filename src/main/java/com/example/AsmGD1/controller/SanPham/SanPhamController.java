@@ -7,7 +7,6 @@ import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
-import com.example.AsmGD1.util.CloudinaryUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -34,9 +33,6 @@ public class SanPhamController {
 
     @Autowired
     private DanhMucService danhMucService;
-
-    @Autowired
-    private CloudinaryUtil cloudinaryUtil;
 
     @Autowired
     private NguoiDungService nguoiDungService;
@@ -73,7 +69,6 @@ public class SanPhamController {
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
             @RequestParam(value = "page", defaultValue = "0") int page) {
 
-        // Add user info and role check
         addUserInfoToModel(model);
 
         Pageable pageable = PageRequest.of(page, 5);
@@ -102,12 +97,10 @@ public class SanPhamController {
 
     @GetMapping("/edit/{id}")
     public String editSanPham(@PathVariable("id") UUID id, Model model) {
-        // Check admin permission
         if (!isCurrentUserAdmin()) {
             return "redirect:/acvstore/san-pham?error=Bạn không có quyền truy cập chức năng này";
         }
 
-        // Add user info and role check
         addUserInfoToModel(model);
 
         SanPham sanPham = sanPhamService.findById(id);
@@ -122,43 +115,38 @@ public class SanPhamController {
 
     @PostMapping("/save")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveSanPham(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> saveSanPham(
+            @RequestParam("id") UUID id,
+            @RequestParam("maSanPham") String maSanPham,
+            @RequestParam("tenSanPham") String tenSanPham,
+            @RequestParam(value = "moTa", required = false) String moTa,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam(value = "trangThai", defaultValue = "false") Boolean trangThai,
+            @RequestParam(value = "danhMucId", required = false) UUID danhMucId) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Check admin permission
             if (!isCurrentUserAdmin()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            System.out.println("Received payload: " + payload.toString());
-
-            UUID id = UUID.fromString((String) payload.get("id"));
-            String maSanPham = (String) payload.get("maSanPham");
-            String tenSanPham = (String) payload.get("tenSanPham");
-            String moTa = (String) payload.get("moTa");
-            String urlHinhAnh = (String) payload.get("urlHinhAnh");
-            Boolean trangThai = (Boolean) payload.get("trangThai");
-            UUID danhMucId = payload.get("danhMucId") != null ? UUID.fromString((String) payload.get("danhMucId")) : null;
-
-            SanPham existingSanPham = sanPhamService.findById(id);
-            if (existingSanPham == null) {
+            SanPham sanPham = sanPhamService.findById(id);
+            if (sanPham == null) {
                 response.put("success", false);
                 response.put("message", "Sản phẩm không tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            existingSanPham.setMaSanPham(maSanPham);
-            existingSanPham.setTenSanPham(tenSanPham);
-            existingSanPham.setMoTa(moTa);
-            existingSanPham.setUrlHinhAnh(urlHinhAnh);
-            existingSanPham.setTrangThai(trangThai != null ? trangThai : false);
+            sanPham.setMaSanPham(maSanPham);
+            sanPham.setTenSanPham(tenSanPham);
+            sanPham.setMoTa(moTa);
+            sanPham.setTrangThai(trangThai != null ? trangThai : false);
 
             if (danhMucId != null) {
                 DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
                 if (danhMuc != null) {
-                    existingSanPham.setDanhMuc(danhMuc);
+                    sanPham.setDanhMuc(danhMuc);
                 } else {
                     response.put("success", false);
                     response.put("message", "Danh mục không tồn tại!");
@@ -166,21 +154,21 @@ public class SanPhamController {
                 }
             }
 
-            sanPhamService.save(existingSanPham);
+            sanPhamService.saveSanPhamWithImage(sanPham, imageFile);
 
             SanPhamDto dto = new SanPhamDto();
-            dto.setId(existingSanPham.getId());
-            dto.setMaSanPham(existingSanPham.getMaSanPham());
-            dto.setTenSanPham(existingSanPham.getTenSanPham());
-            dto.setMoTa(existingSanPham.getMoTa());
-            dto.setUrlHinhAnh(existingSanPham.getUrlHinhAnh());
-            dto.setTrangThai(existingSanPham.getTrangThai());
-            dto.setThoiGianTao(existingSanPham.getThoiGianTao());
-            dto.setTongSoLuong(existingSanPham.getTongSoLuong());
+            dto.setId(sanPham.getId());
+            dto.setMaSanPham(sanPham.getMaSanPham());
+            dto.setTenSanPham(sanPham.getTenSanPham());
+            dto.setMoTa(sanPham.getMoTa());
+            dto.setUrlHinhAnh(sanPham.getUrlHinhAnh());
+            dto.setTrangThai(sanPham.getTrangThai());
+            dto.setThoiGianTao(sanPham.getThoiGianTao());
+            dto.setTongSoLuong(sanPham.getTongSoLuong());
 
-            if (existingSanPham.getDanhMuc() != null) {
-                dto.setDanhMucId(existingSanPham.getDanhMuc().getId());
-                dto.setTenDanhMuc(existingSanPham.getDanhMuc().getTenDanhMuc());
+            if (sanPham.getDanhMuc() != null) {
+                dto.setDanhMucId(sanPham.getDanhMuc().getId());
+                dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
             }
 
             response.put("success", true);
@@ -188,38 +176,8 @@ public class SanPhamController {
             response.put("sanPham", dto);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("Exception: " + e.getMessage());
             response.put("success", false);
             response.put("message", "Lỗi khi lưu sản phẩm: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    @PostMapping("/upload-image")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> uploadImage(@RequestParam("imageFile") MultipartFile imageFile) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            // Check admin permission
-            if (!isCurrentUserAdmin()) {
-                response.put("success", false);
-                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            if (imageFile != null && !imageFile.isEmpty()) {
-                String imageUrl = cloudinaryUtil.uploadImage(imageFile);
-                response.put("success", true);
-                response.put("url", imageUrl);
-                return ResponseEntity.ok(response);
-            } else {
-                response.put("success", false);
-                response.put("message", "Không có file ảnh được chọn!");
-                return ResponseEntity.badRequest().body(response);
-            }
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Lỗi khi tải ảnh lên: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -253,7 +211,6 @@ public class SanPhamController {
     public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Check admin permission
             if (!isCurrentUserAdmin()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");

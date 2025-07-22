@@ -794,9 +794,10 @@
                             <td>
                                 <div class="d-flex justify-content-center">
                                     <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}"
-                                         th:src="${sp.urlHinhAnh}"
+                                         th:src="@{${sp.urlHinhAnh}}"
                                          class="product-image"
-                                         alt="Product Image">
+                                         alt="Product Image"
+                                         onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\'d-flex align-items-center justify-content-center bg-light rounded\' style=\'width: 60px; height: 60px;\'><i class=\'fas fa-image text-muted fs-3\'></i></div>'">
                                     <div th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}"
                                          class="d-flex align-items-center justify-content-center bg-light rounded"
                                          style="width: 60px; height: 60px;">
@@ -878,7 +879,7 @@
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form id="editSanPhamForm">
+                        <form id="editSanPhamForm" enctype="multipart/form-data">
                             <div class="modal-body">
                                 <input type="hidden" name="id">
                                 <div class="row g-4">
@@ -915,10 +916,7 @@
                                                 <i class="fas fa-image me-2"></i>Hình ảnh sản phẩm
                                             </label>
                                             <div class="d-flex align-items-center gap-3 mb-3">
-                                                <button type="button" class="btn btn-primary" id="openCloudinaryWidget">
-                                                    <i class="fas fa-cloud-upload-alt me-2"></i>Chọn ảnh
-                                                </button>
-                                                <input type="hidden" id="editUrlHinhAnh" name="urlHinhAnh">
+                                                <input type="file" class="form-control" id="editImageFile" name="imageFile" accept="image/*">
                                                 <span id="imageNameDisplay" class="text-muted fw-medium">Chưa chọn ảnh</span>
                                             </div>
                                         </div>
@@ -936,9 +934,9 @@
                                     </div>
                                     <div class="col-12">
                                         <div id="imagePreviewContainer" class="text-center">
-                                            <img class="product-image" alt="Current Image" id="imagePreview" style="max-width: 250px; max-height: 250px; display: none;">
-                                            <div id="noImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px; display: none;">
-                                            </div>
+                                            <img class="product-image" alt="Current Image" id="imagePreview" style="max-width: 250px; max-height: 250px; display: none;"
+                                                 onerror="this.onerror=null; this.parentNode.querySelector('#noImagePlaceholder').style.display='flex'; this.style.display='none';">
+                                            <div id="noImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -961,7 +959,6 @@
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
-<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
@@ -1017,8 +1014,7 @@
 
         const editSanPhamModal = document.getElementById('editSanPhamModal');
         const editSanPhamForm = document.getElementById('editSanPhamForm');
-        const openCloudinaryWidgetBtn = document.getElementById('openCloudinaryWidget');
-        const urlHinhAnhInput = document.getElementById('editUrlHinhAnh');
+        const imageFileInput = document.getElementById('editImageFile');
         const imagePreview = document.getElementById('imagePreview');
         const imageNameDisplay = document.getElementById('imageNameDisplay');
         const trangThaiInput = document.getElementById('editTrangThai');
@@ -1031,28 +1027,58 @@
             }
         }
 
-        function updateImagePreview(imageUrl = urlHinhAnhInput?.value) {
+        function updateImagePreview(imageUrl = null, file = null) {
             if (!imagePreview || !noImagePlaceholder || !imageNameDisplay) return;
 
-            if (imageUrl && imageUrl.trim() !== '' && isValidImageUrl(imageUrl)) {
-                imagePreview.src = imageUrl;
+            console.log('updateImagePreview called with imageUrl:', imageUrl, 'file:', file);
+
+            if (file) {
+                console.log('Previewing uploaded file:', file.name);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    noImagePlaceholder.style.display = 'none';
+                    imageNameDisplay.textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            } else if (imageUrl && imageUrl.trim() !== '') {
+                console.log('Previewing server image:', imageUrl);
+                // Ensure the URL is absolute
+                const absoluteUrl = imageUrl.startsWith('/') ? `${window.location.origin}${imageUrl}` : imageUrl;
+                imagePreview.src = absoluteUrl;
                 imagePreview.style.display = 'block';
                 noImagePlaceholder.style.display = 'none';
                 imageNameDisplay.textContent = 'Đã chọn ảnh';
             } else {
+                console.log('No image to preview');
                 imagePreview.style.display = 'none';
                 noImagePlaceholder.style.display = 'flex';
-                imageNameDisplay.textContent = 'Chưa có ảnh được chọn';
+                imageNameDisplay.textContent = 'Chưa chọn ảnh';
             }
         }
 
         function isValidImageUrl(url) {
+            if (!url) return false;
             try {
-                new URL(url);
+                new URL(url, window.location.origin); // Use current origin as base
                 return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
-            } catch {
+            } catch (e) {
+                console.error('Invalid URL format:', url, e);
                 return false;
             }
+        }
+
+        if (imageFileInput) {
+            imageFileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                console.log('Image file selected:', file ? file.name : 'No file');
+                if (file) {
+                    updateImagePreview(null, file);
+                } else {
+                    updateImagePreview();
+                }
+            });
         }
 
         if (editSanPhamModal) {
@@ -1067,7 +1093,7 @@
                 const moTaInput = modalForm.querySelector('textarea[name="moTa"]');
                 const danhMucSelect = modalForm.querySelector('#editDanhMuc');
                 const trangThaiInput = modalForm.querySelector('input[name="trangThai"]');
-                const urlHinhAnhInput = modalForm.querySelector('input[name="urlHinhAnh"]');
+                const imageFileInput = modalForm.querySelector('input[name="imageFile"]');
 
                 modalTitle.innerHTML = `<i class="fas fa-edit"></i> Chỉnh sửa sản phẩm #${sanPhamId}`;
                 sanPhamIdInput.value = sanPhamId;
@@ -1077,9 +1103,11 @@
                 moTaInput.value = '';
                 danhMucSelect.value = '';
                 trangThaiInput.checked = false;
+                imageFileInput.value = ''; // Reset file input
                 updateTrangThaiLabel();
-                urlHinhAnhInput.value = '';
                 updateImagePreview();
+
+                console.log('Fetching product data for ID:', sanPhamId);
 
                 fetch(`/acvstore/san-pham/get/${sanPhamId}`)
                     .then(response => {
@@ -1089,18 +1117,14 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Received data:', data);
+                        console.log('Received product data:', data);
                         maSanPhamInput.value = data.maSanPham || '';
                         tenSanPhamInput.value = data.tenSanPham || '';
                         moTaInput.value = data.moTa || '';
                         danhMucSelect.value = data.danhMucId || '';
                         trangThaiInput.checked = data.trangThai != null ? data.trangThai : false;
                         updateTrangThaiLabel();
-
-                        const imageUrl = data.urlHinhAnh || '';
-                        urlHinhAnhInput.value = imageUrl;
-                        console.log('Image URL:', imageUrl);
-                        updateImagePreview(imageUrl);
+                        updateImagePreview(data.urlHinhAnh || '');
                     })
                     .catch(error => {
                         console.error('Error fetching san pham data:', error);
@@ -1121,33 +1145,29 @@
                 const maSanPham = editSanPhamForm.querySelector('input[name="maSanPham"]').value.trim();
                 const tenSanPham = editSanPhamForm.querySelector('input[name="tenSanPham"]').value.trim();
                 const moTa = editSanPhamForm.querySelector('textarea[name="moTa"]').value.trim();
-                const urlHinhAnh = editSanPhamForm.querySelector('input[name="urlHinhAnh"]').value.trim();
                 const trangThai = editSanPhamForm.querySelector('input[name="trangThai"]').checked;
                 const danhMucId = editSanPhamForm.querySelector('select[name="danhMucId"]').value;
+                const imageFile = editSanPhamForm.querySelector('input[name="imageFile"]').files[0];
 
                 if (!id || !maSanPham || !tenSanPham) {
                     showToast('Vui lòng điền đầy đủ thông tin bắt buộc!', 'warning');
                     return;
                 }
 
-                const formData = {
-                    id: id,
-                    maSanPham: maSanPham,
-                    tenSanPham: tenSanPham,
-                    moTa: moTa || '',
-                    urlHinhAnh: urlHinhAnh || '',
-                    trangThai: trangThai,
-                    danhMucId: danhMucId || null
-                };
+                const formData = new FormData();
+                formData.append('id', id);
+                formData.append('maSanPham', maSanPham);
+                formData.append('tenSanPham', tenSanPham);
+                formData.append('moTa', moTa || '');
+                formData.append('trangThai', trangThai);
+                if (danhMucId) formData.append('danhMucId', danhMucId);
+                if (imageFile) formData.append('imageFile', imageFile);
 
-                console.log('Sending data:', JSON.stringify(formData, null, 2));
+                console.log('Sending FormData:', { id, maSanPham, tenSanPham, moTa, trangThai, danhMucId, imageFile });
 
                 fetch('/acvstore/san-pham/save', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
+                    body: formData
                 })
                     .then(response => {
                         if (!response.ok) {
@@ -1164,7 +1184,7 @@
                             if (row) {
                                 row.cells[1].innerHTML = `<span class="fw-bold fs-8">${sanPham.maSanPham || ''}</span>`;
                                 row.cells[2].innerHTML = sanPham.urlHinhAnh
-                                    ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image"></div>`
+                                    ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'d-flex align-items-center justify-content-center bg-light rounded\\' style=\\'width: 60px; height: 60px;\\' ><i class=\\'fas fa-image text-muted fs-3\\'></i></div>'"></div>`
                                     : `<div class="d-flex justify-content-center"><div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 60px; height: 60px;"><i class="fas fa-image text-muted fs-3"></i></div></div>`;
                                 row.cells[3].innerHTML = `<div class="fw-semibold text-dark">${sanPham.tenSanPham || ''}</div>`;
                                 row.cells[4].innerHTML = `<span class="badge badge-success">${sanPham.tenDanhMuc || 'N/A'}</span>`;
@@ -1194,36 +1214,6 @@
                         showToast('Lỗi khi lưu sản phẩm: ' + error.message, 'error');
                     });
             });
-        }
-
-        if (openCloudinaryWidgetBtn) {
-            const myWidget = cloudinary.createUploadWidget(
-                {
-                    cloudName: 'dfwbuxr0c',
-                    uploadPreset: 'acvstore_unsigned_preset',
-                    folder: 'acvstore/products',
-                    sources: ['local', 'url', 'google_drive', 'dropbox'],
-                    multiple: false,
-                    clientAllowedFormats: ['image'],
-                    maxImageFileSize: 2000000,
-                    theme: 'minimal'
-                },
-                (error, result) => {
-                    if (!error && result && result.event === 'success') {
-                        const imageUrl = result.info.secure_url;
-                        urlHinhAnhInput.value = imageUrl;
-                        updateImagePreview(imageUrl);
-                        showToast('Tải ảnh lên thành công!', 'success');
-                    } else if (error) {
-                        console.error('Cloudinary upload error:', error);
-                        showToast('Lỗi khi tải ảnh lên. Vui lòng thử lại.', 'error');
-                    }
-                }
-            );
-
-            openCloudinaryWidgetBtn.addEventListener('click', () => {
-                myWidget.open();
-            }, false);
         }
 
         // Status toggle functionality - chỉ cho admin
