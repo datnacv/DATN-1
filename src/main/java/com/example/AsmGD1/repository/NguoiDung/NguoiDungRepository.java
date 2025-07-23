@@ -43,7 +43,6 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
 
     Optional<NguoiDung> findByEmail(String email);
 
-    // Thêm phương thức kiểm tra email tồn tại
     boolean existsByEmail(String email);
 
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro IN ('employee', 'admin') AND (u.hoTen LIKE %:keyword% OR u.email LIKE %:keyword% OR u.soDienThoai LIKE %:keyword%)")

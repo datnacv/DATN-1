@@ -231,18 +231,35 @@ public class PhieuGiamGiaController {
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ.");
         }
+        // ✅ Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
+        if ("CASH".equalsIgnoreCase(voucher.getLoai())
+                && voucher.getGiaTriGiam() != null
+                && voucher.getGiaTriGiamToiThieu() != null
+                && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
+            errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+        }
 
-        // Validate ngày
+
+        // Validate ngày bắt đầu và kết thúc
+        LocalDate today = LocalDate.now();
+
         if (voucher.getNgayBatDau() == null) {
             errors.add("Ngày bắt đầu không được để trống.");
+        } else if (voucher.getNgayBatDau().isBefore(today)) {
+            errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayKetThuc() == null) {
             errors.add("Ngày kết thúc không được để trống.");
+        } else if (voucher.getNgayKetThuc().isBefore(today)) {
+            errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
+
 
         // Phiếu cá nhân: phải có khách hàng
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
@@ -421,6 +438,14 @@ public class PhieuGiamGiaController {
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ");
         }
+        // ✅ Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
+        if ("CASH".equalsIgnoreCase(voucher.getLoai())
+                && voucher.getGiaTriGiam() != null
+                && voucher.getGiaTriGiamToiThieu() != null
+                && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
+            errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+        }
+
 
         // Validate loại giảm
         if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
@@ -431,17 +456,26 @@ public class PhieuGiamGiaController {
             }
         }
 
-        // Ngày
+        // Validate ngày bắt đầu và kết thúc
+        LocalDate today = LocalDate.now();
+
         if (voucher.getNgayBatDau() == null) {
-            errors.add("Ngày bắt đầu không được để trống");
+            errors.add("Ngày bắt đầu không được để trống.");
+        } else if (voucher.getNgayBatDau().isBefore(today)) {
+            errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayKetThuc() == null) {
-            errors.add("Ngày kết thúc không được để trống");
+            errors.add("Ngày kết thúc không được để trống.");
+        } else if (voucher.getNgayKetThuc().isBefore(today)) {
+            errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
-            errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc");
+            errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
+
 
         // Phiếu cá nhân phải chọn khách hàng
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) &&
