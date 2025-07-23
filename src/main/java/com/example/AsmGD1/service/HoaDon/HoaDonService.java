@@ -1,4 +1,3 @@
-
 package com.example.AsmGD1.service.HoaDon;
 
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
@@ -96,7 +95,7 @@ public class HoaDonService {
             Font fontFooter = new Font(bf, 10, Font.ITALIC, BaseColor.GRAY);
 
             try {
-                Image logo = Image.getInstance("src/main/resources/static/images/acv-logo.png");
+                Image logo = Image.getInstance("src/main/resources/static/image/acv-logo.png");
                 logo.scaleToFit(100, 100);
                 logo.setAlignment(Element.ALIGN_CENTER);
                 document.add(logo);
@@ -440,14 +439,12 @@ public class HoaDonService {
             return "Hoàn thành";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai()))) {
             return "Vận chuyển thành công";
-        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã giao thành công".equals(ls.getTrangThai()))) {
-            return "Đã giao thành công";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang vận chuyển".equals(ls.getTrangThai()))) {
+            return "Đang vận chuyển";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang xử lý Online".equals(ls.getTrangThai()))) {
             return "Đang xử lý Online";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận Online".equals(ls.getTrangThai()))) {
             return "Đã xác nhận Online";
-        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang vận chuyển".equals(ls.getTrangThai()))) {
-            return "Đang vận chuyển";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận".equals(ls.getTrangThai()))) {
             return "Đã xác nhận";
         }
@@ -458,7 +455,6 @@ public class HoaDonService {
     public void processReturn(UUID hoaDonId, List<UUID> chiTietDonHangIds, String lyDoTraHang) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
-
         if (!"Hoàn thành".equals(hoaDon.getTrangThai()) && !"Vận chuyển thành công".equals(hoaDon.getTrangThai())
                 && !"Đã trả hàng một phần".equals(hoaDon.getTrangThai())) {
             throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành', 'Vận chuyển thành công' hoặc 'Đã trả hàng một phần' để thực hiện trả hàng.");

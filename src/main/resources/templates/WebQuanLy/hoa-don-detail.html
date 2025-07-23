@@ -8,9 +8,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+VN:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script th:src="@{/js/sidebar.js}" defer></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+VN:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-light: #ffffff;
@@ -43,6 +43,10 @@
             --btn-return-hover-bg: #bb2d3b;
             --btn-edit-bg: #ba5300;
             --btn-edit-hover-bg: #e8681a;
+            --btn-online-processing-bg: #ff6f61;
+            --btn-online-processing-hover-bg: #e55b50;
+            --btn-online-delivered-bg: #17a2b8;
+            --btn-online-delivered-hover-bg: #138496;
             --shadow-sm: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             --shadow-md: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
             --shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
@@ -126,34 +130,46 @@
             padding: 1.5rem;
             background: linear-gradient(135deg, var(--bg-medium) 0%, var(--bg-dark) 100%);
             border-bottom: 1px solid var(--border-light);
+        }
+
+        .action-groups {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .action-group-label {
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            min-width: 120px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
             align-items: center;
             gap: 0.5rem;
-            flex-wrap: nowrap;
-            overflow-x: auto;
         }
 
-        .action-bar::-webkit-scrollbar {
-            height: 6px;
-        }
-
-        .action-bar::-webkit-scrollbar-track {
-            background: var(--bg-medium);
-            border-radius: 3px;
-        }
-
-        .action-bar::-webkit-scrollbar-thumb {
-            background: var(--button-primary-bg);
-            border-radius: 3px;
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            flex: 1;
         }
 
         .btn-custom {
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all 0.3s ease;
             color: #fff;
             border: none;
@@ -163,9 +179,10 @@
             box-shadow: var(--shadow-sm);
             position: relative;
             overflow: hidden;
-            min-width: 150px;
+            min-width: 140px;
             justify-content: center;
             white-space: nowrap;
+            cursor: pointer;
         }
 
         .btn-custom::before {
@@ -189,15 +206,20 @@
         }
 
         .btn-custom:disabled {
-            opacity: 0.6;
+            opacity: 0.5;
             cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-custom:disabled::before {
+            display: none;
         }
 
         .btn-back {
             background: linear-gradient(135deg, var(--btn-back-bg) 0%, #5a6268 100%);
         }
 
-        .btn-back:hover {
+        .btn-back:hover:not(:disabled) {
             background: linear-gradient(135deg, var(--btn-back-hover-bg) 0%, #495057 100%);
         }
 
@@ -235,6 +257,32 @@
             background: linear-gradient(135deg, var(--btn-complete-hover-bg) 0%, #198754 100%);
         }
 
+        .btn-online-processing {
+            background: linear-gradient(135deg, var(--btn-online-processing-bg) 0%, #e55b50 100%);
+            color: #fff;
+        }
+
+        .btn-online-processing:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--btn-online-processing-hover-bg) 0%, #d44a3f 100%);
+        }
+
+        .btn-online-delivered {
+            background: linear-gradient(135deg, var(--btn-online-delivered-bg) 0%, #138496 100%);
+            color: #fff;
+        }
+
+        .btn-online-delivered:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--btn-online-delivered-hover-bg) 0%, #117a8b 100%);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--button-primary-bg) 0%, #343a40 100%);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--button-primary-hover-bg) 0%, #1a1e21 100%);
+        }
+
         .btn-return {
             background: linear-gradient(135deg, var(--btn-return-bg) 0%, #bb2d3b 100%);
         }
@@ -243,12 +291,37 @@
             background: linear-gradient(135deg, var(--btn-return-hover-bg) 0%, #a52834 100%);
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--button-primary-bg) 0%, #343a40 100%);
+        .workflow-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
         }
 
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--button-primary-hover-bg) 0%, #1a1e21);
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .workflow-step.active {
+            color: var(--btn-confirm-bg);
+        }
+
+        .workflow-step.completed {
+            color: var(--btn-complete-bg);
+        }
+
+        .workflow-arrow {
+            color: var(--text-muted);
+            font-size: 0.7rem;
         }
 
         .content-section {
@@ -341,108 +414,152 @@
             gap: 0.5rem;
         }
 
-        .table-container {
-            overflow-x: auto;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .table-container::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-
-        .table-container::-webkit-scrollbar-track {
-            background: var(--bg-medium);
-            border-radius: 4px;
-        }
-
-        .table-container::-webkit-scrollbar-thumb {
-            background: var(--button-primary-bg);
-            border-radius: 4px;
-            transition: background 0.3s ease;
-        }
-
-        .table-container::-webkit-scrollbar-thumb:hover {
-            background: var(--button-primary-hover-bg);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin: 0;
-        }
-
-        th, td {
-            padding: 1rem 1.25rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-light);
-            vertical-align: middle;
-        }
-
-        th {
-            background: var(--table-header-bg);
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
             font-weight: 700;
-            color: var(--text-primary);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        tbody tr {
-            transition: all 0.3s;
+        .status-pending {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #000;
         }
 
-        tbody tr:hover {
-            background: var(--table-row-hover-bg);
-            transform: scale(1.001);
+        .status-confirmed-bg {
+            background: linear-gradient(135deg, #198754 0%, #157347 100%);
+            color: #fff;
         }
 
-        td {
-            font-weight: 500;
-            color: var(--text-primary);
+        .status-shipping {
+            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+            color: #fff;
         }
 
-        .text-center {
-            text-align: center !important;
+        .status-delivered {
+            background: linear-gradient(135deg, #20c997 0%, #1aa179 100%);
+            color: #fff;
         }
 
-        .text-right {
-            text-align: right !important;
+        .status-completed-bg {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: #fff;
         }
 
-        .edit-form {
-            display: none;
-            margin-top: 1.5rem;
-            padding: 1.5rem;
-            background: var(--bg-medium);
-            border-radius: 12px;
-            border: 1px solid var(--border-light);
+        .status-returned {
+            background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+            color: #fff;
         }
 
-        .form-label {
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+        .status-online-confirmed {
+            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+            color: #fff;
         }
 
-        .form-control, .form-select {
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border-medium);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            background: var(--bg-light);
+        .status-online-processing {
+            background: linear-gradient(135deg, #ff6f61 0%, #e55b50 100%);
+            color: #fff;
         }
 
-        .form-control:focus, .form-select:focus {
-            border-color: var(--button-primary-bg);
-            box-shadow: 0 0 0 3px rgba(33, 37, 41, 0.1);
-            outline: none;
+        .status-online-delivered {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: #fff;
+        }
+
+        /* Fixed table layout for order information */
+        .table-order-info {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .table-order-info th:nth-child(1), .table-order-info td:nth-child(1) { width: 15%; } /* Mã đơn hàng */
+        .table-order-info th:nth-child(2), .table-order-info td:nth-child(2) { width: 20%; } /* Phương thức */
+        .table-order-info th:nth-child(3), .table-order-info td:nth-child(3) { width: 15%; min-width: 120px; text-align: right; } /* Phí vận chuyển */
+        .table-order-info th:nth-child(4), .table-order-info td:nth-child(4) { width: 25%; } /* Thời gian */
+
+        @media (max-width: 1200px) {
+            .action-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .action-group-label {
+                min-width: auto;
+            }
+
+            .action-buttons {
+                width: 100%;
+            }
+
+            .btn-custom {
+                min-width: 120px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                margin-left: 0;
+                padding: 1rem;
+                margin-top: 70px;
+            }
+
+            .sidebar-container {
+                transform: translateX(-100%);
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .action-bar {
+                padding: 1rem;
+            }
+
+            .action-groups {
+                gap: 0.75rem;
+            }
+
+            .btn-custom {
+                min-width: 100px;
+                font-size: 0.75rem;
+                padding: 0.5rem 1rem;
+            }
+
+            .content-section {
+                padding: 1rem;
+            }
+
+            .info-card {
+                padding: 1rem;
+            }
+
+            .workflow-indicator {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.25rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-custom {
+                width: 100%;
+                min-width: auto;
+            }
+
+            .table-order-info th:nth-child(3), .table-order-info td:nth-child(3) {
+                min-width: 100px;
+            }
         }
 
         .toast {
@@ -499,188 +616,6 @@
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
-
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .status-pending {
-            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-            color: #000;
-        }
-
-        .status-confirmed-bg {
-            background: linear-gradient(135deg, #198754 0%, #157347 100%);
-            color: #fff;
-        }
-
-        .status-shipping {
-            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-            color: #fff;
-        }
-
-        .status-delivered {
-            background: linear-gradient(135deg, #20c997 0%, #1aa179 100%);
-            color: #fff;
-        }
-
-        .status-completed-bg {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            color: #fff;
-        }
-
-        .status-returned {
-            background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
-            color: #fff;
-        }
-
-        .status-partial-returned {
-            background: linear-gradient(135deg, #fd7e14 0%, #e06b0d 100%);
-            color: #fff;
-        }
-
-        .badge {
-            padding: 0.75rem 1.25rem;
-            font-size: 1rem;
-            border-radius: 10px;
-            font-weight: 600;
-            min-width: 60px;
-            text-align: center;
-        }
-
-        .badge.bg-success {
-            background: linear-gradient(135deg, #198754 0%, #157347 100%);
-            color: #fff;
-        }
-
-        .badge.bg-secondary {
-            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
-            color: #fff;
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.8rem;
-            min-width: 100px;
-        }
-
-        .btn-custom.btn-return.btn-sm {
-            margin-left: 1rem;
-        }
-
-        @media (max-width: 1200px) {
-            .action-bar {
-                flex-wrap: nowrap;
-                overflow-x: auto;
-            }
-
-            .btn-custom {
-                min-width: 120px;
-                font-size: 0.85rem;
-                padding: 0.5rem 1rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .content {
-                margin-left: 0;
-                padding: 1rem;
-                margin-top: 70px;
-            }
-
-            .navbar {
-                width: 100%;
-            }
-
-            .sidebar-container {
-                transform: translateX(-100%);
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .action-bar {
-                padding: 1rem;
-                gap: 0.25rem;
-            }
-
-            .btn-custom {
-                min-width: 100px;
-                font-size: 0.75rem;
-                padding: 0.4rem 0.75rem;
-            }
-
-            .content-section {
-                padding: 1rem;
-            }
-
-            .info-card {
-                padding: 1rem;
-            }
-
-            th, td {
-                padding: 0.75rem;
-                font-size: 0.85rem;
-            }
-
-            .table-container {
-                overflow-x: auto;
-            }
-
-            table {
-                min-width: 600px;
-            }
-
-            .badge {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
-                min-width: 60px;
-            }
-
-            .table-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
-            }
-
-            .btn-custom.btn-return.btn-sm {
-                margin-left: 0;
-                width: 100%;
-                text-align: center;
-            }
-        }
-
-        @media print {
-            .sidebar-container,
-            .navbar,
-            .action-bar,
-            .btn-return {
-                display: none !important;
-            }
-
-            .content {
-                margin: 0;
-                padding: 0;
-            }
-
-            .main-container {
-                box-shadow: none;
-                border: 1px solid #000;
-            }
-        }
-
-        .btn-edit {
-            color: #000000;
-        }
     </style>
 </head>
 <body>
@@ -690,65 +625,162 @@
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
+
     <div class="content" id="content">
         <h1>Chi tiết hóa đơn</h1>
 
         <div class="main-container">
             <div class="action-bar">
-                <a th:href="@{/acvstore/hoa-don}" class="btn-custom btn-back">
-                    <i class="fas fa-arrow-left"></i> Quay lại
-                </a>
-                <div th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
-                    <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
-                            th:disabled="${hoaDon.trangThai != 'Chưa xác nhận'}">
-                        <i class="fas fa-check"></i> Xác nhận đơn hàng
-                    </button>
-                    <button id="deliveryButton" class="btn-custom btn-delivery" onclick="confirmDelivery()"
-                            th:disabled="${hoaDon.trangThai != 'Đã xác nhận'}">
-                        <i class="fas fa-truck"></i> Đang vận chuyển
-                    </button>
-                    <button id="deliveredButton" class="btn-custom btn-delivered" onclick="confirmDelivered()"
-                            th:disabled="${hoaDon.trangThai != 'Đang vận chuyển'}">
-                        <i class="fas fa-check-circle"></i> Vận chuyển thành công
-                    </button>
-                    <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
-                            th:disabled="${hoaDon.trangThai != 'Vận chuyển thành công'}">
-                        <i class="fas fa-flag-checkered"></i> Hoàn thành
-                    </button>
+                <div class="action-groups">
+                    <div class="action-group">
+                        <div class="action-group-label">
+                            <i class="fas fa-navigation"></i>
+                            Điều hướng:
+                        </div>
+                        <div class="action-buttons">
+                            <a th:href="@{/acvstore/hoa-don}" class="btn-custom btn-back">
+                                <i class="fas fa-arrow-left"></i> Quay lại
+                            </a>
+                            <a id="downloadPdfLink" class="btn-custom btn-primary"
+                               th:href="@{/acvstore/hoa-don/download/{id}(id=${hoaDon.id})}">
+                                <i class="fas fa-download"></i> Tải PDF
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="action-group" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
+                        <div class="action-group-label">
+                            <i class="fas fa-truck"></i>
+                            Xử lý đơn hàng:
+                        </div>
+                        <div class="action-buttons">
+                            <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
+                                    th:disabled="${hoaDon.trangThai != 'Chưa xác nhận'}">
+                                <i class="fas fa-check"></i> Xác nhận đơn hàng
+                            </button>
+                            <button id="deliveryButton" class="btn-custom btn-delivery" onclick="confirmDelivery()"
+                                    th:disabled="${hoaDon.trangThai != 'Đã xác nhận'}">
+                                <i class="fas fa-truck"></i> Đang vận chuyển
+                            </button>
+                            <button id="deliveredButton" class="btn-custom btn-delivered" onclick="confirmDelivered()"
+                                    th:disabled="${hoaDon.trangThai != 'Đang vận chuyển'}">
+                                <i class="fas fa-check-circle"></i> Vận chuyển thành công
+                            </button>
+                            <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
+                                    th:disabled="${hoaDon.trangThai != 'Vận chuyển thành công'}">
+                                <i class="fas fa-flag-checkered"></i> Hoàn thành
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-group" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Online')}">
+                        <div class="action-group-label">
+                            <i class="fas fa-globe"></i>
+                            Xử lý Online:
+                        </div>
+                        <div class="action-buttons">
+                            <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
+                                    th:disabled="${hoaDon.trangThai != 'Chưa xác nhận'}">
+                                <i class="fas fa-check"></i> Xác nhận đơn hàng
+                            </button>
+                            <button id="onlineProcessingButton" class="btn-custom btn-online-processing" onclick="confirmOnlineProcessing()"
+                                    th:disabled="${hoaDon.trangThai != 'Đã xác nhận Online'}">
+                                <i class="fas fa-cog"></i> Đang xử lý Online
+                            </button>
+                            <button id="onlineShippingButton" class="btn-custom btn-delivery" onclick="confirmOnlineShipping()"
+                                    th:disabled="${hoaDon.trangThai != 'Đang xử lý Online'}">
+                                <i class="fas fa-truck"></i> Đang vận chuyển
+                            </button>
+                            <button id="onlineDeliveredButton" class="btn-custom btn-online-delivered" onclick="confirmOnlineDelivered()"
+                                    th:disabled="${hoaDon.trangThai != 'Đang vận chuyển'}">
+                                <i class="fas fa-check-circle"></i> Vận chuyển thành công
+                            </button>
+                            <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
+                                    th:disabled="${hoaDon.trangThai != 'Vận chuyển thành công'}">
+                                <i class="fas fa-flag-checkered"></i> Hoàn thành
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-group" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy')}">
+                        <div class="action-group-label">
+                            <i class="fas fa-store"></i>
+                            Tại quầy:
+                        </div>
+                        <div class="action-buttons">
+                            <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
+                                    th:if="${hoaDon.trangThai == 'Chưa xác nhận'}">
+                                <i class="fas fa-check"></i> Xác nhận đơn hàng
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="workflow-indicator" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Chưa xác nhận' ? 'active' : 'completed'}">
+                            <i class="fas fa-clock"></i> Chờ xác nhận
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Đã xác nhận' ? 'active' : (hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                            <i class="fas fa-check"></i> Đã xác nhận
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Đang vận chuyển' ? 'active' : (hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                            <i class="fas fa-truck"></i> Vận chuyển
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Vận chuyển thành công' ? 'active' : hoaDon.trangThai == 'Hoàn thành' ? 'completed' : ''}">
+                            <i class="fas fa-check-circle"></i> Giao thành công
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Hoàn thành' ? 'active' : ''}">
+                            <i class="fas fa-flag-checkered"></i> Hoàn thành
+                        </div>
+                    </div>
+
+                    <div class="workflow-indicator" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Online')}">
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Chưa xác nhận' ? 'active' : 'completed'}">
+                            <i class="fas fa-clock"></i> Chờ xác nhận
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Đã xác nhận Online' ? 'active' : (hoaDon.trangThai == 'Đang xử lý Online' or hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                            <i class="fas fa-check"></i> Xác nhận Online
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Đang xử lý Online' ? 'active' : (hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                            <i class="fas fa-cog"></i> Xử lý Online
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Đang vận chuyển' ? 'active' : (hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                            <i class="fas fa-truck"></i> Vận chuyển
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Vận chuyển thành công' ? 'active' : hoaDon.trangThai == 'Hoàn thành' ? 'completed' : ''}">
+                            <i class="fas fa-check-circle"></i> Giao thành công
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step"
+                             th:classappend="${hoaDon.trangThai == 'Hoàn thành' ? 'active' : ''}">
+                            <i class="fas fa-flag-checkered"></i> Hoàn thành
+                        </div>
+                    </div>
                 </div>
-                <div th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Online')}">
-                    <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
-                            th:disabled="${hoaDon.trangThai != 'Chưa xác nhận'}">
-                        <i class="fas fa-check"></i> Xác nhận đơn hàng
-                    </button>
-                    <button id="onlineProcessingButton" class="btn-custom btn-online-processing" onclick="confirmOnlineProcessing()"
-                            th:disabled="${hoaDon.trangThai != 'Đã xác nhận Online'}">
-                        <i class="fas fa-cog"></i> Đang xử lý Online
-                    </button>
-                    <button id="onlineDeliveredButton" class="btn-custom btn-online-delivered" onclick="confirmOnlineDelivered()"
-                            th:disabled="${hoaDon.trangThai != 'Đang xử lý Online'}">
-                        <i class="fas fa-check-circle"></i> Đã giao thành công
-                    </button>
-                    <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
-                            th:disabled="${hoaDon.trangThai != 'Đã giao thành công'}">
-                        <i class="fas fa-flag-checkered"></i> Hoàn thành
-                    </button>
-                </div>
-                <button id="confirmButton" class="btn-custom btn-confirm" onclick="confirmHoaDon()"
-                        th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy') and hoaDon.trangThai == 'Chưa xác nhận'}">
-                    <i class="fas fa-check"></i> Xác nhận đơn hàng
-                </button>
-                <a id="downloadPdfLink" class="btn-custom btn-primary"
-                   th:href="@{/acvstore/hoa-don/download/{id}(id=${hoaDon.id})}">
-                    <i class="fas fa-download"></i> Tải PDF
-                </a>
             </div>
 
             <div class="content-section">
                 <div class="info-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0"><i class="fas fa-user"></i> Thông tin khách hàng</h6>
-                        <button id="editButton" class="btn-custom btn-edit" onclick="toggleEditForm()">
+                        <button id="editButton" class="btn-custom btn-edit" onclick="toggleEditForm()" style="background: linear-gradient(135deg, var(--btn-edit-bg) 0%, #e8681a 100%); color: #fff; min-width: 120px;">
                             <i class="fas fa-edit"></i> Thay đổi
                         </button>
                     </div>
@@ -779,38 +811,38 @@
                         <span id="statusBadge" class="status-badge"></span>
                     </div>
 
-                    <div id="editForm" class="edit-form">
+                    <div id="editForm" class="edit-form" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: var(--bg-medium); border-radius: 12px; border: 1px solid var(--border-light);">
                         <form id="editHoaDonForm" th:action="@{/acvstore/hoa-don/update/{id}(id=${hoaDon.id})}" method="post">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="hoTen" class="form-label">Tên khách hàng:</label>
-                                    <input type="text" class="form-control" id="hoTen" name="hoTen" th:value="${hoaDon.nguoiDung.hoTen}" required>
+                                    <label for="hoTen" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Tên khách hàng:</label>
+                                    <input type="text" class="form-control" id="hoTen" name="hoTen" th:value="${hoaDon.nguoiDung.hoTen}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="soDienThoai" class="form-label">Số điện thoại:</label>
-                                    <input type="text" class="form-control" id="soDienThoai" name="soDienThoai" th:value="${hoaDon.nguoiDung.soDienThoai}" pattern="[0-9]{10}" title="Số điện thoại phải là 10 chữ số" required>
+                                    <label for="soDienThoai" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Số điện thoại:</label>
+                                    <input type="text" class="form-control" id="soDienThoai" name="soDienThoai" th:value="${hoaDon.nguoiDung.soDienThoai}" pattern="[0-9]{10}" title="Số điện thoại phải là 10 chữ số" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="tinhThanhPho" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="tinhThanhPho" name="tinhThanhPho" th:data-current-value="${hoaDon.nguoiDung.tinhThanhPho}" required>
+                                    <label for="tinhThanhPho" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="tinhThanhPho" name="tinhThanhPho" th:data-current-value="${hoaDon.nguoiDung.tinhThanhPho}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
                                         <option value="">Chọn tỉnh/thành phố</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="quanHuyen" class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="quanHuyen" name="quanHuyen" th:data-current-value="${hoaDon.nguoiDung.quanHuyen}" required>
+                                    <label for="quanHuyen" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Quận/Huyện <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="quanHuyen" name="quanHuyen" th:data-current-value="${hoaDon.nguoiDung.quanHuyen}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
                                         <option value="">Chọn quận/huyện</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="phuongXa" class="form-label">Phường/Xã <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="phuongXa" name="phuongXa" th:data-current-value="${hoaDon.nguoiDung.phuongXa}" required>
+                                    <label for="phuongXa" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Phường/Xã <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="phuongXa" name="phuongXa" th:data-current-value="${hoaDon.nguoiDung.phuongXa}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
                                         <option value="">Chọn phường/xã</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="chiTietDiaChi" class="form-label">Chi tiết địa chỉ:</label>
-                                    <input type="text" class="form-control" id="chiTietDiaChi" name="chiTietDiaChi" th:value="${hoaDon.nguoiDung.chiTietDiaChi}">
+                                    <label for="chiTietDiaChi" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Chi tiết địa chỉ:</label>
+                                    <input type="text" class="form-control" id="chiTietDiaChi" name="chiTietDiaChi" th:value="${hoaDon.nguoiDung.chiTietDiaChi}" style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
                                 </div>
                             </div>
                             <div class="d-flex gap-2">
@@ -829,22 +861,22 @@
                     <div class="table-header">
                         <h6><i class="fas fa-shopping-cart"></i> Thông tin đơn hàng</h6>
                     </div>
-                    <div class="table-container">
-                        <table class="table">
+                    <div class="table-container" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                        <table class="table table-order-info" style="width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;">
                             <thead>
                             <tr>
-                                <th><i class="fas fa-hashtag"></i> Mã đơn hàng</th>
-                                <th><i class="fas fa-store"></i> Phương thức bán hàng</th>
-                                <th><i class="fas fa-truck"></i> Phí vận chuyển</th>
-                                <th><i class="fas fa-calendar"></i> Thời gian tạo</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-hashtag"></i> Mã đơn hàng</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-store"></i> Phương thức bán hàng</th>
+                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-truck"></i> Phí vận chuyển</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-calendar"></i> Thời gian tạo</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <tr>
-                                <td><strong th:text="${hoaDon.donHang.maDonHang}"></strong></td>
-                                <td th:text="${hoaDon.donHang.phuongThucBanHang ?: 'Không rõ'}"></td>
-                                <td><strong id="phiVanChuyen" class="text-right" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0}"></strong></td>
-                                <td th:text="${#temporals.format(hoaDon.ngayTao, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                            <tr style="transition: all 0.3s;">
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong th:text="${hoaDon.donHang.maDonHang}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${hoaDon.donHang.phuongThucBanHang ?: 'Không rõ'}"></td>
+                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong id="phiVanChuyen" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${#temporals.format(hoaDon.ngayTao, 'dd/MM/yyyy HH:mm:ss')}"></td>
                             </tr>
                             </tbody>
                         </table>
@@ -854,50 +886,50 @@
                 <div class="table-wrapper">
                     <div class="table-header">
                         <h6><i class="fas fa-box"></i> Danh sách sản phẩm</h6>
-                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần' or hoaDon.trangThai == 'Đã giao thành công'}"
+                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần' or hoaDon.trangThai == 'Vận chuyển thành công'}"
                            th:href="@{/acvstore/tra-hang/{hoaDonId}(hoaDonId=${hoaDon.id})}"
-                           class="btn-custom btn-return btn-sm">
+                           class="btn-custom btn-return" style="min-width: 120px;">
                             <i class="fas fa-undo"></i> Trả hàng
                         </a>
                     </div>
-                    <div class="table-container">
-                        <table class="table">
+                    <div class="table-container" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                        <table class="table" style="width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;">
                             <thead>
                             <tr>
-                                <th class="text-center">STT</th>
-                                <th>Sản phẩm</th>
-                                <th class="text-center">Số lượng</th>
-                                <th class="text-right">Đơn giá</th>
-                                <th class="text-right">Thành tiền</th>
-                                <th class="text-right">Tổng tiền</th>
-                                <th>Ghi chú</th>
-                                <th class="text-center">Trạng thái trả hàng</th>
+                                <th style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">STT</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Sản phẩm</th>
+                                <th style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Số lượng</th>
+                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Đơn giá</th>
+                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Thành tiền</th>
+                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Tổng tiền</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Ghi chú</th>
+                                <th style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">Trạng thái trả hàng</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <tr th:each="item, iterStat : ${hoaDon.donHang.chiTietDonHangs}">
-                                <td class="text-center"><strong th:text="${iterStat.count}"></strong></td>
-                                <td>
+                            <tr th:each="item, iterStat : ${hoaDon.donHang.chiTietDonHangs}" style="transition: all 0.3s;">
+                                <td style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong th:text="${iterStat.count}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
                                     <div>
                                         <strong th:text="${item.tenSanPham}"></strong>
                                         <br>
                                         <small class="text-muted" th:text="'(' + ${item.chiTietSanPham.mauSac.tenMau} + ', ' + ${item.chiTietSanPham.kichCo.ten} + ')'"></small>
                                     </div>
                                 </td>
-                                <td class="text-center">
+                                <td style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
                                     <span class="status-badge status-confirmed-bg" th:text="${item.soLuong}"></span>
                                 </td>
-                                <td class="text-right"><strong id="donGia" th:attr="data-value=${item.gia}"></strong></td>
-                                <td class="text-right"><strong id="thanhTien" th:attr="data-value=${item.thanhTien}" style="color: var(--btn-confirm-bg);"></strong></td>
-                                <td class="text-right"><strong id="tongTien" th:attr="data-value=${hoaDon.tongTien}"></strong></td>
-                                <td th:text="${item.ghiChu ?: 'Không có'}"></td>
-                                <td class="text-center">
-                                    <span th:if="${item.trangThaiHoanTra == true}" class="badge bg-success">Đã trả</span>
-                                    <span th:unless="${item.trangThaiHoanTra == true}" class="badge bg-secondary">Chưa trả</span>
+                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong id="donGia" th:attr="data-value=${item.gia}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--btn-confirm-bg);"><strong id="thanhTien" th:attr="data-value=${item.thanhTien}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong id="tongTien" th:attr="data-value=${hoaDon.tongTien}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${item.ghiChu ?: 'Không có'}"></td>
+                                <td style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
+                                    <span th:if="${item.trangThaiHoanTra == true}" class="badge" style="background: linear-gradient(135deg, #198754 0%, #157347 100%); color: #fff; padding: 0.75rem 1.25rem; font-size: 1rem; border-radius: 10px; font-weight: 600; min-width: 60px; text-align: center;">Đã trả</span>
+                                    <span th:unless="${item.trangThaiHoanTra == true}" class="badge" style="background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); color: #fff; padding: 0.75rem 1.25rem; font-size: 1rem; border-radius: 10px; font-weight: 600; min-width: 60px; text-align: center;">Chưa trả</span>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(hoaDon.donHang.chiTietDonHangs)}">
-                                <td colspan="8" class="text-center py-4" style="color: var(--text-muted);">
+                                <td colspan="8" style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-muted); padding: 2rem 0;">
                                     <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
                                     Không có sản phẩm nào.
                                 </td>
@@ -911,36 +943,36 @@
                     <div class="table-header">
                         <h6><i class="fas fa-history"></i> Lịch sử trạng thái</h6>
                     </div>
-                    <div class="table-container">
-                        <table class="table">
+                    <div class="table-container" style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                        <table class="table" style="width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;">
                             <thead>
                             <tr>
-                                <th><i class="fas fa-clock"></i> Thời gian</th>
-                                <th><i class="fas fa-info-circle"></i> Trạng thái</th>
-                                <th><i class="fas fa-comment"></i> Ghi chú</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-clock"></i> Thời gian</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-info-circle"></i> Trạng thái</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-comment"></i> Ghi chú</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <tr th:each="lichSu : ${hoaDon.lichSuHoaDons}">
-                                <td th:text="${#temporals.format(lichSu.thoiGian, 'dd/MM/yyyy HH:mm:ss')}"></td>
-                                <td>
+                            <tr th:each="lichSu : ${hoaDon.lichSuHoaDons}" style="transition: all 0.3s;">
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${#temporals.format(lichSu.thoiGian, 'dd/MM/yyyy HH:mm:ss')}"></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
                                     <span class="status-badge"
                                           th:classappend="${lichSu.trangThai == 'Chưa xác nhận' ? 'status-pending' :
-                                                          lichSu.trangThai == 'Đã xác nhận' ? 'status-confirmed-bg' :
-                                                          lichSu.trangThai == 'Đang vận chuyển' ? 'status-shipping' :
-                                                          lichSu.trangThai == 'Vận chuyển thành công' ? 'status-delivered' :
-                                                          lichSu.trangThai == 'Đã trả hàng' ? 'status-returned' :
-                                                          lichSu.trangThai == 'Đã trả hàng một phần' ? 'status-partial-returned' :
-                                                          lichSu.trangThai == 'Đã xác nhận Online' ? 'status-online-confirmed' :
-                                                          lichSu.trangThai == 'Đang xử lý Online' ? 'status-online-processing' :
-                                                          lichSu.trangThai == 'Đã giao thành công' ? 'status-online-delivered' :
-                                                          'status-completed-bg'}"
+                      lichSu.trangThai == 'Đã xác nhận' ? 'status-confirmed-bg' :
+                      lichSu.trangThai == 'Đang vận chuyển' ? 'status-shipping' :
+                      lichSu.trangThai == 'Vận chuyển thành công' ? 'status-delivered' :
+                      lichSu.trangThai == 'Đã trả hàng' ? 'status-returned' :
+                      lichSu.trangThai == 'Đã trả hàng một phần' ? 'status-partial-returned' :
+                      lichSu.trangThai == 'Đã xác nhận Online' ? 'status-online-confirmed' :
+                      lichSu.trangThai == 'Đang xử lý Online' ? 'status-online-processing' :
+                      lichSu.trangThai == 'Vận chuyển thành công' ? 'status-online-delivered' :
+                      'status-completed-bg'}"
                                           th:text="${lichSu.trangThai}"></span>
                                 </td>
-                                <td th:text="${lichSu.ghiChu ?: 'Không có'}"></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${lichSu.ghiChu ?: 'Không có'}"></td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(hoaDon.lichSuHoaDons)}">
-                                <td colspan="3" class="text-center py-4" style="color: var(--text-muted);">
+                                <td colspan="3" style="padding: 1rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-muted); padding: 2rem 0;">
                                     <i class="fas fa-history" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
                                     Không có lịch sử trạng thái.
                                 </td>
@@ -964,19 +996,21 @@
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
-        }).format(value) + ' VNĐ';
+        }).format(value);
     }
 
     document.addEventListener('DOMContentLoaded', function () {
         // Format currency for price fields
         document.querySelectorAll('#phiVanChuyen, #donGia, #thanhTien, #tongTien').forEach(element => {
-            const value = parseInt(element.getAttribute('data-value')) || 0;
+            const value = parseFloat(element.getAttribute('data-value')) || 0;
             element.textContent = formatCurrency(value);
         });
 
-        // Cập nhật trạng thái giao hàng
+        // Update status badge
         const statusElement = document.getElementById("statusBadge");
         let trangThaiGiaoHang = trangThai || "Chưa xác nhận";
         statusElement.className = `status-badge ${
@@ -988,7 +1022,7 @@
                                 trangThaiGiaoHang === "Đã trả hàng một phần" ? "status-partial-returned" :
                                     trangThaiGiaoHang === "Đã xác nhận Online" ? "status-online-confirmed" :
                                         trangThaiGiaoHang === "Đang xử lý Online" ? "status-online-processing" :
-                                            trangThaiGiaoHang === "Đã giao thành công" ? "status-online-delivered" :
+                                            trangThaiGiaoHang === "Vận chuyển thành công" ? "status-online-delivered" :
                                                 "status-completed-bg"
         }`;
         statusElement.textContent = trangThaiGiaoHang.normalize("NFC");
@@ -1097,20 +1131,42 @@
         }
     }
 
-    function confirmOnlineDelivered() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận giao thành công cho đơn hàng này?")) {
+    function confirmOnlineShipping() {
+        if (confirm("Bạn có chắc chắn muốn xác nhận đang vận chuyển cho đơn hàng này?")) {
             $("#invoiceSpinner").show();
             $.ajax({
-                url: `/acvstore/hoa-don/confirm-online-delivered/${hoaDonId}`,
+                url: `/acvstore/hoa-don/confirm-online-shipping/${hoaDonId}`,
                 type: "POST",
                 contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đã giao thành công" }),
+                data: JSON.stringify({ ghiChu: "Đang vận chuyển đơn hàng Online" }),
                 success: function (response) {
                     showToast(response.message, "success");
                     window.location.reload();
                 },
                 error: function (error) {
-                    showToast("Lỗi khi xác nhận giao thành công: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    showToast("Lỗi khi xác nhận đang vận chuyển: " + (error.responseJSON?.error || "Không xác định"), "error");
+                },
+                complete: function () {
+                    $("#invoiceSpinner").hide();
+                }
+            });
+        }
+    }
+
+    function confirmOnlineDelivered() {
+        if (confirm("Bạn có chắc chắn muốn xác nhận vận chuyển thành công cho đơn hàng này?")) {
+            $("#invoiceSpinner").show();
+            $.ajax({
+                url: `/acvstore/hoa-don/confirm-online-delivered/${hoaDonId}`,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ ghiChu: "Vận chuyển thành công" }),
+                success: function (response) {
+                    showToast(response.message, "success");
+                    window.location.reload();
+                },
+                error: function (error) {
+                    showToast("Lỗi khi xác nhận vận chuyển thành công: " + (error.responseJSON?.error || "Không xác định"), "error");
                 },
                 complete: function () {
                     $("#invoiceSpinner").hide();
