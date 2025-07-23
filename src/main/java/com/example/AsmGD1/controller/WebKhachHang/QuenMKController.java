@@ -70,7 +70,7 @@ public class QuenMKController {
             nguoiDungService.resetPassword(email, newPassword);
             redirectAttributes.addFlashAttribute("message", "Đặt lại mật khẩu thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
-            return "redirect:/acvstore/customers/login";
+            return "redirect:/customers/login";
         } catch (Exception e) {
             model.addAttribute("email", email);
             model.addAttribute("error", "Đặt lại mật khẩu thất bại: " + e.getMessage());
