@@ -175,28 +175,28 @@
         <h3><strong>Mã đơn:</strong> <span th:text="${hoaDon.donHang.maDonHang}"></span></h3>
         <p><small th:text="${hoaDon.ngayTao.toLocalDate()} + ' ' + ${hoaDon.ngayTao.toLocalTime()}"></small></p>
       </div>
-      <div class="order-status" th:text="${hoaDon.trangThai}"></div>
+      <div class="order-status" th:text="${currentStatus}"></div>
     </div>
 
     <!-- Timeline trạng thái đơn hàng -->
     <div class="order-timeline">
-      <div class="timeline-step" th:classappend="${hoaDon != null ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${currentStatus == 'Chưa xác nhận' or currentStatus == 'Đã xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-shopping-cart"></i></div>
         <div class="step-label">Đã đặt hàng</div>
       </div>
-      <div class="timeline-step" th:classappend="${hoaDon.trangThai == 'Cửa hàng xác nhận đơn' or hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Đã giao hàng' or hoaDon.trangThai == 'Đã nhận hàng' or hoaDon.trangThai == 'Hoàn trả' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${currentStatus == 'Đã xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-check-circle"></i></div>
         <div class="step-label">Cửa hàng xác nhận</div>
       </div>
-      <div class="timeline-step" th:classappend="${hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Đã giao hàng' or hoaDon.trangThai == 'Đã nhận hàng' or hoaDon.trangThai == 'Hoàn trả' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-truck"></i></div>
         <div class="step-label">Đang vận chuyển</div>
       </div>
-      <div class="timeline-step" th:classappend="${hoaDon.trangThai == 'Đã giao hàng' or hoaDon.trangThai == 'Đã nhận hàng' or hoaDon.trangThai == 'Hoàn trả' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-box-open"></i></div>
         <div class="step-label">Đã giao hàng</div>
       </div>
-      <div class="timeline-step" th:classappend="${hoaDon.trangThai == 'Đã nhận hàng' or hoaDon.trangThai == 'Hoàn trả' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-user-check"></i></div>
         <div class="step-label">Đã nhận hàng</div>
       </div>
@@ -204,8 +204,8 @@
 
     <!-- Nút xác nhận đã nhận hàng và hủy đơn hàng -->
     <div class="mt-4 text-center">
-      <button th:if="${hoaDon.trangThai == 'Đã giao hàng'}" class="btn-confirm" onclick="confirmReceivedOrder('${hoaDon.donHang.maDonHang}')">Xác nhận đã nhận hàng</button>
-      <button th:if="${hoaDon.trangThai == 'CHO_XAC_NHAN'}" class="btn-cancel" onclick="cancelOrder('${hoaDon.donHang.maDonHang}')">Hủy đơn hàng</button>
+      <button th:if="${currentStatus == 'Vận chuyển thành công'}" class="btn-confirm" onclick="confirmReceivedOrder('${hoaDon.donHang.maDonHang}')">Xác nhận đã nhận hàng</button>
+      <button th:if="${currentStatus == 'Chưa xác nhận'}" class="btn-cancel" onclick="cancelOrder('${hoaDon.donHang.maDonHang}')">Hủy đơn hàng</button>
     </div>
 
     <!-- Thông tin giao hàng -->
