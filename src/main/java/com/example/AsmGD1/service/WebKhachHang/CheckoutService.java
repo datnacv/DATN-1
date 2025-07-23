@@ -13,6 +13,7 @@ import com.example.AsmGD1.repository.ThongBao.KHChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.KHThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangChiTietSanPhamRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
+import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,9 @@ public class CheckoutService {
     @Autowired
     private GioHangRepository gioHangRepository;
 
+    @Autowired
+    private ViThanhToanService viThanhToanService;
+
 
     @Transactional
     public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request) {
@@ -71,20 +75,17 @@ public class CheckoutService {
         donHang.setNguoiDung(nguoiDung);
         donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         donHang.setThoiGianTao(LocalDateTime.now());
-        donHang.setTrangThaiThanhToan(true); // Giả sử thanh toán ngay (COD, chuyển khoản...)
-        donHang.setThoiGianThanhToan(LocalDateTime.now());
+        donHang.setTrangThaiThanhToan(false); // Mặc định chưa thanh toán
         donHang.setPhuongThucBanHang("Online");
         donHang.setPhiVanChuyen(request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.valueOf(15000));
         donHang.setDiaChiGiaoHang(request.getAddress());
         donHang.setGhiChu(request.getNotes());
 
         // 2. Thiết lập phương thức thanh toán
-        if (request.getPaymentMethodId() != null) {
-            PhuongThucThanhToan pttt = phuongThucThanhToanRepository
-                    .findById(request.getPaymentMethodId())
-                    .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
-            donHang.setPhuongThucThanhToan(pttt);
-        }
+        PhuongThucThanhToan pttt = phuongThucThanhToanRepository
+                .findById(request.getPaymentMethodId())
+                .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
+        donHang.setPhuongThucThanhToan(pttt);
 
         // 3. Tính tiền và chi tiết
         BigDecimal tongTien = BigDecimal.ZERO;
@@ -133,7 +134,7 @@ public class CheckoutService {
 
             giamGia = voucher.getGiaTriGiam().min(tongTien);
             donHang.setPhieuGiamGia(voucher);
-            voucher.setSoLuong(voucher.getSoLuong() - 1); // giảm số lượng còn lại
+            voucher.setSoLuong(voucher.getSoLuong() - 1);
             phieuGiamGiaRepository.save(voucher);
         }
 
@@ -141,15 +142,35 @@ public class CheckoutService {
         donHang.setTienGiam(giamGia);
         donHang.setTongTien(tongTien.add(donHang.getPhiVanChuyen()).subtract(giamGia));
 
-        // 6. Lưu đơn hàng và chi tiết
+        // Gọi thanh toán ví (nếu là ví)
+        donHang = donHangRepository.save(donHang);
+
+        UUID VI_PAYMENT_METHOD_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440019");
+        logger.info("Phương thức thanh toán ID nhận được: {}", request.getPaymentMethodId());
+
+        if (VI_PAYMENT_METHOD_ID.equals(request.getPaymentMethodId())) {
+            boolean paymentSuccess = viThanhToanService.thanhToanBangVi(
+                    nguoiDung.getId(),
+                    donHang.getId(),
+                    donHang.getTongTien()
+            );
+            if (!paymentSuccess) {
+                throw new RuntimeException("Số dư ví không đủ để thanh toán đơn hàng.");
+            }
+            donHang.setTrangThaiThanhToan(true);
+            donHang.setThoiGianThanhToan(LocalDateTime.now());
+            donHangRepository.save(donHang); // Cập nhật lại trạng thái thanh toán
+        }
+
+        // 7. Lưu đơn hàng và chi tiết
         donHangRepository.save(donHang);
         chiTietDonHangRepository.saveAll(chiTietList);
         logger.info("Đã lưu đơn hàng: {}", donHang.getMaDonHang());
 
-        // 7. Tạo hóa đơn
+        // 8. Tạo hóa đơn
         hoaDonService.createHoaDonFromDonHang(donHang);
 
-        // 8. Xoá sản phẩm khỏi giỏ hàng
+        // 9. Xoá sản phẩm khỏi giỏ hàng
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDung.getId());
         if (gioHang != null) {
             for (CheckoutRequest.OrderItem item : request.getOrderItems()) {
