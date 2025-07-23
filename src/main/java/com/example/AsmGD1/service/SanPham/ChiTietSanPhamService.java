@@ -5,6 +5,7 @@ import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamVariationDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.SanPham.*;
+import com.example.AsmGD1.util.CloudinaryUtil;
 import com.example.AsmGD1.util.QRCodeUtil;
 import com.google.zxing.WriterException;
 import jakarta.annotation.PostConstruct;
@@ -39,6 +40,7 @@ public class ChiTietSanPhamService {
     @Autowired private CoAoRepository coAoRepo;
     @Autowired private KieuDangRepository kieuDangRepo;
     @Autowired private ThuongHieuRepository thuongHieuRepo;
+    @Autowired private CloudinaryUtil cloudinaryUtil;
 
     private final String UPLOAD_DIR;
 
@@ -48,7 +50,7 @@ public class ChiTietSanPhamService {
     public ChiTietSanPhamService() {
         String os = System.getProperty("os.name").toLowerCase();
         if (os.contains("win")) {
-            UPLOAD_DIR = "C:\\DATN\\Uploads\\";
+            UPLOAD_DIR = "C:/DATN/uploads/";
         } else {
             UPLOAD_DIR = System.getProperty("user.home") + "/DATN/uploads/";
         }
@@ -62,6 +64,350 @@ public class ChiTietSanPhamService {
         } catch (IOException e) {
             throw new RuntimeException("Could not create upload directory: " + UPLOAD_DIR, e);
         }
+    }
+
+    public List<ChiTietSanPham> findByFilters(UUID productId, UUID colorId, UUID sizeId, UUID originId, UUID materialId,
+                                              UUID styleId, UUID sleeveId, UUID collarId, UUID brandId, String gender, Boolean status) {
+        StringBuilder query = new StringBuilder("SELECT ct FROM ChiTietSanPham ct " +
+                "JOIN FETCH ct.sanPham sp " +
+                "JOIN FETCH ct.kichCo kc " +
+                "JOIN FETCH ct.mauSac ms " +
+                "WHERE sp.id = :productId");
+        Map<String, Object> params = new HashMap<>();
+        params.put("productId", productId);
+
+        if (colorId != null) {
+            query.append(" AND ct.mauSac.id = :colorId");
+            params.put("colorId", colorId);
+        }
+        if (sizeId != null) {
+            query.append(" AND ct.kichCo.id = :sizeId");
+            params.put("sizeId", sizeId);
+        }
+        if (originId != null) {
+            query.append(" AND ct.xuatXu.id = :originId");
+            params.put("originId", originId);
+        }
+        if (materialId != null) {
+            query.append(" AND ct.chatLieu.id = :materialId");
+            params.put("materialId", materialId);
+        }
+        if (styleId != null) {
+            query.append(" AND ct.kieuDang.id = :styleId");
+            params.put("styleId", styleId);
+        }
+        if (sleeveId != null) {
+            query.append(" AND ct.tayAo.id = :sleeveId");
+            params.put("sleeveId", sleeveId);
+        }
+        if (collarId != null) {
+            query.append(" AND ct.coAo.id = :collarId");
+            params.put("collarId", collarId);
+        }
+        if (brandId != null) {
+            query.append(" AND ct.thuongHieu.id = :brandId");
+            params.put("brandId", brandId);
+        }
+        if (gender != null && !gender.isEmpty()) {
+            query.append(" AND ct.gioiTinh = :gender");
+            params.put("gender", gender);
+        }
+        if (status != null) {
+            query.append(" AND ct.trangThai = :status");
+            params.put("status", status);
+        }
+
+        return chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
+    }
+
+    @Transactional
+    public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
+        SanPham sanPham = sanPhamRepo.findById(batchDto.getProductId())
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại ID: " + batchDto.getProductId()));
+        XuatXu xuatXu = xuatXuRepo.findById(batchDto.getOriginId())
+                .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại ID: " + batchDto.getOriginId()));
+        ChatLieu chatLieu = chatLieuRepo.findById(batchDto.getMaterialId())
+                .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại ID: " + batchDto.getMaterialId()));
+        KieuDang kieuDang = kieuDangRepo.findById(batchDto.getStyleId())
+                .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại ID: " + batchDto.getStyleId()));
+        TayAo tayAo = tayAoRepo.findById(batchDto.getSleeveId())
+                .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại ID: " + batchDto.getSleeveId()));
+        CoAo coAo = coAoRepo.findById(batchDto.getCollarId())
+                .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại ID: " + batchDto.getCollarId()));
+        ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
+                .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
+
+        for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
+            if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
+                    variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
+                continue;
+            }
+
+            MauSac mauSac = mauSacRepo.findById(variationDto.getColorId())
+                    .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại ID: " + variationDto.getColorId()));
+            KichCo kichCo = kichCoRepo.findById(variationDto.getSizeId())
+                    .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại ID: " + variationDto.getSizeId()));
+
+            ChiTietSanPham pd = new ChiTietSanPham();
+            pd.setSanPham(sanPham);
+            pd.setXuatXu(xuatXu);
+            pd.setChatLieu(chatLieu);
+            pd.setKieuDang(kieuDang);
+            pd.setTayAo(tayAo);
+            pd.setCoAo(coAo);
+            pd.setThuongHieu(thuongHieu);
+            pd.setMauSac(mauSac);
+            pd.setKichCo(kichCo);
+            pd.setGia(variationDto.getPrice());
+            pd.setSoLuongTonKho(variationDto.getStockQuantity());
+            pd.setGioiTinh(batchDto.getGender());
+            pd.setThoiGianTao(LocalDateTime.now());
+            pd.setTrangThai(variationDto.getStockQuantity() > 0);
+
+            ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
+
+            try {
+                QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
+            } catch (IOException | WriterException e) {
+                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId(), e);
+            }
+
+            // Lưu ảnh cho biến thể dựa trên colorId
+            List<MultipartFile> variationImages = batchDto.getColorImages() != null
+                    ? batchDto.getColorImages().getOrDefault(variationDto.getColorId(), new ArrayList<>())
+                    : new ArrayList<>();
+            if (!variationImages.isEmpty()) {
+                saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
+            }
+        }
+    }
+
+    @Transactional
+    public void saveSingleChiTietSanPham(ChiTietSanPhamUpdateDto dto, List<MultipartFile> imageFiles) {
+        SanPham sanPham = sanPhamRepo.findById(dto.getProductId())
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại ID: " + dto.getProductId()));
+        MauSac mauSac = mauSacRepo.findById(dto.getColorId())
+                .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại ID: " + dto.getColorId()));
+        KichCo kichCo = kichCoRepo.findById(dto.getSizeId())
+                .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại ID: " + dto.getSizeId()));
+        XuatXu xuatXu = xuatXuRepo.findById(dto.getOriginId())
+                .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại ID: " + dto.getOriginId()));
+        ChatLieu chatLieu = chatLieuRepo.findById(dto.getMaterialId())
+                .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại ID: " + dto.getMaterialId()));
+        KieuDang kieuDang = kieuDangRepo.findById(dto.getStyleId())
+                .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại ID: " + dto.getStyleId()));
+        TayAo tayAo = tayAoRepo.findById(dto.getSleeveId())
+                .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại ID: " + dto.getSleeveId()));
+        CoAo coAo = coAoRepo.findById(dto.getCollarId())
+                .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại ID: " + dto.getCollarId()));
+        ThuongHieu thuongHieu = thuongHieuRepo.findById(dto.getBrandId())
+                .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + dto.getBrandId()));
+
+        ChiTietSanPham pd = new ChiTietSanPham();
+        pd.setSanPham(sanPham);
+        pd.setMauSac(mauSac);
+        pd.setKichCo(kichCo);
+        pd.setXuatXu(xuatXu);
+        pd.setChatLieu(chatLieu);
+        pd.setKieuDang(kieuDang);
+        pd.setTayAo(tayAo);
+        pd.setCoAo(coAo);
+        pd.setThuongHieu(thuongHieu);
+        pd.setGia(dto.getPrice());
+        pd.setSoLuongTonKho(dto.getStockQuantity());
+        pd.setGioiTinh(dto.getGender());
+        pd.setThoiGianTao(LocalDateTime.now());
+        pd.setTrangThai(dto.getStockQuantity() > 0 ? true : dto.getStatus() != null ? dto.getStatus() : true);
+
+        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
+
+        if (imageFiles != null && !imageFiles.isEmpty()) {
+            saveImagesToCloudinary(savedDetail, imageFiles);
+        }
+    }
+
+    @Transactional
+    public void updateChiTietSanPham(ChiTietSanPhamUpdateDto updateDto, MultipartFile[] imageFiles) {
+        ChiTietSanPham existingDetail = chiTietSanPhamRepo.findById(updateDto.getId())
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + updateDto.getId()));
+
+        existingDetail.setSanPham(sanPhamRepo.findById(updateDto.getProductId())
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại")));
+        existingDetail.setMauSac(mauSacRepo.findById(updateDto.getColorId())
+                .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại")));
+        existingDetail.setKichCo(kichCoRepo.findById(updateDto.getSizeId())
+                .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại")));
+        existingDetail.setXuatXu(xuatXuRepo.findById(updateDto.getOriginId())
+                .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại")));
+        existingDetail.setChatLieu(chatLieuRepo.findById(updateDto.getMaterialId())
+                .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại")));
+        existingDetail.setKieuDang(kieuDangRepo.findById(updateDto.getStyleId())
+                .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại")));
+        existingDetail.setTayAo(tayAoRepo.findById(updateDto.getSleeveId())
+                .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại")));
+        existingDetail.setCoAo(coAoRepo.findById(updateDto.getCollarId())
+                .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại")));
+        existingDetail.setThuongHieu(thuongHieuRepo.findById(updateDto.getBrandId())
+                .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại")));
+        existingDetail.setGia(updateDto.getPrice());
+        existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
+        existingDetail.setGioiTinh(updateDto.getGender());
+        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
+        logger.info("Updating status to: {}", existingDetail.getTrangThai());
+
+        chiTietSanPhamRepo.save(existingDetail);
+
+        if (imageFiles != null && imageFiles.length > 0) {
+            saveImagesToCloudinary(existingDetail, List.of(imageFiles));
+        }
+    }
+
+    @Transactional
+    public void deleteImage(UUID imageId) {
+        HinhAnhSanPham image = hinhAnhSanPhamRepo.findById(imageId)
+                .orElseThrow(() -> new RuntimeException("Hình ảnh không tồn tại"));
+        try {
+            String url = image.getUrlHinhAnh();
+            String publicId = url.substring(url.lastIndexOf("acvstore/products/") + "acvstore/products/".length(), url.lastIndexOf("."));
+            cloudinaryUtil.deleteImage(publicId);
+            hinhAnhSanPhamRepo.delete(image);
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể xóa ảnh từ Cloudinary: " + e.getMessage());
+        }
+    }
+
+    private void saveImagesToCloudinary(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
+        for (int i = 0; i < imageFiles.size() && i < 3; i++) {
+            MultipartFile file = imageFiles.get(i);
+            if (file != null && !file.isEmpty()) {
+                try {
+                    String imageUrl = cloudinaryUtil.uploadImage(file);
+                    HinhAnhSanPham img = new HinhAnhSanPham();
+                    img.setChiTietSanPham(chiTietSanPham);
+                    img.setUrlHinhAnh(imageUrl);
+                    hinhAnhSanPhamRepo.save(img);
+                } catch (IOException e) {
+                    logger.error("Không thể lưu ảnh lên Cloudinary: ", e);
+                }
+            }
+        }
+    }
+
+    public List<ChiTietSanPham> findAll() {
+        return chiTietSanPhamRepo.findAll();
+    }
+
+    public List<ChiTietSanPham> findByProductId(UUID productId) {
+        return chiTietSanPhamRepo.findBySanPhamId(productId);
+    }
+
+    public ChiTietSanPham findById(UUID id) {
+        return chiTietSanPhamRepo.findById(id).orElse(null);
+    }
+
+    public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
+        return chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(productId, mauSacId, kichCoId);
+    }
+
+    public List<MauSac> findColorsByProductId(UUID productId) {
+        return chiTietSanPhamRepo.findBySanPhamId(productId)
+                .stream()
+                .map(ChiTietSanPham::getMauSac)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    public List<KichCo> findSizesByProductId(UUID productId) {
+        return chiTietSanPhamRepo.findBySanPhamId(productId)
+                .stream()
+                .map(ChiTietSanPham::getKichCo)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public ChiTietSanPham save(ChiTietSanPham chiTietSanPham) {
+        return chiTietSanPhamRepo.save(chiTietSanPham);
+    }
+
+    public List<ChiTietSanPham> getAllChiTietSanPhamsWithQR() {
+        List<ChiTietSanPham> list = chiTietSanPhamRepo.findAll();
+        for (ChiTietSanPham pd : list) {
+            try {
+                String qrDir = "src/main/resources/static/qrcodes/";
+                new File(qrDir).mkdirs();
+                String path = qrDir + "qr_" + pd.getId() + ".png";
+                QRCodeUtil.generateQRCodeImage(String.valueOf(pd.getId()), 200, 200, path);
+            } catch (WriterException | IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return list;
+    }
+
+    public List<ChiTietSanPham> findAllByTrangThai() {
+        return chiTietSanPhamRepo.findAllByTrangThai();
+    }
+
+    @Transactional
+    public void saveChiTietSanPhamWithImages(ChiTietSanPham pd, MultipartFile[] imageFiles) {
+        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
+
+        try {
+            QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
+        } catch (IOException | WriterException e) {
+            System.err.println("❌ Không thể tạo QR Code cho sản phẩm ID: " + savedDetail.getId());
+            e.printStackTrace();
+        }
+
+        saveImagesForChiTietSanPham(savedDetail, imageFiles);
+    }
+
+    private void saveImagesForChiTietSanPham(ChiTietSanPham chiTietSanPham, MultipartFile[] imageFiles) {
+        if (imageFiles != null) {
+            for (MultipartFile file : imageFiles) {
+                if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
+                    try {
+                        Path uploadPath = Paths.get(UPLOAD_DIR);
+                        if (!Files.exists(uploadPath)) {
+                            Files.createDirectories(uploadPath);
+                        }
+                        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
+                        Path filePath = uploadPath.resolve(filename);
+                        Files.write(filePath, file.getBytes());
+
+                        HinhAnhSanPham img = new HinhAnhSanPham();
+                        img.setChiTietSanPham(chiTietSanPham);
+                        img.setUrlHinhAnh(filename);
+                        hinhAnhSanPhamRepo.save(img);
+                    } catch (IOException e) {
+                        System.err.println("Không thể lưu tệp ảnh: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+    }
+
+    /* Hàm xét số lượng về 0 khi bán hàng tại quầy */
+    @Transactional
+    public ChiTietSanPham updateStockAndStatus(UUID productDetailId, int quantityChange) {
+        ChiTietSanPham productDetail = chiTietSanPhamRepo.findById(productDetailId)
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + productDetailId));
+
+        // Cập nhật số lượng tồn kho
+        int newStock = productDetail.getSoLuongTonKho() + quantityChange;
+        if (newStock < 0) {
+            throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + productDetail.getSanPham().getTenSanPham());
+        }
+
+        productDetail.setSoLuongTonKho(newStock);
+
+        // Tự động cập nhật trạng thái
+        productDetail.setTrangThai(newStock > 0);
+
+        // Lưu thay đổi vào cơ sở dữ liệu
+        return chiTietSanPhamRepo.save(productDetail);
     }
 
     @PostConstruct
@@ -124,426 +470,5 @@ public class ChiTietSanPhamService {
 
         // Xoá bản ghi DB
         chiTietSanPhamRepo.delete(chiTiet);
-    }
-
-
-    public List<ChiTietSanPham> findByFilters(UUID productId, UUID colorId, UUID sizeId, UUID originId, UUID materialId,
-                                              UUID styleId, UUID sleeveId, UUID collarId, UUID brandId, String gender, Boolean status) {
-        StringBuilder query = new StringBuilder("SELECT ct FROM ChiTietSanPham ct " +
-                "JOIN FETCH ct.sanPham sp " +
-                "JOIN FETCH ct.kichCo kc " +
-                "JOIN FETCH ct.mauSac ms " +
-                "WHERE sp.id = :productId");
-        Map<String, Object> params = new HashMap<>();
-        params.put("productId", productId);
-
-        if (colorId != null) {
-            query.append(" AND ct.mauSac.id = :colorId");
-            params.put("colorId", colorId);
-        }
-        if (sizeId != null) {
-            query.append(" AND ct.kichCo.id = :sizeId");
-            params.put("sizeId", sizeId);
-        }
-        if (originId != null) {
-            query.append(" AND ct.xuatXu.id = :originId");
-            params.put("originId", originId);
-        }
-        if (materialId != null) {
-            query.append(" AND ct.chatLieu.id = :materialId");
-            params.put("materialId", materialId);
-        }
-        if (styleId != null) {
-            query.append(" AND ct.kieuDang.id = :styleId");
-            params.put("styleId", styleId);
-        }
-        if (sleeveId != null) {
-            query.append(" AND ct.tayAo.id = :sleeveId");
-            params.put("sleeveId", sleeveId);
-        }
-        if (collarId != null) {
-            query.append(" AND ct.coAo.id = :collarId");
-            params.put("collarId", collarId);
-        }
-        if (brandId != null) {
-            query.append(" AND ct.thuongHieu.id = :brandId");
-            params.put("brandId", brandId);
-        }
-        if (gender != null && !gender.isEmpty()) {
-            query.append(" AND ct.gioiTinh = :gender");
-            params.put("gender", gender);
-        }
-        if (status != null) {
-            query.append(" AND ct.trangThai = :status");
-            params.put("status", status);
-        }
-
-        List<ChiTietSanPham> result = chiTietSanPhamRepo.findByDynamicQuery(query.toString(), params);
-
-        // GÁN ẢNH CHO MỖI CHI TIẾT SẢN PHẨM THEO THỨ TỰ
-        for (ChiTietSanPham pd : result) {
-            pd.setHinhAnhSanPhams(hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId()));
-        }
-
-        return result;
-    }
-
-    @Transactional
-    public void saveChiTietSanPhamVariationsDto(ChiTietSanPhamBatchDto batchDto) {
-        SanPham sanPham = sanPhamRepo.findById(batchDto.getProductId())
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại ID: " + batchDto.getProductId()));
-        XuatXu xuatXu = xuatXuRepo.findById(batchDto.getOriginId())
-                .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại ID: " + batchDto.getOriginId()));
-        ChatLieu chatLieu = chatLieuRepo.findById(batchDto.getMaterialId())
-                .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại ID: " + batchDto.getMaterialId()));
-        KieuDang kieuDang = kieuDangRepo.findById(batchDto.getStyleId())
-                .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại ID: " + batchDto.getStyleId()));
-        TayAo tayAo = tayAoRepo.findById(batchDto.getSleeveId())
-                .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại ID: " + batchDto.getSleeveId()));
-        CoAo coAo = coAoRepo.findById(batchDto.getCollarId())
-                .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại ID: " + batchDto.getCollarId()));
-        ThuongHieu thuongHieu = thuongHieuRepo.findById(batchDto.getBrandId())
-                .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + batchDto.getBrandId()));
-
-        for (ChiTietSanPhamVariationDto variationDto : batchDto.getVariations()) {
-            if (variationDto.getColorId() == null || variationDto.getSizeId() == null ||
-                    variationDto.getPrice() == null || variationDto.getStockQuantity() == null) {
-                continue;
-            }
-
-            MauSac mauSac = mauSacRepo.findById(variationDto.getColorId())
-                    .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại ID: " + variationDto.getColorId()));
-            KichCo kichCo = kichCoRepo.findById(variationDto.getSizeId())
-                    .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại ID: " + variationDto.getSizeId()));
-
-            // Kiểm tra trùng lặp biến thể
-            ChiTietSanPham existing = chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(
-                    sanPham.getId(), mauSac.getId(), kichCo.getId());
-            if (existing != null) {
-                logger.warn("Biến thể đã tồn tại: productId={}, colorId={}, sizeId={}",
-                        sanPham.getId(), mauSac.getId(), kichCo.getId());
-                continue;
-            }
-
-            ChiTietSanPham pd = new ChiTietSanPham();
-            pd.setSanPham(sanPham);
-            pd.setXuatXu(xuatXu);
-            pd.setChatLieu(chatLieu);
-            pd.setKieuDang(kieuDang);
-            pd.setTayAo(tayAo);
-            pd.setCoAo(coAo);
-            pd.setThuongHieu(thuongHieu);
-            pd.setMauSac(mauSac);
-            pd.setKichCo(kichCo);
-            pd.setGia(variationDto.getPrice());
-            pd.setSoLuongTonKho(variationDto.getStockQuantity());
-            pd.setGioiTinh(batchDto.getGender());
-            pd.setThoiGianTao(LocalDateTime.now());
-            pd.setTrangThai(variationDto.getStockQuantity() > 0);
-
-            ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
-
-            try {
-                QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
-            } catch (IOException | WriterException e) {
-                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId(), e);
-            }
-
-            // Lưu ảnh cho biến thể dựa trên colorId
-            List<MultipartFile> variationImages = batchDto.getColorImages() != null
-                    ? batchDto.getColorImages().getOrDefault(variationDto.getColorId(), new ArrayList<>())
-                    : new ArrayList<>();
-            if (!variationImages.isEmpty()) {
-                saveImagesToLocal(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
-            }
-        }
-    }
-
-    @Transactional
-    public void saveSingleChiTietSanPham(ChiTietSanPhamUpdateDto dto, List<MultipartFile> imageFiles) {
-        SanPham sanPham = sanPhamRepo.findById(dto.getProductId())
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại ID: " + dto.getProductId()));
-        MauSac mauSac = mauSacRepo.findById(dto.getColorId())
-                .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại ID: " + dto.getColorId()));
-        KichCo kichCo = kichCoRepo.findById(dto.getSizeId())
-                .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại ID: " + dto.getSizeId()));
-        XuatXu xuatXu = xuatXuRepo.findById(dto.getOriginId())
-                .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại ID: " + dto.getOriginId()));
-        ChatLieu chatLieu = chatLieuRepo.findById(dto.getMaterialId())
-                .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại ID: " + dto.getMaterialId()));
-        KieuDang kieuDang = kieuDangRepo.findById(dto.getStyleId())
-                .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại ID: " + dto.getStyleId()));
-        TayAo tayAo = tayAoRepo.findById(dto.getSleeveId())
-                .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại ID: " + dto.getSleeveId()));
-        CoAo coAo = coAoRepo.findById(dto.getCollarId())
-                .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại ID: " + dto.getCollarId()));
-        ThuongHieu thuongHieu = thuongHieuRepo.findById(dto.getBrandId())
-                .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + dto.getBrandId()));
-
-        ChiTietSanPham pd = new ChiTietSanPham();
-        pd.setSanPham(sanPham);
-        pd.setMauSac(mauSac);
-        pd.setKichCo(kichCo);
-        pd.setXuatXu(xuatXu);
-        pd.setChatLieu(chatLieu);
-        pd.setKieuDang(kieuDang);
-        pd.setTayAo(tayAo);
-        pd.setCoAo(coAo);
-        pd.setThuongHieu(thuongHieu);
-        pd.setGia(dto.getPrice());
-        pd.setSoLuongTonKho(dto.getStockQuantity());
-        pd.setGioiTinh(dto.getGender());
-        pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(dto.getStockQuantity() > 0 ? true : dto.getStatus() != null ? dto.getStatus() : true);
-
-        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
-
-        if (imageFiles != null && !imageFiles.isEmpty()) {
-            saveImagesToLocal(savedDetail, imageFiles);
-        }
-    }
-
-    @Transactional
-    public void updateChiTietSanPham(ChiTietSanPhamUpdateDto updateDto, MultipartFile[] imageFiles) {
-        ChiTietSanPham existingDetail = chiTietSanPhamRepo.findById(updateDto.getId())
-                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + updateDto.getId()));
-
-        existingDetail.setSanPham(sanPhamRepo.findById(updateDto.getProductId())
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại")));
-        existingDetail.setMauSac(mauSacRepo.findById(updateDto.getColorId())
-                .orElseThrow(() -> new RuntimeException("Màu sắc không tồn tại")));
-        existingDetail.setKichCo(kichCoRepo.findById(updateDto.getSizeId())
-                .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại")));
-        existingDetail.setXuatXu(xuatXuRepo.findById(updateDto.getOriginId())
-                .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại")));
-        existingDetail.setChatLieu(chatLieuRepo.findById(updateDto.getMaterialId())
-                .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại")));
-        existingDetail.setKieuDang(kieuDangRepo.findById(updateDto.getStyleId())
-                .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại")));
-        existingDetail.setTayAo(tayAoRepo.findById(updateDto.getSleeveId())
-                .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại")));
-        existingDetail.setCoAo(coAoRepo.findById(updateDto.getCollarId())
-                .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại")));
-        existingDetail.setThuongHieu(thuongHieuRepo.findById(updateDto.getBrandId())
-                .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại")));
-        existingDetail.setGia(updateDto.getPrice());
-        existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
-        existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
-        logger.info("Updating status to: {}", existingDetail.getTrangThai());
-
-        chiTietSanPhamRepo.save(existingDetail);
-
-        if (imageFiles != null && imageFiles.length > 0) {
-            saveImagesToLocal(existingDetail, List.of(imageFiles));
-        }
-    }
-
-    @Transactional
-    public void deleteImage(UUID imageId) {
-        HinhAnhSanPham image = hinhAnhSanPhamRepo.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Hình ảnh không tồn tại"));
-        try {
-            String fileName = image.getUrlHinhAnh().replace("/images/", "");
-            Path filePath = Paths.get(UPLOAD_DIR, fileName);
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-                logger.info("Đã xóa tệp ảnh: {}", filePath);
-            }
-            hinhAnhSanPhamRepo.delete(image);
-        } catch (IOException e) {
-            throw new RuntimeException("Không thể xóa ảnh từ thư mục local: " + e.getMessage());
-        }
-    }
-
-    private void saveImagesToLocal(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
-        // Xóa các ảnh cũ trước khi lưu ảnh mới
-        List<HinhAnhSanPham> existingImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
-        for (HinhAnhSanPham oldImage : existingImages) {
-            try {
-                String fileName = oldImage.getUrlHinhAnh().replace("/images/", "");
-                Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    logger.info("Đã xóa ảnh cũ: {}", filePath);
-                }
-                hinhAnhSanPhamRepo.delete(oldImage);
-            } catch (IOException e) {
-                logger.error("Không thể xóa ảnh cũ: {}", oldImage.getUrlHinhAnh(), e);
-            }
-        }
-
-        // Lưu ảnh mới với thứ tự
-        for (int i = 0; i < imageFiles.size() && i < 3; i++) {
-            MultipartFile file = imageFiles.get(i);
-            if (file != null && !file.isEmpty()) {
-                try {
-                    String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
-                    Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                    Files.write(filePath, file.getBytes());
-                    if (!Files.exists(filePath)) {
-                        logger.error("File was not saved correctly: {}", filePath);
-                        throw new RuntimeException("Không thể lưu tệp ảnh: " + fileName);
-                    }
-                    logger.info("Saving image {} with thuTu: {}", fileName, i + 1);
-
-                    HinhAnhSanPham img = new HinhAnhSanPham();
-                    img.setChiTietSanPham(chiTietSanPham);
-                    img.setUrlHinhAnh("/images/" + fileName);
-                    img.setThuTu(i + 1);
-                    hinhAnhSanPhamRepo.save(img);
-                    logger.info("Đã lưu ảnh: {} với thứ tự: {}", fileName, i + 1);
-                } catch (IOException e) {
-                    logger.error("Không thể lưu ảnh vào thư mục local: {}", file.getOriginalFilename(), e);
-                }
-            }
-        }
-    }
-
-    public List<ChiTietSanPham> findAll() {
-        List<ChiTietSanPham> chiTietSanPhams = chiTietSanPhamRepo.findAll();
-        for (ChiTietSanPham pd : chiTietSanPhams) {
-            List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId());
-            pd.setHinhAnhSanPhams(images);
-        }
-        return chiTietSanPhams;
-    }
-
-    public List<ChiTietSanPham> findByProductId(UUID productId) {
-        List<ChiTietSanPham> chiTietSanPhams = chiTietSanPhamRepo.findBySanPhamId(productId);
-        for (ChiTietSanPham pd : chiTietSanPhams) {
-            List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId());
-            pd.setHinhAnhSanPhams(images);
-        }
-        return chiTietSanPhams;
-    }
-
-    public ChiTietSanPham findById(UUID id) {
-        ChiTietSanPham pd = chiTietSanPhamRepo.findById(id).orElse(null);
-        if (pd != null) {
-            List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(id);
-            pd.setHinhAnhSanPhams(images);
-        }
-        return pd;
-    }
-
-    public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
-        ChiTietSanPham pd = chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(productId, mauSacId, kichCoId);
-        if (pd != null) {
-            List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId());
-            pd.setHinhAnhSanPhams(images);
-        }
-        return pd;
-    }
-
-    public List<MauSac> findColorsByProductId(UUID productId) {
-        return chiTietSanPhamRepo.findBySanPhamId(productId)
-                .stream()
-                .map(ChiTietSanPham::getMauSac)
-                .distinct()
-                .collect(Collectors.toList());
-    }
-
-    public List<KichCo> findSizesByProductId(UUID productId) {
-        return chiTietSanPhamRepo.findBySanPhamId(productId)
-                .stream()
-                .map(ChiTietSanPham::getKichCo)
-                .distinct()
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public ChiTietSanPham save(ChiTietSanPham chiTietSanPham) {
-        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(chiTietSanPham);
-        List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(savedDetail.getId());
-        savedDetail.setHinhAnhSanPhams(images);
-        return savedDetail;
-    }
-
-    public List<ChiTietSanPham> findAllByTrangThai() {
-        List<ChiTietSanPham> chiTietSanPhams = chiTietSanPhamRepo.findAllByTrangThai();
-        for (ChiTietSanPham pd : chiTietSanPhams) {
-            List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(pd.getId());
-            pd.setHinhAnhSanPhams(images);
-        }
-        return chiTietSanPhams;
-    }
-
-    @Transactional
-    public void saveChiTietSanPhamWithImages(ChiTietSanPham pd, MultipartFile[] imageFiles) {
-        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
-
-        try {
-            QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
-        } catch (IOException | WriterException e) {
-            logger.error("Không thể tạo QR Code cho sản phẩm ID: " + savedDetail.getId(), e);
-        }
-
-        saveImagesForChiTietSanPham(savedDetail, imageFiles);
-    }
-
-    private void saveImagesForChiTietSanPham(ChiTietSanPham chiTietSanPham, MultipartFile[] imageFiles) {
-        // Xóa các ảnh cũ trước khi lưu ảnh mới
-        List<HinhAnhSanPham> existingImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
-        for (HinhAnhSanPham oldImage : existingImages) {
-            try {
-                String fileName = oldImage.getUrlHinhAnh().replace("/images/", "");
-                Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    logger.info("Đã xóa ảnh cũ: {}", filePath);
-                }
-                hinhAnhSanPhamRepo.delete(oldImage);
-            } catch (IOException e) {
-                logger.error("Không thể xóa ảnh cũ: {}", oldImage.getUrlHinhAnh(), e);
-            }
-        }
-
-        // Lưu ảnh mới với thứ tự
-        if (imageFiles != null) {
-            for (int i = 0; i < imageFiles.length && i < 3; i++) {
-                MultipartFile file = imageFiles[i];
-                if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
-                    try {
-                        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
-                        Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                        Files.write(filePath, file.getBytes());
-                        if (!Files.exists(filePath)) {
-                            logger.error("File was not saved correctly: {}", filePath);
-                            throw new RuntimeException("Không thể lưu tệp ảnh: " + fileName);
-                        }
-                        logger.info("Saving image {} with thuTu: {}", fileName, i + 1);
-
-                        HinhAnhSanPham img = new HinhAnhSanPham();
-                        img.setChiTietSanPham(chiTietSanPham);
-                        img.setUrlHinhAnh("/images/" + fileName);
-                        img.setThuTu(i + 1);
-                        hinhAnhSanPhamRepo.save(img);
-                        logger.info("Đã lưu ảnh: {} với thứ tự: {}", fileName, i + 1);
-                    } catch (IOException e) {
-                        logger.error("Không thể lưu tệp ảnh: {}", file.getOriginalFilename(), e);
-                    }
-                }
-            }
-        }
-    }
-
-    @Transactional
-    public ChiTietSanPham updateStockAndStatus(UUID productDetailId, int quantityChange) {
-        ChiTietSanPham productDetail = chiTietSanPhamRepo.findById(productDetailId)
-                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + productDetailId));
-
-        int newStock = productDetail.getSoLuongTonKho() + quantityChange;
-        if (newStock < 0) {
-            throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + productDetail.getSanPham().getTenSanPham());
-        }
-
-        productDetail.setSoLuongTonKho(newStock);
-        productDetail.setTrangThai(newStock > 0);
-
-        ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(productDetail);
-        List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(savedDetail.getId());
-        savedDetail.setHinhAnhSanPhams(images);
-        return savedDetail;
     }
 }
