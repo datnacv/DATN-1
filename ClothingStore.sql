@@ -182,7 +182,7 @@ CREATE TABLE don_hang (
                           thoi_gian_tao DATETIME NOT NULL,
                           tien_giam DECIMAL(10,2),
                           tong_tien DECIMAL(10,2) NOT NULL,
-                          phuong_thuc_ban_hang NVARCHAR(50) NOT NULL CHECK (phuong_thuc_ban_hang IN (N'Tại quầy', N'Giao hàng')) DEFAULT N'Tại quầy',
+                          phuong_thuc_ban_hang NVARCHAR(50) NOT NULL CHECK (phuong_thuc_ban_hang IN (N'Tại quầy', N'Giao hàng', N'Online')) DEFAULT N'Tại quầy',
                           FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id),
                           FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
@@ -640,3 +640,16 @@ ALTER TABLE lich_su_giao_dich_vi ADD created_at DATETIME DEFAULT CURRENT_TIMESTA
 
 INSERT INTO phuong_thuc_thanh_toan (id, ten_phuong_thuc, trang_thai, ngay_tao)
 VALUES ('550e8400-e29b-41d4-a716-446655440019', N'Ví', 1, GETDATE());
+
+ALTER TABLE nguoi_dung
+    ADD reset_otp NVARCHAR(10) NULL;
+
+ALTER TABLE nguoi_dung
+    ADD otp_expiry DATETIME NULL;
+select * from nguoi_dung
+
+UPDATE nguoi_dung
+SET email = 'datn.acv@gmail.com'
+WHERE id = '550E8400-E29B-41D4-A716-446655440014';
+
+select * from vi_thanh_toan

@@ -4,7 +4,6 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -12,7 +11,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Map;
+import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -22,6 +21,7 @@ public class CustomerController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    // Helper method để kiểm tra quyền admin
     private boolean isCurrentUserAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
@@ -31,30 +31,56 @@ public class CustomerController {
         return false;
     }
 
+    // Helper method để thêm thông tin user vào model
     private void addUserInfoToModel(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung currentUser = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("currentUser", currentUser);
-            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(currentUser.getVaiTro()));
-            model.addAttribute("user", currentUser);
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("currentUser", user);
+            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isEmployee", "EMPLOYEE".equalsIgnoreCase(user.getVaiTro()));
         } else {
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("ADMIN", "", 0, 1).getContent();
+            NguoiDung defaultUser = admins.isEmpty() ? new NguoiDung() : admins.get(0);
+            model.addAttribute("user", defaultUser);
+            model.addAttribute("currentUser", defaultUser);
             model.addAttribute("isAdmin", false);
-            model.addAttribute("user", new NguoiDung());
+            model.addAttribute("isEmployee", false);
         }
+    }
+
+    private boolean isCurrentUserEmployee() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "EMPLOYEE".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
     }
 
     @GetMapping
     public String listCustomers(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "") String keyword,
-                                Model model) {
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        // Kiểm tra quyền truy cập - cả admin và employee đều có thể xem
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+            redirectAttributes.addFlashAttribute("message", "Bạn không có quyền truy cập chức năng này!");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/acvstore/thong-ke";
+        }
+
+        // Thêm thông tin user và quyền vào model
         addUserInfoToModel(model);
+
         Page<NguoiDung> customers = nguoiDungService.findUsersByVaiTro("customer", keyword, page, 5);
         model.addAttribute("customers", customers.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
         model.addAttribute("customer", new NguoiDung());
+
         return "WebQuanLy/list-khach-hang";
     }
 
@@ -62,11 +88,13 @@ public class CustomerController {
     public String addCustomer(@ModelAttribute("customer") NguoiDung customer,
                               RedirectAttributes redirectAttributes,
                               Authentication authentication) {
+        // Kiểm tra quyền admin
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền thêm khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/customers";
         }
+
         try {
             customer.setVaiTro("customer");
             nguoiDungService.save(customer);
@@ -83,11 +111,13 @@ public class CustomerController {
     public String editCustomer(@ModelAttribute("customer") NguoiDung customer,
                                RedirectAttributes redirectAttributes,
                                Authentication authentication) {
+        // Kiểm tra quyền admin
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền sửa khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/customers";
         }
+
         try {
             customer.setVaiTro("customer");
             nguoiDungService.save(customer);
@@ -104,11 +134,13 @@ public class CustomerController {
     public String deleteCustomer(@PathVariable UUID id,
                                  RedirectAttributes redirectAttributes,
                                  Authentication authentication) {
+        // Kiểm tra quyền admin
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền xóa khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/customers";
         }
+
         try {
             nguoiDungService.deleteById(id);
             redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thành công!");
@@ -132,6 +164,4 @@ public class CustomerController {
     public String showLoginForm() {
         return "WebQuanLy/customer-login";
     }
-
-
 }
