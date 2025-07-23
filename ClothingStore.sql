@@ -613,3 +613,30 @@ CREATE TABLE LichSuTimKiem (
                                thoi_gian_tim_kiem DATETIME NOT NULL DEFAULT GETDATE(),
                                FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
 );
+
+
+-- ví tài khoản
+CREATE TABLE vi_thanh_toan (
+                               id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                               id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                               so_du DECIMAL(15, 2) NOT NULL DEFAULT 0.00, -- Số dư ví
+                               thoi_gian_tao DATETIME NOT NULL DEFAULT GETDATE(),
+                               thoi_gian_cap_nhat DATETIME,
+                               trang_thai BIT NOT NULL DEFAULT 1, -- Trạng thái ví (1: hoạt động, 0: khóa)
+                               FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
+);
+CREATE TABLE lich_su_giao_dich_vi (
+                                      id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                      id_vi_thanh_toan UNIQUEIDENTIFIER NOT NULL,
+                                      id_don_hang UNIQUEIDENTIFIER, -- Liên kết với đơn hàng (nếu có)
+                                      loai_giao_dich NVARCHAR(50) NOT NULL CHECK (loai_giao_dich IN (N'Nạp tiền', N'Thanh toán', N'Hoàn tiền')),
+                                      so_tien DECIMAL(15, 2) NOT NULL,
+                                      thoi_gian_giao_dich DATETIME NOT NULL DEFAULT GETDATE(),
+                                      mo_ta NVARCHAR(MAX),
+                                      FOREIGN KEY (id_vi_thanh_toan) REFERENCES vi_thanh_toan(id),
+                                      FOREIGN KEY (id_don_hang) REFERENCES don_hang(id)
+);
+ALTER TABLE lich_su_giao_dich_vi ADD created_at DATETIME DEFAULT CURRENT_TIMESTAMP;
+
+INSERT INTO phuong_thuc_thanh_toan (id, ten_phuong_thuc, trang_thai, ngay_tao)
+VALUES ('550e8400-e29b-41d4-a716-446655440019', N'Ví', 1, GETDATE());
