@@ -38,7 +38,16 @@ public class ChienDichGiamGiaController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
-            return "admin".equalsIgnoreCase(user.getVaiTro());
+            return "ADMIN".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    private boolean isCurrentUserEmployee() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "EMPLOYEE".equalsIgnoreCase(user.getVaiTro());
         }
         return false;
     }
@@ -48,11 +57,13 @@ public class ChienDichGiamGiaController {
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             model.addAttribute("user", user);
-            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isEmployee", "EMPLOYEE".equalsIgnoreCase(user.getVaiTro()));
         } else {
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("ADMIN", "", 0, 1).getContent();
             model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             model.addAttribute("isAdmin", false);
+            model.addAttribute("isEmployee", false);
         }
     }
 
@@ -150,6 +161,52 @@ public class ChienDichGiamGiaController {
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
 
+    @GetMapping("/view/{id}")
+    public String xemChiTiet(@PathVariable("id") UUID id,
+                             @RequestParam(defaultValue = "0") int page,
+                             @RequestParam(defaultValue = "10") int size,
+                             Model model,
+                             RedirectAttributes redirectAttributes) {
+
+        // RBAC: Cả admin và employee đều có thể xem chi tiết
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/chien-dich-giam-gia";
+        }
+
+        ChienDichGiamGia chienDich = chienDichService.timTheoId(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
+
+        // Set view mode attributes
+        model.addAttribute("readOnly", true);
+        model.addAttribute("viewMode", true);
+        model.addAttribute("isReadOnly", true); // For backward compatibility
+        model.addAttribute("chienDich", chienDich);
+
+        // Get selected product details
+        List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
+        Set<UUID> selectedProductIds = chiTietDaChon.stream()
+                .filter(ct -> ct.getSanPham() != null)
+                .map(ct -> ct.getSanPham().getId())
+                .collect(Collectors.toSet());
+
+        // Get product page for display
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+
+        model.addAttribute("selectedDetails", chiTietDaChon);
+        model.addAttribute("selectedProductIds", selectedProductIds);
+        model.addAttribute("productPage", productPage);
+        model.addAttribute("currentProductPage", productPage.getNumber());
+        model.addAttribute("totalProductPages", productPage.getTotalPages());
+        model.addAttribute("status", getStatus(chienDich));
+
+        // Add user info to model
+        addUserInfoToModel(model);
+
+        return "WebQuanLy/discount-campaign-edit";
+    }
+
     @GetMapping("/edit/{id}")
     public String hienFormChinhSua(@PathVariable("id") UUID id,
                                    @RequestParam(defaultValue = "0") int page,
@@ -158,18 +215,30 @@ public class ChienDichGiamGiaController {
                                    Model model,
                                    RedirectAttributes redirectAttributes) {
 
-        ChienDichGiamGia chienDich = chienDichService.timTheoId(id).orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
-
-        String status = getStatus(chienDich);
-        boolean isAdmin = isCurrentUserAdmin();
-
         // RBAC: Admin có thể chỉnh sửa, Employee chỉ có thể xem
-        if (!isAdmin) {
-            model.addAttribute("readOnly", true);
+        boolean isAdmin = isCurrentUserAdmin();
+        boolean isEmployee = isCurrentUserEmployee();
+
+        if (!isAdmin && !isEmployee) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/chien-dich-giam-gia";
         }
 
-        model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status) || !isAdmin);
+        if (isEmployee) {
+            // Employee chỉ có thể xem, redirect to view mode
+            return "redirect:/acvstore/chien-dich-giam-gia/view/" + id +
+                    "?page=" + page + "&size=" + size;
+        }
+
+        ChienDichGiamGia chienDich = chienDichService.timTheoId(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
+
+        String status = getStatus(chienDich);
+
+        model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status));
+        model.addAttribute("viewMode", false);
         model.addAttribute("chienDich", chienDich);
+        model.addAttribute("status", status);
 
         List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
         Set<UUID> selectedProductIds = chiTietDaChon.stream()
@@ -231,6 +300,8 @@ public class ChienDichGiamGiaController {
                     .map(id -> chienDichService.layChiTietTheoId(id).getSanPham().getId())
                     .collect(Collectors.toSet()));
             model.addAttribute("isReadOnly", false);
+            model.addAttribute("viewMode", false);
+            model.addAttribute("status", currentStatus);
             addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-edit";
         }
@@ -251,6 +322,8 @@ public class ChienDichGiamGiaController {
                     .map(id -> chienDichService.layChiTietTheoId(id).getSanPham().getId())
                     .collect(Collectors.toSet()));
             model.addAttribute("isReadOnly", false);
+            model.addAttribute("viewMode", false);
+            model.addAttribute("status", currentStatus);
             addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-edit";
         }

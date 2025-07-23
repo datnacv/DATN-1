@@ -171,6 +171,19 @@
       box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
     }
 
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #34ce57);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      border: none;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #34ce57, #40d865);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
     .card {
       background: var(--glass-bg);
       backdrop-filter: blur(20px);
@@ -229,7 +242,7 @@
 
     <div class="card mb-4 filter-box">
       <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Bộ lọc</h5>
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Bộ lọc</h5>
       </div>
       <div class="card-body">
         <form class="row g-3" method="get" th:action="@{/acvstore/chien-dich-giam-gia}" id="filterForm">
@@ -280,7 +293,7 @@
       <div class="card-header d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">Danh sách chiến dịch giảm giá</h5>
         <a th:href="@{/acvstore/chien-dich-giam-gia/create}" class="btn btn-primary" th:if="${isAdmin}">
-          <i class="bi bi-plus-lg me-1"></i>Thêm mới
+          <i class="fas fa-plus me-1"></i>Thêm mới
         </a>
       </div>
       <div class="table-responsive">
@@ -294,7 +307,7 @@
             <th>Ngày bắt đầu</th>
             <th>Ngày kết thúc</th>
             <th>Trạng thái</th>
-            <th th:if="${isAdmin}">Thao tác</th>
+            <th>Thao tác</th>
           </tr>
           </thead>
           <tbody>
@@ -315,20 +328,37 @@
                               (${campaign.status == 'ENDED'} ? 'Đã kết thúc' : ''))">
               </span>
             </td>
-            <td th:if="${isAdmin}">
+            <td>
               <div class="action-buttons">
-                <a th:href="@{'/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id}}" class="btn btn-sm btn-warning" title="Sửa">
-                  <i class="bi bi-pencil-square"></i>
+                <!-- View button for both Admin and Employee -->
+                <a th:href="@{${isAdmin} ? '/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id} : '/acvstore/chien-dich-giam-gia/view/' + ${campaign.id}}"
+                   class="btn btn-sm btn-success"
+                   title="Xem chi tiết">
+                  <i class="fas fa-eye"></i>
                 </a>
-                <button type="button" class="btn btn-sm btn-danger delete-btn"
-                        th:data-id="${campaign.id}" th:data-name="${campaign.ten}" title="Xóa">
-                  <i class="bi bi-trash"></i>
+
+                <!-- Edit button - only for Admin and only for UPCOMING campaigns -->
+                <a th:if="${isAdmin && campaign.status == 'UPCOMING'}"
+                   th:href="@{'/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id}}"
+                   class="btn btn-sm btn-warning"
+                   title="Sửa">
+                  <i class="fas fa-edit"></i>
+                </a>
+
+                <!-- Delete button - only for Admin -->
+                <button th:if="${isAdmin}"
+                        type="button"
+                        class="btn btn-sm btn-danger delete-btn"
+                        th:data-id="${campaign.id}"
+                        th:data-name="${campaign.ten}"
+                        title="Xóa">
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </td>
           </tr>
           <tr th:if="${#lists.isEmpty(campaignList)}">
-            <td th:colspan="${isAdmin} ? 8 : 7" class="text-center py-4">Không có chiến dịch giảm giá nào</td>
+            <td colspan="8" class="text-center py-4">Không có chiến dịch giảm giá nào</td>
           </tr>
           </tbody>
         </table>

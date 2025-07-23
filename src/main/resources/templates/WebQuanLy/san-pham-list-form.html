@@ -780,7 +780,8 @@
                             <th>Tồn kho</th>
                             <th th:if="${isAdmin}">Trạng thái</th>
                             <th>Ngày tạo</th>
-                            <th th:if="${isAdmin}">Thao tác</th>
+                            <!-- Cột Thao tác hiển thị cho cả Admin và Employee -->
+                            <th>Thao tác</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -828,19 +829,31 @@
                             <td>
                                 <span class="fw-bold" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
                             </td>
-                            <td class="action-buttons" th:if="${isAdmin}">
-                                <button class="btn btn-warning btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#editSanPhamModal"
-                                        th:data-sanpham="${sp.id}"
-                                        title="Chỉnh sửa">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
-                                   class="btn btn-success btn-sm"
-                                   title="Xem chi tiết">
-                                    <i class="fas fa-eye"></i>
-                                </a>
+                            <!-- Cột Thao tác với logic hiển thị khác nhau cho Admin và Employee -->
+                            <td class="action-buttons">
+                                <!-- Nút cho Admin: Edit + View -->
+                                <div th:if="${isAdmin}">
+                                    <button class="btn btn-warning btn-sm"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editSanPhamModal"
+                                            th:data-sanpham="${sp.id}"
+                                            title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
+                                       class="btn btn-success btn-sm"
+                                       title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                                <!-- Nút cho Employee: Chỉ View -->
+                                <div th:unless="${isAdmin}">
+                                    <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
+                                       class="btn btn-success btn-sm"
+                                       title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         </tbody>

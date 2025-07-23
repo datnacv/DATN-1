@@ -94,6 +94,22 @@
             color: #dc3545;
             font-style: italic;
         }
+
+        .role-badge {
+            background: linear-gradient(135deg, #6f42c1, #8b5cf6);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+        }
+
+        .role-badge.employee {
+            background: linear-gradient(135deg, #28a745, #34ce57);
+        }
     </style>
     <script th:src="@{/js/sidebar.js}" defer></script>
 </head>
@@ -105,14 +121,30 @@
     </nav>
     <div class="content">
         <div class="sticky-header">
-            <h2><i class="fas fa-tags me-2"></i>Chỉnh sửa đợt giảm giá</h2>
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <div class="d-flex align-items-center">
+                    <a th:href="@{/acvstore/chien-dich-giam-gia}" class="btn btn-outline-secondary me-3">
+                        <i class="fas fa-arrow-left me-2"></i>Quay lại
+                    </a>
+                    <h2>
+                        <i class="fas fa-tags me-2"></i>
+                        <span th:text="${viewMode} ? 'Xem chi tiết đợt giảm giá' : 'Chỉnh sửa đợt giảm giá'"></span>
+                    </h2>
+                </div>
+                <div class="role-badge" th:classappend="${isAdmin} ? '' : 'employee'">
+                    <i class="fas fa-user-shield me-1" th:if="${isAdmin}"></i>
+                    <i class="fas fa-user me-1" th:unless="${isAdmin}"></i>
+                    <span th:text="${isAdmin} ? 'ADMIN' : 'EMPLOYEE'"></span>
+                </div>
+            </div>
         </div>
         <div class="alert-container">
-            <div class="alert alert-info alert-dismissible fade" role="alert" id="readOnlyWarningToast" th:if="${isReadOnly}" style="display: none;">
+            <div class="alert alert-info alert-dismissible fade" role="alert" id="readOnlyWarningToast" th:if="${readOnly or viewMode}" style="display: none;">
                 <div class="d-flex">
                     <div class="alert-body">
                         <i class="fas fa-info-circle me-2"></i>
-                        Chiến dịch đang diễn ra hoặc đã kết thúc, chỉ có thể xem thông tin.
+                        <span th:if="${viewMode}">Đang ở chế độ xem chi tiết. Không thể chỉnh sửa thông tin.</span>
+                        <span th:unless="${viewMode}">Chiến dịch đang diễn ra hoặc đã kết thúc, chỉ có thể xem thông tin.</span>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
@@ -128,14 +160,14 @@
                             <div class="col-md-4">
                                 <label class="form-label">Mã đợt</label>
                                 <input type="text" class="form-control" name="ma" th:value="${chienDich.ma}" required
-                                       th:attr="disabled=${isReadOnly} ? 'disabled' : null"
+                                       th:attr="disabled=${isReadOnly or viewMode} ? 'disabled' : null"
                                        oninvalid="this.setCustomValidity('Vui lòng nhập mã đợt hợp lệ.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Tên đợt</label>
                                 <input type="text" class="form-control" name="ten" th:value="${chienDich.ten}" required maxlength="100"
-                                       th:attr="disabled=${isReadOnly} ? 'disabled' : null"
+                                       th:attr="disabled=${isReadOnly or viewMode} ? 'disabled' : null"
                                        oninvalid="this.setCustomValidity('Vui lòng nhập tên đợt hợp lệ.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
@@ -143,32 +175,32 @@
                                 <label class="form-label">% giảm</label>
                                 <input type="number" class="form-control" name="phanTramGiam"
                                        th:value="${#numbers.formatDecimal(chienDich.phanTramGiam, 0, 'POINT', 0, 'NONE')}" required min="0.1" max="100" step="0.01"
-                                       th:attr="disabled=${isReadOnly} ? 'disabled' : null"
+                                       th:attr="disabled=${isReadOnly or viewMode} ? 'disabled' : null"
                                        oninvalid="this.setCustomValidity('Nhập phần trăm giảm từ 0.1 đến 100%.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Số lượng</label>
                                 <input type="number" class="form-control" name="soLuong" th:value="${chienDich.soLuong}" required min="1"
-                                       th:attr="disabled=${isReadOnly} ? 'disabled' : null"
+                                       th:attr="disabled=${isReadOnly or viewMode} ? 'disabled' : null"
                                        oninvalid="this.setCustomValidity('Vui lòng nhập số lượng lớn hơn 0.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
                                 <input type="date" class="form-control" name="ngayBatDau" th:value="${#temporals.format(chienDich.ngayBatDau, 'yyyy-MM-dd')}" required
-                                       th:attr="disabled=${isReadOnly} ? 'disabled' : null"
+                                       th:attr="disabled=${isReadOnly or viewMode} ? 'disabled' : null"
                                        oninvalid="this.setCustomValidity('Vui lòng chọn ngày bắt đầu.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Ngày kết thúc</label>
                                 <input type="date" class="form-control" name="ngayKetThuc" th:value="${#temporals.format(chienDich.ngayKetThuc, 'yyyy-MM-dd')}" required
-                                       th:attr="disabled=${isReadOnly} ? 'disabled' : null"
+                                       th:attr="disabled=${isReadOnly or viewMode} ? 'disabled' : null"
                                        oninvalid="this.setCustomValidity('Vui lòng chọn ngày kết thúc.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
-                            <div class="col-md-12 d-flex justify-content-end">
+                            <div class="col-md-12 d-flex justify-content-end" th:unless="${viewMode}">
                                 <button type="reset" class="btn btn-secondary me-2" th:disabled="${isReadOnly}">Làm mới</button>
                                 <button type="submit" class="btn btn-warning" th:disabled="${isReadOnly}">Cập nhật đợt giảm giá</button>
                             </div>
@@ -183,19 +215,19 @@
                                 <span class="input-group-text bg-white">
                                     <i class="fas fa-search text-secondary"></i>
                                 </span>
-                                <input type="text" class="form-control border-start-0" id="productSearchInput" placeholder="Nhập tên sản phẩm..." th:disabled="${isReadOnly}">
+                                <input type="text" class="form-control border-start-0" id="productSearchInput" placeholder="Nhập tên sản phẩm..." th:disabled="${isReadOnly or viewMode}">
                             </div>
                             <table class="table table-bordered">
                                 <thead>
                                 <tr>
-                                    <th><input type="checkbox" id="selectAllProducts" th:disabled="${isReadOnly}"></th>
+                                    <th><input type="checkbox" id="selectAllProducts" th:disabled="${isReadOnly or viewMode}"></th>
                                     <th>Mã</th>
                                     <th>Tên sản phẩm</th>
                                 </tr>
                                 </thead>
                                 <tbody id="productTableBody">
                                 <tr th:each="product : ${productPage.content}" th:data-id="${product.id}" class="product-row">
-                                    <td><input type="checkbox" class="product-checkbox" th:value="${product.id}" th:checked="${selectedProductIds.contains(product.id)}" th:disabled="${isReadOnly}"></td>
+                                    <td><input type="checkbox" class="product-checkbox" th:value="${product.id}" th:checked="${selectedProductIds.contains(product.id)}" th:disabled="${isReadOnly or viewMode}"></td>
                                     <td th:text="${product.maSanPham}"></td>
                                     <td th:text="${product.tenSanPham}"></td>
                                 </tr>
@@ -212,7 +244,7 @@
                             <table class="table table-bordered">
                                 <thead>
                                 <tr>
-                                    <th><input type="checkbox" id="selectAllDetails" th:disabled="${isReadOnly}"></th>
+                                    <th><input type="checkbox" id="selectAllDetails" th:disabled="${isReadOnly or viewMode}"></th>
                                     <th>Tên SP</th>
                                     <th>Màu</th>
                                     <th>Size</th>
@@ -225,7 +257,7 @@
                                     <td colspan="6" class="text-error">Chưa có chi tiết sản phẩm nào được chọn</td>
                                 </tr>
                                 <tr th:each="detail : ${selectedDetails}">
-                                    <td><input type="checkbox" class="detail-checkbox" th:value="${detail.id}" checked th:disabled="${isReadOnly}"></td>
+                                    <td><input type="checkbox" class="detail-checkbox" th:value="${detail.id}" checked th:disabled="${isReadOnly or viewMode}"></td>
                                     <td th:text="${detail.sanPham?.tenSanPham ?: 'Không có tên sản phẩm'}"></td>
                                     <td th:text="${detail.mauSac?.tenMau ?: 'Không có màu'}"></td>
                                     <td th:text="${detail.kichCo?.ten ?: 'Không có kích cỡ'}"></td>
@@ -249,6 +281,7 @@
     const pageSize = 5;
     const selectedProductIds = new Set([[${selectedProductIds}]].map(String));
     const selectedDetailIds = new Set([[${#strings.listJoin(selectedDetails.![id], ',')}]].split(",").filter(id => id));
+    const isReadOnly = [[${isReadOnly}]] || [[${viewMode}]];
 
     function formatPrice(price) {
         if (price == null) return 'Không có giá';
@@ -276,7 +309,7 @@
 
     function loadProductDetails() {
         const container = document.getElementById("productDetailTableBody");
-        if ([[${isReadOnly}]]) {
+        if (isReadOnly) {
             if ([[${selectedDetails}]].length === 0) {
                 container.innerHTML = `<tr><td colspan="6" class="text-error">Chưa có chi tiết sản phẩm nào được chọn</td></tr>`;
             }
@@ -355,7 +388,7 @@
             ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
             : products.map(p => `
                 <tr class="product-row" data-id="${p.id}">
-                    <td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''} ${[[${isReadOnly}]] ? 'disabled' : ''}></td>
+                    <td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''} ${isReadOnly ? 'disabled' : ''}></td>
                     <td>${p.maSanPham}</td>
                     <td>${p.tenSanPham}</td>
                 </tr>`).join('');
@@ -369,7 +402,7 @@
         updateSelectAll(".product-checkbox", "selectAllProducts");
         loadProductDetails();
 
-        if ([[${isReadOnly}]]) {
+        if (isReadOnly) {
             const warningToast = document.getElementById('readOnlyWarningToast');
             warningToast.style.display = 'block';
             warningToast.classList.add('show');
@@ -380,7 +413,7 @@
         }
 
         document.getElementById("selectAllProducts")?.addEventListener("change", function () {
-            if (![[${isReadOnly}]]) {
+            if (!isReadOnly) {
                 document.querySelectorAll(".product-checkbox").forEach(cb => {
                     cb.checked = this.checked;
                     this.checked ? selectedProductIds.add(cb.value) : selectedProductIds.delete(cb.value);
@@ -390,7 +423,7 @@
         });
 
         document.getElementById("selectAllDetails")?.addEventListener("change", function () {
-            if (![[${isReadOnly}]]) {
+            if (!isReadOnly) {
                 document.querySelectorAll(".detail-checkbox").forEach(cb => {
                     cb.checked = this.checked;
                     this.checked ? selectedDetailIds.add(cb.value) : selectedDetailIds.delete(cb.value);
@@ -400,13 +433,13 @@
         });
 
         document.getElementById("updateCampaignForm")?.addEventListener("submit", function () {
-            if (![[${isReadOnly}]]) {
+            if (!isReadOnly) {
                 document.getElementById("selectedProductDetailIdsInput").value = [...selectedDetailIds].join(',');
             }
         });
 
         document.getElementById("productSearchInput").addEventListener("input", function () {
-            if (![[${isReadOnly}]]) {
+            if (!isReadOnly) {
                 clearTimeout(this._searchTimer);
                 const query = this.value.trim();
                 this._searchTimer = setTimeout(() => searchProducts(query, 0), 300);
