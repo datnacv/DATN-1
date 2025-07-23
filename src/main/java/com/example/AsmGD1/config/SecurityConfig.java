@@ -130,20 +130,25 @@ public class SecurityConfig implements ApplicationContextAware {
                             if (nguoiDung != null) {
                                 String vaiTro = nguoiDung.getVaiTro();
                                 if ("EMPLOYEE".equalsIgnoreCase(vaiTro)) {
-                                    // Bỏ qua xác nhận khuôn mặt và redirect đến /acvstore/thong-ke cho EMPLOYEE
+                                    // EMPLOYEE: Bỏ qua xác thực khuôn mặt
                                     response.sendRedirect("/acvstore/thong-ke");
-                                } else {
+                                } else if ("ADMIN".equalsIgnoreCase(vaiTro)) {
                                     byte[] descriptor = nguoiDung.getFaceDescriptor();
                                     if (descriptor == null || descriptor.length == 0) {
-                                        response.sendRedirect("/acvstore/register-face");
+                                        response.sendRedirect("/acvstore/register-face"); // ✅ Chỉ ADMIN được đăng ký mặt
                                     } else {
                                         response.sendRedirect("/acvstore/verify-face");
                                     }
+                                } else {
+                                    // Gửi lỗi không có quyền
+                                    response.sendRedirect("/acvstore/login?error=unauthorizedRole");
                                 }
+
                             } else {
                                 response.sendRedirect("/acvstore/login?error=notfound");
                             }
                         })
+
                         .failureUrl("/acvstore/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
@@ -186,9 +191,17 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/customers/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/customers/login", "/customers/oauth2/register").permitAll()
+                        .requestMatchers(
+                                "/customers/login",
+                                "/customers/oauth2/register",
+                                "/customers/auth/forgot-password",
+                                "/customers/auth/verify-otp",
+                                "/customers/auth/reset-password",
+                                "/customers/auth/resend-otp"
+                        ).permitAll()
                         .anyRequest().hasRole("CUSTOMER")
                 )
+
                 .formLogin(form -> form
                         .loginPage("/customers/login")
                         .loginProcessingUrl("/customers/login")
