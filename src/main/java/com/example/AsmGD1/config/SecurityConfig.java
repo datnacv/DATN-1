@@ -26,7 +26,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-
 import java.io.PrintWriter;
 
 @Configuration
@@ -112,11 +111,35 @@ public class SecurityConfig implements ApplicationContextAware {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
                         .requestMatchers("/acvstore/verify-success").authenticated()
+
+                        // Product management - Both ADMIN and EMPLOYEE can view products
                         .requestMatchers("/acvstore/san-pham", "/acvstore/san-pham/get/**").hasAnyRole("ADMIN", "EMPLOYEE")
                         .requestMatchers("/acvstore/san-pham/save", "/acvstore/san-pham/update-status", "/acvstore/san-pham/upload-image").hasRole("ADMIN")
+
+                        // Product attributes - ONLY ADMIN
+                        .requestMatchers("/acvstore/xuat-xu/**", "/acvstore/mau-sac/**", "/acvstore/kich-co/**",
+                                "/acvstore/chat-lieu/**", "/acvstore/kieu-dang/**", "/acvstore/co-ao/**",
+                                "/acvstore/tay-ao/**", "/acvstore/danh-muc/**", "/acvstore/thuong-hieu/**").hasRole("ADMIN")
+
+                        // Employee management - ONLY ADMIN
+                        .requestMatchers("/acvstore/employees/**").hasRole("ADMIN")
+
+                        // Dashboard access
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
-                        .requestMatchers("/acvstore/thong-ke").hasAnyRole("ADMIN", "EMPLOYEE") // Cho phép cả ADMIN và EMPLOYEE truy cập
+
+                        // Statistics - Both ADMIN and EMPLOYEE
+                        .requestMatchers("/acvstore/thong-ke").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // Sales and invoices - Both ADMIN and EMPLOYEE
+                        .requestMatchers("/acvstore/ban-hang/**", "/acvstore/hoa-don/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // Discounts - Both ADMIN and EMPLOYEE
+                        .requestMatchers("/acvstore/phieu-giam-gia/**", "/acvstore/chien-dich-giam-gia/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // Customers - Both ADMIN and EMPLOYEE
+                        .requestMatchers("/acvstore/customers/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -132,18 +155,23 @@ public class SecurityConfig implements ApplicationContextAware {
                                 if ("EMPLOYEE".equalsIgnoreCase(vaiTro)) {
                                     // Bỏ qua xác nhận khuôn mặt và redirect đến /acvstore/thong-ke cho EMPLOYEE
                                     response.sendRedirect("/acvstore/thong-ke");
-                                } else {
+                                } else if ("ADMIN".equalsIgnoreCase(vaiTro)) {
                                     byte[] descriptor = nguoiDung.getFaceDescriptor();
                                     if (descriptor == null || descriptor.length == 0) {
-                                        response.sendRedirect("/acvstore/register-face");
+                                        response.sendRedirect("/acvstore/register-face"); // ✅ Chỉ ADMIN được đăng ký mặt
                                     } else {
                                         response.sendRedirect("/acvstore/verify-face");
                                     }
+                                } else {
+                                    // Gửi lỗi không có quyền
+                                    response.sendRedirect("/acvstore/login?error=unauthorizedRole");
                                 }
+
                             } else {
                                 response.sendRedirect("/acvstore/login?error=notfound");
                             }
                         })
+
                         .failureUrl("/acvstore/login?error=invalidCredentials")
                         .usernameParameter("tenDangNhap")
                         .passwordParameter("matKhau")
@@ -186,9 +214,17 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/customers/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/customers/login", "/customers/oauth2/register").permitAll()
+                        .requestMatchers(
+                                "/customers/login",
+                                "/customers/oauth2/register",
+                                "/customers/auth/forgot-password",
+                                "/customers/auth/verify-otp",
+                                "/customers/auth/reset-password",
+                                "/customers/auth/resend-otp"
+                        ).permitAll()
                         .anyRequest().hasRole("CUSTOMER")
                 )
+
                 .formLogin(form -> form
                         .loginPage("/customers/login")
                         .loginProcessingUrl("/customers/login")
@@ -225,7 +261,7 @@ public class SecurityConfig implements ApplicationContextAware {
                         .accessDeniedHandler(accessDeniedHandlerCustomers())
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Đảm bảo session được tạo nếu cần
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/customers/login?expired")
@@ -256,7 +292,7 @@ public class SecurityConfig implements ApplicationContextAware {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/images/**", "/vi/**").permitAll()
+                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/image/**", "/vi/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -277,7 +313,7 @@ public class SecurityConfig implements ApplicationContextAware {
                             if (session.getAttribute("pendingUser") != null) {
                                 response.sendRedirect("/customers/oauth2/register");
                             } else {
-                                response.sendRedirect("/"); // Redirect trực tiếp đến /cart
+                                response.sendRedirect("/");
                             }
                         })
                 )
@@ -312,7 +348,7 @@ public class SecurityConfig implements ApplicationContextAware {
             if (session.getAttribute("pendingUser") != null) {
                 response.sendRedirect("/customers/oauth2/register");
             } else {
-                response.sendRedirect("/"); // Redirect trực tiếp đến /cart
+                response.sendRedirect("/");
             }
         };
     }
@@ -322,10 +358,9 @@ public class SecurityConfig implements ApplicationContextAware {
                                                             PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider auth = new DaoAuthenticationProvider();
         auth.setUserDetailsService(userDetailsService);
-        auth.setPasswordEncoder(passwordEncoder); // ✅ Dùng bean được inject
+        auth.setPasswordEncoder(passwordEncoder);
         return auth;
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

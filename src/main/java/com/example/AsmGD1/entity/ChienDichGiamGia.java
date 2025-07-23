@@ -1,5 +1,6 @@
     package com.example.AsmGD1.entity;
 
+    import com.fasterxml.jackson.annotation.JsonIgnore;
     import lombok.Data;
     import jakarta.persistence.*;
     import java.util.UUID;
@@ -41,6 +42,7 @@
         private LocalDateTime thoiGianTao;
 
         @OneToMany(mappedBy = "chienDichGiamGia", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+        @JsonIgnore
         private List<ChiTietSanPham> chiTietSanPhams; // Danh sách các chi tiết sản phẩm thuộc chiến dịch
 
         public String getStatus() {

@@ -47,7 +47,16 @@ public class PhieuGiamGiaController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
-            return "admin".equalsIgnoreCase(user.getVaiTro());
+            return "ADMIN".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    private boolean isCurrentUserEmployee() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "EMPLOYEE".equalsIgnoreCase(user.getVaiTro());
         }
         return false;
     }
@@ -57,11 +66,13 @@ public class PhieuGiamGiaController {
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             model.addAttribute("user", user);
-            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isEmployee", "EMPLOYEE".equalsIgnoreCase(user.getVaiTro()));
         } else {
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("ADMIN", "", 0, 1).getContent();
             model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             model.addAttribute("isAdmin", false);
+            model.addAttribute("isEmployee", false);
         }
     }
 
@@ -231,18 +242,35 @@ public class PhieuGiamGiaController {
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ.");
         }
+        // ✅ Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
+        if ("CASH".equalsIgnoreCase(voucher.getLoai())
+                && voucher.getGiaTriGiam() != null
+                && voucher.getGiaTriGiamToiThieu() != null
+                && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
+            errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+        }
 
-        // Validate ngày
+
+        // Validate ngày bắt đầu và kết thúc
+        LocalDate today = LocalDate.now();
+
         if (voucher.getNgayBatDau() == null) {
             errors.add("Ngày bắt đầu không được để trống.");
+        } else if (voucher.getNgayBatDau().isBefore(today)) {
+            errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayKetThuc() == null) {
             errors.add("Ngày kết thúc không được để trống.");
+        } else if (voucher.getNgayKetThuc().isBefore(today)) {
+            errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
+
 
         // Phiếu cá nhân: phải có khách hàng
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
@@ -284,6 +312,62 @@ public class PhieuGiamGiaController {
         return "redirect:/acvstore/phieu-giam-gia";
     }
 
+    @GetMapping("/view/{id}")
+    public String viewDetails(@PathVariable UUID id,
+                              @RequestParam(defaultValue = "0") int page,
+                              @RequestParam(defaultValue = "5") int size,
+                              @RequestParam(required = false) String search,
+                              Model model,
+                              RedirectAttributes redirectAttributes) {
+
+        // RBAC: Cả admin và employee đều có thể xem chi tiết
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/phieu-giam-gia";
+        }
+
+        PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+
+        // Employee chỉ có thể xem, không được chỉnh sửa
+        boolean isReadOnly = isCurrentUserEmployee();
+        model.addAttribute("readOnly", isReadOnly);
+        model.addAttribute("viewMode", true);
+
+        NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
+        String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
+        String giaTriGiamToiDaStr = voucher.getGiaTriGiamToiDa() != null ? nf.format(voucher.getGiaTriGiamToiDa()) : "";
+        String giaTriGiamToiThieuStr = voucher.getGiaTriGiamToiThieu() != null ? nf.format(voucher.getGiaTriGiamToiThieu()) : "";
+        String gioiHanSuDungStr = voucher.getGioiHanSuDung() != null ? String.valueOf(voucher.getGioiHanSuDung()) : "";
+
+        Pageable pageable = PageRequest.of(page, size);
+        Page<NguoiDung> customerPage = (search != null && !search.isBlank())
+                ? phieuService.timKiemKhachHangPhanTrang(search, pageable)
+                : phieuService.layTatCaKhachHangPhanTrang(pageable);
+
+        List<UUID> selectedCustomerIds = new ArrayList<>();
+        if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
+            List<NguoiDung> daDuocGan = phieuService.layNguoiDungTheoPhieu(voucher.getId());
+            selectedCustomerIds = daDuocGan.stream().map(NguoiDung::getId).toList();
+        }
+
+        model.addAttribute("voucher", voucher);
+        model.addAttribute("giaTriGiamStr", giaTriGiamStr);
+        model.addAttribute("giaTriGiamToiDaStr", giaTriGiamToiDaStr);
+        model.addAttribute("giaTriGiamToiThieuStr", giaTriGiamToiThieuStr);
+        model.addAttribute("gioiHanSuDungStr", gioiHanSuDungStr);
+        model.addAttribute("customers", customerPage.getContent());
+        model.addAttribute("selectedCustomerIds", selectedCustomerIds);
+        model.addAttribute("currentCustomerPage", page);
+        model.addAttribute("totalCustomerPages", customerPage.getTotalPages());
+        model.addAttribute("search", search);
+        model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
+
+        addUserInfoToModel(model);
+
+        return "WebQuanLy/voucher-edit";
+    }
+
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable UUID id,
                                @RequestParam(defaultValue = "0") int page,
@@ -297,10 +381,22 @@ public class PhieuGiamGiaController {
 
         // RBAC: Admin có thể chỉnh sửa, Employee chỉ có thể xem
         boolean isAdmin = isCurrentUserAdmin();
-        if (!isAdmin) {
-            // Employee chỉ có thể xem, không được chỉnh sửa
-            model.addAttribute("readOnly", true);
+        boolean isEmployee = isCurrentUserEmployee();
+
+        if (!isAdmin && !isEmployee) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
+            return "redirect:/acvstore/phieu-giam-gia";
         }
+
+        if (isEmployee) {
+            // Employee chỉ có thể xem, redirect to view mode
+            return "redirect:/acvstore/phieu-giam-gia/view/" + id +
+                    "?page=" + page + "&size=" + size +
+                    (search != null ? "&search=" + search : "");
+        }
+
+        model.addAttribute("readOnly", false);
+        model.addAttribute("viewMode", false);
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
         String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
@@ -421,6 +517,14 @@ public class PhieuGiamGiaController {
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ");
         }
+        // ✅ Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
+        if ("CASH".equalsIgnoreCase(voucher.getLoai())
+                && voucher.getGiaTriGiam() != null
+                && voucher.getGiaTriGiamToiThieu() != null
+                && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
+            errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+        }
+
 
         // Validate loại giảm
         if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
@@ -431,17 +535,26 @@ public class PhieuGiamGiaController {
             }
         }
 
-        // Ngày
+        // Validate ngày bắt đầu và kết thúc
+        LocalDate today = LocalDate.now();
+
         if (voucher.getNgayBatDau() == null) {
-            errors.add("Ngày bắt đầu không được để trống");
+            errors.add("Ngày bắt đầu không được để trống.");
+        } else if (voucher.getNgayBatDau().isBefore(today)) {
+            errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayKetThuc() == null) {
-            errors.add("Ngày kết thúc không được để trống");
+            errors.add("Ngày kết thúc không được để trống.");
+        } else if (voucher.getNgayKetThuc().isBefore(today)) {
+            errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
-            errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc");
+            errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
+
 
         // Phiếu cá nhân phải chọn khách hàng
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) &&

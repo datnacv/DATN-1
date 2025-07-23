@@ -12,13 +12,20 @@ import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.SanPhamRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -26,6 +33,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class SanPhamService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SanPhamService.class);
 
     @Autowired
     private SanPhamRepository sanPhamRepository;
@@ -38,6 +47,22 @@ public class SanPhamService {
 
     @Autowired
     private ChiTietDonHangRepository chiTietDonHangRepository;
+
+    private final String UPLOAD_DIR;
+
+    public SanPhamService() {
+        String os = System.getProperty("os.name").toLowerCase();
+        UPLOAD_DIR = os.contains("win") ? "C:/DATN/uploads/san_pham/" : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
+        try {
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+                logger.info("Created directory: {}", UPLOAD_DIR);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create upload directory: " + UPLOAD_DIR, e);
+        }
+    }
 
     public List<SanPham> findAll() {
         return sanPhamRepository.findAll();
@@ -65,7 +90,42 @@ public class SanPhamService {
         sanPhamRepository.save(sanPham);
     }
 
+    public void saveSanPhamWithImage(SanPham sanPham, MultipartFile imageFile) {
+        if (imageFile != null && !imageFile.isEmpty() && imageFile.getOriginalFilename() != null && !imageFile.getOriginalFilename().isEmpty()) {
+            try {
+                String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
+                Path filePath = Paths.get(UPLOAD_DIR, fileName);
+                Files.createDirectories(filePath.getParent());
+                Files.write(filePath, imageFile.getBytes());
+                if (!Files.exists(filePath)) {
+                    logger.error("Tệp không được lưu đúng cách: {}", filePath);
+                    throw new RuntimeException("Không thể lưu tệp ảnh: " + fileName);
+                }
+                logger.info("Đã lưu ảnh: {}", fileName);
+                sanPham.setUrlHinhAnh("/images/" + fileName);
+            } catch (IOException e) {
+                logger.error("Không thể lưu tệp ảnh: {}", imageFile.getOriginalFilename(), e);
+                throw new RuntimeException("Không thể lưu tệp ảnh: " + imageFile.getOriginalFilename(), e);
+            }
+        }
+        sanPhamRepository.save(sanPham);
+    }
+
     public void deleteById(UUID id) {
+        SanPham sanPham = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + id));
+        if (sanPham.getUrlHinhAnh() != null && !sanPham.getUrlHinhAnh().isEmpty()) {
+            try {
+                String fileName = sanPham.getUrlHinhAnh().replace("/images/", "");
+                Path filePath = Paths.get(UPLOAD_DIR, fileName);
+                if (Files.exists(filePath)) {
+                    Files.delete(filePath);
+                    logger.info("Đã xóa tệp ảnh: {}", filePath);
+                }
+            } catch (IOException e) {
+                logger.error("Không thể xóa ảnh từ thư mục local: {}", sanPham.getUrlHinhAnh(), e);
+            }
+        }
         sanPhamRepository.deleteById(id);
     }
 

@@ -55,6 +55,7 @@ public class ChiTietSanPham {
 
     @ManyToOne
     @JoinColumn(name = "id_chien_dich_giam_gia") // Thêm khóa ngoại đến chien_dich_giam_gia
+    @JsonIgnore
     private ChienDichGiamGia chienDichGiamGia; // Mối quan hệ một-nhiều
 
     @Column(name = "gia", nullable = false, precision = 10, scale = 2)

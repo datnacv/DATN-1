@@ -35,20 +35,42 @@ public class CustomerController {
     private void addUserInfoToModel(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung currentUser = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("currentUser", currentUser);
-            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(currentUser.getVaiTro()));
-            model.addAttribute("user", currentUser);
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("currentUser", user);
+            model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isEmployee", "EMPLOYEE".equalsIgnoreCase(user.getVaiTro()));
         } else {
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("ADMIN", "", 0, 1).getContent();
+            NguoiDung defaultUser = admins.isEmpty() ? new NguoiDung() : admins.get(0);
+            model.addAttribute("user", defaultUser);
+            model.addAttribute("currentUser", defaultUser);
             model.addAttribute("isAdmin", false);
-            model.addAttribute("user", new NguoiDung());
+            model.addAttribute("isEmployee", false);
         }
+    }
+
+    private boolean isCurrentUserEmployee() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "EMPLOYEE".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
     }
 
     @GetMapping
     public String listCustomers(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "") String keyword,
-                                Model model) {
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        // Kiểm tra quyền truy cập - cả admin và employee đều có thể xem
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+            redirectAttributes.addFlashAttribute("message", "Bạn không có quyền truy cập chức năng này!");
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+            return "redirect:/acvstore/thong-ke";
+        }
+
         // Thêm thông tin user và quyền vào model
         addUserInfoToModel(model);
 
