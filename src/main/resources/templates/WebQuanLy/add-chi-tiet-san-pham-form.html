@@ -582,6 +582,9 @@
             margin: 0;
             padding: 0;
         }
+        #loadingOverlayQuickAttr {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -862,18 +865,39 @@
                 </div>
             </div>
 
-            <!-- Loading Overlay -->
-            <div class="loading-overlay" id="loadingOverlay">
+            <!-- Loading & Success: Lưu chi tiết sản phẩm -->
+            <div class="loading-overlay" id="loadingOverlayDetail">
                 <div class="loading-content">
                     <div class="spinner"></div>
                     <div class="loading-text">Đang thêm chi tiết sản phẩm...</div>
                 </div>
             </div>
-
-            <!-- Success Notification -->
-            <div class="success-notification" id="successNotification">
+            <div class="success-notification" id="successNotificationDetail">
                 <i class="fas fa-check-circle me-2"></i>Thêm chi tiết sản phẩm thành công!
             </div>
+
+            <!-- Loading & Success: Thêm nhanh sản phẩm -->
+            <div class="loading-overlay" id="loadingOverlayQuickProduct">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Đang thêm sản phẩm...</div>
+                </div>
+            </div>
+            <div class="success-notification" id="successNotificationQuickProduct">
+                <i class="fas fa-check-circle me-2"></i>Thêm sản phẩm thành công!
+            </div>
+
+            <!-- Loading & Success: Thêm nhanh thuộc tính -->
+            <div class="loading-overlay" id="loadingOverlayQuickAttr">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Đang thêm thuộc tính...</div>
+                </div>
+            </div>
+            <div class="success-notification" id="successNotificationQuickAttr">
+                <i class="fas fa-check-circle me-2"></i>Thêm thuộc tính thành công!
+            </div>
+
         </div>
     </div>
 </div>
@@ -883,6 +907,13 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
     $(document).ready(function () {
+        
+        $('.modal').on('hidden.bs.modal', function () {
+            $('.modal-backdrop').remove(); // Xoá lớp nền đen
+            $('body').removeClass('modal-open'); // Trả lại cuộn trang
+            $('body').css('overflow', 'auto'); // Fix cuộn bị khóa
+        });
+
         new TomSelect('#productSelect', {
             create: false,
             placeholder: '-- Chọn sản phẩm --',
@@ -992,19 +1023,19 @@
                 processData: false,
                 contentType: false,
                 beforeSend: function() {
-                    $('#loadingOverlay').css('display', 'flex');
+                    $('#loadingOverlayQuickProduct').fadeIn(100);
                 },
                 success: function(response) {
+                    $('#loadingOverlayQuickProduct').fadeOut(200);
                     $('#quickAddProductModal').modal('hide');
-                    $('#loadingOverlay').hide();
-                    $('#successNotification').css('display', 'block');
+                    $('#successNotificationQuickProduct').css('display', 'block');
                     setTimeout(() => {
-                        $('#successNotification').css('display', 'none');
+                        $('#successNotificationQuickProduct').css('display', 'none');
                     }, 3000);
                     refreshProductSelect(response.id, response.tenSanPham);
                 },
                 error: function(xhr) {
-                    $('#loadingOverlay').hide();
+                    $('#loadingOverlayQuickProduct').hide();
                     let errorMessage = xhr.statusText;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
@@ -1025,18 +1056,19 @@
                 processData: false,
                 contentType: false,
                 beforeSend: function() {
-                    $('#loadingOverlay').css('display', 'flex');
+                    $('#loadingOverlayDetail').css('display', 'flex');
                 },
                 success: function(response) {
-                    $('#loadingOverlay').hide();
-                    $('#successNotification').css('display', 'block');
+                    $('#loadingOverlayDetail').hide();
+                    $('#successNotificationDetail').css('display', 'block');
+
                     setTimeout(() => {
-                        $('#successNotification').css('display', 'none');
+                        $('#successNotificationDetail').css('display', 'none');
                         window.location.href = '/acvstore/chi-tiet-san-pham?productId=' + $('#productSelect').val() + '&success=Thêm thành công';
-                    }, 3000);
+                    }, 2000); // giảm thời gian hiển thị xuống 2s
                 },
                 error: function(xhr) {
-                    $('#loadingOverlay').hide();
+                    $('#loadingOverlayDetail').hide();
                     let errorMessage = xhr.statusText;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
@@ -1242,19 +1274,21 @@
             contentType: 'application/json',
             data: JSON.stringify(data),
             beforeSend: function() {
-                $('#loadingOverlay').css('display', 'flex');
+                $('#loadingOverlayQuickAttr').fadeIn(100);
             },
             success: function(response) {
+                $('#loadingOverlayQuickAttr').fadeOut(200, function() {
+                    $(this).css('display', 'none');
+                });
                 $('#quickAddModal').modal('hide');
-                $('#loadingOverlay').hide();
-                $('#successNotification').css('display', 'block');
+                $('#successNotificationQuickAttr').css('display', 'block');
                 setTimeout(() => {
-                    $('#successNotification').css('display', 'none');
+                    $('#successNotificationQuickAttr').css('display', 'none');
                 }, 3000);
                 refreshSelectOptions(entity, response.id, name);
             },
             error: function(xhr) {
-                $('#loadingOverlay').hide();
+                $('#loadingOverlayQuickAttr').hide();
                 let errorMessage = xhr.statusText;
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);
