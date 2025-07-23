@@ -546,19 +546,30 @@
     if (form) {
       form.onsubmit = function(e) {
         e.preventDefault();
-        const soTien = form.soTien.value;
-        if (parseInt(soTien) < 1000) {
+        const soTien = parseInt(form.soTien.value);
+
+        if (soTien < 1000) {
           alert("Vui lòng nạp ít nhất 1000 VNĐ.");
           return;
         }
 
-        fetch('/vi/nap-tien', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'soTien=' + encodeURIComponent(soTien)
-        })
-                .then(() => window.location.reload())
-                .catch(err => alert("Đã xảy ra lỗi khi nạp tiền: " + err));
+        // 👉 Lưu lại session để hiển thị sau thanh toán thành công
+        sessionStorage.setItem("pendingTopup", JSON.stringify({ amount: soTien }));
+
+        // 👉 Tạo form tạm và submit như một POST
+        const tempForm = document.createElement("form");
+        tempForm.method = "POST";
+        tempForm.action = "/wallet-topup/create";
+        tempForm.style.display = "none";
+
+        const input = document.createElement("input");
+        input.name = "soTien";
+        input.value = soTien;
+        input.type = "hidden";
+
+        tempForm.appendChild(input);
+        document.body.appendChild(tempForm);
+        tempForm.submit();
       };
     }
 

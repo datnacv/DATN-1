@@ -33,6 +33,10 @@ public class LichSuGiaoDichVi {
     @Column(name = "mo_ta")
     private String moTa;
 
+    @Column(name = "ma_giao_dich")
+    private String maGiaoDich;
+
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface LichSuGiaoDichViRepository extends JpaRepository<LichSuGiaoDichVi, UUID> {
     List<LichSuGiaoDichVi> findByIdViThanhToanOrderByCreatedAtDesc(UUID idViThanhToan);
+    boolean existsByMaGiaoDich(String maGiaoDich);
 }
