@@ -102,6 +102,14 @@ public class GioHangService {
         session.setAttribute(getCartSessionKey(tabId), cart);
     }
 
+    private String layAnhDauTien(ChiTietSanPham chiTiet) {
+        if (chiTiet.getHinhAnhSanPhams() != null && !chiTiet.getHinhAnhSanPhams().isEmpty()) {
+            return chiTiet.getHinhAnhSanPhams().get(0).getUrlHinhAnh(); // Assumes HinhAnhSanPham has getUrl()
+        }
+        return "https://via.placeholder.com/50";
+    }
+
+
     public GioHangDTO themVaoGioHang(UUID productDetailId, int quantity, BigDecimal shippingFee, String tabId) {
         System.out.println("--- themVaoGioHang: Bắt đầu, tabId: " + tabId + " ---");
         List<GioHangItemDTO> currentCart = getCurrentCart(tabId);
@@ -139,7 +147,7 @@ public class GioHangService {
             newItem.setSoLuong(quantity);
             newItem.setGia(giaSauGiam); // Sử dụng giá đã giảm
             newItem.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(quantity)));
-            newItem.setHinhAnh(chiTiet.getSanPham().getUrlHinhAnh() != null ? chiTiet.getSanPham().getUrlHinhAnh() : "https://via.placeholder.com/50");
+            newItem.setHinhAnh(layAnhDauTien(chiTiet) != null ? layAnhDauTien(chiTiet) : "https://via.placeholder.com/50");
             newItem.setAvailableStock(chiTiet.getSoLuongTonKho()); // Thêm thông tin tồn kho
             currentCart.add(newItem);
         }
@@ -236,7 +244,7 @@ public class GioHangService {
             newItem.setSoLuong(quantity);
             newItem.setGia(giaSauGiam); // Sử dụng giá đã giảm
             newItem.setThanhTien(giaSauGiam.multiply(BigDecimal.valueOf(quantity)));
-            newItem.setHinhAnh(chiTiet.getSanPham().getUrlHinhAnh() != null ? chiTiet.getSanPham().getUrlHinhAnh() : "https://via.placeholder.com/50");
+            newItem.setHinhAnh(layAnhDauTien(chiTiet) != null ? layAnhDauTien(chiTiet) : "https://via.placeholder.com/50");
             newItem.setAvailableStock(chiTiet.getSoLuongTonKho());
             currentCart.add(newItem);
         }

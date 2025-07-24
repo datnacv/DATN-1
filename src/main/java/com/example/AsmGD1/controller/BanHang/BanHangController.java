@@ -545,7 +545,7 @@ public class BanHangController {
                 result.put("tenSanPham", variant.getSanPham().getTenSanPham());
                 result.put("mauSac", variant.getMauSac().getTenMau());
                 result.put("kichCo", variant.getKichCo().getTen());
-                result.put("hinhAnh", variant.getSanPham().getUrlHinhAnh());
+                result.put("hinhAnh", chiTietSanPhamService.layAnhDauTien(variant));
                 return ResponseEntity.ok(result);
             } else {
                 result.put("error", "Không tìm thấy biến thể.");
@@ -615,7 +615,7 @@ public class BanHangController {
             Map<String, Object> response = new HashMap<>();
             response.put("productId", chiTiet.getSanPham().getId());
             response.put("tenSanPham", chiTiet.getSanPham().getTenSanPham());
-            response.put("hinhAnh", chiTiet.getSanPham().getUrlHinhAnh());
+            response.put("hinhAnh", chiTietSanPhamService.layAnhDauTien(chiTiet));
             response.put("availableStock", getAvailableStock(id, chiTiet.getSoLuongTonKho()));
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

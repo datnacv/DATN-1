@@ -473,4 +473,12 @@ public class ChiTietSanPhamService {
         chiTiet.setSoLuongTonKho(newStock);
         chiTietSanPhamRepo.save(chiTiet);
     }
+
+    public String layAnhDauTien(ChiTietSanPham chiTiet) {
+        if (chiTiet.getHinhAnhSanPhams() != null && !chiTiet.getHinhAnhSanPhams().isEmpty()) {
+            return chiTiet.getHinhAnhSanPhams().get(0).getUrlHinhAnh();
+        }
+        return "https://via.placeholder.com/50";
+    }
+
 }
