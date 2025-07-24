@@ -244,7 +244,7 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // Tạo đơn hàng mà không kiểm tra tồn kho
+            // Tạo đơn hàng
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
 
             // Cập nhật số lượng chiến dịch nếu có
@@ -258,9 +258,25 @@ public class BanHangController {
                 }
             }
 
-            // Dọn dẹp dữ liệu tạm
+            // Xóa tab hiện tại
             donHangTamRepository.deleteByTabId(donHangDTO.getTabId());
+            gioHangService.xoaTatCaGioHang(donHangDTO.getTabId());
+
+            // Kiểm tra số lượng tab còn lại
+            List<DonHangTam> remainingTabs = donHangTamRepository.findAll();
+            String newTabId = null;
+            if (remainingTabs.isEmpty()) {
+                // Tạo tab mới với ID "1"
+                GioHangDTO newCart = gioHangService.xoaTatCaGioHang("1");
+                newTabId = "1";
+            } else {
+                // Lấy tab cuối cùng làm tab hiện tại
+                newTabId = remainingTabs.get(remainingTabs.size() - 1).getTabId();
+            }
+
+            // Dọn dẹp dữ liệu tạm
             session.removeAttribute("tempStockChanges");
+            session.removeAttribute("pendingOrder_" + donHangDTO.getTabId());
 
             // Tạo hóa đơn PDF
             byte[] pdfData = hoaDonService.taoHoaDon(ketQua.getMaDonHang());
@@ -271,6 +287,9 @@ public class BanHangController {
             response.put("message", "Tạo đơn hàng thành công!");
             response.put("maDonHang", ketQua.getMaDonHang());
             response.put("pdfData", pdfBase64);
+            response.put("tabId", donHangDTO.getTabId());
+            response.put("newTabId", newTabId);
+            response.put("remainingTabs", remainingTabs.size());
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
