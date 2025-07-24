@@ -244,26 +244,13 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // Kiểm tra tồn kho trước khi tạo đơn
-            for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
-                ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
-                if (chiTiet == null) {
-                    return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại: " + item.getIdChiTietSanPham()));
-                }
-                int availableStock = getAvailableStock(item.getIdChiTietSanPham(), chiTiet.getSoLuongTonKho());
-                if (availableStock < item.getSoLuong()) {
-                    return ResponseEntity.badRequest().body(Map.of("error", "Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham()));
-                }
-            }
-
-            // Tạo đơn hàng
+            // Tạo đơn hàng mà không kiểm tra tồn kho
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
 
-            // Cập nhật tồn kho & số lượng chiến dịch nếu có
+            // Cập nhật số lượng chiến dịch nếu có
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet != null) {
-                    // Trừ số lượng chiến dịch giảm giá nếu có
                     ChienDichGiamGia cdgg = chiTiet.getChienDichGiamGia();
                     if (cdgg != null && "ONGOING".equals(cdgg.getStatus())) {
                         chienDichGiamGiaService.truSoLuong(cdgg.getId(), item.getSoLuong());
@@ -285,10 +272,12 @@ public class BanHangController {
             response.put("maDonHang", ketQua.getMaDonHang());
             response.put("pdfData", pdfBase64);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
 
 
     private int getAvailableStock(UUID productDetailId, int originalStock) {
