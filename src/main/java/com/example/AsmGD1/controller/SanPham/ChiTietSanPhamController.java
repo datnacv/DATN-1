@@ -227,23 +227,36 @@ public class ChiTietSanPhamController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("id", chiTiet.getId());
-            response.put("productId", chiTiet.getSanPham().getId());
-            response.put("colorId", chiTiet.getMauSac().getId());
-            response.put("sizeId", chiTiet.getKichCo().getId());
-            response.put("originId", chiTiet.getXuatXu().getId());
-            response.put("materialId", chiTiet.getChatLieu().getId());
-            response.put("styleId", chiTiet.getKieuDang().getId());
-            response.put("sleeveId", chiTiet.getTayAo().getId());
-            response.put("collarId", chiTiet.getCoAo().getId());
-            response.put("brandId", chiTiet.getThuongHieu().getId());
+            response.put("productId", chiTiet.getSanPham() != null ? chiTiet.getSanPham().getId() : null);
+            response.put("colorId", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getId() : null);
+            response.put("sizeId", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getId() : null);
+            response.put("originId", chiTiet.getXuatXu() != null ? chiTiet.getXuatXu().getId() : null);
+            response.put("materialId", chiTiet.getChatLieu() != null ? chiTiet.getChatLieu().getId() : null);
+            response.put("styleId", chiTiet.getKieuDang() != null ? chiTiet.getKieuDang().getId() : null);
+            response.put("sleeveId", chiTiet.getTayAo() != null ? chiTiet.getTayAo().getId() : null);
+            response.put("collarId", chiTiet.getCoAo() != null ? chiTiet.getCoAo().getId() : null);
+            response.put("brandId", chiTiet.getThuongHieu() != null ? chiTiet.getThuongHieu().getId() : null);
             response.put("price", chiTiet.getGia());
             response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("gender", chiTiet.getGioiTinh());
             response.put("status", chiTiet.getTrangThai());
-            response.put("images", chiTiet.getHinhAnhSanPhams().stream()
-                    .sorted(Comparator.comparing(HinhAnhSanPham::getThuTu))
-                    .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh(), "thuTu", img.getThuTu()))
-                    .collect(Collectors.toList()));
+
+            // Xử lý danh sách ảnh, kiểm tra null và sắp xếp
+            List<Map<String, Object>> images = new ArrayList<>();
+            if (chiTiet.getHinhAnhSanPhams() != null) {
+                images = chiTiet.getHinhAnhSanPhams().stream()
+                        .filter(Objects::nonNull)
+                        .sorted(Comparator.comparing(h -> h.getThuTu() != null ? h.getThuTu() : Integer.MAX_VALUE))
+                        .map(img -> {
+                            Map<String, Object> imageMap = new HashMap<>();
+                            imageMap.put("id", img.getId());
+                            imageMap.put("imageUrl", img.getUrlHinhAnh());
+                            imageMap.put("thuTu", img.getThuTu() != null ? img.getThuTu() : 0);
+                            return imageMap;
+                        })
+                        .collect(Collectors.toList());
+            }
+            response.put("images", images);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {

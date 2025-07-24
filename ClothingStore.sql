@@ -652,4 +652,13 @@ UPDATE nguoi_dung
 SET email = 'datn.acv@gmail.com'
 WHERE id = '550E8400-E29B-41D4-A716-446655440014';
 
-select * from vi_thanh_toan
+DELETE FROM hinh_anh_san_pham
+WHERE id IN (
+             '550E8400-E29B-41D4-A716-446655440025',
+             '550E8400-E29B-41D4-A716-446655440026',
+             '550E8400-E29B-41D4-A716-446655440027',
+             '550E8400-E29B-41D4-A716-446655440046',
+             '550E8400-E29B-41D4-A716-446655440047',
+             '550E8400-E29B-41D4-A716-446655440048'
+    );
+
