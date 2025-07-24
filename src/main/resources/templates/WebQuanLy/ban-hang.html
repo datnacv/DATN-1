@@ -1586,6 +1586,20 @@
     if (elements.customerName) elements.customerName.value = tab.customerName;
     if (elements.customerEmail) elements.customerEmail.value = tab.customerEmail;
     if (elements.saleMethod) elements.saleMethod.value = tab.saleMethod;
+    if (tab.customerPhone === '0999999999') {
+      elements.saleMethod.value = 'Tại quầy';
+      elements.saleMethod.setAttribute('disabled', 'true');
+
+      // Ẩn các phần liên quan giao hàng
+      if (elements.addressSection) elements.addressSection.classList.add('d-none');
+      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.add('d-none');
+
+      tab.saleMethod = 'Tại quầy';
+      tab.shippingFee = 0;
+    } else {
+      elements.saleMethod.removeAttribute('disabled');
+    }
+
     if (elements.shippingFee) elements.shippingFee.value = tab.shippingFee;
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
     if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount;
@@ -1780,6 +1794,24 @@
     const saleMethod = saleMethodSelect.value;
     const phone = phoneInput.value;
     const tab = tabs.find(t => t.id === currentTabId);
+
+    if (phone === '0999999999') {
+      saleMethodSelect.value = 'Tại quầy';
+      saleMethodSelect.setAttribute('disabled', 'true');
+      addressSection.classList.add('d-none');
+      shippingFeeContainer.classList.add('d-none');
+
+      if (tab) {
+        tab.saleMethod = 'Tại quầy';
+        tab.shippingFee = 0;
+        updateSummary(tab);
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      }
+      return;
+    } else {
+      saleMethodSelect.removeAttribute('disabled');
+    }
+
 
     if (tab) {
       tab.saleMethod = saleMethod;
