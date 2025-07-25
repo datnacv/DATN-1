@@ -35,8 +35,18 @@ public class ViThanhToanController {
         ViThanhToan vi = viService.findByUser(idNguoiDung);
         model.addAttribute("user", currentUser);
         model.addAttribute("vi", vi);
+
+        if (vi != null) {
+            BigDecimal tongDangCho = viService.tongTienDangCho(vi.getId());
+            BigDecimal soDuKhaDung = vi.getSoDu().subtract(tongDangCho);
+
+            model.addAttribute("soDuKhaDung", soDuKhaDung);
+            model.addAttribute("tongDangCho", tongDangCho);
+        }
+
         return "WebKhachHang/xem_vi";
     }
+
 
     // POST tạo ví nếu chưa có
     @PostMapping("/tao-vi")

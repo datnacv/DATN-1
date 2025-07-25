@@ -202,8 +202,21 @@
 
     <!-- Nếu có ví thì hiển thị số dư -->
     <div th:if="${vi != null}">
-      <p class="text-lg">Số dư hiện tại: <b class="text-blue-800" th:text="${#numbers.formatDecimal(vi.soDu, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</b></p>
+      <p class="text-lg">Số dư khả dụng:
+      <b class="text-blue-800"
+         th:text="${#numbers.formatDecimal(soDuKhaDung, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</b>
+      </p>
+      <p class="text-sm text-gray-500">(* Đang chờ rút:
+        <span th:text="${#numbers.formatDecimal(tongDangCho, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</span>)
+      </p>
     </div>
+
+    <div class="mt-3" th:if="${vi != null}">
+      <a href="/rut-tien" class="btn btn-outline-primary">
+        <i class="fas fa-money-bill-wave"></i> Rút tiền
+      </a>
+    </div>
+
 
     <!-- Nếu chưa có ví -->
     <div th:if="${vi == null}">
