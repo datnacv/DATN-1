@@ -97,6 +97,7 @@ public class CustomerController {
 
         try {
             customer.setVaiTro("customer");
+            customer.setTrangThai(true); // Mặc định trạng thái là true khi thêm mới
             nguoiDungService.save(customer);
             redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
@@ -129,6 +130,8 @@ public class CustomerController {
         }
         return "redirect:/acvstore/customers";
     }
+
+
 
     @PostMapping("/delete/{id}")
     public String deleteCustomer(@PathVariable UUID id,

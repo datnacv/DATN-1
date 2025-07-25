@@ -19,6 +19,10 @@ public class HoaDon {
     private UUID id;
 
     @ManyToOne
+    @JoinColumn(name = "nhan_vien_id")
+    private NguoiDung nhanVien; // Thêm trường này
+
+    @ManyToOne
     @JoinColumn(name = "id_nguoi_dung", nullable = false)
     private NguoiDung nguoiDung;
 

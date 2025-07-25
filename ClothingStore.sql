@@ -226,6 +226,13 @@ CREATE TABLE hoa_don (
                          FOREIGN KEY (id_ma_giam_gia) REFERENCES chien_dich_giam_gia(id),
                          FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
+
+go
+ALTER TABLE hoa_don
+    ADD nhan_vien_id UNIQUEIDENTIFIER NULL,
+FOREIGN KEY (nhan_vien_id) REFERENCES nguoi_dung(id);
+go
+
 CREATE TABLE lich_su_hoa_don (
                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
                                  id_hoa_don UNIQUEIDENTIFIER NOT NULL,
@@ -602,6 +609,7 @@ SET so_luong_ton_kho = so_luong_ton_kho + @so_luong
 WHERE id = @id_chi_tiet_san_pham;
 END
 END;
+
 
 ALTER TABLE don_hang
     ADD trang_thai NVARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN';
