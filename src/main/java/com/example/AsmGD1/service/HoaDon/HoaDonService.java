@@ -30,6 +30,8 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
@@ -108,7 +110,7 @@ public class HoaDonService {
             Paragraph storeInfo = new Paragraph();
             storeInfo.setAlignment(Element.ALIGN_CENTER);
             storeInfo.add(new Phrase("CỬA HÀNG ACV STORE\n", fontHeader));
-            storeInfo.add(new Phrase("Địa chỉ: Thanh Oai, TP. Hà Nội\n", fontNormal));
+            storeInfo.add(new Phrase("Địa chỉ: Thanh Oai, TP. Hà Nội\n", fontNormal));
             storeInfo.add(new Phrase("Hotline: 0866 716 384 | Email: datn.acv@gmail.com\n", fontNormal));
             document.add(storeInfo);
             document.add(Chunk.NEWLINE);
@@ -127,6 +129,10 @@ public class HoaDonService {
             addInfoCell(infoTable, fontBold, fontNormal, "Ngày tạo:", hoaDon.getNgayTao().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")));
             addInfoCell(infoTable, fontBold, fontNormal, "Khách hàng:", hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Khách lẻ");
             addInfoCell(infoTable, fontBold, fontNormal, "Số điện thoại:", hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ");
+
+            // Lấy tên nhân viên từ trường nhanVien
+            String tenNhanVien = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getHoTen() : "Không rõ";
+            addInfoCell(infoTable, fontBold, fontNormal, "Tên nhân viên:", tenNhanVien);
 
             String address = "Không rõ";
             if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
@@ -180,7 +186,6 @@ public class HoaDonService {
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
             summaryTable.setSpacingBefore(10f);
 
-            // Tính tổng tiền hàng từ các chi tiết đơn hàng (không bao gồm phí vận chuyển)
             BigDecimal tongTienHang = donHang.getChiTietDonHangs().stream()
                     .filter(chiTiet -> chiTiet.getTrangThaiHoanTra() == null || !chiTiet.getTrangThaiHoanTra())
                     .map(ChiTietDonHang::getThanhTien)
@@ -298,6 +303,16 @@ public class HoaDonService {
         hoaDon.setTienGiam(refreshedDonHang.getTienGiam() != null ? refreshedDonHang.getTienGiam() : BigDecimal.ZERO);
         hoaDon.setPhuongThucThanhToan(refreshedDonHang.getPhuongThucThanhToan());
 
+        // Lấy thông tin nhân viên từ SecurityContextHolder và lưu vào trường nhanVien
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung nhanVien = (NguoiDung) auth.getPrincipal();
+            hoaDon.setNhanVien(nhanVien);
+        } else {
+            // Nếu không có nhân viên đăng nhập, có thể đặt nhanVien là null hoặc xử lý theo yêu cầu
+            hoaDon.setNhanVien(null);
+        }
+
         String trangThai;
         String ghiChu;
         if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
@@ -324,6 +339,7 @@ public class HoaDonService {
 
         hoaDonRepository.saveAndFlush(hoaDon);
     }
+
 
     public Page<HoaDon> findAll(String search, String trangThai, String paymentMethod, String salesMethod, Pageable pageable) {
         Sort sort = Sort.by(Sort.Direction.DESC, "ngayTao");
@@ -452,9 +468,6 @@ public class HoaDonService {
         }
         return "Chưa xác nhận";
     }
-
-
-
 
     @Transactional
     public void processReturn(UUID hoaDonId, List<UUID> chiTietDonHangIds, String lyDoTraHang) {

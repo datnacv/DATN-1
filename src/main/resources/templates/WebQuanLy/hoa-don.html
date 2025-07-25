@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -8,8 +9,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" th:href="@{/css/admin.css}">
-    <script th:src="@{/js/sidebar.js}" defer></script>
+  <link rel="stylesheet" th:href="@{/css/admin.css}">
+  <script th:src="@{/js/sidebar.js}" defer></script>
   <style>
     :root {
       --primary-color: #3b82f6;
@@ -66,7 +67,6 @@
       margin-top: 70px;
     }
 
-    /* Header Styling */
     h1 {
       color: var(--gray-900);
       font-weight: 700;
@@ -94,7 +94,6 @@
       border-radius: 2px;
     }
 
-    /* Search Bar */
     .search-bar {
       background: #ffffff;
       border-radius: 12px;
@@ -172,7 +171,6 @@
       transform: translateY(-1px);
     }
 
-    /* Table Container */
     .table-container {
       background: #ffffff;
       border-radius: 12px;
@@ -249,12 +247,13 @@
 
     th:nth-child(1), td:nth-child(1) { min-width: 120px; }
     th:nth-child(2), td:nth-child(2) { min-width: 150px; }
-    th:nth-child(3), td:nth-child(3) { min-width: 120px; }
-    th:nth-child(4), td:nth-child(4) { min-width: 140px; }
-    th:nth-child(5), td:nth-child(5) { min-width: 180px; }
+    th:nth-child(3), td:nth-child(3) { min-width: 150px; } /* Cột Tên nhân viên */
+    th:nth-child(4), td:nth-child(4) { min-width: 120px; }
+    th:nth-child(5), td:nth-child(5) { min-width: 140px; }
     th:nth-child(6), td:nth-child(6) { min-width: 180px; }
-    th:nth-child(7), td:nth-child(7) { min-width: 140px; }
-    th:nth-child(8), td:nth-child(8) { min-width: 100px; }
+    th:nth-child(7), td:nth-child(7) { min-width: 180px; }
+    th:nth-child(8), td:nth-child(8) { min-width: 140px; }
+    th:nth-child(9), td:nth-child(9) { min-width: 100px; }
 
     tr:hover {
       background: var(--gray-50);
@@ -381,7 +380,7 @@
       opacity: 0.5;
     }
 
-    td:nth-child(3) {
+    td:nth-child(4) {
       font-weight: 600;
       color: var(--success-color);
     }
@@ -458,6 +457,11 @@
 
     .scroll-to-top.show {
       opacity: 1;
+    }
+
+    td:nth-child(3) {
+      color: var(--gray-700);
+      font-weight: 500;
     }
 
     .scroll-to-top:hover {
@@ -622,6 +626,7 @@
               <tr>
                 <th>Mã đơn hàng</th>
                 <th>Khách hàng</th>
+                <th>Tên nhân viên</th>
                 <th>Tổng tiền</th>
                 <th>Ngày tạo</th>
                 <th>Phương thức thanh toán</th>
@@ -671,6 +676,7 @@
               <tr>
                 <th>Mã đơn hàng</th>
                 <th>Khách hàng</th>
+                <th>Tên nhân viên</th>
                 <th>Tổng tiền</th>
                 <th>Ngày tạo</th>
                 <th>Phương thức thanh toán</th>
@@ -721,6 +727,7 @@
               <tr>
                 <th>Mã đơn hàng</th>
                 <th>Khách hàng</th>
+                <th>Tên nhân viên</th>
                 <th>Tổng tiền</th>
                 <th>Ngày tạo</th>
                 <th>Phương thức thanh toán</th>
@@ -848,7 +855,7 @@
         const hoaDonList = response.hoaDon;
         tbody.empty();
         if (hoaDonList.length === 0) {
-          tbody.append('<tr><td colspan="8" class="text-center py-4" style="color: var(--gray-500);">Không có hóa đơn nào.</td></tr>');
+          tbody.append('<tr><td colspan="9" class="text-center py-4" style="color: var(--gray-500);">Không có hóa đơn nào.</td></tr>');
         } else {
           hoaDonList.forEach(hoaDon => {
             let trangThaiText = hoaDon.trangThai;
@@ -880,28 +887,29 @@
                 statusClass = 'status-pending';
             }
             tbody.append(`
-              <tr>
-                <td>${hoaDon.maHoaDon}</td>
-                <td>${hoaDon.tenKhachHang}</td>
-                <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
-                <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
-                <td>${hoaDon.phuongThucThanhToan}</td>
-                <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
-                <td><span class="${statusClass}">${trangThaiText}</span></td>
-                <td>
-                  <div class="dropdown">
-                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                      <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                      <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                      <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
-                      <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Hoàn thành' ? '' : 'style="display:none;"'}>Trả hàng</button></li>
-                    </ul>
-                  </div>
-                </td>
-              </tr>
-            `);
+                        <tr>
+                            <td>${hoaDon.maHoaDon}</td>
+                            <td>${hoaDon.tenKhachHang}</td>
+                            <td>${hoaDon.tenNhanVien || 'Không rõ'}</td>
+                            <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
+                            <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+                            <td>${hoaDon.phuongThucThanhToan}</td>
+                            <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+                            <td><span class="${statusClass}">${trangThaiText}</span></td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+                                        <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
+                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
+                                        <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Hoàn thành' ? '' : 'style="display:none;"'}>Trả hàng</button></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    `);
           });
         }
         updatePagination(response.totalPages, response.currentPage, search, trangThai, paymentMethod, salesMethod, tabId);

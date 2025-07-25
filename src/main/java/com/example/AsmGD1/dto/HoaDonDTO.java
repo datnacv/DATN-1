@@ -16,6 +16,7 @@
         private String tenKhachHang;
         private String soDienThoaiKhachHang;
         private String diaChi; // Thêm trường diaChi
+        private String tenNhanVien; // Thêm trường này
         private BigDecimal tongTienHang;
         private BigDecimal tienGiam;
         private BigDecimal tongTien;

@@ -226,6 +226,14 @@ CREATE TABLE hoa_don (
                          FOREIGN KEY (id_ma_giam_gia) REFERENCES chien_dich_giam_gia(id),
                          FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
+
+go
+ALTER TABLE hoa_don
+    ADD nhan_vien_id UNIQUEIDENTIFIER NULL,
+FOREIGN KEY (nhan_vien_id) REFERENCES nguoi_dung(id);
+go
+
+
 CREATE TABLE lich_su_hoa_don (
                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
                                  id_hoa_don UNIQUEIDENTIFIER NOT NULL,
@@ -653,3 +661,5 @@ SET email = 'datn.acv@gmail.com'
 WHERE id = '550E8400-E29B-41D4-A716-446655440014';
 
 select * from vi_thanh_toan
+
+select * from lich_su_hoa_don

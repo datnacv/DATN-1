@@ -79,7 +79,9 @@ public class HoaDonController {
                         Map<String, Object> hoaDonInfo = new HashMap<>();
                         hoaDonInfo.put("id", row.getId());
                         hoaDonInfo.put("maHoaDon", row.getDonHang().getMaDonHang());
-                        hoaDonInfo.put("tenKhachHang", row.getNguoiDung().getHoTen());
+                        hoaDonInfo.put("tenKhachHang", row.getNguoiDung() != null ? row.getNguoiDung().getHoTen() : "Khách lẻ");
+                        // Lấy tên nhân viên từ trường nhanVien của HoaDon
+                        hoaDonInfo.put("tenNhanVien", row.getNhanVien() != null ? row.getNhanVien().getHoTen() : "Không rõ");
                         hoaDonInfo.put("tongTien", row.getTongTien());
                         hoaDonInfo.put("thoiGianTao", row.getNgayTao());
                         hoaDonInfo.put("phuongThucThanhToan", row.getPhuongThucThanhToan() != null ? row.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
