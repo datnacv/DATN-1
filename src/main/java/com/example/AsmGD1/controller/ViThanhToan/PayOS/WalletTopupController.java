@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.ViThanhToan.PayOS;
 
+import com.example.AsmGD1.entity.ViThanhToan;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,18 +32,34 @@ public class WalletTopupController {
     @PostMapping("/confirm")
     public ResponseEntity<?> confirmTopup(@RequestBody Map<String, Object> payload) {
         try {
-            UUID idNguoiDung = UUID.fromString(payload.get("idNguoiDung").toString());
-            BigDecimal soTien = new BigDecimal(payload.get("soTien").toString());
+            Object idNguoiDungRaw = payload.get("idNguoiDung");
+            Object soTienRaw = payload.get("soTien");
+
+            // Kiểm tra đầu vào
+            if (idNguoiDungRaw == null || soTienRaw == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Thiếu tham số idNguoiDung hoặc soTien"
+                ));
+            }
+
+            UUID idNguoiDung = UUID.fromString(idNguoiDungRaw.toString());
+            BigDecimal soTien = new BigDecimal(soTienRaw.toString());
 
             // ✅ Cộng tiền vào ví
             viThanhToanService.napTien(idNguoiDung, soTien);
 
-            return ResponseEntity.ok(Map.of("message", "Nạp tiền thành công"));
+            ViThanhToan vi = viThanhToanService.findByUser(idNguoiDung);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Nạp tiền thành công",
+                    "soDuMoi", vi.getSoDu()
+            ));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Nạp tiền thất bại: " + e.getMessage()));
         }
     }
+
 
 
     @PostMapping(value = "/create", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

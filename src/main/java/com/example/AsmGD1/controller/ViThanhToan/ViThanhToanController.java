@@ -33,6 +33,7 @@ public class ViThanhToanController {
         UUID idNguoiDung = currentUser.getId();
 
         ViThanhToan vi = viService.findByUser(idNguoiDung);
+        model.addAttribute("user", currentUser);
         model.addAttribute("vi", vi);
         return "WebKhachHang/xem_vi";
     }
@@ -85,6 +86,7 @@ public class ViThanhToanController {
 
         List<LichSuGiaoDichVi> lichSu = lichSuRepo.findByIdViThanhToanOrderByCreatedAtDesc(vi.getId());
         model.addAttribute("lichSu", lichSu);
+        model.addAttribute("user", currentUser);
         return "WebKhachHang/lich_su";
     }
 

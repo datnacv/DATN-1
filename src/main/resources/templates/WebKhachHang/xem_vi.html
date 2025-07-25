@@ -217,6 +217,7 @@
     <div th:if="${vi != null}" class="mt-6">
       <h4 class="font-semibold text-gray-800 mb-3">Nạp tiền vào ví</h4>
       <form id="formNapTien" th:action="@{/vi/nap-tien}" method="post" class="flex gap-3 items-center">
+        <input type="hidden" id="idNguoiDung" th:value="${user.id}" />
         <input type="number" name="soTien" min="1000" required placeholder="Nhập số tiền muốn nạp" class="form-control border rounded-lg p-2 w-64"/>
         <button type="submit" class="btn text-white" style="background-color: #153054;">Nạp tiền</button>
       </form>
@@ -547,16 +548,17 @@
       form.onsubmit = function(e) {
         e.preventDefault();
         const soTien = parseInt(form.soTien.value);
+        const idNguoiDung = document.getElementById("idNguoiDung")?.value; // ✅ thêm dòng này
 
         if (soTien < 1000) {
           alert("Vui lòng nạp ít nhất 1000 VNĐ.");
           return;
         }
 
-        // 👉 Lưu lại session để hiển thị sau thanh toán thành công
-        sessionStorage.setItem("pendingTopup", JSON.stringify({ amount: soTien }));
+        // 👉 Lưu lại session để xác nhận ở trang success
+        sessionStorage.setItem("pendingTopup", JSON.stringify({ amount: soTien, idNguoiDung }));
 
-        // 👉 Tạo form tạm và submit như một POST
+        // 👉 Submit form nạp
         const tempForm = document.createElement("form");
         tempForm.method = "POST";
         tempForm.action = "/wallet-topup/create";

@@ -12,36 +12,33 @@
                 return;
             }
 
-            try {
-                const { amount, idNguoiDung } = JSON.parse(pending);
+            const { amount, idNguoiDung } = JSON.parse(pending);
+            console.log("✅ pendingTopup:", { amount, idNguoiDung });
 
-                // ✅ Gọi API cập nhật ví
+            try {
                 const res = await fetch("/wallet-topup/confirm", {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        soTien: amount,
-                        idNguoiDung: idNguoiDung
-                    })
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ soTien: amount, idNguoiDung })
                 });
 
-                if (!res.ok) throw new Error("Lỗi gọi API xác nhận nạp tiền");
+                const result = await res.json(); // 🚨 bắt buộc phải có dòng này
+
+                if (!res.ok) {
+                    document.getElementById("topupStatus").textContent = "Lỗi khi cập nhật ví!";
+                    console.error("❌ Chi tiết lỗi:", result.error);
+                    return;
+                }
 
                 document.getElementById("topupStatus").textContent =
-                    `Bạn đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ vào ví.`;
+                    `Bạn đã nạp thành công ${amount.toLocaleString('vi-VN')} VNĐ. Số dư mới: ${parseInt(result.soDuMoi).toLocaleString('vi-VN')} VNĐ`;
 
                 sessionStorage.removeItem("pendingTopup");
-
-                setTimeout(() => {
-                    window.location.href = "/vi";
-                }, 3000);
+                setTimeout(() => window.location.href = "/vi", 3000);
 
             } catch (err) {
                 console.error("❌ Lỗi xác nhận nạp tiền:", err);
-                document.getElementById("topupStatus").textContent =
-                    "Có lỗi xảy ra khi cập nhật ví. Vui lòng liên hệ hỗ trợ.";
+                document.getElementById("topupStatus").textContent = "Có lỗi xảy ra khi cập nhật ví.";
             }
         };
     </script>
