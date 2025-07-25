@@ -659,14 +659,14 @@
                     </td>
                     <td class="text-center d-flex justify-content-center gap-1">
                         <!-- View button for both Admin and Employee -->
-                        <a th:href="@{${isAdmin} ? '/acvstore/phieu-giam-gia/edit/' + ${v.id} : '/acvstore/phieu-giam-gia/view/' + ${v.id}}"
+                        <a th:href="@{'/acvstore/phieu-giam-gia/view/' + ${v.id}}"
                            class="btn btn-sm btn-outline-success"
-                           th:title="${isAdmin} ? (${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'Xem chi tiết phiếu giảm giá (chỉ xem)' : 'Chỉnh sửa phiếu giảm giá') : 'Xem chi tiết phiếu giảm giá'">
+                           title="Xem chi tiết phiếu giảm giá">
                             <i class="fas fa-eye"></i>
                         </a>
 
-                        <!-- Edit button - only for Admin -->
-                        <a th:if="${isAdmin && (getStatus.apply(v) == 'Sắp diễn ra')}"
+                        <!-- Edit button - only for Admin and only if status is 'Sắp diễn ra' -->
+                        <a th:if="${isAdmin and getStatus.apply(v) == 'Sắp diễn ra'}"
                            th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${v.id}}"
                            class="btn btn-sm btn-outline-info"
                            title="Chỉnh sửa phiếu giảm giá">
