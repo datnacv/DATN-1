@@ -69,8 +69,11 @@ public class PhieuGiamGiaController {
             model.addAttribute("isAdmin", "ADMIN".equalsIgnoreCase(user.getVaiTro()));
             model.addAttribute("isEmployee", "EMPLOYEE".equalsIgnoreCase(user.getVaiTro()));
         } else {
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("ADMIN", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            // Fallback for testing
+            NguoiDung defaultUser = new NguoiDung();
+            defaultUser.setTenDangNhap("Unknown");
+            defaultUser.setVaiTro("GUEST");
+            model.addAttribute("user", defaultUser);
             model.addAttribute("isAdmin", false);
             model.addAttribute("isEmployee", false);
         }
@@ -85,6 +88,11 @@ public class PhieuGiamGiaController {
                        @RequestParam(defaultValue = "0") int page,
                        @RequestParam(defaultValue = "10") int size,
                        Model model) {
+
+        // RBAC: Cả admin và employee đều có thể xem danh sách
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+            return "redirect:/login";
+        }
 
         Pageable pageable = PageRequest.of(page, size);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -242,14 +250,14 @@ public class PhieuGiamGiaController {
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ.");
         }
-        // ✅ Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
+
+        // Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
         if ("CASH".equalsIgnoreCase(voucher.getLoai())
                 && voucher.getGiaTriGiam() != null
                 && voucher.getGiaTriGiamToiThieu() != null
                 && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
             errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
         }
-
 
         // Validate ngày bắt đầu và kết thúc
         LocalDate today = LocalDate.now();
@@ -271,21 +279,19 @@ public class PhieuGiamGiaController {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
 
-
         // Phiếu cá nhân: phải có khách hàng
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
             if (selectedCustomerIds == null || selectedCustomerIds.isEmpty()) {
                 errors.add("Vui lòng chọn ít nhất một khách hàng khi tạo phiếu cá nhân.");
             }
-        }else if ("cong_khai".equalsIgnoreCase(voucher.getKieuPhieu())) {
+        } else if ("cong_khai".equalsIgnoreCase(voucher.getKieuPhieu())) {
             Integer gioiHan = voucher.getGioiHanSuDung();
             if (gioiHan == null || gioiHan <= 0) {
                 errors.add("Vui lòng nhập số lượt sử dụng hợp lệ cho phiếu công khai.");
             } else {
-                voucher.setSoLuong(gioiHan); // ✅ Lưu lại lượt ban đầu
+                voucher.setSoLuong(gioiHan);
             }
         }
-
 
         if (!errors.isEmpty()) {
             model.addAttribute("errorMessage", String.join("<br>", errors));
@@ -337,10 +343,9 @@ public class PhieuGiamGiaController {
         PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
 
-        // Employee chỉ có thể xem, không được chỉnh sửa
-        boolean isReadOnly = isCurrentUserEmployee();
-        model.addAttribute("readOnly", isReadOnly);
+        // Đánh dấu đây là chế độ xem
         model.addAttribute("viewMode", true);
+        model.addAttribute("readOnly", true);
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
         String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
@@ -373,7 +378,7 @@ public class PhieuGiamGiaController {
 
         addUserInfoToModel(model);
 
-        return "WebQuanLy/voucher-edit";
+        return "WebQuanLy/voucher-detail";
     }
 
     @GetMapping("/edit/{id}")
@@ -387,24 +392,21 @@ public class PhieuGiamGiaController {
         PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
 
-        // RBAC: Admin có thể chỉnh sửa, Employee chỉ có thể xem
-        boolean isAdmin = isCurrentUserAdmin();
-        boolean isEmployee = isCurrentUserEmployee();
-
-        if (!isAdmin && !isEmployee) {
+        // RBAC: Chỉ admin mới được chỉnh sửa
+        if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
             return "redirect:/acvstore/phieu-giam-gia";
         }
 
-        if (isEmployee) {
-            // Employee chỉ có thể xem, redirect to view mode
-            return "redirect:/acvstore/phieu-giam-gia/view/" + id +
-                    "?page=" + page + "&size=" + size +
-                    (search != null ? "&search=" + search : "");
+        // Kiểm tra trạng thái voucher
+        String status = getTrangThai(voucher);
+        if (!"Sắp diễn ra".equals(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể chỉnh sửa phiếu giảm giá ở trạng thái 'Sắp diễn ra'.");
+            return "redirect:/acvstore/phieu-giam-gia";
         }
 
-        model.addAttribute("readOnly", false);
         model.addAttribute("viewMode", false);
+        model.addAttribute("readOnly", false);
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
         String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
@@ -525,14 +527,14 @@ public class PhieuGiamGiaController {
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ");
         }
-        // ✅ Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
+
+        // Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
         if ("CASH".equalsIgnoreCase(voucher.getLoai())
                 && voucher.getGiaTriGiam() != null
                 && voucher.getGiaTriGiamToiThieu() != null
                 && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
             errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
         }
-
 
         // Validate loại giảm
         if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
@@ -562,7 +564,6 @@ public class PhieuGiamGiaController {
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
-
 
         // Phiếu cá nhân phải chọn khách hàng
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) &&
