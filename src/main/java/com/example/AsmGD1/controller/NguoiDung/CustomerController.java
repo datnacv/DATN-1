@@ -31,6 +31,21 @@ public class CustomerController {
         return false;
     }
 
+    // Helper method để kiểm tra quyền employee
+    private boolean isCurrentUserEmployee() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "EMPLOYEE".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    // Helper method để kiểm tra quyền admin hoặc employee
+    private boolean isCurrentUserAdminOrEmployee() {
+        return isCurrentUserAdmin() || isCurrentUserEmployee();
+    }
+
     // Helper method để thêm thông tin user vào model
     private void addUserInfoToModel(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -50,22 +65,13 @@ public class CustomerController {
         }
     }
 
-    private boolean isCurrentUserEmployee() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            return "EMPLOYEE".equalsIgnoreCase(user.getVaiTro());
-        }
-        return false;
-    }
-
     @GetMapping
     public String listCustomers(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "") String keyword,
                                 Model model,
                                 RedirectAttributes redirectAttributes) {
         // Kiểm tra quyền truy cập - cả admin và employee đều có thể xem
-        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+        if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền truy cập chức năng này!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/thong-ke";
@@ -88,8 +94,8 @@ public class CustomerController {
     public String addCustomer(@ModelAttribute("customer") NguoiDung customer,
                               RedirectAttributes redirectAttributes,
                               Authentication authentication) {
-        // Kiểm tra quyền admin
-        if (!isCurrentUserAdmin()) {
+        // Kiểm tra quyền admin hoặc employee
+        if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền thêm khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/customers";
@@ -111,8 +117,8 @@ public class CustomerController {
     public String editCustomer(@ModelAttribute("customer") NguoiDung customer,
                                RedirectAttributes redirectAttributes,
                                Authentication authentication) {
-        // Kiểm tra quyền admin
-        if (!isCurrentUserAdmin()) {
+        // Kiểm tra quyền admin hoặc employee
+        if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền sửa khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/customers";
@@ -134,8 +140,8 @@ public class CustomerController {
     public String deleteCustomer(@PathVariable UUID id,
                                  RedirectAttributes redirectAttributes,
                                  Authentication authentication) {
-        // Kiểm tra quyền admin
-        if (!isCurrentUserAdmin()) {
+        // Kiểm tra quyền admin hoặc employee
+        if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền xóa khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/customers";
