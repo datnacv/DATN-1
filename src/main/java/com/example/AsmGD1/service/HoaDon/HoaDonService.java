@@ -272,7 +272,7 @@ public class HoaDonService {
         return df.format(amount.setScale(0, RoundingMode.HALF_UP));
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     @Retryable(
             value = {ObjectOptimisticLockingFailureException.class},
             maxAttempts = 3,
@@ -441,6 +441,12 @@ public class HoaDonService {
     }
 
     public String getCurrentStatus(HoaDon hoaDon) {
+        // Ưu tiên trạng thái "Hoàn thành" nếu có trong lịch sử
+        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
+            return "Hoàn thành";
+        }
+
+        // Kiểm tra trạng thái trả hàng
         List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
         long totalItems = chiTietDonHangs.size();
         long returnedItems = chiTietDonHangs.stream()
@@ -452,8 +458,6 @@ public class HoaDonService {
         } else if (returnedItems > 0) {
             return "Đã trả hàng một phần";
         } else if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
-            return "Hoàn thành";
-        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
             return "Hoàn thành";
         } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai()))) {
             return "Vận chuyển thành công";

@@ -692,6 +692,8 @@
           <div id="paginationInstore" class="pagination"></div>
         </div>
       </div>
+
+
       <div class="tab-pane fade" id="online" role="tabpanel" aria-labelledby="online-tab">
         <div class="search-bar">
           <div class="search-row">
@@ -727,7 +729,6 @@
               <tr>
                 <th>Mã đơn hàng</th>
                 <th>Khách hàng</th>
-                <th>Tên nhân viên</th>
                 <th>Tổng tiền</th>
                 <th>Ngày tạo</th>
                 <th>Phương thức thanh toán</th>
@@ -855,61 +856,52 @@
         const hoaDonList = response.hoaDon;
         tbody.empty();
         if (hoaDonList.length === 0) {
-          tbody.append('<tr><td colspan="9" class="text-center py-4" style="color: var(--gray-500);">Không có hóa đơn nào.</td></tr>');
+          const colspan = tabId === 'online' ? 8 : 9;
+          tbody.append(`<tr><td colspan="${colspan}" class="text-center py-4" style="color: var(--gray-500);">Không có hóa đơn nào.</td></tr>`);
         } else {
           hoaDonList.forEach(hoaDon => {
             let trangThaiText = hoaDon.trangThai;
             let statusClass = '';
             switch (hoaDon.trangThai) {
-              case 'Chưa xác nhận':
-                statusClass = 'status-pending';
-                break;
+              case 'Chưa xác nhận': statusClass = 'status-pending'; break;
               case 'Đã xác nhận':
-                statusClass = 'status-confirmed-bg';
-                break;
-              case 'Đang vận chuyển':
-                statusClass = 'status-shipping';
-                break;
-              case 'Vận chuyển thành công':
-                statusClass = 'status-confirmed-bg';
-                break;
-              case 'Hoàn thành':
-                statusClass = 'status-completed-bg';
-                break;
-              case 'Đã trả hàng':
-                statusClass = 'status-returned';
-                break;
-              case 'Đã trả hàng một phần':
-                statusClass = 'status-partial-returned';
-                break;
-              default:
-                trangThaiText = hoaDon.trangThai;
-                statusClass = 'status-pending';
+              case 'Vận chuyển thành công': statusClass = 'status-confirmed-bg'; break;
+              case 'Đang vận chuyển': statusClass = 'status-shipping'; break;
+              case 'Hoàn thành': statusClass = 'status-completed-bg'; break;
+              case 'Đã trả hàng': statusClass = 'status-returned'; break;
+              case 'Đã trả hàng một phần': statusClass = 'status-partial-returned'; break;
+              default: statusClass = 'status-pending'; break;
             }
-            tbody.append(`
-                        <tr>
-                            <td>${hoaDon.maHoaDon}</td>
-                            <td>${hoaDon.tenKhachHang}</td>
-                            <td>${hoaDon.tenNhanVien || 'Không rõ'}</td>
-                            <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
-                            <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
-                            <td>${hoaDon.phuongThucThanhToan}</td>
-                            <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
-                            <td><span class="${statusClass}">${trangThaiText}</span></td>
-                            <td>
-                                <div class="dropdown">
-                                    <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                    <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                                        <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                                        <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
-                                        <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Hoàn thành' ? '' : 'style="display:none;"'}>Trả hàng</button></li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
-                    `);
+
+            let html = `
+      <tr>
+        <td>${hoaDon.maHoaDon}</td>
+        <td>${hoaDon.tenKhachHang}</td>
+    `;
+            if (tabId !== "online") {
+              html += `<td>${hoaDon.tenNhanVien || 'Không rõ'}</td>`;
+            }
+            html += `
+        <td><strong>${formatCurrency(hoaDon.tongTien)}</strong></td>
+        <td>${new Date(hoaDon.thoiGianTao).toLocaleString("vi-VN")}</td>
+        <td>${hoaDon.phuongThucThanhToan}</td>
+        <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
+        <td><span class="${statusClass}">${trangThaiText}</span></td>
+        <td>
+          <div class="dropdown">
+            <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
+              <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
+              <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style=\"display:none;\"'}>Xác nhận hóa đơn</button></li>
+              <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Hoàn thành' ? '' : 'style=\"display:none;\"'}>Trả hàng</button></li>
+            </ul>
+          </div>
+        </td>
+      </tr>
+    `;
+            tbody.append(html);
           });
         }
         updatePagination(response.totalPages, response.currentPage, search, trangThai, paymentMethod, salesMethod, tabId);
