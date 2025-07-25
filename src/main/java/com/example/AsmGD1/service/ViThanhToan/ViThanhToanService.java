@@ -9,6 +9,7 @@ import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.BanHang.PhuongThucThanhToanRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
+import com.example.AsmGD1.repository.ViThanhToan.YeuCauRutTienRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,14 @@ public class ViThanhToanService {
 
     @Autowired
     private PhuongThucThanhToanRepository phuongThucRepo;
+
+    @Autowired
+    private YeuCauRutTienRepository rutTienRepo;
+
+    public BigDecimal tongTienDangCho(UUID idVi) {
+        BigDecimal tong = rutTienRepo.tongTienDangCho(idVi);
+        return tong != null ? tong : BigDecimal.ZERO;
+    }
 
     public ViThanhToan findByUser(UUID idNguoiDung) {
         return viThanhToanRepo.findByIdNguoiDung(idNguoiDung).orElse(null);
