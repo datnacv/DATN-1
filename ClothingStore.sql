@@ -662,3 +662,18 @@ WHERE id IN (
              '550E8400-E29B-41D4-A716-446655440048'
     );
 
+
+CREATE TABLE yeu_cau_rut_tien (
+                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                  id_vi_thanh_toan UNIQUEIDENTIFIER NOT NULL,
+                                  ma_giao_dich NVARCHAR(20) UNIQUE NOT NULL,
+                                  so_tai_khoan VARCHAR(50),
+                                  nguoi_thu_huong VARCHAR(100),
+                                  ten_ngan_hang VARCHAR(100),
+                                  so_tien DECIMAL(15, 2) NOT NULL CHECK (so_tien > 0),
+                                  trang_thai NVARCHAR(50) NOT NULL DEFAULT N'Đang chờ',
+                                  ghi_chu NVARCHAR(MAX),
+                                  thoi_gian_yeu_cau DATETIME NOT NULL DEFAULT GETDATE(),
+                                  thoi_gian_xu_ly DATETIME NULL,
+                                  FOREIGN KEY (id_vi_thanh_toan) REFERENCES vi_thanh_toan(id)
+);
