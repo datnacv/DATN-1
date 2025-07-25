@@ -606,6 +606,7 @@
               <option value="Vận chuyển thành công">Vận chuyển thành công</option>
               <option value="Đã trả hàng">Đã trả hàng</option>
               <option value="Đã trả hàng một phần">Đã trả hàng một phần</option>
+              <option value="Khách hàng không muốn nhận hàng">Khách hàng không muốn nhận hàng</option>
             </select>
             <select id="paymentMethodFilterDelivery" onchange="loadHoaDonList(0, 5, $('#searchInputDelivery').val(), $('#statusFilterDelivery').val(), this.value, 'Giao hàng', 'delivery')">
               <option value="">Tất cả phương thức thanh toán</option>
@@ -654,6 +655,7 @@
               <option value="Vận chuyển thành công">Vận chuyển thành công</option>
               <option value="Đã trả hàng">Đã trả hàng</option>
               <option value="Đã trả hàng một phần">Đã trả hàng một phần</option>
+              <option value="Khách hàng không muốn nhận hàng">Khách hàng không muốn nhận hàng</option>
             </select>
             <select id="paymentMethodFilterInstore" onchange="loadHoaDonList(0, 5, $('#searchInputInstore').val(), $('#statusFilterInstore').val(), this.value, 'Tại quầy', 'instore')">
               <option value="">Tất cả phương thức thanh toán</option>
@@ -696,12 +698,14 @@
             <select id="statusFilterOnline" onchange="loadHoaDonList(0, 5, $('#searchInputOnline').val(), this.value, $('#paymentMethodFilterOnline').val(), 'Online', 'online')">
               <option value="">Tất cả trạng thái</option>
               <option value="Chưa xác nhận">Chưa xác nhận</option>
-              <option value="Đã xác nhận">Đã xác nhận</option>
+              <option value="Đã xác nhận Online">Đã xác nhận Online</option>
+              <option value="Đang xử lý Online">Đang xử lý Online</option>
               <option value="Hoàn thành">Hoàn thành</option>
               <option value="Đang vận chuyển">Đang vận chuyển</option>
               <option value="Vận chuyển thành công">Vận chuyển thành công</option>
               <option value="Đã trả hàng">Đã trả hàng</option>
               <option value="Đã trả hàng một phần">Đã trả hàng một phần</option>
+              <option value="Khách hàng không muốn nhận hàng">Khách hàng không muốn nhận hàng</option>
             </select>
             <select id="paymentMethodFilterOnline" onchange="loadHoaDonList(0, 5, $('#searchInputOnline').val(), $('#statusFilterOnline').val(), this.value, 'Online', 'online')">
               <option value="">Tất cả phương thức thanh toán</option>

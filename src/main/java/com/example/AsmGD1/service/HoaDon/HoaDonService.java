@@ -1,3 +1,4 @@
+
 package com.example.AsmGD1.service.HoaDon;
 
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
@@ -179,13 +180,16 @@ public class HoaDonService {
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
             summaryTable.setSpacingBefore(10f);
 
-            BigDecimal tongTienHang = hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO);
+            // Tính tổng tiền hàng từ các chi tiết đơn hàng (không bao gồm phí vận chuyển)
+            BigDecimal tongTienHang = donHang.getChiTietDonHangs().stream()
+                    .filter(chiTiet -> chiTiet.getTrangThaiHoanTra() == null || !chiTiet.getTrangThaiHoanTra())
+                    .map(ChiTietDonHang::getThanhTien)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền hàng:", formatCurrency(tongTienHang));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Phí vận chuyển:", formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền:", formatCurrency(hoaDon.getTongTien()));
 
-            // Thêm số tiền khách đưa và tiền thối lại
             BigDecimal soTienKhachDua = donHang.getSoTienKhachDua() != null ? donHang.getSoTienKhachDua() : BigDecimal.ZERO;
             BigDecimal tienThoi = soTienKhachDua.compareTo(BigDecimal.ZERO) > 0 ? soTienKhachDua.subtract(hoaDon.getTongTien()) : BigDecimal.ZERO;
             addSummaryCell(summaryTable, fontBold, fontNormal, "Số tiền khách đưa:", formatCurrency(soTienKhachDua));
@@ -193,7 +197,6 @@ public class HoaDonService {
 
             document.add(summaryTable);
 
-            // Thêm mã QR và hướng dẫn trả hàng
             Paragraph footer = new Paragraph();
             footer.setAlignment(Element.ALIGN_CENTER);
             footer.setSpacingBefore(20f);
@@ -201,8 +204,7 @@ public class HoaDonService {
             footer.add(new Phrase("Quét mã QR dưới đây để thực hiện trả hàng:", fontNormal));
             document.add(footer);
 
-            // Tạo mã QR
-            String returnUrl = "http://localhost:8080/acvstore/tra-hang/" + id; // Thay bằng URL thực tế của ứng dụng
+            String returnUrl = "http://localhost:8080/acvstore/tra-hang/" + id;
             try {
                 QRCodeWriter qrCodeWriter = new QRCodeWriter();
                 BitMatrix bitMatrix = qrCodeWriter.encode(returnUrl, BarcodeFormat.QR_CODE, 150, 150);
@@ -301,12 +303,12 @@ public class HoaDonService {
         if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Hoàn thành";
             ghiChu = "Hoàn thành (Tại quầy)";
-        }else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
+        } else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Chưa xác nhận";
             ghiChu = "Hóa đơn Online được tạo";
-        } else {
-            trangThai = "Chưa xác nhận";
-            ghiChu = refreshedDonHang.getDiaChiGiaoHang() != null ? refreshedDonHang.getDiaChiGiaoHang() : "";
+        } else { // Giao hàng
+            trangThai = "Đã xác nhận";
+            ghiChu = "Đã xác nhận đơn hàng Giao hàng";
         }
 
         hoaDon.setTrangThai(trangThai);
@@ -451,6 +453,9 @@ public class HoaDonService {
         return "Chưa xác nhận";
     }
 
+
+
+
     @Transactional
     public void processReturn(UUID hoaDonId, List<UUID> chiTietDonHangIds, String lyDoTraHang) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
@@ -492,14 +497,12 @@ public class HoaDonService {
             tongTienHoan = tongTienHoan.add(chiTiet.getThanhTien());
         }
 
-        // Kiểm tra xem có phải trả toàn bộ sản phẩm hay không
         List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
         long totalItems = chiTietDonHangs.size();
         long returnedItems = chiTietDonHangs.stream()
                 .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
                 .count();
 
-        // Nếu trả toàn bộ sản phẩm, cộng thêm phí vận chuyển vào tổng tiền hoàn
         if (returnedItems == totalItems) {
             BigDecimal phiVanChuyen = hoaDon.getDonHang().getPhiVanChuyen() != null
                     ? hoaDon.getDonHang().getPhiVanChuyen()
@@ -507,10 +510,8 @@ public class HoaDonService {
             tongTienHoan = tongTienHoan.add(phiVanChuyen);
         }
 
-        // Cập nhật tổng tiền hóa đơn
         hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
 
-        // Cập nhật trạng thái và ghi chú
         String trangThaiTraHang = returnedItems == totalItems ? "Đã trả hàng" : "Đã trả hàng một phần";
         String ghiChu = "Lý do trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn trả: " + formatCurrency(tongTienHoan);
         addLichSuHoaDon(hoaDon, trangThaiTraHang, ghiChu);
