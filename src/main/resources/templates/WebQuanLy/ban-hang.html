@@ -1451,7 +1451,9 @@
     tab.subTotal = data.tongTienHang || 0;
     tab.discount = data.giamGia || 0;
     tab.total = data.tong || 0;
-    tab.shippingFee = data.phiVanChuyen || 0;
+    tab.shippingFee = (data.phiVanChuyen !== undefined && data.phiVanChuyen !== null)
+      ? data.phiVanChuyen
+      : tab.shippingFee;
 
     renderCart(tab.cart);
     updateSummary(tab);
