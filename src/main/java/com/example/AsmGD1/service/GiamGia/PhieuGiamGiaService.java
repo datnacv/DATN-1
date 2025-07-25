@@ -38,16 +38,20 @@ public class PhieuGiamGiaService {
         }
 
         // Đảm bảo soLuong và gioiHanSuDung không null
-        if (phieu.getSoLuong() == null) {
-            phieu.setSoLuong(1); // Mặc định là 1
-        }
-        if (phieu.getGioiHanSuDung() == null) {
-            phieu.setGioiHanSuDung(1); // Mặc định là 1
+        if ("ca_nhan".equalsIgnoreCase(phieu.getKieuPhieu())) {
+            phieu.setSoLuong(1); // Phiếu cá nhân: soLuong = 1
+            phieu.setGioiHanSuDung(1); // Phiếu cá nhân: gioiHanSuDung = 1
+        } else {
+            if (phieu.getSoLuong() == null) {
+                phieu.setSoLuong(1); // Mặc định cho phiếu công khai
+            }
+            if (phieu.getGioiHanSuDung() == null) {
+                phieu.setGioiHanSuDung(phieu.getSoLuong()); // gioiHanSuDung bằng soLuong
+            }
         }
 
         return phieuGiamGiaRepository.save(phieu);
     }
-
 
     public void xoa(UUID id) {
         phieuGiamGiaRepository.deleteById(id);

@@ -95,12 +95,24 @@ public class KHThanhToanController {
             model.addAttribute("loggedInUser", nguoiDung);
 
             // Load phiếu giảm giá công khai còn lượt sử dụng
-            List<PhieuGiamGia> vouchers = phieuGiamGiaService.layTatCa().stream()
+            List<PhieuGiamGia> publicVouchers = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> "cong_khai".equalsIgnoreCase(p.getKieuPhieu()))
-                    .filter(p -> p.getGioiHanSuDung() != null && p.getGioiHanSuDung() > 0)
+                    .filter(p -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(p))) // chỉ lấy phiếu đang diễn ra
+                    .filter(p -> p.getGioiHanSuDung() != null && p.getGioiHanSuDung() > 0) // còn lượt sử dụng
                     .toList();
 
-            model.addAttribute("vouchers", vouchers);
+            // Load phiếu giảm giá cá nhân còn hạn cho người dùng
+            List<PhieuGiamGia> privateVouchers = phieuGiamGiaCuaNguoiDungService.layPhieuCaNhanConHan(nguoiDung.getId());
+
+            // Gộp cả 2 danh sách vào 1 Set để tránh trùng lặp
+            List<PhieuGiamGia> allVouchers = new ArrayList<>();
+            allVouchers.addAll(publicVouchers);
+            allVouchers.addAll(privateVouchers);
+
+            model.addAttribute("vouchers", allVouchers);
+            System.out.println(">>> Tổng số voucher truyền ra view: " + allVouchers.size());
+            allVouchers.forEach(v -> System.out.println(" - " + v.getMa()));
+
 
         } catch (Exception e) {
             model.addAttribute("error", "Không thể tải thông tin người dùng: " + e.getMessage());
@@ -108,6 +120,7 @@ public class KHThanhToanController {
 
         return "WebKhachHang/thanh-toan";
     }
+
 
     @PostMapping("/dat-hang")
     public String datHang(
@@ -188,10 +201,9 @@ public class KHThanhToanController {
             tongTien = tongTien.add(thanhTien);
         }
 
-        // XỬ LÝ MÃ GIẢM GIÁ
+        // ==== XỬ LÝ MÃ GIẢM GIÁ ====
         BigDecimal giamGia = BigDecimal.ZERO;
         if (voucher != null && !voucher.trim().isEmpty()) {
-            // Tìm phiếu giảm giá theo mã bằng cách lọc từ danh sách tất cả phiếu
             PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> p.getMa() != null && p.getMa().equalsIgnoreCase(voucher.trim()))
                     .findFirst()
@@ -201,60 +213,58 @@ public class KHThanhToanController {
                 redirect.addFlashAttribute("error", "Mã giảm giá không tồn tại.");
                 return "redirect:/thanh-toan";
             }
+            System.out.println(">> Tổng tiền đơn hàng: " + tongTien);
+            System.out.println(">> Giá trị tối thiểu của mã: " + phieu.getGiaTriGiamToiThieu());
 
-            // Kiểm tra trạng thái phiếu
             if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
                 redirect.addFlashAttribute("error", "Phiếu giảm giá không trong thời gian hiệu lực.");
                 return "redirect:/thanh-toan";
             }
 
-            boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getLoai());
+            if (phieu.getGiaTriGiamToiThieu() != null &&
+                    tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
+                redirect.addFlashAttribute("error", "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.");
+                return "redirect:/thanh-toan";
+            }
 
+            boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
+            boolean used;
             if (isCaNhan) {
-                // Handle personal voucher
-                boolean used = phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId());
+                used = phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId());
                 if (!used) {
                     redirect.addFlashAttribute("error", "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng.");
                     return "redirect:/thanh-toan";
                 }
             } else {
-                // Handle public voucher
-                boolean used = phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
+                used = phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
                 if (!used) {
                     redirect.addFlashAttribute("error", "Mã giảm giá công khai đã hết lượt sử dụng.");
                     return "redirect:/thanh-toan";
                 }
             }
 
-            // Tính toán giảm giá
-            if ("Phần trăm".equalsIgnoreCase(phieu.getKieuPhieu())) {
+            // TÍNH GIẢM GIÁ
+            if ("Phần trăm".equalsIgnoreCase(phieu.getLoai())) {
                 giamGia = tongTien.multiply(phieu.getGiaTriGiam().divide(BigDecimal.valueOf(100)));
-                if (phieu.getGiaTriGiamToiDa() != null) {
-                    giamGia = giamGia.min(phieu.getGiaTriGiamToiDa());
+                if (phieu.getGiaTriGiamToiDa() != null && giamGia.compareTo(phieu.getGiaTriGiamToiDa()) > 0) {
+                    giamGia = phieu.getGiaTriGiamToiDa();
                 }
             } else {
                 giamGia = phieu.getGiaTriGiam();
             }
-
-            if (phieu.getGiaTriGiamToiThieu() != null &&
-                    tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
-                giamGia = BigDecimal.ZERO;
-                redirect.addFlashAttribute("error", "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.");
-                return "redirect:/thanh-toan";
-            }
         }
 
-        // Save order and order details
+        // ==== LƯU ĐƠN HÀNG ====
         donHang.setTongTien(tongTien.add(shippingFee).subtract(giamGia));
         donHangRepo.save(donHang);
         chiTietDonHangRepo.saveAll(chiTietListDH);
-
-        // Clear cart after successful order
         chiTietGioHangService.clearGioHang(gioHang.getId());
 
         redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
         return "redirect:/thanh-toan";
     }
+
+
 
     private String extractEmailFromAuthentication(Authentication authentication) {
         if (authentication instanceof OAuth2AuthenticationToken oauthToken) {

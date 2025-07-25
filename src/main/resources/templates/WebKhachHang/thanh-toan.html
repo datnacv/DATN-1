@@ -139,9 +139,10 @@
                 <select id="voucher" name="voucher" class="form-control w-full">
                     <option value="">-- Chọn mã giảm giá --</option>
                     <th:block th:each="voucher : ${vouchers}">
-                        <option th:value="${voucher.ma}" th:text="${voucher.ten} + ' (' + ${voucher.ma} + ')'"></option>
+                        <option th:value="${voucher.ma}" th:text="${voucher.ten} + ' (Tối thiểu: ' + ${#numbers.formatDecimal(voucher.giaTriGiamToiThieu, 0, 'COMMA', 0, 'POINT')} + ' VNĐ)'"></option>
                     </th:block>
                 </select>
+
             </div>
             <button id="submit-order" class="btn btn-primary w-full mt-6 submit-btn">
                 <i class="fas fa-check-circle mr-2"></i> Đặt hàng
