@@ -111,6 +111,22 @@ public class KhachhangSanPhamService {
                 .collect(Collectors.toList());
         dto.setKichCoList(kichCoList);
 
+        // Tổ hợp kích cỡ - màu sắc hợp lệ
+        List<ChiTietSanPham> allDetails = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId());
+
+        List<ChiTietSanPhamDto.SizeColorCombination> combinations = allDetails.stream()
+                .map(item -> {
+                    ChiTietSanPhamDto.SizeColorCombination combo = new ChiTietSanPhamDto.SizeColorCombination();
+                    combo.setSizeId(item.getKichCo().getId());
+                    combo.setColorId(item.getMauSac().getId());
+                    return combo;
+                })
+                .distinct()
+                .collect(Collectors.toList());
+
+        dto.setValidCombinations(combinations);
+
+
         // Lấy thông tin chất liệu, xuất xứ, thương hiệu, kiểu dáng, tay áo, cổ áo
         ChatLieuDto chatLieuDto = new ChatLieuDto();
         chatLieuDto.setId(chiTiet.getChatLieu().getId());

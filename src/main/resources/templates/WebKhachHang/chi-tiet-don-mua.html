@@ -204,7 +204,7 @@
 
     <!-- Nút xác nhận đã nhận hàng và hủy đơn hàng -->
     <div class="mt-4 text-center">
-      <button th:if="${currentStatus == 'Vận chuyển thành công'}" class="btn-confirm" onclick="confirmReceivedOrder('${hoaDon.donHang.maDonHang}')">Xác nhận đã nhận hàng</button>
+      <button th:if="${currentStatus == 'Vận chuyển thành công'}" class="btn-confirm" onclick="confirmReceivedOrder('${hoaDon.donHang.id}')">Xác nhận đã nhận hàng</button>
       <button th:if="${currentStatus == 'Chưa xác nhận'}" class="btn-cancel" onclick="cancelOrder('${hoaDon.donHang.maDonHang}')">Hủy đơn hàng</button>
     </div>
 
@@ -370,7 +370,7 @@
   });
 
   // Xác nhận đã nhận hàng
-  function confirmReceivedOrder(maDonHang) {
+  function confirmReceivedOrder(id) {
     Swal.fire({
       title: 'Xác nhận đã nhận hàng?',
       text: 'Bạn có chắc chắn đã nhận được đơn hàng này?',
@@ -382,7 +382,7 @@
       cancelButtonColor: '#d33',
     }).then((result) => {
       if (result.isConfirmed) {
-        fetch(`/api/orders/confirm-received/${maDonHang}`, {
+        fetch(`/api/orders/confirm-received/${id}`, {
           method: 'POST',
           credentials: 'include',
           headers: {

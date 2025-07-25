@@ -314,6 +314,10 @@
     <div class="content" id="content">
         <div class="text-center mb-2 mt-3">
             <h2 class="page-title">QUẢN LÝ CHI TIẾT SẢN PHẨM</h2>
+            <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                <span th:text="${param.success[0]}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         </div>
 
         <!-- Employee Notice -->
@@ -449,10 +453,18 @@
                         <td th:text="${stats.count}"></td>
                         <td>
                             <div th:if="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}">
-                                <img th:src="${pd.hinhAnhSanPhams[0].urlHinhAnh}" class="product-image" alt="Ảnh sản phẩm" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                                <span style="display:none;" class="text-danger small">Ảnh lỗi</span>
+                                <div th:with="img = ${pd.hinhAnhSanPhams[0]}">
+                                    <img th:if="${img.urlHinhAnh != null and !#strings.isEmpty(img.urlHinhAnh)}"
+                                         th:src="${img.urlHinhAnh}"
+                                         class="product-image"
+                                         alt="Ảnh sản phẩm"
+                                         onerror="this.style.display='none'; this.insertAdjacentHTML('afterend', '<span class=\'text-muted\'>Không có</span>')">
+                                    <span th:if="${img.urlHinhAnh == null or #strings.isEmpty(img.urlHinhAnh)}"
+                                          class="text-muted">Không có</span>
+                                </div>
                             </div>
-                            <span th:unless="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}" class="text-muted">Không có</span>
+                            <span th:unless="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}"
+                                  class="text-muted">Không có</span>
                         </td>
                         <td th:text="${pd.sanPham?.tenSanPham ?: 'N/A'}"></td>
                         <td th:text="${pd.mauSac?.tenMau ?: 'N/A'}"></td>
@@ -492,6 +504,7 @@
                     </div>
                     <form id="editChiTietSanPhamForm" enctype="multipart/form-data">
                         <div class="modal-body">
+                            <input type="hidden" name="deletedImageIds" id="deletedImageIds">
                             <input type="hidden" id="editId" name="id"/>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
@@ -681,20 +694,20 @@
 
                     const existingImagesContainer = $('#existingImages');
                     existingImagesContainer.empty();
+
                     if (response.images && response.images.length > 0) {
-                        // Sắp xếp ảnh theo thuTu
                         response.images.sort((a, b) => a.thuTu - b.thuTu);
                         response.images.forEach(image => {
-                            const imageHtml = `
-                        <div class="image-preview">
-                            <img src="${image.imageUrl}" alt="Ảnh sản phẩm">
-                            <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
-                        </div>
-                    `;
-                            existingImagesContainer.append(imageHtml);
+                            if (image.imageUrl && image.imageUrl.trim() !== "") {
+                                const imageHtml = `
+                <div class="image-preview">
+                    <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.parentElement.remove()">
+                    <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
+                </div>
+            `;
+                                existingImagesContainer.append(imageHtml);
+                            }
                         });
-                    } else {
-                        existingImagesContainer.append('<p class="text-muted">Không có ảnh nào.</p>');
                     }
                 },
                 error: function (xhr) {
@@ -703,20 +716,16 @@
             });
         });
 
+        let deletedImageIds = [];
+
         window.deleteImage = function(button) {
             const imageId = $(button).data('image-id');
             if (confirm('Bạn có chắc muốn xóa ảnh này?')) {
-                $.ajax({
-                    url: '/acvstore/chi-tiet-san-pham/delete-image/' + imageId,
-                    type: 'POST',
-                    success: function (response) {
-                        $(button).closest('.image-preview').remove();
-                        alert(response.message);
-                    },
-                    error: function (xhr) {
-                        alert("Lỗi khi xóa ảnh: " + (xhr.responseText || xhr.statusText));
-                    }
-                });
+                deletedImageIds.push(imageId);
+                $('#deletedImageIds').val(deletedImageIds.join(','));
+
+                // ✅ Xóa toàn bộ phần preview chứa ảnh + nút
+                $(button).closest('.image-preview').remove();
             }
         };
 
@@ -747,6 +756,8 @@
             e.preventDefault();
             const formData = new FormData(this);
             formData.set('status', $('#editStatus').is(':checked'));
+            formData.append('deletedImageIds', $('#deletedImageIds').val());
+
             const id = $('#editId').val();
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/update/' + id,
@@ -755,10 +766,12 @@
                 processData: false,
                 contentType: false,
                 success: function (response) {
+                    console.log('Phản hồi từ server:', response); // Thêm log để kiểm tra
                     $('#editChiTietSanPhamModal').modal('hide');
-                    location.reload();
+                    window.location.href = "/acvstore/chi-tiet-san-pham?productId=" + response.productId + "&success=Cập nhật thành công";
                 },
                 error: function (xhr) {
+                    console.error('Lỗi khi cập nhật:', xhr.responseText || xhr.statusText); // Thêm log lỗi
                     alert("Lỗi khi cập nhật chi tiết sản phẩm: " + (xhr.responseText || xhr.statusText));
                 }
             });

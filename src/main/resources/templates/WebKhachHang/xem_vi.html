@@ -202,8 +202,21 @@
 
     <!-- Nếu có ví thì hiển thị số dư -->
     <div th:if="${vi != null}">
-      <p class="text-lg">Số dư hiện tại: <b class="text-blue-800" th:text="${#numbers.formatDecimal(vi.soDu, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</b></p>
+      <p class="text-lg">Số dư khả dụng:
+      <b class="text-blue-800"
+         th:text="${#numbers.formatDecimal(soDuKhaDung, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</b>
+      </p>
+      <p class="text-sm text-gray-500">(* Đang chờ rút:
+        <span th:text="${#numbers.formatDecimal(tongDangCho, 0, 'COMMA', 0, 'POINT')} + ' VND'">0 VND</span>)
+      </p>
     </div>
+
+    <div class="mt-3" th:if="${vi != null}">
+      <a href="/rut-tien" class="btn btn-outline-primary">
+        <i class="fas fa-money-bill-wave"></i> Rút tiền
+      </a>
+    </div>
+
 
     <!-- Nếu chưa có ví -->
     <div th:if="${vi == null}">
@@ -217,6 +230,7 @@
     <div th:if="${vi != null}" class="mt-6">
       <h4 class="font-semibold text-gray-800 mb-3">Nạp tiền vào ví</h4>
       <form id="formNapTien" th:action="@{/vi/nap-tien}" method="post" class="flex gap-3 items-center">
+        <input type="hidden" id="idNguoiDung" th:value="${user.id}" />
         <input type="number" name="soTien" min="1000" required placeholder="Nhập số tiền muốn nạp" class="form-control border rounded-lg p-2 w-64"/>
         <button type="submit" class="btn text-white" style="background-color: #153054;">Nạp tiền</button>
       </form>
@@ -546,19 +560,31 @@
     if (form) {
       form.onsubmit = function(e) {
         e.preventDefault();
-        const soTien = form.soTien.value;
-        if (parseInt(soTien) < 1000) {
+        const soTien = parseInt(form.soTien.value);
+        const idNguoiDung = document.getElementById("idNguoiDung")?.value; // ✅ thêm dòng này
+
+        if (soTien < 1000) {
           alert("Vui lòng nạp ít nhất 1000 VNĐ.");
           return;
         }
 
-        fetch('/vi/nap-tien', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-          body: 'soTien=' + encodeURIComponent(soTien)
-        })
-                .then(() => window.location.reload())
-                .catch(err => alert("Đã xảy ra lỗi khi nạp tiền: " + err));
+        // 👉 Lưu lại session để xác nhận ở trang success
+        sessionStorage.setItem("pendingTopup", JSON.stringify({ amount: soTien, idNguoiDung }));
+
+        // 👉 Submit form nạp
+        const tempForm = document.createElement("form");
+        tempForm.method = "POST";
+        tempForm.action = "/wallet-topup/create";
+        tempForm.style.display = "none";
+
+        const input = document.createElement("input");
+        input.name = "soTien";
+        input.value = soTien;
+        input.type = "hidden";
+
+        tempForm.appendChild(input);
+        document.body.appendChild(tempForm);
+        tempForm.submit();
       };
     }
 

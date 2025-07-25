@@ -226,6 +226,13 @@ CREATE TABLE hoa_don (
                          FOREIGN KEY (id_ma_giam_gia) REFERENCES chien_dich_giam_gia(id),
                          FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
+
+go
+ALTER TABLE hoa_don
+    ADD nhan_vien_id UNIQUEIDENTIFIER NULL,
+FOREIGN KEY (nhan_vien_id) REFERENCES nguoi_dung(id);
+go
+
 CREATE TABLE lich_su_hoa_don (
                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
                                  id_hoa_don UNIQUEIDENTIFIER NOT NULL,
@@ -603,6 +610,7 @@ WHERE id = @id_chi_tiet_san_pham;
 END
 END;
 
+
 ALTER TABLE don_hang
     ADD trang_thai NVARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN';
 
@@ -652,4 +660,28 @@ UPDATE nguoi_dung
 SET email = 'datn.acv@gmail.com'
 WHERE id = '550E8400-E29B-41D4-A716-446655440014';
 
-select * from vi_thanh_toan
+DELETE FROM hinh_anh_san_pham
+WHERE id IN (
+             '550E8400-E29B-41D4-A716-446655440025',
+             '550E8400-E29B-41D4-A716-446655440026',
+             '550E8400-E29B-41D4-A716-446655440027',
+             '550E8400-E29B-41D4-A716-446655440046',
+             '550E8400-E29B-41D4-A716-446655440047',
+             '550E8400-E29B-41D4-A716-446655440048'
+    );
+
+
+CREATE TABLE yeu_cau_rut_tien (
+                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                  id_vi_thanh_toan UNIQUEIDENTIFIER NOT NULL,
+                                  ma_giao_dich NVARCHAR(20) UNIQUE NOT NULL,
+                                  so_tai_khoan VARCHAR(50),
+                                  nguoi_thu_huong VARCHAR(100),
+                                  ten_ngan_hang VARCHAR(100),
+                                  so_tien DECIMAL(15, 2) NOT NULL CHECK (so_tien > 0),
+                                  trang_thai NVARCHAR(50) NOT NULL DEFAULT N'Đang chờ',
+                                  ghi_chu NVARCHAR(MAX),
+                                  thoi_gian_yeu_cau DATETIME NOT NULL DEFAULT GETDATE(),
+                                  thoi_gian_xu_ly DATETIME NULL,
+                                  FOREIGN KEY (id_vi_thanh_toan) REFERENCES vi_thanh_toan(id)
+);

@@ -286,10 +286,11 @@ public class ChiTietSanPhamService {
     }
 
     @Transactional
-    public void updateChiTietSanPham(ChiTietSanPhamUpdateDto updateDto, MultipartFile[] imageFiles) {
+    public void updateChiTietSanPham(ChiTietSanPhamUpdateDto updateDto, MultipartFile[] imageFiles, List<UUID> deletedImageIds) {
         ChiTietSanPham existingDetail = chiTietSanPhamRepo.findById(updateDto.getId())
                 .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + updateDto.getId()));
 
+        // Cập nhật các thuộc tính sản phẩm
         existingDetail.setSanPham(sanPhamRepo.findById(updateDto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại")));
         existingDetail.setMauSac(mauSacRepo.findById(updateDto.getColorId())
@@ -312,82 +313,111 @@ public class ChiTietSanPhamService {
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
         existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
-        logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
+        // Lưu chi tiết sản phẩm trước để đảm bảo ID tồn tại
         chiTietSanPhamRepo.save(existingDetail);
 
+        // Xóa các ảnh được chọn
+        if (deletedImageIds != null && !deletedImageIds.isEmpty()) {
+            for (UUID imageId : deletedImageIds) {
+                deleteImage(imageId);
+            }
+            // Xóa danh sách ảnh hiện tại trong đối tượng để đảm bảo đồng bộ
+            existingDetail.setHinhAnhSanPhams(new ArrayList<>());
+            chiTietSanPhamRepo.save(existingDetail);
+        }
+
+        // Thêm ảnh mới nếu có
         if (imageFiles != null && imageFiles.length > 0) {
             saveImagesToLocal(existingDetail, Arrays.asList(imageFiles));
         }
+
+        // Làm mới danh sách ảnh từ cơ sở dữ liệu
+        List<HinhAnhSanPham> updatedImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(existingDetail.getId());
+        logger.info("Danh sách ảnh sau cập nhật cho ID {}: {} ảnh", existingDetail.getId(), updatedImages.size());
+        existingDetail.setHinhAnhSanPhams(updatedImages);
+
+        // Lưu lại lần cuối để đảm bảo tất cả thay đổi được áp dụng
+        chiTietSanPhamRepo.save(existingDetail);
     }
 
     @Transactional
     public void deleteImage(UUID imageId) {
-        HinhAnhSanPham image = hinhAnhSanPhamRepo.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Hình ảnh không tồn tại"));
+        Optional<HinhAnhSanPham> optionalImage = hinhAnhSanPhamRepo.findById(imageId);
+
+        if (optionalImage.isEmpty()) {
+            logger.warn("Ảnh với ID {} không tồn tại trong CSDL, bỏ qua xóa.", imageId);
+            return;
+        }
+
+        HinhAnhSanPham image = optionalImage.get();
+
         try {
-            String fileName = image.getUrlHinhAnh().replace("/images/", "");
-            Path filePath = Paths.get(UPLOAD_DIR, fileName);
-            if (Files.exists(filePath)) {
-                Files.delete(filePath);
-                logger.info("Đã xóa tệp ảnh: {}", filePath);
+            String fileName = null;
+            if (image.getUrlHinhAnh() != null) {
+                fileName = image.getUrlHinhAnh().replace("/images/", "");
             }
+
+            if (fileName != null) {
+                Path filePath = Paths.get(UPLOAD_DIR, fileName);
+                if (Files.exists(filePath)) {
+                    Files.delete(filePath);
+                    logger.info("Đã xóa tệp ảnh: {}", filePath);
+                } else {
+                    logger.warn("Tệp ảnh không tồn tại trên ổ đĩa: {}", filePath);
+                }
+            }
+
             hinhAnhSanPhamRepo.delete(image);
+            logger.info("Đã xóa bản ghi ảnh trong CSDL: {}", imageId);
+
         } catch (IOException e) {
             throw new RuntimeException("Không thể xóa ảnh từ thư mục local: " + e.getMessage());
         }
     }
 
-    private void saveImagesToLocal(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
-        // Xóa ảnh cũ trước khi lưu ảnh mới
-        List<HinhAnhSanPham> existingImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
-        for (HinhAnhSanPham oldImage : existingImages) {
-            try {
-                String fileName = oldImage.getUrlHinhAnh().replace("/images/", "");
-                Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                if (Files.exists(filePath)) {
-                    Files.delete(filePath);
-                    logger.info("Đã xóa ảnh cũ: {}", filePath);
-                }
-                hinhAnhSanPhamRepo.delete(oldImage);
-            } catch (IOException e) {
-                logger.error("Không thể xóa ảnh cũ: {}", oldImage.getUrlHinhAnh(), e);
-            }
+
+    public void saveImagesToLocal(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.isEmpty()) {
+            logger.warn("Không có ảnh để lưu cho chi tiết sản phẩm ID: {}", chiTietSanPham.getId());
+            return;
         }
 
-        // Lưu ảnh mới với thứ tự chính xác
-        if (imageFiles != null && !imageFiles.isEmpty()) {
-            for (int i = 0; i < imageFiles.size() && i < 3; i++) {
-                MultipartFile file = imageFiles.get(i);
-                if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
-                    try {
-                        String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
-                        Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                        Files.createDirectories(filePath.getParent());
-                        Files.write(filePath, file.getBytes());
-                        if (!Files.exists(filePath)) {
-                            logger.error("Tệp không được lưu đúng cách: {}", filePath);
-                            throw new RuntimeException("Không thể lưu tệp ảnh: " + fileName);
-                        }
-                        logger.info("Đã lưu ảnh {} với thứ tự: {}", fileName, i + 1);
+        List<HinhAnhSanPham> existingImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
+        int nextOrder = existingImages.size(); // Bắt đầu thứ tự sau ảnh cũ
 
-                        HinhAnhSanPham img = new HinhAnhSanPham();
-                        img.setChiTietSanPham(chiTietSanPham);
-                        img.setUrlHinhAnh("/images/" + fileName);
-                        img.setThuTu(i + 1); // Gán thứ tự từ 1 đến 3
-                        hinhAnhSanPhamRepo.save(img);
-                        logger.info("Đã lưu ảnh vào cơ sở dữ liệu: {} với thứ tự: {}", fileName, i + 1);
-                    } catch (IOException e) {
-                        logger.error("Không thể lưu tệp ảnh: {}", file.getOriginalFilename(), e);
-                        throw new RuntimeException("Không thể lưu tệp ảnh: " + file.getOriginalFilename(), e);
-                    }
-                }
+        for (MultipartFile imageFile : imageFiles) {
+            if (imageFile == null || imageFile.isEmpty()) {
+                logger.warn("Tệp ảnh rỗng, bỏ qua.");
+                continue;
+            }
+
+            String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+            try {
+                Files.createDirectories(filePath.getParent());
+                Files.copy(imageFile.getInputStream(), filePath);
+                String imageUrl = "/images/" + fileName;
+
+                HinhAnhSanPham newImage = new HinhAnhSanPham();
+                newImage.setChiTietSanPham(chiTietSanPham);
+                newImage.setUrlHinhAnh(imageUrl);
+                newImage.setThuTu(nextOrder++);
+                hinhAnhSanPhamRepo.save(newImage);
+
+                logger.info("Đã lưu ảnh mới: {} cho chi tiết sản phẩm ID: {}", imageUrl, chiTietSanPham.getId());
+            } catch (IOException e) {
+                logger.error("Không thể lưu ảnh {}: {}", fileName, e.getMessage());
+                throw new RuntimeException("Không thể lưu ảnh mới: " + e.getMessage(), e);
             }
         }
     }
 
     public List<HinhAnhSanPham> findHinhAnhSanPhamByChiTietSanPhamIdOrdered(UUID chiTietSanPhamId) {
-        return hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPhamId);
+        List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPhamId);
+        logger.info("Tìm thấy {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), chiTietSanPhamId);
+        images.forEach(img -> logger.info("Ảnh ID: {}, URL: {}, ThuTu: {}", img.getId(), img.getUrlHinhAnh(), img.getThuTu()));
+        return images;
     }
 
     public List<ChiTietSanPham> findAll() {
@@ -462,4 +492,23 @@ public class ChiTietSanPhamService {
 
         return chiTietSanPhamRepo.save(productDetail);
     }
+
+    public void updateStock(UUID productDetailId, int quantity) {
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(productDetailId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
+        int newStock = chiTiet.getSoLuongTonKho() - quantity;
+        if (newStock < 0) {
+            throw new IllegalStateException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
+        }
+        chiTiet.setSoLuongTonKho(newStock);
+        chiTietSanPhamRepo.save(chiTiet);
+    }
+
+    public String layAnhDauTien(ChiTietSanPham chiTiet) {
+        if (chiTiet.getHinhAnhSanPhams() != null && !chiTiet.getHinhAnhSanPhams().isEmpty()) {
+            return chiTiet.getHinhAnhSanPhams().get(0).getUrlHinhAnh();
+        }
+        return "https://via.placeholder.com/50";
+    }
+
 }

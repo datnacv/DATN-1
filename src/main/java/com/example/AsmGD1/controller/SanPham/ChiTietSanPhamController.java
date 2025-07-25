@@ -103,11 +103,10 @@ public class ChiTietSanPhamController {
                     model.addAttribute("sanPhamDaChon", sanPhamDaChon);
                     List<ChiTietSanPham> chiTietList = chiTietSanPhamService.findByFilters(
                             productId, colorId, sizeId, originId, materialId, styleId, sleeveId, collarId, brandId, gender, status);
-                    // Sắp xếp hinhAnhSanPhams cho mỗi ChiTietSanPham
                     for (ChiTietSanPham pd : chiTietList) {
-                        if (pd.getHinhAnhSanPhams() != null) {
-                            pd.setHinhAnhSanPhams(chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId()));
-                        }
+                        List<HinhAnhSanPham> images = chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId());
+                        pd.setHinhAnhSanPhams(images);
+                        logger.info("Tải {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), pd.getId());
                     }
                     chiTietList.forEach(pd -> logger.info("Product ID: {}, Status: {}", pd.getId(), pd.getTrangThai()));
                     model.addAttribute("chiTietSanPhamList", chiTietList);
@@ -122,10 +121,22 @@ public class ChiTietSanPhamController {
                     model.addAttribute("selectedGender", gender);
                     model.addAttribute("selectedStatus", status);
                 } else {
-                    model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
+                    List<ChiTietSanPham> allDetails = chiTietSanPhamService.findAll();
+                    for (ChiTietSanPham pd : allDetails) {
+                        List<HinhAnhSanPham> images = chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId());
+                        pd.setHinhAnhSanPhams(images);
+                        logger.info("Tải {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), pd.getId());
+                    }
+                    model.addAttribute("chiTietSanPhamList", allDetails);
                 }
             } else {
-                model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
+                List<ChiTietSanPham> allDetails = chiTietSanPhamService.findAll();
+                for (ChiTietSanPham pd : allDetails) {
+                    List<HinhAnhSanPham> images = chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId());
+                    pd.setHinhAnhSanPhams(images);
+                    logger.info("Tải {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), pd.getId());
+                }
+                model.addAttribute("chiTietSanPhamList", allDetails);
             }
 
             return "WebQuanLy/chi-tiet-san-pham-form";
@@ -227,23 +238,36 @@ public class ChiTietSanPhamController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("id", chiTiet.getId());
-            response.put("productId", chiTiet.getSanPham().getId());
-            response.put("colorId", chiTiet.getMauSac().getId());
-            response.put("sizeId", chiTiet.getKichCo().getId());
-            response.put("originId", chiTiet.getXuatXu().getId());
-            response.put("materialId", chiTiet.getChatLieu().getId());
-            response.put("styleId", chiTiet.getKieuDang().getId());
-            response.put("sleeveId", chiTiet.getTayAo().getId());
-            response.put("collarId", chiTiet.getCoAo().getId());
-            response.put("brandId", chiTiet.getThuongHieu().getId());
+            response.put("productId", chiTiet.getSanPham() != null ? chiTiet.getSanPham().getId() : null);
+            response.put("colorId", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getId() : null);
+            response.put("sizeId", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getId() : null);
+            response.put("originId", chiTiet.getXuatXu() != null ? chiTiet.getXuatXu().getId() : null);
+            response.put("materialId", chiTiet.getChatLieu() != null ? chiTiet.getChatLieu().getId() : null);
+            response.put("styleId", chiTiet.getKieuDang() != null ? chiTiet.getKieuDang().getId() : null);
+            response.put("sleeveId", chiTiet.getTayAo() != null ? chiTiet.getTayAo().getId() : null);
+            response.put("collarId", chiTiet.getCoAo() != null ? chiTiet.getCoAo().getId() : null);
+            response.put("brandId", chiTiet.getThuongHieu() != null ? chiTiet.getThuongHieu().getId() : null);
             response.put("price", chiTiet.getGia());
             response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("gender", chiTiet.getGioiTinh());
             response.put("status", chiTiet.getTrangThai());
-            response.put("images", chiTiet.getHinhAnhSanPhams().stream()
-                    .sorted(Comparator.comparing(HinhAnhSanPham::getThuTu))
-                    .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh(), "thuTu", img.getThuTu()))
-                    .collect(Collectors.toList()));
+
+            // Xử lý danh sách ảnh, kiểm tra null và sắp xếp
+            List<Map<String, Object>> images = new ArrayList<>();
+            if (chiTiet.getHinhAnhSanPhams() != null) {
+                images = chiTiet.getHinhAnhSanPhams().stream()
+                        .filter(Objects::nonNull)
+                        .sorted(Comparator.comparing(h -> h.getThuTu() != null ? h.getThuTu() : Integer.MAX_VALUE))
+                        .map(img -> {
+                            Map<String, Object> imageMap = new HashMap<>();
+                            imageMap.put("id", img.getId());
+                            imageMap.put("imageUrl", img.getUrlHinhAnh());
+                            imageMap.put("thuTu", img.getThuTu() != null ? img.getThuTu() : 0);
+                            return imageMap;
+                        })
+                        .collect(Collectors.toList());
+            }
+            response.put("images", images);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -254,24 +278,39 @@ public class ChiTietSanPhamController {
 
     @PostMapping("/update/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> capNhatChiTietSanPham(@PathVariable UUID id,
-                                                                     @ModelAttribute ChiTietSanPhamUpdateDto updateDto,
-                                                                     @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles) {
+    public ResponseEntity<Map<String, Object>> capNhatChiTietSanPham(
+            @PathVariable UUID id,
+            @ModelAttribute ChiTietSanPhamUpdateDto updateDto,
+            @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+            @RequestParam(value = "deletedImageIds", required = false) String deletedImageIdsStr) {
         try {
-            // Check admin permission
             if (!isCurrentUserAdmin()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
             }
 
             updateDto.setId(id);
-            logger.info("Received updateDto with status: {}", updateDto.getStatus());
-            chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles);
-            return ResponseEntity.ok(Map.of("message", "Cập nhật chi tiết sản phẩm thành công"));
+
+            // 👇 Chuyển chuỗi về danh sách UUID
+            List<UUID> deletedIds = new ArrayList<>();
+            if (deletedImageIdsStr != null && !deletedImageIdsStr.isBlank()) {
+                deletedIds = Arrays.stream(deletedImageIdsStr.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(UUID::fromString)
+                        .collect(Collectors.toList());
+            }
+
+            chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles, deletedIds);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Cập nhật chi tiết sản phẩm thành công",
+                    "productId", updateDto.getProductId()
+            ));
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật chi tiết sản phẩm ID {}: ", id, e);
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật chi tiết sản phẩm: " + e.getMessage()));
         }
     }
+
 
     @PostMapping("/delete-image/{imageId}")
     @ResponseBody

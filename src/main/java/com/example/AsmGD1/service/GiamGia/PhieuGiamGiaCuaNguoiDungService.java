@@ -7,10 +7,13 @@ import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaCuaNguoiDungRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -22,6 +25,8 @@ public class PhieuGiamGiaCuaNguoiDungService {
 
     private final NguoiDungRepository nguoiDungRepository;
     private final PhieuGiamGiaCuaNguoiDungRepository phieuGiamGiaCuaNguoiDungRepository;
+    @Autowired
+    private PhieuGiamGiaService phieuGiamGiaService; // Thêm dependency để gọi phương thức luu
 
     public List<NguoiDung> layTatCaKhachHang() {
         return nguoiDungRepository.findByVaiTro("CUSTOMER").stream()
@@ -46,9 +51,22 @@ public class PhieuGiamGiaCuaNguoiDungService {
                 );
 
         if (!daTonTai) {
+            // Đảm bảo phiếu cá nhân có soLuong = 1 và gioiHanSuDung = 1
+            if ("ca_nhan".equalsIgnoreCase(phieuGiamGia.getKieuPhieu())) {
+                phieuGiamGia.setSoLuong(1);
+                phieuGiamGia.setGioiHanSuDung(1);
+                phieuGiamGiaService.luu(phieuGiamGia); // Lưu thay đổi vào PhieuGiamGia
+            }
+
             PhieuGiamGiaCuaNguoiDung entity = new PhieuGiamGiaCuaNguoiDung();
             entity.setNguoiDung(nguoiDung);
             entity.setPhieuGiamGia(phieuGiamGia);
+
+            if ("ca_nhan".equalsIgnoreCase(phieuGiamGia.getKieuPhieu())) {
+                entity.setSoLuotConLai(1);
+                entity.setSoLuotDuocSuDung(1);
+            }
+
             phieuGiamGiaCuaNguoiDungRepository.save(entity);
         }
     }
@@ -89,4 +107,56 @@ public class PhieuGiamGiaCuaNguoiDungService {
     public List<PhieuGiamGiaCuaNguoiDung> findByNguoiDungId(UUID nguoiDungId) {
         return phieuGiamGiaCuaNguoiDungRepository.findByNguoiDungId(nguoiDungId);
     }
+
+    @Transactional
+    public boolean suDungPhieu(UUID nguoiDungId, UUID phieuId) {
+        var optional = phieuGiamGiaCuaNguoiDungRepository
+                .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuId, nguoiDungId);
+
+        if (optional.isEmpty()) return false;
+
+        PhieuGiamGiaCuaNguoiDung p = optional.get();
+        PhieuGiamGia phieu = p.getPhieuGiamGia();
+
+        boolean conLuotCaNhan = p.getSoLuotConLai() != null && p.getSoLuotConLai() > 0;
+        boolean conSoLuongTong = phieu != null && phieu.getSoLuong() != null && phieu.getSoLuong() > 0;
+
+        if (conLuotCaNhan && conSoLuongTong) {
+            // Trừ lượt người dùng
+            p.setSoLuotConLai(p.getSoLuotConLai() - 1);
+            phieuGiamGiaCuaNguoiDungRepository.save(p);
+
+            // Trừ số lượng phiếu gốc
+            phieu.setSoLuong(phieu.getSoLuong() - 1);
+            phieuGiamGiaService.luu(phieu); // cập nhật lại phiếu
+            return true;
+        }
+
+        return false;
+    }
+
+
+
+    public List<PhieuGiamGia> layPhieuCaNhanConHan(UUID nguoiDungId) {
+        List<PhieuGiamGiaCuaNguoiDung> list = phieuGiamGiaCuaNguoiDungRepository.findByNguoiDungId(nguoiDungId);
+        LocalDate today = LocalDate.now();
+        List<PhieuGiamGia> result = new ArrayList<>();
+
+        for (PhieuGiamGiaCuaNguoiDung item : list) {
+            PhieuGiamGia phieu = item.getPhieuGiamGia();
+            if (phieu == null) continue;
+
+            boolean conLuot = item.getSoLuotConLai() != null && item.getSoLuotConLai() > 0;
+            boolean conSoLuong = phieu.getSoLuong() != null && phieu.getSoLuong() > 0;
+            boolean conHan = (phieu.getNgayBatDau() == null || !today.isBefore(phieu.getNgayBatDau()))
+                    && (phieu.getNgayKetThuc() == null || !today.isAfter(phieu.getNgayKetThuc()));
+
+            if (conLuot && conSoLuong && conHan) {
+                result.add(phieu);
+            }
+        }
+
+        return result;
+    }
+
 }

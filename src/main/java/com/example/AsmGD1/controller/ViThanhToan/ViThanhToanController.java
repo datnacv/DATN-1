@@ -33,9 +33,20 @@ public class ViThanhToanController {
         UUID idNguoiDung = currentUser.getId();
 
         ViThanhToan vi = viService.findByUser(idNguoiDung);
+        model.addAttribute("user", currentUser);
         model.addAttribute("vi", vi);
+
+        if (vi != null) {
+            BigDecimal tongDangCho = viService.tongTienDangCho(vi.getId());
+            BigDecimal soDuKhaDung = vi.getSoDu().subtract(tongDangCho);
+
+            model.addAttribute("soDuKhaDung", soDuKhaDung);
+            model.addAttribute("tongDangCho", tongDangCho);
+        }
+
         return "WebKhachHang/xem_vi";
     }
+
 
     // POST tạo ví nếu chưa có
     @PostMapping("/tao-vi")
@@ -85,6 +96,7 @@ public class ViThanhToanController {
 
         List<LichSuGiaoDichVi> lichSu = lichSuRepo.findByIdViThanhToanOrderByCreatedAtDesc(vi.getId());
         model.addAttribute("lichSu", lichSu);
+        model.addAttribute("user", currentUser);
         return "WebKhachHang/lich_su";
     }
 

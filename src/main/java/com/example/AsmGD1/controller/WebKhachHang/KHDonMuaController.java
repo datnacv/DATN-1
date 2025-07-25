@@ -4,7 +4,7 @@ import com.example.AsmGD1.entity.ChiTietDonHang;
 import com.example.AsmGD1.entity.HoaDon;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
-import com.example.AsmGD1.service.HoaDon.HoaDonService; // Thêm import
+import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,7 +31,7 @@ public class KHDonMuaController {
     private NguoiDungService nguoiDungService;
 
     @Autowired
-    private HoaDonService hoaDonService; // Thêm dependency
+    private HoaDonService hoaDonService;
 
     @GetMapping
     public String donMuaPage(@RequestParam(name = "status", defaultValue = "tat-ca") String status,
@@ -92,7 +93,7 @@ public class KHDonMuaController {
         String currentStatus = hoaDonService.getCurrentStatus(hoaDon);
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
-        model.addAttribute("currentStatus", currentStatus); // Sử dụng currentStatus
+        model.addAttribute("currentStatus", currentStatus);
         model.addAttribute("statusHistory", hoaDon.getLichSuHoaDons() != null ? hoaDon.getLichSuHoaDons() : new ArrayList<>());
 
         return "WebKhachHang/chi-tiet-don-mua";
@@ -134,13 +135,20 @@ public class KHDonMuaController {
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng hoặc bạn không có quyền xác nhận.");
         }
-        if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) { // Sửa lại cho đúng
+        if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
             return ResponseEntity.badRequest().body("Chỉ có thể xác nhận khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
         }
         try {
-            hoaDon.setTrangThai("Hoàn thành"); // Đổi thành "Hoàn thành" thay vì "Đã nhận hàng"
-            hoaDonRepo.save(hoaDon);
-            return ResponseEntity.ok("Đã xác nhận nhận hàng thành công.");
+            hoaDon.setTrangThai("Hoàn thành");
+            hoaDon.setNgayThanhToan(LocalDateTime.now());
+            hoaDon.setGhiChu("Khách hàng xác nhận đã nhận hàng");
+            hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
+            HoaDon savedHoaDon = hoaDonRepo.save(hoaDon); // Đảm bảo lưu và lấy lại đối tượng
+            if ("Hoàn thành".equals(savedHoaDon.getTrangThai())) {
+                return ResponseEntity.ok("Đã xác nhận nhận hàng thành công.");
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi cập nhật trạng thái.");
+            }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xác nhận: " + e.getMessage());
         }
