@@ -49,9 +49,16 @@ public class PhieuGiamGiaCuaNguoiDungService {
             PhieuGiamGiaCuaNguoiDung entity = new PhieuGiamGiaCuaNguoiDung();
             entity.setNguoiDung(nguoiDung);
             entity.setPhieuGiamGia(phieuGiamGia);
+
+            if ("ca_nhan".equalsIgnoreCase(phieuGiamGia.getKieuPhieu())) { // ✅ ĐÚNG
+                entity.setSoLuotConLai(1);
+                entity.setSoLuotDuocSuDung(1);
+            }
+
             phieuGiamGiaCuaNguoiDungRepository.save(entity);
         }
     }
+
 
     public List<UUID> layIdKhachHangDaGanPhieu(UUID phieuId) {
         return phieuGiamGiaCuaNguoiDungRepository.findByPhieuGiamGia_Id(phieuId).stream()
@@ -89,4 +96,23 @@ public class PhieuGiamGiaCuaNguoiDungService {
     public List<PhieuGiamGiaCuaNguoiDung> findByNguoiDungId(UUID nguoiDungId) {
         return phieuGiamGiaCuaNguoiDungRepository.findByNguoiDungId(nguoiDungId);
     }
+    @Transactional
+    public boolean suDungPhieu(UUID nguoiDungId, UUID phieuId) {
+        var optional = phieuGiamGiaCuaNguoiDungRepository
+                .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuId, nguoiDungId);
+
+        if (optional.isEmpty()) return false;
+
+        PhieuGiamGiaCuaNguoiDung p = optional.get();
+
+        if (p.getSoLuotConLai() != null && p.getSoLuotConLai() > 0) {
+            p.setSoLuotConLai(p.getSoLuotConLai() - 1);
+            phieuGiamGiaCuaNguoiDungRepository.save(p);
+            return true;
+        }
+
+        return false;
+    }
+
+
 }
