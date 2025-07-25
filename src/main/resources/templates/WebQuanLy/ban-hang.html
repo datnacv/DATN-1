@@ -1039,20 +1039,22 @@
     cart.forEach((item, index) => {
       const row = document.createElement("tr");
 
-      const actualStock = parseInt(item.availableStock || item.soLuongTonKho || item.stockQuantity || 0);
+      const actualStock = parseInt(item.availableStock || 0);
       const currentQuantity = parseInt(item.soLuong || 0);
       const price = parseFloat(item.gia || 0);
       const totalPrice = parseFloat(item.thanhTien || 0);
-      const originalPrice = parseFloat(item.originalPrice || item.gia); // Giá gốc
-      const phanTramGiam = parseFloat(item.phanTramGiam || 0); // Phần trăm giảm giá
+      const originalPrice = parseFloat(item.originalPrice || item.gia);
+      const phanTramGiam = parseFloat(item.phanTramGiam || 0);
 
       const isMinQuantity = currentQuantity <= 1;
-      const isMaxQuantity = currentQuantity >= actualStock;
-      const isOverStock = currentQuantity > actualStock;
+      const isMaxQuantity = actualStock === 0; // Chỉ vô hiệu hóa khi tồn kho khả dụng bằng 0
+      const isOverStock = actualStock < 0;
 
       const stockWarning = isOverStock
-              ? `<div class="stock-warning"><i class="fas fa-exclamation-triangle"></i>Vượt quá tồn kho khả dụng (${actualStock})</div>`
-              : "";
+              ? `<div class="stock-warning"><i class="fas fa-exclamation-triangle"></i>Tồn kho âm (${actualStock})</div>`
+              : actualStock === 0
+                      ? `<div class="stock-warning"><i class="fas fa-exclamation-triangle"></i>Hết tồn kho khả dụng</div>`
+                      : "";
 
       const priceDisplay = phanTramGiam > 0
               ? `<span class="fw-bold text-dark">${price.toLocaleString("vi-VN")} VNĐ</span>
@@ -1095,7 +1097,6 @@
           </button>
           <input type="number"
                  min="1"
-                 max="${actualStock}"
                  value="${currentQuantity}"
                  class="form-control form-control-sm text-center fw-bold ${isOverStock ? "text-danger" : ""}"
                  style="width: 70px;"
@@ -1104,7 +1105,7 @@
           <button class="quantity-btn btn btn-success btn-sm ${isMaxQuantity ? "disabled" : ""}"
                   ${isMaxQuantity ? "disabled" : ""}
                   onclick="updateQuantity(${index}, 1, '${item.idChiTietSanPham}', ${actualStock})"
-                  title="${isMaxQuantity ? "Đã đạt tối đa tồn kho" : "Tăng số lượng"}">
+                  title="${isMaxQuantity ? "Hết tồn kho khả dụng" : "Tăng số lượng"}">
             <i class="fas fa-plus"></i>
           </button>
         </div>
@@ -1147,12 +1148,8 @@
       showToast("Số lượng phải lớn hơn 0.", "warning");
       return;
     }
-    if (newQuantity > maxStock) {
-      newQuantity = maxStock;
-      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
-      return;
-    }
 
+    // Không chặn số lượng tối đa ở đây, để backend xử lý
     isUpdating = true;
     const quantityControls = document.querySelector(`.quantity-controls[data-index="${index}"]`);
     if (quantityControls) {
@@ -1189,7 +1186,7 @@
 
       const data = await response.json();
       updateCartFromResponse(data);
-      await refreshCartFromServer(); // Update stock in real-time
+      await refreshCartFromServer(); // Cập nhật tồn kho theo thời gian thực
       if (tab.voucherId) {
         await applyVoucher(tab.voucherId);
       }
@@ -1197,7 +1194,7 @@
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
       showToast("Lỗi khi cập nhật số lượng: " + error.message, "error");
-      await refreshCartFromServer(); // Ensure UI syncs on error
+      await refreshCartFromServer(); // Đảm bảo đồng bộ giao diện khi có lỗi
     } finally {
       isUpdating = false;
       if (quantityControls) {
@@ -1454,7 +1451,9 @@
     tab.subTotal = data.tongTienHang || 0;
     tab.discount = data.giamGia || 0;
     tab.total = data.tong || 0;
-    tab.shippingFee = data.phiVanChuyen || 0;
+    tab.shippingFee = (data.phiVanChuyen !== undefined && data.phiVanChuyen !== null)
+      ? data.phiVanChuyen
+      : tab.shippingFee;
 
     renderCart(tab.cart);
     updateSummary(tab);
@@ -1589,6 +1588,20 @@
     if (elements.customerName) elements.customerName.value = tab.customerName;
     if (elements.customerEmail) elements.customerEmail.value = tab.customerEmail;
     if (elements.saleMethod) elements.saleMethod.value = tab.saleMethod;
+    if (tab.customerPhone === '0999999999') {
+      elements.saleMethod.value = 'Tại quầy';
+      elements.saleMethod.setAttribute('disabled', 'true');
+
+      // Ẩn các phần liên quan giao hàng
+      if (elements.addressSection) elements.addressSection.classList.add('d-none');
+      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.add('d-none');
+
+      tab.saleMethod = 'Tại quầy';
+      tab.shippingFee = 0;
+    } else {
+      elements.saleMethod.removeAttribute('disabled');
+    }
+
     if (elements.shippingFee) elements.shippingFee.value = tab.shippingFee;
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
     if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount;
@@ -1783,6 +1796,24 @@
     const saleMethod = saleMethodSelect.value;
     const phone = phoneInput.value;
     const tab = tabs.find(t => t.id === currentTabId);
+
+    if (phone === '0999999999') {
+      saleMethodSelect.value = 'Tại quầy';
+      saleMethodSelect.setAttribute('disabled', 'true');
+      addressSection.classList.add('d-none');
+      shippingFeeContainer.classList.add('d-none');
+
+      if (tab) {
+        tab.saleMethod = 'Tại quầy';
+        tab.shippingFee = 0;
+        updateSummary(tab);
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      }
+      return;
+    } else {
+      saleMethodSelect.removeAttribute('disabled');
+    }
+
 
     if (tab) {
       tab.saleMethod = saleMethod;

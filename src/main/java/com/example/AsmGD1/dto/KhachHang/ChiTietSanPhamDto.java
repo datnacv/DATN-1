@@ -29,4 +29,13 @@ public class ChiTietSanPhamDto {
     private TayAoDto tayAo;
     private CoAoDto coAo;
     private List<String> hinhAnhList; // URLs từ bảng hinh_anh_san_pham
+
+    private List<SizeColorCombination> validCombinations;
+
+    @Data
+    public static class SizeColorCombination {
+        private UUID sizeId;
+        private UUID colorId;
+    }
+
 }

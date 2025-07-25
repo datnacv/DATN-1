@@ -492,4 +492,23 @@ public class ChiTietSanPhamService {
 
         return chiTietSanPhamRepo.save(productDetail);
     }
+
+    public void updateStock(UUID productDetailId, int quantity) {
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(productDetailId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
+        int newStock = chiTiet.getSoLuongTonKho() - quantity;
+        if (newStock < 0) {
+            throw new IllegalStateException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
+        }
+        chiTiet.setSoLuongTonKho(newStock);
+        chiTietSanPhamRepo.save(chiTiet);
+    }
+
+    public String layAnhDauTien(ChiTietSanPham chiTiet) {
+        if (chiTiet.getHinhAnhSanPhams() != null && !chiTiet.getHinhAnhSanPhams().isEmpty()) {
+            return chiTiet.getHinhAnhSanPhams().get(0).getUrlHinhAnh();
+        }
+        return "https://via.placeholder.com/50";
+    }
+
 }
