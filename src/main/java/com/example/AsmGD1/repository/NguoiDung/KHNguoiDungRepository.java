@@ -10,4 +10,6 @@ import java.util.UUID;
 @Repository
 public interface KHNguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     Optional<NguoiDung> findByTenDangNhap(String tenDangNhap);
+    Optional<NguoiDung> findByEmail(String email);
+    Optional<NguoiDung> findBySoDienThoai(String soDienThoai);
 }

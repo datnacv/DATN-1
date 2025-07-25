@@ -277,7 +277,15 @@ public class PhieuGiamGiaController {
             if (selectedCustomerIds == null || selectedCustomerIds.isEmpty()) {
                 errors.add("Vui lòng chọn ít nhất một khách hàng khi tạo phiếu cá nhân.");
             }
+        }else if ("cong_khai".equalsIgnoreCase(voucher.getKieuPhieu())) {
+            Integer gioiHan = voucher.getGioiHanSuDung();
+            if (gioiHan == null || gioiHan <= 0) {
+                errors.add("Vui lòng nhập số lượt sử dụng hợp lệ cho phiếu công khai.");
+            } else {
+                voucher.setSoLuong(gioiHan); // ✅ Lưu lại lượt ban đầu
+            }
         }
+
 
         if (!errors.isEmpty()) {
             model.addAttribute("errorMessage", String.join("<br>", errors));

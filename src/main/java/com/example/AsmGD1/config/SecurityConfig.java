@@ -216,6 +216,8 @@ public class SecurityConfig implements ApplicationContextAware {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/customers/login",
+                                "/customers/register",         
+                                "/customers/register/**",
                                 "/customers/oauth2/register",
                                 "/customers/auth/forgot-password",
                                 "/customers/auth/verify-otp",
