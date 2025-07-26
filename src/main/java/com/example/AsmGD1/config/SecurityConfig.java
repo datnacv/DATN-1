@@ -110,6 +110,7 @@ public class SecurityConfig implements ApplicationContextAware {
                 .addFilterBefore(faceVerificationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
+                        .requestMatchers("/acvstore/vi/**").hasRole("ADMIN")
                         .requestMatchers("/acvstore/verify-success").authenticated()
 
                         // Product management - Both ADMIN and EMPLOYEE can view products
@@ -294,7 +295,7 @@ public class SecurityConfig implements ApplicationContextAware {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/image/**", "/vi/**").permitAll()
+                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/image/**", "/vi/**", "/uploads/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )

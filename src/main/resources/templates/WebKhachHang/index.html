@@ -654,7 +654,7 @@
 
       document.getElementById('typing-indicator').classList.remove('hidden');
       try {
-        const res = await fetch("https://duclong0910.app.n8n.cloud/webhook/website-chatbot", {
+        const res = await fetch("https://namhaihoang.app.n8n.cloud/webhook/website-chatbot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ body: { from: "user_123", message } })

@@ -1,11 +1,9 @@
 package com.example.AsmGD1.service.ViThanhToan;
 
 import com.example.AsmGD1.controller.WebKhachHang.KHThanhToanController;
-import com.example.AsmGD1.entity.DonHang;
-import com.example.AsmGD1.entity.LichSuGiaoDichVi;
-import com.example.AsmGD1.entity.PhuongThucThanhToan;
-import com.example.AsmGD1.entity.ViThanhToan;
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.BanHang.PhuongThucThanhToanRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
@@ -38,6 +36,8 @@ public class ViThanhToanService {
 
     @Autowired
     private YeuCauRutTienRepository rutTienRepo;
+    @Autowired
+    private NguoiDungRepository nguoiDungRepository;
 
     public BigDecimal tongTienDangCho(UUID idVi) {
         BigDecimal tong = rutTienRepo.tongTienDangCho(idVi);
@@ -45,8 +45,12 @@ public class ViThanhToanService {
     }
 
     public ViThanhToan findByUser(UUID idNguoiDung) {
-        return viThanhToanRepo.findByIdNguoiDung(idNguoiDung).orElse(null);
+        NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        return viThanhToanRepo.findByNguoiDung(nguoiDung).orElse(null);
     }
+
 
     @Transactional
     public void napTien(UUID idNguoiDung, BigDecimal soTien) {
@@ -54,8 +58,13 @@ public class ViThanhToanService {
             throw new IllegalArgumentException("Số tiền nạp phải lớn hơn 0");
         }
 
-        ViThanhToan vi = viThanhToanRepo.findByIdNguoiDung(idNguoiDung)
+        // Tìm ví
+        NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        ViThanhToan vi = viThanhToanRepo.findByNguoiDung(nguoiDung)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
 
         vi.setSoDu(vi.getSoDu().add(soTien));
         vi.setThoiGianCapNhat(LocalDateTime.now());
@@ -74,8 +83,13 @@ public class ViThanhToanService {
 
     @Transactional
     public boolean truTienTrongVi(UUID idNguoiDung, BigDecimal soTien, DonHang donHang) {
-        ViThanhToan vi = viThanhToanRepo.findByIdNguoiDung(idNguoiDung)
+        // Tìm ví
+        NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+        ViThanhToan vi = viThanhToanRepo.findByNguoiDung(nguoiDung)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
 
         if (vi.getSoDu().compareTo(soTien) < 0) {
             return false; //Không đủ tiền
@@ -102,21 +116,33 @@ public class ViThanhToanService {
 
 
     public ViThanhToan taoViMoi(UUID idNguoiDung) {
+        // B1: Lấy đối tượng NguoiDung từ id
+        NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
+                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại"));
+
+        // B2: Tạo ví mới và gán người dùng
         ViThanhToan vi = new ViThanhToan();
-        vi.setIdNguoiDung(idNguoiDung);
+        vi.setNguoiDung(nguoiDung); // ✅ Sử dụng entity thay vì UUID
         vi.setSoDu(BigDecimal.ZERO);
-        vi.setThoiGianTao(LocalDateTime.now()); // ✅ Thêm dòng này
-        vi.setTrangThai(true); // nếu cột này không cho null, bạn phải gán giá trị
+        vi.setThoiGianTao(LocalDateTime.now());
+        vi.setTrangThai(true);
+
         return viThanhToanRepo.save(vi);
     }
+
 
 
 
     @Transactional(rollbackFor = Exception.class)
     public boolean thanhToanBangVi(UUID idNguoiDung, UUID idDonHang, BigDecimal tongTien) {
         try {
-            ViThanhToan vi = viThanhToanRepo.findByIdNguoiDung(idNguoiDung)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ví cho người dùng: " + idNguoiDung));
+            // Tìm ví
+            NguoiDung nguoiDung = nguoiDungRepository.findById(idNguoiDung)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
+
+            ViThanhToan vi = viThanhToanRepo.findByNguoiDung(nguoiDung)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
 
             if (tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Số tiền thanh toán không hợp lệ: " + tongTien);
