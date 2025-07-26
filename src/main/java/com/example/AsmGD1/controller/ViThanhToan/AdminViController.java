@@ -159,6 +159,18 @@ public class AdminViController {
         yeuCau.setThoiGianXuLy(LocalDateTime.now());
         rutTienRepo.save(yeuCau);
 
+        // Ghi lịch sử hoàn tiền vào ví
+        LichSuGiaoDichVi ls = new LichSuGiaoDichVi();
+        ls.setIdViThanhToan(yeuCau.getViThanhToan().getId());
+        ls.setLoaiGiaoDich("Hoàn tiền");
+        ls.setSoTien(yeuCau.getSoTien());
+        ls.setMaGiaoDich(yeuCau.getMaGiaoDich());
+        ls.setMoTa("Hoàn tiền vào ví do từ chối yêu cầu rút tiền. Lý do: " + (lyDo != null ? lyDo : "Không rõ"));
+        ls.setCreatedAt(LocalDateTime.now());
+        ls.setThoiGianGiaoDich(LocalDateTime.now());
+        lichSuGiaoDichViRepository.save(ls);
+
+
         return "redirect:/acvstore/vi/yeu-cau-rut-tien";
     }
 }

@@ -230,17 +230,27 @@
                     <th>Số tiền</th>
                     <th>Thời gian</th>
                     <th>Mô tả</th>
+                    <th>Ảnh bằng chứng</th> <!-- Thêm cột mới -->
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="ls : ${lichSu}">
                     <td th:text="${ls.loaiGiaoDich}"></td>
-                    <td th:text="${#numbers.formatDecimal(ls.soTien, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
+                    <td th:text="${#numbers.formatDecimal(ls.soTien, 0, 'POINT', 0, 'POINT')} + ' VND'"></td>
                     <td th:text="${#temporals.format(ls.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
                     <td th:text="${ls.moTa}"></td>
+                    <td>
+                        <img th:if="${ls.anhBangChung != null and not #strings.isEmpty(ls.anhBangChung)}"
+                             th:src="@{${ls.anhBangChung}}"
+                             alt="Bằng chứng"
+                             style="width: 100px; height: auto; border-radius: 4px;"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"/>
+                        <span th:if="${ls.anhBangChung == null or #strings.isEmpty(ls.anhBangChung)}"
+                              class="text-gray-600">Không có</span>
+                    </td>
                 </tr>
                 <tr th:if="${lichSu == null or lichSu.isEmpty()}">
-                    <td colspan="4" class="text-center text-gray-600">Không có giao dịch nào.</td>
+                    <td colspan="5" class="text-center text-gray-600">Không có giao dịch nào.</td> <!-- Cập nhật colspan -->
                 </tr>
                 </tbody>
             </table>
