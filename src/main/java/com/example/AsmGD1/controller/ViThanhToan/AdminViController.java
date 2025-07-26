@@ -1,8 +1,10 @@
 package com.example.AsmGD1.controller.ViThanhToan;
 
+import com.example.AsmGD1.entity.LichSuGiaoDichVi;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.ViThanhToan;
 import com.example.AsmGD1.entity.YeuCauRutTien;
+import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
 import com.example.AsmGD1.repository.ViThanhToan.YeuCauRutTienRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
@@ -36,6 +38,8 @@ public class AdminViController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    @Autowired
+    private LichSuGiaoDichViRepository lichSuGiaoDichViRepository;
     // Tổng số dư của tất cả ví
     @GetMapping("/tong-hop")
     public String tongHopVi(Model model) {
@@ -121,6 +125,19 @@ public class AdminViController {
             yeuCau.setTrangThai("Đã duyệt");
             yeuCau.setThoiGianXuLy(LocalDateTime.now());
             rutTienRepo.save(yeuCau);
+
+            // Lưu lịch sử giao dịch
+            LichSuGiaoDichVi lichSu = new LichSuGiaoDichVi();
+            lichSu.setIdViThanhToan(vi.getId());
+            lichSu.setLoaiGiaoDich("Rút tiền");
+            lichSu.setSoTien(soTienRut);
+            lichSu.setThoiGianGiaoDich(LocalDateTime.now());
+            lichSu.setCreatedAt(LocalDateTime.now());
+            lichSu.setMaGiaoDich(yeuCau.getMaGiaoDich());
+            lichSu.setMoTa("Rút tiền về tài khoản: " + yeuCau.getSoTaiKhoan() + " (" + yeuCau.getTenNganHang() + ")");
+
+            // lưu lịch sử
+            lichSuGiaoDichViRepository.save(lichSu);
         }
 
         return "redirect:/acvstore/vi/yeu-cau-rut-tien";
