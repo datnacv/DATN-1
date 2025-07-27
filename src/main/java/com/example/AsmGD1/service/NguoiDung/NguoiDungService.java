@@ -146,4 +146,8 @@ public class NguoiDungService {
         user.setOtpExpiry(null);
         nguoiDungRepository.save(user);
     }
+    public NguoiDung findBySoDienThoai(String phone) {
+        return nguoiDungRepository.findBySoDienThoai(phone).orElse(null);
+    }
+
 }

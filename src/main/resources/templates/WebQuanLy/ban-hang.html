@@ -1955,40 +1955,57 @@
     if (!tab) return;
 
     const subTotal = tab.subTotal || 0;
+    let url = `${BASE_URL}/vouchers?subTotal=${subTotal}&tabId=${currentTabId}`;
+
+    if (tab.customerPhone && tab.customerPhone !== '0999999999') {
+      try {
+        const customerRes = await fetch(`/acvstore/customers/by-phone/${tab.customerPhone}`);
+        if (customerRes.ok) {
+          const customerData = await customerRes.json();
+          if (customerData.id) {
+            tab.customerId = customerData.id;
+            url += `&customerId=${tab.customerId}`; // cho API public voucher (nếu có)
+
+            // 👉 Gọi tiếp API lấy voucher cá nhân
+            const personalVoucherRes = await fetch(`/acvstore/customers/vouchers/${tab.customerPhone}`);
+            if (personalVoucherRes.ok) {
+              const personalVouchers = await personalVoucherRes.json();
+              tab.personalVouchers = personalVouchers;
+              console.log('📦 Phiếu cá nhân:', personalVouchers);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Lỗi khi lấy customerId hoặc phiếu cá nhân:", e);
+      }
+    }
 
     try {
-      const response = await fetch(`${BASE_URL}/vouchers?subTotal=${subTotal}&tabId=${currentTabId}`);
-      if (!response.ok) {
-        let errorMessage = "Lỗi khi lấy phiếu giảm giá.";
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Lỗi khi lấy phiếu giảm giá công khai.");
       const data = await response.json();
+
       const voucherSelect = document.getElementById('voucherSelect');
       if (voucherSelect) {
         voucherSelect.innerHTML = '<option value="">🎫 Không sử dụng</option>';
 
-        if (data.vouchers && data.vouchers.length > 0) {
-          data.vouchers.forEach(voucher => {
-            const option = document.createElement('option');
-            option.value = voucher.id;
-            option.text = `${voucher.ten} (Tối thiểu: ${voucher.giaTriGiamToiThieuFormatted || voucher.giaTriGiamToiThieu + ' VNĐ'})`;
-            voucherSelect.appendChild(option);
-          });
-        }
+        // Gộp cả hai loại voucher: cá nhân + công khai
+        const allVouchers = [...(tab.personalVouchers || []), ...(data.vouchers || [])];
+        allVouchers.forEach(voucher => {
+          const option = document.createElement('option');
+          option.value = voucher.id;
+          option.text = `${voucher.ten} (Tối thiểu: ${voucher.giaTriGiamToiThieuFormatted || voucher.giaTriGiamToiThieu + ' VNĐ'})`;
+          voucherSelect.appendChild(option);
+        });
 
         voucherSelect.value = tab.voucherId || '';
       }
     } catch (error) {
-      console.error('Lỗi khi lấy phiếu giảm giá:', error);
+      console.error('Lỗi khi xử lý phiếu giảm giá:', error);
     }
   }
+
+
 
   async function applyVoucher(voucherId) {
     const tab = tabs.find(t => t.id === currentTabId);

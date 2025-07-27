@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -198,43 +199,67 @@ public class BanHangController {
         }
     }
 
-    @GetMapping("/vouchers")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> getApplicableVouchers(@RequestParam String subTotal, @RequestParam(required = false) BigDecimal shippingFee, @RequestParam String tabId) {
-        try {
-            String cleanSubTotal = subTotal.replaceAll("[^0-9]", "");
-            BigDecimal amount = new BigDecimal(cleanSubTotal.isEmpty() ? "0" : cleanSubTotal);
-            System.out.println("Debug - Cleaned subTotal: " + amount + ", tabId: " + tabId);
+        @GetMapping("/vouchers")
+        @ResponseBody
+        public ResponseEntity<Map<String, Object>> getApplicableVouchers(
+                @RequestParam String subTotal,
+                @RequestParam(required = false) BigDecimal shippingFee,
+                @RequestParam String tabId,
+                @RequestParam(required = false) UUID customerId // <- thêm dòng này
+        ) {
+            try {
+                String cleanSubTotal = subTotal.replaceAll("[^0-9]", "");
+                BigDecimal amount = new BigDecimal(cleanSubTotal.isEmpty() ? "0" : cleanSubTotal);
+                System.out.println("Debug - Cleaned subTotal: " + amount + ", tabId: " + tabId);
 
-            GioHangDTO gioHang = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO, tabId);
-            gioHang.setTongTienHang(amount);
+                GioHangDTO gioHang = gioHangService.layGioHang(
+                        shippingFee != null ? shippingFee : BigDecimal.ZERO,
+                        tabId
+                );
+                gioHang.setTongTienHang(amount);
 
-            if (gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
-                GioHangItemDTO dummyItem = new GioHangItemDTO();
-                dummyItem.setIdChiTietSanPham(UUID.randomUUID());
-                dummyItem.setTenSanPham("Sản phẩm tạm");
-                dummyItem.setSoLuong(1);
-                dummyItem.setGia(amount);
-                dummyItem.setThanhTien(amount);
-                gioHang.setDanhSachSanPham(Collections.singletonList(dummyItem));
-                System.out.println("Debug - Added dummy item to cart with amount: " + amount);
+                if (gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
+                    GioHangItemDTO dummyItem = new GioHangItemDTO();
+                    dummyItem.setIdChiTietSanPham(UUID.randomUUID());
+                    dummyItem.setTenSanPham("Sản phẩm tạm");
+                    dummyItem.setSoLuong(1);
+                    dummyItem.setGia(amount);
+                    dummyItem.setThanhTien(amount);
+                    gioHang.setDanhSachSanPham(Collections.singletonList(dummyItem));
+                    System.out.println("Debug - Added dummy item to cart with amount: " + amount);
+                }
+
+                // Lấy phiếu công khai hợp lệ
+                List<PhieuGiamGia> congKhai = phieuGiamGiaService.layTatCa().stream()
+                        .filter(v -> "cong_khai".equalsIgnoreCase(v.getKieuPhieu()))
+                        .filter(v -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)))
+                        .filter(v -> amount.compareTo(v.getGiaTriGiamToiThieu()) >= 0)
+                        .collect(Collectors.toList());
+
+                List<PhieuGiamGia> caNhan = new ArrayList<>();
+                if (customerId != null) {
+                    caNhan = phieuGiamGiaCuaNguoiDungService.layPhieuCaNhanConHan(customerId).stream()
+                            .filter(v -> amount.compareTo(v.getGiaTriGiamToiThieu()) >= 0)
+                            .collect(Collectors.toList());
+                }
+
+                List<PhieuGiamGia> applicableVouchers = new ArrayList<>();
+                applicableVouchers.addAll(congKhai);
+                applicableVouchers.addAll(caNhan);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("gioHang", gioHang);
+                response.put("vouchers", applicableVouchers);
+
+                return ResponseEntity.ok(response);
+
+            } catch (Exception e) {
+                System.err.println("Debug - Error in getApplicableVouchers: " + e.getMessage());
+                return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy phiếu giảm giá: " + e.getMessage()));
             }
-
-            List<PhieuGiamGia> applicableVouchers = phieuGiamGiaRepository.findAll().stream()
-                    .filter(v -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)))
-                    .filter(v -> amount.compareTo(v.getGiaTriGiamToiThieu()) >= 0)
-                    .collect(Collectors.toList());
-            System.out.println("Debug - Applicable vouchers count: " + applicableVouchers.size());
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("gioHang", gioHang);
-            response.put("vouchers", applicableVouchers);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.err.println("Debug - Error in getApplicableVouchers: " + e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy phiếu giảm giá: " + e.getMessage()));
         }
-    }
+
+
 
     @PostMapping("/create-order")
     @ResponseBody

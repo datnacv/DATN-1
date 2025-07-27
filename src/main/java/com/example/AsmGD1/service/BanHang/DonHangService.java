@@ -157,31 +157,43 @@ public class DonHangService {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
 
-            // Sửa lại logic tính toán giảm giá để khớp với GioHangService
-            if ("Phần trăm".equals(phieuGiamGia.getLoai()) || "PERCENT".equals(phieuGiamGia.getLoai())) {
+            // Tính tiền giảm
+            if ("Phần trăm".equalsIgnoreCase(phieuGiamGia.getLoai()) || "PERCENT".equalsIgnoreCase(phieuGiamGia.getLoai())) {
                 tienGiam = tongTien.multiply(phieuGiamGia.getGiaTriGiam())
                         .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
                 if (phieuGiamGia.getGiaTriGiamToiDa() != null && tienGiam.compareTo(phieuGiamGia.getGiaTriGiamToiDa()) > 0) {
                     tienGiam = phieuGiamGia.getGiaTriGiamToiDa();
                 }
-            } else if ("Tiền mặt".equals(phieuGiamGia.getLoai()) || "CASH".equals(phieuGiamGia.getLoai())) {
+            } else if ("Tiền mặt".equalsIgnoreCase(phieuGiamGia.getLoai()) || "CASH".equalsIgnoreCase(phieuGiamGia.getLoai())) {
                 tienGiam = phieuGiamGia.getGiaTriGiam().min(tongTien);
             }
 
-            PhieuGiamGiaCuaNguoiDung phieuGiam = phieuGiamGiaCuaNguoiDungRepository
-                    .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
+            // Trừ lượt nếu là phiếu cá nhân
+            if ("ca_nhan".equalsIgnoreCase(phieuGiamGia.getKieuPhieu())) {
+                PhieuGiamGiaCuaNguoiDung phieuCaNhan = phieuGiamGiaCuaNguoiDungRepository
+                        .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
 
-            if (phieuGiam != null && phieuGiam.getSoLuotConLai() > 0) {
-                phieuGiam.setSoLuotConLai(phieuGiam.getSoLuotConLai() - 1);
-                phieuGiamGiaCuaNguoiDungRepository.save(phieuGiam);
-            } else if (phieuGiam != null) {
-                throw new RuntimeException("Phiếu giảm giá đã hết lượt sử dụng.");
+                if (phieuCaNhan != null && phieuCaNhan.getSoLuotConLai() != null && phieuCaNhan.getSoLuotConLai() > 0) {
+                    phieuCaNhan.setSoLuotConLai(phieuCaNhan.getSoLuotConLai() - 1);
+                    phieuGiamGiaCuaNguoiDungRepository.save(phieuCaNhan);
+                } else {
+                    throw new RuntimeException("Phiếu giảm giá cá nhân đã hết lượt sử dụng.");
+                }
+            }
+
+            // Trừ số lượng phiếu (cho cả công khai và cá nhân)
+            if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() > 0) {
+                phieuGiamGia.setSoLuong(phieuGiamGia.getSoLuong() - 1);
+                phieuGiamGiaRepository.save(phieuGiamGia);
+            } else {
+                throw new RuntimeException("Phiếu giảm giá đã hết số lượng.");
             }
 
             donHang.setTienGiam(tienGiam);
         } else {
             donHang.setTienGiam(BigDecimal.ZERO);
         }
+
 
         BigDecimal tongTienDonHang = tongTien.add(donHang.getPhiVanChuyen()).subtract(tienGiam);
         donHang.setTongTien(tongTienDonHang);

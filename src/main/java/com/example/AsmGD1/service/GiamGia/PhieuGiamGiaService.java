@@ -2,6 +2,7 @@ package com.example.AsmGD1.service.GiamGia;
 
 import com.example.AsmGD1.entity.PhieuGiamGia;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -71,22 +72,25 @@ public class PhieuGiamGiaService {
         return "Không xác định";
     }
 
+    @Transactional
     public boolean apDungPhieuGiamGia(UUID phieuId) {
         PhieuGiamGia phieu = phieuGiamGiaRepository.findById(phieuId).orElse(null);
-        if (phieu == null) {
-            return false;
-        }
-        // Kiểm tra trạng thái
-        if (!"Đang diễn ra".equals(tinhTrang(phieu))) {
-            return false;
-        }
-        // Kiểm tra lượt sử dụng
+        if (phieu == null) return false;
+
+        if (!"Đang diễn ra".equals(tinhTrang(phieu))) return false;
+
         Integer luotConLai = phieu.getGioiHanSuDung();
-        if (luotConLai != null && luotConLai > 0) {
+        Integer soLuong = phieu.getSoLuong();
+
+        if (luotConLai != null && luotConLai > 0 && soLuong != null && soLuong > 0) {
             phieu.setGioiHanSuDung(luotConLai - 1);
+            phieu.setSoLuong(soLuong - 1); // 👈 TRỪ số lượng
             phieuGiamGiaRepository.save(phieu);
+            phieuGiamGiaRepository.flush(); // 👈 Bắt buộc cần gọi save
             return true;
         }
         return false;
     }
+
+
 }
