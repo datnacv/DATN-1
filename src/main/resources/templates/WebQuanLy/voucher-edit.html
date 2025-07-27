@@ -628,7 +628,7 @@
                                 <i class="fas fa-calendar-alt"></i>
                                 Ngày bắt đầu <span class="text-danger">*</span>
                             </label>
-                            <input type="date" th:field="*{ngayBatDau}" class="form-control"
+                            <input type="datetime-local" th:field="*{ngayBatDau}" class="form-control"
                                    th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}" required>
                         </div>
                     </div>
@@ -639,7 +639,7 @@
                                 <i class="fas fa-calendar-check"></i>
                                 Ngày kết thúc <span class="text-danger">*</span>
                             </label>
-                            <input type="date" th:field="*{ngayKetThuc}" class="form-control"
+                            <input type="datetime-local" th:field="*{ngayKetThuc}" class="form-control"
                                    th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}" required>
                         </div>
                     </div>

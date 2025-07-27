@@ -1,58 +1,58 @@
-    package com.example.AsmGD1.entity;
+package com.example.AsmGD1.entity;
 
-    import com.fasterxml.jackson.annotation.JsonIgnore;
-    import lombok.Data;
-    import jakarta.persistence.*;
-    import java.util.UUID;
-    import java.math.BigDecimal;
-    import java.time.LocalDate;
-    import java.time.LocalDateTime;
-    import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import jakarta.persistence.*;
 
-    @Entity
-    @Table(name = "chien_dich_giam_gia")
-    @Data
-    public class ChienDichGiamGia {
-        @Id
-        @GeneratedValue(strategy = GenerationType.AUTO)
-        private UUID id;
+import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
-        @Column(name = "ten")
-        private String ten;
+@Entity
+@Table(name = "chien_dich_giam_gia")
+@Data
+public class ChienDichGiamGia {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID id;
 
-        @Column(name = "ma", nullable = false, length = 50)
-        private String ma;
+    @Column(name = "ten")
+    private String ten;
 
-        @Column(name = "hinh_thuc_giam")
-        private String hinhThucGiam;
+    @Column(name = "ma", nullable = false, length = 50)
+    private String ma;
 
-        @Column(name = "so_luong")
-        private Integer soLuong;
+    @Column(name = "hinh_thuc_giam")
+    private String hinhThucGiam;
 
-        @Column(name = "phan_tram_giam")
-        private BigDecimal phanTramGiam;
+    @Column(name = "so_luong")
+    private Integer soLuong;
 
-        @Column(name = "ngay_bat_dau")
-        private LocalDate ngayBatDau;
+    @Column(name = "phan_tram_giam")
+    private BigDecimal phanTramGiam;
 
-        @Column(name = "ngay_ket_thuc")
-        private LocalDate ngayKetThuc;
+    @Column(name = "ngay_bat_dau")
+    private LocalDateTime ngayBatDau;
 
-        @Column(name = "thoi_gian_tao")
-        private LocalDateTime thoiGianTao;
+    @Column(name = "ngay_ket_thuc")
+    private LocalDateTime ngayKetThuc;
 
-        @OneToMany(mappedBy = "chienDichGiamGia", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-        @JsonIgnore
-        private List<ChiTietSanPham> chiTietSanPhams; // Danh sách các chi tiết sản phẩm thuộc chiến dịch
+    @Column(name = "thoi_gian_tao")
+    private LocalDateTime thoiGianTao;
 
-        public String getStatus() {
-            LocalDate today = LocalDate.now();
-            if (today.isBefore(ngayBatDau)) {
-                return "UPCOMING"; // Sắp diễn ra
-            } else if (today.isAfter(ngayKetThuc)) {
-                return "ENDED"; // Đã kết thúc
-            } else {
-                return "ONGOING"; // Đang diễn ra
-            }
+    @OneToMany(mappedBy = "chienDichGiamGia", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<ChiTietSanPham> chiTietSanPhams;
+
+    public String getStatus() {
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(ngayBatDau)) {
+            return "UPCOMING"; // Sắp diễn ra
+        } else if (now.isAfter(ngayKetThuc)) {
+            return "ENDED"; // Đã kết thúc
+        } else {
+            return "ONGOING"; // Đang diễn ra
         }
     }
+}

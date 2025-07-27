@@ -59,18 +59,24 @@ public class PhieuGiamGiaService {
     }
 
     public String tinhTrang(PhieuGiamGia v) {
-        LocalDate homNay = LocalDate.now();
-        if (v.getNgayBatDau() != null && v.getNgayKetThuc() != null) {
-            if (homNay.isBefore(v.getNgayBatDau())) {
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime batDau = v.getNgayBatDau();
+        LocalDateTime ketThuc = v.getNgayKetThuc();
+
+        if (batDau != null && ketThuc != null) {
+            if (now.isBefore(batDau)) {
                 return "Sắp diễn ra";
-            } else if (!homNay.isAfter(v.getNgayKetThuc())) {
+            } else if (!now.isAfter(ketThuc)) {
                 return "Đang diễn ra";
             } else {
                 return "Đã kết thúc";
             }
         }
+
         return "Không xác định";
     }
+
 
     @Transactional
     public boolean apDungPhieuGiamGia(UUID phieuId) {

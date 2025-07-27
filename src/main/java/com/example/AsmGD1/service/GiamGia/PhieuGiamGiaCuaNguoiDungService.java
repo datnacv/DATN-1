@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -139,7 +140,7 @@ public class PhieuGiamGiaCuaNguoiDungService {
 
     public List<PhieuGiamGia> layPhieuCaNhanConHan(UUID nguoiDungId) {
         List<PhieuGiamGiaCuaNguoiDung> list = phieuGiamGiaCuaNguoiDungRepository.findByNguoiDungId(nguoiDungId);
-        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
         List<PhieuGiamGia> result = new ArrayList<>();
 
         for (PhieuGiamGiaCuaNguoiDung item : list) {
@@ -148,8 +149,8 @@ public class PhieuGiamGiaCuaNguoiDungService {
 
             boolean conLuot = item.getSoLuotConLai() != null && item.getSoLuotConLai() > 0;
             boolean conSoLuong = phieu.getSoLuong() != null && phieu.getSoLuong() > 0;
-            boolean conHan = (phieu.getNgayBatDau() == null || !today.isBefore(phieu.getNgayBatDau()))
-                    && (phieu.getNgayKetThuc() == null || !today.isAfter(phieu.getNgayKetThuc()));
+            boolean conHan = (phieu.getNgayBatDau() == null || !now.isBefore(phieu.getNgayBatDau()))
+                    && (phieu.getNgayKetThuc() == null || !now.isAfter(phieu.getNgayKetThuc()));
 
             if (conLuot && conSoLuong && conHan) {
                 result.add(phieu);
@@ -158,5 +159,6 @@ public class PhieuGiamGiaCuaNguoiDungService {
 
         return result;
     }
+
 
 }

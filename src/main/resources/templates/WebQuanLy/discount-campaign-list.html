@@ -269,13 +269,13 @@
           </div>
           <div class="col-md-2">
             <label class="form-label small">Từ ngày</label>
-            <input type="date" name="startDate" class="form-control"
-                   th:value="${startDate}">
+            <input type="datetime-local" name="startDate" class="form-control"
+                   th:value="${startDate != null ? #temporals.format(startDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
           </div>
           <div class="col-md-2">
             <label class="form-label small">Đến ngày</label>
-            <input type="date" name="endDate" class="form-control"
-                   th:value="${endDate}">
+            <input type="datetime-local" name="endDate" class="form-control"
+                   th:value="${endDate != null ? #temporals.format(endDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
           </div>
           <div class="col-md-2">
             <label class="form-label small">Trạng thái</label>
@@ -333,23 +333,17 @@
             <td th:text="${campaign.ma}"></td>
             <td th:text="${campaign.ten}" class="text-start"></td>
             <td th:utext="${campaign.phanTramGiam % 1 == 0} ? ${campaign.phanTramGiam.intValue()} + '&#37;' : ${campaign.phanTramGiam} + '&#37;'"></td>
-            <td th:text="${#temporals.format(campaign.ngayBatDau, 'dd/MM/yyyy')}"></td>
-            <td th:text="${#temporals.format(campaign.ngayKetThuc, 'dd/MM/yyyy')}"></td>
+            <td th:text="${#temporals.format(campaign.ngayBatDau, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${#temporals.format(campaign.ngayKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
             <td>
               <span class="badge"
-                    th:with="status=${T(java.time.LocalDate).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' :
-                        (T(java.time.LocalDate).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}"
-                    th:classappend="${status == 'ONGOING'} ? 'bg-success' :
-                       (${status == 'UPCOMING'} ? 'bg-primary' :
-                       (${status == 'ENDED'} ? 'bg-secondary' : ''))"
-                    th:text="${status == 'ONGOING'} ? 'Đang diễn ra' :
-                  (${status == 'UPCOMING'} ? 'Sắp diễn ra' :
-                  (${status == 'ENDED'} ? 'Đã kết thúc' : ''))">
+                    th:with="status=${T(java.time.LocalDateTime).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' : (T(java.time.LocalDateTime).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}"
+                    th:classappend="${status == 'ONGOING'} ? 'bg-success' : (${status == 'UPCOMING'} ? 'bg-primary' : (${status == 'ENDED'} ? 'bg-secondary' : ''))"
+                    th:text="${status == 'ONGOING'} ? 'Đang diễn ra' : (${status == 'UPCOMING'} ? 'Sắp diễn ra' : (${status == 'ENDED'} ? 'Đã kết thúc' : ''))">
               </span>
             </td>
             <td>
-              <div class="action-buttons" th:with="status=${T(java.time.LocalDate).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' :
-                                              (T(java.time.LocalDate).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}">
+              <div class="action-buttons" th:with="status=${T(java.time.LocalDateTime).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' : (T(java.time.LocalDateTime).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}">
                 <!-- View button - Cả Admin và Employee đều có thể xem -->
                 <a th:href="@{'/acvstore/chien-dich-giam-gia/view/' + ${campaign.id}}"
                    class="btn btn-sm btn-success"
