@@ -31,22 +31,27 @@ public class ChiTietGioHangService {
                 .orElseThrow(() -> new RuntimeException("Chi tiết giỏ hàng không tồn tại với ID: " + chiTietGioHangId));
 
         ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
+        int soLuongTonKho = chiTietSanPham.getSoLuongTonKho();
 
-        // Kiểm tra số lượng tồn kho
-        if (chiTietSanPham.getSoLuongTonKho() < soLuongMoi) {
-            throw new RuntimeException("Số lượng tồn kho không đủ: " + chiTietSanPham.getSoLuongTonKho());
+        if (soLuongMoi > soLuongTonKho) {
+            throw new RuntimeException("Số lượng yêu cầu vượt quá tồn kho hiện tại: " + soLuongTonKho);
         }
 
-        // Cập nhật số lượng trong chi tiết giỏ hàng
+        int soLuongCu = chiTiet.getSoLuong();
+
+        // KHÔNG trừ kho ở đây
+
+        // Cập nhật chi tiết giỏ hàng
         chiTiet.setSoLuong(soLuongMoi);
         chiTiet = chiTietGioHangRepository.save(chiTiet);
 
-        // Cập nhật tổng tiền giỏ hàng
+        // Tính lại tổng tiền
+        BigDecimal thanhTienMoi = chiTiet.getGia().multiply(BigDecimal.valueOf(soLuongMoi)).subtract(chiTiet.getTienGiam());
+        BigDecimal thanhTienCu = chiTiet.getGia().multiply(BigDecimal.valueOf(soLuongCu)).subtract(chiTiet.getTienGiam());
+
         GioHang gioHang = gioHangRepository.findById(chiTiet.getGioHang().getId())
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
-        BigDecimal giaMoi = chiTiet.getGia().multiply(BigDecimal.valueOf(soLuongMoi)).subtract(chiTiet.getTienGiam());
-        BigDecimal giaCu = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong())).subtract(chiTiet.getTienGiam());
-        gioHang.setTongTien(gioHang.getTongTien().add(giaMoi).subtract(giaCu));
+        gioHang.setTongTien(gioHang.getTongTien().add(thanhTienMoi.subtract(thanhTienCu)));
         gioHangRepository.save(gioHang);
 
         return chiTiet;
