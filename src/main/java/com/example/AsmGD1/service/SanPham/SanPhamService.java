@@ -255,4 +255,16 @@ public class SanPhamService {
             return dto;
         }).collect(Collectors.toList());
     }
+
+    public List<SanPham> getSanPhamLienQuan(UUID idSanPham, int limit) {
+        SanPham sanPhamGoc = sanPhamRepository.findById(idSanPham)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm gốc"));
+
+        UUID idDanhMuc = sanPhamGoc.getDanhMuc().getId();
+        String tenSanPham = sanPhamGoc.getTenSanPham();
+
+        Pageable pageable = PageRequest.of(0, limit);
+        return sanPhamRepository.findSanPhamLienQuan(idSanPham, idDanhMuc, tenSanPham.toLowerCase(), pageable);
+    }
+
 }
