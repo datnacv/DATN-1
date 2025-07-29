@@ -6,9 +6,11 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,6 +20,7 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -126,7 +129,9 @@ public class KHDonMuaController {
     }
 
     @PostMapping("/api/orders/confirm-received/{id}")
+    @Transactional(rollbackOn = Exception.class)
     public ResponseEntity<?> confirmReceivedOrder(@PathVariable("id") UUID id, Authentication authentication) {
+        System.out.println("Received confirmReceivedOrder request for id: " + id);
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xác nhận.");
         }
@@ -143,13 +148,18 @@ public class KHDonMuaController {
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setGhiChu("Khách hàng xác nhận đã nhận hàng");
             hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
-            HoaDon savedHoaDon = hoaDonRepo.save(hoaDon); // Đảm bảo lưu và lấy lại đối tượng
-            if ("Hoàn thành".equals(savedHoaDon.getTrangThai())) {
-                return ResponseEntity.ok("Đã xác nhận nhận hàng thành công.");
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi cập nhật trạng thái.");
+            HoaDon savedHoaDon = hoaDonService.save(hoaDon);
+            System.out.println("Trạng thái HoaDon đã lưu: " + savedHoaDon.getTrangThai() + ", ID: " + savedHoaDon.getId());
+            if (!"Hoàn thành".equals(savedHoaDon.getTrangThai())) {
+                throw new RuntimeException("Không thể cập nhật trạng thái thành 'Hoàn thành'.");
             }
+            return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công."));
+
+        } catch (ObjectOptimisticLockingFailureException e) {
+            System.err.println("Xung đột đồng thời khi lưu hóa đơn: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi xung đột đồng thời khi xác nhận. Vui lòng thử lại.");
         } catch (Exception e) {
+            System.err.println("Lỗi khi xác nhận đơn hàng: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xác nhận: " + e.getMessage());
         }
     }

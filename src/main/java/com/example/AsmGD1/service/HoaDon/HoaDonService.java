@@ -181,18 +181,37 @@ public class HoaDonService {
 
             document.add(table);
 
+            // Tính tổng tiền hàng (tongTienHang) trước khi giảm giá
+            BigDecimal tongTienHang = donHang.getChiTietDonHangs().stream()
+                    .filter(chiTiet -> chiTiet.getTrangThaiHoanTra() == null || !chiTiet.getTrangThaiHoanTra())
+                    .map(ChiTietDonHang::getThanhTien)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+// Xác định và tính số tiền giảm giá
+            BigDecimal discountAmount;
+            BigDecimal tienGiam = hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO;
+            if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
+                // Nếu TienGiam > 100, giả định là tiền mặt (VD: 200,000 VNĐ)
+                discountAmount = tienGiam;
+            } else {
+                // Nếu TienGiam <= 100, giả định là phần trăm (VD: 10 cho 10%)
+                discountAmount = tongTienHang.multiply(tienGiam)
+                        .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            }
+
+// Tạo bảng tổng kết
             PdfPTable summaryTable = new PdfPTable(2);
             summaryTable.setWidthPercentage(50);
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
             summaryTable.setSpacingBefore(10f);
 
-            BigDecimal tongTienHang = donHang.getChiTietDonHangs().stream()
-                    .filter(chiTiet -> chiTiet.getTrangThaiHoanTra() == null || !chiTiet.getTrangThaiHoanTra())
-                    .map(ChiTietDonHang::getThanhTien)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền hàng:", formatCurrency(tongTienHang));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Phí vận chuyển:", formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO));
-            addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
+            if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
+                addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(discountAmount));
+            } else {
+                addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá (" + tienGiam + "%):", formatCurrency(discountAmount));
+            }
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền:", formatCurrency(hoaDon.getTongTien()));
 
             BigDecimal soTienKhachDua = donHang.getSoTienKhachDua() != null ? donHang.getSoTienKhachDua() : BigDecimal.ZERO;
@@ -280,9 +299,15 @@ public class HoaDonService {
     )
     public HoaDon save(HoaDon hoaDon) {
         try {
-            return hoaDonRepository.save(hoaDon);
+            HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hoaDon);
+            System.out.println("Lưu hóa đơn thành công, ID: " + savedHoaDon.getId() + ", Trạng thái: " + savedHoaDon.getTrangThai());
+            return savedHoaDon;
         } catch (ObjectOptimisticLockingFailureException e) {
+            System.err.println("Xung đột đồng thời khi lưu hóa đơn: " + e.getMessage());
             throw new RuntimeException("Xung đột đồng thời khi cập nhật hóa đơn. Vui lòng thử lại.");
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lưu hóa đơn: " + e.getMessage());
+            throw new RuntimeException("Lỗi khi lưu hóa đơn: " + e.getMessage());
         }
     }
 
@@ -438,15 +463,27 @@ public class HoaDonService {
         lichSu.setGhiChu(ghiChu);
         lichSuHoaDonRepository.save(lichSu);
         hoaDon.getLichSuHoaDons().add(lichSu);
+        System.out.println("Đã thêm LichSuHoaDon: " + trangThai); // Thêm log
     }
 
     public String getCurrentStatus(HoaDon hoaDon) {
-        // Ưu tiên trạng thái "Hoàn thành" nếu có trong lịch sử
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
+        // Kiểm tra trạng thái Hủy đơn hàng trước
+        if ("Hủy đơn hàng".equals(hoaDon.getTrangThai())) {
+            return "Hủy đơn hàng";
+        }
+
+        // Kiểm tra trạng thái Hoàn thành
+        if ("Hoàn thành".equals(hoaDon.getTrangThai()) ||
+                hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
             return "Hoàn thành";
         }
 
-        // Kiểm tra trạng thái trả hàng
+        // Ghi log lịch sử để debug
+        System.out.println("LichSuHoaDon: " + hoaDon.getLichSuHoaDons().stream()
+                .map(ls -> ls.getTrangThai() + " at " + ls.getThoiGian())
+                .collect(Collectors.toList()));
+
+        // Kiểm tra lịch sử trả hàng
         List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
         long totalItems = chiTietDonHangs.size();
         long returnedItems = chiTietDonHangs.stream()
@@ -471,6 +508,33 @@ public class HoaDonService {
             return "Đã xác nhận";
         }
         return "Chưa xác nhận";
+    }
+
+    @Transactional
+    public void cancelOrder(UUID hoaDonId, String ghiChu) {
+        HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
+
+        String currentStatus = hoaDon.getTrangThai();
+        if (!List.of("Chưa xác nhận", "Đã xác nhận", "Đã xác nhận Online", "Đang xử lý Online", "Đang vận chuyển").contains(currentStatus)) {
+            throw new IllegalStateException("Hóa đơn không thể hủy khi ở trạng thái: " + currentStatus);
+        }
+
+        // Cập nhật trạng thái hóa đơn
+        hoaDon.setTrangThai("Hủy đơn hàng");
+        hoaDon.setGhiChu(ghiChu);
+        hoaDon.setNgayThanhToan(LocalDateTime.now());
+
+        // Thêm lịch sử hóa đơn
+        addLichSuHoaDon(hoaDon, "Hủy đơn hàng", ghiChu);
+
+        // Khôi phục tồn kho sản phẩm
+        for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
+            chiTietSanPhamRepository.updateStock(chiTiet.getChiTietSanPham().getId(), chiTiet.getSoLuong());
+        }
+
+        // Lưu hóa đơn
+        save(hoaDon);
     }
 
     @Transactional
