@@ -620,7 +620,8 @@
   }
 
   function restoreHistory() {
-    chatMessages.innerHTML = '<div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>';
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = ''; // Xóa nội dung hiện tại
     const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
     for (const item of items) {
       const div = document.createElement('div');
@@ -628,6 +629,12 @@
       div.innerHTML = item.msg;
       chatMessages.appendChild(div);
     }
+    // Thêm typing-indicator vào cuối
+    const typingIndicator = document.createElement('div');
+    typingIndicator.id = 'typing-indicator';
+    typingIndicator.className = 'chatbot-msg-bot hidden';
+    typingIndicator.textContent = 'Đang soạn tin...';
+    chatMessages.appendChild(typingIndicator);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
@@ -639,8 +646,8 @@
   });
 
   chatInput.addEventListener('keydown', async (event) => {
-    if (event.key === 'Enter' && !event.repeat) { // Add !event.repeat to avoid repeated triggers
-      event.preventDefault(); // Prevent default form submission if any
+    if (event.key === 'Enter' && !event.repeat) {
+      event.preventDefault();
       const message = chatInput.value.trim();
       if (!message) return;
 
@@ -648,11 +655,23 @@
       userDiv.className = 'chatbot-msg-user';
       userDiv.textContent = message;
       chatMessages.appendChild(userDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
       saveToHistory('user', message);
       chatInput.value = '';
 
-      document.getElementById('typing-indicator').classList.remove('hidden');
+      // Di chuyển hoặc thêm typing-indicator vào cuối
+      let typingIndicator = document.getElementById('typing-indicator');
+      if (typingIndicator) {
+        typingIndicator.remove(); // Xóa typing-indicator hiện tại
+      }
+      typingIndicator = document.createElement('div');
+      typingIndicator.id = 'typing-indicator';
+      typingIndicator.className = 'chatbot-msg-bot hidden';
+      typingIndicator.textContent = 'Đang soạn tin...';
+      chatMessages.appendChild(typingIndicator);
+      typingIndicator.classList.remove('hidden');
+
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
       try {
         const res = await fetch("https://namhaihoang.app.n8n.cloud/webhook/website-chatbot", {
           method: "POST",
@@ -679,7 +698,7 @@
         chatMessages.appendChild(botErr);
         saveToHistory('bot', botErr.textContent);
       } finally {
-        document.getElementById('typing-indicator').classList.add('hidden');
+        typingIndicator.classList.add('hidden');
       }
     }
   });
