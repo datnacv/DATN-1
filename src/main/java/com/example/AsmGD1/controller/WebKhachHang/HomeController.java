@@ -87,13 +87,20 @@ public class HomeController {
             model.addAttribute("error", "Sản phẩm không tồn tại hoặc đã bị xóa!");
             return "WebKhachHang/error";
         }
+
         NumberFormat format = NumberFormat.getInstance(new Locale("vi", "VN"));
         String giaFormatted = format.format(productDetail.getGia()) + " VNĐ";
-        model.addAttribute("giaFormatted", giaFormatted);
 
+        // 👇 Lấy sản phẩm liên quan
+        List<SanPhamDto> sanPhamLienQuan = khachhangSanPhamService.getSanPhamLienQuan(sanPhamId, 6);
+
+        model.addAttribute("giaFormatted", giaFormatted);
         model.addAttribute("productDetail", productDetail);
+        model.addAttribute("sanPhamLienQuan", sanPhamLienQuan); // 👈 Gửi qua view
+
         return "WebKhachHang/chitietsanpham";
     }
+
     @GetMapping("/don-mua")
     public String donMuaPage(Model model, Authentication authentication) {
         if (authentication != null && authentication.getPrincipal() instanceof NguoiDung user) {

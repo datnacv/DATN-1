@@ -28,8 +28,7 @@ public class YeuCauRutTienController {
 
     @GetMapping("/rut-tien")
     public String showForm(Model model, @AuthenticationPrincipal NguoiDung user) {
-        UUID idNguoiDung = user.getId();
-        Optional<ViThanhToan> optionalVi = viRepo.findByIdNguoiDung(idNguoiDung);
+        Optional<ViThanhToan> optionalVi = viRepo.findByNguoiDung(user);
 
         if (optionalVi.isPresent()) {
             ViThanhToan vi = optionalVi.get();
@@ -54,8 +53,7 @@ public class YeuCauRutTienController {
                                 Model model,
                                 @AuthenticationPrincipal NguoiDung user, RedirectAttributes redirectAttributes) {
 
-        UUID idNguoiDung = user.getId();
-        Optional<ViThanhToan> optionalVi = viRepo.findByIdNguoiDung(idNguoiDung);
+        Optional<ViThanhToan> optionalVi = viRepo.findByNguoiDung(user);
 
         if (optionalVi.isEmpty()) {
             redirectAttributes.addFlashAttribute("error", "Không tìm thấy ví.");

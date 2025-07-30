@@ -124,6 +124,19 @@
     </div>
 </section>
 
+<section class="container mx-auto py-12">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Sản phẩm liên quan</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div th:each="sp : ${sanPhamLienQuan}" class="bg-white rounded-lg shadow hover:shadow-md transition p-3">
+            <a th:href="@{/chitietsanpham(id=${sp.id})}">
+                <img th:src="${sp.urlHinhAnh}" alt="Ảnh sản phẩm" class="w-full h-52 object-cover rounded mb-3"/>
+                <h3 th:text="${sp.tenSanPham}" class="text-base font-semibold text-gray-700 line-clamp-2 h-[48px]"></h3>
+                <p th:text="${giaFormatted}" class="text-[#153054] font-bold mt-2 text-sm"></p>
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- Floating Chatbot Icon -->
 <div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
     <i class="fas fa-robot fa-lg text-white"></i>

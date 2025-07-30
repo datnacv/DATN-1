@@ -227,11 +227,9 @@ CREATE TABLE hoa_don (
                          FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
 
-go
 ALTER TABLE hoa_don
     ADD nhan_vien_id UNIQUEIDENTIFIER NULL,
 FOREIGN KEY (nhan_vien_id) REFERENCES nguoi_dung(id);
-go
 
 CREATE TABLE lich_su_hoa_don (
                                  id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
@@ -685,3 +683,6 @@ CREATE TABLE yeu_cau_rut_tien (
                                   thoi_gian_xu_ly DATETIME NULL,
                                   FOREIGN KEY (id_vi_thanh_toan) REFERENCES vi_thanh_toan(id)
 );
+
+ALTER TABLE yeu_cau_rut_tien
+    ADD anh_bang_chung NVARCHAR(MAX) NULL;

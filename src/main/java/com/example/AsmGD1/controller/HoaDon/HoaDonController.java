@@ -50,8 +50,8 @@ public class HoaDonController {
         model.addAttribute("hoaDonPage", hoaDonPage);
         model.addAttribute("search", search);
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String tenDangNhap = authentication.getName();
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();

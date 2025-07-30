@@ -1,9 +1,12 @@
 package com.example.AsmGD1.controller.ViThanhToan;
 
+import com.example.AsmGD1.dto.ViThanhToan.LichSuGiaoDichViDTO;
 import com.example.AsmGD1.entity.LichSuGiaoDichVi;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.ViThanhToan;
+import com.example.AsmGD1.entity.YeuCauRutTien;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
+import com.example.AsmGD1.repository.ViThanhToan.YeuCauRutTienRepository;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -14,6 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Controller
@@ -25,6 +29,9 @@ public class ViThanhToanController {
 
     @Autowired
     private LichSuGiaoDichViRepository lichSuRepo;
+
+    @Autowired
+    private YeuCauRutTienRepository yeuCauRutTienRepository;
 
     // Trang xem ví
     @GetMapping
@@ -88,16 +95,40 @@ public class ViThanhToanController {
 
         ViThanhToan vi = viService.findByUser(idNguoiDung);
 
-        // Nếu chưa có ví thì chuyển hưởng tạo ví
         if (vi == null) {
             model.addAttribute("msg", "Bạn chưa có ví để xem lịch sử.");
             return "redirect:/vi";
         }
 
         List<LichSuGiaoDichVi> lichSu = lichSuRepo.findByIdViThanhToanOrderByCreatedAtDesc(vi.getId());
-        model.addAttribute("lichSu", lichSu);
+        List<LichSuGiaoDichViDTO> lichSuDTOs = lichSu.stream().map(giaoDich -> {
+            LichSuGiaoDichViDTO dto = new LichSuGiaoDichViDTO();
+            dto.setId(giaoDich.getId());
+            dto.setIdViThanhToan(giaoDich.getIdViThanhToan());
+            dto.setIdDonHang(giaoDich.getIdDonHang());
+            dto.setLoaiGiaoDich(giaoDich.getLoaiGiaoDich());
+            dto.setSoTien(giaoDich.getSoTien());
+            dto.setThoiGianGiaoDich(giaoDich.getThoiGianGiaoDich());
+            dto.setMoTa(giaoDich.getMoTa());
+            dto.setMaGiaoDich(giaoDich.getMaGiaoDich());
+            dto.setCreatedAt(giaoDich.getCreatedAt());
+
+            // Lấy anhBangChung từ YeuCauRutTien dựa trên maGiaoDich
+            if ("Rút tiền".equals(giaoDich.getLoaiGiaoDich())) {
+                Optional<YeuCauRutTien> yeuCau = yeuCauRutTienRepository.findByMaGiaoDich(giaoDich.getMaGiaoDich());
+                yeuCau.ifPresent(rutTien -> {
+                    String fileName = rutTien.getAnhBangChung();
+                    if (fileName != null && !fileName.isEmpty()) {
+                        dto.setAnhBangChung("/uploads/bang-chung/" + fileName); // Thêm tiền tố đúng
+                    }
+                });
+            }
+
+            return dto;
+        }).toList();
+
+        model.addAttribute("lichSu", lichSuDTOs);
         model.addAttribute("user", currentUser);
         return "WebKhachHang/lich_su";
     }
-
 }

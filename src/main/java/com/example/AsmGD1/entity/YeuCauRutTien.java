@@ -48,6 +48,9 @@ public class YeuCauRutTien {
     @Column(name = "ten_ngan_hang")
     private String tenNganHang;
 
+    @Column(name = "anh_bang_chung")
+    private String anhBangChung;
+
     @PrePersist
     public void prePersist() {
         if (thoiGianYeuCau == null) {

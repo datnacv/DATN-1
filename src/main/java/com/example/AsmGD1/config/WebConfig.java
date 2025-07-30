@@ -14,34 +14,63 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String os = System.getProperty("os.name").toLowerCase();
-        String uploadPath;
-        String directoryPath;
+
+        // ======== CẤU HÌNH ẢNH SẢN PHẨM (/images/**) ==========
+        String productUploadPath;
+        String productDirPath;
 
         if (os.contains("win")) {
-            uploadPath = "file:///C:/DATN/uploads/san_pham/"; // với 3 dấu / sau file:
-            directoryPath = "C:/DATN/uploads/san_pham/";
+            productUploadPath = "file:///C:/DATN/uploads/san_pham/";
+            productDirPath = "C:/DATN/uploads/san_pham/";
         } else {
             String userHome = System.getProperty("user.home");
-            uploadPath = "file://" + userHome + "/DATN/uploads/san_pham/";
-            directoryPath = userHome + "/DATN/uploads/san_pham/";
+            productUploadPath = "file://" + userHome + "/DATN/uploads/san_pham/";
+            productDirPath = userHome + "/DATN/uploads/san_pham/";
         }
 
-        // Tạo thư mục nếu chưa tồn tại
         try {
-            Path path = Paths.get(directoryPath);
-            if (!Files.exists(path)) {
-                Files.createDirectories(path);
-                System.out.println("Đã tạo thư mục: " + path);
+            Path productPath = Paths.get(productDirPath);
+            if (!Files.exists(productPath)) {
+                Files.createDirectories(productPath);
+                System.out.println("Đã tạo thư mục sản phẩm: " + productPath);
             } else {
-                System.out.println("Thư mục đã tồn tại: " + path);
+                System.out.println("Thư mục sản phẩm đã tồn tại: " + productPath);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Không thể tạo hoặc truy cập thư mục tải lên: " + directoryPath, e);
+            throw new RuntimeException("Không thể tạo hoặc truy cập thư mục sản phẩm: " + productDirPath, e);
         }
 
-        // Ánh xạ /images/** đến thư mục uploads
         registry.addResourceHandler("/images/**")
-                .addResourceLocations(uploadPath)
+                .addResourceLocations(productUploadPath)
+                .setCachePeriod(0);
+
+        // ======== CẤU HÌNH ẢNH BẰNG CHỨNG (/uploads/bang-chung/**) ==========
+        String evidenceUploadPath;
+        String evidenceDirPath;
+
+        if (os.contains("win")) {
+            evidenceUploadPath = "file:///C:/DATN/uploads/bang-chung/";
+            evidenceDirPath = "C:/DATN/uploads/bang-chung/";
+        } else {
+            String userHome = System.getProperty("user.home");
+            evidenceUploadPath = "file://" + userHome + "/DATN/uploads/bang-chung/";
+            evidenceDirPath = userHome + "/DATN/uploads/bang-chung/";
+        }
+
+        try {
+            Path evidencePath = Paths.get(evidenceDirPath);
+            if (!Files.exists(evidencePath)) {
+                Files.createDirectories(evidencePath);
+                System.out.println("Đã tạo thư mục bằng chứng: " + evidencePath);
+            } else {
+                System.out.println("Thư mục bằng chứng đã tồn tại: " + evidencePath);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể tạo hoặc truy cập thư mục bằng chứng: " + evidenceDirPath, e);
+        }
+
+        registry.addResourceHandler("/uploads/bang-chung/**")
+                .addResourceLocations(evidenceUploadPath)
                 .setCachePeriod(0);
     }
 }
