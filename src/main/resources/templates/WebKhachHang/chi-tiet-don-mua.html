@@ -211,7 +211,7 @@
         Xác nhận đã nhận hàng
       </button>
 
-      <button th:if="${currentStatus == 'Chưa xác nhận'}" class="btn-cancel" onclick="cancelOrder('${hoaDon.donHang.maDonHang}')">Hủy đơn hàng</button>
+      <button th:if="${currentStatus == 'Chưa xác nhận'}" class="btn-cancel" th:attr="onclick=|cancelOrder('${hoaDon.donHang.maDonHang}', '${hoaDon.id}')|">Hủy đơn hàng</button>
     </div>
 
     <!-- Thông tin giao hàng -->
@@ -415,12 +415,13 @@
     });
   }
 
-  // Hủy đơn hàng
-  function cancelOrder(maDonHang) {
+  function cancelOrder(maDonHang, id) { // Thêm tham số id
     Swal.fire({
       title: 'Hủy đơn hàng?',
       text: 'Bạn có chắc chắn muốn hủy đơn hàng này?',
-      icon: 'warning',
+      input: 'text',
+      inputLabel: 'Lý do hủy đơn hàng',
+      inputPlaceholder: 'Nhập lý do hủy (tùy chọn)',
       showCancelButton: true,
       confirmButtonText: 'Hủy đơn',
       cancelButtonText: 'Không',
@@ -428,12 +429,14 @@
       cancelButtonColor: '#6b7280',
     }).then((result) => {
       if (result.isConfirmed) {
-        fetch(`/dsdon-mua/api/orders/cancel/${maDonHang}`, {
+        const ghiChu = result.value || 'Khách hàng hủy đơn hàng';
+        fetch(`/dsdon-mua/api/orders/cancel/${id}`, { // Sử dụng id thay vì maDonHang
           method: 'POST',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({ ghiChu: ghiChu })
         })
                 .then((response) => {
                   if (response.ok) {

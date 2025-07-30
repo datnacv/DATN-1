@@ -57,7 +57,7 @@ public class KHDonMuaController {
                 case "cho-xac-nhan" -> "CHO_XAC_NHAN";
                 case "dang-giao" -> "DANG_GIAO";
                 case "hoan-thanh" -> "HOAN_THANH";
-                case "da-huy" -> "DA_HUY";
+                case "da-huy" -> "Hủy đơn hàng";
                 default -> "";
             };
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb);
@@ -103,7 +103,8 @@ public class KHDonMuaController {
     }
 
     @PostMapping("/api/orders/cancel/{id}")
-    public ResponseEntity<?> cancelOrder(@PathVariable("id") UUID id, Authentication authentication) {
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<?> cancelOrder(@PathVariable("id") UUID id, @RequestBody Map<String, String> request, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để hủy đơn hàng.");
         }
@@ -115,14 +116,19 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng hoặc bạn không có quyền hủy đơn hàng này.");
         }
 
-        if (!hoaDon.getTrangThai().equals("CHO_XAC_NHAN")) {
-            return ResponseEntity.badRequest().body("Chỉ có thể hủy đơn hàng ở trạng thái 'Chờ xác nhận'.");
+        String ghiChu = request.get("ghiChu");
+        if (ghiChu == null || ghiChu.trim().isEmpty()) {
+            ghiChu = "Khách hàng hủy đơn hàng";
         }
 
         try {
-            hoaDon.setTrangThai("DA_HUY");
-            hoaDonRepo.save(hoaDon);
+            // Gọi phương thức cancelOrder của HoaDonService để đồng bộ với logic admin
+            hoaDonService.cancelOrder(id, ghiChu);
             return ResponseEntity.ok("Đơn hàng đã được hủy thành công.");
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body("Chỉ có thể hủy đơn hàng ở trạng thái 'Chưa xác nhận', 'Đã xác nhận', 'Đã xác nhận Online', 'Đang xử lý Online' hoặc 'Đang vận chuyển'.");
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi xung đột đồng thời khi hủy đơn hàng. Vui lòng thử lại.");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi hủy đơn hàng: " + e.getMessage());
         }
