@@ -82,8 +82,7 @@ public class ViThanhToanController {
         NguoiDung currentUser = (NguoiDung) authentication.getPrincipal();
         UUID idNguoiDung = currentUser.getId();
 
-        viService.napTien(idNguoiDung, soTien);
-        attrs.addFlashAttribute("msg", "Nạp tiền thành công");
+        viService.napTien(idNguoiDung, soTien);attrs.addFlashAttribute("msg", "Nạp tiền thành công");
         return "redirect:/vi";
     }
 

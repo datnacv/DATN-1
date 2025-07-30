@@ -87,9 +87,16 @@ public class AdminViController {
 
         if (vi.getSoDu().compareTo(soTienRut) >= 0) {
             try {
-                // 📁 Đường dẫn tuyệt đối đến thư mục lưu ảnh
-                String userHome = System.getProperty("user.home");
-                String uploadDir = userHome + "/DATN/uploads/bang-chung/";
+                // 📁 Lấy hệ điều hành và set đường dẫn upload
+                String os = System.getProperty("os.name").toLowerCase();
+                String uploadDir;
+
+                if (os.contains("win")) {
+                    uploadDir = "C:/DATN/uploads/bang-chung/";
+                } else {
+                    String userHome = System.getProperty("user.home");
+                    uploadDir = userHome + "/DATN/uploads/bang-chung/";
+                }
 
                 // 👉 Làm sạch tên file để tránh lỗi unicode & khoảng trắng
                 String originalFileName = file.getOriginalFilename();
@@ -135,8 +142,6 @@ public class AdminViController {
             lichSu.setCreatedAt(LocalDateTime.now());
             lichSu.setMaGiaoDich(yeuCau.getMaGiaoDich());
             lichSu.setMoTa("Rút tiền về tài khoản: " + yeuCau.getSoTaiKhoan() + " (" + yeuCau.getTenNganHang() + ")");
-
-            // lưu lịch sử
             lichSuGiaoDichViRepository.save(lichSu);
         }
 

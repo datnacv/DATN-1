@@ -67,9 +67,7 @@ public class WebConfig implements WebMvcConfigurer {
             }
         } catch (IOException e) {
             throw new RuntimeException("Không thể tạo hoặc truy cập thư mục bằng chứng: " + evidenceDirPath, e);
-        }
-
-        registry.addResourceHandler("/uploads/bang-chung/**")
+        }registry.addResourceHandler("/uploads/bang-chung/**")
                 .addResourceLocations(evidenceUploadPath)
                 .setCachePeriod(0);
     }
