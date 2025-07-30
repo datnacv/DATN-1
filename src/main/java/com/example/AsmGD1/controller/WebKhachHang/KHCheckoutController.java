@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/checkout")
@@ -72,10 +73,11 @@ public class KHCheckoutController {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findByMa(voucher)
                     .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ"));
 
-            if (phieuGiamGia.getSoLuong() <= 0 || phieuGiamGia.getNgayKetThuc().isBefore(LocalDate.now())) {
+            if (phieuGiamGia.getSoLuong() <= 0 || phieuGiamGia.getNgayKetThuc().isBefore(LocalDateTime.now())) {
                 logger.warn("Voucher invalid: {}", voucher);
                 return ResponseEntity.badRequest().body(new APIResponse("Mã giảm giá đã hết hạn hoặc không còn số lượng"));
             }
+
 
             BigDecimal discount = checkoutService.calculateDiscount(phieuGiamGia);
             logger.info("Voucher applied successfully, discount: {}", discount);

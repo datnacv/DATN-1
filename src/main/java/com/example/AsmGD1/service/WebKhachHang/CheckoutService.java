@@ -128,9 +128,12 @@ public class CheckoutService {
             PhieuGiamGia voucher = phieuGiamGiaRepository.findByMa(request.getVoucher())
                     .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ"));
 
-            if (voucher.getSoLuong() <= 0 || voucher.getNgayKetThuc().isBefore(LocalDateTime.now().toLocalDate())) {
-                throw new RuntimeException("Mã giảm giá đã hết hạn hoặc không còn số lượng");
+            if (voucher.getSoLuong() <= 0
+                    || voucher.getNgayBatDau().isAfter(LocalDateTime.now())
+                    || voucher.getNgayKetThuc().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("Mã giảm giá không còn hiệu lực.");
             }
+
 
             giamGia = voucher.getGiaTriGiam().min(tongTien);
             donHang.setPhieuGiamGia(voucher);

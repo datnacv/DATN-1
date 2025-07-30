@@ -100,6 +100,25 @@ public class SecurityConfig implements ApplicationContextAware {
     }
 
     @Bean
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user").permitAll()
+                        .requestMatchers("/api/orders/**").authenticated() // Cụ thể hóa endpoint orders
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jsonAuthEntryPoint()) // Sử dụng entry point JSON cho API
+                );
+        return http.build();
+    }
+
+    @Bean
     public SecurityFilterChain employeeSecurityFilterChain(HttpSecurity http,
                                                            CustomerAccessBlockFilter blockFilter,
                                                            FaceVerificationFilter faceVerificationFilter) throws Exception {
@@ -110,6 +129,7 @@ public class SecurityConfig implements ApplicationContextAware {
                 .addFilterBefore(faceVerificationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
+                        .requestMatchers("/acvstore/vi/**").hasRole("ADMIN")
                         .requestMatchers("/acvstore/verify-success").authenticated()
 
                         // Product management - Both ADMIN and EMPLOYEE can view products
@@ -275,26 +295,13 @@ public class SecurityConfig implements ApplicationContextAware {
         return http.build();
     }
 
-    @Bean
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/api/**")
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
-                .csrf(csrf -> csrf.disable());
-        return http.build();
-    }
+
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/image/**", "/vi/**").permitAll()
+                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/image/**", "/vi/**", "/uploads/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )

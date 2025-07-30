@@ -73,8 +73,8 @@ public class ChienDichGiamGiaController {
     @GetMapping
     public String danhSach(
             @RequestParam(name = "keyword", required = false) String keyword,
-            @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(name = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(name = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(name = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "discountLevel", required = false) String discountLevel,
             @RequestParam(name = "page", defaultValue = "0") int page,
@@ -393,9 +393,10 @@ public class ChienDichGiamGiaController {
             return "Ngày kết thúc không được trước ngày bắt đầu.";
         }
 
-        if (isCreate && chienDich.getNgayBatDau().isBefore(LocalDate.now())) {
+        if (isCreate && chienDich.getNgayBatDau().isBefore(LocalDateTime.now())) {
             return "Ngày bắt đầu phải là hiện tại hoặc tương lai.";
         }
+
 
         if (chiTietIds == null || chiTietIds.isEmpty()) {
             return "Vui lòng chọn ít nhất một chi tiết sản phẩm.";
@@ -456,13 +457,14 @@ public class ChienDichGiamGiaController {
     }
 
     private String getStatus(ChienDichGiamGia chienDich) {
-        LocalDate today = LocalDate.now();
-        if (chienDich.getNgayBatDau().isAfter(today)) {
+        LocalDateTime now = LocalDateTime.now();
+        if (chienDich.getNgayBatDau().isAfter(now)) {
             return "UPCOMING";
-        } else if (chienDich.getNgayKetThuc().isBefore(today)) {
+        } else if (chienDich.getNgayKetThuc().isBefore(now)) {
             return "ENDED";
         } else {
             return "ONGOING";
         }
     }
+
 }

@@ -15,8 +15,9 @@ public class ViThanhToan {
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
-    @Column(name = "id_nguoi_dung", nullable = false)
-    private UUID idNguoiDung;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_nguoi_dung", nullable = false)
+    private NguoiDung nguoiDung;
 
     @Column(name = "so_du", nullable = false)
     private BigDecimal soDu;

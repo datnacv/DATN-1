@@ -52,7 +52,6 @@ public class ThongBaoService {
         return list != null ? list : List.of(); // tránh null
     }
 
-
     public long demSoThongBaoChuaXem(UUID idNguoiDung) {
         try {
             return chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(idNguoiDung);
@@ -62,11 +61,23 @@ public class ThongBaoService {
         }
     }
 
-
     public void danhDauDaXem(UUID idThongBao, UUID idNguoiDung) {
         chiTietThongBaoNhomRepository.findByThongBaoNhom_IdAndNguoiDung_Id(idThongBao, idNguoiDung).ifPresent(thongBao -> {
             thongBao.setDaXem(true);
             chiTietThongBaoNhomRepository.save(thongBao);
         });
+    }
+
+    public void danhDauTatCaDaXem(UUID idNguoiDung) {
+        List<ChiTietThongBaoNhom> danhSach = chiTietThongBaoNhomRepository
+                .findByNguoiDungIdOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
+
+        for (ChiTietThongBaoNhom tb : danhSach) {
+            if (!tb.isDaXem()) {
+                tb.setDaXem(true);
+            }
+        }
+
+        chiTietThongBaoNhomRepository.saveAll(danhSach);
     }
 }

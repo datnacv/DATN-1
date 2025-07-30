@@ -339,14 +339,26 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label"><i class="fas fa-calendar-alt me-2"></i>Ngày bắt đầu:</label>
-                        <input type="date" th:field="*{ngayBatDau}" class="form-control" readonly>
+                        <label class="form-label">
+                            <i class="fas fa-calendar-alt me-2"></i>Ngày bắt đầu:
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               readonly
+                               th:value="${voucher.ngayBatDau != null ? #temporals.format(voucher.ngayBatDau, 'dd/MM/yyyy HH:mm') : ''}" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label"><i class="fas fa-calendar-check me-2"></i>Ngày kết thúc:</label>
-                        <input type="date" th:field="*{ngayKetThuc}" class="form-control" readonly>
+                        <label class="form-label">
+                            <i class="fas fa-calendar-check me-2"></i>Ngày kết thúc:
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               readonly
+                               th:value="${voucher.ngayKetThuc != null ? #temporals.format(voucher.ngayKetThuc, 'dd/MM/yyyy HH:mm') : ''}" />
                     </div>
                 </div>
+
+
 
                 <div class="row mb-3">
                     <div class="col-md-12">

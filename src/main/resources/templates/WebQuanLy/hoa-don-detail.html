@@ -562,6 +562,10 @@
             }
         }
 
+        .status-canceled {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: #fff;
+        }
         .toast {
             position: fixed;
             top: 2rem;
@@ -648,6 +652,7 @@
                         </div>
                     </div>
 
+                    <!-- Trong phần action-group cho Giao hàng -->
                     <div class="action-group" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
                         <div class="action-group-label">
                             <i class="fas fa-truck"></i>
@@ -667,12 +672,18 @@
                                 <i class="fas fa-check-circle"></i> Vận chuyển thành công
                             </button>
                             <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
-                                    th:disabled="${hoaDon.trangThai != 'Vận chuyển thành công'}">
+                                    th:disabled="${currentStatus != 'Vận chuyển thành công'}"
+                                    th:style="${currentStatus == 'Hoàn thành' ? 'display: none' : ''}">
                                 <i class="fas fa-flag-checkered"></i> Hoàn thành
+                            </button>
+                            <button id="cancelButton" class="btn-custom btn-return" onclick="cancelOrder()"
+                                    th:disabled="${hoaDon.trangThai != 'Chưa xác nhận' and hoaDon.trangThai != 'Đã xác nhận' and hoaDon.trangThai != 'Đang vận chuyển'}">
+                                <i class="fas fa-times"></i> Hủy đơn hàng
                             </button>
                         </div>
                     </div>
 
+                    <!-- Trong phần action-group cho Online -->
                     <div class="action-group" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Online')}">
                         <div class="action-group-label">
                             <i class="fas fa-globe"></i>
@@ -696,8 +707,13 @@
                                 <i class="fas fa-check-circle"></i> Vận chuyển thành công
                             </button>
                             <button id="completeButton" class="btn-custom btn-complete" onclick="completeOrder()"
-                                    th:disabled="${hoaDon.trangThai != 'Vận chuyển thành công'}">
+                                    th:disabled="${currentStatus != 'Vận chuyển thành công'}"
+                                    th:style="${currentStatus == 'Hoàn thành' ? 'display: none' : ''}">
                                 <i class="fas fa-flag-checkered"></i> Hoàn thành
+                            </button>
+                            <button id="cancelButton" class="btn-custom btn-return" onclick="cancelOrder()"
+                                    th:disabled="${hoaDon.trangThai != 'Chưa xác nhận' and hoaDon.trangThai != 'Đã xác nhận Online' and hoaDon.trangThai != 'Đang xử lý Online' and hoaDon.trangThai != 'Đang vận chuyển'}">
+                                <i class="fas fa-times"></i> Hủy đơn hàng
                             </button>
                         </div>
                     </div>
@@ -715,62 +731,74 @@
                         </div>
                     </div>
 
+                    <!-- Workflow-indicator cho Giao hàng -->
                     <div class="workflow-indicator" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Chưa xác nhận' ? 'active' : 'completed'}">
+                             th:classappend="${currentStatus == 'Chưa xác nhận' ? 'active' : 'completed'}">
                             <i class="fas fa-clock"></i> Chờ xác nhận
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Đã xác nhận' ? 'active' : (hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Đã xác nhận' ? 'active' : (currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành') ? 'completed' : ''}">
                             <i class="fas fa-check"></i> Đã xác nhận
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Đang vận chuyển' ? 'active' : (hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Đang vận chuyển' ? 'active' : (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành') ? 'completed' : ''}">
                             <i class="fas fa-truck"></i> Vận chuyển
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Vận chuyển thành công' ? 'active' : hoaDon.trangThai == 'Hoàn thành' ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Vận chuyển thành công' ? 'active' : currentStatus == 'Hoàn thành' ? 'completed' : ''}">
                             <i class="fas fa-check-circle"></i> Giao thành công
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Hoàn thành' ? 'active' : ''}">
+                             th:classappend="${currentStatus == 'Hoàn thành' ? 'active' : ''}">
                             <i class="fas fa-flag-checkered"></i> Hoàn thành
+                        </div>
+                        <span class="workflow-arrow">/</span>
+                        <div class="workflow-step"
+                             th:classappend="${currentStatus == 'Hủy đơn hàng' ? 'active' : ''}">
+                            <i class="fas fa-times"></i> Hủy đơn hàng
                         </div>
                     </div>
 
+                    <!-- Workflow-indicator cho Online -->
                     <div class="workflow-indicator" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Online')}">
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Chưa xác nhận' ? 'active' : 'completed'}">
+                             th:classappend="${currentStatus == 'Chưa xác nhận' ? 'active' : 'completed'}">
                             <i class="fas fa-clock"></i> Chờ xác nhận
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Đã xác nhận Online' ? 'active' : (hoaDon.trangThai == 'Đang xử lý Online' or hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Đã xác nhận Online' ? 'active' : (currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành') ? 'completed' : ''}">
                             <i class="fas fa-check"></i> Xác nhận Online
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Đang xử lý Online' ? 'active' : (hoaDon.trangThai == 'Đang vận chuyển' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Đang xử lý Online' ? 'active' : (currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành') ? 'completed' : ''}">
                             <i class="fas fa-cog"></i> Xử lý Online
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Đang vận chuyển' ? 'active' : (hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành') ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Đang vận chuyển' ? 'active' : (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành') ? 'completed' : ''}">
                             <i class="fas fa-truck"></i> Vận chuyển
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Vận chuyển thành công' ? 'active' : hoaDon.trangThai == 'Hoàn thành' ? 'completed' : ''}">
+                             th:classappend="${currentStatus == 'Vận chuyển thành công' ? 'active' : currentStatus == 'Hoàn thành' ? 'completed' : ''}">
                             <i class="fas fa-check-circle"></i> Giao thành công
                         </div>
                         <span class="workflow-arrow">→</span>
                         <div class="workflow-step"
-                             th:classappend="${hoaDon.trangThai == 'Hoàn thành' ? 'active' : ''}">
+                             th:classappend="${currentStatus == 'Hoàn thành' ? 'active' : ''}">
                             <i class="fas fa-flag-checkered"></i> Hoàn thành
+                        </div>
+                        <span class="workflow-arrow">/</span>
+                        <div class="workflow-step"
+                             th:classappend="${currentStatus == 'Hủy đơn hàng' ? 'active' : ''}">
+                            <i class="fas fa-times"></i> Hủy đơn hàng
                         </div>
                     </div>
                 </div>
@@ -808,7 +836,7 @@
                         <span class="info-label">
                             <i class="fas fa-info-circle"></i> Trạng thái:
                         </span>
-                        <span id="statusBadge" class="status-badge"></span>
+                        <span id="statusBadge" class="status-badge" th:text="${currentStatus}"></span>
                     </div>
 
                     <div id="editForm" class="edit-form" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: var(--bg-medium); border-radius: 12px; border: 1px solid var(--border-light);">
@@ -1012,7 +1040,7 @@
 
         // Update status badge
         const statusElement = document.getElementById("statusBadge");
-        let trangThaiGiaoHang = trangThai || "Chưa xác nhận";
+        let trangThaiGiaoHang = /*[[${currentStatus}]]*/ "Chưa xác nhận";
         statusElement.className = `status-badge ${
             trangThaiGiaoHang === "Chưa xác nhận" ? "status-pending" :
                 trangThaiGiaoHang === "Đã xác nhận" ? "status-confirmed-bg" :
@@ -1023,7 +1051,9 @@
                                     trangThaiGiaoHang === "Đã xác nhận Online" ? "status-online-confirmed" :
                                         trangThaiGiaoHang === "Đang xử lý Online" ? "status-online-processing" :
                                             trangThaiGiaoHang === "Vận chuyển thành công" ? "status-online-delivered" :
-                                                "status-completed-bg"
+                                                trangThaiGiaoHang === "Hủy đơn hàng" ? "status-canceled" :
+                                                    trangThaiGiaoHang === "Hoàn thành" ? "status-completed-bg" :
+                                                        "status-completed-bg"
         }`;
         statusElement.textContent = trangThaiGiaoHang.normalize("NFC");
     });
@@ -1041,6 +1071,46 @@
             toast.classList.remove("show");
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+    }
+
+    function pollOrderStatus() {
+        setInterval(() => {
+            $.ajax({
+                url: `/acvstore/hoa-don/status/${hoaDonId}`,
+                type: "GET",
+                success: function(response) {
+                    if (response.currentStatus !== trangThai) {
+                        showToast(`Trạng thái đơn hàng đã thay đổi: ${response.currentStatus}`, "success");
+                        window.location.reload();
+                    }
+                },
+                error: function(error) {
+                    console.error("Lỗi khi kiểm tra trạng thái:", error);
+                }
+            });
+        }, 30000); // Kiểm tra mỗi 30 giây
+    }
+
+    function cancelOrder() {
+        if (confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) {
+            $("#invoiceSpinner").show();
+            $.ajax({
+                url: `/acvstore/hoa-don/cancel/${hoaDonId}`,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ ghiChu: "Khách không muốn nhận hàng nữa" }),
+                success: function (response) {
+                    showToast(response.message, "success");
+                    window.location.reload();
+                },
+                error: function (error) {
+                    showToast("Lỗi khi hủy đơn hàng: " + (error.responseJSON?.error || "Không xác định"), "error");
+                },
+                complete: function () {
+                    $("#invoiceSpinner").hide();
+                }
+            });
+        }
     }
 
     function confirmHoaDon() {

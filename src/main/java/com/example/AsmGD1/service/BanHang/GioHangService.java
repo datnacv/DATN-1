@@ -303,8 +303,10 @@ public class GioHangService {
                     ", GiaTriGiamToiThieu: " + phieu.getGiaTriGiamToiThieu() + ", Loai: " + phieu.getLoai());
 
             // Kiểm tra tính hợp lệ của voucher
-            boolean isValidDate = (phieu.getNgayBatDau() == null || !phieu.getNgayBatDau().isAfter(today)) &&
-                    (phieu.getNgayKetThuc() == null || !phieu.getNgayKetThuc().isBefore(today));
+            LocalDateTime now = LocalDateTime.now();
+            boolean isValidDate = (phieu.getNgayBatDau() == null || !phieu.getNgayBatDau().isAfter(now)) &&
+                    (phieu.getNgayKetThuc() == null || !phieu.getNgayKetThuc().isBefore(now));
+
             boolean hasQuantity = phieu.getSoLuong() == null || phieu.getSoLuong() > 0;
             boolean meetsMinimum = phieu.getGiaTriGiamToiThieu() == null ||
                     tongTienHang.compareTo(phieu.getGiaTriGiamToiThieu()) >= 0;

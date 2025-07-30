@@ -40,13 +40,14 @@ public class PhieuGiamGia {
 //    @Column(name = "cong_khai")
 //    private Boolean congKhai;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     @Column(name = "ngay_bat_dau")
-    private LocalDate ngayBatDau;
+    private LocalDateTime ngayBatDau;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     @Column(name = "ngay_ket_thuc")
-    private LocalDate ngayKetThuc;
+    private LocalDateTime ngayKetThuc;
+
 
 
     @Column(name = "thoi_gian_tao")

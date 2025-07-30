@@ -8,6 +8,7 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
+import com.example.AsmGD1.service.SanPham.SanPhamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ public class KhachhangSanPhamService {
 
     @Autowired
     private LichSuTimKiemRepository lichSuTimKiemRepository;
+
+    @Autowired
+    private SanPhamService sanPhamService;
 
     private static final Logger logger = LoggerFactory.getLogger(KhachhangSanPhamService.class);
 
@@ -259,4 +263,12 @@ public class KhachhangSanPhamService {
                 .map(this::convertToSanPhamDto)
                 .collect(Collectors.toList());
     }
+
+    public List<SanPhamDto> getSanPhamLienQuan(UUID sanPhamId, int limit) {
+        List<SanPham> sanPhams = sanPhamService.getSanPhamLienQuan(sanPhamId, limit);
+        return sanPhams.stream()
+                .map(this::convertToSanPhamDto)
+                .collect(Collectors.toList());
+    }
+
 }

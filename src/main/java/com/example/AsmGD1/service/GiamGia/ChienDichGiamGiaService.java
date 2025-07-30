@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,7 +20,7 @@ public interface ChienDichGiamGiaService {
     void capNhatChienDichKemChiTiet(ChienDichGiamGia chienDich, List<UUID> danhSachChiTietSanPham);
 
     // Lọc chiến dịch theo bộ lọc
-    Page<ChienDichGiamGia> locChienDich(String keyword, LocalDate startDate, LocalDate endDate,
+    Page<ChienDichGiamGia> locChienDich(String keyword, LocalDateTime startDate, LocalDateTime endDate,
                                         String status, String discountLevel, Pageable pageable);
 
     // Tìm chi tiết sản phẩm theo sản phẩm
