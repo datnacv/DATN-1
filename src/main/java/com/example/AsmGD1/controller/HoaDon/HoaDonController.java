@@ -80,12 +80,11 @@ public class HoaDonController {
                         hoaDonInfo.put("id", row.getId());
                         hoaDonInfo.put("maHoaDon", row.getDonHang().getMaDonHang());
                         hoaDonInfo.put("tenKhachHang", row.getNguoiDung() != null ? row.getNguoiDung().getHoTen() : "Khách lẻ");
-                        // Lấy tên nhân viên từ trường nhanVien của HoaDon
                         hoaDonInfo.put("tenNhanVien", row.getNhanVien() != null ? row.getNhanVien().getHoTen() : "Không rõ");
                         hoaDonInfo.put("tongTien", row.getTongTien());
                         hoaDonInfo.put("thoiGianTao", row.getNgayTao());
                         hoaDonInfo.put("phuongThucThanhToan", row.getPhuongThucThanhToan() != null ? row.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
-                        hoaDonInfo.put("trangThai", row.getTrangThai());
+                        hoaDonInfo.put("trangThai", hoaDonService.getCurrentStatus(row));
                         hoaDonInfo.put("phuongThucBanHang", row.getDonHang().getPhuongThucBanHang());
                         return hoaDonInfo;
                     })
@@ -122,11 +121,22 @@ public class HoaDonController {
             }
 
             model.addAttribute("hoaDon", hoaDon);
+            model.addAttribute("currentStatus", hoaDonService.getCurrentStatus(hoaDon));
             return "WebQuanLy/hoa-don-detail";
         } catch (Exception e) {
             model.addAttribute("error", "Lỗi khi tải chi tiết hóa đơn: " + e.getMessage());
             return "error";
         }
+    }
+
+    @GetMapping("/status/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> getOrderStatus(@PathVariable UUID id) {
+        HoaDon hoaDon = hoaDonService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+        Map<String, String> response = new HashMap<>();
+        response.put("currentStatus", hoaDonService.getCurrentStatus(hoaDon));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/delete/{id}")
@@ -204,6 +214,34 @@ public class HoaDonController {
             return ResponseEntity.badRequest()
                     .contentType(MediaType.TEXT_PLAIN)
                     .body(("Lỗi khi tải PDF: " + e.getMessage()).getBytes());
+        }
+    }
+
+    @PostMapping("/cancel/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> cancelOrder(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            HoaDon hoaDon = hoaDonService.findById(uuid)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+
+            // Gọi service để hủy đơn hàng
+            hoaDonService.cancelOrder(uuid, ghiChu);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được hủy thành công.");
+            response.put("currentStatus", "Hủy đơn hàng");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi hủy đơn hàng: " + e.getMessage()));
         }
     }
 
