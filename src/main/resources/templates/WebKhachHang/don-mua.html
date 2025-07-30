@@ -2,22 +2,44 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Đơn mua của tôi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ACV Store - Đơn mua của tôi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        button[disabled] {
+            pointer-events: none;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .navbar { background: linear-gradient(to right, #153054, #1e4066); }
+        .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
+        .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        body { padding-top: 100px; }
+        @media (max-width: 640px) {
+            .dropdown-menu { width: 100%; left: 0; }
+            body { padding-top: 80px; }
+        }
         .order-card {
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
             margin-bottom: 20px;
             padding: 15px;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
+        .order-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+        }
         .order-status {
             font-weight: bold;
-            color: #f97316;
+            color: #153054;
         }
-
         .order-product-img {
             width: 70px;
             height: 70px;
@@ -25,110 +47,105 @@
             border-radius: 5px;
             margin-right: 10px;
         }
-
         .nav-tabs .nav-link.active {
-            background-color: #f97316;
+            background-color: #153054;
             color: white;
         }
-
-        .text-orange-600 {
-            color: #f97316 !important;
+        .nav-tabs .nav-link {
+            color: #153054;
         }
-
+        .nav-tabs .nav-link:hover {
+            color: #1e4066;
+        }
+        .text-orange-600 {
+            color: #153054 !important;
+        }
         .rounded-pill {
             border-radius: 50rem !important;
         }
+        .btn-outline-primary {
+            border-color: #153054;
+            color: #153054;
+        }
+        .btn-outline-primary:hover {
+            background-color: #153054;
+            color: white;
+        }
     </style>
 </head>
-<body class="bg-light">
+<body class="bg-gray-100">
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg sticky-top shadow-sm" style="background-color: #f97316;">
-    <div class="container d-flex justify-content-between align-items-center py-2">
-        <!-- Logo -->
-        <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
+<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+    <marquee behavior="scroll" direction="left" scrollamount="5">
+        🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+    </marquee>
+</div>
 
-        <!-- Dropdown Danh mục -->
-        <div class="dropdown me-3">
-            <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                Danh mục
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+    <div class="container mx-auto flex items-center justify-between py-2 px-4">
+        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+        <div class="relative dropdown">
+            <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none">
+                Danh mục <i class="fas fa-caret-down"></i>
             </button>
-            <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="/category/nam">Thời trang Nam</a></li>
-                <li><a class="dropdown-item" href="/category/nu">Thời trang Nữ</a></li>
-                <li><a class="dropdown-item" href="/category/phu-kien">Phụ kiện</a></li>
-                <li><a class="dropdown-item" href="/category/gia-dung">Gia dụng</a></li>
-            </ul>
+            <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                <a href="/category/nam" class="block px-4 py-2 hover:bg-[#e0ebf5]">Thời trang Nam</a>
+                <a href="/category/nu" class="block px-4 py-2 hover:bg-[#e0ebf5]">Thời trang Nữ</a>
+                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-[#e0ebf5]">Phụ kiện</a>
+                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-[#e0ebf5]">Gia dụng</a>
+            </div>
         </div>
-
-        <!-- Tìm kiếm -->
-        <form class="flex-grow-1 mx-3" style="max-width: 600px;">
-            <div class="input-group">
-                <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm...">
-                <button class="btn btn-light rounded-end-pill px-4" type="submit">
-                    <i class="fas fa-search text-orange-600"></i>
+        <div class="flex-1 mx-4 max-w-2xl">
+            <div class="relative">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-3 py-1 rounded-full">
+                    <i class="fas fa-search"></i>
                 </button>
             </div>
-        </form>
-
-        <!-- Giỏ hàng + Người dùng -->
-        <div class="d-flex align-items-center gap-3">
-            <!-- Giỏ hàng -->
-            <a th:href="@{/cart}" class="text-white fs-5 position-relative">
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="/cart" class="text-white text-xl relative">
                 <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
             </a>
-
-            <!-- Nếu đã đăng nhập -->
             <div th:if="${user != null}" class="dropdown">
-                <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none dropdown-toggle" type="button" data-bs-toggle="dropdown">
                     <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
-                    <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
-                </ul>
+                <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                    <a href="/account/profile" class="block px-4 py-2 hover:bg-[#e0ebf5]">Tài khoản của tôi</a>
+                    <a href="/dsdon-mua" class="block px-4 py-2 hover:bg-[#e0ebf5]">Đơn mua</a>
+                    <a href="/vi" class="block px-4 py-2 hover:bg-[#e0ebf5]">Ví thanh toán</a>
+                    <a href="/customers/logout" class="block px-4 py-2 hover:bg-[#e0ebf5] text-danger">Đăng xuất</a>
+                </div>
             </div>
-
-            <!-- Nếu chưa đăng nhập -->
-            <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3">
-                Đăng nhập
-            </a>
+            <a th:if="${user == null}" href="/customers/login" class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none">Đăng nhập</a>
         </div>
     </div>
 </nav>
 
-<!-- Nội dung đơn mua -->
-<div class="container mt-3">
-    <h3>Đơn mua của bạn</h3>
+<div class="container mx-auto py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Đơn mua của bạn</h1>
 
-    <!-- Tabs trạng thái -->
-    <ul class="nav nav-tabs mt-3" id="orderTabs">
+    <ul class="nav nav-tabs mb-4" id="orderTabs">
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'"
-               th:href="@{/dsdon-mua(status='tat-ca')}">Tất cả</a>
+            <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'" th:href="@{/dsdon-mua(status='tat-ca')}">Tất cả</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'"
-               th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chờ xác nhận</a>
+            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chờ xác nhận</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'dang-giao'} ? ' active'"
-               th:href="@{/dsdon-mua(status='dang-giao')}">Đang giao</a>
+            <a class="nav-link" th:classappend="${status == 'dang-giao'} ? ' active'" th:href="@{/dsdon-mua(status='dang-giao')}">Đang giao</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'hoan-thanh'} ? ' active'"
-               th:href="@{/dsdon-mua(status='hoan-thanh')}">Hoàn thành</a>
+            <a class="nav-link" th:classappend="${status == 'hoan-thanh'} ? ' active'" th:href="@{/dsdon-mua(status='hoan-thanh')}">Hoàn thành</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'da-huy'} ? ' active'"
-               th:href="@{/dsdon-mua(status='da-huy')}">Đã hủy</a>
+            <a class="nav-link" th:classappend="${status == 'da-huy'} ? ' active'" th:href="@{/dsdon-mua(status='da-huy')}">Đã hủy</a>
         </li>
     </ul>
 
-    <!-- Danh sách đơn hàng -->
-    <div class="mt-4" th:if="${danhSachHoaDon != null and !#lists.isEmpty(danhSachHoaDon)}">
+    <div th:if="${danhSachHoaDon != null and !#lists.isEmpty(danhSachHoaDon)}">
         <div th:each="hoaDon : ${danhSachHoaDon}" class="order-card">
             <div class="d-flex justify-content-between">
                 <div>
@@ -150,20 +167,128 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <strong>Tổng tiền:</strong>
-                    <span class="text-danger fs-5" th:text="${hoaDon.formattedTongTien} + ' đ'"></span>
+                    <span class="text-[#153054] fs-5" th:text="${hoaDon.formattedTongTien} + ' đ'"></span>
                 </div>
                 <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
             </div>
         </div>
     </div>
 
-    <!-- Nếu không có đơn -->
     <div th:if="${danhSachHoaDon == null or #lists.isEmpty(danhSachHoaDon)}" class="text-center mt-5">
-        <p>Không có đơn hàng nào.</p>
+        <p class="text-gray-600">Không có đơn hàng nào.</p>
+        <a href="/" class="text-[#153054] font-semibold hover:text-[#1e4066] mt-2 inline-block">Quay lại trang chủ</a>
     </div>
-
 </div>
 
+<!-- Floating Chatbot Icon -->
+<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+    <i class="fas fa-robot fa-lg text-white"></i>
+</div>
+
+<!-- Chatbot Box -->
+<div id="chatbot-box" style="
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 420px;
+    max-height: 620px;
+    background: #fff;
+    border-radius: 7px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 10000;
+    font-family: 'Segoe UI', sans-serif;
+  ">
+    <div style="background-color: #153054; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+        <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
+        <div style="font-weight: bold;">ACV Bot</div>
+        <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">×</span>
+    </div>
+    <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;">
+        <div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>
+    </div>
+    <div id="quick-replies" class="flex flex-wrap gap-2 p-4">
+        <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Sản phẩm mới nhất</button>
+        <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Kiểm tra đơn hàng</button>
+        <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Chính sách đổi trả</button>
+    </div>
+    <div style="padding: 10px; border-top: 1px solid #eee;">
+        <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #ccc;
+        border-radius: 24px;
+        font-size: 15px;
+        outline: none;
+        transition: border 0.2s ease-in-out;
+      ">
+    </div>
+</div>
+
+<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+            <h3 class="text-lg font-bold mb-4">ACV Store</h3>
+            <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+            <div class="mt-4">
+                <h4 class="text-sm font-semibold">Đăng ký nhận tin</h4>
+                <form class="flex gap-2 mt-2">
+                    <input type="email" class="w-full p-2 rounded border" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Đăng ký</button>
+                </form>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
+            <ul class="space-y-2">
+                <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-blue-300">Tủ đồ mùa hè</a></li>
+                <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+            <p class="text-sm">Email: datn.acv@gmail.com</p>
+            <p class="text-sm">Hotline: 1900 8686</p>
+            <div class="flex space-x-4 mt-4">
+                <a href="#" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+</footer>
+
+<button id="back-to-top" class="fixed bottom-20 right-20 bg-blue-600 text-white p-3 rounded-full shadow-lg hidden" aria-label="Quay lại đầu trang">
+    <i class="fas fa-arrow-up"></i>
+</button>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Cập nhật số lượng giỏ hàng
+    async function updateCartCount() {
+        try {
+            const response = await fetch('/api/cart', { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
+                document.getElementById('cart-count').textContent = cartCount;
+            } else if (response.status === 401) {
+                document.getElementById('cart-count').textContent = 0;
+            }
+        } catch (error) {
+            console.error('Lỗi khi cập nhật số lượng giỏ hàng:', error);
+        }
+    }
+
+    // Khởi tạo trang
+    document.addEventListener('DOMContentLoaded', () => {
+        updateCartCount();
+    });
+</script>
 </body>
 </html>
