@@ -1,5 +1,7 @@
 package com.example.AsmGD1.controller.ThongBao;
 
+import com.example.AsmGD1.dto.ThongBao.ThongBaoDTO;
+import com.example.AsmGD1.entity.ChiTietThongBaoNhom;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
@@ -9,13 +11,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/acvstore/thong-bao")
@@ -29,29 +33,49 @@ public class ThongBaoController {
 
     @Autowired
     private NguoiDungService nguoiDungService;
+    @GetMapping("/load")
+    @ResponseBody
+    public ResponseEntity<?> taiDanhSachThongBao(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof NguoiDung)) {
+            return ResponseEntity.status(401).body("Người dùng chưa đăng nhập");
+        }
+
+        NguoiDung user = (NguoiDung) authentication.getPrincipal();
+        List<ChiTietThongBaoNhom> danhSach = thongBaoService.layThongBaoTheoNguoiDung(user.getId());
+
+        List<ThongBaoDTO> dtoList = danhSach.stream()
+                .map(ThongBaoDTO::new)
+                .collect(Collectors.toList());
+
+        long soChuaDoc = danhSach.stream().filter(tb -> !tb.isDaXem()).count();
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("notifications", dtoList);
+        response.put("unreadCount", soChuaDoc);
+
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/xem")
-    public String hienThiThongBao(Model model, Principal principal) {
+    @ResponseBody
+    public ResponseEntity<?> hienThiThongBao(Principal principal) {
         Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
+        Map<String, Object> response = new HashMap<>();
 
         if (optionalNguoiDung.isPresent()) {
             NguoiDung nguoiDung = optionalNguoiDung.get();
-            model.addAttribute("notifications", thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId()));
-            model.addAttribute("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            response.put("notifications", thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId()));
+            response.put("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-                NguoiDung user = (NguoiDung) auth.getPrincipal();
-                model.addAttribute("user", user);
-            }
+            NguoiDung user = (auth != null && auth.getPrincipal() instanceof NguoiDung) ? (NguoiDung) auth.getPrincipal() : null;
+            response.put("user", user != null ? user : new NguoiDung());
+            return ResponseEntity.ok(response);
         } else {
-            model.addAttribute("notifications", null);
-            model.addAttribute("unreadCount", 0);
-            model.addAttribute("user", null);
+            response.put("notifications", null);
+            response.put("unreadCount", 0);
+            response.put("user", null);
+            return ResponseEntity.ok(response);
         }
-
-        return "fragments/accountDropdown :: accountDropdown";
     }
 
     @PostMapping("/danh-dau-da-xem")
@@ -62,6 +86,20 @@ public class ThongBaoController {
         if (optionalNguoiDung.isPresent()) {
             NguoiDung nguoiDung = optionalNguoiDung.get();
             thongBaoService.danhDauDaXem(idThongBao, nguoiDung.getId());
+            return ResponseEntity.ok().build();
+        } else {
+            return ResponseEntity.badRequest().body("Không tìm thấy người dùng.");
+        }
+    }
+
+    @PostMapping("/danh-dau-tat-ca")
+    @ResponseBody
+    public ResponseEntity<?> danhDauTatCaThongBaoDaXem(Principal principal) {
+        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
+
+        if (optionalNguoiDung.isPresent()) {
+            NguoiDung nguoiDung = optionalNguoiDung.get();
+            thongBaoService.danhDauTatCaDaXem(nguoiDung.getId());
             return ResponseEntity.ok().build();
         } else {
             return ResponseEntity.badRequest().body("Không tìm thấy người dùng.");
