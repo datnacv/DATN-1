@@ -104,7 +104,7 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user").permitAll()
+                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet", "/api/san-pham/ban-chay", "/api/san-pham/moi-nhat").permitAll()
                         .requestMatchers("/api/orders/**").authenticated() // Cụ thể hóa endpoint orders
                         .anyRequest().authenticated()
                 )
