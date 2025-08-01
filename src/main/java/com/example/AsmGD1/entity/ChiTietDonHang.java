@@ -46,4 +46,11 @@ public class ChiTietDonHang {
     // Trường mới để lưu giá đã định dạng
     @Transient
     private String formattedGia;
+
+
+    @Transient
+    private String formattedThanhTien;
+
+
+
 }

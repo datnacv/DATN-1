@@ -401,6 +401,7 @@ public class HoaDonService {
             dto.setDiaChi(hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getChiTietDiaChi() != null ? hoaDon.getNguoiDung().getChiTietDiaChi() : hoaDon.getGhiChu() != null ? hoaDon.getGhiChu() : "Không rõ");
             dto.setTongTienHang(hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
             dto.setTongTien(hoaDon.getTongTien());
+            dto.setTienGiam(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO); // Thêm dòng này
             dto.setPhiVanChuyen(hoaDon.getDonHang().getPhiVanChuyen() != null ? hoaDon.getDonHang().getPhiVanChuyen() : BigDecimal.ZERO);
             dto.setPhuongThucThanhToan(hoaDon.getPhuongThucThanhToan() != null ? hoaDon.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
             dto.setTrangThaiThanhToan(hoaDon.getTrangThai());

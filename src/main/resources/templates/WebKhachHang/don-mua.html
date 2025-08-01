@@ -133,7 +133,7 @@
             <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'" th:href="@{/dsdon-mua(status='tat-ca')}">Tất cả</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chờ xác nhận</a>
+            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chưa xác nhận</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" th:classappend="${status == 'da-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='da-xac-nhan')}">Đã xác nhận</a>
@@ -170,14 +170,14 @@
                 <div>
                     <div th:text="${chiTiet.tenSanPham}"></div>
                     <small>Số lượng: <span th:text="${chiTiet.soLuong}"></span></small><br/>
-                    <small>Giá: <span th:text="${chiTiet.formattedGia} + ' đ'"></span></small>
+                    <small>Giá: <span th:text="${chiTiet.formattedGia} + ' VNĐ'"></span></small>
                 </div>
             </div>
             <hr>
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <strong>Tổng tiền:</strong>
-                    <span class="text-[#153054] fs-5" th:text="${hoaDon.formattedTongTien} + ' đ'"></span>
+                    <span class="text-[#153054] fs-5" th:text="${hoaDon.formattedTongTien} + ' VNĐ'"></span>
                 </div>
                 <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
             </div>

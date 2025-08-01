@@ -251,8 +251,8 @@
           </div>
         </td>
         <td th:text="${chiTiet.soLuong}"></td>
-        <td th:text="${chiTiet.formattedGia} + ' VNĐ'"></td>
-        <td th:text="${#numbers.formatDecimal(chiTiet.gia * chiTiet.soLuong, 0, 0, 'COMMA')} + ' VNĐ'"></td>
+        <td><span class="price" th:attr="data-value=${chiTiet.gia}"></span></td>
+        <td><span class="price" th:attr="data-value=${chiTiet.gia * chiTiet.soLuong}"></span></td>
         <td th:text="${chiTiet.ghiChu != null ? chiTiet.ghiChu : 'Không có'}"></td>
       </tr>
       </tbody>
@@ -263,11 +263,11 @@
       <h4 class="font-bold mb-3">Thông tin thanh toán</h4>
       <div class="payment-info">
         <span class="payment-label">Phí vận chuyển</span>
-        <span class="payment-value" th:text="${hoaDon.donHang.phiVanChuyen != null ? #numbers.formatDecimal(hoaDon.donHang.phiVanChuyen, 0, 0, 'COMMA') + ' VNĐ' : '36,501 VNĐ'}"></span>
+        <span class="payment-value price" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 36501}"></span>
       </div>
       <div class="payment-info">
         <span class="payment-label">Giảm giá</span>
-        <span class="payment-value" th:text="${hoaDon.donHang.tienGiam != null ? #numbers.formatDecimal(hoaDon.donHang.tienGiam, 0, 0, 'COMMA') + ' VNĐ' : '0 VNĐ'}"></span>
+        <span class="payment-value" id="tienGiam" th:attr="data-value=${hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0}"></span>
       </div>
       <div class="payment-info" th:if="${hoaDon.trangThai == 'Hoàn trả'}">
         <span class="payment-label">Trạng thái hoàn trả</span>
@@ -279,7 +279,7 @@
     <div class="mt-4 payment-summary">
       <div class="payment-info total-row">
         <span class="payment-label">Tổng tiền</span>
-        <span class="payment-value" th:text="${hoaDon.formattedTongTien} + ' VNĐ'"></span>
+        <span class="payment-value price" th:attr="data-value=${hoaDon.tongTien}"></span>
       </div>
       <div class="payment-info">
         <span class="payment-label">Trạng thái thanh toán</span>
@@ -329,10 +329,37 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-  // Format number to VND
-  function formatVND(number) {
-    return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(number) + ' VNĐ';
+  // Format number for display
+  function formatVND(value, isDiscount = false) {
+    if (value == null || isNaN(value)) {
+      return isDiscount ? 'Không có giảm giá' : '0 VNĐ';
+    }
+    value = parseFloat(value);
+    if (isDiscount) {
+      if (value === 0) {
+        return 'Không có giảm giá';
+      } else if (value <= 100) {
+        return value + '%';
+      }
+    }
+    return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(value) + ' VNĐ';
   }
+
+  // Apply formatting on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    // Format discount (tienGiam)
+    const tienGiamElement = document.getElementById('tienGiam');
+    if (tienGiamElement) {
+      const value = parseFloat(tienGiamElement.getAttribute('data-value')) || 0;
+      tienGiamElement.textContent = formatVND(value, true);
+    }
+
+    // Format other price fields
+    document.querySelectorAll('.price').forEach(element => {
+      const value = parseFloat(element.getAttribute('data-value')) || 0;
+      element.textContent = formatVND(value);
+    });
+  });
 
   // Authentication check
   window.addEventListener('load', async () => {
