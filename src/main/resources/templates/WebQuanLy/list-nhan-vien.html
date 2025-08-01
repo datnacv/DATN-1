@@ -12,7 +12,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         /* ===== MODERN DESIGN SYSTEM ===== */
         :root {
-            --primary-black: #000000;
+            --primary-black: #153054;
             --soft-black: #1a1a1a;
             --medium-black: #333333;
             --light-black: #666666;
@@ -21,10 +21,10 @@
             --light-gray: #f5f5f5;
             --border-gray: #e0e0e0;
             --text-gray: #757575;
-            --success-green: #000000;
+            --success-green: #22c55e;
             --danger-red: #ff4444;
             --warning-orange: #ffbb33;
-            --info-blue: #070707;
+            --info-blue: #153054;
 
             /* Shadows */
             --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
@@ -86,7 +86,7 @@
         /* ===== LAYOUT ===== */
         .content {
             margin-left: 260px;
-            padding: 70px;
+            padding: 80px;
             min-height: 100vh;
             background: var(--pure-white);
             max-height: 100vh;
@@ -119,12 +119,15 @@
             position: relative;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px; /* Increased spacing between icon and text */
         }
 
         .page-title i {
-            font-size: 2rem;
-            opacity: 0.8;
+            font-size: 1.5rem; /* Reduced icon size */
+            background: var(--primary-black);
+            color: var(--pure-white);
+            padding: 8px; /* Adjusted padding to fit smaller size */
+            border-radius: 8px;
         }
 
         /* ===== CARDS ===== */
@@ -183,7 +186,7 @@
 
         .form-control:focus, .form-select:focus {
             border-color: var(--primary-black);
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
             background: var(--pure-white);
             outline: none;
         }
@@ -246,20 +249,20 @@
         }
 
         .btn-primary:hover {
-            background: var(--soft-black);
+            background: #1e4a7a;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
             color: var(--pure-white);
         }
 
         .btn-success {
-            background: var(--success-green);
+            background: var(--primary-black);
             color: var(--pure-white);
             box-shadow: var(--shadow-sm);
         }
 
         .btn-success:hover {
-            background: #0c0c0c;
+            background: #1e4a7a;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
             color: var(--pure-white);
@@ -709,7 +712,7 @@
         }
 
         .scroll-to-top:hover {
-            background: var(--soft-black);
+            background: #1e4a7a;
             transform: translateY(-3px);
             box-shadow: var(--shadow-xl);
         }
@@ -846,12 +849,12 @@
                                     th:disabled="${!isAdmin}">
                                 <i class="fa-solid fa-edit"></i>
                             </button>
-<!--                            <button type="button" class="btn btn-danger btn-sm btn-action"-->
-<!--                                    data-bs-toggle="modal"-->
-<!--                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}"-->
-<!--                                    th:disabled="${!isAdmin}">-->
-<!--                                <i class="fa-solid fa-trash"></i>-->
-<!--                            </button>-->
+                            <!--                            <button type="button" class="btn btn-danger btn-sm btn-action"-->
+                            <!--                                    data-bs-toggle="modal"-->
+                            <!--                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}"-->
+                            <!--                                    th:disabled="${!isAdmin}">-->
+                            <!--                                <i class="fa-solid fa-trash"></i>-->
+                            <!--                            </button>-->
                         </td>
                     </tr>
                     </tbody>

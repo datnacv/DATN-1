@@ -54,9 +54,12 @@ public class KHDonMuaController {
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungId(nguoiDung.getId());
         } else {
             String statusDb = switch (status) {
-                case "cho-xac-nhan" -> "CHO_XAC_NHAN";
-                case "dang-giao" -> "DANG_GIAO";
-                case "hoan-thanh" -> "HOAN_THANH";
+                case "cho-xac-nhan" -> "Chưa xác nhận";
+                case "da-xac-nhan" -> "Đã xác nhận Online";
+                case "dang-xu-ly-online" -> "Đang xử lý Online";
+                case "dang-van-chuyen" -> "Đang vận chuyển";
+                case "van-chuyen-thanh-cong" -> "Vận chuyển thành công";
+                case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
                 default -> "";
             };
