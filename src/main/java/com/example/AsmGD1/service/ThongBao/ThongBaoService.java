@@ -8,6 +8,9 @@ import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -16,6 +19,7 @@ import java.util.UUID;
 
 @Service
 public class ThongBaoService {
+
     @Autowired
     private ThongBaoNhomRepository thongBaoNhomRepository;
 
@@ -47,9 +51,18 @@ public class ThongBaoService {
         }
     }
 
-    public List<ChiTietThongBaoNhom> layThongBaoTheoNguoiDung(UUID idNguoiDung) {
-        List<ChiTietThongBaoNhom> list = chiTietThongBaoNhomRepository.findByNguoiDungIdOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
-        return list != null ? list : List.of(); // tránh null
+    public List<ChiTietThongBaoNhom> layThongBaoTheoNguoiDung(UUID idNguoiDung, int page, int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("thongBaoNhom.thoiGianTao").descending());
+            List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository
+                    .findByNguoiDungId(idNguoiDung, pageable)
+                    .getContent();
+            System.out.println("Số thông báo trả về (layThongBaoTheoNguoiDung): " + result.size());
+            return result;
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy thông báo: " + e.getMessage());
+            return List.of();
+        }
     }
 
     public long demSoThongBaoChuaXem(UUID idNguoiDung) {
@@ -71,13 +84,23 @@ public class ThongBaoService {
     public void danhDauTatCaDaXem(UUID idNguoiDung) {
         List<ChiTietThongBaoNhom> danhSach = chiTietThongBaoNhomRepository
                 .findByNguoiDungIdOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
-
         for (ChiTietThongBaoNhom tb : danhSach) {
             if (!tb.isDaXem()) {
                 tb.setDaXem(true);
             }
         }
-
         chiTietThongBaoNhomRepository.saveAll(danhSach);
+    }
+
+    public List<ChiTietThongBaoNhom> lay5ThongBaoMoiNhat(UUID idNguoiDung) {
+        try {
+            Pageable top5 = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "thongBaoNhom.thoiGianTao"));
+            List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository.findByNguoiDungId(idNguoiDung, top5).getContent();
+            System.out.println("Số thông báo trả về (lay5ThongBaoMoiNhat): " + result.size()); // Debug
+            return result;
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy 5 thông báo mới nhất: " + e.getMessage());
+            return List.of();
+        }
     }
 }
