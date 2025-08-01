@@ -8,6 +8,7 @@ import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -104,7 +105,15 @@ public class ChiTietGioHangService {
     }
 
     // ✅ THÊM MỚI: Xóa toàn bộ chi tiết giỏ hàng theo ID giỏ hàng
+    @Transactional
     public void clearGioHang(UUID gioHangId) {
+        // Xóa tất cả chi tiết giỏ hàng
         chiTietGioHangRepository.deleteByGioHang_Id(gioHangId);
+
+        // Cập nhật tổng tiền của giỏ hàng về 0
+        GioHang gioHang = gioHangRepository.findById(gioHangId)
+                .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
+        gioHang.setTongTien(BigDecimal.ZERO);
+        gioHangRepository.save(gioHang);
     }
 }

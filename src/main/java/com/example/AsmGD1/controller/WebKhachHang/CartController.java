@@ -5,6 +5,7 @@ import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.HoaDon;
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,20 +41,35 @@ public class CartController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    @Autowired
+    private GioHangRepository gioHangRepository;
+
     @GetMapping
     public ResponseEntity<Map<String, Object>> getCart(Authentication authentication) {
         try {
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
-            System.out.println("Authenticated user ID: " + nguoiDungId); // Debug
             if (nguoiDungId == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Vui lòng đăng nhập để xem giỏ hàng"));
             }
 
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
+            List<ChiTietGioHang> chiTietGioHangs = khachHangGioHangService.getGioHangChiTiets(gioHang.getId());
+
+            // Tính lại tổng tiền từ các chi tiết giỏ hàng để đảm bảo chính xác
+            BigDecimal tongTien = chiTietGioHangs.stream()
+                    .map(item -> item.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())).subtract(item.getTienGiam() != null ? item.getTienGiam() : BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Cập nhật tổng tiền nếu có sự không đồng bộ
+            if (!tongTien.equals(gioHang.getTongTien())) {
+                gioHang.setTongTien(tongTien);
+                gioHangRepository.save(gioHang);
+            }
+
             Map<String, Object> response = new HashMap<>();
             response.put("gioHangId", gioHang.getId());
-            response.put("chiTietGioHang", khachHangGioHangService.getGioHangChiTiets(gioHang.getId()));
-            response.put("tongTien", gioHang.getTongTien() != null ? gioHang.getTongTien() : BigDecimal.ZERO);
+            response.put("chiTietGioHang", chiTietGioHangs);
+            response.put("tongTien", tongTien);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Không thể tải giỏ hàng: " + e.getMessage()));
