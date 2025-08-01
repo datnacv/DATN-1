@@ -2,6 +2,8 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -39,6 +41,8 @@
         }
         .notification-badge {
             animation: pulse 2s infinite;
+            font-size: 0.7rem;
+            padding: 0.3em 0.5em;
         }
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -78,37 +82,38 @@
 <body>
 <div th:fragment="accountDropdown(user)">
     <div th:if="${user != null}" class="dropdown ms-auto d-flex align-items-center">
-        <!-- Notification Bell with Dropdown -->
         <div class="dropdown me-3">
             <a href="#" class="position-relative text-decoration-none dropdown-toggle"
                id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-bell fa-lg text-primary"></i>
-                <span th:if="${unreadCount > 0}"
+                <span th:if="${unreadCount != null and unreadCount > 0}"
                       class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge">
                     <span th:text="${unreadCount}">0</span>
+                </span>
+                <span th:if="${unreadCount == null or unreadCount == 0}"
+                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge d-none">
+                    <span>0</span>
                 </span>
             </a>
             <ul id="notificationContainer"
                 class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 notification-dropdown"
                 aria-labelledby="notificationDropdown" style="min-width: 350px; max-width: 400px;">
-                <!-- Header -->
                 <li class="notification-header">
                     <div class="px-3 py-2 d-flex justify-content-between align-items-center">
                         <div class="fw-bold">Thông báo</div>
                         <div class="d-flex gap-2">
-                            <button th:if="${unreadCount > 0}"
+                            <button th:if="${unreadCount != null and unreadCount > 0}"
                                     class="btn btn-sm btn-outline-primary"
                                     onclick="markAllAsRead()"
                                     title="Đánh dấu tất cả đã đọc">
                                 <i class="fas fa-check-double"></i>
                             </button>
-                            <a href="#" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#notificationModal" title="Xem tất cả">
+                            <a href="#" class="btn btn-sm btn-outline-secondary" data-bs-target="#notificationModal" title="Xem tất cả">
                                 <i class="fas fa-external-link-alt"></i>
                             </a>
                         </div>
                     </div>
                 </li>
-                <!-- Loading state -->
                 <li class="notification-item px-3 py-2" id="loadingState">
                     <div class="text-center">
                         <div class="spinner-border spinner-border-sm text-primary" role="status">
@@ -117,27 +122,23 @@
                         <div class="mt-1 small text-muted">Đang tải thông báo...</div>
                     </div>
                 </li>
-                <!-- Empty state -->
                 <li class="notification-item px-3 py-4 notification-empty d-none" id="emptyState">
                     <div class="text-center">
                         <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
                         <div>Không có thông báo nào</div>
                     </div>
                 </li>
-                <!-- Anchor để chèn các thông báo -->
                 <li id="notificationInsertAnchor"></li>
-                <!-- Footer -->
                 <li class="notification-footer">
                     <div class="px-3 py-2">
                         <a class="d-block text-center text-decoration-none small text-primary fw-bold"
-                           href="#" data-bs-toggle="modal" data-bs-target="#notificationModal">
+                           href="#" data-bs-target="#notificationModal">
                             <i class="fas fa-bell me-1"></i>Xem tất cả thông báo
                         </a>
                     </div>
                 </li>
             </ul>
         </div>
-        <!-- Account Dropdown -->
         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle"
            id="accountDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-user-circle fa-lg me-2 text-primary"></i>
@@ -159,7 +160,7 @@
     </div>
 </div>
 
-<!-- Notification Modal -->
+<!-- Modal được tách ra ngoài fragment accountDropdown -->
 <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -169,11 +170,8 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3 text-end">
-                    <button th:if="${unreadCount > 0}" class="btn btn-primary me-2" onclick="markAllAsRead()">
+                    <button th:if="${unreadCount != null and unreadCount > 0}" class="btn btn-primary me-2" onclick="markAllAsRead()">
                         <i class="fas fa-check-double me-1"></i>Đánh dấu tất cả đã đọc
-                    </button>
-                    <button class="btn btn-danger" onclick="deleteAllNotifications()">
-                        <i class="fas fa-trash me-1"></i>Xoá tất cả thông báo
                     </button>
                 </div>
                 <div class="table-responsive">
@@ -181,17 +179,15 @@
                         <thead>
                         <tr>
                             <th scope="col" style="width: 5%">#</th>
-                            <th scope="col" style="width: 10%">Loại</th>
-                            <th scope="col" style="width: 20%">Tiêu đề</th>
-                            <th scope="col" style="width: 30%">Nội dung</th>
+                            <th scope="col" style="width: 25%">Tiêu đề</th>
+                            <th scope="col" style="width: 35%">Nội dung</th>
                             <th scope="col" style="width: 20%">Thời gian</th>
-                            <th scope="col" style="width: 10%">Trạng thái</th>
-                            <th scope="col" style="width: 15%">Thao tác</th>
+                            <th scope="col" style="width: 15%">Trạng thái</th>
                         </tr>
                         </thead>
                         <tbody id="modalNotificationTableBody">
                         <tr id="modalTableLoadingState">
-                            <td colspan="7" class="text-center">
+                            <td colspan="5" class="text-center">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
@@ -199,7 +195,7 @@
                             </td>
                         </tr>
                         <tr id="modalTableEmptyState" class="d-none">
-                            <td colspan="7" class="text-center notification-empty">
+                            <td colspan="5" class="text-center notification-empty">
                                 <i class="fas fa-bell-slash fa-2x text-muted mb-2 d-block"></i>
                                 Không có thông báo nào
                             </td>
@@ -215,16 +211,12 @@
     </div>
 </div>
 
-<!-- Notification Table Page -->
 <div th:fragment="notificationTable">
     <div class="container notification-table-container">
         <h2 class="text-center mb-4">Danh Sách Thông Báo</h2>
         <div class="mb-3 text-end">
-            <button th:if="${unreadCount > 0}" class="btn btn-primary me-2" onclick="markAllAsRead()">
+            <button th:if="${unreadCount != null and unreadCount > 0}" class="btn btn-primary me-2" onclick="markAllAsRead()">
                 <i class="fas fa-check-double me-1"></i>Đánh dấu tất cả đã đọc
-            </button>
-            <button class="btn btn-danger" onclick="deleteAllNotifications()">
-                <i class="fas fa-trash me-1"></i>Xoá tất cả thông báo
             </button>
         </div>
         <div class="table-responsive">
@@ -232,17 +224,15 @@
                 <thead>
                 <tr>
                     <th scope="col" style="width: 5%">#</th>
-                    <th scope="col" style="width: 10%">Loại</th>
-                    <th scope="col" style="width: 20%">Tiêu đề</th>
-                    <th scope="col" style="width: 30%">Nội dung</th>
+                    <th scope="col" style="width: 25%">Tiêu đề</th>
+                    <th scope="col" style="width: 35%">Nội dung</th>
                     <th scope="col" style="width: 20%">Thời gian</th>
-                    <th scope="col" style="width: 10%">Trạng thái</th>
-                    <th scope="col" style="width: 15%">Thao tác</th>
+                    <th scope="col" style="width: 15%">Trạng thái</th>
                 </tr>
                 </thead>
                 <tbody id="notificationTableBody">
                 <tr id="tableLoadingState">
-                    <td colspan="7" class="text-center">
+                    <td colspan="5" class="text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
                         </div>
@@ -250,7 +240,7 @@
                     </td>
                 </tr>
                 <tr id="tableEmptyState" class="d-none">
-                    <td colspan="7" class="text-center notification-empty">
+                    <td colspan="5" class="text-center notification-empty">
                         <i class="fas fa-bell-slash fa-2x text-muted mb-2 d-block"></i>
                         Không có thông báo nào
                     </td>
@@ -262,498 +252,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const trigger = document.getElementById('notificationDropdown');
-        if (trigger) {
-            const dropdown = trigger.closest('.dropdown');
-            dropdown.addEventListener('shown.bs.dropdown', function () {
-                loadNotifications();
-            });
-        }
-        // Load notifications for table if on notification page
-        if (document.getElementById('notificationTableBody')) {
-            loadNotificationsForTable();
-        }
-        // Load notifications for modal when shown
-        const modal = document.getElementById('notificationModal');
-        if (modal) {
-            modal.addEventListener('shown.bs.modal', function () {
-                loadNotificationsForModal();
-            });
-        }
-    });
-
-    function loadNotifications() {
-        const loadingState = document.getElementById('loadingState');
-        const emptyState = document.getElementById('emptyState');
-        const notificationContainer = document.getElementById('notificationContainer');
-
-        // Reset states
-        if (loadingState) loadingState.classList.remove('d-none');
-        if (emptyState) emptyState.classList.add('d-none');
-
-        // Clear existing notifications
-        const existingNotifications = notificationContainer?.querySelectorAll('.notification-item:not(#loadingState):not(#emptyState)') || [];
-        existingNotifications.forEach(item => item.remove());
-
-        fetch('/acvstore/thong-bao/load')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (loadingState) loadingState.classList.add('d-none');
-                if (data.notifications && data.notifications.length > 0) {
-                    renderNotifications(data.notifications);
-                    updateUnreadCount(data.unreadCount || 0);
-                } else {
-                    if (emptyState) emptyState.classList.remove('d-none');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading notifications:', error);
-                if (loadingState) loadingState.classList.add('d-none');
-                const errorItem = document.createElement('div');
-                errorItem.className = 'notification-item px-3 py-2 text-center text-danger';
-                errorItem.innerHTML = `
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <div class="small">Không thể tải thông báo: ${error.message}</div>
-                `;
-                if (notificationContainer) notificationContainer.appendChild(errorItem);
-            });
-    }
-
-    function loadNotificationsForTable() {
-        const loadingState = document.getElementById('tableLoadingState');
-        const emptyState = document.getElementById('tableEmptyState');
-        const tableBody = document.getElementById('notificationTableBody');
-
-        // Reset states
-        if (loadingState) loadingState.classList.remove('d-none');
-        if (emptyState) emptyState.classList.add('d-none');
-
-        // Clear existing notifications
-        const existingNotifications = tableBody?.querySelectorAll('tr:not(#tableLoadingState):not(#tableEmptyState)') || [];
-        existingNotifications.forEach(item => item.remove());
-
-        fetch('/acvstore/thong-bao/load')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (loadingState) loadingState.classList.add('d-none');
-                if (data.notifications && data.notifications.length > 0) {
-                    renderNotificationsForTable(data.notifications, false);
-                    updateUnreadCount(data.unreadCount || 0);
-                } else {
-                    if (emptyState) emptyState.classList.remove('d-none');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading notifications:', error);
-                if (loadingState) loadingState.classList.add('d-none');
-                const errorRow = document.createElement('tr');
-                errorRow.innerHTML = `
-                    <td colspan="7" class="text-center text-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div>Không thể tải thông báo: ${error.message}</div>
-                    </td>
-                `;
-                if (tableBody) tableBody.appendChild(errorRow);
-            });
-    }
-
-    function loadNotificationsForModal() {
-        const loadingState = document.getElementById('modalTableLoadingState');
-        const emptyState = document.getElementById('modalTableEmptyState');
-        const tableBody = document.getElementById('modalNotificationTableBody');
-
-        // Reset states
-        if (loadingState) loadingState.classList.remove('d-none');
-        if (emptyState) emptyState.classList.add('d-none');
-
-        // Clear existing notifications
-        const existingNotifications = tableBody?.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)') || [];
-        existingNotifications.forEach(item => item.remove());
-
-        fetch('/acvstore/thong-bao/load')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (loadingState) loadingState.classList.add('d-none');
-                if (data.notifications && data.notifications.length > 0) {
-                    renderNotificationsForTable(data.notifications, true);
-                    updateUnreadCount(data.unreadCount || 0);
-                } else {
-                    if (emptyState) emptyState.classList.remove('d-none');
-                }
-            })
-            .catch(error => {
-                console.error('Error loading notifications for modal:', error);
-                if (loadingState) loadingState.classList.add('d-none');
-                const errorRow = document.createElement('tr');
-                errorRow.innerHTML = `
-                    <td colspan="7" class="text-center text-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div>Không thể tải thông báo: ${error.message}</div>
-                    </td>
-                `;
-                if (tableBody) tableBody.appendChild(errorRow);
-            });
-    }
-
-    function renderNotifications(notifications) {
-        const anchor = document.getElementById('notificationInsertAnchor');
-        const loadingState = document.getElementById('loadingState');
-        const emptyState = document.getElementById('emptyState');
-
-        if (!notifications || notifications.length === 0) {
-            if (emptyState) emptyState.classList.remove('d-none');
-            return;
-        }
-
-        notifications.forEach((notification, index) => {
-            const timeAgo = formatTimeAgo(notification.thoiGian);
-            const icon = getNotificationIcon(notification.type || 'default');
-            const item = document.createElement('li');
-            item.className = `notification-item px-3 py-2 ${notification.daXem ? '' : 'notification-unread'}`;
-            item.style.cursor = notification.daXem ? 'default' : 'pointer';
-
-            item.innerHTML = `
-                <div class="d-flex align-items-start">
-                    <div class="me-2">${icon}</div>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold mb-1">${escapeHtml(notification.tieuDe || 'Thông báo')}</div>
-                        <div class="text-muted notification-content">${escapeHtml(notification.noiDung || '')}</div>
-                        <div class="text-end notification-time mt-1">${timeAgo}</div>
-                    </div>
-                    ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
-                </div>
-            `;
-
-            if (!notification.daXem) {
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Ngăn chặn sự kiện dropdown
-                    markAsRead(notification.id, item);
-                });
-            }
-
-            if (anchor) anchor.before(item);
-        });
-    }
-
-    function renderNotificationsForTable(notifications, isModal = false) {
-        const tableBody = isModal ? document.getElementById('modalNotificationTableBody') : document.getElementById('notificationTableBody');
-        const emptyState = isModal ? document.getElementById('modalTableEmptyState') : document.getElementById('tableEmptyState');
-
-        if (!notifications || notifications.length === 0) {
-            if (emptyState) emptyState.classList.remove('d-none');
-            return;
-        }
-
-        notifications.forEach((notification, index) => {
-            const timeAgo = formatTimeAgo(notification.thoiGian);
-            const row = document.createElement('tr');
-            row.className = notification.daXem ? '' : 'notification-unread';
-            row.style.cursor = notification.daXem ? 'default' : 'pointer';
-
-            row.innerHTML = `
-                <td>${index + 1}</td>
-                <td><i class="${getNotificationIconClass(notification.type || 'default')}"></i></td>
-                <td>${escapeHtml(notification.tieuDe || 'Thông báo')}</td>
-                <td>${escapeHtml(notification.noiDung || '')}</td>
-                <td>${timeAgo}</td>
-                <td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
-                <td>
-                    ${notification.daXem ? '' : `<button class="btn btn-sm btn-outline-primary me-1" onclick="markAsRead('${notification.id}', this.closest('tr'))" title="Đánh dấu đã đọc"><i class="fas fa-eye"></i></button>`}
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteNotification('${notification.id}', this.closest('tr'))" title="Xoá"><i class="fas fa-trash"></i></button>
-                </td>
-            `;
-
-            if (!notification.daXem) {
-                row.addEventListener('click', (e) => {
-                    if (e.target.closest('button')) return; // Bỏ qua nếu click vào nút
-                    markAsRead(notification.id, row);
-                });
-            }
-
-            if (tableBody) tableBody.appendChild(row);
-        });
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function getNotificationIconClass(type) {
-        const icons = {
-            'order': 'fas fa-shopping-cart text-success',
-            'payment': 'fas fa-credit-card text-warning',
-            'system': 'fas fa-cog text-secondary',
-            'user': 'fas fa-user text-info',
-            'product': 'fas fa-box text-primary',
-            'promotion': 'fas fa-tags text-danger',
-            'default': 'fas fa-info-circle text-primary'
-        };
-        return icons[type] || icons['default'];
-    }
-
-    function getNotificationIcon(type) {
-        return `<i class="${getNotificationIconClass(type)}"></i>`;
-    }
-
-    function formatTimeAgo(thoiGian) {
-        if (!thoiGian) return 'Không rõ thời gian';
-
-        try {
-            let dateObj;
-            if (thoiGian.includes('/')) {
-                const parts = thoiGian.split(/[/ :]/);
-                if (parts.length >= 5) {
-                    dateObj = new Date(`${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T${parts[3].padStart(2, '0')}:${parts[4].padStart(2, '0')}:${parts[5] || '00'}`);
-                }
-            } else {
-                dateObj = new Date(thoiGian);
-            }
-
-            if (!dateObj || isNaN(dateObj.getTime())) {
-                return 'Không rõ thời gian';
-            }
-
-            const now = new Date();
-            const seconds = Math.floor((now - dateObj) / 1000);
-
-            if (seconds < 60) return 'Vừa xong';
-            const minutes = Math.floor(seconds / 60);
-            if (minutes < 60) return `${minutes} phút trước`;
-            const hours = Math.floor(minutes / 60);
-            if (hours < 24) return `${hours} giờ trước`;
-            const days = Math.floor(hours / 24);
-            if (days < 7) return `${days} ngày trước`;
-            return dateObj.toLocaleDateString('vi-VN');
-        } catch (e) {
-            console.error('Error formatting time:', e, thoiGian);
-            return 'Không rõ thời gian';
-        }
-    }
-
-    function markAsRead(notificationId, element) {
-        if (!notificationId) {
-            console.error('No notification ID provided');
-            return;
-        }
-
-        fetch('/acvstore/thong-bao/danh-dau-da-xem', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `idThongBao=${encodeURIComponent(notificationId)}`
-        })
-            .then(response => {
-                if (response.ok) {
-                    element.classList.remove('notification-unread');
-                    element.style.cursor = 'default';
-                    const unreadIndicator = element.querySelector('.badge');
-                    if (unreadIndicator) unreadIndicator.remove();
-                    if (element.tagName === 'TR') {
-                        const statusCell = element.querySelector('td:nth-child(6)');
-                        if (statusCell) statusCell.textContent = 'Đã đọc';
-                        const markAsReadBtn = element.querySelector('.btn-outline-primary');
-                        if (markAsReadBtn) markAsReadBtn.remove();
-                    }
-                    updateUnreadCountAfterRead();
-                    // Reload modal or table if open
-                    if (document.getElementById('modalNotificationTableBody')) loadNotificationsForModal();
-                    if (document.getElementById('notificationTableBody')) loadNotificationsForTable();
-                } else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-            })
-            .catch(error => {
-                console.error('Error marking notification as read:', error);
-            });
-    }
-
-    function markAllAsRead() {
-        fetch('/acvstore/thong-bao/danh-dau-tat-ca', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        })
-            .then(response => {
-                if (response.ok) {
-                    const unreadItems = document.querySelectorAll('.notification-unread');
-                    unreadItems.forEach(item => {
-                        item.classList.remove('notification-unread');
-                        item.style.cursor = 'default';
-                        const indicator = item.querySelector('.badge');
-                        if (indicator) indicator.remove();
-                        if (item.tagName === 'TR') {
-                            const statusCell = item.querySelector('td:nth-child(6)');
-                            if (statusCell) statusCell.textContent = 'Đã đọc';
-                            const markAsReadBtn = item.querySelector('.btn-outline-primary');
-                            if (markAsReadBtn) markAsReadBtn.remove();
-                        }
-                    });
-                    updateUnreadCount(0);
-                    const markAllButtons = document.querySelectorAll('[onclick="markAllAsRead()"]');
-                    markAllButtons.forEach(btn => btn.style.display = 'none');
-                    // Reload modal or table if open
-                    if (document.getElementById('modalNotificationTableBody')) loadNotificationsForModal();
-                    if (document.getElementById('notificationTableBody')) loadNotificationsForTable();
-                } else {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-            })
-            .catch(error => {
-                console.error('Error marking all notifications as read:', error);
-            });
-    }
-
-    function deleteNotification(notificationId, element) {
-        if (!notificationId) {
-            console.error('No notification ID provided');
-            return;
-        }
-
-        if (confirm('Bạn có chắc chắn muốn xóa thông báo này?')) {
-            fetch('/acvstore/thong-bao/xoa', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `idThongBao=${encodeURIComponent(notificationId)}`
-            })
-                .then(response => {
-                    if (response.ok) {
-                        element.remove();
-                        updateUnreadCountAfterDelete();
-                        checkEmptyState();
-                        // Reload modal or table if open
-                        if (document.getElementById('modalNotificationTableBody')) loadNotificationsForModal();
-                        if (document.getElementById('notificationTableBody')) loadNotificationsForTable();
-                        loadNotifications(); // Reload dropdown
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting notification:', error);
-                    alert('Không thể xóa thông báo: ' + error.message);
-                });
-        }
-    }
-
-    function deleteAllNotifications() {
-        if (confirm('Bạn có chắc chắn muốn xóa tất cả thông báo?')) {
-            fetch('/acvstore/thong-bao/xoa-tat-ca', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }
-            })
-                .then(response => {
-                    if (response.ok) {
-                        const tableBody = document.getElementById('modalNotificationTableBody') || document.getElementById('notificationTableBody');
-                        const notificationContainer = document.getElementById('notificationContainer');
-                        if (tableBody) {
-                            const items = tableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState):not(#tableLoadingState):not(#tableEmptyState)');
-                            items.forEach(item => item.remove());
-                        }
-                        if (notificationContainer) {
-                            const dropdownItems = notificationContainer.querySelectorAll('.notification-item:not(#loadingState):not(#emptyState)');
-                            dropdownItems.forEach(item => item.remove());
-                        }
-                        updateUnreadCount(0);
-                        checkEmptyState();
-                    } else {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting all notifications:', error);
-                    alert('Không thể xóa tất cả thông báo: ' + error.message);
-                });
-        }
-    }
-
-    function updateUnreadCount(count) {
-        const badge = document.querySelector('.notification-badge span');
-        const badgeContainer = document.querySelector('.notification-badge');
-
-        if (count > 0) {
-            if (badge) badge.textContent = count;
-            if (badgeContainer) badgeContainer.style.display = 'inline';
-        } else {
-            if (badgeContainer) badgeContainer.style.display = 'none';
-        }
-    }
-
-    function updateUnreadCountAfterRead() {
-        const currentBadge = document.querySelector('.notification-badge span');
-        if (currentBadge) {
-            const currentCount = parseInt(currentBadge.textContent) || 0;
-            if (currentCount > 0) {
-                updateUnreadCount(currentCount - 1);
-            }
-        }
-    }
-
-    function updateUnreadCountAfterDelete() {
-        fetch('/acvstore/thong-bao/load')
-            .then(response => response.json())
-            .then(data => {
-                updateUnreadCount(data.unreadCount || 0);
-            })
-            .catch(error => {
-                console.error('Error updating unread count:', error);
-            });
-    }
-
-    function checkEmptyState() {
-        const modalTableBody = document.getElementById('modalNotificationTableBody');
-        const tableBody = document.getElementById('notificationTableBody');
-        const notificationContainer = document.getElementById('notificationContainer');
-
-        if (modalTableBody) {
-            const items = modalTableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
-            const emptyState = document.getElementById('modalTableEmptyState');
-            if (items.length === 0 && emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-        }
-
-        if (tableBody) {
-            const items = tableBody.querySelectorAll('tr:not(#tableLoadingState):not(#tableEmptyState)');
-            const emptyState = document.getElementById('tableEmptyState');
-            if (items.length === 0 && emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-        }
-
-        if (notificationContainer) {
-            const items = notificationContainer.querySelectorAll('.notification-item:not(#loadingState):not(#emptyState)');
-            const emptyState = document.getElementById('emptyState');
-            if (items.length === 0 && emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-        }
-    }
-</script>
+<script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

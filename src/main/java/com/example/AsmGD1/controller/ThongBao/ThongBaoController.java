@@ -6,13 +6,12 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
@@ -33,48 +32,72 @@ public class ThongBaoController {
 
     @Autowired
     private NguoiDungService nguoiDungService;
+
     @GetMapping("/load")
     @ResponseBody
-    public ResponseEntity<?> taiDanhSachThongBao(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof NguoiDung)) {
+    public ResponseEntity<?> taiDanhSachThongBao(Authentication authentication, HttpServletResponse response) {
+        // Ngăn cache
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
+        if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(401).body("Người dùng chưa đăng nhập");
         }
 
-        NguoiDung user = (NguoiDung) authentication.getPrincipal();
-        List<ChiTietThongBaoNhom> danhSach = thongBaoService.layThongBaoTheoNguoiDung(user.getId());
+        String username = authentication.getName();
+        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(username);
+        if (!optionalNguoiDung.isPresent()) {
+            return ResponseEntity.status(401).body("Không tìm thấy người dùng");
+        }
+
+        NguoiDung user = optionalNguoiDung.get();
+        List<ChiTietThongBaoNhom> danhSach = thongBaoService.lay5ThongBaoMoiNhat(user.getId());
 
         List<ThongBaoDTO> dtoList = danhSach.stream()
                 .map(ThongBaoDTO::new)
+                .limit(5) // Đảm bảo chỉ lấy 5 thông báo
                 .collect(Collectors.toList());
 
-        long soChuaDoc = danhSach.stream().filter(tb -> !tb.isDaXem()).count();
+        long soChuaDoc = thongBaoService.demSoThongBaoChuaXem(user.getId());
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("notifications", dtoList);
-        response.put("unreadCount", soChuaDoc);
+        Map<String, Object> responseMap = new HashMap<>();
+        responseMap.put("notifications", dtoList);
+        responseMap.put("unreadCount", soChuaDoc);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(responseMap);
     }
 
     @GetMapping("/xem")
     @ResponseBody
-    public ResponseEntity<?> hienThiThongBao(Principal principal) {
+    public ResponseEntity<?> hienThiThongBao(
+            Principal principal,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            HttpServletResponse response) {
+        // Ngăn cache
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
-        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> responseMap = new HashMap<>();
 
         if (optionalNguoiDung.isPresent()) {
             NguoiDung nguoiDung = optionalNguoiDung.get();
-            response.put("notifications", thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId()));
-            response.put("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            NguoiDung user = (auth != null && auth.getPrincipal() instanceof NguoiDung) ? (NguoiDung) auth.getPrincipal() : null;
-            response.put("user", user != null ? user : new NguoiDung());
-            return ResponseEntity.ok(response);
+            List<ChiTietThongBaoNhom> notifications = thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId(), page, size);
+            List<ThongBaoDTO> dtoList = notifications.stream()
+                    .map(ThongBaoDTO::new)
+                    .collect(Collectors.toList());
+            responseMap.put("notifications", dtoList);
+            responseMap.put("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
+            responseMap.put("user", nguoiDung);
+            return ResponseEntity.ok(responseMap);
         } else {
-            response.put("notifications", null);
-            response.put("unreadCount", 0);
-            response.put("user", null);
-            return ResponseEntity.ok(response);
+            responseMap.put("notifications", null);
+            responseMap.put("unreadCount", 0);
+            responseMap.put("user", null);
+            return ResponseEntity.ok(responseMap);
         }
     }
 

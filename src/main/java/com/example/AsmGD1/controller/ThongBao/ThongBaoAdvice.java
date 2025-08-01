@@ -1,20 +1,26 @@
-package com.example.AsmGD1.controller.ThongBao;
+ package com.example.AsmGD1.controller.ThongBao;
 
+import com.example.AsmGD1.dto.ThongBao.ThongBaoDTO;
+import com.example.AsmGD1.entity.ChiTietThongBaoNhom;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class ThongBaoAdvice {
+
+    private static final Logger logger = LoggerFactory.getLogger(ThongBaoAdvice.class);
 
     @Autowired
     private ThongBaoService thongBaoService;
@@ -30,30 +36,34 @@ public class ThongBaoAdvice {
 
                 if (nguoiDungOpt.isPresent()) {
                     NguoiDung nguoiDung = nguoiDungOpt.get();
-                    System.out.println("Logged in user: " + nguoiDung.getTenDangNhap());
+                    logger.info("Đã đăng nhập với người dùng: {}", nguoiDung.getTenDangNhap());
+
+                    // Lấy 5 thông báo mới nhất
+                    List<ChiTietThongBaoNhom> danhSach = thongBaoService.lay5ThongBaoMoiNhat(nguoiDung.getId());
+                    List<ThongBaoDTO> dtoList = danhSach.stream()
+                            .map(ThongBaoDTO::new)
+                            .collect(Collectors.toList());
 
                     model.addAttribute("user", nguoiDung);
                     model.addAttribute("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
-                    model.addAttribute("notifications", thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId()));
+                    model.addAttribute("notifications", dtoList);
                 } else {
-                    System.out.println("Không tìm thấy người dùng!");
+                    logger.warn("Không tìm thấy người dùng với tên đăng nhập: {}", principal.getName());
                     model.addAttribute("user", null);
                     model.addAttribute("unreadCount", 0);
                     model.addAttribute("notifications", List.of());
                 }
             } else {
-                System.out.println("Principal null");
+                logger.debug("Chưa đăng nhập (Principal null)");
                 model.addAttribute("user", null);
                 model.addAttribute("unreadCount", 0);
                 model.addAttribute("notifications", List.of());
             }
         } catch (Exception e) {
-            e.printStackTrace(); // log lỗi ra console
+            logger.error("Lỗi khi tải thông báo cho tất cả trang", e);
             model.addAttribute("user", null);
             model.addAttribute("unreadCount", 0);
             model.addAttribute("notifications", List.of());
         }
     }
-
-
 }
