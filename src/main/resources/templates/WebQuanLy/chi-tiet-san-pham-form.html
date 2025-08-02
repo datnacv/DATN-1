@@ -365,13 +365,25 @@
 
         /* Action buttons - nằm ngang */
         .action-buttons {
+            position: relative; /* Make the td a positioning context */
+            /* The button will be absolutely positioned, so flex properties on the td are not needed for centering it */
+        }
+        .action-buttons .edit-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1; /* Ensure it's on top if there are other elements */
+
+            /* Keep existing btn-sm styles for size and appearance */
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            min-width: 44px;
+            height: 40px;
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 8px;
-            height: 100%;
-            min-height: 60px; /* Ensure enough height for vertical centering */
-            flex-wrap: nowrap;
+            justify-content: center;
+            border-radius: 10px;
         }
 
         .form-switch {
@@ -800,6 +812,18 @@
                 top: 80px;
             }
         }
+
+        /* Đảm bảo thanh gạt trong modal có cùng kích thước và căn chỉnh với thanh gạt trong bảng */
+        .modal-body .form-check.form-switch .form-check-input {
+            width: 3em; /* Kích thước chuẩn như ở bảng */
+            height: 1.5em; /* Kích thước chuẩn như ở bảng */
+        }
+
+        .modal-body .form-check.form-switch .form-check-label {
+            margin-left: 1rem; /* Khoảng cách chuẩn như ở bảng */
+            white-space: nowrap; /* Đảm bảo chữ không xuống dòng */
+            line-height: 1.5em; /* Căn chỉnh chiều cao dòng với toggle */
+        }
     </style>
 </head>
 <body>
@@ -1026,8 +1050,8 @@
                                 </div>
                             </th:block>
                             <th:block th:unless="${isAdmin}">
-          <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
-                th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
+      <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+            th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
                             </th:block>
                         </td>
                         <!-- Cột Thao tác chỉ hiển thị cho Admin -->
@@ -1176,9 +1200,9 @@
                             </div>
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editStatus">Trạng thái</label>
-                                        <div class="form-check form-switch d-flex align-items-center mt-3">
+                                    <div class="mb-3"> <!-- Sử dụng div để tạo khoảng cách dưới -->
+                                        <label for="editStatus" class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
+                                        <div class="form-check form-switch d-flex align-items-center">
                                             <input class="form-check-input" type="checkbox" id="editStatus" name="status" value="true">
                                             <label class="form-check-label ms-3 fw-semibold fs-6" id="statusLabel" for="editStatus">Ngừng Bán</label>
                                         </div>
@@ -1259,14 +1283,14 @@
         };
 
         toast.innerHTML = `
-          <div class="d-flex">
-              <div class="toast-body d-flex align-items-center gap-2">
-                  <i class="${icon[type] || icon.info}"></i>
-                  <span class="fw-medium">${message}</span>
-              </div>
-              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      <div class="d-flex">
+          <div class="toast-body d-flex align-items-center gap-2">
+              <i class="${icon[type] || icon.info}"></i>
+              <span class="fw-medium">${message}</span>
           </div>
-      `;
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+  `;
 
         container.appendChild(toast);
 
@@ -1391,11 +1415,11 @@
                         response.images.forEach(image => {
                             if (image.imageUrl && image.imageUrl.trim() !== "") {
                                 const imageHtml = `
-                                  <div class="image-preview">
-                                      <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.src='/placeholder.svg?height=100&width=100'; this.alt='Ảnh lỗi';">
-                                      <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
-                                  </div>
-                              `;
+                              <div class="image-preview">
+                                  <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.src='/placeholder.svg?height=100&width=100'; this.alt='Ảnh lỗi';">
+                                  <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
+                              </div>
+                          `;
                                 existingImagesContainer.append(imageHtml);
                             }
                         });
@@ -1447,10 +1471,10 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const previewHtml = `
-                      <div class="image-preview">
-                          <img src="${e.target.result}" alt="Ảnh mới">
-                      </div>
-                  `;
+                  <div class="image-preview">
+                      <img src="${e.target.result}" alt="Ảnh mới">
+                  </div>
+              `;
                     previewContainer.append(previewHtml);
                 };
                 reader.readAsDataURL(file);
