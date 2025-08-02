@@ -479,8 +479,21 @@
                         <td th:text="${pd.soLuongTonKho}"></td>
                         <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
                         <td style="min-width: 150px;">
-                        <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
-                              th:text="${pd.trangThai} ? 'Hoạt động' : 'Ngừng hoạt động'"></span>
+                            <th:block th:if="${isAdmin}">
+                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                    <input class="form-check-input status-toggle"
+                                           type="checkbox"
+                                           th:checked="${pd.trangThai != null and pd.trangThai}"
+                                           th:data-id="${pd.id}"
+                                           role="switch">
+                                    <label class="form-check-label ms-2"
+                                           th:text="${pd.trangThai != null and pd.trangThai} ? 'Hoạt động' : 'Ngừng hoạt động'"></label>
+                                </div>
+                            </th:block>
+                            <th:block th:unless="${isAdmin}">
+            <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+                  th:text="${pd.trangThai} ? 'Hoạt động' : 'Ngừng hoạt động'"></span>
+                            </th:block>
                         </td>
                         <!-- Cột Thao tác chỉ hiển thị cho Admin -->
                         <td class="text-center action-buttons" th:if="${isAdmin}">
@@ -652,6 +665,35 @@
             console.log('Employee user - Management functions disabled');
             return;
         }
+
+        $('.status-toggle').on('change', function () {
+            const productDetailId = $(this).data('id');
+            const newStatus = $(this).is(':checked');
+            const statusLabel = $(this).next('.form-check-label');
+
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/update-status',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    id: productDetailId,
+                    trangThai: newStatus
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        statusLabel.text(newStatus ? 'Hoạt động' : 'Ngừng hoạt động');
+                        alert(response.message);
+                    } else {
+                        alert(response.message);
+                        $(this).prop('checked', !newStatus); // Hoàn tác nếu lỗi
+                    }
+                },
+                error: function (xhr) {
+                    alert("Lỗi khi cập nhật trạng thái: " + (xhr.responseText || xhr.statusText));
+                    $(this).prop('checked', !newStatus); // Hoàn tác nếu lỗi
+                }
+            });
+        });
 
         function updateStatusLabel() {
             const statusInput = $('#editStatus');

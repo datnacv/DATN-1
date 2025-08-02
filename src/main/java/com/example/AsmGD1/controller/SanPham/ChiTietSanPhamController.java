@@ -187,6 +187,40 @@ public class ChiTietSanPhamController {
         }
     }
 
+    @PostMapping("/update-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            UUID id = UUID.fromString((String) payload.get("id"));
+            Boolean trangThai = (Boolean) payload.get("trangThai");
+
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamService.findById(id);
+            if (chiTietSanPham == null) {
+                response.put("success", false);
+                response.put("message", "Chi tiết sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            chiTietSanPham.setTrangThai(trangThai != null ? trangThai : false);
+            chiTietSanPhamService.save(chiTietSanPham);
+
+            response.put("success", true);
+            response.put("message", "Cập nhật trạng thái thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @PostMapping("/save")
     public String luuChiTietSanPhamDon(@ModelAttribute ChiTietSanPhamUpdateDto dto,
                                        @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
