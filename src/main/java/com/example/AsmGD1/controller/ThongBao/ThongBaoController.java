@@ -8,6 +8,7 @@ import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -110,29 +111,43 @@ public class ThongBaoController {
 
     @PostMapping("/danh-dau-da-xem")
     @ResponseBody
-    public ResponseEntity<?> danhDauThongBaoDaXem(@RequestParam UUID idThongBao, Principal principal) {
-        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
-
-        if (optionalNguoiDung.isPresent()) {
+    public ResponseEntity<Map<String, Object>> danhDauThongBaoDaXem(@RequestParam UUID idThongBao, Principal principal) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
+            if (!optionalNguoiDung.isPresent()) {
+                response.put("error", "Không tìm thấy người dùng.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
             NguoiDung nguoiDung = optionalNguoiDung.get();
             thongBaoService.danhDauDaXem(idThongBao, nguoiDung.getId());
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.badRequest().body("Không tìm thấy người dùng.");
+            long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId());
+            response.put("unreadCount", unreadCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", "Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
     @PostMapping("/danh-dau-tat-ca")
     @ResponseBody
-    public ResponseEntity<?> danhDauTatCaThongBaoDaXem(Principal principal) {
-        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
-
-        if (optionalNguoiDung.isPresent()) {
+    public ResponseEntity<Map<String, Object>> danhDauTatCaThongBaoDaXem(Principal principal) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
+            if (!optionalNguoiDung.isPresent()) {
+                response.put("error", "Không tìm thấy người dùng.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
             NguoiDung nguoiDung = optionalNguoiDung.get();
             thongBaoService.danhDauTatCaDaXem(nguoiDung.getId());
-            return ResponseEntity.ok().build();
-        } else {
-            return ResponseEntity.badRequest().body("Không tìm thấy người dùng.");
+            long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId());
+            response.put("unreadCount", unreadCount);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("error", "Lỗi server: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 }

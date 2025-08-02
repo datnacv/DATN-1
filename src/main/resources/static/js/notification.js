@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded, initializing notification system...');
 
@@ -7,14 +8,10 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
-    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
-    if (!csrfToken || !csrfHeader) {
-        console.warn('CSRF token or header not found. POST requests may fail.');
-    }
-
     let currentPage = 0;
     let totalPages = 1;
+    let unreadCount = 0;
+    let isDropdownOpen = false;
 
     // Hàm debounce để ngăn gọi API nhiều lần
     function debounce(func, wait) {
@@ -36,8 +33,13 @@ document.addEventListener('DOMContentLoaded', function () {
         if (dropdown) {
             trigger.addEventListener('click', debounce(function () {
                 console.log('Notification bell clicked, triggering loadNotifications...');
+                isDropdownOpen = true;
                 loadNotifications();
             }, 300));
+            const dropdownMenu = document.getElementById('notificationContainer');
+            dropdownMenu.addEventListener('hidden.bs.dropdown', function () {
+                isDropdownOpen = false;
+            });
         } else {
             console.warn('Dropdown container not found for notificationDropdown');
         }
@@ -99,7 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetch('/acvstore/thong-bao/load?_=' + new Date().getTime())
             .then(response => {
-                console.log('Response status:', response.status);
                 if (!response.ok) {
                     throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
                 }
@@ -111,7 +112,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 if (data.notifications && Array.isArray(data.notifications) && data.notifications.length > 0) {
                     renderNotifications(data.notifications.slice(0, 5));
-                    updateUnreadCount(data.unreadCount || 0);
+                    unreadCount = data.unreadCount || 0;
+                    updateUnreadCount(unreadCount);
                 } else {
                     if (emptyState) emptyState.classList.remove('d-none');
                 }
@@ -145,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         fetch('/acvstore/thong-bao/load?_=' + new Date().getTime())
             .then(response => {
-                console.log('Response status:', response.status);
                 if (!response.ok) {
                     throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
                 }
@@ -156,7 +157,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 if (data.notifications && Array.isArray(data.notifications) && data.notifications.length > 0) {
                     renderNotificationsForTable(data.notifications.slice(0, 5), false);
-                    updateUnreadCount(data.unreadCount || 0);
+                    unreadCount = data.unreadCount || 0;
+                    updateUnreadCount(unreadCount);
                 } else {
                     if (emptyState) emptyState.classList.remove('d-none');
                 }
@@ -167,10 +169,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 const errorRow = document.createElement('tr');
                 errorRow.innerHTML = `
-                    <td colspan="5" class="text-center">
-                        <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
-                    </td>
-                `;
+<td colspan="5" class="text-center">
+    <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
+</td>
+`;
                 tableBody.appendChild(errorRow);
             });
     }
@@ -194,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log(`Loading notifications for modal with page=${page}, size=${size}`);
         fetch(`/acvstore/thong-bao/xem?page=${page}&size=${size}&_=${new Date().getTime()}`)
             .then(response => {
-                console.log('Response status:', response.status);
                 if (!response.ok) {
                     throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
                 }
@@ -205,7 +206,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 if (data.notifications && Array.isArray(data.notifications) && data.notifications.length > 0) {
                     renderNotificationsForTable(data.notifications, true);
-                    updateUnreadCount(data.unreadCount || 0);
+                    unreadCount = data.unreadCount || 0;
+                    updateUnreadCount(unreadCount);
                     totalPages = Math.max(1, Math.ceil((data.totalCount || data.notifications.length) / size));
                     updatePagination(page);
                 } else {
@@ -220,10 +222,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 const errorRow = document.createElement('tr');
                 errorRow.innerHTML = `
-                    <td colspan="5" class="text-center">
-                        <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
-                    </td>
-                `;
+<td colspan="5" class="text-center">
+    <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
+</td>
+`;
                 tableBody.appendChild(errorRow);
             });
     }
@@ -250,18 +252,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const item = document.createElement('li');
             item.className = `notification-item px-3 py-2 ${notification.daXem ? '' : 'notification-unread'}`;
             item.style.cursor = 'pointer';
-            item.onclick = () => markAsRead(notification.idThongBao, item);
+            item.dataset.notificationId = notification.idThongBao;
+            item.onclick = () => showConfirmModal(notification.idThongBao, item, tieuDe);
             item.innerHTML = `
-                <div class="d-flex align-items-start">
-                    <div class="me-2">${icon}</div>
-                    <div class="flex-grow-1">
-                        <div class="fw-semibold mb-1">${escapeHtml(tieuDe)}</div>
-                        <div class="text-muted notification-content">${escapeHtml(noiDung)}</div>
-                        <div class="text-end notification-time mt-1">${timeAgo}</div>
-                    </div>
-                    ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
-                </div>
-            `;
+<div class="d-flex align-items-start">
+    <div class="me-2">${icon}</div>
+<div class="flex-grow-1">
+    <div class="fw-semibold mb-1">${escapeHtml(tieuDe)}</div>
+    <div class="text-muted notification-content">${escapeHtml(noiDung)}</div>
+    <div class="text-end notification-time mt-1">${timeAgo}</div>
+</div>
+${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
+</div>
+`;
             anchor.before(item);
         });
     }
@@ -275,7 +278,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // 👉 Tạo hiệu ứng mờ khi bắt đầu load lại bảng
         tableBody.classList.add('opacity-50');
 
         if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
@@ -284,12 +286,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Xóa dữ liệu cũ
         const existingRows = tableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
         existingRows.forEach(item => item.remove());
 
-        // ⚠️ Nếu bạn đang dùng phân trang trong modal, cần dùng currentPage và pageSize để tính STT
-        const baseIndex = currentPage * 5; // hoặc thay 5 = pageSize nếu có
+        const baseIndex = currentPage * 5;
 
         notifications.forEach((notification, index) => {
             const timeAgo = formatTimeAgo(notification.thoiGian);
@@ -299,25 +299,24 @@ document.addEventListener('DOMContentLoaded', function () {
             const row = document.createElement('tr');
             row.className = notification.daXem ? '' : 'notification-unread';
             row.style.cursor = 'pointer';
-            row.onclick = () => markAsRead(notification.idThongBao, row);
+            row.dataset.notificationId = notification.idThongBao;
+            row.onclick = () => showConfirmModal(notification.idThongBao, row, tieuDe);
 
             row.innerHTML = `
-            <td>${baseIndex + index + 1}</td>
-            <td>${escapeHtml(tieuDe)}</td>
-            <td>${escapeHtml(noiDung)}</td>
-            <td>${timeAgo}</td>
-            <td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
-        `;
+<td>${baseIndex + index + 1}</td>
+<td>${escapeHtml(tieuDe)}</td>
+<td>${escapeHtml(noiDung)}</td>
+<td>${timeAgo}</td>
+<td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
+    `;
 
             tableBody.appendChild(row);
         });
 
-        // 👉 Bỏ hiệu ứng mờ sau khi render xong
         setTimeout(() => {
             tableBody.classList.remove('opacity-50');
-        }, 100); // delay nhẹ để tránh "giật"
+        }, 100);
     }
-
 
     function escapeHtml(text) {
         if (!text) return '';
@@ -374,6 +373,42 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function showConfirmModal(notificationId, element, tieuDe = 'Thông báo') {
+        const modal = document.getElementById('confirmReadModal');
+        if (!modal) {
+            console.error('Confirm modal not found');
+            alert('Lỗi hệ thống: Không tìm thấy cửa sổ xác nhận.');
+            return;
+        }
+        const modalBody = modal.querySelector('.modal-body');
+        modalBody.textContent = `Bạn có chắc chắn muốn đánh dấu thông báo "${escapeHtml(tieuDe)}" là đã đọc?`;
+
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+
+        const wasDropdownOpen = isDropdownOpen;
+
+        const confirmButton = document.getElementById('confirmReadButton');
+        const newConfirmButton = confirmButton.cloneNode(true);
+        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+
+        newConfirmButton.addEventListener('click', () => {
+            markAsRead(notificationId, element);
+            modalInstance.hide();
+            if (wasDropdownOpen) {
+                const dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('notificationDropdown'));
+                dropdownInstance.show();
+            }
+        });
+
+        modal.addEventListener('hidden.bs.modal', function () {
+            if (wasDropdownOpen) {
+                const dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('notificationDropdown'));
+                dropdownInstance.show();
+            }
+        }, { once: true });
+    }
+
     function markAsRead(notificationId, element) {
         fetch('/acvstore/thong-bao/danh-dau-da-xem', {
             method: 'POST',
@@ -383,26 +418,66 @@ document.addEventListener('DOMContentLoaded', function () {
             body: `idThongBao=${notificationId}`
         })
             .then(response => {
-                if (response.ok) {
-                    element.classList.remove('notification-unread');
-                    element.style.cursor = 'default';
-                    const indicator = element.querySelector('.badge');
-                    if (indicator) indicator.remove();
-                    if (element.tagName === 'TR') {
-                        const statusCell = element.querySelector('td:last-child');
-                        if (statusCell) statusCell.textContent = 'Đã đọc';
-                    }
-                    loadNotifications();
-                    loadNotificationsForTable();
-                    loadNotificationsForModal();
-                } else {
+                if (!response.ok) {
                     throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
                 }
+                return response.json(); // Giả sử server trả về JSON với unreadCount mới
+            })
+            .then(data => {
+                // Cập nhật giao diện cho thông báo được đánh dấu
+                element.classList.remove('notification-unread');
+                element.style.cursor = 'default';
+                const indicator = element.querySelector('.badge');
+                if (indicator) indicator.remove();
+                if (element.tagName === 'TR') {
+                    const statusCell = element.querySelector('td:last-child');
+                    if (statusCell) statusCell.textContent = 'Đã đọc';
+                }
+                // Cập nhật unreadCount từ server
+                unreadCount = data.unreadCount || Math.max(0, unreadCount - 1);
+                updateUnreadCount(unreadCount);
+                // Cập nhật trạng thái trong tất cả các giao diện
+                updateNotificationInLists(notificationId);
             })
             .catch(error => {
                 console.error('Lỗi đánh dấu thông báo đã đọc:', error);
                 alert('Không thể đánh dấu thông báo đã đọc. Vui lòng thử lại sau.');
             });
+    }
+
+    function updateNotificationInLists(notificationId) {
+        // Cập nhật dropdown
+        const dropdownItems = document.querySelectorAll('#notificationContainer .notification-item');
+        dropdownItems.forEach(item => {
+            if (item.dataset.notificationId === notificationId.toString()) {
+                item.classList.remove('notification-unread');
+                item.style.cursor = 'default';
+                const badge = item.querySelector('.badge');
+                if (badge) badge.remove();
+            }
+        });
+
+        // Cập nhật bảng trong trang
+        const tableRows = document.querySelectorAll('#notificationTableBody tr');
+        tableRows.forEach(row => {
+            if (row.dataset.notificationId === notificationId.toString()) {
+                row.classList.remove('notification-unread');
+                row.style.cursor = 'default';
+                const statusCell = row.querySelector('td:last-child');
+                if (statusCell) statusCell.textContent = 'Đã đọc';
+            }
+        });
+
+        // Cập nhật bảng trong modal
+        const modalRows = document.querySelectorAll('#modalNotificationTableBody tr');
+        modalRows.forEach(row => {
+            if (row.dataset.notificationId === notificationId.toString()) {
+                row.classList.remove('notification-unread');
+                row.style.cursor = 'default';
+                const statusCell = row.querySelector('td:last-child');
+                if (statusCell) statusCell.textContent = 'Đã đọc';
+            }
+        });
     }
 
     function markAllAsRead() {
@@ -413,25 +488,36 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         })
             .then(response => {
-                if (response.ok) {
-                    const unreadItems = document.querySelectorAll('.notification-unread');
-                    unreadItems.forEach(item => {
-                        item.classList.remove('notification-unread');
-                        item.style.cursor = 'default';
-                        const indicator = item.querySelector('.badge');
-                        if (indicator) indicator.remove();
-                        if (item.tagName === 'TR') {
-                            const statusCell = item.querySelector('td:last-child');
-                            if (statusCell) statusCell.textContent = 'Đã đọc';
-                        }
-                    });
-                    updateUnreadCount(0);
-                    const markAllButtons = document.querySelectorAll('[onclick="markAllAsRead()"]');
-                    markAllButtons.forEach(btn => btn.style.display = 'none');
-                    if (document.getElementById('modalNotificationTableBody')) loadNotificationsForModal();
-                    if (document.getElementById('notificationTableBody')) loadNotificationsForTable();
-                } else {
+                if (!response.ok) {
                     throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
+                }
+                return response.json(); // Giả sử server trả về JSON với unreadCount
+            })
+            .then(data => {
+                const unreadItems = document.querySelectorAll('.notification-unread');
+                unreadItems.forEach(item => {
+                    item.classList.remove('notification-unread');
+                    item.style.cursor = 'default';
+                    const indicator = item.querySelector('.badge');
+                    if (indicator) indicator.remove();
+                    if (item.tagName === 'TR') {
+                        const statusCell = item.querySelector('td:last-child');
+                        if (statusCell) statusCell.textContent = 'Đã đọc';
+                    }
+                });
+                unreadCount = data.unreadCount || 0;
+                updateUnreadCount(unreadCount);
+                const markAllButtons = document.querySelectorAll('[onclick="markAllAsRead()"]');
+                markAllButtons.forEach(btn => btn.style.display = 'none');
+                // Tải lại danh sách để đảm bảo đồng bộ
+                if (document.getElementById('notificationContainer').classList.contains('show')) {
+                    loadNotifications();
+                }
+                if (document.getElementById('notificationTableBody')) {
+                    loadNotificationsForTable();
+                }
+                if (document.getElementById('modalNotificationTableBody')) {
+                    loadNotificationsForModal();
                 }
             })
             .catch(error => {
@@ -441,6 +527,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateUnreadCount(count) {
+        unreadCount = count;
         const badge = document.querySelector('.notification-badge span');
         const badgeContainer = document.querySelector('.notification-badge');
         if (count > 0) {
