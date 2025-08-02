@@ -1,4 +1,3 @@
-
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded, initializing notification system...');
 
@@ -12,6 +11,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let totalPages = 1;
     let unreadCount = 0;
     let isDropdownOpen = false;
+    let cachedNotifications = null;
+    let lastFetchTime = 0;
+    const CACHE_DURATION = 30000; // Cache trong 30 giây
 
     // Hàm debounce để ngăn gọi API nhiều lần
     function debounce(func, wait) {
@@ -24,6 +26,25 @@ document.addEventListener('DOMContentLoaded', function () {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+
+    // Hàm hiển thị toast
+    function showToast(message, type = 'success') {
+        const toastContainer = document.createElement('div');
+        toastContainer.className = `position-fixed top-0 end-0 p-3`; // Thay đổi từ bottom-0 thành top-0
+        toastContainer.style.zIndex = '1050';
+        toastContainer.innerHTML = `
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+        document.body.appendChild(toastContainer);
+        const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
+        toast.show();
+        setTimeout(() => toastContainer.remove(), 3000);
     }
 
     // Xử lý chuông thông báo
@@ -93,13 +114,28 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Kiểm tra cache
+        const now = new Date().getTime();
+        if (cachedNotifications && (now - lastFetchTime < CACHE_DURATION)) {
+            console.log('Sử dụng dữ liệu từ cache');
+            if (loadingState) loadingState.classList.add('d-none');
+            if (cachedNotifications.length > 0) {
+                renderNotifications(cachedNotifications.filter(n => !n.daXem).slice(0, 5));
+                updateUnreadCount(unreadCount);
+            } else {
+                if (emptyState) emptyState.classList.remove('d-none');
+            }
+            checkEmptyState();
+            return;
+        }
+
         if (loadingState) loadingState.classList.remove('d-none');
         if (emptyState) emptyState.classList.add('d-none');
 
         const existingNotifications = notificationContainer.querySelectorAll('.notification-item:not(#loadingState):not(#emptyState)') || [];
         existingNotifications.forEach(item => item.remove());
 
-        fetch('/acvstore/thong-bao/load?_=' + new Date().getTime())
+        fetch('/acvstore/thong-bao/load?unread=true&_=' + new Date().getTime())
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
@@ -107,14 +143,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 return response.json();
             })
             .then(data => {
-                console.log('Data received:', data);
+                console.log('Dữ liệu thông báo:', JSON.stringify(data, null, 2));
                 console.log('Số thông báo nhận được:', data.notifications ? data.notifications.length : 0);
                 if (loadingState) loadingState.classList.add('d-none');
                 if (data.notifications && Array.isArray(data.notifications) && data.notifications.length > 0) {
-                    renderNotifications(data.notifications.slice(0, 5));
+                    cachedNotifications = data.notifications;
+                    lastFetchTime = now;
+                    renderNotifications(data.notifications.filter(n => !n.daXem).slice(0, 5));
                     unreadCount = data.unreadCount || 0;
                     updateUnreadCount(unreadCount);
                 } else {
+                    cachedNotifications = [];
                     if (emptyState) emptyState.classList.remove('d-none');
                 }
                 checkEmptyState();
@@ -169,10 +208,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 const errorRow = document.createElement('tr');
                 errorRow.innerHTML = `
-<td colspan="5" class="text-center">
-    <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
-</td>
-`;
+                    <td colspan="5" class="text-center">
+                        <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
+                    </td>
+                `;
                 tableBody.appendChild(errorRow);
             });
     }
@@ -222,10 +261,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (loadingState) loadingState.classList.add('d-none');
                 const errorRow = document.createElement('tr');
                 errorRow.innerHTML = `
-<td colspan="5" class="text-center">
-    <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
-</td>
-`;
+                    <td colspan="5" class="text-center">
+                        <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
+                    </td>
+                `;
                 tableBody.appendChild(errorRow);
             });
     }
@@ -239,12 +278,15 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
+        // Lọc chỉ thông báo chưa đọc
+        const unreadNotifications = notifications.filter(n => !n.daXem);
+
+        if (!unreadNotifications || !Array.isArray(unreadNotifications) || unreadNotifications.length === 0) {
             if (emptyState) emptyState.classList.remove('d-none');
             return;
         }
 
-        notifications.slice(0, 5).forEach((notification, index) => {
+        unreadNotifications.slice(0, 5).forEach((notification, index) => {
             const timeAgo = formatTimeAgo(notification.thoiGian);
             const icon = '<i class="fas fa-info-circle text-primary"></i>';
             const tieuDe = notification.tieuDe || 'Không có tiêu đề';
@@ -252,19 +294,19 @@ document.addEventListener('DOMContentLoaded', function () {
             const item = document.createElement('li');
             item.className = `notification-item px-3 py-2 ${notification.daXem ? '' : 'notification-unread'}`;
             item.style.cursor = 'pointer';
-            item.dataset.notificationId = notification.idThongBao;
-            item.onclick = () => showConfirmModal(notification.idThongBao, item, tieuDe);
+            item.dataset.notificationId = notification.idChiTietThongBao;
+            item.onclick = () => showConfirmModal(notification.idChiTietThongBao, item, tieuDe);
             item.innerHTML = `
-<div class="d-flex align-items-start">
-    <div class="me-2">${icon}</div>
-<div class="flex-grow-1">
-    <div class="fw-semibold mb-1">${escapeHtml(tieuDe)}</div>
-    <div class="text-muted notification-content">${escapeHtml(noiDung)}</div>
-    <div class="text-end notification-time mt-1">${timeAgo}</div>
-</div>
-${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
-</div>
-`;
+                <div class="d-flex align-items-start">
+                    <div class="me-2">${icon}</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-semibold mb-1">${escapeHtml(tieuDe)}</div>
+                        <div class="text-muted notification-content">${escapeHtml(noiDung)}</div>
+                        <div class="text-end notification-time mt-1">${timeAgo}</div>
+                    </div>
+                    ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
+                </div>
+            `;
             anchor.before(item);
         });
     }
@@ -299,16 +341,16 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
             const row = document.createElement('tr');
             row.className = notification.daXem ? '' : 'notification-unread';
             row.style.cursor = 'pointer';
-            row.dataset.notificationId = notification.idThongBao;
-            row.onclick = () => showConfirmModal(notification.idThongBao, row, tieuDe);
+            row.dataset.notificationId = notification.idChiTietThongBao;
+            row.onclick = () => showConfirmModal(notification.idChiTietThongBao, row, tieuDe);
 
             row.innerHTML = `
-<td>${baseIndex + index + 1}</td>
-<td>${escapeHtml(tieuDe)}</td>
-<td>${escapeHtml(noiDung)}</td>
-<td>${timeAgo}</td>
-<td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
-    `;
+                <td>${baseIndex + index + 1}</td>
+                <td>${escapeHtml(tieuDe)}</td>
+                <td>${escapeHtml(noiDung)}</td>
+                <td>${timeAgo}</td>
+                <td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
+            `;
 
             tableBody.appendChild(row);
         });
@@ -374,6 +416,7 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
     }
 
     function showConfirmModal(notificationId, element, tieuDe = 'Thông báo') {
+        console.log('Hiển thị modal xác nhận cho idChiTietThongBao:', notificationId);
         const modal = document.getElementById('confirmReadModal');
         if (!modal) {
             console.error('Confirm modal not found');
@@ -393,19 +436,13 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
         confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
 
         newConfirmButton.addEventListener('click', () => {
+            console.log('Nút xác nhận được nhấn cho idChiTietThongBao:', notificationId);
             markAsRead(notificationId, element);
             modalInstance.hide();
-            if (wasDropdownOpen) {
-                const dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('notificationDropdown'));
-                dropdownInstance.show();
-            }
         });
 
         modal.addEventListener('hidden.bs.modal', function () {
-            if (wasDropdownOpen) {
-                const dropdownInstance = bootstrap.Dropdown.getOrCreateInstance(document.getElementById('notificationDropdown'));
-                dropdownInstance.show();
-            }
+            console.log('Modal xác nhận đã đóng, wasDropdownOpen:', wasDropdownOpen);
         }, { once: true });
     }
 
@@ -415,63 +452,70 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: `idThongBao=${notificationId}`
+            body: `idChiTietThongBao=${encodeURIComponent(notificationId)}`
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
+                    throw new Error(`Lỗi server: ${response.status}`);
                 }
-                return response.json(); // Giả sử server trả về JSON với unreadCount mới
+                return response.json();
             })
             .then(data => {
-                // Cập nhật giao diện cho thông báo được đánh dấu
+                console.log('Dữ liệu từ server:', data);
                 element.classList.remove('notification-unread');
-                element.style.cursor = 'default';
-                const indicator = element.querySelector('.badge');
-                if (indicator) indicator.remove();
+                const badge = element.querySelector('.badge');
+                if (badge) badge.remove();
+
                 if (element.tagName === 'TR') {
                     const statusCell = element.querySelector('td:last-child');
                     if (statusCell) statusCell.textContent = 'Đã đọc';
                 }
-                // Cập nhật unreadCount từ server
+
                 unreadCount = data.unreadCount || Math.max(0, unreadCount - 1);
                 updateUnreadCount(unreadCount);
-                // Cập nhật trạng thái trong tất cả các giao diện
                 updateNotificationInLists(notificationId);
+
+                // Xóa thông báo khỏi dropdown ngay lập tức
+                if (element.classList.contains('notification-item')) {
+                    element.remove();
+                    checkEmptyState();
+                }
+
+                showToast('Thông báo đã được đánh dấu là đã đọc!');
+                if (isDropdownOpen) {
+                    loadNotifications();
+                }
             })
             .catch(error => {
-                console.error('Lỗi đánh dấu thông báo đã đọc:', error);
-                alert('Không thể đánh dấu thông báo đã đọc. Vui lòng thử lại sau.');
+                console.error('Lỗi khi đánh dấu đã đọc:', error);
+                showToast('Không thể đánh dấu thông báo đã đọc.', 'danger');
             });
     }
 
     function updateNotificationInLists(notificationId) {
-        // Cập nhật dropdown
+        const idString = notificationId.toString();
+        console.log('Cập nhật giao diện cho idChiTietThongBao:', idString);
         const dropdownItems = document.querySelectorAll('#notificationContainer .notification-item');
         dropdownItems.forEach(item => {
-            if (item.dataset.notificationId === notificationId.toString()) {
-                item.classList.remove('notification-unread');
-                item.style.cursor = 'default';
-                const badge = item.querySelector('.badge');
-                if (badge) badge.remove();
+            if (item.dataset.notificationId === idString) {
+                console.log('Cập nhật dropdown item:', item.dataset.notificationId);
+                item.remove(); // Xóa khỏi dropdown
             }
         });
-
-        // Cập nhật bảng trong trang
         const tableRows = document.querySelectorAll('#notificationTableBody tr');
         tableRows.forEach(row => {
-            if (row.dataset.notificationId === notificationId.toString()) {
+            if (row.dataset.notificationId === idString) {
+                console.log('Cập nhật table row:', row.dataset.notificationId);
                 row.classList.remove('notification-unread');
                 row.style.cursor = 'default';
                 const statusCell = row.querySelector('td:last-child');
                 if (statusCell) statusCell.textContent = 'Đã đọc';
             }
         });
-
-        // Cập nhật bảng trong modal
         const modalRows = document.querySelectorAll('#modalNotificationTableBody tr');
         modalRows.forEach(row => {
-            if (row.dataset.notificationId === notificationId.toString()) {
+            if (row.dataset.notificationId === idString) {
+                console.log('Cập nhật modal row:', row.dataset.notificationId);
                 row.classList.remove('notification-unread');
                 row.style.cursor = 'default';
                 const statusCell = row.querySelector('td:last-child');
@@ -489,11 +533,14 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}`);
+                    return response.text().then(text => {
+                        throw new Error(`Lỗi kết nối! Mã trạng thái: ${response.status}, Nội dung: ${text}`);
+                    });
                 }
-                return response.json(); // Giả sử server trả về JSON với unreadCount
+                return response.json();
             })
             .then(data => {
+                console.log('Đánh dấu tất cả đã đọc - Response:', data);
                 const unreadItems = document.querySelectorAll('.notification-unread');
                 unreadItems.forEach(item => {
                     item.classList.remove('notification-unread');
@@ -504,12 +551,15 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
                         const statusCell = item.querySelector('td:last-child');
                         if (statusCell) statusCell.textContent = 'Đã đọc';
                     }
+                    if (item.classList.contains('notification-item')) {
+                        item.remove();
+                    }
                 });
                 unreadCount = data.unreadCount || 0;
                 updateUnreadCount(unreadCount);
                 const markAllButtons = document.querySelectorAll('[onclick="markAllAsRead()"]');
                 markAllButtons.forEach(btn => btn.style.display = 'none');
-                // Tải lại danh sách để đảm bảo đồng bộ
+                showToast('Đã đánh dấu tất cả thông báo là đã đọc!');
                 if (document.getElementById('notificationContainer').classList.contains('show')) {
                     loadNotifications();
                 }
@@ -519,10 +569,11 @@ ${notification.daXem ? '' : '<span class="badge bg-primary ms-2">Mới</span>'}
                 if (document.getElementById('modalNotificationTableBody')) {
                     loadNotificationsForModal();
                 }
+                checkEmptyState();
             })
             .catch(error => {
                 console.error('Lỗi đánh dấu tất cả thông báo đã đọc:', error);
-                alert('Không thể đánh dấu tất cả thông báo đã đọc. Vui lòng thử lại sau.');
+                showToast('Không thể đánh dấu tất cả thông báo đã đọc.', 'danger');
             });
     }
 

@@ -4,6 +4,7 @@ import com.example.AsmGD1.dto.ThongBao.ThongBaoDTO;
 import com.example.AsmGD1.entity.ChiTietThongBaoNhom;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,10 +35,15 @@ public class ThongBaoController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    @Autowired
+    private ChiTietThongBaoNhomRepository chiTietThongBaoNhomRepository;
+
     @GetMapping("/load")
     @ResponseBody
-    public ResponseEntity<?> taiDanhSachThongBao(Authentication authentication, HttpServletResponse response) {
-        // Ngăn cache
+    public ResponseEntity<?> taiDanhSachThongBao(
+            Authentication authentication,
+            @RequestParam(value = "unread", defaultValue = "false") boolean unread,
+            HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
@@ -53,11 +59,16 @@ public class ThongBaoController {
         }
 
         NguoiDung user = optionalNguoiDung.get();
-        List<ChiTietThongBaoNhom> danhSach = thongBaoService.lay5ThongBaoMoiNhat(user.getId());
+        List<ChiTietThongBaoNhom> danhSach;
+        if (unread) {
+            danhSach = thongBaoService.layThongBaoChuaXem(user.getId());
+        } else {
+            danhSach = thongBaoService.lay5ThongBaoMoiNhat(user.getId());
+        }
 
         List<ThongBaoDTO> dtoList = danhSach.stream()
                 .map(ThongBaoDTO::new)
-                .limit(5) // Đảm bảo chỉ lấy 5 thông báo
+                .limit(5)
                 .collect(Collectors.toList());
 
         long soChuaDoc = thongBaoService.demSoThongBaoChuaXem(user.getId());
@@ -76,8 +87,6 @@ public class ThongBaoController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             HttpServletResponse response) {
-
-        // Ngăn cache
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
@@ -88,7 +97,7 @@ public class ThongBaoController {
         if (optionalNguoiDung.isPresent()) {
             NguoiDung nguoiDung = optionalNguoiDung.get();
             List<ChiTietThongBaoNhom> notifications = thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId(), page, size);
-            long totalCount = thongBaoService.demTongSoThongBao(nguoiDung.getId()); // thêm dòng này
+            long totalCount = thongBaoService.demTongSoThongBao(nguoiDung.getId());
 
             List<ThongBaoDTO> dtoList = notifications.stream()
                     .map(ThongBaoDTO::new)
@@ -96,35 +105,47 @@ public class ThongBaoController {
 
             responseMap.put("notifications", dtoList);
             responseMap.put("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
-            responseMap.put("totalCount", totalCount); // thêm dòng này
+            responseMap.put("totalCount", totalCount);
             responseMap.put("user", nguoiDung);
             return ResponseEntity.ok(responseMap);
         } else {
             responseMap.put("notifications", null);
             responseMap.put("unreadCount", 0);
-            responseMap.put("totalCount", 0); // thêm dòng này
+            responseMap.put("totalCount", 0);
             responseMap.put("user", null);
             return ResponseEntity.ok(responseMap);
         }
     }
 
-
     @PostMapping("/danh-dau-da-xem")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> danhDauThongBaoDaXem(@RequestParam UUID idThongBao, Principal principal) {
+    public ResponseEntity<Map<String, Object>> danhDauThongBaoDaXem(@RequestParam UUID idChiTietThongBao, Principal principal) {
         Map<String, Object> response = new HashMap<>();
         try {
+            System.out.println("Nhận yêu cầu đánh dấu đã đọc - idChiTietThongBao: " + idChiTietThongBao + ", Principal: " + (principal != null ? principal.getName() : "null"));
+            if (principal == null) {
+                response.put("error", "Người dùng chưa đăng nhập.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
             Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
             if (!optionalNguoiDung.isPresent()) {
+                System.out.println("Không tìm thấy người dùng với tên đăng nhập: " + principal.getName());
                 response.put("error", "Không tìm thấy người dùng.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             NguoiDung nguoiDung = optionalNguoiDung.get();
-            thongBaoService.danhDauDaXem(idThongBao, nguoiDung.getId());
+            System.out.println("Người dùng tìm thấy: " + nguoiDung.getTenDangNhap() + ", id: " + nguoiDung.getId());
+            thongBaoService.danhDauDaXem(idChiTietThongBao, nguoiDung.getId());
             long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId());
+            System.out.println("Số thông báo chưa đọc sau khi cập nhật: " + unreadCount);
             response.put("unreadCount", unreadCount);
             return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            System.err.println("Lỗi khi đánh dấu đã đọc: " + e.getMessage());
+            response.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (Exception e) {
+            System.err.println("Lỗi server khi đánh dấu đã đọc: " + e.getMessage());
             response.put("error", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
@@ -149,5 +170,15 @@ public class ThongBaoController {
             response.put("error", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
+    }
+
+    @GetMapping("/debug/thong-bao")
+    @ResponseBody
+    public List<ChiTietThongBaoNhom> debugThongBao(Principal principal) {
+        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
+        if (optionalNguoiDung.isPresent()) {
+            return chiTietThongBaoNhomRepository.findByNguoiDungIdOrderByThongBaoNhom_ThoiGianTaoDesc(optionalNguoiDung.get().getId());
+        }
+        return List.of();
     }
 }
