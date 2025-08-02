@@ -23,6 +23,31 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
         .quantity-control { display: flex; align-items: center; gap: 10px; }
         .quantity-input { width: 60px; text-align: center; }
+
+        /* Style cho footer và bản đồ */
+        .map-container {
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .map-container:hover {
+            transform: translateY(-5px);
+        }
+
+        @keyframes patternMove {
+            0% { background-position: 0 0, 0 0; }
+            100% { background-position: 60px 60px, -60px 60px; }
+        }
+
+        @media (max-width: 768px) {
+            .map-container iframe {
+                height: 200px;
+            }
+            .container.mx-auto {
+                padding: 0 10px;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -123,7 +148,7 @@
     </div>
 </section>
 
-<footer class="bg-gray-800 text-white py-8">
+<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px; position: relative; z-index: 1;">
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
             <h3 class="text-lg font-bold mb-4">ACV Store</h3>
@@ -132,23 +157,32 @@
         <div>
             <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
             <ul class="space-y-2">
-                <li><a href="/new" class="hover:text-orange-500">Sản phẩm mới</a></li>
-                <li><a href="/all" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
-                <li><a href="/bestsellers" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+                <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-blue-300">Tủ đồ mùa hè</a></li>
+                <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
             </ul>
         </div>
         <div>
             <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-            <p class="text-sm">Email: support@160store.com</p>
-            <p class="text-sm">Hotline: 0123 456 789</p>
+            <p class="text-sm">Địa chỉ: Chung Cư Le Capitole, Hà Nội, Việt Nam</p>
+            <p class="text-sm">Email: datn.acv@gmail.com</p>
+            <p class="text-sm">Hotline: 1900 8686</p>
             <div class="flex space-x-4 mt-4">
-                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
             </div>
         </div>
     </div>
+    <div class="container mx-auto mt-8">
+        <div class="map-container relative overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.646955515961!2d105.81876547508028!3d21.00678448063709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ad4154d7e2e9%3A0x4ac6110617de42bc!2sChung%20C%C6%B0%20Le%20Capitole!5e0!3m2!1sen!2s!4v1754127537191!5m2!1sen!2s" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <p class="text-center text-sm mt-2 text-gray-300">* Bản đồ hiển thị vị trí chi nhánh chính tại Chung Cư Le Capitole, Hà Nội. Vui lòng liên hệ để xác nhận giờ mở cửa.</p>
+    </div>
     <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+    <!-- Hiệu ứng nền -->
+    <div class="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%),linear-gradient(-45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%)] bg-[length:60px_60px] animate-[patternMove_20s_linear_infinite] -z-10"></div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
