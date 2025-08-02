@@ -14,6 +14,13 @@
 
       const { orderData, tabId } = JSON.parse(pending);
 
+      // Đảm bảo soTienKhachDua là 0 nếu thanh toán chuyển khoản
+      if (orderData.phuongThucThanhToan === '550E8400-E29B-41D4-A716-446655440018') {
+        orderData.soTienKhachDua = 0;
+      }
+
+      console.log('orderData before sending to /create-order:', JSON.stringify(orderData, null, 2));
+
       try {
         const res = await fetch("http://localhost:8080/acvstore/ban-hang/create-order", {
           method: "POST",
@@ -33,14 +40,16 @@
         document.getElementById("orderCode").textContent = result.maDonHang;
         sessionStorage.removeItem("pendingOrder");
 
-        // 👉 Xoá tab đã thanh toán
+        // Xóa tab đã thanh toán
         let tabs = JSON.parse(localStorage.getItem('orderTabs') || '[]');
+        console.log('Tabs before filtering:', JSON.stringify(tabs, null, 2));
         tabs = tabs.filter(t => String(t.id) !== String(tabId));
 
-        // 👉 Nếu không còn tab nào, tạo lại tab mặc định Đơn 1
+        // Nếu không còn tab nào, tạo lại tab mặc định Đơn 1
         if (tabs.length === 0) {
+          const newTabId = 1;
           const newTab = {
-            id: 1,
+            id: newTabId,
             tenTab: "Đơn 1",
             sanPhams: [],
             subTotal: 0,
@@ -52,7 +61,7 @@
             soTienKhachDua: 0,
             tienThua: 0,
             khachHangDaChon: null,
-            phuongThucThanhToan: null,
+            phuongThucThanhToan: "550e8400-e29b-41d4-a716-446655440017",
             customerPhone: '',
             customerName: '',
             customerEmail: '',
@@ -62,12 +71,14 @@
             selectedAddress: ''
           };
           tabs.push(newTab);
-          localStorage.setItem('currentTabId', 1);
+          localStorage.setItem('currentTabId', newTabId);
+          console.log('New tab created:', JSON.stringify(newTab, null, 2));
         }
 
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        console.log('Tabs saved to localStorage:', JSON.stringify(tabs, null, 2));
 
-        // ⏳ Chuyển hướng sau 2 giây
+        // Chuyển hướng sau 2 giây
         setTimeout(() => {
           window.location.href = "/acvstore/ban-hang";
         }, 2000);
@@ -85,7 +96,6 @@
       font-family: sans-serif;
       background-color: #f9fafb;
     }
-
     .success-box {
       background: white;
       display: inline-block;
@@ -93,13 +103,11 @@
       border-radius: 8px;
       box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
     }
-
     .success-title {
       color: green;
       font-size: 24px;
       font-weight: bold;
     }
-
     .btn {
       padding: 10px 20px;
       background-color: #4f46e5;
@@ -109,7 +117,6 @@
       display: inline-block;
       margin-top: 20px;
     }
-
     .btn:hover {
       background-color: #4338ca;
     }
