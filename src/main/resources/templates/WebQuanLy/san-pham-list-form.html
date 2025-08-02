@@ -134,9 +134,9 @@
         }
 
         .card-header span {
-            color: var(--text-white) !important; /* Đảm bảo màu chữ trắng */
-            font-weight: 700; /* Tăng độ đậm để nổi bật */
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Thêm bóng chữ để tăng độ tương phản */
+            color: var(--text-white) !important;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .card-header::before {
@@ -215,9 +215,9 @@
 
         /* Nút Primary (Thêm) */
         .btn-primary {
-            background: var(--primary-color); /* #153054 */
+            background: var(--primary-color);
             border-color: var(--primary-color);
-            color: var(--text-white) !important; /* Đảm bảo màu chữ luôn là trắng */
+            color: var(--text-white) !important;
             box-shadow: 0 4px 15px rgba(21, 48, 84, 0.2);
         }
 
@@ -306,7 +306,6 @@
         .table {
             margin-bottom: 0;
             border-color: var(--border-color);
-            vertical-align: middle;
             width: 100%;
             background: var(--content-background);
             border-radius: 16px;
@@ -328,12 +327,13 @@
             letter-spacing: 0.5px;
             text-align: center;
             color: var(--text-primary);
+            vertical-align: middle;
         }
 
         .table td {
             padding: 1.5rem 1rem;
             border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
+            vertical-align: middle; /* Đây là key fix - đảm bảo tất cả nội dung trong ô được căn giữa theo chiều dọc */
             text-align: center;
             color: var(--text-content);
         }
@@ -362,21 +362,27 @@
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
-        /* Action buttons - nằm ngang */
+        /* Action buttons - đã sửa để căn giữa hoàn hảo */
         .action-buttons {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
             height: 100%;
-            min-height: 60px;
-            flex-wrap: nowrap;
+            width: 100%;
+            /* Loại bỏ min-height và flex-wrap để tránh conflict */
+        }
+
+        /* Đảm bảo các nút trong action-buttons được căn giữa */
+        .action-buttons .btn {
+            margin: 0; /* Loại bỏ margin mặc định */
         }
 
         .form-switch {
             display: flex;
             align-items: center;
             justify-content: center;
+            height: 100%;
         }
 
         .form-check-input {
@@ -738,7 +744,6 @@
             .action-buttons {
                 flex-direction: row;
                 gap: 4px;
-                min-height: auto;
                 justify-content: center;
             }
 
@@ -900,30 +905,32 @@
                             <td>
                                 <span class="fw-bold" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
                             </td>
-                            <!-- Cột Thao tác với nút nằm ngang -->
-                            <td class="action-buttons">
-                                <!-- Nút cho Admin: Edit + View nằm ngang -->
-                                <div th:if="${isAdmin}" class="d-flex gap-2 justify-content-center">
-                                    <button class="btn btn-warning btn-sm"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#editSanPhamModal"
-                                            th:data-sanpham="${sp.id}"
-                                            title="Chỉnh sửa">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
-                                       class="btn btn-success btn-sm"
-                                       title="Xem chi tiết">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </div>
-                                <!-- Nút cho Employee: Chỉ View -->
-                                <div th:unless="${isAdmin}" class="d-flex justify-content-center">
-                                    <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
-                                       class="btn btn-success btn-sm"
-                                       title="Xem chi tiết">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
+                            <!-- Cột Thao tác với nút đã được sửa lỗi căn giữa -->
+                            <td>
+                                <div class="action-buttons">
+                                    <!-- Nút cho Admin: Edit + View nằm ngang -->
+                                    <div th:if="${isAdmin}" class="d-flex gap-2">
+                                        <button class="btn btn-warning btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editSanPhamModal"
+                                                th:data-sanpham="${sp.id}"
+                                                title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
+                                           class="btn btn-success btn-sm"
+                                           title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                    <!-- Nút cho Employee: Chỉ View -->
+                                    <div th:unless="${isAdmin}">
+                                        <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
+                                           class="btn btn-success btn-sm"
+                                           title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
