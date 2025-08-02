@@ -9,189 +9,628 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Giữ nguyên các style hiện có */
+        /* Enhanced styles with better UX/UI */
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding-top: 140px;
+            line-height: 1.6;
+        }
+
         button[disabled] {
             pointer-events: none;
             opacity: 0.5;
             cursor: not-allowed;
         }
-        .navbar { background: linear-gradient(to right, #153054, #1e4066); }
-        .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
-        .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
-        .dropdown:hover .dropdown-menu { display: block; }
-        body { padding-top: 100px; }
-        @media (max-width: 640px) {
-            .dropdown-menu { width: 100%; left: 0; }
-            body { padding-top: 80px; }
+
+        /* Enhanced navbar */
+        .navbar {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
-        .order-card {
-            border: 1px solid #e5e7eb;
+
+        /* Enhanced ticker */
+        .ticker {
+            background: linear-gradient(90deg, #9FD5F7 0%, #b8e0f8 100%);
+            color: #153054;
+            font-weight: 600;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1050;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Enhanced dropdown */
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 12px;
-            margin-bottom: 20px;
-            padding: 15px;
+            z-index: 1000;
+            padding: 8px;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-menu a {
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .dropdown-menu a:hover {
+            background: linear-gradient(135deg, #e0ebf5 0%, #f1f8ff 100%);
+            transform: translateX(4px);
+        }
+
+        /* Enhanced search bar */
+        .search-container input {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .search-container input:focus {
+            border-color: #9FD5F7;
+            box-shadow: 0 0 0 4px rgba(159, 213, 247, 0.2);
+        }
+
+        /* Enhanced page title */
+        .page-title {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 2rem;
+        }
+
+        /* Enhanced tabs */
+        .nav-tabs {
+            border: none;
             background: white;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 16px;
+            padding: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            white-space: nowrap;
         }
-        .order-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+
+        .nav-tabs .nav-item {
+            margin: 0 4px;
         }
-        .order-status {
-            font-weight: bold;
-            color: #153054;
-        }
-        .order-product-img {
-            width: 70px;
-            height: 70px;
-            object-fit: cover;
-            border-radius: 5px;
-            margin-right: 10px;
-        }
-        .nav-tabs .nav-link.active {
-            background-color: #153054;
-            color: white;
-        }
+
         .nav-tabs .nav-link {
-            color: #153054;
+            color: #64748b;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
+
         .nav-tabs .nav-link:hover {
-            color: #1e4066;
+            color: #153054;
+            background: rgba(159, 213, 247, 0.1);
+            transform: translateY(-2px);
         }
-        .text-orange-600 {
-            color: #153054 !important;
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(21, 48, 84, 0.3);
+            transform: translateY(-2px);
         }
-        .rounded-pill {
-            border-radius: 50rem !important;
+
+        .nav-tabs .nav-link.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            pointer-events: none;
         }
-        .btn-outline-primary {
-            border-color: #153054;
+
+        /* Enhanced order cards */
+        .order-card {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            padding: 24px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.06);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .order-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #153054 0%, #9FD5F7 100%);
+        }
+
+        .order-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+
+        /* Enhanced order header */
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .order-info h6 {
+            color: #153054;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .order-date {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Enhanced status badges */
+        .order-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(21, 48, 84, 0.2);
+        }
+
+        /* Enhanced product items */
+        .product-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            margin: 8px 0;
+            background: #f8fafc;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .product-item:hover {
+            background: #f1f5f9;
+            transform: translateX(4px);
+        }
+
+        .order-product-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-right: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .order-product-img:hover {
+            transform: scale(1.05);
+        }
+
+        .product-details h6 {
+            color: #1e293b;
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .product-meta {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        /* Enhanced footer section */
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f1f5f9;
+        }
+
+        .total-amount {
+            font-size: 18px;
+            font-weight: 700;
             color: #153054;
         }
+
+        .total-label {
+            color: #64748b;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        /* Enhanced buttons */
+        .btn-outline-primary {
+            border: 2px solid #153054;
+            color: #153054;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-outline-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
         .btn-outline-primary:hover {
-            background-color: #153054;
             color: white;
+            border-color: #153054;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(21, 48, 84, 0.3);
+        }
+
+        .btn-outline-primary:hover::before {
+            left: 0;
+        }
+
+        /* Enhanced empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.06);
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            color: #cbd5e1;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: #64748b;
+            margin-bottom: 24px;
+        }
+
+        .empty-state a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #153054;
+            font-weight: 600;
+            text-decoration: none;
+            padding: 12px 24px;
+            border: 2px solid #153054;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .empty-state a:hover {
+            background: #153054;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Enhanced chatbot */
+        #chatbot-toggle {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            box-shadow: 0 6px 25px rgba(21, 48, 84, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #chatbot-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(21, 48, 84, 0.4);
+        }
+
+        #chatbot-box {
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Enhanced footer */
+        footer {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        }
+
+        /* Responsive improvements */
+        @media (max-width: 768px) {
+            body { padding-top: 100px; }
+
+            .order-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .order-footer {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .nav-tabs {
+                padding: 4px;
+            }
+
+            .nav-tabs .nav-link {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .product-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .order-product-img {
+                margin-right: 0;
+                margin-bottom: 12px;
+            }
+        }
+
+        /* Loading animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Focus styles for accessibility */
+        .nav-link:focus,
+        .btn:focus,
+        input:focus {
+            outline: 2px solid #9FD5F7;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
 
-<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+<div class="ticker py-2 overflow-hidden fixed top-0 w-full z-50">
     <marquee behavior="scroll" direction="left" scrollamount="5">
         🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
     </marquee>
 </div>
 
 <nav class="navbar fixed-top shadow-lg mt-10 z-40">
-    <div class="container mx-auto flex items-center justify-between py-2 px-4">
-        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+    <div class="container mx-auto flex items-center justify-between py-3 px-4">
+        <a href="/" class="text-2xl font-bold text-white hover:text-[#9FD5F7] transition-colors">
+            <i class="fas fa-store mr-2"></i>ACV Store
+        </a>
         <div class="relative dropdown">
-            <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none">
+            <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none transition-colors flex items-center gap-2">
+                <i class="fas fa-th-large"></i>
                 Danh mục <i class="fas fa-caret-down"></i>
             </button>
             <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
-                <a href="/category/nam" class="block px-4 py-2 hover:bg-[#e0ebf5]">Thời trang Nam</a>
-                <a href="/category/nu" class="block px-4 py-2 hover:bg-[#e0ebf5]">Thời trang Nữ</a>
-                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-[#e0ebf5]">Phụ kiện</a>
-                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-[#e0ebf5]">Gia dụng</a>
+                <a href="/category/nam" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-male mr-2"></i>Thời trang Nam
+                </a>
+                <a href="/category/nu" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-female mr-2"></i>Thời trang Nữ
+                </a>
+                <a href="/category/phu-kien" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-gem mr-2"></i>Phụ kiện
+                </a>
+                <a href="/category/gia-dung" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-home mr-2"></i>Gia dụng
+                </a>
             </div>
         </div>
-        <div class="flex-1 mx-4 max-w-2xl">
+        <div class="flex-1 mx-4 max-w-2xl search-container">
             <div class="relative">
-                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
-                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-3 py-1 rounded-full">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-3 px-5 pr-12 rounded-full border-none focus:outline-none"/>
+                <button class="absolute right-3 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-4 py-2 rounded-full hover:bg-[#1e4066] transition-colors">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
         </div>
-        <div class="flex items-center space-x-4">
-            <a href="/cart" class="text-white text-xl relative">
+        <div class="flex items-center space-x-6">
+            <a href="/cart" class="text-white text-xl relative hover:text-[#9FD5F7] transition-colors">
                 <i class="fas fa-shopping-cart"></i>
-                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">0</span>
             </a>
             <div th:if="${user != null}" class="dropdown">
-                <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
                 </button>
-                <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
-                    <a href="/account/profile" class="block px-4 py-2 hover:bg-[#e0ebf5]">Tài khoản của tôi</a>
-                    <a href="/dsdon-mua" class="block px-4 py-2 hover:bg-[#e0ebf5]">Đơn mua</a>
-                    <a href="/vi" class="block px-4 py-2 hover:bg-[#e0ebf5]">Ví thanh toán</a>
-                    <a href="/customers/logout" class="block px-4 py-2 hover:bg-[#e0ebf5] text-danger">Đăng xuất</a>
-                </div>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
+                    <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
+                    <li><a class="dropdown-item" th:href="@{/vi}">Ví thanh toán</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
+                </ul>
             </div>
-            <a th:if="${user == null}" href="/customers/login" class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none">Đăng nhập</a>
+            <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3" id="loginButton">
+                Đăng nhập
+            </a>
         </div>
     </div>
 </nav>
 
-<div class="container mx-auto py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Đơn mua của bạn</h1>
+<div class="container mx-auto py-8 px-4">
+    <h1 class="page-title text-4xl mb-8 text-center">
+        <i class="fas fa-shopping-bag mr-3"></i>Đơn mua của bạn
+    </h1>
 
-    <ul class="nav nav-tabs mb-4" id="orderTabs">
+    <ul class="nav nav-tabs mb-6" id="orderTabs">
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'" th:href="@{/dsdon-mua(status='tat-ca')}">Tất cả</a>
+            <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'" th:href="@{/dsdon-mua(status='tat-ca')}">
+                <i class="fas fa-list mr-2"></i>Tất cả
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chưa xác nhận</a>
+            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">
+                <i class="fas fa-clock mr-2"></i>Chờ xác nhận
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'da-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='da-xac-nhan')}">Đã xác nhận</a>
+            <a class="nav-link" th:classappend="${status == 'da-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='da-xac-nhan')}">
+                <i class="fas fa-check-circle mr-2"></i>Đã xác nhận
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'dang-xu-ly-online'} ? ' active'" th:href="@{/dsdon-mua(status='dang-xu-ly-online')}">Đang xử lý</a>
+            <a class="nav-link" th:classappend="${status == 'dang-xu-ly-online'} ? ' active'" th:href="@{/dsdon-mua(status='dang-xu-ly-online')}">
+                <i class="fas fa-cog mr-2"></i>Đang xử lý
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'dang-van-chuyen'} ? ' active'" th:href="@{/dsdon-mua(status='dang-van-chuyen')}">Đang vận chuyển</a>
+            <a class="nav-link" th:classappend="${status == 'dang-van-chuyen'} ? ' active'" th:href="@{/dsdon-mua(status='dang-van-chuyen')}">
+                <i class="fas fa-truck mr-2"></i>Đang vận chuyển
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'van-chuyen-thanh-cong'} ? ' active'" th:href="@{/dsdon-mua(status='van-chuyen-thanh-cong')}">Vận chuyển thành công </a>
+            <a class="nav-link" th:classappend="${status == 'van-chuyen-thanh-cong'} ? ' active'" th:href="@{/dsdon-mua(status='van-chuyen-thanh-cong')}">
+                <i class="fas fa-shipping-fast mr-2"></i>Vận chuyển thành công
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'hoan-thanh'} ? ' active'" th:href="@{/dsdon-mua(status='hoan-thanh')}">Hoàn thành</a>
+            <a class="nav-link" th:classappend="${status == 'hoan-thanh'} ? ' active'" th:href="@{/dsdon-mua(status='hoan-thanh')}">
+                <i class="fas fa-check-double mr-2"></i>Hoàn thành
+            </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'da-huy'} ? ' active'" th:href="@{/dsdon-mua(status='da-huy')}">Đã hủy</a>
+            <a class="nav-link" th:classappend="${status == 'da-huy'} ? ' active'" th:href="@{/dsdon-mua(status='da-huy')}">
+                <i class="fas fa-times-circle mr-2"></i>Đã hủy
+            </a>
         </li>
     </ul>
 
     <div th:if="${danhSachHoaDon != null and !#lists.isEmpty(danhSachHoaDon)}">
         <div th:each="hoaDon : ${danhSachHoaDon}" class="order-card">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <strong>Mã đơn:</strong> <span th:text="${hoaDon.donHang.maDonHang}"></span><br/>
-                    <small th:text="${hoaDon.ngayTao.toLocalDate()} + ' ' + ${hoaDon.ngayTao.toLocalTime()}"></small>
+            <div class="order-header">
+                <div class="order-info">
+                    <h6><i class="fas fa-receipt mr-2"></i>Mã đơn: <span th:text="${hoaDon.donHang.maDonHang}"></span></h6>
+                    <div class="order-date">
+                        <i class="fas fa-calendar-alt mr-1"></i>
+                        <span th:text="${hoaDon.ngayTao.toLocalDate()} + ' ' + ${hoaDon.ngayTao.toLocalTime()}"></span>
+                    </div>
                 </div>
                 <div class="order-status" th:text="${hoaDon.trangThai}"></div>
             </div>
-            <hr>
-            <div th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}" class="d-flex align-items-center mb-2">
-                <img th:src="${chiTiet.chiTietSanPham.hinhAnhSanPhams != null and !#lists.isEmpty(chiTiet.chiTietSanPham.hinhAnhSanPhams) ? chiTiet.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}" class="order-product-img" alt="Ảnh sản phẩm"/>
-                <div>
-                    <div th:text="${chiTiet.tenSanPham}"></div>
-                    <small>Số lượng: <span th:text="${chiTiet.soLuong}"></span></small><br/>
-                    <small>Giá: <span th:text="${chiTiet.formattedGia} + ' VNĐ'"></span></small>
+
+            <div class="products-section">
+                <div th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}" class="product-item">
+                    <img th:src="${chiTiet.chiTietSanPham.hinhAnhSanPhams != null and !#lists.isEmpty(chiTiet.chiTietSanPham.hinhAnhSanPhams) ? chiTiet.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}"
+                         class="order-product-img" alt="Ảnh sản phẩm"/>
+                    <div class="product-details flex-1">
+                        <h6 th:text="${chiTiet.tenSanPham}"></h6>
+                        <div class="product-meta">
+                            <span><i class="fas fa-cubes mr-1"></i>Số lượng: <strong th:text="${chiTiet.soLuong}"></strong></span>
+                            <span class="ml-4"><i class="fas fa-tag mr-1"></i>Giá: <strong th:text="${chiTiet.formattedGia} + ' VNĐ'"></strong></span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <hr>
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>Tổng tiền:</strong>
-                    <span class="text-[#153054] fs-5" th:text="${hoaDon.formattedTongTien} + ' VNĐ'"></span>
+
+            <div class="order-footer">
+                <div class="total-amount">
+                    <span class="total-label">Tổng tiền:</span>
+                    <span th:text="${hoaDon.formattedTongTien} + ' VNĐ'"></span>
                 </div>
-                <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
+                <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary">
+                    <i class="fas fa-eye mr-2"></i>Xem chi tiết
+                </a>
             </div>
         </div>
     </div>
 
-    <div th:if="${danhSachHoaDon == null or #lists.isEmpty(danhSachHoaDon)}" class="text-center mt-5">
-        <p class="text-gray-600">Không có đơn hàng nào.</p>
-        <a href="/" class="text-[#153054] font-semibold hover:text-[#1e4066] mt-2 inline-block">Quay lại trang chủ</a>
+    <div th:if="${danhSachHoaDon == null or #lists.isEmpty(danhSachHoaDon)}" class="empty-state">
+        <i class="fas fa-shopping-bag"></i>
+        <h3>Chưa có đơn hàng nào</h3>
+        <p>Bạn chưa có đơn hàng nào trong danh sách này. Hãy khám phá các sản phẩm tuyệt vời của chúng tôi!</p>
+        <a href="/">
+            <i class="fas fa-arrow-left mr-2"></i>Quay lại mua sắm
+        </a>
     </div>
 </div>
 
-<!-- Giữ nguyên phần chatbot và footer -->
-<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+<!-- Enhanced chatbot -->
+<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background: linear-gradient(135deg, #153054 0%, #1e4066 100%); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 6px 25px rgba(21, 48, 84, 0.3); transition: all 0.3s ease;">
     <i class="fas fa-robot fa-lg text-white"></i>
 </div>
 
@@ -202,76 +641,106 @@
     width: 420px;
     max-height: 620px;
     background: #fff;
-    border-radius: 7px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     display: none;
     flex-direction: column;
     overflow: hidden;
     z-index: 10000;
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'Inter', sans-serif;
+    backdrop-filter: blur(10px);
   ">
-    <div style="background-color: #153054; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+    <div style="background: linear-gradient(135deg, #153054 0%, #1e4066 100%); color: white; padding: 16px 20px; display: flex; align-items: center; gap: 12px;">
         <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
-        <div style="font-weight: bold;">ACV Bot</div>
-        <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">×</span>
+        <div style="font-weight: 600; font-size: 16px;">ACV Bot</div>
+        <span id="chatbot-close" style="margin-left: auto; cursor: pointer; font-size: 20px; font-weight: bold;">×</span>
     </div>
-    <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;">
-        <div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>
+    <div id="chat-messages" style="padding: 16px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.5; background: #f8fafc;">
+        <div id="typing-indicator" class="chatbot-msg-bot hidden">
+            <i class="fas fa-circle-notch fa-spin mr-2"></i>Đang gõ...
+        </div>
     </div>
-    <div id="quick-replies" class="flex flex-wrap gap-2 p-4">
-        <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Sản phẩm mới nhất</button>
-        <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Kiểm tra đơn hàng</button>
-        <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Chính sách đổi trả</button>
+    <div id="quick-replies" class="flex flex-wrap gap-2 p-4 bg-gray-50">
+        <button class="quick-reply px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-full text-sm font-medium transition-colors">
+            <i class="fas fa-star mr-1"></i>Sản phẩm mới nhất
+        </button>
+        <button class="quick-reply px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-full text-sm font-medium transition-colors">
+            <i class="fas fa-search mr-1"></i>Kiểm tra đơn hàng
+        </button>
+        <button class="quick-reply px-3 py-2 bg-blue-100 hover:bg-blue-200 rounded-full text-sm font-medium transition-colors">
+            <i class="fas fa-exchange-alt mr-1"></i>Chính sách đổi trả
+        </button>
     </div>
-    <div style="padding: 10px; border-top: 1px solid #eee;">
+    <div style="padding: 12px; border-top: 1px solid #e2e8f0;">
         <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
         width: 100%;
         padding: 12px 16px;
-        border: 1px solid #ccc;
+        border: 2px solid #e2e8f0;
         border-radius: 24px;
-        font-size: 15px;
+        font-size: 14px;
         outline: none;
         transition: border 0.2s ease-in-out;
+        background: white;
       ">
     </div>
 </div>
 
-<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px">
-    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+<footer style="background: linear-gradient(135deg, #153054 0%, #1e4066 100%); color: white; padding-top: 40px; padding-bottom: 20px; position: relative;">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
         <div>
-            <h3 class="text-lg font-bold mb-4">ACV Store</h3>
-            <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
-            <div class="mt-4">
-                <h4 class="text-sm font-semibold">Đăng ký nhận tin</h4>
-                <form class="flex gap-2 mt-2">
-                    <input type="email" class="w-full p-2 rounded border" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Đăng ký</button>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-store mr-3"></i>ACV Store
+            </h3>
+            <p class="text-sm mb-6 opacity-90">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+            <div class="mt-6">
+                <h4 class="text-sm font-semibold mb-3 flex items-center">
+                    <i class="fas fa-envelope mr-2"></i>Đăng ký nhận tin
+                </h4>
+                <form class="flex gap-2 mt-3">
+                    <input type="email" class="flex-1 p-3 rounded-lg border-none focus:outline-none text-gray-800" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
+                    <button type="submit" class="bg-white text-[#153054] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </form>
             </div>
         </div>
         <div>
-            <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
-            <ul class="space-y-2">
-                <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
-                <li><a href="/all" class="hover:text-blue-300">Tủ đồ mùa hè</a></li>
-                <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-link mr-3"></i>Liên kết nhanh
+            </h3>
+            <ul class="space-y-3">
+                <li><a href="/new" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-star mr-2"></i>Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-sun mr-2"></i>Tủ đồ mùa hè</a></li>
+                <li><a href="/bestsellers" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-fire mr-2"></i>Sản phẩm bán chạy</a></li>
             </ul>
         </div>
         <div>
-            <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-            <p class="text-sm">Email: datn.acv@gmail.com</p>
-            <p class="text-sm">Hotline: 1900 8686</p>
-            <div class="flex space-x-4 mt-4">
-                <a href="#" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-phone mr-3"></i>Liên hệ
+            </h3>
+            <div class="space-y-3">
+                <p class="text-sm flex items-center"><i class="fas fa-envelope mr-3"></i>datn.acv@gmail.com</p>
+                <p class="text-sm flex items-center"><i class="fas fa-phone-alt mr-3"></i>1900 8686</p>
+            </div>
+            <div class="flex space-x-4 mt-6">
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Twitter">
+                    <i class="fab fa-twitter"></i>
+                </a>
             </div>
         </div>
     </div>
-    <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+    <div class="text-center mt-8 pt-6 border-t border-white/20 text-sm opacity-75">
+        © 2025 ACV Store. All rights reserved.
+    </div>
 </footer>
 
-<button id="back-to-top" class="fixed bottom-20 right-20 bg-blue-600 text-white p-3 rounded-full shadow-lg hidden" aria-label="Quay lại đầu trang">
+<button id="back-to-top" class="fixed bottom-20 right-20 bg-[#153054] hover:bg-[#1e4066] text-white p-4 rounded-full shadow-lg hidden transition-all duration-300 hover:scale-110" aria-label="Quay lại đầu trang">
     <i class="fas fa-arrow-up"></i>
 </button>
 
@@ -294,9 +763,44 @@
         }
     }
 
+    // Enhanced chatbot toggle
+    document.getElementById('chatbot-toggle').addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.1)';
+    });
+
+    document.getElementById('chatbot-toggle').addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+    });
+
+    // Back to top button
+    window.addEventListener('scroll', function() {
+        const backToTop = document.getElementById('back-to-top');
+        if (window.pageYOffset > 300) {
+            backToTop.classList.remove('hidden');
+        } else {
+            backToTop.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('back-to-top').addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     // Khởi tạo trang
     document.addEventListener('DOMContentLoaded', () => {
         updateCartCount();
+
+        // Add loading animation to order cards
+        const orderCards = document.querySelectorAll('.order-card');
+        orderCards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
     });
 </script>
 </body>
