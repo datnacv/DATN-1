@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.MauSac;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.MauSacRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class MauSacService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách màu sắc với phân trang
+    public Page<MauSac> getAllMauSac(Pageable pageable) {
+        return mauSacRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả màu sắc (không phân trang)
     public List<MauSac> getAllMauSac() {
         return mauSacRepository.findAll();
     }
 
-    public List<MauSac> searchMauSac(String tenMau) {
-        return mauSacRepository.findByTenMauContainingIgnoreCase(tenMau);
+    // Tìm kiếm màu sắc với phân trang
+    public Page<MauSac> searchMauSac(String tenMau, Pageable pageable) {
+        return mauSacRepository.findByTenMauContainingIgnoreCase(tenMau, pageable);
     }
 
     public MauSac getMauSacById(UUID id) {

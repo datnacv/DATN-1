@@ -5,6 +5,9 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.KichCoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -12,8 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -29,22 +30,30 @@ public class KichCoController {
     @GetMapping("/kich-co")
     public String listKichCo(@RequestParam(value = "search", required = false) String search,
                              @RequestParam(value = "error", required = false) String errorMessage,
+                             @RequestParam(value = "page", defaultValue = "0") int page,
                              Model model) {
-        List<KichCo> kichCoList = Collections.emptyList();
+
+        Pageable pageable = PageRequest.of(page, 5); // 5 items per page
+        Page<KichCo> kichCoPage;
 
         try {
-            kichCoList = search != null && !search.trim().isEmpty()
-                    ? kichCoService.searchKichCo(search)
-                    : kichCoService.getAllKichCo();
+            kichCoPage = search != null && !search.trim().isEmpty()
+                    ? kichCoService.searchKichCo(search, pageable)
+                    : kichCoService.getAllKichCo(pageable);
 
-            if (kichCoList == null) kichCoList = Collections.emptyList();
-            Collections.reverse(kichCoList);
+            if (kichCoPage == null) {
+                kichCoPage = Page.empty(pageable);
+            }
 
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Lỗi khi tải danh sách kích cỡ: " + e.getMessage());
+            kichCoPage = Page.empty(pageable);
         }
 
-        model.addAttribute("kichCoList", kichCoList);
+        model.addAttribute("kichCoList", kichCoPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", kichCoPage.getTotalPages());
+        model.addAttribute("search", search);
 
         // Lấy thông tin user hiện tại và phân quyền
         UserInfo userInfo = getCurrentUserInfo();
@@ -68,8 +77,10 @@ public class KichCoController {
         }
 
         try {
+            // Kiểm tra id trước khi lưu để xác định là thêm mới hay cập nhật
+            boolean isUpdate = kichCo.getId() != null;
             kichCoService.saveKichCo(kichCo);
-            String message = kichCo.getId() != null ? "Cập nhật kích cỡ thành công!" : "Thêm kích cỡ thành công!";
+            String message = isUpdate ? "Cập nhật kích cỡ thành công!" : "Thêm kích cỡ thành công!";
             redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lưu kích cỡ thất bại: " + e.getMessage());

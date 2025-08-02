@@ -79,8 +79,9 @@ public class XuatXuController {
         }
 
         try {
+            boolean isUpdate = xuatXu.getId() != null;
             xuatXuService.saveXuatXu(xuatXu);
-            String message = xuatXu.getId() != null ? "Cập nhật xuất xứ thành công!" : "Thêm xuất xứ thành công!";
+            String message = isUpdate ? "Cập nhật xuất xứ thành công!" : "Thêm xuất xứ thành công!";
             redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lưu xuất xứ thất bại: " + e.getMessage());
