@@ -64,12 +64,8 @@ public class HoaDon {
     @Transient
     private String formattedTongTien;
 
-    // Getter và Setter cho formattedTongTien
-    public String getFormattedTongTien() {
-        return formattedTongTien;
-    }
 
-    public void setFormattedTongTien(String formattedTongTien) {
-        this.formattedTongTien = formattedTongTien;
-    }
+
+
+
 }

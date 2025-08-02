@@ -200,6 +200,62 @@ public class KhachhangSanPhamService {
         return dto;
     }
 
+    public List<SanPhamDto> getSanPhamBanChayDtos() {
+        List<Object[]> results = khachHangSanPhamRepository.findSanPhamBanChayWithGiaAndSold();
+        return results.stream()
+                .map(this::mapProjectionToDto)
+                .limit(5) // ✅ Chỉ lấy 5 sản phẩm đầu tiên (bán chạy nhất)
+                .collect(Collectors.toList());
+    }
+
+
+    public List<SanPhamDto> getSanPhamMoiNhatDtos() {
+        List<Object[]> results = khachHangSanPhamRepository.findSanPhamMoiWithGiaAndSold();
+        return results.stream()
+                .map(this::mapProjectionToDto)
+                .collect(Collectors.toList());
+    }
+
+
+    private SanPhamDto mapProjectionToDto(Object[] row) {
+        SanPham p = (SanPham) row[0];
+        BigDecimal minGia = (BigDecimal) row[1]; // giá thấp nhất trong các biến thể
+        BigDecimal maxGia = (BigDecimal) row[2]; // giá cao nhất trong các biến thể
+        Long sold = row[3] != null ? ((Number) row[3]).longValue() : 0L;
+
+        SanPhamDto dto = new SanPhamDto();
+        dto.setId(p.getId());
+        dto.setTenSanPham(p.getTenSanPham());
+        dto.setMaSanPham(p.getMaSanPham());
+        dto.setMoTa(p.getMoTa());
+        dto.setTrangThai(p.getTrangThai());
+        dto.setThoiGianTao(p.getThoiGianTao());
+
+        if (p.getDanhMuc() != null) {
+            dto.setDanhMucId(p.getDanhMuc().getId());
+            dto.setTenDanhMuc(p.getDanhMuc().getTenDanhMuc());
+        }
+
+        dto.setUrlHinhAnh(p.getUrlHinhAnh());
+
+        // ✅ Format giá đúng như bạn yêu cầu: hiển thị theo khoảng nếu có nhiều biến thể
+        if (minGia != null && maxGia != null && minGia.compareTo(maxGia) < 0) {
+            dto.setOldPrice(minGia + " - " + maxGia);  // Giá gốc
+            dto.setPrice(minGia + " - " + maxGia);      // Giá hiện tại (nếu chưa có giảm)
+        } else {
+            String gia = minGia != null ? minGia.toString() : "0";
+            dto.setOldPrice(gia);
+            dto.setPrice(gia);
+        }
+
+        // ❌ Không tự tính % giảm nếu không có logic giảm thật
+        dto.setDiscount("0%");
+
+        dto.setSold(String.valueOf(sold));
+
+        return dto;
+    }
+
     public List<SanPhamDto> searchProducts(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
             return getNewProducts(); // Nếu không có từ khóa, trả về sản phẩm mới

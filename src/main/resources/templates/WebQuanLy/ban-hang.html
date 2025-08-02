@@ -5,14 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ACV Store - Bán Hàng</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!--  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>-->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <script th:src="@{/js/sidebar.js}" defer></script>
   <style>
+    :root {
+      --primary-color: #153054;
+      --primary-hover: #0e2239;
+      --secondary-color: #153054;
+      --success-color: #153054;
+      --danger-color: #153054;
+      --warning-color: #153054;
+      --light-gray: #f8f9fa;
+      --border-color: #dee2e6;
+      --text-color: #9FD5F7;
+      --dark-blue: #153054;
+      --light-blue: #ffffff;
+      --neutral-gray: #6B7280;
+    }
+
+    body {
+      background-color: white;
+      color: var(--dark-blue);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
     #qrScannerModal {
       display: none;
       flex-direction: column;
@@ -75,7 +94,7 @@
     }
 
     .close-button {
-      background: #ff4444;
+      background: var(--neutral-gray);
       color: white;
       border: none;
       padding: 10px 24px;
@@ -83,33 +102,16 @@
       font-size: 16px;
       cursor: pointer;
       transition: background 0.2s;
-      margin-top: 16px; /* Add spacing from the scanner container */
+      margin-top: 16px;
     }
 
     .close-button:hover {
-      background: #cc0000;
+      background: #4b5563;
     }
 
     .scanner-footer {
-      text-align: center; /* Center the button below the scanner */
-      margin-top: 16px; /* Space between scanner and button */
-    }
-
-    :root {
-      --primary-color: #000000;
-      --primary-hover: #333333;
-      --secondary-color: #666666;
-      --success-color: #28a745;
-      --danger-color: #dc3545;
-      --warning-color: #ffc107;
-      --light-gray: #f8f9fa;
-      --border-color: #dee2e6;
-    }
-
-    body {
-      background-color: white;
-      color: #000;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      text-align: center;
+      margin-top: 16px;
     }
 
     .toast {
@@ -117,7 +119,7 @@
       top: 1rem;
       right: 1rem;
       background: var(--primary-color);
-      color: white;
+      color: var(--light-blue);
       padding: 1rem 1.5rem;
       border-radius: 12px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
@@ -139,6 +141,7 @@
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       border-radius: 16px;
     }
+
     .tab {
       display: flex;
       align-items: center;
@@ -150,7 +153,7 @@
       overflow: hidden;
       background: #f5f5f5;
       border: 2px solid var(--border-color);
-      color: var(--primary-color);
+      color: var(--dark-blue);
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -159,22 +162,21 @@
 
     .tab:hover:not(.active) {
       background: #eaeaea;
-      color: var(--primary-color);
+      color: var(--dark-blue);
       transform: translateY(-1px);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       border-color: var(--primary-color);
     }
 
     .tab.active {
-      background: linear-gradient(135deg, #000000, #333333);
-      color: #ffffff;
+      background: linear-gradient(135deg, #153054, #0e2239);
+      color: var(--light-blue);
       font-weight: 600;
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-      border-color: #000000;
+      border-color: #153054;
     }
 
-    /* Nút X bên trong tab */
     .tab .btn {
       width: 28px;
       height: 28px;
@@ -188,33 +190,29 @@
       justify-content: center;
       transition: all 0.3s ease;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-      opacity: 0.4; /* luôn hiển thị nhẹ ở tab không active */
-      color: var(--primary-color);
+      opacity: 0.4;
+      color: var(--dark-blue);
       pointer-events: auto;
     }
 
-    /* Khi tab đang active — X rõ ràng, trắng, nổi bật */
     .tab.active .btn {
       opacity: 1;
       background: rgba(255, 255, 255, 0.2);
-      color: white;
+      color: var(--light-blue);
       box-shadow: 0 2px 6px rgba(255, 255, 255, 0.2);
     }
 
-    /* Khi hover tab hoặc hover riêng nút */
     .tab:hover .btn,
     .tab .btn:hover {
       opacity: 1;
     }
 
-    /* Hover riêng nút X */
     .tab .btn:hover {
       background: var(--danger-color);
-      color: white;
+      color: var(--light-blue);
       transform: rotate(90deg) scale(1.1);
-      box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+      box-shadow: 0 4px 12px rgba(21, 48, 84, 0.3);
     }
-
 
     .modal {
       display: none;
@@ -238,13 +236,13 @@
 
     .modal-content {
       background: white;
-      padding: 1.5rem; /* Giảm padding từ 2rem xuống 1.5rem */
-      border-radius: 16px; /* Giảm border-radius từ 20px xuống 16px */
-      max-width: 500px; /* Giảm max-width từ 600px xuống 500px */
+      padding: 1.5rem;
+      border-radius: 16px;
+      max-width: 500px;
       width: 90%;
-      max-height: 70vh; /* Giảm max-height từ 80vh xuống 70vh */
+      max-height: 70vh;
       overflow-y: auto;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2); /* Giảm độ mờ của shadow */
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       animation: slideUp 0.3s ease;
     }
 
@@ -259,24 +257,54 @@
       }
     }
 
+    .modal-content h3,
+    .modal-content h4 {
+      color: var(--dark-blue);
+    }
+
+    .modal-content .fw-medium,
+    .modal-content .fw-semibold {
+      color: var(--dark-blue);
+    }
+
+    .modal-content .text-muted {
+      color: var(--neutral-gray) !important;
+    }
+
+    .modal-content .text-primary {
+      color: var(--dark-blue) !important;
+    }
+
+    .modal-content .text-success {
+      color: var(--dark-blue) !important;
+    }
+
     .form-control {
       transition: all 0.3s ease;
       border: 2px solid var(--border-color);
       border-radius: 12px;
       background: white;
       padding: 12px 16px;
+      color: var(--dark-blue);
     }
 
     .form-control:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 0 4px rgba(21, 48, 84, 0.1);
       outline: none;
       transform: translateY(-1px);
+    }
+
+    .form-control:disabled,
+    .form-control[readonly] {
+      color: var(--neutral-gray);
+      background: #e9ecef;
     }
 
     .btn-primary {
       background: var(--primary-color);
       border-color: var(--primary-color);
+      color: var(--light-blue);
       transition: all 0.3s ease;
       border-radius: 12px;
       font-weight: 600;
@@ -292,7 +320,7 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      background: linear-gradient(90deg, transparent, rgba(159, 213, 247, 0.2), transparent);
       transition: left 0.5s;
     }
 
@@ -303,13 +331,15 @@
     .btn-primary:hover {
       background: var(--primary-hover);
       border-color: var(--primary-hover);
+      color: var(--light-blue);
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     }
 
     .btn-secondary {
-      background: var(--secondary-color);
-      border-color: var(--secondary-color);
+      background: var(--neutral-gray);
+      border-color: var(--neutral-gray);
+      color: white;
       transition: all 0.3s ease;
       border-radius: 12px;
       font-weight: 600;
@@ -317,15 +347,17 @@
     }
 
     .btn-secondary:hover {
-      background: #555;
-      border-color: #555;
+      background: #4b5563;
+      border-color: #4b5563;
+      color: white;
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 102, 102, 0.4);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     }
 
     .btn-success {
       background: var(--success-color);
       border-color: var(--success-color);
+      color: var(--light-blue);
       transition: all 0.3s ease;
       border-radius: 12px;
       font-weight: 600;
@@ -333,15 +365,17 @@
     }
 
     .btn-success:hover {
-      background: #218838;
-      border-color: #218838;
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+      color: var(--light-blue);
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     }
 
     .btn-danger {
       background: var(--danger-color);
       border-color: var(--danger-color);
+      color: var(--light-blue);
       transition: all 0.3s ease;
       border-radius: 12px;
       font-weight: 600;
@@ -349,10 +383,11 @@
     }
 
     .btn-danger:hover {
-      background: #c82333;
-      border-color: #c82333;
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+      color: var(--light-blue);
       transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
     }
 
     .spinner {
@@ -381,7 +416,7 @@
       background: var(--light-gray);
       padding: 1.5rem 1rem;
       font-weight: 700;
-      color: var(--primary-color);
+      color: var(--dark-blue);
       border: none;
     }
 
@@ -389,6 +424,16 @@
       padding: 1.5rem 1rem;
       border-bottom: 1px solid var(--border-color);
       vertical-align: middle;
+      color: var(--dark-blue);
+    }
+
+    .cart-table .fw-semibold {
+      color: var(--dark-blue);
+    }
+
+    .cart-table .quantity {
+      color: var(--dark-blue);
+      font-weight: bold;
     }
 
     .cart-table tr:hover {
@@ -400,6 +445,14 @@
     .cart-table img {
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .cart-table .text-muted {
+      color: var(--neutral-gray) !important;
+    }
+
+    .cart-table .text-success {
+      color: var(--dark-blue) !important;
     }
 
     .quantity-controls {
@@ -429,6 +482,8 @@
       transition: all 0.2s ease;
       border: none;
       cursor: pointer;
+      background: var(--primary-color);
+      color: var(--light-blue);
     }
 
     .quantity-btn:disabled {
@@ -439,6 +494,7 @@
 
     .quantity-btn:not(:disabled):hover {
       transform: scale(1.1);
+      background: var(--primary-hover);
     }
 
     .stock-warning {
@@ -469,6 +525,25 @@
       background: linear-gradient(90deg, var(--primary-color), var(--success-color), var(--warning-color));
     }
 
+    .summary-card .fw-medium {
+      color: var(--dark-blue);
+    }
+
+    .summary-card #subTotal,
+    .summary-card #shippingFeeDisplay,
+    .summary-card #discount,
+    .summary-card #changeAmount {
+      color: var(--dark-blue);
+    }
+
+    .summary-card #total {
+      color: var(--dark-blue);
+    }
+
+    .summary-card .bg-light #total {
+      color: var(--dark-blue);
+    }
+
     .section-header {
       display: flex;
       align-items: center;
@@ -476,6 +551,10 @@
       margin-bottom: 1.5rem;
       padding-bottom: 0.75rem;
       border-bottom: 2px solid var(--border-color);
+    }
+
+    .section-header h3 {
+      color: var(--dark-blue);
     }
 
     .section-icon {
@@ -504,6 +583,7 @@
     .floating-label input,
     .floating-label select {
       padding-top: 1.5rem;
+      color: var(--dark-blue);
     }
 
     .floating-label label {
@@ -512,7 +592,7 @@
       top: 0.5rem;
       font-size: 0.75rem;
       font-weight: 600;
-      color: var(--primary-color);
+      color: var(--dark-blue);
       pointer-events: none;
     }
 
@@ -521,16 +601,18 @@
       border-radius: 20px;
       font-size: 0.875rem;
       font-weight: 500;
+      background-color: var(--primary-color);
+      color: var(--light-blue);
     }
 
     .badge-primary {
       background-color: var(--primary-color);
-      color: white;
+      color: var(--light-blue);
     }
 
     .badge-secondary {
       background-color: var(--secondary-color);
-      color: white;
+      color: var(--light-blue);
     }
 
     @media (max-width: 768px) {
@@ -564,7 +646,7 @@
     }
 
     .header-gradient {
-      background: linear-gradient(135deg, #000 0%, #333 100%);
+      background: linear-gradient(135deg, #153054, #0e2239);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -576,7 +658,6 @@
       gap: 1rem;
       margin-bottom: 2rem;
     }
-
   </style>
 </head>
 <body>
@@ -584,20 +665,14 @@
   <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
   <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-    <!-- Các phần tử khác bên trái (nếu có) -->
-
     <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
   </nav>
 
-
-  <!-- Nội dung chính -->
   <div class="content mt-16" id="mainContent">
-    <!-- Header Section -->
     <div class="text-center mb-2 mt-3">
-      <p class="fs-2 fw-bold">Bán hàng tại quầy</p>
+      <p class="fs-2 fw-bold header-gradient">Bán hàng tại quầy</p>
     </div>
 
-    <!-- Tabs Section -->
     <div class="glass-card p-4 mb-4">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div id="orderTabs" class="d-flex flex-wrap"></div>
@@ -609,7 +684,6 @@
     </div>
 
     <div class="glass-card p-4">
-      <!-- Action Buttons -->
       <div class="action-buttons">
         <button onclick="showQrScanner()" class="btn btn-success d-flex align-items-center justify-content-center gap-3">
           <i class="fas fa-qrcode fs-5"></i>
@@ -621,11 +695,10 @@
         </button>
       </div>
 
-      <!-- Cart Table -->
       <div class="mb-4">
         <div class="section-header">
           <i class="fas fa-shopping-cart section-icon"></i>
-          <h3 class="fs-4 fw-bold text-dark mb-0">Giỏ hàng</h3>
+          <h3 class="fs-4 fw-bold mb-0">Giỏ hàng</h3>
         </div>
 
         <div class="table-responsive">
@@ -647,11 +720,10 @@
         </div>
       </div>
 
-      <!-- Customer Information -->
       <div class="mb-4">
         <div class="section-header">
           <i class="fas fa-user section-icon"></i>
-          <h3 class="fs-4 fw-bold text-dark mb-0">Thông tin khách hàng</h3>
+          <h3 class="fs-4 fw-bold mb-0">Thông tin khách hàng</h3>
         </div>
 
         <div class="customer-info-grid mb-3">
@@ -677,11 +749,10 @@
         </div>
       </div>
 
-      <!-- Address Selection -->
       <div id="addressSection" class="mb-4 d-none">
         <div class="section-header">
           <i class="fas fa-map-marker-alt section-icon"></i>
-          <h3 class="fs-4 fw-bold text-dark mb-0">Địa chỉ giao hàng</h3>
+          <h3 class="fs-4 fw-bold mb-0">Địa chỉ giao hàng</h3>
         </div>
 
         <div class="mb-3">
@@ -698,7 +769,7 @@
           </button>
 
           <div id="addAddressForm" class="d-none bg-light p-4 rounded border-2 border-dashed mt-3">
-            <h4 class="fw-semibold text-dark mb-3">Thêm địa chỉ mới</h4>
+            <h4 class="fw-semibold mb-3">Thêm địa chỉ mới</h4>
             <div class="form-grid">
               <div class="floating-label">
                 <label for="addressLine">Địa chỉ cụ thể</label>
@@ -730,11 +801,10 @@
         </div>
       </div>
 
-      <!-- Order Configuration -->
       <div class="mb-4">
         <div class="section-header">
           <i class="fas fa-cog section-icon"></i>
-          <h3 class="fs-4 fw-bold text-dark mb-0">Cấu hình đơn hàng</h3>
+          <h3 class="fs-4 fw-bold mb-0">Cấu hình đơn hàng</h3>
         </div>
 
         <div class="form-grid">
@@ -773,57 +843,53 @@
         </div>
       </div>
 
-      <!-- Order Summary -->
       <div class="summary-card mb-4">
         <div class="section-header">
           <i class="fas fa-calculator section-icon"></i>
-          <h3 class="fs-4 fw-bold text-dark mb-0">Tổng kết đơn hàng</h3>
+          <h3 class="fs-4 fw-bold mb-0">Tổng kết đơn hàng</h3>
         </div>
 
         <div class="row">
           <div class="col-md-6">
             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium text-muted">Tổng tiền hàng:</span>
+              <span class="fw-medium">Tổng tiền hàng:</span>
               <span id="subTotal" class="fw-bold fs-5">0 VNĐ</span>
             </div>
             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium text-muted">Phí vận chuyển:</span>
+              <span class="fw-medium">Phí vận chuyển:</span>
               <span id="shippingFeeDisplay" class="fw-bold fs-5">0 VNĐ</span>
             </div>
             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium text-muted">Giảm giá:</span>
-              <span id="discount" class="fw-bold fs-5 text-success">0 VNĐ</span>
+              <span class="fw-medium">Giảm giá:</span>
+              <span id="discount" class="fw-bold fs-5">0 VNĐ</span>
             </div>
           </div>
 
           <div class="col-md-6">
             <div class="d-flex justify-content-between align-items-center py-3 bg-light rounded px-3 mb-3">
-              <span class="fw-bold fs-4 text-dark">Tổng tiền:</span>
-              <span id="total" class="fw-bold fs-3 text-primary">0 VNĐ</span>
+              <span class="fw-bold fs-4">Tổng tiền:</span>
+              <span id="total" class="fw-bold fs-3 text-success">0 VNĐ</span>
             </div>
             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium text-muted">Tiền trả lại:</span>
-              <span id="changeAmount" class="fw-bold fs-5 text-success">0 VNĐ</span>
+              <span class="fw-medium">Tiền trả lại:</span>
+              <span id="changeAmount" class="fw-bold fs-5">0 VNĐ</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Create Order Button -->
       <button onclick="createOrder()" class="btn btn-success w-100 py-3 fs-4 fw-bold d-flex align-items-center justify-content-center gap-3">
         <i class="fas fa-check-circle fs-3"></i>
         Tạo đơn hàng
       </button>
     </div>
 
-    <!-- QR Scanner Modal -->
     <div id="qrScannerModal">
       <div class="scanner-container">
         <div id="qr-reader"></div>
         <div class="scan-overlay">
           <div class="scan-line"></div>
-          <div class="scanner-corners">
-          </div>
+          <div class="scanner-corners"></div>
         </div>
       </div>
       <div class="scanner-footer">
@@ -831,18 +897,16 @@
       </div>
     </div>
 
-    <!-- Customer Modal -->
     <div id="customerModal" class="modal">
       <div class="modal-content">
         <div class="d-flex justify-content-between align-items-center mb-4">
           <div class="d-flex align-items-center gap-3">
             <i class="fas fa-users fs-3 text-primary"></i>
-            <h3 class="fs-3 fw-bold text-dark">Danh sách khách hàng</h3>
+            <h3 class="fs-3 fw-bold">Danh sách khách hàng</h3>
           </div>
           <button onclick="document.getElementById('customerModal').style.display='none'" class="btn-close"></button>
         </div>
 
-        <!-- Thêm trường tìm kiếm -->
         <div class="mb-4">
           <div class="floating-label">
             <label for="customerSearch">Tìm kiếm khách hàng</label>
@@ -850,7 +914,6 @@
           </div>
         </div>
 
-        <!-- Khách lẻ -->
         <div class="mb-4">
           <h4 class="fs-5 fw-semibold text-muted mb-3 d-flex align-items-center gap-2">
             <i class="fas fa-user text-primary"></i>
@@ -864,7 +927,6 @@
           </div>
         </div>
 
-        <!-- Khách hàng khác -->
         <div>
           <h4 class="fs-5 fw-semibold text-muted mb-3 d-flex align-items-center gap-2">
             <i class="fas fa-address-book text-success"></i>
@@ -877,14 +939,12 @@
       </div>
     </div>
 
-    <!-- Product Modal -->
     <div id="productModal" class="modal">
       <div class="modal-content">
         <div class="d-flex align-items-center gap-3 mb-4">
           <i class="fas fa-box fs-3 text-primary"></i>
-          <h3 class="fs-3 fw-bold text-dark">Danh sách sản phẩm</h3>
+          <h3 class="fs-3 fw-bold">Danh sách sản phẩm</h3>
         </div>
-        <!-- Tìm kiếm sản phẩm -->
         <div class="mb-4">
           <div class="floating-label">
             <label for="productSearch">Tìm kiếm sản phẩm</label>
@@ -899,12 +959,11 @@
       </div>
     </div>
 
-    <!-- Product Variant Modal -->
     <div id="variantModal" class="modal">
       <div class="modal-content">
         <div class="d-flex align-items-center gap-3 mb-4">
           <i class="fas fa-palette fs-3 text-primary"></i>
-          <h3 class="fs-3 fw-bold text-dark" id="variantModalTitle">Chọn biến thể sản phẩm</h3>
+          <h3 class="fs-3 fw-bold" id="variantModalTitle">Chọn biến thể sản phẩm</h3>
         </div>
 
         <div class="form-grid mb-4">
@@ -1057,10 +1116,10 @@
                       : "";
 
       const priceDisplay = phanTramGiam > 0
-              ? `<span class="fw-bold text-dark">${price.toLocaleString("vi-VN")} VNĐ</span>
+              ? `<span class="fw-bold">${price.toLocaleString("vi-VN")} VNĐ</span>
                <div class="small text-muted text-decoration-line-through">${originalPrice.toLocaleString("vi-VN")} VNĐ</div>
                <div class="small text-success">Giảm ${phanTramGiam}%</div>`
-              : `<span class="fw-bold text-dark">${price.toLocaleString("vi-VN")} VNĐ</span>`;
+              : `<span class="fw-bold">${price.toLocaleString("vi-VN")} VNĐ</span>`;
 
       row.innerHTML = `
       <td>
@@ -1071,7 +1130,7 @@
              onerror="this.src='https://via.placeholder.com/60x60?text=No+Image'">
       </td>
       <td>
-        <div class="fw-semibold text-dark">${item.tenSanPham || "N/A"}</div>
+        <div class="fw-semibold">${item.tenSanPham || "N/A"}</div>
         <div class="small text-muted">Tồn kho khả dụng: ${actualStock}</div>
       </td>
       <td>
@@ -2272,7 +2331,7 @@
                         <div class="d-flex align-items-center gap-3">
                             <i class="fas fa-user-circle fs-3 text-primary"></i>
                             <div>
-                                <div class="fw-semibold text-dark">${customer.hoTen}</div>
+                                <div class="fw-semibold">${customer.hoTen}</div>
                                 <div class="small text-muted">${customer.soDienThoai} • ${customer.email}</div>
                             </div>
                         </div>
@@ -2356,7 +2415,7 @@
           <div class="d-flex align-items-center gap-3">
             <i class="fas fa-box fs-3 text-success"></i>
             <div>
-              <div class="fw-semibold text-dark">${productName}</div>
+              <div class="fw-semibold">${productName}</div>
               <div class="small text-muted">Nhấn để chọn biến thể</div>
             </div>
           </div>
@@ -2699,5 +2758,7 @@
     initTabs();
   });
 </script>
+<script th:src="@{/js/notification.js}"></script>
+
 </body>
 </html>

@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Giữ nguyên các style hiện có */
         button[disabled] {
             pointer-events: none;
             opacity: 0.5;
@@ -132,10 +133,19 @@
             <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'" th:href="@{/dsdon-mua(status='tat-ca')}">Tất cả</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chờ xác nhận</a>
+            <a class="nav-link" th:classappend="${status == 'cho-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='cho-xac-nhan')}">Chưa xác nhận</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" th:classappend="${status == 'dang-giao'} ? ' active'" th:href="@{/dsdon-mua(status='dang-giao')}">Đang giao</a>
+            <a class="nav-link" th:classappend="${status == 'da-xac-nhan'} ? ' active'" th:href="@{/dsdon-mua(status='da-xac-nhan')}">Đã xác nhận</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'dang-xu-ly-online'} ? ' active'" th:href="@{/dsdon-mua(status='dang-xu-ly-online')}">Đang xử lý</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'dang-van-chuyen'} ? ' active'" th:href="@{/dsdon-mua(status='dang-van-chuyen')}">Đang vận chuyển</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'van-chuyen-thanh-cong'} ? ' active'" th:href="@{/dsdon-mua(status='van-chuyen-thanh-cong')}">Vận chuyển thành công </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" th:classappend="${status == 'hoan-thanh'} ? ' active'" th:href="@{/dsdon-mua(status='hoan-thanh')}">Hoàn thành</a>
@@ -160,14 +170,14 @@
                 <div>
                     <div th:text="${chiTiet.tenSanPham}"></div>
                     <small>Số lượng: <span th:text="${chiTiet.soLuong}"></span></small><br/>
-                    <small>Giá: <span th:text="${chiTiet.formattedGia} + ' đ'"></span></small>
+                    <small>Giá: <span th:text="${chiTiet.formattedGia} + ' VNĐ'"></span></small>
                 </div>
             </div>
             <hr>
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <strong>Tổng tiền:</strong>
-                    <span class="text-[#153054] fs-5" th:text="${hoaDon.formattedTongTien} + ' đ'"></span>
+                    <span class="text-[#153054] fs-5" th:text="${hoaDon.formattedTongTien} + ' VNĐ'"></span>
                 </div>
                 <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
             </div>
@@ -180,12 +190,11 @@
     </div>
 </div>
 
-<!-- Floating Chatbot Icon -->
+<!-- Giữ nguyên phần chatbot và footer -->
 <div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
     <i class="fas fa-robot fa-lg text-white"></i>
 </div>
 
-<!-- Chatbot Box -->
 <div id="chatbot-box" style="
     position: fixed;
     bottom: 100px;

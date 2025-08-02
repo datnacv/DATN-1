@@ -1,5 +1,6 @@
 package com.example.AsmGD1.repository.WebKhachHang;
 
+import com.example.AsmGD1.dto.KhachHang.SanPhamProjection;
 import com.example.AsmGD1.entity.ChiTietSanPham;
 import com.example.AsmGD1.entity.SanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -91,4 +92,33 @@ public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID>
             "AND EXISTS (SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = p.id AND c.trangThai = true) " +
             "AND d.id = (SELECT d2.id FROM DanhMuc d2 JOIN d2.sanPhams sp GROUP BY d2.id ORDER BY COUNT(sp.id) DESC LIMIT 1)")
     List<SanPham> findPopularCategoryProducts();
+
+    @Query("""
+    SELECT p, 
+           MIN(ctsp.gia), 
+           MAX(ctsp.gia), 
+           COALESCE(SUM(ctdh.soLuong), 0)
+    FROM SanPham p 
+    JOIN p.chiTietSanPhams ctsp 
+    LEFT JOIN ChiTietDonHang ctdh ON ctdh.chiTietSanPham.id = ctsp.id
+    WHERE p.trangThai = true AND ctsp.trangThai = true
+    GROUP BY p
+    ORDER BY p.thoiGianTao DESC
+""")
+    List<Object[]> findSanPhamMoiWithGiaAndSold();
+
+    @Query("""
+    SELECT p, 
+           MIN(ctsp.gia), 
+           MAX(ctsp.gia), 
+           COALESCE(SUM(ctdh.soLuong), 0)
+    FROM SanPham p 
+    JOIN p.chiTietSanPhams ctsp 
+    LEFT JOIN ChiTietDonHang ctdh ON ctdh.chiTietSanPham.id = ctsp.id
+    WHERE p.trangThai = true AND ctsp.trangThai = true
+    GROUP BY p
+    ORDER BY SUM(ctdh.soLuong) DESC
+""")
+    List<Object[]> findSanPhamBanChayWithGiaAndSold();
+
 }

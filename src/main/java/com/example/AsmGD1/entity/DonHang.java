@@ -76,4 +76,13 @@ public class DonHang {
         chiTietDonHangs.add(chiTiet);
         chiTiet.setDonHang(this);
     }
+
+    @Transient
+    private String formattedPhiVanChuyen;
+
+    @Transient
+    private String formattedTienGiam;
+
+
+
 }

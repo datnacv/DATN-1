@@ -17,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,24 +48,32 @@ public class KHDonMuaController {
         NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
         model.addAttribute("user", nguoiDung);
 
-        DecimalFormat formatter = new DecimalFormat("#,###");
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+
 
         List<HoaDon> danhSachHoaDon;
         if ("tat-ca".equalsIgnoreCase(status)) {
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungId(nguoiDung.getId());
         } else {
             String statusDb = switch (status) {
-                case "cho-xac-nhan" -> "CHO_XAC_NHAN";
-                case "dang-giao" -> "DANG_GIAO";
-                case "hoan-thanh" -> "HOAN_THANH";
+                case "cho-xac-nhan" -> "Chưa xác nhận";
+                case "da-xac-nhan" -> "Đã xác nhận Online";
+                case "dang-xu-ly-online" -> "Đang xử lý Online";
+                case "dang-van-chuyen" -> "Đang vận chuyển";
+                case "van-chuyen-thanh-cong" -> "Vận chuyển thành công";
+                case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
                 default -> "";
             };
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb);
         }
 
+
         for (HoaDon hoaDon : danhSachHoaDon) {
             hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
+
             for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
                 chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
             }
@@ -87,8 +96,12 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
-        DecimalFormat formatter = new DecimalFormat("#,###");
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+
         hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
+
         for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
             chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
         }
