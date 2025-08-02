@@ -5,6 +5,9 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.TayAoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -12,8 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -29,22 +30,30 @@ public class TayAoController {
     @GetMapping("/tay-ao")
     public String listTayAo(@RequestParam(value = "search", required = false) String search,
                             @RequestParam(value = "error", required = false) String errorMessage,
+                            @RequestParam(value = "page", defaultValue = "0") int page,
                             Model model) {
-        List<TayAo> tayAoList = Collections.emptyList();
+
+        Pageable pageable = PageRequest.of(page, 5); // 5 items per page
+        Page<TayAo> tayAoPage;
 
         try {
-            tayAoList = search != null && !search.trim().isEmpty()
-                    ? tayAoService.searchTayAo(search)
-                    : tayAoService.getAllTayAo();
+            tayAoPage = search != null && !search.trim().isEmpty()
+                    ? tayAoService.searchTayAo(search, pageable)
+                    : tayAoService.getAllTayAo(pageable);
 
-            if (tayAoList == null) tayAoList = Collections.emptyList();
-            Collections.reverse(tayAoList);
+            if (tayAoPage == null) {
+                tayAoPage = Page.empty(pageable);
+            }
 
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Lỗi khi tải danh sách tay áo: " + e.getMessage());
+            tayAoPage = Page.empty(pageable);
         }
 
-        model.addAttribute("tayAoList", tayAoList);
+        model.addAttribute("tayAoList", tayAoPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", tayAoPage.getTotalPages());
+        model.addAttribute("search", search);
 
         // Lấy thông tin user hiện tại và phân quyền
         UserInfo userInfo = getCurrentUserInfo();
@@ -68,8 +77,10 @@ public class TayAoController {
         }
 
         try {
+            // Kiểm tra id trước khi lưu để xác định là thêm mới hay cập nhật
+            boolean isUpdate = tayAo.getId() != null;
             tayAoService.saveTayAo(tayAo);
-            String message = tayAo.getId() != null ? "Cập nhật tay áo thành công!" : "Thêm tay áo thành công!";
+            String message = isUpdate ? "Cập nhật tay áo thành công!" : "Thêm tay áo thành công!";
             redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lưu tay áo thất bại: " + e.getMessage());

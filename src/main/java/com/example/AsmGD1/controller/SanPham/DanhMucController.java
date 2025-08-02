@@ -5,6 +5,9 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -12,8 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -29,22 +30,30 @@ public class DanhMucController {
     @GetMapping("/danh-muc")
     public String listDanhMuc(@RequestParam(value = "search", required = false) String search,
                               @RequestParam(value = "error", required = false) String errorMessage,
+                              @RequestParam(value = "page", defaultValue = "0") int page,
                               Model model) {
-        List<DanhMuc> danhMucList = Collections.emptyList();
+
+        Pageable pageable = PageRequest.of(page, 5); // 5 items per page
+        Page<DanhMuc> danhMucPage;
 
         try {
-            danhMucList = search != null && !search.trim().isEmpty()
-                    ? danhMucService.searchDanhMuc(search)
-                    : danhMucService.getAllDanhMuc();
+            danhMucPage = search != null && !search.trim().isEmpty()
+                    ? danhMucService.searchDanhMuc(search, pageable)
+                    : danhMucService.getAllDanhMuc(pageable);
 
-            if (danhMucList == null) danhMucList = Collections.emptyList();
-            Collections.reverse(danhMucList);
+            if (danhMucPage == null) {
+                danhMucPage = Page.empty(pageable);
+            }
 
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Lỗi khi tải danh sách danh mục: " + e.getMessage());
+            danhMucPage = Page.empty(pageable);
         }
 
-        model.addAttribute("danhMucList", danhMucList);
+        model.addAttribute("danhMucList", danhMucPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", danhMucPage.getTotalPages());
+        model.addAttribute("search", search);
 
         // Lấy thông tin user hiện tại và phân quyền
         UserInfo userInfo = getCurrentUserInfo();
@@ -68,8 +77,10 @@ public class DanhMucController {
         }
 
         try {
+            // Kiểm tra id trước khi lưu để xác định là thêm mới hay cập nhật
+            boolean isUpdate = danhMuc.getId() != null;
             danhMucService.saveDanhMuc(danhMuc);
-            String message = danhMuc.getId() != null ? "Cập nhật danh mục thành công!" : "Thêm danh mục thành công!";
+            String message = isUpdate ? "Cập nhật danh mục thành công!" : "Thêm danh mục thành công!";
             redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lưu danh mục thất bại: " + e.getMessage());

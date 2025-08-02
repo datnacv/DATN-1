@@ -187,6 +187,40 @@ public class ChiTietSanPhamController {
         }
     }
 
+    @PostMapping("/update-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            UUID id = UUID.fromString((String) payload.get("id"));
+            Boolean trangThai = (Boolean) payload.get("trangThai");
+
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamService.findById(id);
+            if (chiTietSanPham == null) {
+                response.put("success", false);
+                response.put("message", "Chi tiết sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            chiTietSanPham.setTrangThai(trangThai != null ? trangThai : false);
+            chiTietSanPhamService.save(chiTietSanPham);
+
+            response.put("success", true);
+            response.put("message", "Cập nhật trạng thái thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @PostMapping("/save")
     public String luuChiTietSanPhamDon(@ModelAttribute ChiTietSanPhamUpdateDto dto,
                                        @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
@@ -341,6 +375,20 @@ public class ChiTietSanPhamController {
             if (!isCurrentUserAdmin()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra trùng lặp Mã Sản Phẩm
+            if (sanPhamService.existsByMaSanPham(sanPham.getMaSanPham())) {
+                response.put("success", false);
+                response.put("message", "Mã sản phẩm đã tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra trùng lặp Tên Sản Phẩm
+            if (sanPhamService.existsByTenSanPham(sanPham.getTenSanPham())) {
+                response.put("success", false);
+                response.put("message", "Tên sản phẩm đã tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 

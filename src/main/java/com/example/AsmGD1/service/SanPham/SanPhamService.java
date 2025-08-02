@@ -266,5 +266,11 @@ public class SanPhamService {
         Pageable pageable = PageRequest.of(0, limit);
         return sanPhamRepository.findSanPhamLienQuan(idSanPham, idDanhMuc, tenSanPham.toLowerCase(), pageable);
     }
+    public boolean existsByMaSanPham(String maSanPham) {
+        return sanPhamRepository.existsByMaSanPham(maSanPham);
+    }
 
+    public boolean existsByTenSanPham(String tenSanPham) {
+        return sanPhamRepository.existsByTenSanPham(tenSanPham);
+    }
 }

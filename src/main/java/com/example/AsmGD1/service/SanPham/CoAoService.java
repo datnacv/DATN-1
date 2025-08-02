@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.CoAo;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.CoAoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class CoAoService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách cổ áo với phân trang
+    public Page<CoAo> getAllCoAo(Pageable pageable) {
+        return coAoRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả cổ áo (không phân trang)
     public List<CoAo> getAllCoAo() {
         return coAoRepository.findAll();
     }
 
-    public List<CoAo> searchCoAo(String tenCoAo) {
-        return coAoRepository.findByTenCoAoContainingIgnoreCase(tenCoAo);
+    // Tìm kiếm cổ áo với phân trang
+    public Page<CoAo> searchCoAo(String tenCoAo, Pageable pageable) {
+        return coAoRepository.findByTenCoAoContainingIgnoreCase(tenCoAo, pageable);
     }
 
     public CoAo getCoAoById(UUID id) {
