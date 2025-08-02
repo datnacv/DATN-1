@@ -75,31 +75,38 @@ public class ThongBaoController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             HttpServletResponse response) {
+
         // Ngăn cache
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         response.setHeader("Pragma", "no-cache");
         response.setDateHeader("Expires", 0);
 
-        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
         Map<String, Object> responseMap = new HashMap<>();
+        Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
 
         if (optionalNguoiDung.isPresent()) {
             NguoiDung nguoiDung = optionalNguoiDung.get();
             List<ChiTietThongBaoNhom> notifications = thongBaoService.layThongBaoTheoNguoiDung(nguoiDung.getId(), page, size);
+            long totalCount = thongBaoService.demTongSoThongBao(nguoiDung.getId()); // thêm dòng này
+
             List<ThongBaoDTO> dtoList = notifications.stream()
                     .map(ThongBaoDTO::new)
                     .collect(Collectors.toList());
+
             responseMap.put("notifications", dtoList);
             responseMap.put("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId()));
+            responseMap.put("totalCount", totalCount); // thêm dòng này
             responseMap.put("user", nguoiDung);
             return ResponseEntity.ok(responseMap);
         } else {
             responseMap.put("notifications", null);
             responseMap.put("unreadCount", 0);
+            responseMap.put("totalCount", 0); // thêm dòng này
             responseMap.put("user", null);
             return ResponseEntity.ok(responseMap);
         }
     }
+
 
     @PostMapping("/danh-dau-da-xem")
     @ResponseBody

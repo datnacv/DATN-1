@@ -22,6 +22,8 @@
         .notification-header { top: 0; border-bottom: 1px solid #dee2e6; }
         .notification-footer { bottom: 0; border-top: 1px solid #dee2e6; }
         .notification-table th, .notification-table td { vertical-align: middle; }
+        .pagination { margin-bottom: 0; }
+        .page-item.disabled .page-link { cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -113,14 +115,12 @@
     </div>
 
     <!-- 📋 Notification Modal -->
-    <!-- 📋 Notification Modal -->
     <div class="modal fade" id="notificationModal" tabindex="-1"
          aria-labelledby="notificationModalLabel"
          aria-hidden="true"
          data-bs-backdrop="false" data-bs-keyboard="true">
-
         <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="notificationModalLabel">Danh Sách Thông Báo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
@@ -163,6 +163,19 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <nav aria-label="Notification pagination">
+                        <ul class="pagination pagination-sm justify-content-center">
+                            <li class="page-item" id="prevPage">
+                                <a class="page-link" href="#" onclick="changePage(-1)">Trước</a>
+                            </li>
+                            <li class="page-item active" id="currentPage">
+                                <a class="page-link" href="#">1</a>
+                            </li>
+                            <li class="page-item" id="nextPage">
+                                <a class="page-link" href="#" onclick="changePage(1)">Sau</a>
+                            </li>
+                        </ul>
+                    </nav>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>

@@ -18,4 +18,6 @@ public interface ChiTietThongBaoNhomRepository extends JpaRepository<ChiTietThon
     long countByNguoiDungIdAndDaXemFalse(UUID nguoiDungId);
 
     Optional<ChiTietThongBaoNhom> findByThongBaoNhom_IdAndNguoiDung_Id(UUID thongBaoNhomId, UUID nguoiDungId);
+    long countByNguoiDungId(UUID nguoiDungId);
+
 }

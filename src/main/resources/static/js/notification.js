@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', function () {
         console.warn('CSRF token or header not found. POST requests may fail.');
     }
 
+    let currentPage = 0;
+    let totalPages = 1;
+
     // Hàm debounce để ngăn gọi API nhiều lần
     function debounce(func, wait) {
         let timeout;
@@ -52,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const viewAllLinks = document.querySelectorAll('a[data-bs-target="#notificationModal"]');
     viewAllLinks.forEach(link => {
         link.addEventListener('click', function (e) {
-            e.preventDefault(); // Ngăn hành vi mặc định của Bootstrap
+            e.preventDefault();
             console.log('View all notifications link clicked');
             const modal = document.getElementById('notificationModal');
             if (!modal) {
@@ -65,11 +68,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 const modalInstance = new bootstrap.Modal(modal);
                 modalInstance.show();
                 console.log('Modal opened successfully');
-                // Tải thông báo khi modal mở
                 modal.addEventListener('shown.bs.modal', function () {
                     console.log('Modal is shown, loading notifications...');
+                    currentPage = 0;
                     loadNotificationsForModal();
-                }, { once: true }); // Chỉ gọi một lần khi modal mở
+                }, { once: true });
             } catch (e) {
                 console.error('Error showing modal:', e);
                 alert('Lỗi hệ thống: Không thể hiển thị cửa sổ thông báo. Vui lòng thử lại sau.');
@@ -172,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    function loadNotificationsForModal(page = 0, size = 5) {
+    function loadNotificationsForModal(page = currentPage, size = 5) {
         const loadingState = document.getElementById('modalTableLoadingState');
         const emptyState = document.getElementById('modalTableEmptyState');
         const tableBody = document.getElementById('modalNotificationTableBody');
@@ -203,8 +206,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (data.notifications && Array.isArray(data.notifications) && data.notifications.length > 0) {
                     renderNotificationsForTable(data.notifications, true);
                     updateUnreadCount(data.unreadCount || 0);
+                    totalPages = Math.max(1, Math.ceil((data.totalCount || data.notifications.length) / size));
+                    updatePagination(page);
                 } else {
                     if (emptyState) emptyState.classList.remove('d-none');
+                    totalPages = 1;
+                    updatePagination(page);
                 }
                 checkEmptyState();
             })
@@ -268,29 +275,49 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // 👉 Tạo hiệu ứng mờ khi bắt đầu load lại bảng
+        tableBody.classList.add('opacity-50');
+
         if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
             if (emptyState) emptyState.classList.remove('d-none');
+            tableBody.classList.remove('opacity-50');
             return;
         }
+
+        // Xóa dữ liệu cũ
+        const existingRows = tableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
+        existingRows.forEach(item => item.remove());
+
+        // ⚠️ Nếu bạn đang dùng phân trang trong modal, cần dùng currentPage và pageSize để tính STT
+        const baseIndex = currentPage * 5; // hoặc thay 5 = pageSize nếu có
 
         notifications.forEach((notification, index) => {
             const timeAgo = formatTimeAgo(notification.thoiGian);
             const tieuDe = notification.tieuDe || 'Không có tiêu đề';
             const noiDung = notification.noiDung || 'Không có nội dung';
+
             const row = document.createElement('tr');
             row.className = notification.daXem ? '' : 'notification-unread';
             row.style.cursor = 'pointer';
             row.onclick = () => markAsRead(notification.idThongBao, row);
+
             row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${escapeHtml(tieuDe)}</td>
-                <td>${escapeHtml(noiDung)}</td>
-                <td>${timeAgo}</td>
-                <td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
-            `;
+            <td>${baseIndex + index + 1}</td>
+            <td>${escapeHtml(tieuDe)}</td>
+            <td>${escapeHtml(noiDung)}</td>
+            <td>${timeAgo}</td>
+            <td>${notification.daXem ? 'Đã đọc' : '<span class="badge bg-primary">Mới</span>'}</td>
+        `;
+
             tableBody.appendChild(row);
         });
+
+        // 👉 Bỏ hiệu ứng mờ sau khi render xong
+        setTimeout(() => {
+            tableBody.classList.remove('opacity-50');
+        }, 100); // delay nhẹ để tránh "giật"
     }
+
 
     function escapeHtml(text) {
         if (!text) return '';
@@ -348,15 +375,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function markAsRead(notificationId, element) {
-        if (!csrfToken || !csrfHeader) {
-            alert('Lỗi hệ thống: Thiếu thông tin bảo mật. Vui lòng thử lại sau.');
-            return;
-        }
         fetch('/acvstore/thong-bao/danh-dau-da-xem', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                [csrfHeader]: csrfToken
+                'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: `idThongBao=${notificationId}`
         })
@@ -384,15 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function markAllAsRead() {
-        if (!csrfToken || !csrfHeader) {
-            alert('Lỗi hệ thống: Thiếu thông tin bảo mật. Vui lòng thử lại sau.');
-            return;
-        }
         fetch('/acvstore/thong-bao/danh-dau-tat-ca', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                [csrfHeader]: csrfToken
+                'Content-Type': 'application/x-www-form-urlencoded'
             }
         })
             .then(response => {
@@ -463,4 +480,30 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
     }
+
+    function updatePagination(page) {
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        const currentPageEl = document.getElementById('currentPage');
+
+        if (currentPageEl) {
+            currentPageEl.querySelector('.page-link').textContent = page + 1;
+        }
+
+        if (prevPage) {
+            prevPage.classList.toggle('disabled', page === 0);
+        }
+
+        if (nextPage) {
+            nextPage.classList.toggle('disabled', page >= totalPages - 1);
+        }
+    }
+
+    window.changePage = function (delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 0 && newPage < totalPages) {
+            currentPage = newPage;
+            loadNotificationsForModal(currentPage);
+        }
+    };
 });
