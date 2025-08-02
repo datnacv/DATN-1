@@ -26,28 +26,93 @@
         .quantity-control { display: flex; align-items: center; gap: 10px; }
         .quantity-input { width: 60px; text-align: center; }
         .quantity-input:disabled { background-color: #f1f1f1; cursor: not-allowed; }
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
+        }
+        #chatbot-toggle, #chatbot-box {
+            display: none !important;
+        }
         @media (max-width: 640px) {
             .product-img { max-height: 300px; }
             .thumbnail-img { width: 60px; height: 60px; }
             .dropdown-menu { width: 100%; left: 0; }
             body { padding-top: 80px; }
         }
-        /* Style cho footer và bản đồ */
         .map-container {
             border-radius: 10px;
             overflow: hidden;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
         .map-container:hover {
             transform: translateY(-5px);
         }
-
         @keyframes patternMove {
             0% { background-position: 0 0, 0 0; }
             100% { background-position: 60px 60px, -60px 60px; }
         }
-
         @media (max-width: 768px) {
             .map-container iframe {
                 height: 200px;
@@ -80,12 +145,15 @@
             </div>
         </div>
         <div class="flex-1 mx-4 max-w-2xl">
-            <div class="relative">
-                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
-                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-3 py-1 rounded-full">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
+            <form class="position-relative" action="/search" method="get">
+                <div class="relative">
+                    <input type="text" class="w-full py-2 px-4 rounded-full border-none focus:outline-none" placeholder="Tìm kiếm sản phẩm..." name="keyword" id="searchInput" autocomplete="off" th:value="${keyword}"/>
+                    <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-3 py-1 rounded-full" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div id="searchSuggestions" class="search-suggestions"></div>
+            </form>
         </div>
         <a href="/cart" class="text-white text-xl relative">
             <i class="fas fa-shopping-cart"></i>
@@ -256,7 +324,6 @@
     <i class="fas fa-arrow-up"></i>
 </button>
 
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script th:inline="javascript">
@@ -266,6 +333,140 @@
 </script>
 
 <script>
+    // Search suggestions
+    const searchInput = document.getElementById('searchInput');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    let debounceTimer;
+
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            const keyword = searchInput.value.trim();
+            searchSuggestions.innerHTML = '';
+            if (keyword.length < 2) {
+                showSearchHistory(keyword);
+                return;
+            }
+            try {
+                const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
+                const products = await response.json();
+                searchSuggestions.innerHTML = '';
+                if (products.length === 0) {
+                    searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
+                }
+                products.forEach(product => {
+                    const suggestion = document.createElement('div');
+                    suggestion.className = 'suggestion-item';
+                    suggestion.innerHTML = `
+                        <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}"/>
+                        <div>
+                            <div class="font-semibold">${product.tenSanPham}</div>
+                            <div class="text-blue-800">${product.price.toLocaleString('vi-VN')} VNĐ</div>
+                        </div>
+                    `;
+                    suggestion.addEventListener('click', () => {
+                        window.location.href = `/chitietsanpham?id=${product.id}`;
+                    });
+                    searchSuggestions.appendChild(suggestion);
+                });
+                searchSuggestions.classList.add('active');
+            } catch (error) {
+                console.error('Lỗi khi tải gợi ý tìm kiếm:', error);
+                searchSuggestions.innerHTML = '<div class="suggestion-item">Lỗi khi tải gợi ý</div>';
+                searchSuggestions.classList.add('active');
+            }
+        }, 300);
+    });
+
+    searchInput.addEventListener('focus', async () => {
+        const keyword = searchInput.value.trim();
+        showSearchHistory(keyword);
+    });
+
+    searchInput.addEventListener('keydown', async (event) => {
+        if (event.key === 'Enter') {
+            const keyword = searchInput.value.trim();
+            if (!keyword) return;
+
+            try {
+                const response = await fetch(`/api/save-search-history?keyword=${encodeURIComponent(keyword)}`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                if (!response.ok) {
+                    console.error('Lỗi khi lưu lịch sử tìm kiếm:', await response.text());
+                }
+                // Form sẽ tự động gửi yêu cầu do thẻ <form>
+            } catch (error) {
+                console.error('Lỗi khi lưu lịch sử tìm kiếm:', error);
+            }
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+            searchSuggestions.classList.remove('active');
+        }
+    });
+
+    async function showSearchHistory(filterKeyword = '') {
+        try {
+            const response = await fetch('/api/search-history', { credentials: 'include' });
+            if (!response.ok) {
+                throw new Error(response.status === 401 ? 'Vui lòng đăng nhập để xem lịch sử tìm kiếm' : 'Lỗi khi tải lịch sử tìm kiếm');
+            }
+            const history = await response.json();
+            searchSuggestions.innerHTML = '';
+            const filteredHistory = filterKeyword
+                ? history.filter(kw => kw.toLowerCase().includes(filterKeyword.toLowerCase()))
+                : history;
+            if (filteredHistory.length === 0) {
+                searchSuggestions.innerHTML = '<div class="history-item">Không có lịch sử tìm kiếm</div>';
+            } else {
+                filteredHistory.forEach(keyword => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.innerHTML = `
+                        <span class="keyword">${
+                        filterKeyword
+                            ? keyword.replace(new RegExp(filterKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), match => `<span class="highlight">${match}</span>`)
+                            : keyword
+                    }</span>
+                        <i class="fas fa-times delete-btn" title="Xóa mục này"></i>
+                    `;
+                    historyItem.querySelector('.keyword').addEventListener('click', () => {
+                        searchInput.value = keyword;
+                        searchInput.dispatchEvent(new Event('input'));
+                    });
+                    historyItem.querySelector('.delete-btn').addEventListener('click', async () => {
+                        try {
+                            const response = await fetch(`/api/search-history/delete?keyword=${encodeURIComponent(keyword)}`, {
+                                method: 'DELETE',
+                                credentials: 'include'
+                            });
+                            if (response.ok) {
+                                showSearchHistory(filterKeyword);
+                            } else {
+                                searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử</div>';
+                                searchSuggestions.classList.add('active');
+                            }
+                        } catch (error) {
+                            console.error('Lỗi khi xóa mục lịch sử tìm kiếm:', error);
+                            searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử tìm kiếm</div>';
+                            searchSuggestions.classList.add('active');
+                        }
+                    });
+                    searchSuggestions.appendChild(historyItem);
+                });
+            }
+            searchSuggestions.classList.add('active');
+        } catch (error) {
+            console.error('Lỗi khi tải lịch sử tìm kiếm:', error);
+            searchSuggestions.innerHTML = `<div class="history-item">${error.message}</div>`;
+            searchSuggestions.classList.add('active');
+        }
+    }
+
     // Format number to VND
     function formatVND(number) {
         return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(number) + ' VNĐ';
@@ -425,8 +626,6 @@
             checkSelections();
         });
     });
-
-
 
     // Thumbnail image click to update main image
     document.querySelectorAll('.thumbnail-img').forEach(thumbnail => {
