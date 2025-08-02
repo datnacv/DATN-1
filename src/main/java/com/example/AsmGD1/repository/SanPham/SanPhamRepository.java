@@ -47,5 +47,6 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
             @Param("tenSanPham") String tenSanPham,
             Pageable pageable
     );
-
+    boolean existsByMaSanPham(String maSanPham);
+    boolean existsByTenSanPham(String tenSanPham);
 }

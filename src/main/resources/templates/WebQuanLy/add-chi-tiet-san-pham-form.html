@@ -1146,7 +1146,16 @@
                         const errorResponse = JSON.parse(xhr.responseText);
                         errorMessage = errorResponse.message || xhr.responseText;
                     } catch (e) {}
-                    alert('Lỗi khi thêm sản phẩm: ' + errorMessage);
+                    // Hiển thị thông báo lỗi trong modal
+                    $('#quickAddProductModal .modal-body').prepend(
+                        `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            ${errorMessage}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`
+                    );
+                    setTimeout(() => {
+                        $('.alert').alert('close');
+                    }, 8000); // Tự động đóng thông báo sau 8 giây
                 }
             });
         });

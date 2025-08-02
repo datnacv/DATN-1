@@ -378,6 +378,20 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Kiểm tra trùng lặp Mã Sản Phẩm
+            if (sanPhamService.existsByMaSanPham(sanPham.getMaSanPham())) {
+                response.put("success", false);
+                response.put("message", "Mã sản phẩm đã tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra trùng lặp Tên Sản Phẩm
+            if (sanPhamService.existsByTenSanPham(sanPham.getTenSanPham())) {
+                response.put("success", false);
+                response.put("message", "Tên sản phẩm đã tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             SanPham newSanPham = new SanPham();
             newSanPham.setMaSanPham(sanPham.getMaSanPham());
             newSanPham.setTenSanPham(sanPham.getTenSanPham());
