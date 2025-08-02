@@ -1534,6 +1534,12 @@
 
       if (savedTabs && savedTabId) {
         tabs = JSON.parse(savedTabs);
+        // Đặt lại paymentMethod cho các tab không hợp lệ
+        tabs.forEach(tab => {
+          if (!tab.paymentMethod || tab.paymentMethod !== '550E8400-E29B-41D4-A716-446655440018') {
+            tab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
+          }
+        });
         currentTabId = parseInt(savedTabId);
         tabs.sort((a, b) => a.id - b.id);
         renderTabs();
@@ -1636,6 +1642,11 @@
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;
 
+    // Đặt phương thức thanh toán mặc định là Tiền mặt nếu không hợp lệ
+    if (!tab.paymentMethod || tab.paymentMethod !== '550E8400-E29B-41D4-A716-446655440018') {
+      tab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
+    }
+
     // Load thông tin từ tab
     const elements = {
       customerPhone: document.getElementById('customerPhone'),
@@ -1656,11 +1667,8 @@
     if (tab.customerPhone === '0999999999') {
       elements.saleMethod.value = 'Tại quầy';
       elements.saleMethod.setAttribute('disabled', 'true');
-
-      // Ẩn các phần liên quan giao hàng
       if (elements.addressSection) elements.addressSection.classList.add('d-none');
       if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.add('d-none');
-
       tab.saleMethod = 'Tại quầy';
       tab.shippingFee = 0;
     } else {
@@ -1669,17 +1677,7 @@
 
     if (elements.shippingFee) elements.shippingFee.value = tab.shippingFee;
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
-    if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount;
-
-    // Điều khiển hiển thị của phí vận chuyển và địa chỉ giao hàng
-    if (tab.saleMethod === 'Giao hàng' && tab.customerPhone && tab.customerPhone !== '0999999999') {
-      if (elements.addressSection) elements.addressSection.classList.remove('d-none');
-      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.remove('d-none');
-    } else {
-      if (elements.addressSection) elements.addressSection.classList.add('d-none');
-      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.add('d-none');
-      tab.shippingFee = 0; // Đặt lại phí vận chuyển về 0
-    }
+    if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount || 0; // Default to 0
 
     toggleCashInput();
     renderCart(tab.cart);
@@ -1694,6 +1692,7 @@
         tab.subTotal = cartData.tongTienHang || 0;
         tab.discount = cartData.giamGia || 0;
         tab.total = cartData.tong || 0;
+        tab.cashAmount = cartData.cashAmount || 0;
         renderCart(tab.cart);
         updateSummary(tab);
       }
@@ -1706,6 +1705,7 @@
     }
 
     await fetchVouchers();
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
   }
 
   async function fetchCustomerAddresses() {
@@ -2285,7 +2285,7 @@
       soDienThoaiKhachHang: tab.customerPhone,
       phiVanChuyen: tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0,
       phuongThucThanhToan: tab.paymentMethod,
-      soTienKhachDua: parseFloat(cashAmountInput ? cashAmountInput.value.replace(/\./g, '') : 0) || 0,
+      soTienKhachDua: tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018' ? 0 : (parseFloat(cashAmountInput?.value.replace(/\./g, '') || '0') || 0),
       phuongThucBanHang: tab.saleMethod,
       idPhieuGiamGia: tab.voucherId || null,
       danhSachSanPham: tab.cart,
@@ -2293,10 +2293,11 @@
       tabId: String(currentTabId)
     };
 
-    // Tính tổng tiền
+    // Log để kiểm tra orderData
+    console.log('orderData before saving to sessionStorage:', JSON.stringify(orderData));
+
     const totalAmount = (tab.total || 0) + (tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0);
 
-    // Hiển thị hộp thoại xác nhận SweetAlert2
     const confirmResult = await Swal.fire({
       icon: 'question',
       title: 'Xác nhận thanh toán',
@@ -2316,14 +2317,12 @@
       cancelButtonColor: '#d33',
     });
 
-    // Nếu người dùng không xác nhận, thoát hàm
     if (!confirmResult.isConfirmed) {
       return;
     }
 
     try {
       if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
-        // Thanh toán chuyển khoản - chuyển hướng đến VNPay
         if (totalAmount <= 0) {
           showToast('Tổng tiền phải lớn hơn 0.', 'warning');
           return;
@@ -2353,11 +2352,9 @@
         form.appendChild(descriptionInput);
 
         sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData, tabId: currentTabId }));
-
         document.body.appendChild(form);
         form.submit();
       } else {
-        // Thanh toán tiền mặt
         const response = await fetch(`${BASE_URL}/create-order`, {
           method: 'POST',
           headers: {
@@ -2379,10 +2376,8 @@
         }
 
         const data = await response.json();
-        // Cập nhật thông báo thành công
         showToast(`Hóa đơn ${data.maDonHang} đã được tạo và in hóa đơn thành công!`, 'success');
 
-        // Xử lý file PDF nếu có
         if (data.pdfData) {
           try {
             const byteCharacters = atob(data.pdfData);
@@ -2393,7 +2388,6 @@
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-            // Tạo URL và kích hoạt tải xuống
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -2408,12 +2402,15 @@
           }
         }
 
-        // Xóa tab hiện tại và tạo tab mới
         tabs = tabs.filter(t => t.id !== currentTabId);
         if (tabs.length === 0) {
           await addNewTab();
         } else {
           currentTabId = tabs[tabs.length - 1].id;
+          const lastTab = tabs.find(t => t.id === currentTabId);
+          if (lastTab) {
+            lastTab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
+          }
         }
 
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
@@ -2804,14 +2801,12 @@
   // Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
     const cashInput = document.getElementById('cashAmount');
-
     if (cashInput) {
       cashInput.addEventListener('input', (e) => {
         const cursorPosition = e.target.selectionStart;
         const rawValue = e.target.value.replace(/\./g, '');
         const formattedValue = formatCashInput(rawValue);
         e.target.value = formattedValue;
-
         const tab = tabs.find(t => t.id === currentTabId);
         if (tab) {
           tab.cashAmount = parseFloat(rawValue) || 0;
@@ -2876,6 +2871,18 @@
       customerSearch.addEventListener('input', () => {
         const keyword = customerSearch.value.trim();
         fetchCustomers(keyword);
+      });
+    }
+
+    const paymentMethodSelect = document.getElementById('paymentMethod');
+    if (paymentMethodSelect) {
+      paymentMethodSelect.addEventListener('change', (e) => {
+        const tab = tabs.find(t => t.id === currentTabId);
+        if (tab) {
+          tab.paymentMethod = e.target.value;
+          toggleCashInput();
+          localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        }
       });
     }
 
