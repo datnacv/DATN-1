@@ -5,6 +5,7 @@ import com.example.AsmGD1.dto.BanHang.*;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.DonHangTamRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
+import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.BanHang.DonHangService;
 import com.example.AsmGD1.service.BanHang.GioHangService;
@@ -94,6 +95,10 @@ public class BanHangController {
     private ChienDichGiamGiaService chienDichGiamGiaService;
 
     @Autowired
+    private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
+
+
+    @Autowired
     private HttpSession session;
 
     @GetMapping("/customers")
@@ -141,16 +146,20 @@ public class BanHangController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
 
             List<String> addresses = new ArrayList<>();
-            if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().trim().isEmpty()) {
-                addresses.add(nguoiDung.getChiTietDiaChi());
+
+            // Thêm địa chỉ mặc định từ NguoiDung
+            String defaultAddress = constructDetailedAddress(nguoiDung);
+            if (defaultAddress != null && !defaultAddress.isBlank()) {
+                addresses.add("[Mặc định] " + defaultAddress);  // Gắn tag nếu muốn
             }
-            String detailedAddress = constructDetailedAddress(nguoiDung);
-            if (detailedAddress != null && !addresses.contains(detailedAddress)) {
-                addresses.add(detailedAddress);
-            }
-            List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
-            if (sessionAddresses != null) {
-                addresses.addAll(sessionAddresses);
+
+            // Thêm các địa chỉ khác từ bảng DiaChiNguoiDung
+            List<DiaChiNguoiDung> diaChiKhac = diaChiNguoiDungRepository.findByNguoiDung_Id(nguoiDung.getId());
+            for (DiaChiNguoiDung diaChi : diaChiKhac) {
+                String otherAddr = constructDetailedAddress(diaChi);
+                if (otherAddr != null && !addresses.contains(otherAddr)) {
+                    addresses.add(otherAddr);
+                }
             }
 
             Map<String, Object> response = new HashMap<>();
@@ -163,35 +172,38 @@ public class BanHangController {
         }
     }
 
+
     @PostMapping("/customer/{phone}/add-address")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> addCustomerAddress(@PathVariable String phone, @RequestBody Map<String, String> request) {
         try {
             NguoiDung nguoiDung = nguoiDungRepository.findBySoDienThoai(phone)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
-            String addressLine = request.get("addressLine");
-            String ward = request.get("ward");
-            String district = request.get("district");
-            String city = request.get("city");
-            if (addressLine != null && ward != null && district != null && city != null &&
-                    !addressLine.trim().isEmpty() && !ward.trim().isEmpty() && !district.trim().isEmpty() && !city.trim().isEmpty()) {
-                nguoiDung.setChiTietDiaChi(addressLine);
-                nguoiDung.setPhuongXa(ward);
-                nguoiDung.setQuanHuyen(district);
-                nguoiDung.setTinhThanhPho(city);
+
+            String chiTietDiaChi = request.get("chiTietDiaChi");
+            String phuongXa = request.get("phuongXa");
+            String quanHuyen = request.get("quanHuyen");
+            String tinhThanhPho = request.get("tinhThanhPho");
+
+            if (chiTietDiaChi != null && phuongXa != null && quanHuyen != null && tinhThanhPho != null &&
+                    !chiTietDiaChi.trim().isEmpty() && !phuongXa.trim().isEmpty() && !quanHuyen.trim().isEmpty() && !tinhThanhPho.trim().isEmpty()) {
+                nguoiDung.setChiTietDiaChi(chiTietDiaChi);
+                nguoiDung.setPhuongXa(phuongXa);
+                nguoiDung.setQuanHuyen(quanHuyen);
+                nguoiDung.setTinhThanhPho(tinhThanhPho);
                 nguoiDungRepository.save(nguoiDung);
 
                 List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
                 if (sessionAddresses == null) {
                     sessionAddresses = new ArrayList<>();
                 }
-                String fullAddress = addressLine + ", " + ward + ", " + district + ", " + city;
+                String fullAddress = chiTietDiaChi + ", " + phuongXa + ", " + quanHuyen + ", " + tinhThanhPho;
                 if (!sessionAddresses.contains(fullAddress)) {
                     sessionAddresses.add(fullAddress);
+                    session.setAttribute("customer_addresses_" + phone, sessionAddresses);
                 }
-                session.setAttribute("customer_addresses_" + phone, sessionAddresses);
 
-                return ResponseEntity.ok(Map.of("success", true));
+                return ResponseEntity.ok(Map.of("success", true, "message", "Đã thêm địa chỉ thành công"));
             }
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Địa chỉ không hợp lệ"));
         } catch (Exception e) {
@@ -367,23 +379,21 @@ public class BanHangController {
     }
 
     private String constructDetailedAddress(NguoiDung nguoiDung) {
-        StringBuilder address = new StringBuilder();
-        if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().trim().isEmpty()) {
-            address.append(nguoiDung.getChiTietDiaChi());
-        }
-        if (nguoiDung.getPhuongXa() != null && !nguoiDung.getPhuongXa().trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(nguoiDung.getPhuongXa());
-        }
-        if (nguoiDung.getQuanHuyen() != null && !nguoiDung.getQuanHuyen().trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(nguoiDung.getQuanHuyen());
-        }
-        if (nguoiDung.getTinhThanhPho() != null && !nguoiDung.getTinhThanhPho().trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(nguoiDung.getTinhThanhPho());
-        }
-        return address.length() > 0 ? address.toString() : null;
+        StringBuilder sb = new StringBuilder();
+        if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().isBlank()) sb.append(nguoiDung.getChiTietDiaChi());
+        if (nguoiDung.getPhuongXa() != null && !nguoiDung.getPhuongXa().isBlank()) sb.append(", ").append(nguoiDung.getPhuongXa());
+        if (nguoiDung.getQuanHuyen() != null && !nguoiDung.getQuanHuyen().isBlank()) sb.append(", ").append(nguoiDung.getQuanHuyen());
+        if (nguoiDung.getTinhThanhPho() != null && !nguoiDung.getTinhThanhPho().isBlank()) sb.append(", ").append(nguoiDung.getTinhThanhPho());
+        return sb.length() > 0 ? sb.toString() : null;
+    }
+
+    private String constructDetailedAddress(DiaChiNguoiDung diaChi) {
+        StringBuilder sb = new StringBuilder();
+        if (diaChi.getChiTietDiaChi() != null && !diaChi.getChiTietDiaChi().isBlank()) sb.append(diaChi.getChiTietDiaChi());
+        if (diaChi.getPhuongXa() != null && !diaChi.getPhuongXa().isBlank()) sb.append(", ").append(diaChi.getPhuongXa());
+        if (diaChi.getQuanHuyen() != null && !diaChi.getQuanHuyen().isBlank()) sb.append(", ").append(diaChi.getQuanHuyen());
+        if (diaChi.getTinhThanhPho() != null && !diaChi.getTinhThanhPho().isBlank()) sb.append(", ").append(diaChi.getTinhThanhPho());
+        return sb.length() > 0 ? sb.toString() : null;
     }
 
     @GetMapping
