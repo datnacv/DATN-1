@@ -475,7 +475,7 @@
                         <td th:text="${pd.tayAo?.tenTayAo ?: 'N/A'}"></td>
                         <td th:text="${pd.coAo?.tenCoAo ?: 'N/A'}"></td>
                         <td th:text="${pd.thuongHieu?.tenThuongHieu ?: 'N/A'}"></td>
-                        <td th:text="${#numbers.formatDecimal(pd.gia, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></td>
+                        <td th:text="${#numbers.formatDecimal(pd.gia, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
                         <td th:text="${pd.soLuongTonKho}"></td>
                         <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
                         <td style="min-width: 150px;">
