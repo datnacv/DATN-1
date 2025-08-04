@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ACV Store - Hồ sơ cá nhân</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .navbar { background: linear-gradient(to right, #153054, #1e4066); }
+    .address-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white; }
+    .address-card .actions button { margin-right: 5px; }
+  </style>
+</head>
+<body class="bg-gray-100">
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg sticky-top shadow-sm">
+  <div class="container d-flex justify-content-between align-items-center py-2">
+    <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
+    <div class="d-flex align-items-center gap-3">
+      <a href="/" class="text-white"><i class="fas fa-home"></i> Trang chủ</a>
+      <a href="/customers/logout" class="btn btn-light rounded-pill px-3">Đăng xuất</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Nội dung chính -->
+<div class="container py-5">
+  <h2 class="text-2xl font-bold text-gray-800 mb-4">Hồ sơ cá nhân</h2>
+
+  <!-- Thông báo -->
+  <div id="alertBox"></div>
+
+  <!-- Form thông tin người dùng -->
+  <form id="profileForm" class="bg-white rounded-lg shadow-md p-4 mb-5">
+    <div class="mb-3">
+      <label class="form-label">Họ tên</label>
+      <input type="text" id="hoTen" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" id="email" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Số điện thoại</label>
+      <input type="text" id="soDienThoai" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Cập nhật</button>
+  </form>
+
+  <!-- Danh sách địa chỉ -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <h4 class="mb-3">Địa chỉ của tôi</h4>
+    <div id="addressList"></div>
+    <button class="btn btn-success mt-3" onclick="showAddAddressForm()">+ Thêm địa chỉ</button>
+  </div>
+
+  <!-- Form thêm/sửa địa chỉ -->
+  <div id="addressFormContainer" class="bg-white rounded-lg shadow-md p-4 mt-4" style="display:none;">
+    <h4 id="addressFormTitle">Thêm địa chỉ</h4>
+    <form id="addressForm">
+      <input type="hidden" id="addressId">
+      <div class="mb-3">
+        <label class="form-label">Tỉnh / Thành phố</label>
+        <input type="text" id="tinhThanhPho" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Quận / Huyện</label>
+        <input type="text" id="quanHuyen" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Phường / Xã</label>
+        <input type="text" id="phuongXa" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Chi tiết địa chỉ</label>
+        <textarea id="chiTietDiaChi" class="form-control" required></textarea>
+      </div>
+      <div class="form-check mb-3">
+        <input type="checkbox" id="macDinh" class="form-check-input">
+        <label for="macDinh" class="form-check-label">Đặt làm mặc định</label>
+      </div>
+      <button type="submit" class="btn btn-primary">Lưu</button>
+      <button type="button" class="btn btn-secondary" onclick="hideAddressForm()">Hủy</button>
+    </form>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding: 20px; margin-top: 50px;">
+  <div class="text-center text-sm">© 2025 ACV Store. All rights reserved.</div>
+</footer>
+
+<script>
+  const alertBox = document.getElementById('alertBox');
+
+  function showAlert(msg, type='success') {
+    alertBox.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+    setTimeout(() => alertBox.innerHTML = '', 3000);
+  }
+
+  async function loadProfile() {
+    const res = await fetch('/api/profile');
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('hoTen').value = data.hoTen || '';
+      document.getElementById('email').value = data.email || '';
+      document.getElementById('soDienThoai').value = data.soDienThoai || '';
+    } else {
+      showAlert(data.error, 'danger');
+    }
+  }
+
+  async function loadAddresses() {
+    const res = await fetch('/api/profile/addresses');
+    const data = await res.json();
+    const container = document.getElementById('addressList');
+    container.innerHTML = '';
+    if (res.ok && data.length > 0) {
+      data.forEach(addr => {
+        container.innerHTML += `
+          <div class="address-card">
+            <strong>${addr.tinhThanhPho}, ${addr.quanHuyen}, ${addr.phuongXa}</strong>
+            <p>${addr.chiTietDiaChi}</p>
+            <small>${addr.macDinh ? 'Mặc định' : ''}</small>
+            <div class="actions mt-2">
+              <button class="btn btn-sm btn-warning" onclick="editAddress('${addr.id}')">Sửa</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteAddress('${addr.id}')">Xóa</button>
+              <button class="btn btn-sm btn-info" onclick="setDefault('${addr.id}')">Đặt mặc định</button>
+            </div>
+          </div>`;
+      });
+    } else {
+      container.innerHTML = '<p>Chưa có địa chỉ nào</p>';
+    }
+  }
+
+  document.getElementById('profileForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const payload = {
+      hoTen: document.getElementById('hoTen').value,
+      email: document.getElementById('email').value,
+      soDienThoai: document.getElementById('soDienThoai').value
+    };
+    const res = await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) showAlert('Cập nhật thành công');
+    else showAlert(data.error, 'danger');
+  });
+
+  function showAddAddressForm() {
+    document.getElementById('addressFormTitle').innerText = 'Thêm địa chỉ';
+    document.getElementById('addressForm').reset();
+    document.getElementById('addressId').value = '';
+    document.getElementById('addressFormContainer').style.display = 'block';
+  }
+
+  function hideAddressForm() {
+    document.getElementById('addressFormContainer').style.display = 'none';
+  }
+
+  async function editAddress(id) {
+    const res = await fetch('/api/profile/addresses');
+    const data = await res.json();
+    const addr = data.find(a => a.id === id);
+    if (addr) {
+      document.getElementById('addressId').value = addr.id;
+      document.getElementById('tinhThanhPho').value = addr.tinhThanhPho;
+      document.getElementById('quanHuyen').value = addr.quanHuyen;
+      document.getElementById('phuongXa').value = addr.phuongXa;
+      document.getElementById('chiTietDiaChi').value = addr.chiTietDiaChi;
+      document.getElementById('macDinh').checked = addr.macDinh;
+      document.getElementById('addressFormTitle').innerText = 'Sửa địa chỉ';
+      document.getElementById('addressFormContainer').style.display = 'block';
+    }
+  }
+
+  document.getElementById('addressForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = document.getElementById('addressId').value;
+    const payload = {
+      tinhThanhPho: document.getElementById('tinhThanhPho').value,
+      quanHuyen: document.getElementById('quanHuyen').value,
+      phuongXa: document.getElementById('phuongXa').value,
+      chiTietDiaChi: document.getElementById('chiTietDiaChi').value,
+      macDinh: document.getElementById('macDinh').checked
+    };
+    const res = await fetch(id ? `/api/profile/address/${id}` : '/api/profile/address', {
+      method: id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert('Lưu địa chỉ thành công');
+      hideAddressForm();
+      loadAddresses();
+    } else {
+      showAlert(data.error, 'danger');
+    }
+  });
+
+  async function deleteAddress(id) {
+    if (!confirm('Xóa địa chỉ này?')) return;
+    const res = await fetch(`/api/profile/address/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert(data.message);
+      loadAddresses();
+    } else showAlert(data.error, 'danger');
+  }
+
+  async function setDefault(id) {
+    const res = await fetch(`/api/profile/address/${id}/set-default`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      showAlert(data.message);
+      loadAddresses();
+    } else showAlert(data.error, 'danger');
+  }
+
+  loadProfile();
+  loadAddresses();
+</script>
+</body>
+</html>
