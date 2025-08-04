@@ -16,8 +16,6 @@ import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -242,10 +239,9 @@ public class KHThanhToanController {
                 return "redirect:/thanh-toan";
             }
 
-            giamGia = phieuGiamGiaService   .tinhTienGiamGia(phieu, tongTien);
+            giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
             logger.info("🎯 Áp dụng mã tại /dat-hang - Mã: {}, Loại: {}, Giá trị giảm: {}, Tổng tiền: {}, Giảm giá tính được: {}",
                     phieu.getMa(), phieu.getLoai(), phieu.getGiaTriGiam(), tongTien, giamGia);
-
         }
 
         donHang.setTongTien(tongTien.add(shippingFee).subtract(giamGia));
@@ -255,89 +251,5 @@ public class KHThanhToanController {
 
         redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
         return "redirect:/thanh-toan";
-    }
-
-
-    @PostMapping("/api/checkout/apply-voucher")
-    public ResponseEntity<?> applyVoucher(@RequestParam("voucher") String voucherCode, Authentication authentication) {
-        try {
-            String email = extractEmailFromAuthentication(authentication);
-            if (email == null) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
-            }
-
-            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email).orElse(null);
-            if (nguoiDung == null) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Người dùng không tồn tại."));
-            }
-
-            PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
-                    .filter(p -> p.getMa().equalsIgnoreCase(voucherCode.trim()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (phieu == null) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã giảm giá không tồn tại."));
-            }
-
-            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Phiếu giảm giá không trong thời gian hiệu lực."));
-            }
-
-            GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
-            List<ChiTietGioHang> chiTietList = chiTietGioHangService.getGioHangChiTietList(gioHang.getId());
-            BigDecimal tongTien = chiTietList.stream()
-                    .map(item -> item.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            if (phieu.getGiaTriGiamToiThieu() != null && tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Đơn hàng chưa đạt giá trị tối thiểu."));
-            }
-
-            boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
-            boolean used = isCaNhan
-                    ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
-                    : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
-
-            if (!used) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã giảm giá không khả dụng hoặc đã hết lượt sử dụng."));
-            }
-
-            BigDecimal giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
-            logger.info("🎯 Áp dụng mã tại /apply-voucher - Mã: {}, Loại: {}, Giá trị giảm: {}, Tổng tiền: {}, Giảm giá tính được: {}",
-                    phieu.getMa(), phieu.getLoai(), phieu.getGiaTriGiam(), tongTien, giamGia);
-
-            return ResponseEntity.ok(new ApiResponse(true, "Áp dụng mã giảm giá thành công.", giamGia));
-
-        } catch (Exception e) {
-            logger.error("Lỗi khi áp dụng mã giảm giá: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse(false, "Lỗi khi áp dụng mã giảm giá: " + e.getMessage()));
-        }
-    }
-
-    // Lớp hỗ trợ cho phản hồi API
-    public static class ApiResponse {
-        private boolean success;
-        private String message;
-        private Object data;
-
-        public ApiResponse(boolean success, String message) {
-            this.success = success;
-            this.message = message;
-        }
-
-        public ApiResponse(boolean success, String message, Object data) {
-            this.success = success;
-            this.message = message;
-            this.data = data;
-        }
-
-        public boolean isSuccess() { return success; }
-        public void setSuccess(boolean success) { this.success = success; }
-        public String getMessage() { return message; }
-        public void setMessage(String message) { this.message = message; }
-        public Object getData() { return data; }
-        public void setData(Object data) { this.data = data; }
     }
 }

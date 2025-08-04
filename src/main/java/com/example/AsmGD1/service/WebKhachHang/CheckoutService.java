@@ -185,14 +185,5 @@ public class CheckoutService {
         return donHang;
     }
 
-    public BigDecimal calculateDiscount(PhieuGiamGia phieuGiamGia) {
-        if ("Phần trăm".equals(phieuGiamGia.getLoai())) {
-            BigDecimal discount = phieuGiamGia.getGiaTriGiam();
-            if (phieuGiamGia.getGiaTriGiamToiDa() != null && discount.compareTo(phieuGiamGia.getGiaTriGiamToiDa()) > 0) {
-                return phieuGiamGia.getGiaTriGiamToiDa();
-            }
-            return discount;
-        }
-        return phieuGiamGia.getGiaTriGiam();
-    }
+
 }
