@@ -103,11 +103,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                            <input type="text" id="fullName" name="fullName" class="form-control w-full" th:value="${loggedInUser?.hoTen}" required/>
+                            <input type="text" id="fullName" name="fullName" class="form-control w-full" th:value="${nguoiNhan}" required/>
                         </div>
                         <div>
                             <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                            <input type="tel" id="phone" name="phone" class="form-control w-full" th:value="${loggedInUser?.soDienThoai}" required/>
+                            <input type="tel" id="phone" name="phone" class="form-control w-full" th:value="${soDienThoaiNguoiNhan}" required/>
                         </div>
                     </div>
                     <div>

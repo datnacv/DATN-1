@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -82,6 +83,9 @@ public class ProfileService {
         existingUser.setPhuongXa(userData.getPhuongXa());
         existingUser.setChiTietDiaChi(userData.getChiTietDiaChi());
         existingUser.setVaiTro(userData.getVaiTro());
+        if (userData.getMatKhau() != null && !userData.getMatKhau().isEmpty()) {
+            existingUser.setMatKhau(passwordEncoder.encode(userData.getMatKhau()));
+        }
 
         return profileRepository.save(existingUser);
     }
@@ -108,15 +112,36 @@ public class ProfileService {
         }
 
         if (Boolean.TRUE.equals(address.getMacDinh())) {
+            // Unset macDinh for all other addresses
             diaChiNguoiDungRepository.removeDefaultFlag(user.getId());
+            // Update NguoiDung with new default address
+            user.setTinhThanhPho(address.getTinhThanhPho());
+            user.setQuanHuyen(address.getQuanHuyen());
+            user.setPhuongXa(address.getPhuongXa());
+            user.setChiTietDiaChi(address.getChiTietDiaChi());
+            profileRepository.save(user);
         }
 
         return diaChiNguoiDungRepository.save(address);
     }
 
     public List<DiaChiNguoiDung> getUserAddresses() {
-        UUID userId = getCurrentUser().getId();
-        return diaChiNguoiDungRepository.findByNguoiDung_Id(userId);
+        NguoiDung user = getCurrentUser();
+        if (user == null || !user.getTrangThai()) {
+            return new ArrayList<>();
+        }
+        List<DiaChiNguoiDung> addresses = diaChiNguoiDungRepository.findByNguoiDung_Id(user.getId());
+        // Đảm bảo chỉ một địa chỉ là mặc định
+        boolean hasDefault = false;
+        for (DiaChiNguoiDung addr : addresses) {
+            if (addr.getMacDinh() && hasDefault) {
+                addr.setMacDinh(false);
+                diaChiNguoiDungRepository.save(addr);
+            } else if (addr.getMacDinh()) {
+                hasDefault = true;
+            }
+        }
+        return addresses;
     }
 
     public DiaChiNguoiDung getAddressById(UUID addressId) {
@@ -137,7 +162,15 @@ public class ProfileService {
         address.setChiTietDiaChi(addressData.getChiTietDiaChi());
 
         if (Boolean.TRUE.equals(addressData.getMacDinh())) {
-            diaChiNguoiDungRepository.removeDefaultFlag(address.getNguoiDung().getId());
+            NguoiDung user = address.getNguoiDung();
+            // Unset macDinh for all other addresses
+            diaChiNguoiDungRepository.removeDefaultFlag(user.getId());
+            // Update NguoiDung with new default address
+            user.setTinhThanhPho(address.getTinhThanhPho());
+            user.setQuanHuyen(address.getQuanHuyen());
+            user.setPhuongXa(address.getPhuongXa());
+            user.setChiTietDiaChi(address.getChiTietDiaChi());
+            profileRepository.save(user);
             address.setMacDinh(true);
         } else {
             address.setMacDinh(false);
@@ -147,17 +180,27 @@ public class ProfileService {
     }
 
     @Transactional
-    public void deleteAddress(UUID addressId) {
+    public DiaChiNguoiDung setDefaultAddress(UUID addressId) {
         DiaChiNguoiDung address = getAddressById(addressId);
-        diaChiNguoiDungRepository.delete(address);
+        NguoiDung user = address.getNguoiDung();
+
+        // Unset macDinh for all other addresses
+        diaChiNguoiDungRepository.removeDefaultFlag(user.getId());
+        // Update NguoiDung with new default address
+        user.setTinhThanhPho(address.getTinhThanhPho());
+        user.setQuanHuyen(address.getQuanHuyen());
+        user.setPhuongXa(address.getPhuongXa());
+        user.setChiTietDiaChi(address.getChiTietDiaChi());
+        profileRepository.save(user);
+
+        address.setMacDinh(true);
+        return diaChiNguoiDungRepository.save(address);
     }
 
     @Transactional
-    public void setDefaultAddress(UUID addressId) {
+    public void deleteAddress(UUID addressId) {
         DiaChiNguoiDung address = getAddressById(addressId);
-        diaChiNguoiDungRepository.removeDefaultFlag(address.getNguoiDung().getId());
-        address.setMacDinh(true);
-        diaChiNguoiDungRepository.save(address);
+        diaChiNguoiDungRepository.delete(address);
     }
 
     private void validateAddress(DiaChiNguoiDung address) {

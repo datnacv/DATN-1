@@ -2,164 +2,227 @@ package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.entity.DiaChiNguoiDung;
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.NguoiDung.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
 @RequestMapping("/profile")
-@PreAuthorize("isAuthenticated()")
 public class ProfileController {
 
     @Autowired
     private ProfileService profileService;
 
-    /** Hàm dùng chung để load user & address */
-    private void addUserAndAddresses(Model model) {
-        model.addAttribute("user", profileService.getCurrentUser());
-        model.addAttribute("addresses", profileService.getUserAddresses());
-    }
+    @Autowired
+    private NguoiDungService nguoiDungService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping
-    public String getProfile(Model model,
-                             @RequestParam(required = false) String success,
-                             @RequestParam(required = false) String error) {
-        addUserAndAddresses(model);
-        if (success != null) model.addAttribute("success", success);
-        if (error != null) model.addAttribute("error", error);
-        return "WebKhachHang/profile";
-    }
-
-    @GetMapping("/edit")
-    public String showEditForm(Model model) {
-        model.addAttribute("user", profileService.getCurrentUser());
-        return "WebKhachHang/profile-edit";
+    public String viewProfile(Model model, Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            NguoiDung user = profileService.getCurrentUser();
+            if (user == null || !user.getTrangThai()) {
+                model.addAttribute("error", "Người dùng không tồn tại hoặc đã bị khóa");
+                return "WebKhachHang/profile";
+            }
+            Map<String, String> userInfo = new HashMap<>();
+            userInfo.put("hoTen", user.getHoTen());
+            userInfo.put("email", user.getEmail());
+            userInfo.put("soDienThoai", user.getSoDienThoai());
+            model.addAttribute("userInfo", userInfo);
+            model.addAttribute("addresses", profileService.getUserAddresses());
+            return "WebKhachHang/profile";
+        } catch (Exception e) {
+            model.addAttribute("error", "Lỗi khi tải trang hồ sơ: " + e.getMessage());
+            return "WebKhachHang/profile";
+        }
     }
 
     @PostMapping
-    public String updateProfile(@ModelAttribute NguoiDung user) {
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateProfile(@RequestParam String hoTen,
+                                                             @RequestParam String email,
+                                                             @RequestParam String soDienThoai,
+                                                             @RequestParam(required = false) String matKhau,
+                                                             Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
         try {
-            profileService.updateUser(user);
-            return "redirect:/profile?success=Cập nhật thông tin thành công";
-        } catch (RuntimeException e) {
-            return "redirect:/profile/edit?error=" + e.getMessage();
+            String username = authentication.getName();
+            NguoiDung existingUser = profileService.getCurrentUser();
+            if (existingUser == null || !existingUser.getTrangThai()) {
+                response.put("status", "error");
+                response.put("message", "Người dùng không tồn tại hoặc đã bị khóa");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra email trùng lặp
+            NguoiDung userByEmail = nguoiDungService.findByEmail(email);
+            if (userByEmail != null && !userByEmail.getId().equals(existingUser.getId())) {
+                response.put("status", "error");
+                response.put("message", "Email đã tồn tại");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra số điện thoại trùng lặp
+            NguoiDung userByPhone = nguoiDungService.findBySoDienThoai(soDienThoai);
+            if (userByPhone != null && !userByPhone.getId().equals(existingUser.getId())) {
+                response.put("status", "error");
+                response.put("message", "Số điện thoại đã tồn tại");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            existingUser.setHoTen(hoTen);
+            existingUser.setEmail(email);
+            existingUser.setSoDienThoai(soDienThoai);
+            if (matKhau != null && !matKhau.isEmpty()) {
+                existingUser.setMatKhau(passwordEncoder.encode(matKhau));
+            }
+            profileService.updateUser(existingUser);
+
+            response.put("status", "success");
+            response.put("message", "Cập nhật hồ sơ thành công");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Lỗi khi cập nhật hồ sơ: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/address/add-ajax")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<Map<String, Object>> addAddress(@RequestBody DiaChiNguoiDung diaChi, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String username = authentication.getName();
+            NguoiDung user = profileService.getCurrentUser();
+            if (user == null || !user.getTrangThai()) {
+                response.put("status", "error");
+                response.put("message", "Người dùng không tồn tại hoặc đã bị khóa");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            diaChi.setNguoiDung(user);
+
+            DiaChiNguoiDung savedAddress = profileService.addAddress(diaChi);
+            response.put("status", "success");
+            response.put("message", "Thêm địa chỉ thành công");
+            response.put("address", savedAddress);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Lỗi khi thêm địa chỉ: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/address/{id}/update-ajax")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<Map<String, Object>> updateAddress(@PathVariable UUID id, @RequestBody DiaChiNguoiDung diaChi, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String username = authentication.getName();
+            NguoiDung user = profileService.getCurrentUser();
+            if (user == null || !user.getTrangThai()) {
+                response.put("status", "error");
+                response.put("message", "Người dùng không tồn tại hoặc đã bị khóa");
+                return ResponseEntity.badRequest().body(response);
+            }
+            DiaChiNguoiDung updatedAddress = profileService.updateAddress(id, diaChi);
+
+            updatedAddress.setNguoiNhan(diaChi.getNguoiNhan());
+            updatedAddress.setSoDienThoaiNguoiNhan(diaChi.getSoDienThoaiNguoiNhan());
+
+            response.put("status", "success");
+            response.put("message", "Cập nhật địa chỉ thành công");
+            response.put("address", updatedAddress);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Lỗi khi cập nhật địa chỉ: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/address/{id}/delete-ajax")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<Map<String, Object>> deleteAddress(@PathVariable UUID id, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String username = authentication.getName();
+            NguoiDung user = profileService.getCurrentUser();
+            if (user == null || !user.getTrangThai()) {
+                response.put("status", "error");
+                response.put("message", "Người dùng không tồn tại hoặc đã bị khóa");
+                return ResponseEntity.badRequest().body(response);
+            }
+            profileService.deleteAddress(id);
+            response.put("status", "success");
+            response.put("message", "Xóa địa chỉ thành công");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Lỗi khi xóa địa chỉ: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
+        }
+    }
+
+    @PostMapping("/address/{id}/set-default-ajax")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<Map<String, Object>> setDefaultAddress(@PathVariable UUID id, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            String username = authentication.getName();
+            NguoiDung user = profileService.getCurrentUser();
+            if (user == null || !user.getTrangThai()) {
+                response.put("status", "error");
+                response.put("message", "Người dùng không tồn tại hoặc đã bị khóa");
+                return ResponseEntity.badRequest().body(response);
+            }
+            DiaChiNguoiDung address = profileService.setDefaultAddress(id);
+            response.put("status", "success");
+            response.put("message", "Đặt địa chỉ mặc định thành công");
+            response.put("address", address);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "Lỗi khi đặt địa chỉ mặc định: " + e.getMessage());
+            return ResponseEntity.status(500).body(response);
         }
     }
 
     @PostMapping("/delete")
-    public String deleteProfile() {
+    public String deleteAccount(Authentication authentication, Model model) {
         try {
+            String username = authentication.getName();
+            NguoiDung user = profileService.getCurrentUser();
+            if (user == null || !user.getTrangThai()) {
+                model.addAttribute("error", "Người dùng không tồn tại hoặc đã bị khóa");
+                return "WebKhachHang/profile";
+            }
             profileService.deleteUser();
             return "redirect:/logout";
-        } catch (RuntimeException e) {
-            return "redirect:/profile?error=" + e.getMessage();
-        }
-    }
-
-    /** ==== Địa chỉ ==== */
-    @GetMapping("/address/add")
-    public String showAddAddressForm(Model model) {
-        model.addAttribute("address", new DiaChiNguoiDung());
-        return "WebKhachHang/address-add";
-    }
-
-    @PostMapping("/address")
-    public String addAddress(@ModelAttribute DiaChiNguoiDung address) {
-        try {
-            profileService.addAddress(address);
-            return "redirect:/profile?success=Thêm địa chỉ thành công";
-        } catch (RuntimeException e) {
-            return "redirect:/profile/address/add?error=" + e.getMessage();
-        }
-    }
-
-    @GetMapping("/address/{addressId}/edit")
-    public String showEditAddressForm(@PathVariable UUID addressId, Model model) {
-        model.addAttribute("address", profileService.getAddressById(addressId));
-        return "WebKhachHang/address-edit";
-    }
-
-    @PostMapping("/address/{addressId}")
-    public String updateAddress(@PathVariable UUID addressId, @ModelAttribute DiaChiNguoiDung address) {
-        try {
-            profileService.updateAddress(addressId, address);
-            return "redirect:/profile?success=Cập nhật địa chỉ thành công";
-        } catch (RuntimeException e) {
-            return "redirect:/profile/address/" + addressId + "/edit?error=" + e.getMessage();
-        }
-    }
-
-    @PostMapping("/address/{addressId}/delete")
-    public String deleteAddress(@PathVariable UUID addressId) {
-        try {
-            profileService.deleteAddress(addressId);
-            return "redirect:/profile?success=Xóa địa chỉ thành công";
-        } catch (RuntimeException e) {
-            return "redirect:/profile?error=" + e.getMessage();
-        }
-    }
-
-    @PostMapping("/address/{addressId}/set-default")
-    public String setDefaultAddress(@PathVariable UUID addressId) {
-        try {
-            profileService.setDefaultAddress(addressId);
-            return "redirect:/profile?success=Đặt địa chỉ mặc định thành công";
-        } catch (RuntimeException e) {
-            return "redirect:/profile?error=" + e.getMessage();
-        }
-    }
-
-    /** ==== Quên mật khẩu ==== */
-    @GetMapping("/forgot-password")
-    public String showForgotPasswordForm() {
-        return "WebKhachHang/forgot-password";
-    }
-
-    @PostMapping("/forgot-password")
-    public String requestOtp(@RequestParam String email, Model model) {
-        try {
-            profileService.sendOtp(email);
-            model.addAttribute("success", "Mã OTP đã được gửi đến email của bạn");
-            model.addAttribute("email", email);
-            return "WebKhachHang/reset-password";
-        } catch (RuntimeException e) {
-            model.addAttribute("error", e.getMessage());
-            return "WebKhachHang/forgot-password";
-        }
-    }
-
-    @PostMapping("/reset-password")
-    public String resetPassword(@RequestParam String email,
-                                @RequestParam String otp,
-                                @RequestParam String newPassword,
-                                Model model) {
-        try {
-            String result = profileService.verifyOtp(email, otp);
-            switch (result) {
-                case "valid":
-                    profileService.resetPassword(email, newPassword);
-                    model.addAttribute("success", "Đặt lại mật khẩu thành công. Vui lòng đăng nhập.");
-                    return "login";
-                case "expired":
-                    model.addAttribute("error", "Mã OTP đã hết hạn");
-                    break;
-                case "invalid":
-                    model.addAttribute("error", "Mã OTP không hợp lệ");
-                    break;
-                default:
-                    model.addAttribute("error", "Không tìm thấy người dùng");
-            }
-            model.addAttribute("email", email);
-            return "WebKhachHang/reset-password";
-        } catch (RuntimeException e) {
-            model.addAttribute("error", e.getMessage());
-            model.addAttribute("email", email);
-            return "WebKhachHang/reset-password";
+        } catch (Exception e) {
+            model.addAttribute("error", "Lỗi khi xóa tài khoản: " + e.getMessage());
+            return "WebKhachHang/profile";
         }
     }
 }

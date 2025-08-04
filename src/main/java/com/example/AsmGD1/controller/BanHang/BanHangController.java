@@ -147,14 +147,17 @@ public class BanHangController {
 
             List<String> addresses = new ArrayList<>();
 
-            // Thêm địa chỉ mặc định từ NguoiDung
-            String defaultAddress = constructDetailedAddress(nguoiDung);
-            if (defaultAddress != null && !defaultAddress.isBlank()) {
-                addresses.add("[Mặc định] " + defaultAddress);  // Gắn tag nếu muốn
-            }
+            // Lấy địa chỉ mặc định trước (nếu có)
+            Optional<DiaChiNguoiDung> defaultDiaChi = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            defaultDiaChi.ifPresent(diaChi -> {
+                String addr = constructDetailedAddress(diaChi);
+                if (addr != null && !addr.isBlank()) {
+                    addresses.add("[Mặc định] " + addr);
+                }
+            });
 
-            // Thêm các địa chỉ khác từ bảng DiaChiNguoiDung
-            List<DiaChiNguoiDung> diaChiKhac = diaChiNguoiDungRepository.findByNguoiDung_Id(nguoiDung.getId());
+            // Lấy các địa chỉ khác (không phải mặc định)
+            List<DiaChiNguoiDung> diaChiKhac = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhFalse(nguoiDung.getId());
             for (DiaChiNguoiDung diaChi : diaChiKhac) {
                 String otherAddr = constructDetailedAddress(diaChi);
                 if (otherAddr != null && !addresses.contains(otherAddr)) {
@@ -187,11 +190,15 @@ public class BanHangController {
 
             if (chiTietDiaChi != null && phuongXa != null && quanHuyen != null && tinhThanhPho != null &&
                     !chiTietDiaChi.trim().isEmpty() && !phuongXa.trim().isEmpty() && !quanHuyen.trim().isEmpty() && !tinhThanhPho.trim().isEmpty()) {
-                nguoiDung.setChiTietDiaChi(chiTietDiaChi);
-                nguoiDung.setPhuongXa(phuongXa);
-                nguoiDung.setQuanHuyen(quanHuyen);
-                nguoiDung.setTinhThanhPho(tinhThanhPho);
-                nguoiDungRepository.save(nguoiDung);
+                DiaChiNguoiDung diaChi = new DiaChiNguoiDung();
+                diaChi.setNguoiDung(nguoiDung);
+                diaChi.setChiTietDiaChi(chiTietDiaChi);
+                diaChi.setPhuongXa(phuongXa);
+                diaChi.setQuanHuyen(quanHuyen);
+                diaChi.setTinhThanhPho(tinhThanhPho);
+                diaChi.setMacDinh(false); // Mặc định không phải địa chỉ mặc định
+                diaChi.setThoiGianTao(LocalDateTime.now());
+                diaChiNguoiDungRepository.save(diaChi);
 
                 List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
                 if (sessionAddresses == null) {

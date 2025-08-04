@@ -1,7 +1,9 @@
 package com.example.AsmGD1.controller.GiaoHangNhanh;
 
 import com.example.AsmGD1.dto.KhachHang.GiaoHangNhanh.DiaChiResponse;
+import com.example.AsmGD1.entity.DiaChiNguoiDung;
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,9 @@ public class CheckoutRestController {
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
 
+    @Autowired
+    private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
+
     @GetMapping("/addresses")
     public DiaChiResponse getUserAddress(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -39,12 +44,16 @@ public class CheckoutRestController {
             NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Người dùng với email " + email + " không tồn tại"));
 
-            // Trả về địa chỉ từ NguoiDung
+            // Lấy địa chỉ mặc định từ DiaChiNguoiDung
+            DiaChiNguoiDung defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy địa chỉ mặc định cho người dùng với email " + email));
+
+            // Trả về địa chỉ từ DiaChiNguoiDung
             DiaChiResponse res = new DiaChiResponse();
-            res.setTinhThanhPho(nguoiDung.getTinhThanhPho());
-            res.setQuanHuyen(nguoiDung.getQuanHuyen());
-            res.setPhuongXa(nguoiDung.getPhuongXa());
-            res.setChiTietDiaChi(nguoiDung.getChiTietDiaChi());
+            res.setTinhThanhPho(defaultAddress.getTinhThanhPho());
+            res.setQuanHuyen(defaultAddress.getQuanHuyen());
+            res.setPhuongXa(defaultAddress.getPhuongXa());
+            res.setChiTietDiaChi(defaultAddress.getChiTietDiaChi());
             return res;
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi lấy địa chỉ: " + e.getMessage());

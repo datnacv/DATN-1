@@ -6,6 +6,7 @@ import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.BanHang.PhuongThucThanhToanRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
+import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
@@ -32,6 +33,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Controller
@@ -76,6 +78,9 @@ public class KHThanhToanController {
     @Autowired
     private PhieuGiamGiaCuaNguoiDungService phieuGiamGiaCuaNguoiDungService;
 
+    @Autowired
+    private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
+
     private String extractEmailFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
@@ -103,7 +108,27 @@ public class KHThanhToanController {
             NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Người dùng với email " + email + " không tồn tại"));
 
+            // Truyền nguoiDung vào model (vẫn cần cho các thông tin khác nếu sử dụng)
             model.addAttribute("loggedInUser", nguoiDung);
+
+            // Lấy địa chỉ mặc định từ DiaChiNguoiDung
+            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            if (defaultAddress.isPresent()) {
+                DiaChiNguoiDung address = defaultAddress.get();
+                // Truyền chiTietDiaChi, nguoiNhan, soDienThoaiNguoiNhan vào model
+                model.addAttribute("defaultAddress", address.getChiTietDiaChi() + ", " +
+                        address.getPhuongXa() + ", " +
+                        address.getQuanHuyen() + ", " +
+                        address.getTinhThanhPho());
+                model.addAttribute("nguoiNhan", address.getNguoiNhan() != null ? address.getNguoiNhan() : nguoiDung.getHoTen());
+                model.addAttribute("soDienThoaiNguoiNhan", address.getSoDienThoaiNguoiNhan() != null ? address.getSoDienThoaiNguoiNhan() : nguoiDung.getSoDienThoai());
+                model.addAttribute("chiTietDiaChi", address.getChiTietDiaChi() != null ? address.getChiTietDiaChi() : nguoiDung.getChiTietDiaChi());
+            } else {
+                // Nếu không có địa chỉ mặc định, sử dụng thông tin từ NguoiDung
+                model.addAttribute("defaultAddress", "");
+                model.addAttribute("nguoiNhan", nguoiDung.getHoTen());
+                model.addAttribute("soDienThoaiNguoiNhan", nguoiDung.getSoDienThoai());
+            }
 
             List<PhieuGiamGia> publicVouchers = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> "cong_khai".equalsIgnoreCase(p.getKieuPhieu()))
@@ -123,6 +148,11 @@ public class KHThanhToanController {
 
         } catch (Exception e) {
             model.addAttribute("error", "Không thể tải thông tin người dùng: " + e.getMessage());
+            model.addAttribute("defaultAddress", "");
+            // Nếu có lỗi, sử dụng thông tin từ NguoiDung làm mặc định
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(extractEmailFromAuthentication(authentication)).orElse(null);
+            model.addAttribute("nguoiNhan", nguoiDung != null ? nguoiDung.getHoTen() : "");
+            model.addAttribute("soDienThoaiNguoiNhan", nguoiDung != null ? nguoiDung.getSoDienThoai() : "");
         }
 
         return "WebKhachHang/thanh-toan";
@@ -168,6 +198,12 @@ public class KHThanhToanController {
         donHang.setPhiVanChuyen(shippingFee);
         donHang.setDiaChiGiaoHang(address);
         donHang.setGhiChu(note);
+
+        // Nếu address rỗng, lấy địa chỉ mặc định từ DiaChiNguoiDung
+        if (address == null || address.trim().isEmpty()) {
+            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            donHang.setDiaChiGiaoHang(defaultAddress.map(d -> d.getChiTietDiaChi() + ", " + d.getPhuongXa() + ", " + d.getQuanHuyen() + ", " + d.getTinhThanhPho()).orElse(""));
+        }
 
         PhuongThucThanhToan pttt = phuongThucRepo.findById(UUID.fromString(ptThanhToan))
                 .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
@@ -242,10 +278,9 @@ public class KHThanhToanController {
                 return "redirect:/thanh-toan";
             }
 
-            giamGia = phieuGiamGiaService   .tinhTienGiamGia(phieu, tongTien);
+            giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
             logger.info("🎯 Áp dụng mã tại /dat-hang - Mã: {}, Loại: {}, Giá trị giảm: {}, Tổng tiền: {}, Giảm giá tính được: {}",
                     phieu.getMa(), phieu.getLoai(), phieu.getGiaTriGiam(), tongTien, giamGia);
-
         }
 
         donHang.setTongTien(tongTien.add(shippingFee).subtract(giamGia));
@@ -313,6 +348,31 @@ public class KHThanhToanController {
             logger.error("Lỗi khi áp dụng mã giảm giá: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "Lỗi khi áp dụng mã giảm giá: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/api/checkout/default-address")
+    public ResponseEntity<?> getDefaultAddress(Authentication authentication) {
+        try {
+            String email = extractEmailFromAuthentication(authentication);
+            if (email == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            }
+
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại."));
+
+            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            if (defaultAddress.isEmpty()) {
+                return ResponseEntity.ok(new ApiResponse(true, "Không tìm thấy địa chỉ mặc định.", null));
+            }
+
+            DiaChiNguoiDung address = defaultAddress.get();
+            return ResponseEntity.ok(new ApiResponse(true, "Lấy địa chỉ mặc định thành công.", address));
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy địa chỉ mặc định: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse(false, "Lỗi khi lấy địa chỉ mặc định: " + e.getMessage()));
         }
     }
 

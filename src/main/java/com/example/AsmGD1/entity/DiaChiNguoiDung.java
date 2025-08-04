@@ -39,4 +39,10 @@ public class DiaChiNguoiDung {
     @Column(name = "thoi_gian_tao")
     private LocalDateTime thoiGianTao = LocalDateTime.now();
 
+    @Column(name = "nguoi_nhan")
+    private String nguoiNhan;
+
+    @Column(name = "so_dien_thoai_nguoi_nhan")
+    private String soDienThoaiNguoiNhan;
+
 }

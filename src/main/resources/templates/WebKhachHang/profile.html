@@ -1,232 +1,763 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ACV Store - Hồ sơ cá nhân</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="_csrf" th:content="${_csrf?.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    .navbar { background: linear-gradient(to right, #153054, #1e4066); }
-    .address-card { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 10px; background: white; }
-    .address-card .actions button { margin-right: 5px; }
+    body { background: #f9fafb; font-family: 'Inter', sans-serif; }
+    .page-title { font-size: 1.8rem; font-weight: 700; color: #153054; margin-bottom: 20px; }
+    .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .form-label { font-weight: 600; }
+    .form-control, .form-select {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.95rem;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #153054;
+      box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
+    }
+    .btn-primary { background-color: #153054; border: none; }
+    .btn-primary:hover { background-color: #1e4066; }
+    .btn-secondary { background-color: #e2e6ea; border: none; color: #153054; }
+    .btn-secondary:hover { background-color: #d6dade; }
+    .btn-success { background-color: #28a745; border: none; }
+    .btn-success:hover { background-color: #218838; }
+    .address-cell { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #888; }
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1050; }
   </style>
 </head>
-<body class="bg-gray-100">
+<body>
 
 <!-- Navbar -->
-<nav class="navbar navbar-expand-lg sticky-top shadow-sm">
-  <div class="container d-flex justify-content-between align-items-center py-2">
-    <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
-    <div class="d-flex align-items-center gap-3">
-      <a href="/" class="text-white"><i class="fas fa-home"></i> Trang chủ</a>
-      <a href="/customers/logout" class="btn btn-light rounded-pill px-3">Đăng xuất</a>
+<nav class="navbar navbar-expand-lg" style="background: linear-gradient(to right, #153054, #1e4066);">
+  <div class="container">
+    <a class="navbar-brand text-white fw-bold" href="/">ACV Store</a>
+    <div class="ms-auto">
+      <a href="/" class="btn btn-light btn-sm"><i class="fas fa-home me-1"></i>Trang chủ</a>
     </div>
   </div>
 </nav>
 
-<!-- Nội dung chính -->
+<!-- Toast Container -->
+<div class="toast-container"></div>
+
 <div class="container py-5">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Hồ sơ cá nhân</h2>
+  <h1 class="page-title"><i class="fas fa-user-circle me-2"></i> Hồ sơ cá nhân</h1>
 
-  <!-- Thông báo -->
-  <div id="alertBox"></div>
+  <!-- Alert từ backend -->
+  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-  <!-- Form thông tin người dùng -->
-  <form id="profileForm" class="bg-white rounded-lg shadow-md p-4 mb-5">
-    <div class="mb-3">
-      <label class="form-label">Họ tên</label>
-      <input type="text" id="hoTen" class="form-control" required>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Email</label>
-      <input type="email" id="email" class="form-control" required>
-    </div>
-    <div class="mb-3">
-      <label class="form-label">Số điện thoại</label>
-      <input type="text" id="soDienThoai" class="form-control" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Cập nhật</button>
-  </form>
+  <!-- Thông tin cá nhân -->
+  <div class="card mb-4">
+    <div class="card-header fw-bold"><i class="fas fa-id-card me-1"></i> Thông tin cá nhân</div>
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-4">
+        <div class="avatar me-3"><i class="fas fa-user"></i></div>
+        <div>
+          <div class="fw-bold" th:text="${user.hoTen}">Nguyễn Văn A</div>
+          <small class="text-muted" th:text="${user.email}">example@email.com</small>
+        </div>
+      </div>
 
-  <!-- Danh sách địa chỉ -->
-  <div class="bg-white rounded-lg shadow-md p-4">
-    <h4 class="mb-3">Địa chỉ của tôi</h4>
-    <div id="addressList"></div>
-    <button class="btn btn-success mt-3" onclick="showAddAddressForm()">+ Thêm địa chỉ</button>
+      <!-- Form cập nhật thông tin -->
+      <form id="profileForm" th:action="@{/profile}" method="post">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Họ tên</label>
+            <input type="text" class="form-control" name="hoTen" th:value="${user.hoTen}" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" name="email" th:value="${user.email}" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Số điện thoại</label>
+            <input type="text" class="form-control" name="soDienThoai" th:value="${user.soDienThoai}" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Mật khẩu mới</label>
+            <input type="password" class="form-control" name="matKhau" placeholder="Để trống nếu không đổi">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="updateProfileBtn"><i class="fas fa-save me-1"></i> Cập nhật</button>
+      </form>
+
+      <!-- Form xóa tài khoản -->
+      <form th:action="@{/profile/delete}" method="post" class="mt-3"
+            onsubmit="return confirm('Bạn chắc chắn muốn xóa tài khoản này?')">
+        <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Xóa tài khoản</button>
+      </form>
+    </div>
   </div>
 
-  <!-- Form thêm/sửa địa chỉ -->
-  <div id="addressFormContainer" class="bg-white rounded-lg shadow-md p-4 mt-4" style="display:none;">
-    <h4 id="addressFormTitle">Thêm địa chỉ</h4>
-    <form id="addressForm">
-      <input type="hidden" id="addressId">
-      <div class="mb-3">
-        <label class="form-label">Tỉnh / Thành phố</label>
-        <input type="text" id="tinhThanhPho" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Quận / Huyện</label>
-        <input type="text" id="quanHuyen" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Phường / Xã</label>
-        <input type="text" id="phuongXa" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label class="form-label">Chi tiết địa chỉ</label>
-        <textarea id="chiTietDiaChi" class="form-control" required></textarea>
-      </div>
-      <div class="form-check mb-3">
-        <input type="checkbox" id="macDinh" class="form-check-input">
-        <label for="macDinh" class="form-check-label">Đặt làm mặc định</label>
-      </div>
-      <button type="submit" class="btn btn-primary">Lưu</button>
-      <button type="button" class="btn btn-secondary" onclick="hideAddressForm()">Hủy</button>
-    </form>
+  <!-- Danh sách địa chỉ -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-bold"><i class="fas fa-map-marker-alt me-1"></i> Địa chỉ của tôi</span>
+      <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModal">
+        <i class="fas fa-plus me-1"></i> Thêm địa chỉ
+      </button>
+    </div>
+    <div class="card-body">
+      <table class="table align-middle">
+        <thead>
+        <tr>
+          <th>Người nhận</th>
+          <th>Số điện thoại</th>
+          <th>Địa chỉ</th>
+          <th>Mặc định</th>
+          <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody id="addressTableBody">
+        <tr th:each="addr : ${addresses}" th:attr="data-id=${addr.id}">
+          <td th:text="${addr.nguoiNhan != null ? addr.nguoiNhan : addr.nguoiDung.hoTen}"></td>
+          <td th:text="${addr.soDienThoaiNguoiNhan != null ? addr.soDienThoaiNguoiNhan : addr.nguoiDung.soDienThoai}"></td>
+          <td class="address-cell"
+              th:title="${addr.tinhThanhPho + ', ' + addr.quanHuyen + ', ' + addr.phuongXa + ', ' + addr.chiTietDiaChi}"
+              th:text="${addr.tinhThanhPho + ', ' + addr.quanHuyen + ', ' + addr.phuongXa + ', ' + addr.chiTietDiaChi}">
+          </td>
+          <td>
+            <span th:if="${addr.macDinh}" class="badge bg-success">Mặc định</span>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm edit-address-btn" th:data-id="${addr.id}" th:data-bs-target="'#editAddressModal' + ${addr.id}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm delete-address-btn" th:data-id="${addr.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+            <button th:if="${!addr.macDinh}" type="button" class="btn btn-secondary btn-sm set-default-btn"
+                    th:data-id="${addr.id}">
+              Đặt mặc định
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<!-- Footer -->
-<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding: 20px; margin-top: 50px;">
-  <div class="text-center text-sm">© 2025 ACV Store. All rights reserved.</div>
-</footer>
+<!-- Modal Thêm Địa chỉ -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-labelledby="addAddressModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="addAddressModalLabel">Thêm địa chỉ mới</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addAddressForm">
+          <div class="mb-3">
+            <label for="addNguoiNhan" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addNguoiNhan" name="nguoiNhan" placeholder="Nhập tên người nhận" required>
+          </div>
+          <div class="mb-3">
+            <label for="addSoDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addSoDienThoaiNguoiNhan" name="soDienThoaiNguoiNhan" placeholder="Nhập SĐT người nhận" required>
+          </div>
+          <div class="mb-3">
+            <label for="addTinhThanhPho" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+            <select class="form-select" id="addTinhThanhPho" name="tinhThanhPho" required>
+              <option value="">Chọn tỉnh/thành phố</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="addQuanHuyen" class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
+            <select class="form-select" id="addQuanHuyen" name="quanHuyen" required>
+              <option value="">Chọn quận/huyện</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="addPhuongXa" class="form-label">Phường/Xã <span class="text-danger">*</span></label>
+            <select class="form-select" id="addPhuongXa" name="phuongXa" required>
+              <option value="">Chọn phường/xã</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="addChiTietDiaChi" class="form-label">Địa chỉ chi tiết</label>
+            <input type="text" class="form-control" id="addChiTietDiaChi" name="chiTietDiaChi" required>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="addMacDinh" name="macDinh">
+            <label class="form-check-label" for="addMacDinh">Đặt làm mặc định</label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            <button type="submit" class="btn btn-primary" id="addAddressBtn">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
-<script>
-  const alertBox = document.getElementById('alertBox');
+<!-- Modal Sửa Địa chỉ -->
+<th:block th:each="addr : ${addresses}">
+  <div class="modal fade" th:id="'editAddressModal' + ${addr.id}" tabindex="-1" th:aria-labelledby="'editAddressModalLabel' + ${addr.id}" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" th:id="'editAddressModalLabel' + ${addr.id}">Sửa địa chỉ</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form th:id="'editAddressForm' + ${addr.id}">
+            <input type="hidden" th:value="${addr.id}" th:id="'editId' + ${addr.id}" name="id">
 
-  function showAlert(msg, type='success') {
-    alertBox.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
-    setTimeout(() => alertBox.innerHTML = '', 3000);
-  }
-
-  async function loadProfile() {
-    const res = await fetch('/api/profile');
-    const data = await res.json();
-    if (res.ok) {
-      document.getElementById('hoTen').value = data.hoTen || '';
-      document.getElementById('email').value = data.email || '';
-      document.getElementById('soDienThoai').value = data.soDienThoai || '';
-    } else {
-      showAlert(data.error, 'danger');
-    }
-  }
-
-  async function loadAddresses() {
-    const res = await fetch('/api/profile/addresses');
-    const data = await res.json();
-    const container = document.getElementById('addressList');
-    container.innerHTML = '';
-    if (res.ok && data.length > 0) {
-      data.forEach(addr => {
-        container.innerHTML += `
-          <div class="address-card">
-            <strong>${addr.tinhThanhPho}, ${addr.quanHuyen}, ${addr.phuongXa}</strong>
-            <p>${addr.chiTietDiaChi}</p>
-            <small>${addr.macDinh ? 'Mặc định' : ''}</small>
-            <div class="actions mt-2">
-              <button class="btn btn-sm btn-warning" onclick="editAddress('${addr.id}')">Sửa</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteAddress('${addr.id}')">Xóa</button>
-              <button class="btn btn-sm btn-info" onclick="setDefault('${addr.id}')">Đặt mặc định</button>
+            <div class="mb-3">
+              <label th:for="'editNguoiNhan' + ${addr.id}" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     th:id="'editNguoiNhan' + ${addr.id}"
+                     name="nguoiNhan"
+                     th:value="${addr.nguoiNhan != null ? addr.nguoiNhan : addr.nguoiDung.hoTen}"
+                     placeholder="Nhập tên người nhận" required>
             </div>
-          </div>`;
+
+            <div class="mb-3">
+              <label th:for="'editSoDienThoaiNguoiNhan' + ${addr.id}" class="form-label">Số điện thoại người nhận <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     th:id="'editSoDienThoaiNguoiNhan' + ${addr.id}"
+                     name="soDienThoaiNguoiNhan"
+                     th:value="${addr.soDienThoaiNguoiNhan != null ? addr.soDienThoaiNguoiNhan : addr.nguoiDung.soDienThoai}"
+                     placeholder="Nhập SĐT người nhận" required>
+            </div>
+
+            <div class="mb-3">
+              <label th:for="'editTinhThanhPho' + ${addr.id}" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+              <select class="form-select" th:id="'editTinhThanhPho' + ${addr.id}" name="tinhThanhPho" required
+                      th:data-current-value="${addr.tinhThanhPho}">
+                <option value="">Chọn tỉnh/thành phố</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label th:for="'editQuanHuyen' + ${addr.id}" class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
+              <select class="form-select" th:id="'editQuanHuyen' + ${addr.id}" name="quanHuyen" required
+                      th:data-current-value="${addr.quanHuyen}">
+                <option value="">Chọn quận/huyện</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label th:for="'editPhuongXa' + ${addr.id}" class="form-label">Phường/Xã <span class="text-danger">*</span></label>
+              <select class="form-select" th:id="'editPhuongXa' + ${addr.id}" name="phuongXa" required
+                      th:data-current-value="${addr.phuongXa}">
+                <option value="">Chọn phường/xã</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label th:for="'editChiTietDiaChi' + ${addr.id}" class="form-label">Địa chỉ chi tiết</label>
+              <input type="text" class="form-control" th:id="'editChiTietDiaChi' + ${addr.id}" name="chiTietDiaChi"
+                     th:value="${addr.chiTietDiaChi}" required>
+            </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" th:id="'editMacDinh' + ${addr.id}" name="macDinh"
+                     th:checked="${addr.macDinh}">
+              <label class="form-check-label" th:for="'editMacDinh' + ${addr.id}">Đặt làm mặc định</label>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary update-address-btn" th:data-id="${addr.id}">Cập nhật</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</th:block>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Hàm hiển thị toast notification
+  function showToast(message, type = 'success') {
+    const toastContainer = document.querySelector('.toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+    toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    `;
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  // Hàm thêm dòng mới vào bảng
+  function appendAddressToTable(address) {
+    const tableBody = document.getElementById('addressTableBody');
+    const row = document.createElement('tr');
+    row.setAttribute('data-id', address.id);
+    row.innerHTML = `
+      <td>${address.nguoiNhan || address.nguoiDung.hoTen}</td>
+      <td>${address.soDienThoaiNguoiNhan || address.nguoiDung.soDienThoai}</td>
+
+      <td class="address-cell" title="${address.tinhThanhPho}, ${address.quanHuyen}, ${address.phuongXa}, ${address.chiTietDiaChi}">
+        ${address.tinhThanhPho}, ${address.quanHuyen}, ${address.phuongXa}, ${address.chiTietDiaChi}
+      </td>
+      <td>${address.macDinh ? '<span class="badge bg-success">Mặc định</span>' : ''}</td>
+      <td>
+        <button class="btn btn-primary btn-sm edit-address-btn" data-id="${address.id}" data-bs-target="#editAddressModal${address.id}">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-danger btn-sm delete-address-btn" data-id="${address.id}">
+          <i class="fas fa-trash"></i>
+        </button>
+        ${!address.macDinh ? `<button class="btn btn-secondary btn-sm set-default-btn" data-id="${address.id}">Đặt mặc định</button>` : ''}
+      </td>
+    `;
+    tableBody.appendChild(row);
+    bindAddressEventListeners();
+  }
+
+  // Hàm cập nhật dòng trong bảng
+  function updateAddressInTable(address) {
+    const row = document.querySelector(`tr[data-id="${address.id}"]`);
+    if (row) {
+      row.innerHTML = `
+        <td>${address.nguoiDung.hoTen}</td>
+        <td>${address.nguoiDung.soDienThoai}</td>
+        <td class="address-cell" title="${address.tinhThanhPho}, ${address.quanHuyen}, ${address.phuongXa}, ${address.chiTietDiaChi}">
+          ${address.tinhThanhPho}, ${address.quanHuyen}, ${address.phuongXa}, ${address.chiTietDiaChi}
+        </td>
+        <td>${address.macDinh ? '<span class="badge bg-success">Mặc định</span>' : ''}</td>
+        <td>
+          <button class="btn btn-primary btn-sm edit-address-btn" data-id="${address.id}" data-bs-target="#editAddressModal${address.id}">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-danger btn-sm delete-address-btn" data-id="${address.id}">
+            <i class="fas fa-trash"></i>
+          </button>
+          ${!address.macDinh ? `<button class="btn btn-secondary btn-sm set-default-btn" data-id="${address.id}">Đặt mặc định</button>` : ''}
+        </td>
+      `;
+      bindAddressEventListeners();
+    }
+  }
+
+  // Hàm xóa dòng khỏi bảng
+  function removeAddressFromTable(addressId) {
+    const row = document.querySelector(`tr[data-id="${addressId}"]`);
+    if (row) row.remove();
+  }
+
+  // Lấy CSRF token
+  const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+  const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+  // Hàm tải tỉnh/thành phố
+  async function fetchProvinces() {
+    try {
+      let response = await fetch("https://provinces.open-api.vn/api/p/");
+      let provinces = await response.json();
+      const provinceSelects = document.querySelectorAll('select[id^="addTinhThanhPho"], select[id^="editTinhThanhPho"]');
+      provinceSelects.forEach(select => {
+        select.innerHTML = '<option value="">Chọn tỉnh/thành phố</option>';
+        provinces.forEach(province => {
+          const option = document.createElement("option");
+          option.value = province.name;
+          option.textContent = province.name;
+          option.setAttribute("data-code", province.code);
+          select.appendChild(option);
+        });
       });
-    } else {
-      container.innerHTML = '<p>Chưa có địa chỉ nào</p>';
+      return provinces;
+    } catch (error) {
+      console.error("Lỗi tải tỉnh/thành phố", error);
+      showToast("Lỗi tải dữ liệu tỉnh/thành phố", 'danger');
+      return [];
     }
   }
 
-  document.getElementById('profileForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const payload = {
-      hoTen: document.getElementById('hoTen').value,
-      email: document.getElementById('email').value,
-      soDienThoai: document.getElementById('soDienThoai').value
-    };
-    const res = await fetch('/api/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+  // Hàm tải quận/huyện
+  async function fetchDistricts(provinceCode, districtSelect, wardSelect) {
+    try {
+      let response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+      let data = await response.json();
+      districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+      wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+
+      data.districts.forEach(district => {
+        const option = document.createElement("option");
+        option.value = district.name;
+        option.textContent = district.name;
+        option.setAttribute("data-code", district.code);
+        districtSelect.appendChild(option);
+      });
+    } catch (error) {
+      console.error("Lỗi tải quận/huyện", error);
+      showToast("Lỗi tải dữ liệu quận/huyện", 'danger');
+    }
+  }
+
+  // Hàm tải phường/xã
+  async function fetchWards(districtCode, wardSelect) {
+    try {
+      let response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+      let data = await response.json();
+      wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+
+      data.wards.forEach(ward => {
+        const option = document.createElement("option");
+        option.value = ward.name;
+        option.textContent = ward.name;
+        option.setAttribute("data-code", ward.code);
+        wardSelect.appendChild(option);
+      });
+    } catch (error) {
+      console.error("Lỗi tải phường/xã", error);
+      showToast("Lỗi tải dữ liệu phường/xã", 'danger');
+    }
+  }
+
+  // Hàm thiết lập giá trị hiện tại cho select
+  function setSelectValue(selectElement, value) {
+    if (value && selectElement) {
+      const options = selectElement.querySelectorAll('option');
+      for (let option of options) {
+        if (option.value === value) {
+          option.selected = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // Hàm thiết lập địa chỉ cho form edit khi modal được mở
+  function setupEditForm(addressId, currentProvince, currentDistrict, currentWard) {
+    const provinceSelect = document.getElementById(`editTinhThanhPho${addressId}`);
+    const districtSelect = document.getElementById(`editQuanHuyen${addressId}`);
+    const wardSelect = document.getElementById(`editPhuongXa${addressId}`);
+
+    if (!provinceSelect || !districtSelect || !wardSelect) return;
+
+    // Thiết lập tỉnh/thành phố
+    setSelectValue(provinceSelect, currentProvince);
+
+    // Tìm mã tỉnh
+    const selectedProvinceOption = provinceSelect.querySelector(`option[value="${currentProvince}"]`);
+    if (selectedProvinceOption) {
+      const provinceCode = selectedProvinceOption.getAttribute('data-code');
+      fetchDistricts(provinceCode, districtSelect, wardSelect).then(() => {
+        // Thiết lập quận/huyện
+        setSelectValue(districtSelect, currentDistrict);
+
+        // Tìm mã quận
+        const selectedDistrictOption = districtSelect.querySelector(`option[value="${currentDistrict}"]`);
+        if (selectedDistrictOption) {
+          const districtCode = selectedDistrictOption.getAttribute('data-code');
+          fetchWards(districtCode, wardSelect).then(() => {
+            // Thiết lập phường/xã
+            setSelectValue(wardSelect, currentWard);
+          });
+        }
+      });
+    }
+  }
+
+  // Hàm bind sự kiện cho các nút
+  function bindAddressEventListeners() {
+    document.querySelectorAll('.edit-address-btn').forEach(btn => {
+      btn.removeEventListener('click', editAddressHandler);
+      btn.addEventListener('click', editAddressHandler);
     });
-    const data = await res.json();
-    if (res.ok) showAlert('Cập nhật thành công');
-    else showAlert(data.error, 'danger');
-  });
 
-  function showAddAddressForm() {
-    document.getElementById('addressFormTitle').innerText = 'Thêm địa chỉ';
-    document.getElementById('addressForm').reset();
-    document.getElementById('addressId').value = '';
-    document.getElementById('addressFormContainer').style.display = 'block';
-  }
-
-  function hideAddressForm() {
-    document.getElementById('addressFormContainer').style.display = 'none';
-  }
-
-  async function editAddress(id) {
-    const res = await fetch('/api/profile/addresses');
-    const data = await res.json();
-    const addr = data.find(a => a.id === id);
-    if (addr) {
-      document.getElementById('addressId').value = addr.id;
-      document.getElementById('tinhThanhPho').value = addr.tinhThanhPho;
-      document.getElementById('quanHuyen').value = addr.quanHuyen;
-      document.getElementById('phuongXa').value = addr.phuongXa;
-      document.getElementById('chiTietDiaChi').value = addr.chiTietDiaChi;
-      document.getElementById('macDinh').checked = addr.macDinh;
-      document.getElementById('addressFormTitle').innerText = 'Sửa địa chỉ';
-      document.getElementById('addressFormContainer').style.display = 'block';
-    }
-  }
-
-  document.getElementById('addressForm').addEventListener('submit', async e => {
-    e.preventDefault();
-    const id = document.getElementById('addressId').value;
-    const payload = {
-      tinhThanhPho: document.getElementById('tinhThanhPho').value,
-      quanHuyen: document.getElementById('quanHuyen').value,
-      phuongXa: document.getElementById('phuongXa').value,
-      chiTietDiaChi: document.getElementById('chiTietDiaChi').value,
-      macDinh: document.getElementById('macDinh').checked
-    };
-    const res = await fetch(id ? `/api/profile/address/${id}` : '/api/profile/address', {
-      method: id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    document.querySelectorAll('.delete-address-btn').forEach(btn => {
+      btn.removeEventListener('click', deleteAddressHandler);
+      btn.addEventListener('click', deleteAddressHandler);
     });
-    const data = await res.json();
-    if (res.ok) {
-      showAlert('Lưu địa chỉ thành công');
-      hideAddressForm();
-      loadAddresses();
-    } else {
-      showAlert(data.error, 'danger');
-    }
-  });
 
-  async function deleteAddress(id) {
+    document.querySelectorAll('.set-default-btn').forEach(btn => {
+      btn.removeEventListener('click', setDefaultHandler);
+      btn.addEventListener('click', setDefaultHandler);
+    });
+
+    document.querySelectorAll('.update-address-btn').forEach(btn => {
+      btn.removeEventListener('click', updateAddressHandler);
+      btn.addEventListener('click', updateAddressHandler);
+    });
+  }
+
+  function editAddressHandler() {
+    const modalId = this.getAttribute('data-bs-target');
+    const modal = document.querySelector(modalId);
+    if (modal) {
+      bootstrap.Modal.getOrCreateInstance(modal).show();
+    } else {
+      console.error(`Modal ${modalId} not found`);
+      showToast('Không tìm thấy modal chỉnh sửa', 'danger');
+    }
+  }
+
+  function deleteAddressHandler() {
     if (!confirm('Xóa địa chỉ này?')) return;
-    const res = await fetch(`/api/profile/address/${id}`, { method: 'DELETE' });
-    const data = await res.json();
-    if (res.ok) {
-      showAlert(data.message);
-      loadAddresses();
-    } else showAlert(data.error, 'danger');
+    const addressId = this.dataset.id;
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+    fetch(`/profile/address/${addressId}/delete-ajax`, {
+      method: 'POST',
+      headers
+    })
+            .then(res => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+              return res.json();
+            })
+            .then(data => {
+              if (data.status === 'success') {
+                removeAddressFromTable(addressId);
+                showToast(data.message);
+              } else {
+                showToast(data.message, 'danger');
+              }
+            })
+            .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'));
   }
 
-  async function setDefault(id) {
-    const res = await fetch(`/api/profile/address/${id}/set-default`, { method: 'POST' });
-    const data = await res.json();
-    if (res.ok) {
-      showAlert(data.message);
-      loadAddresses();
-    } else showAlert(data.error, 'danger');
+  function setDefaultHandler() {
+    const addressId = this.dataset.id;
+    const button = this;
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý...';
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+    fetch(`/profile/address/${addressId}/set-default-ajax`, {
+      method: 'POST',
+      headers
+    })
+            .then(res => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+              return res.json();
+            })
+            .then(data => {
+              if (data.status === 'success') {
+                location.reload();
+                showToast(data.message);
+              } else {
+                showToast(data.message, 'danger');
+                button.disabled = false;
+                button.innerHTML = 'Đặt mặc định';
+              }
+            })
+            .catch(err => {
+              showToast('Có lỗi xảy ra: ' + err.message, 'danger');
+              button.disabled = false;
+              button.innerHTML = 'Đặt mặc định';
+            });
   }
 
-  loadProfile();
-  loadAddresses();
+  function updateAddressHandler() {
+    const addressId = this.dataset.id;
+    const form = document.getElementById(`editAddressForm${addressId}`);
+    const data = {
+      id: document.getElementById(`editId${addressId}`).value,
+      nguoiNhan: document.getElementById(`editNguoiNhan${addressId}`).value,
+      soDienThoaiNguoiNhan: document.getElementById(`editSoDienThoaiNguoiNhan${addressId}`).value,
+      tinhThanhPho: document.getElementById(`editTinhThanhPho${addressId}`).value,
+      quanHuyen: document.getElementById(`editQuanHuyen${addressId}`).value,
+      phuongXa: document.getElementById(`editPhuongXa${addressId}`).value,
+      chiTietDiaChi: document.getElementById(`editChiTietDiaChi${addressId}`).value,
+      macDinh: document.getElementById(`editMacDinh${addressId}`).checked
+    };
+
+    if (!data.tinhThanhPho || !data.quanHuyen || !data.phuongXa || !data.chiTietDiaChi) {
+      showToast('Vui lòng điền đầy đủ các trường địa chỉ', 'danger');
+      return;
+    }
+    const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+    fetch(`/profile/address/${addressId}/update-ajax`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
+    })
+            .then(res => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+              return res.json();
+            })
+            .then(data => {
+              if (data.status === 'success') {
+                updateAddressInTable(data.address);
+                bootstrap.Modal.getInstance(document.getElementById(`editAddressModal${addressId}`)).hide();
+                showToast(data.message);
+              } else {
+                showToast(data.message, 'danger');
+              }
+            })
+            .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'));
+  }
+
+  // Thêm địa chỉ
+  document.getElementById('addAddressForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const data = {
+      nguoiNhan: document.getElementById('addNguoiNhan').value,
+      soDienThoaiNguoiNhan: document.getElementById('addSoDienThoaiNguoiNhan').value,
+      tinhThanhPho: document.getElementById('addTinhThanhPho').value,
+      quanHuyen: document.getElementById('addQuanHuyen').value,
+      phuongXa: document.getElementById('addPhuongXa').value,
+      chiTietDiaChi: document.getElementById('addChiTietDiaChi').value,
+      macDinh: document.getElementById('addMacDinh').checked
+    };
+
+    if (!data.tinhThanhPho || !data.quanHuyen || !data.phuongXa || !data.chiTietDiaChi) {
+      showToast('Vui lòng điền đầy đủ các trường địa chỉ', 'danger');
+      return;
+    }
+    const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+    fetch('/profile/address/add-ajax', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data)
+    })
+            .then(res => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+              return res.json();
+            })
+            .then(data => {
+              if (data.status === 'success') {
+                appendAddressToTable(data.address);
+                bootstrap.Modal.getInstance(document.getElementById('addAddressModal')).hide();
+                document.getElementById('addAddressForm').reset();
+                showToast(data.message);
+              } else {
+                showToast(data.message, 'danger');
+              }
+            })
+            .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'));
+  });
+
+  // Cập nhật hồ sơ qua AJAX
+  document.getElementById('profileForm')?.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const button = document.getElementById('updateProfileBtn');
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang cập nhật...';
+    const headers = { 'X-Requested-With': 'XMLHttpRequest' };
+    if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+    fetch('/profile', {
+      method: 'POST',
+      headers,
+      body: formData
+    })
+            .then(res => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+              return res.json();
+            })
+            .then(data => {
+              if (data.status === 'success') {
+                showToast(data.message);
+                setTimeout(() => location.reload(), 1000);
+              } else {
+                showToast(data.message, 'danger');
+              }
+            })
+            .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'))
+            .finally(() => {
+              button.disabled = false;
+              button.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';
+            });
+  });
+
+  // Khởi tạo tải dữ liệu tỉnh/thành phố
+  document.addEventListener('DOMContentLoaded', function () {
+    bindAddressEventListeners();
+
+    // Thiết lập dữ liệu cho form thêm
+    const addProvinceSelect = document.getElementById('addTinhThanhPho');
+    const addDistrictSelect = document.getElementById('addQuanHuyen');
+    const addWardSelect = document.getElementById('addPhuongXa');
+
+    if (addProvinceSelect && addDistrictSelect && addWardSelect) {
+      addProvinceSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const provinceCode = selectedOption.getAttribute('data-code');
+        if (provinceCode) {
+          fetchDistricts(provinceCode, addDistrictSelect, addWardSelect);
+        } else {
+          addDistrictSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+          addWardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+        }
+      });
+
+      addDistrictSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const districtCode = selectedOption.getAttribute('data-code');
+        if (districtCode) {
+          fetchWards(districtCode, addWardSelect);
+        } else {
+          addWardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+        }
+      });
+    }
+
+    // Thiết lập dữ liệu cho các form edit khi modal được mở
+    const editModals = document.querySelectorAll('[id^="editAddressModal"]');
+    editModals.forEach(modal => {
+      modal.addEventListener('show.bs.modal', function (event) {
+        const addressId = modal.id.replace('editAddressModal', '');
+        const provinceSelect = document.getElementById(`editTinhThanhPho${addressId}`);
+        const districtSelect = document.getElementById(`editQuanHuyen${addressId}`);
+        const wardSelect = document.getElementById(`editPhuongXa${addressId}`);
+
+        if (provinceSelect && districtSelect && wardSelect) {
+          const currentProvince = provinceSelect.getAttribute('data-current-value');
+          const currentDistrict = districtSelect.getAttribute('data-current-value');
+          const currentWard = wardSelect.getAttribute('data-current-value');
+
+          setupEditForm(addressId, currentProvince, currentDistrict, currentWard);
+        }
+      });
+    });
+
+    // Tải danh sách tỉnh/thành phố
+    fetchProvinces();
+  });
+
+  // Xử lý sự kiện thay đổi tỉnh/thành phố và quận/huyện cho các form edit
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('select[id^="editTinhThanhPho"]')) {
+      const addressId = e.target.id.replace('editTinhThanhPho', '');
+      const districtSelect = document.getElementById(`editQuanHuyen${addressId}`);
+      const wardSelect = document.getElementById(`editPhuongXa${addressId}`);
+
+      const selectedOption = e.target.options[e.target.selectedIndex];
+      const provinceCode = selectedOption.getAttribute('data-code');
+
+      if (provinceCode && districtSelect && wardSelect) {
+        fetchDistricts(provinceCode, districtSelect, wardSelect);
+      } else if (districtSelect && wardSelect) {
+        districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+        wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+      }
+    }
+
+    if (e.target.matches('select[id^="editQuanHuyen"]')) {
+      const addressId = e.target.id.replace('editQuanHuyen', '');
+      const wardSelect = document.getElementById(`editPhuongXa${addressId}`);
+
+      const selectedOption = e.target.options[e.target.selectedIndex];
+      const districtCode = selectedOption.getAttribute('data-code');
+
+      if (districtCode && wardSelect) {
+        fetchWards(districtCode, wardSelect);
+      } else if (wardSelect) {
+        wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+      }
+    }
+  });
 </script>
 </body>
 </html>
