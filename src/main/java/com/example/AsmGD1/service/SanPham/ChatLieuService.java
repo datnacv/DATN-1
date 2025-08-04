@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.ChatLieu;
 import com.example.AsmGD1.repository.SanPham.ChatLieuRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class ChatLieuService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách chất liệu với phân trang
+    public Page<ChatLieu> getAllChatLieu(Pageable pageable) {
+        return chatLieuRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả chất liệu (không phân trang)
     public List<ChatLieu> getAllChatLieu() {
         return chatLieuRepository.findAll();
     }
 
-    public List<ChatLieu> searchChatLieu(String tenChatLieu) {
-        return chatLieuRepository.findByTenChatLieuContainingIgnoreCase(tenChatLieu);
+    // Tìm kiếm chất liệu với phân trang
+    public Page<ChatLieu> searchChatLieu(String tenChatLieu, Pageable pageable) {
+        return chatLieuRepository.findByTenChatLieuContainingIgnoreCase(tenChatLieu, pageable);
     }
 
     public ChatLieu getChatLieuById(UUID id) {

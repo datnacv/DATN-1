@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -65,6 +66,18 @@ public class ThongBaoService {
         }
     }
 
+    public List<ChiTietThongBaoNhom> layThongBaoChuaXem(UUID idNguoiDung) {
+        try {
+            List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository
+                    .findByNguoiDungIdAndDaXemFalseOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
+            System.out.println("Số thông báo chưa đọc trả về (layThongBaoChuaXem): " + result.size());
+            return result;
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy thông báo chưa đọc: " + e.getMessage());
+            return List.of();
+        }
+    }
+
     public long demSoThongBaoChuaXem(UUID idNguoiDung) {
         try {
             return chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(idNguoiDung);
@@ -74,20 +87,30 @@ public class ThongBaoService {
         }
     }
 
-    public void danhDauDaXem(UUID idThongBao, UUID idNguoiDung) {
-        chiTietThongBaoNhomRepository.findByThongBaoNhom_IdAndNguoiDung_Id(idThongBao, idNguoiDung).ifPresent(thongBao -> {
+    public void danhDauDaXem(UUID idChiTietThongBao, UUID idNguoiDung) {
+        System.out.println("Đánh dấu đã đọc - idChiTietThongBao: " + idChiTietThongBao + ", idNguoiDung: " + idNguoiDung);
+        Optional<ChiTietThongBaoNhom> optionalThongBao = chiTietThongBaoNhomRepository.findById(idChiTietThongBao);
+        if (optionalThongBao.isPresent()) {
+            ChiTietThongBaoNhom thongBao = optionalThongBao.get();
+            if (!thongBao.getNguoiDung().getId().equals(idNguoiDung)) {
+                System.err.println("Thông báo không thuộc về người dùng: idNguoiDung=" + idNguoiDung);
+                throw new IllegalArgumentException("Thông báo không thuộc về người dùng này.");
+            }
+            System.out.println("Tìm thấy thông báo: idChiTietThongBao=" + idChiTietThongBao + ", idNguoiDung=" + idNguoiDung);
             thongBao.setDaXem(true);
             chiTietThongBaoNhomRepository.save(thongBao);
-        });
+            System.out.println("Đã cập nhật trạng thái daXem=true cho thông báo: " + idChiTietThongBao);
+        } else {
+            System.err.println("Không tìm thấy thông báo với idChiTietThongBao=" + idChiTietThongBao);
+            throw new IllegalArgumentException("Không tìm thấy thông báo.");
+        }
     }
 
     public void danhDauTatCaDaXem(UUID idNguoiDung) {
         List<ChiTietThongBaoNhom> danhSach = chiTietThongBaoNhomRepository
-                .findByNguoiDungIdOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
+                .findByNguoiDungIdAndDaXemFalseOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
         for (ChiTietThongBaoNhom tb : danhSach) {
-            if (!tb.isDaXem()) {
-                tb.setDaXem(true);
-            }
+            tb.setDaXem(true);
         }
         chiTietThongBaoNhomRepository.saveAll(danhSach);
     }
@@ -96,11 +119,15 @@ public class ThongBaoService {
         try {
             Pageable top5 = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "thongBaoNhom.thoiGianTao"));
             List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository.findByNguoiDungId(idNguoiDung, top5).getContent();
-            System.out.println("Số thông báo trả về (lay5ThongBaoMoiNhat): " + result.size()); // Debug
+            System.out.println("Số thông báo trả về (lay5ThongBaoMoiNhat): " + result.size());
             return result;
         } catch (Exception e) {
             System.err.println("Lỗi khi lấy 5 thông báo mới nhất: " + e.getMessage());
             return List.of();
         }
+    }
+
+    public long demTongSoThongBao(UUID idNguoiDung) {
+        return chiTietThongBaoNhomRepository.countByNguoiDungId(idNguoiDung);
     }
 }

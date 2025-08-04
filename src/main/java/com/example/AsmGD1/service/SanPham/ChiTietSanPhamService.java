@@ -56,6 +56,9 @@ public class ChiTietSanPhamService {
         }
     }
 
+
+
+
     @PostConstruct
     public void syncAllProductDetailsQRCode() {
         List<ChiTietSanPham> allDetails = chiTietSanPhamRepo.findAll();

@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.TayAo;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.TayAoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class TayAoService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách tay áo với phân trang
+    public Page<TayAo> getAllTayAo(Pageable pageable) {
+        return tayAoRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả tay áo (không phân trang)
     public List<TayAo> getAllTayAo() {
         return tayAoRepository.findAll();
     }
 
-    public List<TayAo> searchTayAo(String tenTayAo) {
-        return tayAoRepository.findByTenTayAoContainingIgnoreCase(tenTayAo);
+    // Tìm kiếm tay áo với phân trang
+    public Page<TayAo> searchTayAo(String tenTayAo, Pageable pageable) {
+        return tayAoRepository.findByTenTayAoContainingIgnoreCase(tenTayAo, pageable);
     }
 
     public TayAo getTayAoById(UUID id) {

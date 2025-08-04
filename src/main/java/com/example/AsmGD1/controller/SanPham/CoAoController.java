@@ -5,6 +5,9 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.CoAoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -12,8 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -29,22 +30,30 @@ public class CoAoController {
     @GetMapping("/co-ao")
     public String listCoAo(@RequestParam(value = "search", required = false) String search,
                            @RequestParam(value = "error", required = false) String errorMessage,
+                           @RequestParam(value = "page", defaultValue = "0") int page,
                            Model model) {
-        List<CoAo> coAoList = Collections.emptyList();
+
+        Pageable pageable = PageRequest.of(page, 5); // 5 items per page
+        Page<CoAo> coAoPage;
 
         try {
-            coAoList = search != null && !search.trim().isEmpty()
-                    ? coAoService.searchCoAo(search)
-                    : coAoService.getAllCoAo();
+            coAoPage = search != null && !search.trim().isEmpty()
+                    ? coAoService.searchCoAo(search, pageable)
+                    : coAoService.getAllCoAo(pageable);
 
-            if (coAoList == null) coAoList = Collections.emptyList();
-            Collections.reverse(coAoList);
+            if (coAoPage == null) {
+                coAoPage = Page.empty(pageable);
+            }
 
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Lỗi khi tải danh sách cổ áo: " + e.getMessage());
+            coAoPage = Page.empty(pageable);
         }
 
-        model.addAttribute("coAoList", coAoList);
+        model.addAttribute("coAoList", coAoPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", coAoPage.getTotalPages());
+        model.addAttribute("search", search);
 
         // Lấy thông tin user hiện tại và phân quyền
         UserInfo userInfo = getCurrentUserInfo();
@@ -68,8 +77,10 @@ public class CoAoController {
         }
 
         try {
+            // Kiểm tra id trước khi lưu để xác định là thêm mới hay cập nhật
+            boolean isUpdate = coAo.getId() != null;
             coAoService.saveCoAo(coAo);
-            String message = coAo.getId() != null ? "Cập nhật cổ áo thành công!" : "Thêm cổ áo thành công!";
+            String message = isUpdate ? "Cập nhật cổ áo thành công!" : "Thêm cổ áo thành công!";
             redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lưu cổ áo thất bại: " + e.getMessage());

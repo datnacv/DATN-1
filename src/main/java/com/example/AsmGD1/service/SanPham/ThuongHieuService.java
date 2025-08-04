@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.ThuongHieu;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.ThuongHieuRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class ThuongHieuService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách thương hiệu với phân trang
+    public Page<ThuongHieu> getAllThuongHieu(Pageable pageable) {
+        return thuongHieuRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả thương hiệu (không phân trang)
     public List<ThuongHieu> getAllThuongHieu() {
         return thuongHieuRepository.findAll();
     }
 
-    public List<ThuongHieu> searchThuongHieu(String tenThuongHieu) {
-        return thuongHieuRepository.findByTenThuongHieuContainingIgnoreCase(tenThuongHieu);
+    // Tìm kiếm thương hiệu với phân trang
+    public Page<ThuongHieu> searchThuongHieu(String tenThuongHieu, Pageable pageable) {
+        return thuongHieuRepository.findByTenThuongHieuContainingIgnoreCase(tenThuongHieu, pageable);
     }
 
     public ThuongHieu getThuongHieuById(UUID id) {

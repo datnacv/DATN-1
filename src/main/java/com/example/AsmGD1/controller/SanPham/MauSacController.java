@@ -5,6 +5,9 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.MauSacService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -12,8 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 @Controller
@@ -29,22 +30,30 @@ public class MauSacController {
     @GetMapping("/mau-sac")
     public String listMauSac(@RequestParam(value = "search", required = false) String search,
                              @RequestParam(value = "error", required = false) String errorMessage,
+                             @RequestParam(value = "page", defaultValue = "0") int page,
                              Model model) {
-        List<MauSac> mauSacList = Collections.emptyList();
+
+        Pageable pageable = PageRequest.of(page, 5); // 5 items per page
+        Page<MauSac> mauSacPage;
 
         try {
-            mauSacList = search != null && !search.trim().isEmpty()
-                    ? mauSacService.searchMauSac(search)
-                    : mauSacService.getAllMauSac();
+            mauSacPage = search != null && !search.trim().isEmpty()
+                    ? mauSacService.searchMauSac(search, pageable)
+                    : mauSacService.getAllMauSac(pageable);
 
-            if (mauSacList == null) mauSacList = Collections.emptyList();
-            Collections.reverse(mauSacList);
+            if (mauSacPage == null) {
+                mauSacPage = Page.empty(pageable);
+            }
 
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Lỗi khi tải danh sách màu sắc: " + e.getMessage());
+            mauSacPage = Page.empty(pageable);
         }
 
-        model.addAttribute("mauSacList", mauSacList);
+        model.addAttribute("mauSacList", mauSacPage.getContent());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", mauSacPage.getTotalPages());
+        model.addAttribute("search", search);
 
         // Lấy thông tin user hiện tại và phân quyền
         UserInfo userInfo = getCurrentUserInfo();
@@ -61,15 +70,16 @@ public class MauSacController {
     @PostMapping("/mau-sac/save")
     public String saveMauSac(@ModelAttribute MauSac mauSac,
                              RedirectAttributes redirectAttributes) {
-
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền thực hiện thao tác này!");
             return "redirect:/acvstore/mau-sac";
         }
 
         try {
+            // Kiểm tra id trước khi lưu
+            boolean isUpdate = mauSac.getId() != null;
             mauSacService.saveMauSac(mauSac);
-            String message = mauSac.getId() != null ? "Cập nhật màu sắc thành công!" : "Thêm màu sắc thành công!";
+            String message = isUpdate ? "Cập nhật màu sắc thành công!" : "Thêm màu sắc thành công!";
             redirectAttributes.addFlashAttribute("successMessage", message);
         } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lưu màu sắc thất bại: " + e.getMessage());

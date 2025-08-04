@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.DanhMuc;
 import com.example.AsmGD1.repository.SanPham.DanhMucRepository;
 import com.example.AsmGD1.repository.SanPham.SanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class DanhMucService {
     @Autowired
     private SanPhamRepository sanPhamRepository;
 
+    // Lấy danh sách danh mục với phân trang
+    public Page<DanhMuc> getAllDanhMuc(Pageable pageable) {
+        return danhMucRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả danh mục (không phân trang)
     public List<DanhMuc> getAllDanhMuc() {
         return danhMucRepository.findAll();
     }
 
-    public List<DanhMuc> searchDanhMuc(String tenDanhMuc) {
-        return danhMucRepository.findByTenDanhMucContainingIgnoreCase(tenDanhMuc);
+    // Tìm kiếm danh mục với phân trang
+    public Page<DanhMuc> searchDanhMuc(String tenDanhMuc, Pageable pageable) {
+        return danhMucRepository.findByTenDanhMucContainingIgnoreCase(tenDanhMuc, pageable);
     }
 
     public DanhMuc getDanhMucById(UUID id) {

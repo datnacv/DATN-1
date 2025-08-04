@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.KieuDang;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.KieuDangRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class KieuDangService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách kiểu dáng với phân trang
+    public Page<KieuDang> getAllKieuDang(Pageable pageable) {
+        return kieuDangRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả kiểu dáng (không phân trang)
     public List<KieuDang> getAllKieuDang() {
         return kieuDangRepository.findAll();
     }
 
-    public List<KieuDang> searchKieuDang(String tenKieuDang) {
-        return kieuDangRepository.findByTenKieuDangContainingIgnoreCase(tenKieuDang);
+    // Tìm kiếm kiểu dáng với phân trang
+    public Page<KieuDang> searchKieuDang(String tenKieuDang, Pageable pageable) {
+        return kieuDangRepository.findByTenKieuDangContainingIgnoreCase(tenKieuDang, pageable);
     }
 
     public KieuDang getKieuDangById(UUID id) {
