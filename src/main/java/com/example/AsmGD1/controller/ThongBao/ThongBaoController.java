@@ -61,10 +61,11 @@ public class ThongBaoController {
         NguoiDung user = optionalNguoiDung.get();
         List<ChiTietThongBaoNhom> danhSach;
         if (unread) {
-            danhSach = thongBaoService.layThongBaoChuaXem(user.getId());
+            danhSach = thongBaoService.lay5ThongBaoChuaXem(user.getId()); // ⚠️ dùng method đã giới hạn
         } else {
             danhSach = thongBaoService.lay5ThongBaoMoiNhat(user.getId());
         }
+
 
         List<ThongBaoDTO> dtoList = danhSach.stream()
                 .map(ThongBaoDTO::new)

@@ -130,4 +130,16 @@ public class ThongBaoService {
     public long demTongSoThongBao(UUID idNguoiDung) {
         return chiTietThongBaoNhomRepository.countByNguoiDungId(idNguoiDung);
     }
+    public List<ChiTietThongBaoNhom> lay5ThongBaoChuaXem(UUID idNguoiDung) {
+        try {
+            List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository
+                    .findTop5ByNguoiDungIdAndDaXemFalseOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
+            System.out.println("Số thông báo chưa đọc trả về (lay5ThongBaoChuaXem): " + result.size());
+            return result;
+        } catch (Exception e) {
+            System.err.println("Lỗi khi lấy 5 thông báo chưa đọc: " + e.getMessage());
+            return List.of();
+        }
+    }
+
 }
