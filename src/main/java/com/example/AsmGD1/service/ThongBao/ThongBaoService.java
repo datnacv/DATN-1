@@ -7,6 +7,7 @@ import com.example.AsmGD1.entity.ThongBaoNhom;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -66,14 +67,18 @@ public class ThongBaoService {
         }
     }
 
-    public List<ChiTietThongBaoNhom> layThongBaoChuaXem(UUID idNguoiDung) {
+    public List<ChiTietThongBaoNhom> layThongBaoTheoNguoiDungVaTrangThai(UUID idNguoiDung, int page, int size, String status) {
         try {
-            List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository
-                    .findByNguoiDungIdAndDaXemFalseOrderByThongBaoNhom_ThoiGianTaoDesc(idNguoiDung);
-            System.out.println("Số thông báo chưa đọc trả về (layThongBaoChuaXem): " + result.size());
-            return result;
+            Pageable pageable = PageRequest.of(page, size, Sort.by("thongBaoNhom.thoiGianTao").descending());
+            if ("unread".equalsIgnoreCase(status)) {
+                return chiTietThongBaoNhomRepository.findByNguoiDungIdAndDaXemFalse(idNguoiDung, pageable).getContent();
+            } else if ("read".equalsIgnoreCase(status)) {
+                return chiTietThongBaoNhomRepository.findByNguoiDungIdAndDaXemTrue(idNguoiDung, pageable).getContent();
+            } else {
+                return chiTietThongBaoNhomRepository.findByNguoiDungId(idNguoiDung, pageable).getContent();
+            }
         } catch (Exception e) {
-            System.err.println("Lỗi khi lấy thông báo chưa đọc: " + e.getMessage());
+            System.err.println("Lỗi khi lấy thông báo theo trạng thái: " + e.getMessage());
             return List.of();
         }
     }
@@ -83,6 +88,30 @@ public class ThongBaoService {
             return chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(idNguoiDung);
         } catch (Exception e) {
             System.err.println("Lỗi khi đếm thông báo chưa xem: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    public long demTongSoThongBao(UUID idNguoiDung) {
+        try {
+            return chiTietThongBaoNhomRepository.countByNguoiDungId(idNguoiDung);
+        } catch (Exception e) {
+            System.err.println("Lỗi khi đếm tổng số thông báo: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    public long demTongSoThongBaoTheoTrangThai(UUID idNguoiDung, String status) {
+        try {
+            if ("unread".equalsIgnoreCase(status)) {
+                return chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(idNguoiDung);
+            } else if ("read".equalsIgnoreCase(status)) {
+                return chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemTrue(idNguoiDung);
+            } else {
+                return chiTietThongBaoNhomRepository.countByNguoiDungId(idNguoiDung);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi khi đếm thông báo theo trạng thái: " + e.getMessage());
             return 0;
         }
     }
@@ -127,9 +156,6 @@ public class ThongBaoService {
         }
     }
 
-    public long demTongSoThongBao(UUID idNguoiDung) {
-        return chiTietThongBaoNhomRepository.countByNguoiDungId(idNguoiDung);
-    }
     public List<ChiTietThongBaoNhom> lay5ThongBaoChuaXem(UUID idNguoiDung) {
         try {
             List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository
@@ -140,6 +166,39 @@ public class ThongBaoService {
             System.err.println("Lỗi khi lấy 5 thông báo chưa đọc: " + e.getMessage());
             return List.of();
         }
+    }
+
+    public void danhDauChuaXem(UUID idChiTietThongBao, UUID idNguoiDung) {
+        Optional<ChiTietThongBaoNhom> optionalThongBao = chiTietThongBaoNhomRepository.findById(idChiTietThongBao);
+        if (optionalThongBao.isPresent()) {
+            ChiTietThongBaoNhom thongBao = optionalThongBao.get();
+            if (!thongBao.getNguoiDung().getId().equals(idNguoiDung)) {
+                throw new IllegalArgumentException("Thông báo không thuộc về người dùng này.");
+            }
+            thongBao.setDaXem(false);
+            chiTietThongBaoNhomRepository.save(thongBao);
+        } else {
+            throw new IllegalArgumentException("Không tìm thấy thông báo.");
+        }
+    }
+
+    public void xoaThongBao(UUID idThongBao, UUID idNguoiDung) {
+        Optional<ChiTietThongBaoNhom> optional = chiTietThongBaoNhomRepository.findById(idThongBao);
+        if (optional.isEmpty()) {
+            throw new IllegalArgumentException("Không tìm thấy thông báo.");
+        }
+
+        ChiTietThongBaoNhom thongBao = optional.get();
+        if (!thongBao.getNguoiDung().getId().equals(idNguoiDung)) {
+            throw new IllegalArgumentException("Thông báo không thuộc về người dùng này.");
+        }
+
+        chiTietThongBaoNhomRepository.delete(thongBao);
+    }
+
+    @Transactional
+    public void xoaTatCaThongBao(UUID idNguoiDung) {
+        chiTietThongBaoNhomRepository.deleteByNguoiDungId(idNguoiDung);
     }
 
 }

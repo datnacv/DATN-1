@@ -2,17 +2,46 @@
 <html xmlns:th="http://www.thymeleaf.org" lang="vi">
 <head>
     <meta charset="UTF-8">
-<!--    <meta name="_csrf" th:content="${_csrf.token}"/>-->
-<!--    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        .btn-light {
+            background-color: #f2f4f7;
+            border: none;
+            color: #333;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            padding: 0;
+        }
+
+        .btn-light:hover {
+            background-color: #e0e0e0;
+        }
+
+        .btn-danger {
+            background-color: #ffe5e5;
+            color: #dc3545;
+            border: none;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            padding: 0;
+        }
+
+        .btn-danger:hover {
+            background-color: #ffcccc;
+        }
+
         .notification-item { border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; }
         .notification-item:hover { background-color: #f8f9fa; }
-        .notification-unread { background-color: #e3f2fd; border-left: 3px solid #2196f3; }
-        .notification-content { font-size: 0.9rem; line-height: 1.4; }
-        .notification-time { font-size: 0.75rem; color: #6c757d; }
         .notification-dropdown { max-height: 400px; overflow-y: auto; }
         .notification-empty { text-align: center; color: #6c757d; font-style: italic; }
         .notification-badge { animation: pulse 2s infinite; font-size: 0.7rem; padding: 0.3em 0.5em; }
@@ -29,7 +58,6 @@
 <body>
 <div th:fragment="accountDropdown(user)">
     <div th:if="${user != null}" class="dropdown ms-auto d-flex align-items-center">
-
         <!-- 🔔 Notification Bell -->
         <div class="dropdown me-3">
             <a href="#" class="position-relative text-decoration-none dropdown-toggle"
@@ -126,24 +154,41 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3 text-end">
-                        <button th:if="${unreadCount != null and unreadCount > 0}" class="btn btn-primary me-2"
-                                onclick="markAllAsRead()">
-                            <i class="fas fa-check-double me-1"></i>Đánh dấu tất cả đã đọc
-                        </button>
+                    <!-- 🔽 Bộ lọc trạng thái và nút hành động -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <select class="form-select w-auto" id="filterStatus" onchange="filterNotificationsByStatus()">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="unread">Thông báo mới</option>
+                            <option value="read">Đã đọc</option>
+                        </select>
+
+                        <div class="d-flex gap-2">
+                            <button th:if="${unreadCount != null and unreadCount > 0}"
+                                    class="btn btn-outline-primary"
+                                    id="markAllAsReadButton"
+                                    onclick="markAllAsRead()">
+                                <i class="fas fa-check-double me-1"></i>Đánh dấu tất cả đã đọc
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="deleteAllNotifications()">
+                                <i class="fas fa-trash-alt me-1"></i>Xoá tất cả thông báo
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- 📄 Bảng danh sách thông báo -->
                     <div class="table-responsive">
                         <table class="table table-hover notification-table">
                             <thead>
                             <tr>
-                                <th>#</th>
                                 <th>Tiêu đề</th>
                                 <th>Nội dung</th>
                                 <th>Thời gian</th>
                                 <th>Trạng thái</th>
+                                <th>Hành động</th>
                             </tr>
                             </thead>
                             <tbody id="modalNotificationTableBody">
+                            <!-- Loading -->
                             <tr id="modalTableLoadingState">
                                 <td colspan="5" class="text-center">
                                     <div class="spinner-border text-primary" role="status">
@@ -152,6 +197,7 @@
                                     <div class="mt-2">Đang tải thông báo...</div>
                                 </td>
                             </tr>
+                            <!-- Empty -->
                             <tr id="modalTableEmptyState" class="d-none">
                                 <td colspan="5" class="text-center notification-empty">
                                     <i class="fas fa-bell-slash fa-2x text-muted mb-2 d-block"></i>
@@ -162,6 +208,7 @@
                         </table>
                     </div>
                 </div>
+
                 <div class="modal-footer">
                     <nav aria-label="Notification pagination">
                         <ul class="pagination pagination-sm justify-content-center">
@@ -206,6 +253,6 @@
 
 <!-- JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-<script th:src="@{/js/notification.js}"></script>
+<script src="/js/notification.js"></script>
 </body>
 </html>
