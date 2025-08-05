@@ -79,24 +79,31 @@ public class PhieuGiamGiaService {
     @Transactional
     public boolean apDungPhieuGiamGia(UUID phieuId) {
         PhieuGiamGia phieu = phieuGiamGiaRepository.findById(phieuId).orElse(null);
-        if (phieu == null) return false;
-        if (!"Đang diễn ra".equals(tinhTrang(phieu))) return false;
+        if (phieu == null) {
+            logger.warn("Không tìm thấy phiếu giảm giá: phieuId={}", phieuId);
+            return false;
+        }
+        if (!"Đang diễn ra".equals(tinhTrang(phieu))) {
+            logger.warn("Phiếu giảm giá không trong thời gian hiệu lực: phieuId={}", phieuId);
+            return false;
+        }
 
-        Integer luotConLai = phieu.getGioiHanSuDung();
         Integer soLuong = phieu.getSoLuong();
-
-        if (luotConLai != null && luotConLai > 0 && soLuong != null && soLuong > 0) {
-            phieu.setGioiHanSuDung(luotConLai - 1);
+        if (soLuong != null && soLuong > 0) {
             phieu.setSoLuong(soLuong - 1);
             phieuGiamGiaRepository.save(phieu);
             phieuGiamGiaRepository.flush();
+            logger.info("Áp dụng phiếu công khai thành công: phieuId={}, soLuong moi={}", phieuId, phieu.getSoLuong());
             return true;
         }
+
+        logger.warn("Phiếu công khai không khả dụng: soLuong={}", soLuong);
         return false;
     }
 
     public BigDecimal tinhTienGiamGia(PhieuGiamGia phieu, BigDecimal tongTien) {
         if (phieu == null || tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) {
+            logger.warn("⚠️ Đầu vào không hợp lệ - phieu: {}, tongTien: {}", phieu, tongTien);
             return BigDecimal.ZERO;
         }
 
@@ -104,31 +111,44 @@ public class PhieuGiamGiaService {
         BigDecimal giaTriGiam = phieu.getGiaTriGiam();
 
         if (giaTriGiam == null || giaTriGiam.compareTo(BigDecimal.ZERO) <= 0) {
+            logger.warn("⚠️ Giá trị giảm không hợp lệ - giaTriGiam: {}", giaTriGiam);
             return BigDecimal.ZERO;
         }
 
         String loai = phieu.getLoai();
+        if (loai == null || loai.isBlank()) {
+            logger.warn("⚠️ Loại phiếu null hoặc rỗng - ma: {}", phieu.getMa());
+            return BigDecimal.ZERO;
+        }
 
-        if ("PERCENT".equalsIgnoreCase(loai) || "Phần trăm".equalsIgnoreCase(loai)) {
-            // Lưu trong DB là phần trăm (VD: 10.00 nghĩa là 10%)
+        String loaiChuanHoa = loai.trim().toUpperCase().replace("_", "").replace(" ", "");
+        logger.info("🔎 Tính tiền giảm giá | Mã: {}, Loại gốc: {}, Loại chuẩn hóa: {}, Giá trị giảm: {}, Tổng tiền: {}",
+                phieu.getMa(), loai, loaiChuanHoa, giaTriGiam, tongTien);
+
+        if ("PERCENT".equals(loaiChuanHoa) || "PHANTRAM".equals(loaiChuanHoa)) {
             giamGia = tongTien.multiply(giaTriGiam)
                     .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP)
                     .setScale(0, RoundingMode.HALF_UP);
 
             if (phieu.getGiaTriGiamToiDa() != null &&
                     giamGia.compareTo(phieu.getGiaTriGiamToiDa()) > 0) {
+                logger.info("🔁 Áp dụng giới hạn tối đa: {} thay vì {}", phieu.getGiaTriGiamToiDa(), giamGia);
                 giamGia = phieu.getGiaTriGiamToiDa();
             }
-
-        } else if ("FIXED".equalsIgnoreCase(loai) || "Tiền mặt".equalsIgnoreCase(loai)) {
+        } else if ("FIXED".equals(loaiChuanHoa) || "TIENMAT".equals(loaiChuanHoa) || "CASH".equals(loaiChuanHoa)) {
             giamGia = giaTriGiam;
+            logger.info("🔁 Áp dụng giảm giá tiền mặt: {}", giamGia);
+        } else {
+            logger.warn("⚠️ Loại phiếu không hỗ trợ: {}", loaiChuanHoa);
+            return BigDecimal.ZERO;
         }
 
         if (giamGia.compareTo(tongTien) > 0) {
+            logger.info("🔁 Giảm giá vượt tổng tiền, giới hạn lại bằng tổng tiền: {}", tongTien);
             giamGia = tongTien;
         }
 
+        logger.info("✅ Số tiền được giảm: {}", giamGia);
         return giamGia;
     }
-
 }
