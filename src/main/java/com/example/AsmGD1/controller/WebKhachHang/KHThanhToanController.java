@@ -105,8 +105,9 @@ public class KHThanhToanController {
             List<PhieuGiamGia> publicVouchers = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> "cong_khai".equalsIgnoreCase(p.getKieuPhieu()))
                     .filter(p -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(p)))
-                    .filter(p -> p.getGioiHanSuDung() != null && p.getGioiHanSuDung() > 0)
+                    .filter(p -> p.getSoLuong() != null && p.getSoLuong() > 0)
                     .toList();
+
 
             List<PhieuGiamGia> privateVouchers = phieuGiamGiaCuaNguoiDungService.layPhieuCaNhanConHan(nguoiDung.getId());
 
@@ -137,119 +138,141 @@ public class KHThanhToanController {
             Authentication authentication,
             RedirectAttributes redirect) {
 
-        String email = extractEmailFromAuthentication(authentication);
-        if (email == null) {
-            redirect.addFlashAttribute("error", "Không thể xác định email người dùng. Vui lòng đăng nhập lại.");
+        try {
+            String email = extractEmailFromAuthentication(authentication);
+            if (email == null) {
+                redirect.addFlashAttribute("error", "Không thể xác định email người dùng. Vui lòng đăng nhập lại.");
+                return "redirect:/thanh-toan";
+            }
+
+            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email).orElse(null);
+            if (nguoiDung == null) {
+                redirect.addFlashAttribute("error", "Không tìm thấy người dùng với email: " + email);
+                return "redirect:/thanh-toan";
+            }
+
+            GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
+            List<ChiTietGioHang> chiTietList = chiTietGioHangService.getGioHangChiTietList(gioHang.getId());
+            if (chiTietList.isEmpty()) {
+                redirect.addFlashAttribute("error", "Giỏ hàng của bạn hiện đang rỗng.");
+                return "redirect:/thanh-toan";
+            }
+
+            DonHang donHang = new DonHang();
+            donHang.setNguoiDung(nguoiDung);
+            donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            donHang.setThoiGianTao(LocalDateTime.now());
+            donHang.setTrangThai("CHO_XAC_NHAN");
+            donHang.setPhuongThucBanHang("Online");
+            donHang.setPhiVanChuyen(shippingFee);
+            donHang.setDiaChiGiaoHang(address);
+            donHang.setGhiChu(note);
+
+            PhuongThucThanhToan pttt = phuongThucRepo.findById(UUID.fromString(ptThanhToan))
+                    .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
+            donHang.setPhuongThucThanhToan(pttt);
+
+            BigDecimal tongTien = BigDecimal.ZERO;
+            List<ChiTietDonHang> chiTietListDH = new ArrayList<>();
+
+            for (ChiTietGioHang item : chiTietList) {
+                ChiTietSanPham chiTietSP = item.getChiTietSanPham();
+                if (chiTietSP == null || chiTietSP.getSanPham() == null || item.getGia() == null) {
+                    redirect.addFlashAttribute("error", "Dữ liệu giỏ hàng không hợp lệ.");
+                    return "redirect:/thanh-toan";
+                }
+
+                if (chiTietSP.getSoLuongTonKho() < item.getSoLuong()) {
+                    redirect.addFlashAttribute("error", "Sản phẩm " + chiTietSP.getSanPham().getTenSanPham() + " không đủ số lượng.");
+                    return "redirect:/thanh-toan";
+                }
+
+                BigDecimal gia = item.getGia();
+                int soLuong = item.getSoLuong();
+                BigDecimal thanhTien = gia.multiply(BigDecimal.valueOf(soLuong));
+
+                ChiTietDonHang ct = new ChiTietDonHang();
+                ct.setDonHang(donHang);
+                ct.setChiTietSanPham(chiTietSP);
+                ct.setSoLuong(soLuong);
+                ct.setGia(gia);
+                ct.setTenSanPham(chiTietSP.getSanPham().getTenSanPham());
+                ct.setThanhTien(thanhTien);
+                chiTietListDH.add(ct);
+
+                chiTietSP.setSoLuongTonKho(chiTietSP.getSoLuongTonKho() - soLuong);
+                chiTietSanPhamRepository.save(chiTietSP);
+
+                tongTien = tongTien.add(thanhTien);
+            }
+
+            BigDecimal giamGia = BigDecimal.ZERO;
+            PhieuGiamGia phieu = null;
+            boolean isCaNhan = false;
+
+            // 👉 Chỉ kiểm tra voucher, chưa trừ
+            if (voucher != null && !voucher.trim().isEmpty()) {
+                phieu = phieuGiamGiaService.layTheoMa(voucher.trim());
+                if (phieu == null) {
+                    redirect.addFlashAttribute("error", "Mã giảm giá không tồn tại.");
+                    return "redirect:/thanh-toan";
+                }
+
+                if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
+                    redirect.addFlashAttribute("error", "Phiếu giảm giá không trong thời gian hiệu lực.");
+                    return "redirect:/thanh-toan";
+                }
+
+                if (phieu.getGiaTriGiamToiThieu() != null &&
+                        tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
+                    redirect.addFlashAttribute("error", "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.");
+                    return "redirect:/thanh-toan";
+                }
+
+                isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
+                boolean valid = isCaNhan
+                        ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(nguoiDung.getId(), phieu.getId())
+                        : phieu.getSoLuong() > 0;
+
+                if (!valid) {
+                    redirect.addFlashAttribute("error", isCaNhan
+                            ? "Mã giảm giá cá nhân không hợp lệ hoặc đã hết lượt sử dụng."
+                            : "Mã giảm giá công khai đã hết lượt sử dụng.");
+                    return "redirect:/thanh-toan";
+                }
+
+                giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
+            }
+
+            // 👉 Sau khi xử lý xong hết → set tổng tiền
+            donHang.setTongTien(tongTien.add(shippingFee).subtract(giamGia));
+            donHangRepo.save(donHang);
+            chiTietDonHangRepo.saveAll(chiTietListDH);
+            chiTietGioHangService.clearGioHang(gioHang.getId());
+
+            // ✅ Sau khi đã đặt hàng thành công mới trừ voucher
+            if (phieu != null) {
+                boolean truThanhCong = isCaNhan
+                        ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
+                        : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
+
+                if (!truThanhCong) {
+                    // Nếu trừ thất bại → rollback đơn
+                    donHangRepo.delete(donHang);
+                    redirect.addFlashAttribute("error", "Lỗi áp dụng mã giảm giá sau khi đặt hàng. Vui lòng thử lại.");
+                    return "redirect:/thanh-toan";
+                }
+            }
+
+            redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
+            return "redirect:/thanh-toan";
+
+        } catch (Exception e) {
+            logger.error("🛑 Lỗi đặt hàng: {}", e.getMessage(), e);
+            redirect.addFlashAttribute("error", "Lỗi khi đặt hàng: " + e.getMessage());
             return "redirect:/thanh-toan";
         }
-
-        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email).orElse(null);
-        if (nguoiDung == null) {
-            redirect.addFlashAttribute("error", "Không tìm thấy người dùng với email: " + email);
-            return "redirect:/thanh-toan";
-        }
-
-        GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
-        List<ChiTietGioHang> chiTietList = chiTietGioHangService.getGioHangChiTietList(gioHang.getId());
-        if (chiTietList.isEmpty()) {
-            redirect.addFlashAttribute("error", "Giỏ hàng của bạn hiện đang rỗng.");
-            return "redirect:/thanh-toan";
-        }
-
-        DonHang donHang = new DonHang();
-        donHang.setNguoiDung(nguoiDung);
-        donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        donHang.setThoiGianTao(LocalDateTime.now());
-        donHang.setTrangThai("CHO_XAC_NHAN");
-        donHang.setPhuongThucBanHang("Online");
-        donHang.setPhiVanChuyen(shippingFee);
-        donHang.setDiaChiGiaoHang(address);
-        donHang.setGhiChu(note);
-
-        PhuongThucThanhToan pttt = phuongThucRepo.findById(UUID.fromString(ptThanhToan))
-                .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
-        donHang.setPhuongThucThanhToan(pttt);
-
-        BigDecimal tongTien = BigDecimal.ZERO;
-        List<ChiTietDonHang> chiTietListDH = new ArrayList<>();
-
-        for (ChiTietGioHang item : chiTietList) {
-            ChiTietSanPham chiTietSP = item.getChiTietSanPham();
-            if (chiTietSP == null || chiTietSP.getSanPham() == null || item.getGia() == null) {
-                redirect.addFlashAttribute("error", "Dữ liệu giỏ hàng không hợp lệ.");
-                return "redirect:/thanh-toan";
-            }
-
-            if (chiTietSP.getSoLuongTonKho() < item.getSoLuong()) {
-                redirect.addFlashAttribute("error", "Sản phẩm " + chiTietSP.getSanPham().getTenSanPham() + " không đủ số lượng.");
-                return "redirect:/thanh-toan";
-            }
-
-            BigDecimal gia = item.getGia();
-            int soLuong = item.getSoLuong();
-            BigDecimal thanhTien = gia.multiply(BigDecimal.valueOf(soLuong));
-
-            ChiTietDonHang ct = new ChiTietDonHang();
-            ct.setDonHang(donHang);
-            ct.setChiTietSanPham(chiTietSP);
-            ct.setSoLuong(soLuong);
-            ct.setGia(gia);
-            ct.setTenSanPham(chiTietSP.getSanPham().getTenSanPham());
-            ct.setThanhTien(thanhTien);
-            chiTietListDH.add(ct);
-
-            chiTietSP.setSoLuongTonKho(chiTietSP.getSoLuongTonKho() - soLuong);
-            chiTietSanPhamRepository.save(chiTietSP);
-
-            tongTien = tongTien.add(thanhTien);
-        }
-
-        BigDecimal giamGia = BigDecimal.ZERO;
-        if (voucher != null && !voucher.trim().isEmpty()) {
-            PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
-                    .filter(p -> p.getMa() != null && p.getMa().equalsIgnoreCase(voucher.trim()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (phieu == null) {
-                redirect.addFlashAttribute("error", "Mã giảm giá không tồn tại.");
-                return "redirect:/thanh-toan";
-            }
-
-            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
-                redirect.addFlashAttribute("error", "Phiếu giảm giá không trong thời gian hiệu lực.");
-                return "redirect:/thanh-toan";
-            }
-
-            if (phieu.getGiaTriGiamToiThieu() != null &&
-                    tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
-                redirect.addFlashAttribute("error", "Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.");
-                return "redirect:/thanh-toan";
-            }
-
-            boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
-            boolean used = isCaNhan
-                    ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
-                    : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
-
-            if (!used) {
-                redirect.addFlashAttribute("error", isCaNhan
-                        ? "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng."
-                        : "Mã giảm giá công khai đã hết lượt sử dụng.");
-                return "redirect:/thanh-toan";
-            }
-
-            giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
-            logger.info("🎯 Áp dụng mã tại /dat-hang - Mã: {}, Loại: {}, Giá trị giảm: {}, Tổng tiền: {}, Giảm giá tính được: {}",
-                    phieu.getMa(), phieu.getLoai(), phieu.getGiaTriGiam(), tongTien, giamGia);
-        }
-
-        donHang.setTongTien(tongTien.add(shippingFee).subtract(giamGia));
-        donHangRepo.save(donHang);
-        chiTietDonHangRepo.saveAll(chiTietListDH);
-        chiTietGioHangService.clearGioHang(gioHang.getId());
-
-        redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
-        return "redirect:/thanh-toan";
     }
+
+
 }
