@@ -2,10 +2,12 @@ package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.DanhGia;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
@@ -38,6 +40,9 @@ public class HomeController {
 
     @Autowired
     private LichSuTimKiemRepository lichSuTimKiemRepository;
+
+    @Autowired
+    private DanhGiaRepository danhGiaRepository;
 
     @Autowired
     public HomeController(KhachhangSanPhamService khachhangSanPhamService, KhachHangGioHangService khachHangGioHangService) {
@@ -324,4 +329,45 @@ public class HomeController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi lưu lịch sử tìm kiếm: " + e.getMessage());
         }
     }
+
+    @GetMapping("/api/product/{sanPhamId}/ratings")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getProductRatings(@PathVariable UUID sanPhamId, Authentication authentication) {
+        List<DanhGia> allReviews = danhGiaRepository.findByChiTietSanPham_SanPham_IdOrderByThoiGianDanhGiaDesc(sanPhamId);
+
+        UUID currentUserId = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            String email = extractEmailFromAuthentication(authentication);
+            if (email != null) {
+                currentUserId = nguoiDungRepository.findByEmail(email)
+                        .map(NguoiDung::getId)
+                        .orElse(null);
+            }
+        }
+
+        List<Map<String, Object>> myReviews = new ArrayList<>();
+        List<Map<String, Object>> otherReviews = new ArrayList<>();
+
+        for (DanhGia dg : allReviews) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("user", dg.getNguoiDung().getHoTen());
+            map.put("rating", dg.getXepHang());
+            map.put("content", dg.getNoiDung());
+            map.put("date", dg.getThoiGianDanhGia());
+            map.put("media", dg.getUrlHinhAnh());
+
+            if (currentUserId != null && dg.getNguoiDung().getId().equals(currentUserId)) {
+                myReviews.add(map);
+            } else {
+                otherReviews.add(map);
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("myReviews", myReviews);
+        response.put("otherReviews", otherReviews);
+        return ResponseEntity.ok(response);
+    }
+
+
 }

@@ -20,6 +20,7 @@ public class SanPhamDto {
     private UUID danhMucId;
     private String tenDanhMuc;
     private LocalDateTime thoiGianTao; // 👈 THÊM dòng này
+    private Double averageRating; // Thêm thuộc tính này
 
     // Thêm các trường cho flash sale
     private String price;

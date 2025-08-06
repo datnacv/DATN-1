@@ -64,6 +64,8 @@ public class HoaDon {
     @Transient
     private String formattedTongTien;
 
+    @Transient
+    private boolean daDanhGia;
 
 
 

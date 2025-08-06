@@ -216,6 +216,17 @@
     </div>
 </section>
 
+<section class="mt-10">
+    <h2 class="text-2xl font-bold mb-4">Đánh giá sản phẩm</h2>
+    <div id="rating-summary" class="mb-6">
+        <p class="font-semibold text-lg">⭐ <span id="avg-rating">0</span>/5 từ <span id="total-reviews">0</span> đánh giá</p>
+    </div>
+    <div id="ratings-list" class="space-y-4">
+        <p>Đang tải đánh giá...</p>
+    </div>
+</section>
+
+
 <section class="container mx-auto py-12">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">Sản phẩm liên quan</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -332,7 +343,7 @@
     /*]]>*/
 </script>
 
-<script>
+<script th:inline="javascript">
     // Search suggestions
     const searchInput = document.getElementById('searchInput');
     const searchSuggestions = document.getElementById('searchSuggestions');
@@ -801,6 +812,81 @@
     document.querySelectorAll('.buy-now').forEach(button => {
         button.addEventListener('click', () => handleProductAction(button, 'buy'));
     });
+
+
+        document.addEventListener("DOMContentLoaded", function() {
+        const sanPhamId = /*[[${productDetail.sanPhamId}]]*/ '';
+
+        fetch(`/api/product/${sanPhamId}/ratings`, { credentials: 'include' })
+        .then(res => {
+        if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+        return res.json();
+    })
+        .then(data => {
+        const list = document.getElementById("ratings-list");
+        const avgRating = document.getElementById("avg-rating");
+        const totalReviews = document.getElementById("total-reviews");
+
+        const allReviews = [...(data.myReviews || []), ...(data.otherReviews || [])];
+        if (allReviews.length === 0) {
+        list.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
+        avgRating.textContent = "0";
+        totalReviews.textContent = "0";
+        return;
+    }
+
+        const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
+        avgRating.textContent = avg.toFixed(1);
+        totalReviews.textContent = allReviews.length;
+
+        list.innerHTML = "";
+
+        // Hiển thị đánh giá của bạn
+        if (data.myReviews && data.myReviews.length > 0) {
+        list.innerHTML += `<h3 class="font-bold text-lg text-[#153054]">Đánh giá của bạn</h3>`;
+        data.myReviews.forEach(r => {
+        list.innerHTML += renderReview(r, true);
+    });
+        list.innerHTML += `<hr class="my-4"/>`;
+    }
+
+        // Hiển thị đánh giá của người khác
+        if (data.otherReviews && data.otherReviews.length > 0) {
+        list.innerHTML += `<h3 class="font-bold text-lg">Đánh giá từ khách hàng khác</h3>`;
+        data.otherReviews.forEach(r => {
+        list.innerHTML += renderReview(r, false);
+    });
+    }
+    })
+        .catch(err => {
+        console.error("Lỗi khi tải đánh giá:", err);
+        const list = document.getElementById("ratings-list");
+        list.innerHTML = "<p>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
+    });
+
+        function renderReview(r, isMine) {
+        const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+        const mediaHtml = r.media
+        ? r.media.split(",").map(url => `<img src="${url}" class="w-20 h-20 object-cover rounded"/>`).join("")
+        : "";
+        return `
+                <div class="p-4 bg-white rounded-lg shadow ${isMine ? 'border border-[#153054]' : ''}">
+                    <div class="flex items-center justify-between">
+                        <span class="font-semibold">${r.user} ${isMine ? '(Bạn)' : ''}</span>
+                        <span class="text-yellow-500">${stars}</span>
+                    </div>
+                    <p class="text-gray-600 mt-1">${r.content || ""}</p>
+                    <div class="flex gap-2 mt-2">${mediaHtml}</div>
+                    <small class="text-gray-400">${new Date(r.date).toLocaleDateString()}</small>
+                </div>
+            `;
+    }
+    });
+
+
+
 </script>
 </body>
 </html>

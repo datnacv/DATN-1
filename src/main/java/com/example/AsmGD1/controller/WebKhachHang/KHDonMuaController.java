@@ -1,9 +1,11 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.entity.ChiTietDonHang;
+import com.example.AsmGD1.entity.DanhGia;
 import com.example.AsmGD1.entity.HoaDon;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
+import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.transaction.Transactional;
@@ -15,18 +17,20 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/dsdon-mua")
 public class KHDonMuaController {
+
+    @Autowired
+    private DanhGiaRepository danhGiaRepository;
 
     @Autowired
     private HoaDonRepository hoaDonRepo;
@@ -52,7 +56,6 @@ public class KHDonMuaController {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-
         List<HoaDon> danhSachHoaDon;
         if ("tat-ca".equalsIgnoreCase(status)) {
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungId(nguoiDung.getId());
@@ -70,14 +73,20 @@ public class KHDonMuaController {
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb);
         }
 
-
         for (HoaDon hoaDon : danhSachHoaDon) {
             hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
 
             for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
                 chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
             }
+
+            // Kiểm tra đã đánh giá chưa
+            boolean daDanhGia = danhGiaRepository.existsByHoaDonIdAndNguoiDungId(
+                    hoaDon.getId(), nguoiDung.getId()
+            );
+            hoaDon.setDaDanhGia(daDanhGia); // cần thêm field này trong Entity hoặc tạo DTO riêng
         }
+
 
         model.addAttribute("danhSachHoaDon", danhSachHoaDon);
         model.addAttribute("status", status);
@@ -115,6 +124,34 @@ public class KHDonMuaController {
         return "WebKhachHang/chi-tiet-don-mua";
     }
 
+    @GetMapping("/danh-gia/{id}")
+    public String danhGiaPage(@PathVariable("id") UUID id, Model model, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/dang-nhap";
+        }
+
+        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId()) || !"Hoàn thành".equals(hoaDon.getTrangThai())) {
+            return "redirect:/dsdon-mua";
+        }
+
+        // Kiểm tra và xử lý nếu hoaDon.donHang là null
+        if (hoaDon.getDonHang() == null || hoaDon.getDonHang().getChiTietDonHangs() == null) {
+            model.addAttribute("error", "Không có sản phẩm trong hóa đơn để đánh giá.");
+            return "error"; // Chuyển hướng đến trang lỗi tùy chỉnh
+        }
+        boolean alreadyRated = danhGiaRepository.existsByHoaDonIdAndNguoiDungId(id, nguoiDung.getId());
+        if (alreadyRated) {
+            return "redirect:/dsdon-mua"; // hoặc trả về trang thông báo
+        }
+
+
+        model.addAttribute("hoaDon", hoaDon);
+        model.addAttribute("user", nguoiDung);
+        return "WebKhachHang/danh-gia";
+    }
+
     @PostMapping("/api/orders/cancel/{id}")
     @Transactional(rollbackOn = Exception.class)
     public ResponseEntity<?> cancelOrder(@PathVariable("id") UUID id, @RequestBody Map<String, String> request, Authentication authentication) {
@@ -135,7 +172,6 @@ public class KHDonMuaController {
         }
 
         try {
-            // Gọi phương thức cancelOrder của HoaDonService để đồng bộ với logic admin
             hoaDonService.cancelOrder(id, ghiChu);
             return ResponseEntity.ok("Đơn hàng đã được hủy thành công.");
         } catch (IllegalStateException e) {
@@ -173,7 +209,6 @@ public class KHDonMuaController {
                 throw new RuntimeException("Không thể cập nhật trạng thái thành 'Hoàn thành'.");
             }
             return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công."));
-
         } catch (ObjectOptimisticLockingFailureException e) {
             System.err.println("Xung đột đồng thời khi lưu hóa đơn: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi xung đột đồng thời khi xác nhận. Vui lòng thử lại.");
@@ -181,5 +216,120 @@ public class KHDonMuaController {
             System.err.println("Lỗi khi xác nhận đơn hàng: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xác nhận: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/api/orders/{id}/products")
+    public ResponseEntity<List<Map<String, Object>>> getOrderProducts(@PathVariable("id") UUID id, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+
+        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        List<Map<String, Object>> products = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                .map(chiTiet -> {
+                    Map<String, Object> product = new HashMap<>();
+                    product.put("id", chiTiet.getChiTietSanPham().getId());
+                    product.put("tenSanPham", chiTiet.getTenSanPham());
+                    product.put("mauSac", chiTiet.getChiTietSanPham().getMauSac() != null ? chiTiet.getChiTietSanPham().getMauSac().getTenMau() : "N/A");
+                    product.put("kichCo", chiTiet.getChiTietSanPham().getKichCo() != null ? chiTiet.getChiTietSanPham().getKichCo().getTen() : "N/A");
+                    return product;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(products);
+    }
+
+    @PostMapping("/api/ratings")
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> submitRating(
+            @RequestParam("hoaDonId") UUID hoaDonId,
+            @RequestParam("userId") UUID userId,
+            @RequestParam("chiTietSanPhamId") UUID chiTietSanPhamId,
+            @RequestParam("rating") Integer rating,
+            @RequestParam(value = "content", required = false) String content,
+            @RequestParam(value = "media", required = false) MultipartFile[] media,
+            Authentication authentication) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            response.put("success", false);
+            response.put("message", "Vui lòng đăng nhập để gửi đánh giá.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        if (!nguoiDung.getId().equals(userId)) {
+            response.put("success", false);
+            response.put("message", "Bạn không có quyền gửi đánh giá này.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        HoaDon hoaDon = hoaDonRepo.findById(hoaDonId).orElse(null);
+        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(userId) || !"Hoàn thành".equals(hoaDon.getTrangThai())) {
+            response.put("success", false);
+            response.put("message", "Hóa đơn không hợp lệ hoặc chưa hoàn thành.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        boolean validProduct = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                .anyMatch(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId));
+        if (!validProduct) {
+            response.put("success", false);
+            response.put("message", "Sản phẩm không thuộc hóa đơn này.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        boolean alreadyRated = danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(hoaDonId, chiTietSanPhamId, userId);
+        if (alreadyRated) {
+            response.put("success", false);
+            response.put("message", "Bạn đã đánh giá sản phẩm này trong hóa đơn này rồi.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        try {
+            DanhGia danhGia = new DanhGia();
+            danhGia.setHoaDon(hoaDon);
+            danhGia.setChiTietSanPham(hoaDon.getDonHang().getChiTietDonHangs().stream()
+                    .filter(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId))
+                    .findFirst().get().getChiTietSanPham());
+            danhGia.setNguoiDung(nguoiDung);
+            danhGia.setXepHang(rating);
+            danhGia.setNoiDung(content);
+            danhGia.setTrangThai(true);
+            danhGia.setThoiGianDanhGia(LocalDateTime.now()); // Thêm thời gian đánh giá
+
+            // Xử lý upload media
+            if (media != null && media.length > 0) {
+                StringBuilder mediaUrls = new StringBuilder();
+                for (MultipartFile file : media) {
+                    String url = uploadFile(file);
+                    mediaUrls.append(url).append(",");
+                }
+                danhGia.setUrlHinhAnh(mediaUrls.toString().replaceAll(",$", ""));
+            }
+
+            danhGiaRepository.save(danhGia);
+            response.put("success", true);
+            response.put("message", "Đánh giá đã được gửi thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi gửi đánh giá: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Hàm upload file (cần triển khai theo hệ thống của bạn)
+    private String uploadFile(MultipartFile file) {
+        // Triển khai logic upload file lên server hoặc dịch vụ lưu trữ (như AWS S3, Firebase Storage,...)
+        // Trả về URL của file
+        return "https://example.com/uploaded/" + file.getOriginalFilename();
     }
 }
