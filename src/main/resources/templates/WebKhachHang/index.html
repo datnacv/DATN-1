@@ -677,7 +677,7 @@
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
-      const response = await fetch('https://namhaihoang.app.n8n.cloud/webhook/website-chatbot', {
+      const response = await fetch('https://lucnguyenthanhoai.app.n8n.cloud/webhook/website-chatbot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body: { from: 'user_123', message } })
@@ -733,7 +733,7 @@
     let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
     console.log('Trước khi làm sạch:', cleanedMessage);
 
-    cleanedMessage = cleanedMessage.replace(/[-\u001F\u007F-\u009F]/g, '');
+    cleanedMessage = cleanedMessage.replace(/[\u001F\u007F-\u009F]/g, '');
     console.log('Sau khi làm sạch:', cleanedMessage);
 
     try {
@@ -754,7 +754,10 @@
 
   function formatMessage(message) {
     return message
-            .replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank" style="color: #153054; text-decoration: underline;">${url}</a>`)
+            .replace(
+                    /(https?:\/\/[^\s]+|acvstore\.site\/[^\s]+)/g,
+                    url => `<a href="${url.startsWith('http') ? url : 'https://' + url}" target="_blank" style="color: #153054; text-decoration: underline;">${url}</a>`
+            )
             .replace(/\n/g, '<br>');
   }
   new Swiper('.banner-slider', {
