@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,16 @@ public class ThongBaoService {
     private NguoiDungRepository nguoiDungRepository;
 
     public void taoThongBaoChoAdmin(DonHang donHang) {
+        System.out.println("==> GỌI HÀM taoThongBaoChoAdmin()");
+        System.out.println("==> Mã đơn hàng: " + donHang.getMaDonHang());
+
+        List<NguoiDung> danhSachAdmin = nguoiDungRepository.findByVaiTroAndTrangThai("admin", true);
+        System.out.println("==> Số admin: " + danhSachAdmin.size());
+
+        if (danhSachAdmin.isEmpty()) {
+            System.err.println("❌ Không tìm thấy admin nào để nhận thông báo.");
+        }
+
         ThongBaoNhom thongBao = new ThongBaoNhom();
         thongBao.setId(UUID.randomUUID());
         thongBao.setDonHang(donHang);
@@ -42,7 +53,6 @@ public class ThongBaoService {
         thongBao.setTrangThai("Mới");
         thongBaoNhomRepository.save(thongBao);
 
-        List<NguoiDung> danhSachAdmin = nguoiDungRepository.findByVaiTroAndTrangThai("admin", true);
         for (NguoiDung admin : danhSachAdmin) {
             ChiTietThongBaoNhom chiTiet = new ChiTietThongBaoNhom();
             chiTiet.setId(UUID.randomUUID());
@@ -50,22 +60,36 @@ public class ThongBaoService {
             chiTiet.setNguoiDung(admin);
             chiTiet.setDaXem(false);
             chiTietThongBaoNhomRepository.save(chiTiet);
+            System.out.println("==> Gửi thông báo đến admin: " + admin.getHoTen());
         }
     }
 
-    public List<ChiTietThongBaoNhom> layThongBaoTheoNguoiDung(UUID idNguoiDung, int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("thongBaoNhom.thoiGianTao").descending());
-            List<ChiTietThongBaoNhom> result = chiTietThongBaoNhomRepository
-                    .findByNguoiDungId(idNguoiDung, pageable)
-                    .getContent();
-            System.out.println("Số thông báo trả về (layThongBaoTheoNguoiDung): " + result.size());
-            return result;
-        } catch (Exception e) {
-            System.err.println("Lỗi khi lấy thông báo: " + e.getMessage());
-            return List.of();
+    public void taoThongBaoHeThong(String vaiTroNhan, String tieuDe, String noiDung) {
+        ThongBaoNhom thongBao = new ThongBaoNhom();
+        thongBao.setId(UUID.randomUUID());
+        thongBao.setVaiTroNhan(vaiTroNhan);
+        thongBao.setTieuDe(tieuDe);
+        thongBao.setNoiDung(noiDung);
+        thongBao.setThoiGianTao(LocalDateTime.now());
+        thongBao.setTrangThai("Mới");
+
+        // ✅ Thêm dòng này để tránh lỗi nếu DB không cho phép null mặc định
+        thongBao.setDonHang(null); // ← Quan trọng
+
+        thongBaoNhomRepository.save(thongBao);
+
+        List<NguoiDung> nguoiNhans = nguoiDungRepository.findByVaiTroAndTrangThai(vaiTroNhan, true);
+        for (NguoiDung nd : nguoiNhans) {
+            ChiTietThongBaoNhom ct = new ChiTietThongBaoNhom();
+            ct.setId(UUID.randomUUID());
+            ct.setThongBaoNhom(thongBao);
+            ct.setNguoiDung(nd);
+            ct.setDaXem(false);
+            chiTietThongBaoNhomRepository.save(ct);
         }
     }
+
+
 
     public List<ChiTietThongBaoNhom> layThongBaoTheoNguoiDungVaTrangThai(UUID idNguoiDung, int page, int size, String status) {
         try {

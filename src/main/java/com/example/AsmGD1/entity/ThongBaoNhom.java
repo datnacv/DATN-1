@@ -14,7 +14,7 @@ public class ThongBaoNhom {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "id_don_hang")
+    @JoinColumn(name = "id_don_hang", nullable = true)
     private DonHang donHang;
 
     @Column(name = "vai_tro_nhan")

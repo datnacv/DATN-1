@@ -12,6 +12,7 @@ import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +28,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -72,6 +74,9 @@ public class KHThanhToanController {
 
     @Autowired
     private PhieuGiamGiaCuaNguoiDungService phieuGiamGiaCuaNguoiDungService;
+    @Autowired
+    private ThongBaoService thongBaoService;
+
 
     private String extractEmailFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -263,6 +268,11 @@ public class KHThanhToanController {
                     return "redirect:/thanh-toan";
                 }
             }
+
+            redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
+            logger.info("Chuẩn bị tạo thông báo cho đơn hàng: {}", donHang.getMaDonHang());
+            thongBaoService.taoThongBaoChoAdmin(donHang);
+            logger.info("Thông báo cho đơn hàng {} đã được tạo", donHang.getMaDonHang());
 
             redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
             return "redirect:/thanh-toan";
