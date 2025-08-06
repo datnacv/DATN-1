@@ -156,10 +156,7 @@
 
 <nav class="navbar navbar-expand-lg sticky-top shadow-sm">
   <div class="container d-flex justify-content-between align-items-center py-2">
-    <!-- Logo -->
     <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
-
-    <!-- Dropdown Danh mục -->
     <div class="dropdown me-3">
       <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
         Danh mục
@@ -171,8 +168,6 @@
         <li><a class="dropdown-item" href="/category/gia-dung">Gia dụng</a></li>
       </ul>
     </div>
-
-    <!-- Tìm kiếm -->
     <form class="flex-grow-1 mx-3 position-relative" style="max-width: 600px;" action="/search" method="get">
       <div class="input-group">
         <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" name="keyword" id="searchInput" th:value="${keyword}" autocomplete="off">
@@ -182,16 +177,11 @@
       </div>
       <div id="searchSuggestions" class="search-suggestions"></div>
     </form>
-
-    <!-- Giỏ hàng + Người dùng -->
     <div class="d-flex align-items-center gap-3">
-      <!-- Giỏ hàng -->
       <a th:href="@{/cart}" class="text-white fs-5 position-relative" aria-label="Giỏ hàng">
         <i class="fas fa-shopping-cart"></i>
         <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
       </a>
-
-      <!-- Nếu đã đăng nhập -->
       <div th:if="${user != null}" class="dropdown">
         <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
           <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
@@ -204,8 +194,6 @@
           <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
         </ul>
       </div>
-
-      <!-- Nếu chưa đăng nhập -->
       <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3" id="loginButton">
         Đăng nhập
       </a>
@@ -291,11 +279,11 @@
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-blue-800 font-bold mt-2"
-     th:attr="data-price=${product.price}">
-</div>        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
-        <div class="rating text-yellow-400 text-sm mt-1">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}"></div>
+        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -325,16 +313,16 @@
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-blue-800 font-bold mt-2"
-     th:attr="data-price=${product.price}">
-</div>        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
-        <div class="rating text-yellow-400 text-sm mt-1">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}"></div>
+        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt dirigida6">
+  <div class="see-all text-center mt-6">
     <a href="/all" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
@@ -360,11 +348,11 @@
       </div>
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-blue-800 font-bold mt-2"
-     th:attr="data-price=${product.price}">
-</div>        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
-        <div class="rating text-yellow-400 text-sm mt-1">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}"></div>
+        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -374,12 +362,10 @@
   </div>
 </section>
 
-<!-- Floating Chatbot Icon -->
 <div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
   <i class="fas fa-robot fa-lg text-white"></i>
 </div>
 
-<!-- Chatbot Box -->
 <div id="chatbot-box" style="
     position: fixed;
     bottom: 100px;
@@ -395,24 +381,17 @@
     z-index: 10000;
     font-family: 'Segoe UI', sans-serif;
   ">
-  <!-- Header -->
   <div style="background-color: #153054; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
     <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
     <div style="font-weight: bold;">ACV Bot</div>
     <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">×</span>
   </div>
-
-  <!-- Messages -->
   <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;"></div>
-
-  <!-- Quick Replies -->
   <div id="quick-replies" class="flex flex-wrap gap-2 p-4">
     <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Sản phẩm mới nhất</button>
     <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Kiểm tra đơn hàng</button>
     <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Chính sách đổi trả</button>
   </div>
-
-  <!-- Input -->
   <div style="padding: 10px; border-top: 1px solid #eee;">
     <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
         width: 100%;
@@ -562,7 +541,6 @@
         if (!response.ok) {
           console.error('Error saving search history:', await response.text());
         }
-        // Chuyển hướng đến trang kết quả tìm kiếm
         window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
       } catch (error) {
         console.error('Error saving search history:', error);
@@ -601,12 +579,10 @@
           }</span>
                     <i class="fas fa-times delete-btn" title="Xóa mục này"></i>
                 `;
-          // Sự kiện click vào từ khóa để tìm kiếm
           historyItem.querySelector('.keyword').addEventListener('click', () => {
             searchInput.value = keyword;
             searchInput.dispatchEvent(new Event('input'));
           });
-          // Sự kiện click vào nút xóa
           historyItem.querySelector('.delete-btn').addEventListener('click', async () => {
             try {
               const response = await fetch(`/api/search-history/delete?keyword=${encodeURIComponent(keyword)}`, {
@@ -614,7 +590,6 @@
                 credentials: 'include'
               });
               if (response.ok) {
-                // Cập nhật lại danh sách lịch sử sau khi xóa
                 showSearchHistory(filterKeyword);
               } else {
                 searchSuggestions.innerHTML = '<div class="history-item">Lỗi khi xóa mục lịch sử</div>';
@@ -661,7 +636,7 @@
 
   function restoreHistory() {
     const chatMessages = document.getElementById('chat-messages');
-    chatMessages.innerHTML = ''; // Xóa nội dung hiện tại
+    chatMessages.innerHTML = '';
     const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
     for (const item of items) {
       const div = document.createElement('div');
@@ -669,7 +644,6 @@
       div.innerHTML = item.msg;
       chatMessages.appendChild(div);
     }
-    // Thêm typing-indicator vào cuối
     const typingIndicator = document.createElement('div');
     typingIndicator.id = 'typing-indicator';
     typingIndicator.className = 'chatbot-msg-bot hidden';
@@ -759,7 +733,6 @@
     let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
     console.log('Trước khi làm sạch:', cleanedMessage);
 
-    // Làm sạch các ký tự điều khiển không in được (tránh loại bỏ dấu -)
     cleanedMessage = cleanedMessage.replace(/[-\u001F\u007F-\u009F]/g, '');
     console.log('Sau khi làm sạch:', cleanedMessage);
 
@@ -769,7 +742,6 @@
       return parsedData.message || cleanedMessage;
     } catch (parseErr) {
       console.log('❌ Lỗi parse JSON:', parseErr);
-      // Trích xuất thủ công nếu parse thất bại
       const messageMatch = cleanedMessage.match(/"message":\s*"([^"]*)"/);
       if (messageMatch && messageMatch[1]) {
         console.log('✅ Trích xuất thủ công thành công:', messageMatch[1]);
@@ -971,6 +943,69 @@
   backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   document.addEventListener('DOMContentLoaded', updateCartCount);
+
+  // Dynamic rating display
+  document.addEventListener("DOMContentLoaded", function() {
+    const ratingContainers = document.querySelectorAll('.rating');
+
+    ratingContainers.forEach(container => {
+      const sanPhamId = container.dataset.productId;
+      if (!sanPhamId) return;
+
+      fetch(`/api/product/${sanPhamId}/ratings`, { credentials: 'include' })
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+              })
+              .then(data => {
+                const starsContainer = container.querySelector('.stars');
+                const avgRatingElement = container.querySelector('.avg-rating');
+                const totalReviewsElement = container.querySelector('.total-reviews');
+
+                const allReviews = [...(data.myReviews || []), ...(data.otherReviews || [])];
+                if (allReviews.length === 0) {
+                  starsContainer.innerHTML = 'Chưa có đánh giá';
+                  avgRatingElement.textContent = '0';
+                  totalReviewsElement.textContent = '0';
+                  return;
+                }
+
+                const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
+                const roundedAvg = Math.round(avg * 2) / 2; // Làm tròn đến 0.5
+                avgRatingElement.textContent = roundedAvg.toFixed(1);
+                totalReviewsElement.textContent = allReviews.length;
+
+                starsContainer.innerHTML = renderStars(roundedAvg);
+              })
+              .catch(err => {
+                console.error(`Lỗi khi tải đánh giá cho sản phẩm ${sanPhamId}:`, err);
+                container.innerHTML = '<span class="text-gray-600">Lỗi tải đánh giá</span>';
+              });
+    });
+
+    function renderStars(avgRating) {
+      const fullStars = Math.floor(avgRating);
+      const hasHalfStar = avgRating % 1 >= 0.5;
+      let starsHtml = '';
+
+      for (let i = 0; i < fullStars; i++) {
+        starsHtml += '<i class="fas fa-star text-yellow-400"></i>';
+      }
+
+      if (hasHalfStar && fullStars < 5) {
+        starsHtml += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
+      }
+
+      const remainingStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+      for (let i = 0; i < remainingStars; i++) {
+        starsHtml += '<i class="far fa-star text-yellow-400"></i>';
+      }
+
+      return starsHtml;
+    }
+  });
 </script>
 </body>
 </html>
