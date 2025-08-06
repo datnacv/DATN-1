@@ -9,6 +9,8 @@ import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
@@ -28,6 +34,8 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/dsdon-mua")
 public class KHDonMuaController {
+
+    private static final Logger logger = LoggerFactory.getLogger(KHDonMuaController.class);
 
     @Autowired
     private DanhGiaRepository danhGiaRepository;
@@ -40,6 +48,22 @@ public class KHDonMuaController {
 
     @Autowired
     private HoaDonService hoaDonService;
+
+    private final String UPLOAD_DIR;
+
+    public KHDonMuaController() {
+        String os = System.getProperty("os.name").toLowerCase();
+        UPLOAD_DIR = os.contains("win") ? "C:/DATN/uploads/danh_gia/" : System.getProperty("user.home") + "/DATN/uploads/danh_gia/";
+        try {
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+                logger.info("Created directory: {}", UPLOAD_DIR);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Could not create upload directory: " + UPLOAD_DIR, e);
+        }
+    }
 
     @GetMapping
     public String donMuaPage(@RequestParam(name = "status", defaultValue = "tat-ca") String status,
@@ -86,7 +110,6 @@ public class KHDonMuaController {
             );
             hoaDon.setDaDanhGia(daDanhGia); // cần thêm field này trong Entity hoặc tạo DTO riêng
         }
-
 
         model.addAttribute("danhSachHoaDon", danhSachHoaDon);
         model.addAttribute("status", status);
@@ -145,7 +168,6 @@ public class KHDonMuaController {
         if (alreadyRated) {
             return "redirect:/dsdon-mua"; // hoặc trả về trang thông báo
         }
-
 
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
@@ -303,16 +325,27 @@ public class KHDonMuaController {
             danhGia.setXepHang(rating);
             danhGia.setNoiDung(content);
             danhGia.setTrangThai(true);
-            danhGia.setThoiGianDanhGia(LocalDateTime.now()); // Thêm thời gian đánh giá
+            danhGia.setThoiGianDanhGia(LocalDateTime.now());
 
-            // Xử lý upload media
+            // Xử lý upload media với giới hạn 3 file
             if (media != null && media.length > 0) {
+                if (media.length > 3) {
+                    response.put("success", false);
+                    response.put("message", "Chỉ được phép tải lên tối đa 3 hình ảnh.");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                }
+
                 StringBuilder mediaUrls = new StringBuilder();
                 for (MultipartFile file : media) {
-                    String url = uploadFile(file);
-                    mediaUrls.append(url).append(",");
+                    if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
+                        String url = uploadFile(file);
+                        mediaUrls.append(url).append(",");
+                    }
                 }
-                danhGia.setUrlHinhAnh(mediaUrls.toString().replaceAll(",$", ""));
+                // Loại bỏ dấu phẩy cuối cùng nếu có
+                if (mediaUrls.length() > 0) {
+                    danhGia.setUrlHinhAnh(mediaUrls.toString().replaceAll(",$", ""));
+                }
             }
 
             danhGiaRepository.save(danhGia);
@@ -326,10 +359,24 @@ public class KHDonMuaController {
         }
     }
 
-    // Hàm upload file (cần triển khai theo hệ thống của bạn)
     private String uploadFile(MultipartFile file) {
-        // Triển khai logic upload file lên server hoặc dịch vụ lưu trữ (như AWS S3, Firebase Storage,...)
-        // Trả về URL của file
-        return "https://example.com/uploaded/" + file.getOriginalFilename();
+        try {
+            if (!file.getContentType().startsWith("image/")) {
+                throw new RuntimeException("Chỉ được phép tải lên tệp hình ảnh.");
+            }
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
+            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+            Files.createDirectories(filePath.getParent());
+            Files.write(filePath, file.getBytes());
+            if (!Files.exists(filePath)) {
+                logger.error("Tệp không được lưu đúng cách: {}", filePath);
+                throw new RuntimeException("Không thể lưu tệp: " + fileName);
+            }
+            logger.info("Đã lưu tệp: {}", filePath);
+            return "/images/danh_gia/" + fileName;
+        } catch (IOException e) {
+            logger.error("Không thể lưu tệp: {}", file.getOriginalFilename(), e);
+            throw new RuntimeException("Không thể lưu tệp: " + file.getOriginalFilename(), e);
+        }
     }
 }

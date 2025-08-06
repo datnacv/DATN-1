@@ -67,8 +67,39 @@ public class WebConfig implements WebMvcConfigurer {
             }
         } catch (IOException e) {
             throw new RuntimeException("Không thể tạo hoặc truy cập thư mục bằng chứng: " + evidenceDirPath, e);
-        }registry.addResourceHandler("/uploads/bang-chung/**")
+        }
+
+        registry.addResourceHandler("/uploads/bang-chung/**")
                 .addResourceLocations(evidenceUploadPath)
+                .setCachePeriod(0);
+
+        // ======== CẤU HÌNH ẢNH ĐÁNH GIÁ (/images/danh_gia/**) ==========
+        String ratingUploadPath;
+        String ratingDirPath;
+
+        if (os.contains("win")) {
+            ratingUploadPath = "file:///C:/DATN/uploads/danh_gia/";
+            ratingDirPath = "C:/DATN/uploads/danh_gia/";
+        } else {
+            String userHome = System.getProperty("user.home");
+            ratingUploadPath = "file://" + userHome + "/DATN/uploads/danh_gia/";
+            ratingDirPath = userHome + "/DATN/uploads/danh_gia/";
+        }
+
+        try {
+            Path ratingPath = Paths.get(ratingDirPath);
+            if (!Files.exists(ratingPath)) {
+                Files.createDirectories(ratingPath);
+                System.out.println("Đã tạo thư mục đánh giá: " + ratingPath);
+            } else {
+                System.out.println("Thư mục đánh giá đã tồn tại: " + ratingPath);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể tạo hoặc truy cập thư mục đánh giá: " + ratingDirPath, e);
+        }
+
+        registry.addResourceHandler("/images/danh_gia/**")
+                .addResourceLocations(ratingUploadPath)
                 .setCachePeriod(0);
     }
 }
