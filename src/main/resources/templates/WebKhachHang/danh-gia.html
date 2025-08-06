@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>ACV Store - Đánh giá đơn hàng</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding-top: 140px;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .ticker {
+            background: linear-gradient(90deg, #9FD5F7 0%, #b8e0f8 100%);
+            color: #153054;
+            font-weight: 600;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1050;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            z-index: 1000;
+            padding: 8px;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-menu a {
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .dropdown-menu a:hover {
+            background: linear-gradient(135deg, #e0ebf5 0%, #f1f8ff 100%);
+            transform: translateX(4px);
+        }
+
+        .search-container input {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .search-container input:focus {
+            border-color: #9FD5F7;
+            box-shadow: 0 0 0 4px rgba(159, 213, 247, 0.2);
+        }
+
+        .page-title {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 25px rgba(0,0,0,0.06);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #153054 0%, #9FD5F7 100%);
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #1e4066 0%, #2a5078 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(21, 48, 84, 0.3);
+        }
+
+        .btn-secondary {
+            border: 2px solid #153054;
+            color: #153054;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #153054;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .star-rating .fa-star {
+            color: #e2e8f0;
+            transition: color 0.2s ease;
+        }
+
+        .star-rating .fa-star.selected,
+        .star-rating .fa-star:hover,
+        .star-rating .fa-star:hover ~ .fa-star {
+            color: #facc15;
+        }
+
+        #mediaPreview img,
+        #mediaPreview video {
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        #mediaPreview video {
+            background: #000;
+        }
+
+        footer {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            position: relative;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
+        }
+
+        @media (max-width: 768px) {
+            body { padding-top: 100px; }
+        }
+    </style>
+</head>
+<body>
+<div class="ticker py-2 overflow-hidden fixed top-0 w-full z-50">
+    <marquee behavior="scroll" direction="left" scrollamount="5">
+        🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+    </marquee>
+</div>
+
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+    <div class="container mx-auto flex items-center justify-between py-3 px-4">
+        <a href="/" class="text-2xl font-bold text-white hover:text-[#9FD5F7] transition-colors">
+            <i class="fas fa-store mr-2"></i>ACV Store
+        </a>
+        <div class="relative dropdown">
+            <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none transition-colors flex items-center gap-2">
+                <i class="fas fa-th-large"></i>
+                Danh mục <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                <a href="/category/nam" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-male mr-2"></i>Thời trang Nam
+                </a>
+                <a href="/category/nu" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-female mr-2"></i>Thời trang Nữ
+                </a>
+                <a href="/category/phu-kien" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-gem mr-2"></i>Phụ kiện
+                </a>
+                <a href="/category/gia-dung" class="block px-4 py-3 hover:bg-[#e0ebf5] rounded-lg">
+                    <i class="fas fa-home mr-2"></i>Gia dụng
+                </a>
+            </div>
+        </div>
+        <div class="flex-1 mx-4 max-w-2xl search-container">
+            <div class="relative">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-3 px-5 pr-12 rounded-full border-none focus:outline-none"/>
+                <button class="absolute right-3 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-4 py-2 rounded-full hover:bg-[#1e4066] transition-colors">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center space-x-6">
+            <a href="/cart" class="text-white text-xl relative hover:text-[#9FD5F7] transition-colors">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">0</span>
+            </a>
+            <div th:if="${user != null}" class="dropdown">
+                <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
+                    <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
+                    <li><a class="dropdown-item" th:href="@{/vi}">Ví thanh toán</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
+                </ul>
+            </div>
+            <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3" id="loginButton">
+                Đăng nhập
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container mx-auto py-8 px-4">
+    <h1 class="page-title text-4xl mb-8 text-center">
+        <i class="fas fa-star mr-3"></i>Đánh giá đơn hàng
+    </h1>
+
+    <div class="card">
+        <h3 class="text-xl font-semibold mb-4">Mã đơn hàng: <span th:text="${hoaDon.donHang.maDonHang}"></span></h3>
+        <form id="rateForm" th:action="@{/dsdon-mua/api/ratings}" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="hoaDonId" th:value="${hoaDon.id}"/>
+            <input type="hidden" name="userId" th:value="${user.id}"/>
+            <!-- Hiển thị thông tin sản phẩm mà không dùng select hoặc radio -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Sản phẩm trong đơn hàng:</label>
+                <div th:if="${hoaDon.donHang != null and not #lists.isEmpty(hoaDon.donHang.chiTietDonHangs)}"
+                     class="space-y-2">
+                    <div th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}"
+                         class="p-2 bg-gray-50 rounded-lg">
+                        <p th:text="'Tên sản phẩm: ' + ${chiTiet.tenSanPham}"></p>
+                        <p th:text="'Màu sắc: ' + (${chiTiet.chiTietSanPham.mauSac != null ? chiTiet.chiTietSanPham.mauSac.tenMau : 'N/A'})"></p>
+                        <p th:text="'Kích thước: ' + (${chiTiet.chiTietSanPham.kichCo != null ? chiTiet.chiTietSanPham.kichCo.ten : 'N/A'})"></p>
+                    </div>
+                </div>
+                <p th:unless="${hoaDon.donHang != null and not #lists.isEmpty(hoaDon.donHang.chiTietDonHangs)}"
+                   class="text-red-500">Không có sản phẩm nào để đánh giá.</p>
+                <!-- Gửi ID sản phẩm đầu tiên làm mặc định -->
+                <input type="hidden" name="chiTietSanPhamId"
+                       th:value="${hoaDon.donHang.chiTietDonHangs != null and not #lists.isEmpty(hoaDon.donHang.chiTietDonHangs) ? hoaDon.donHang.chiTietDonHangs[0].chiTietSanPham.id : ''}">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Xếp hạng:</label>
+                <div class="star-rating flex gap-2">
+                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="1"></i>
+                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="2"></i>
+                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="3"></i>
+                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="4"></i>
+                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="5"></i>
+                    <input type="hidden" id="rating" name="rating" value="0">
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">Nội dung đánh giá:</label>
+                <textarea id="content" name="content" rows="4" class="w-full p-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-[#9FD5F7] focus:border-[#9FD5F7]" placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+            </div>
+            <div class="mb-4">
+                <label for="media" class="block text-sm font-semibold text-gray-700 mb-2">Tải lên hình ảnh hoặc video:</label>
+                <input type="file" id="media" name="media" accept="image/*,video/*" multiple class="form-control w-full p-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-[#9FD5F7] focus:border-[#9FD5F7]">
+                <div id="mediaPreview" class="mt-3 flex flex-wrap gap-3"></div>
+            </div>
+            <div class="text-right">
+                <a th:href="@{'/dsdon-mua'}" class="btn btn-secondary mr-2">Hủy</a>
+                <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer style="background: linear-gradient(135deg, #153054 0%, #1e4066 100%); color: white; padding-top: 40px; padding-bottom: 20px; position: relative;">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
+        <div>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-store mr-3"></i>ACV Store
+            </h3>
+            <p class="text-sm mb-6 opacity-90">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+            <div class="mt-6">
+                <h4 class="text-sm font-semibold mb-3 flex items-center">
+                    <i class="fas fa-envelope mr-2"></i>Đăng ký nhận tin
+                </h4>
+                <form class="flex gap-2 mt-3">
+                    <input type="email" class="flex-1 p-3 rounded-lg border-none focus:outline-none text-gray-800" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
+                    <button type="submit" class="bg-white text-[#153054] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-link mr-3"></i>Liên kết nhanh
+            </h3>
+            <ul class="space-y-3">
+                <li><a href="/new" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-star mr-2"></i>Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-sun mr-2"></i>Tủ đồ mùa hè</a></li>
+                <li><a href="/bestsellers" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-fire mr-2"></i>Sản phẩm bán chạy</a></li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-phone mr-3"></i>Liên hệ
+            </h3>
+            <div class="space-y-3">
+                <p class="text-sm flex items-center"><i class="fas fa-envelope mr-3"></i>datn.acv@gmail.com</p>
+                <p class="text-sm flex items-center"><i class="fas fa-phone-alt mr-3"></i>1900 8686</p>
+            </div>
+            <div class="flex space-x-4 mt-6">
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Twitter">
+                    <i class="fab fa-twitter"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="text-center mt-8 pt-6 border-t border-white/20 text-sm opacity-75">
+        © 2025 ACV Store. All rights reserved.
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Xử lý xếp hạng sao
+    document.querySelectorAll('.star-rating .fa-star').forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.getAttribute('data-rating');
+            document.getElementById('rating').value = rating;
+            document.querySelectorAll('.star-rating .fa-star').forEach(s => {
+                s.classList.toggle('selected', s.getAttribute('data-rating') <= rating);
+            });
+        });
+    });
+
+    // Xử lý preview hình ảnh/video
+    document.getElementById('media').addEventListener('change', function(event) {
+        const preview = document.getElementById('mediaPreview');
+        preview.innerHTML = '';
+        Array.from(event.target.files).forEach(file => {
+            const url = URL.createObjectURL(file);
+            const element = file.type.startsWith('video/')
+                ? document.createElement('video')
+                : document.createElement('img');
+            element.src = url;
+            if (file.type.startsWith('video/')) {
+                element.controls = true;
+            }
+            preview.appendChild(element);
+        });
+    });
+
+    // Gửi form đánh giá
+    document.getElementById('rateForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+
+        fetch('/dsdon-mua/api/ratings', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Thành công!',
+                        text: 'Đánh giá của bạn đã được gửi.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = '/dsdon-mua';
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: data.message || 'Không thể gửi đánh giá. Vui lòng thử lại.'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Đã có lỗi xảy ra: ' + error.message
+                });
+            });
+    });
+</script>
+</body>
+</html>

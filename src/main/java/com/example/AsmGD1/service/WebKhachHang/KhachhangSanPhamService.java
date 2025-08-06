@@ -2,10 +2,8 @@ package com.example.AsmGD1.service.WebKhachHang;
 
 import com.example.AsmGD1.dto.KhachHang.*;
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
-import com.example.AsmGD1.entity.ChiTietSanPham;
-import com.example.AsmGD1.entity.LichSuTimKiem;
-import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.entity.*;
+import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
@@ -33,7 +31,28 @@ public class KhachhangSanPhamService {
     @Autowired
     private SanPhamService sanPhamService;
 
+    @Autowired
+    private DanhGiaRepository danhGiaRepository;
+
     private static final Logger logger = LoggerFactory.getLogger(KhachhangSanPhamService.class);
+
+    // Tính số sao trung bình cho một sản phẩm
+    public Double getAverageRating(UUID sanPhamId) {
+        List<DanhGia> danhGias = danhGiaRepository.findByChiTietSanPham_SanPham_IdOrderByThoiGianDanhGiaDesc(sanPhamId);
+        if (danhGias.isEmpty()) {
+            return 0.0; // Nếu chưa có đánh giá, trả về 0
+        }
+        double average = danhGias.stream()
+                .mapToInt(DanhGia::getXepHang)
+                .average()
+                .orElse(0.0);
+        // Làm tròn đến 1 chữ số thập phân
+        return Math.round(average * 10.0) / 10.0;
+    }
+
+
+
+
 
     // Lấy danh sách sản phẩm mới
     public List<SanPhamDto> getNewProducts() {
