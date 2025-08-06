@@ -272,7 +272,11 @@
                             tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
                             soLuong: item.soLuong,
                             gia: item.gia,
-                            urlHinhAnh: item.chiTietSanPham.urlHinhAnh || '/images/default-product.jpg'
+                            urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
+                                ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
+                                : item.chiTietSanPham.sanPham.urlHinhAnh || '/images/default-product.jpg',
+                            sizeName: item.chiTietSanPham.kichCo?.ten || 'N/A',
+                            colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A'
                         }));
                         localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
                         window.location.href = '/thanh-toan';

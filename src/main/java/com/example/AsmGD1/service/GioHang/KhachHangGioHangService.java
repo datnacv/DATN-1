@@ -110,7 +110,7 @@ public class KhachHangGioHangService {
     }
 
     public List<ChiTietGioHang> getGioHangChiTiets(UUID gioHangId) {
-        List<ChiTietGioHang> chiTiets = chiTietGioHangRepository.findByGioHangId(gioHangId);
+        List<ChiTietGioHang> chiTiets = chiTietGioHangRepository.findByGioHangIdWithHinhAnh(gioHangId);
         return chiTiets != null ? chiTiets : java.util.Collections.emptyList();
     }
 }

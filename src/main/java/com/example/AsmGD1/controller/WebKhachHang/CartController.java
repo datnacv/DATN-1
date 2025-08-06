@@ -11,6 +11,7 @@ import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/cart")
@@ -55,12 +57,132 @@ public class CartController {
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
             List<ChiTietGioHang> chiTietGioHangs = khachHangGioHangService.getGioHangChiTiets(gioHang.getId());
 
-            // Tính lại tổng tiền từ các chi tiết giỏ hàng để đảm bảo chính xác
+            // Ánh xạ chiTietGioHang
+            List<Map<String, Object>> chiTietResponse = chiTietGioHangs.stream().map(item -> {
+                Map<String, Object> itemMap = new HashMap<>();
+                itemMap.put("id", item.getId());
+                itemMap.put("soLuong", item.getSoLuong());
+                itemMap.put("gia", item.getGia());
+                itemMap.put("tienGiam", item.getTienGiam() != null ? item.getTienGiam() : BigDecimal.ZERO);
+                itemMap.put("ghiChu", item.getGhiChu());
+                itemMap.put("thoiGianThem", item.getThoiGianThem());
+                itemMap.put("trangThai", item.getTrangThai());
+
+                // Ánh xạ chiTietSanPham
+                Map<String, Object> chiTietSanPhamMap = new HashMap<>();
+                chiTietSanPhamMap.put("id", item.getChiTietSanPham().getId());
+                chiTietSanPhamMap.put("gia", item.getChiTietSanPham().getGia());
+                chiTietSanPhamMap.put("soLuongTonKho", item.getChiTietSanPham().getSoLuongTonKho());
+                chiTietSanPhamMap.put("gioiTinh", item.getChiTietSanPham().getGioiTinh());
+                chiTietSanPhamMap.put("thoiGianTao", item.getChiTietSanPham().getThoiGianTao());
+                chiTietSanPhamMap.put("trangThai", item.getChiTietSanPham().getTrangThai());
+
+                // Ánh xạ sanPham
+                Map<String, Object> sanPhamMap = new HashMap<>();
+                sanPhamMap.put("id", item.getChiTietSanPham().getSanPham().getId());
+                sanPhamMap.put("maSanPham", item.getChiTietSanPham().getSanPham().getMaSanPham());
+                sanPhamMap.put("tenSanPham", item.getChiTietSanPham().getSanPham().getTenSanPham());
+                sanPhamMap.put("moTa", item.getChiTietSanPham().getSanPham().getMoTa());
+                sanPhamMap.put("urlHinhAnh", item.getChiTietSanPham().getSanPham().getUrlHinhAnh());
+                sanPhamMap.put("thoiGianTao", item.getChiTietSanPham().getSanPham().getThoiGianTao());
+                sanPhamMap.put("trangThai", item.getChiTietSanPham().getSanPham().getTrangThai());
+                sanPhamMap.put("tongSoLuong", item.getChiTietSanPham().getSanPham().getTongSoLuong());
+                sanPhamMap.put("maxPrice", item.getChiTietSanPham().getSanPham().getMaxPrice());
+                sanPhamMap.put("minPrice", item.getChiTietSanPham().getSanPham().getMinPrice());
+                sanPhamMap.put("totalStockQuantity", item.getChiTietSanPham().getSanPham().getTotalStockQuantity());
+                sanPhamMap.put("minPriceFormatted", item.getChiTietSanPham().getSanPham().getMinPriceFormatted());
+                sanPhamMap.put("maxPriceFormatted", item.getChiTietSanPham().getSanPham().getMaxPriceFormatted());
+
+                // Ánh xạ danhMuc
+                Map<String, Object> danhMucMap = new HashMap<>();
+                danhMucMap.put("id", item.getChiTietSanPham().getSanPham().getDanhMuc().getId());
+                danhMucMap.put("tenDanhMuc", item.getChiTietSanPham().getSanPham().getDanhMuc().getTenDanhMuc());
+                sanPhamMap.put("danhMuc", danhMucMap);
+
+                chiTietSanPhamMap.put("sanPham", sanPhamMap);
+
+                // Ánh xạ kichCo
+                if (item.getChiTietSanPham().getKichCo() != null) {
+                    Map<String, Object> kichCoMap = new HashMap<>();
+                    kichCoMap.put("id", item.getChiTietSanPham().getKichCo().getId());
+                    kichCoMap.put("ten", item.getChiTietSanPham().getKichCo().getTen());
+                    chiTietSanPhamMap.put("kichCo", kichCoMap);
+                }
+
+                // Ánh xạ mauSac
+                if (item.getChiTietSanPham().getMauSac() != null) {
+                    Map<String, Object> mauSacMap = new HashMap<>();
+                    mauSacMap.put("id", item.getChiTietSanPham().getMauSac().getId());
+                    mauSacMap.put("tenMau", item.getChiTietSanPham().getMauSac().getTenMau());
+                    chiTietSanPhamMap.put("mauSac", mauSacMap);
+                }
+
+                // Ánh xạ chatLieu
+                if (item.getChiTietSanPham().getChatLieu() != null) {
+                    Map<String, Object> chatLieuMap = new HashMap<>();
+                    chatLieuMap.put("id", item.getChiTietSanPham().getChatLieu().getId());
+                    chatLieuMap.put("tenChatLieu", item.getChiTietSanPham().getChatLieu().getTenChatLieu());
+                    chiTietSanPhamMap.put("chatLieu", chatLieuMap);
+                }
+
+                // Ánh xạ xuatXu
+                if (item.getChiTietSanPham().getXuatXu() != null) {
+                    Map<String, Object> xuatXuMap = new HashMap<>();
+                    xuatXuMap.put("id", item.getChiTietSanPham().getXuatXu().getId());
+                    xuatXuMap.put("tenXuatXu", item.getChiTietSanPham().getXuatXu().getTenXuatXu());
+                    chiTietSanPhamMap.put("xuatXu", xuatXuMap);
+                }
+
+                // Ánh xạ tayAo
+                if (item.getChiTietSanPham().getTayAo() != null) {
+                    Map<String, Object> tayAoMap = new HashMap<>();
+                    tayAoMap.put("id", item.getChiTietSanPham().getTayAo().getId());
+                    tayAoMap.put("tenTayAo", item.getChiTietSanPham().getTayAo().getTenTayAo());
+                    chiTietSanPhamMap.put("tayAo", tayAoMap);
+                }
+
+                // Ánh xạ coAo
+                if (item.getChiTietSanPham().getCoAo() != null) {
+                    Map<String, Object> coAoMap = new HashMap<>();
+                    coAoMap.put("id", item.getChiTietSanPham().getCoAo().getId());
+                    coAoMap.put("tenCoAo", item.getChiTietSanPham().getCoAo().getTenCoAo());
+                    chiTietSanPhamMap.put("coAo", coAoMap);
+                }
+
+                // Ánh xạ kieuDang
+                if (item.getChiTietSanPham().getKieuDang() != null) {
+                    Map<String, Object> kieuDangMap = new HashMap<>();
+                    kieuDangMap.put("id", item.getChiTietSanPham().getKieuDang().getId());
+                    kieuDangMap.put("tenKieuDang", item.getChiTietSanPham().getKieuDang().getTenKieuDang());
+                    chiTietSanPhamMap.put("kieuDang", kieuDangMap);
+                }
+
+                // Ánh xạ thuongHieu
+                if (item.getChiTietSanPham().getThuongHieu() != null) {
+                    Map<String, Object> thuongHieuMap = new HashMap<>();
+                    thuongHieuMap.put("id", item.getChiTietSanPham().getThuongHieu().getId());
+                    thuongHieuMap.put("tenThuongHieu", item.getChiTietSanPham().getThuongHieu().getTenThuongHieu());
+                    chiTietSanPhamMap.put("thuongHieu", thuongHieuMap);
+                }
+
+                // Ánh xạ hinhAnhSanPhams
+                List<Map<String, Object>> hinhAnhList = item.getChiTietSanPham().getHinhAnhSanPhams().stream().map(hinhAnh -> {
+                    Map<String, Object> hinhAnhMap = new HashMap<>();
+                    hinhAnhMap.put("id", hinhAnh.getId());
+                    hinhAnhMap.put("urlHinhAnh", hinhAnh.getUrlHinhAnh());
+                    return hinhAnhMap;
+                }).collect(Collectors.toList());
+                chiTietSanPhamMap.put("hinhAnhSanPhams", hinhAnhList);
+
+                itemMap.put("chiTietSanPham", chiTietSanPhamMap);
+                return itemMap;
+            }).collect(Collectors.toList());
+
+            // Tính tổng tiền
             BigDecimal tongTien = chiTietGioHangs.stream()
                     .map(item -> item.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())).subtract(item.getTienGiam() != null ? item.getTienGiam() : BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // Cập nhật tổng tiền nếu có sự không đồng bộ
             if (!tongTien.equals(gioHang.getTongTien())) {
                 gioHang.setTongTien(tongTien);
                 gioHangRepository.save(gioHang);
@@ -68,7 +190,7 @@ public class CartController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("gioHangId", gioHang.getId());
-            response.put("chiTietGioHang", chiTietGioHangs);
+            response.put("chiTietGioHang", chiTietResponse);
             response.put("tongTien", tongTien);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
