@@ -9,6 +9,7 @@ import com.example.AsmGD1.repository.GiamGia.KHPhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.GioHang.ChiTietGioHangRepository;
 import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.HoaDon.KHHoaDonRepository;
+import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.KHChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.KHThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangChiTietSanPhamRepository;
@@ -67,42 +68,57 @@ public class CheckoutService {
     @Autowired
     private ViThanhToanService viThanhToanService;
 
+    @Autowired
+    private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
 
     @Transactional
-    public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request) {
-        // 1. Tạo đơn hàng
+    public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request, UUID addressId) {
         DonHang donHang = new DonHang();
         donHang.setNguoiDung(nguoiDung);
         donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         donHang.setThoiGianTao(LocalDateTime.now());
-        donHang.setTrangThaiThanhToan(false); // Mặc định chưa thanh toán
+        donHang.setTrangThaiThanhToan(false);
         donHang.setPhuongThucBanHang("Online");
         donHang.setPhiVanChuyen(request.getShippingFee() != null ? request.getShippingFee() : BigDecimal.valueOf(15000));
-        donHang.setDiaChiGiaoHang(request.getAddress());
-        donHang.setGhiChu(request.getNotes());
+        donHang.setGhiChu(request.getNotes() != null ? request.getNotes() + " | Người nhận: " + request.getFullName() + ", SĐT: " + request.getPhone() : "Người nhận: " + request.getFullName() + ", SĐT: " + request.getPhone());
 
-        // 2. Thiết lập phương thức thanh toán
+        // Handle address
+        if (addressId != null) {
+            DiaChiNguoiDung selectedAddress = diaChiNguoiDungRepository.findById(addressId)
+                    .orElseThrow(() -> new RuntimeException("Địa chỉ không hợp lệ."));
+            donHang.setDiaChi(selectedAddress);
+            donHang.setDiaChiGiaoHang(selectedAddress.getChiTietDiaChi() + ", " +
+                    selectedAddress.getPhuongXa() + ", " +
+                    selectedAddress.getQuanHuyen() + ", " +
+                    selectedAddress.getTinhThanhPho());
+        } else if (request.getAddress() != null && !request.getAddress().isEmpty()) {
+            donHang.setDiaChiGiaoHang(request.getAddress());
+        } else {
+            DiaChiNguoiDung defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId())
+                    .orElseThrow(() -> new RuntimeException("Vui lòng chọn hoặc nhập địa chỉ giao hàng."));
+            donHang.setDiaChi(defaultAddress);
+            donHang.setDiaChiGiaoHang(defaultAddress.getChiTietDiaChi() + ", " +
+                    defaultAddress.getPhuongXa() + ", " +
+                    defaultAddress.getQuanHuyen() + ", " +
+                    defaultAddress.getTinhThanhPho());
+        }
+
         PhuongThucThanhToan pttt = phuongThucThanhToanRepository
                 .findById(request.getPaymentMethodId())
                 .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
         donHang.setPhuongThucThanhToan(pttt);
 
-        // 3. Tính tiền và chi tiết
         BigDecimal tongTien = BigDecimal.ZERO;
         List<ChiTietDonHang> chiTietList = new ArrayList<>();
-
         for (CheckoutRequest.OrderItem item : request.getOrderItems()) {
             ChiTietSanPham chiTietSP = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại: " + item.getChiTietSanPhamId()));
-
             if (chiTietSP.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Sản phẩm " + chiTietSP.getSanPham().getTenSanPham() + " không đủ số lượng trong kho. Còn lại: " + chiTietSP.getSoLuongTonKho());
             }
-
             BigDecimal gia = chiTietSP.getGia();
             int soLuong = item.getSoLuong();
             BigDecimal thanhTien = gia.multiply(BigDecimal.valueOf(soLuong));
-
             ChiTietDonHang chiTiet = new ChiTietDonHang();
             chiTiet.setDonHang(donHang);
             chiTiet.setChiTietSanPham(chiTietSP);
@@ -112,45 +128,33 @@ public class CheckoutService {
             chiTiet.setTenSanPham(chiTietSP.getSanPham().getTenSanPham());
             chiTiet.setTrangThaiHoanTra(false);
             chiTiet.setGhiChu(request.getNotes());
-
             chiTietList.add(chiTiet);
             tongTien = tongTien.add(thanhTien);
-
-            // Giảm tồn kho
             chiTietSP.setSoLuongTonKho(chiTietSP.getSoLuongTonKho() - soLuong);
             chiTietSanPhamRepository.save(chiTietSP);
             logger.info("Đã giảm tồn kho: {} -> {}", chiTietSP.getSanPham().getTenSanPham(), chiTietSP.getSoLuongTonKho());
         }
 
-        // 4. Áp dụng mã giảm giá nếu có
         BigDecimal giamGia = BigDecimal.ZERO;
         if (request.getVoucher() != null && !request.getVoucher().isEmpty()) {
             PhieuGiamGia voucher = phieuGiamGiaRepository.findByMa(request.getVoucher())
                     .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ"));
-
             if (voucher.getSoLuong() <= 0
                     || voucher.getNgayBatDau().isAfter(LocalDateTime.now())
                     || voucher.getNgayKetThuc().isBefore(LocalDateTime.now())) {
                 throw new RuntimeException("Mã giảm giá không còn hiệu lực.");
             }
-
-
             giamGia = voucher.getGiaTriGiam().min(tongTien);
             donHang.setPhieuGiamGia(voucher);
             voucher.setSoLuong(voucher.getSoLuong() - 1);
             phieuGiamGiaRepository.save(voucher);
         }
 
-        // 5. Gán tổng tiền, tiền giảm
         donHang.setTienGiam(giamGia);
         donHang.setTongTien(tongTien.add(donHang.getPhiVanChuyen()).subtract(giamGia));
 
-        // Gọi thanh toán ví (nếu là ví)
         donHang = donHangRepository.save(donHang);
-
         UUID VI_PAYMENT_METHOD_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440019");
-        logger.info("Phương thức thanh toán ID nhận được: {}", request.getPaymentMethodId());
-
         if (VI_PAYMENT_METHOD_ID.equals(request.getPaymentMethodId())) {
             boolean paymentSuccess = viThanhToanService.thanhToanBangVi(
                     nguoiDung.getId(),
@@ -162,18 +166,14 @@ public class CheckoutService {
             }
             donHang.setTrangThaiThanhToan(true);
             donHang.setThoiGianThanhToan(LocalDateTime.now());
-            donHangRepository.save(donHang); // Cập nhật lại trạng thái thanh toán
+            donHangRepository.save(donHang);
         }
 
-        // 7. Lưu đơn hàng và chi tiết
         donHangRepository.save(donHang);
         chiTietDonHangRepository.saveAll(chiTietList);
         logger.info("Đã lưu đơn hàng: {}", donHang.getMaDonHang());
 
-        // 8. Tạo hóa đơn
         hoaDonService.createHoaDonFromDonHang(donHang);
-
-        // 9. Xoá sản phẩm khỏi giỏ hàng
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDung.getId());
         if (gioHang != null) {
             for (CheckoutRequest.OrderItem item : request.getOrderItems()) {
@@ -181,7 +181,6 @@ public class CheckoutService {
                 logger.info("Đã xoá sản phẩm {} khỏi giỏ hàng", item.getChiTietSanPhamId());
             }
         }
-
         return donHang;
     }
 

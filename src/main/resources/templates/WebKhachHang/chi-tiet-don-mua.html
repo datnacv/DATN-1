@@ -874,7 +874,7 @@
         <span class="payment-label">
           <i class="fas fa-wallet mr-2"></i>Phương thức thanh toán
         </span>
-        <span class="payment-value" th:text="${hoaDon.donHang.trangThaiThanhToan ? 'Chuyển khoản ngân hàng' : 'Thanh toán khi nhận hàng'}"></span>
+        <span class="payment-value" th:text="${hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc == 'Tiền mặt' ? 'Thanh toán khi nhận hàng (COD)' : hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc}"></span>
       </div>
 
       <p th:if="${!hoaDon.donHang.trangThaiThanhToan}" class="payment-note">

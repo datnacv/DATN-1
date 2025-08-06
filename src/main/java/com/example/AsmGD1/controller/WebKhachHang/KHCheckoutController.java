@@ -181,7 +181,7 @@ public class KHCheckoutController {
 
             NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
             logger.info("Submitting order for user: {}", nguoiDung.getTenDangNhap());
-            DonHang donHang = checkoutService.createOrder(nguoiDung, request);
+            DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
             logger.info("Order submitted successfully: {}", donHang.getMaDonHang());
             return ResponseEntity.ok(new APIResponse("Đặt hàng thành công", donHang.getMaDonHang()));
         } catch (RuntimeException e) {

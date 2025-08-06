@@ -197,7 +197,7 @@
           <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
+          <li><a class="dropdown-item" th:href="@{/profile}">Tài khoản của tôi</a></li>
           <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
           <li><a class="dropdown-item" th:href="@{/vi}">Ví thanh toán</a></li>
           <li><hr class="dropdown-divider"></li>
@@ -258,9 +258,15 @@
 <div class="container mx-auto py-8">
   <div class="swiper banner-slider">
     <div class="swiper-wrapper">
-      <div class="swiper-slide"><img loading="lazy" src="https://file.hstatic.net/200000503583/collection/ao-nam-2022_71fff4523ebe4fbd9722928187580776.jpg" alt="Banner thời trang nam" class="w-full h-full object-cover"/></div>
-      <div class="swiper-slide"><img loading="lazy" src="https://file.hstatic.net/1000253775/file/kt_dn_dk.jpg" alt="Banner khuyến mãi" class="w-full h-full object-cover"/></div>
-      <div class="swiper-slide"><img loading="lazy" src="https://4menshop.com/images/thumbs/news/-602.jpg" alt="Banner sản phẩm mới" class="w-full h-full object-cover"/></div>
+      <div class="swiper-slide">
+        <img loading="lazy" src="/image/banner1.png" alt="Banner thời trang nam" class="w-full h-full object-cover"/>
+      </div>
+      <div class="swiper-slide">
+        <img loading="lazy" src="/image/banner2.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+      </div>
+      <div class="swiper-slide">
+        <img loading="lazy" src="/image/banner3.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+      </div>
     </div>
     <div class="swiper-button-next text-blue-800"></div>
     <div class="swiper-button-prev text-blue-800"></div>
@@ -680,63 +686,105 @@
   });
 
   chatInput.addEventListener('keydown', async (event) => {
-    if (event.key === 'Enter' && !event.repeat) {
-      event.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message) return;
+    if (event.key !== 'Enter' || event.repeat) return;
 
-      const userDiv = document.createElement('div');
-      userDiv.className = 'chatbot-msg-user';
-      userDiv.textContent = message;
-      chatMessages.appendChild(userDiv);
-      saveToHistory('user', message);
-      chatInput.value = '';
+    event.preventDefault();
+    const message = chatInput.value.trim();
+    if (!message) return;
 
-      // Di chuyển hoặc thêm typing-indicator vào cuối
-      let typingIndicator = document.getElementById('typing-indicator');
-      if (typingIndicator) {
-        typingIndicator.remove(); // Xóa typing-indicator hiện tại
-      }
-      typingIndicator = document.createElement('div');
-      typingIndicator.id = 'typing-indicator';
-      typingIndicator.className = 'chatbot-msg-bot hidden';
-      typingIndicator.textContent = 'Đang soạn tin...';
-      chatMessages.appendChild(typingIndicator);
-      typingIndicator.classList.remove('hidden');
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chatbot-msg-user';
+    userDiv.textContent = message;
+    chatMessages.appendChild(userDiv);
+    saveToHistory('user', message);
+    chatInput.value = '';
 
+    const typingIndicator = addTypingIndicator();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+      const response = await fetch('https://namhaihoang.app.n8n.cloud/webhook/website-chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: { from: 'user_123', message } })
+      });
+
+      const data = await response.json();
+      console.log('📥 Dữ liệu gốc từ bot:', data);
+
+      const rawMessage = extractMessageFromResponse(data);
+      const formattedMsg = formatMessage(rawMessage);
+
+      const botDiv = document.createElement('div');
+      botDiv.className = 'chatbot-msg-bot';
+      botDiv.innerHTML = formattedMsg;
+      chatMessages.appendChild(botDiv);
+      saveToHistory('bot', botDiv.innerHTML);
       chatMessages.scrollTop = chatMessages.scrollHeight;
 
-      try {
-        const res = await fetch("https://namhaihoang.app.n8n.cloud/webhook/website-chatbot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body: { from: "user_123", message } })
-        });
-
-        const contentType = res.headers.get("content-type");
-        const data = contentType && contentType.includes("json") ? await res.json() : { message: "Bot không phản hồi." };
-
-        let formattedMsg = data.message || "Không có phản hồi.";
-
-        const botDiv = document.createElement('div');
-        botDiv.className = 'chatbot-msg-bot';
-        botDiv.innerHTML = formattedMsg;
-        chatMessages.appendChild(botDiv);
-        saveToHistory('bot', botDiv.innerHTML);
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      } catch (e) {
-        const botErr = document.createElement('div');
-        botErr.className = 'chatbot-msg-bot';
-        botErr.textContent = "Lỗi kết nối. Vui lòng thử lại.";
-        chatMessages.appendChild(botErr);
-        saveToHistory('bot', botErr.textContent);
-      } finally {
-        typingIndicator.classList.add('hidden');
-      }
+    } catch (error) {
+      console.error('💥 Lỗi kết nối:', error);
+      const botErr = document.createElement('div');
+      botErr.className = 'chatbot-msg-bot';
+      botErr.textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+      chatMessages.appendChild(botErr);
+      saveToHistory('bot', botErr.textContent);
+    } finally {
+      typingIndicator.classList.add('hidden');
     }
   });
 
+  function addTypingIndicator() {
+    const existingIndicator = document.getElementById('typing-indicator');
+    if (existingIndicator) existingIndicator.remove();
+
+    const indicator = document.createElement('div');
+    indicator.id = 'typing-indicator';
+    indicator.className = 'chatbot-msg-bot';
+    indicator.textContent = 'Đang soạn tin...';
+    chatMessages.appendChild(indicator);
+    return indicator;
+  }
+
+  function extractMessageFromResponse(data) {
+    if (typeof data.message !== 'string') {
+      if (typeof data.message === 'object' && data.message !== null && 'message' in data.message) {
+        console.log('🔍 Dữ liệu từ object:', data.message.message);
+        return data.message.message;
+      }
+      console.warn('🤷‍♂️ Không hiểu kiểu dữ liệu message:', data.message);
+      return 'Xin lỗi, bot không phản hồi đúng định dạng.';
+    }
+
+    let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
+    console.log('Trước khi làm sạch:', cleanedMessage);
+
+    // Làm sạch các ký tự điều khiển không in được (tránh loại bỏ dấu -)
+    cleanedMessage = cleanedMessage.replace(/[-\u001F\u007F-\u009F]/g, '');
+    console.log('Sau khi làm sạch:', cleanedMessage);
+
+    try {
+      const parsedData = JSON.parse(cleanedMessage);
+      console.log('🧠 Dữ liệu sau parse:', parsedData.message);
+      return parsedData.message || cleanedMessage;
+    } catch (parseErr) {
+      console.log('❌ Lỗi parse JSON:', parseErr);
+      // Trích xuất thủ công nếu parse thất bại
+      const messageMatch = cleanedMessage.match(/"message":\s*"([^"]*)"/);
+      if (messageMatch && messageMatch[1]) {
+        console.log('✅ Trích xuất thủ công thành công:', messageMatch[1]);
+        return messageMatch[1];
+      }
+      console.log('⚠️ Không trích xuất được, sử dụng cleanedMessage:', cleanedMessage);
+      return cleanedMessage;
+    }
+  }
+
+  function formatMessage(message) {
+    return message
+            .replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank" style="color: #153054; text-decoration: underline;">${url}</a>`)
+            .replace(/\n/g, '<br>');
+  }
   new Swiper('.banner-slider', {
     loop: true,
     autoplay: { delay: 5000 },

@@ -18,4 +18,7 @@ public interface DiaChiNguoiDungRepository extends JpaRepository<DiaChiNguoiDung
     @Modifying
     @Query("UPDATE DiaChiNguoiDung d SET d.macDinh = false WHERE d.nguoiDung.id = :nguoiDungId")
     void removeDefaultFlag(UUID nguoiDungId);
+
+    @Query("SELECT d FROM DiaChiNguoiDung d WHERE d.nguoiDung.id = :nguoiDungId AND d.macDinh = false")
+    List<DiaChiNguoiDung> findByNguoiDung_IdAndMacDinhFalse(UUID nguoiDungId);
 }

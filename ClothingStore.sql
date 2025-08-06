@@ -684,5 +684,59 @@ CREATE TABLE yeu_cau_rut_tien (
                                   FOREIGN KEY (id_vi_thanh_toan) REFERENCES vi_thanh_toan(id)
 );
 
-ALTER TABLE yeu_cau_rut_tien
-    ADD anh_bang_chung NVARCHAR(MAX) NULL;
+CREATE TABLE dia_chi_nguoi_dung (
+                                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                    id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                                    chi_tiet_dia_chi NVARCHAR(255) NOT NULL,
+                                    phuong_xa NVARCHAR(100),
+                                    quan_huyen NVARCHAR(100),
+                                    tinh_thanh_pho NVARCHAR(100),
+                                    mac_dinh BIT DEFAULT 0, -- 1 nếu là địa chỉ mặc định
+                                    thoi_gian_tao DATETIME DEFAULT GETDATE(),
+                                    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE
+);
+
+CREATE TABLE danh_gia (
+                          id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                          id_hoa_don UNIQUEIDENTIFIER NOT NULL,
+                          id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
+                          id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                          xep_hang INT NOT NULL CHECK (xep_hang BETWEEN 1 AND 5), -- Xếp hạng từ 1 đến 5 sao
+                          noi_dung NVARCHAR(MAX),
+                          url_hinh_anh NVARCHAR(MAX), -- Lưu URL của hình ảnh hoặc video
+                          thoi_gian_danh_gia DATETIME NOT NULL DEFAULT GETDATE(),
+                          trang_thai BIT NOT NULL DEFAULT 1, -- Trạng thái đánh giá (1: hiển thị, 0: ẩn)
+                          FOREIGN KEY (id_hoa_don) REFERENCES hoa_don(id),
+                          FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id),
+                          FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
+);
+
+
+ALTER TABLE dia_chi_nguoi_dung
+    ADD nguoi_nhan NVARCHAR(100) NULL,
+    so_dien_thoai_nguoi_nhan NVARCHAR(20) NULL;
+
+ALTER TABLE don_hang
+    ADD id_dia_chi UNIQUEIDENTIFIER,
+FOREIGN KEY (id_dia_chi) REFERENCES dia_chi_nguoi_dung(id);
+
+ALTER TABLE phieu_giam_gia
+ALTER COLUMN ngay_bat_dau DATETIME;
+
+ALTER TABLE phieu_giam_gia
+ALTER COLUMN ngay_ket_thuc DATETIME;
+
+ALTER TABLE chien_dich_giam_gia
+ALTER COLUMN ngay_bat_dau DATETIME2(0) NOT NULL;
+
+ALTER TABLE chien_dich_giam_gia
+ALTER COLUMN ngay_ket_thuc DATETIME2(0) NOT NULL;
+
+ALTER TABLE thong_bao_nhom
+ALTER COLUMN id_don_hang UNIQUEIDENTIFIER NULL;
+
+SELECT * FROM don_hang
+SELECT * FROM phuong_thuc_thanh_toan
+
+SELECT * FROM vi_thanh_toan
+

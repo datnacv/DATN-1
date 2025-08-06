@@ -81,6 +81,7 @@
         <table>
             <thead>
             <tr>
+                <th>Hình ảnh</th>
                 <th>Sản phẩm</th>
                 <th>Màu sắc</th>
                 <th>Kích cỡ</th>
@@ -93,6 +94,11 @@
             </thead>
             <tbody>
             <tr th:each="item : ${chiTietGioHang}">
+                <td>
+                    <img th:each="hinhAnh : ${item.chiTietSanPham.hinhAnhSanPhams}"
+                         th:src="@{${hinhAnh.urlHinhAnh}}" alt="Image"
+                         style="width: 50px; height: 50px;"/>
+                </td>
                 <td th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
                 <td th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
                 <td th:text="${item.chiTietSanPham.kichCo.ten}"></td>
