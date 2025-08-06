@@ -686,3 +686,22 @@ CREATE TABLE yeu_cau_rut_tien (
 
 ALTER TABLE yeu_cau_rut_tien
     ADD anh_bang_chung NVARCHAR(MAX) NULL;
+
+CREATE TABLE dia_chi_nguoi_dung (
+                                    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+                                    id_nguoi_dung UNIQUEIDENTIFIER NOT NULL,
+                                    chi_tiet_dia_chi NVARCHAR(255) NOT NULL,
+                                    phuong_xa NVARCHAR(100),
+                                    quan_huyen NVARCHAR(100),
+                                    tinh_thanh_pho NVARCHAR(100),
+                                    mac_dinh BIT DEFAULT 0, -- 1 nếu là địa chỉ mặc định
+                                    thoi_gian_tao DATETIME DEFAULT GETDATE(),
+                                    FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE
+);
+ALTER TABLE dia_chi_nguoi_dung
+    ADD nguoi_nhan NVARCHAR(100) NULL,
+    so_dien_thoai_nguoi_nhan NVARCHAR(20) NULL;
+
+ALTER TABLE don_hang
+    ADD id_dia_chi UNIQUEIDENTIFIER,
+FOREIGN KEY (id_dia_chi) REFERENCES dia_chi_nguoi_dung(id);
