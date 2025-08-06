@@ -442,55 +442,47 @@
                 return 'Không rõ thời gian';
             }
         }
-    
+
         function showConfirmModal(notificationId, element, tieuDe = 'Thông báo') {
             console.log('Hiển thị modal xác nhận cho idChiTietThongBao:', notificationId);
-    
+
             const modal = document.getElementById('confirmReadModal');
-            if (!modal) {
-                console.error('Confirm modal not found');
-                alert('Lỗi hệ thống: Không tìm thấy cửa sổ xác nhận.');
+            const modalBody = modal.querySelector('.modal-body');
+            const confirmButton = document.getElementById('confirmReadButton');
+
+            if (!modal || !confirmButton) {
+                console.error('Không tìm thấy modal hoặc nút xác nhận');
                 return;
             }
-    
-            const modalBody = modal.querySelector('.modal-body');
-            modalBody.textContent = `Bạn có chắc chắn muốn đánh dấu thông báo "${escapeHtml(tieuDe)}" là đã đọc?`;
-    
+
+            modalBody.textContent = `Bạn có chắc chắn muốn đánh dấu thông báo "${tieuDe}" là đã đọc?`;
+
             const modalInstance = new bootstrap.Modal(modal);
             modalInstance.show();
-    
-            const wasDropdownOpen = isDropdownOpen;
-    
-            const confirmButton = document.getElementById('confirmReadButton');
-            const newConfirmButton = confirmButton.cloneNode(true);
-            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
-    
-            newConfirmButton.addEventListener('click', () => {
-                console.log('Xác nhận đánh dấu đã đọc:', notificationId);
-                markAsRead(notificationId, element);
+
+            confirmButton.onclick = () => {
+                markNotificationAsRead(notificationId, element);
                 modalInstance.hide();
-            });
-    
-            modal.addEventListener('hidden.bs.modal', function () {
-                if (wasDropdownOpen) {
-                    isDropdownOpen = false;
-                    const dropdownEl = document.getElementById('notificationDropdown');
-                    if (dropdownEl) {
-                        const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownEl);
-                        if (dropdownInstance) dropdownInstance.hide();
-                    }
-                }
-            }, { once: true });
+            };
+
         }
-    
-        function markAsRead(notificationId, element) {
-            if (markingSet.has(notificationId)) {
-                console.warn('Thông báo đã đang được xử lý:', notificationId);
+
+
+
+        function markNotificationAsRead(notificationId, element) {
+            if (!notificationId || !element) {
+                console.warn('Thiếu notificationId hoặc element!');
                 return;
             }
+
+            if (markingSet.has(notificationId)) {
+                console.warn('Thông báo đang được xử lý:', notificationId);
+                return;
+            }
+
             markingSet.add(notificationId);
-            element.classList.add('opacity-50'); // Hiệu ứng loading
-    
+            element.classList.add('opacity-50'); // loading effect
+
             fetch('/acvstore/thong-bao/danh-dau-da-xem', {
                 method: 'POST',
                 headers: {
@@ -499,19 +491,22 @@
                 body: `idChiTietThongBao=${encodeURIComponent(notificationId)}`
             })
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Lỗi server: ${response.status}`);
-                    }
+                    if (!response.ok) throw new Error(`Lỗi server: ${response.status}`);
                     return response.json();
                 })
                 .then(data => {
+                    // Xóa class "unread" và badge
                     element.classList.remove('notification-unread');
                     const badge = element.querySelector('.badge');
                     if (badge) badge.remove();
-    
+
+                    // Nếu là dòng trong bảng (modal)
                     if (element.tagName === 'TR') {
                         const statusCell = element.querySelector('.status-cell');
-                        if (statusCell) statusCell.innerHTML = '<span class="badge bg-secondary">Đã đọc</span>';
+                        if (statusCell) {
+                            statusCell.innerHTML = '<span class="badge bg-secondary">Đã đọc</span>';
+                        }
+
                         const readButton = element.querySelector('button[title*="Đánh dấu"]');
                         if (readButton) {
                             readButton.innerHTML = '<i class="fas fa-eye-slash"></i>';
@@ -519,26 +514,23 @@
                             readButton.setAttribute('title', 'Đánh dấu chưa đọc');
                         }
                     }
-    
+
+                    // Cập nhật số thông báo chưa đọc
                     unreadCount = data.unreadCount || Math.max(0, unreadCount - 1);
                     updateUnreadCount(unreadCount);
-    
-                    if (cachedNotifications && Array.isArray(cachedNotifications)) {
-                        cachedNotifications = cachedNotifications.filter(n => n.idChiTietThongBao !== notificationId);
-                    }
-    
-                    // Làm mới tất cả giao diện
+
+                    // ✅ Xoá hoàn toàn cache để dropdown lần sau tự reload
+                    cachedNotifications = null;
+
+                    // Làm mới các bảng hiển thị nếu cần
                     if (document.getElementById('modalNotificationTableBody')) {
                         loadNotificationsForModal(currentPage);
                     }
                     if (document.getElementById('notificationTableBody')) {
                         loadNotificationsForTable();
                     }
-                    if (isDropdownOpen) {
-                        cachedNotifications = null; // Xóa cache
-                        loadNotifications();
-                    }
-    
+
+                    // Cập nhật giao diện liên quan
                     updateNotificationInLists(notificationId);
                     showToast('Thông báo đã được đánh dấu là đã đọc!');
                 })
@@ -551,7 +543,9 @@
                     markingSet.delete(notificationId);
                 });
         }
-    
+
+
+
         function markAsRead(button) {
             const row = button.closest('tr');
             const notificationId = row.dataset.notificationId;
@@ -773,7 +767,7 @@
                     });
             }
         }
-    
+
         function markAllAsRead() {
             fetch('/acvstore/thong-bao/danh-dau-tat-ca', {
                 method: 'POST',
@@ -791,16 +785,16 @@
                 })
                 .then(data => {
                     console.log('Đánh dấu tất cả đã đọc - Response:', data);
-    
-                    // Cập nhật giao diện cho dropdown
+
+                    // ✅ Cập nhật giao diện dropdown
                     const dropdownItems = document.querySelectorAll('#notificationContainer .notification-item:not(#loadingState):not(#emptyState)');
                     dropdownItems.forEach(item => {
                         item.classList.remove('notification-unread');
                         const badge = item.querySelector('.badge');
                         if (badge) badge.remove();
                     });
-    
-                    // Cập nhật giao diện cho bảng trong modal
+
+                    // ✅ Cập nhật giao diện bảng trong modal
                     const modalRows = document.querySelectorAll('#modalNotificationTableBody tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
                     modalRows.forEach(row => {
                         row.classList.remove('notification-unread');
@@ -814,8 +808,8 @@
                             readButton.setAttribute('title', 'Đánh dấu chưa đọc');
                         }
                     });
-    
-                    // Cập nhật giao diện cho bảng chính (nếu có)
+
+                    // ✅ Cập nhật bảng chính (nếu có)
                     const tableRows = document.querySelectorAll('#notificationTableBody tr:not(#tableLoadingState):not(#tableEmptyState)');
                     tableRows.forEach(row => {
                         row.classList.remove('notification-unread');
@@ -823,22 +817,20 @@
                         const statusCell = row.querySelector('.status-cell');
                         if (statusCell) statusCell.innerHTML = '<span class="badge bg-secondary">Đã đọc</span>';
                     });
-    
-                    // Cập nhật số lượng thông báo chưa đọc
+
+                    // ✅ Cập nhật số lượng và ẩn nút
                     unreadCount = data.unreadCount || 0;
                     updateUnreadCount(unreadCount);
-    
-                    // Ẩn nút "Đánh dấu tất cả đã đọc" nếu không còn thông báo chưa đọc
                     const markAllButtons = document.querySelectorAll('[onclick="markAllAsRead()"]');
                     markAllButtons.forEach(btn => btn.style.display = unreadCount > 0 ? 'inline-block' : 'none');
-    
-                    // Cập nhật bộ nhớ cache
-                    if (cachedNotifications && Array.isArray(cachedNotifications)) {
-                        cachedNotifications.forEach(n => n.daXem = true);
-                    }
-    
-                    // Kiểm tra trạng thái rỗng
+
+                    // ✅ Xóa hoàn toàn cache → dropdown sẽ fetch lại lần sau
+                    cachedNotifications = null;
+
+                    // ✅ Kiểm tra trạng thái rỗng
                     checkEmptyState();
+
+                    // ✅ Toast
                     showToast('Đã đánh dấu tất cả thông báo là đã đọc!');
                 })
                 .catch(error => {
@@ -846,7 +838,8 @@
                     showToast('Không thể đánh dấu tất cả thông báo đã đọc.', 'danger');
                 });
         }
-    
+
+        window.markAllAsRead = markAllAsRead;
         function updateNotificationInLists(notificationId) {
             const idString = notificationId.toString();
             console.log('Cập nhật giao diện cho idChiTietThongBao:', idString);
@@ -858,7 +851,7 @@
                     item.remove();
                 }
             });
-    
+
             const tableRows = document.querySelectorAll('#notificationTableBody tr');
             tableRows.forEach(row => {
                 if (row.dataset.notificationId === idString) {
