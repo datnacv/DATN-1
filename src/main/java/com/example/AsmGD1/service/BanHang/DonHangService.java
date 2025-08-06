@@ -85,6 +85,7 @@ public class DonHangService {
             maxAttempts = 3,
             backoff = @Backoff(delay = 100)
     )
+
     public KetQuaDonHangDTO taoDonHang(DonHangDTO donHangDTO) {
         log.info("Bắt đầu tạo đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
 
@@ -217,7 +218,15 @@ public class DonHangService {
 
         // Nếu đã thanh toán thì lưu thống kê
         if (donHang.getTrangThaiThanhToan()) {
-            thongBaoService.taoThongBaoChoAdmin(donHang);
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Thanh toán tại quầy",
+                    "Khách hàng " + khachHang.getHoTen()
+                            + " đã thanh toán tại quầy. "
+                            + "Mã đơn: " + donHang.getMaDonHang()
+                            + ". Tổng tiền: " + dinhDangTien(donHang.getTongTien())
+            );
+
             for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
                 ChiTietSanPham chiTiet = chiTietDonHang.getChiTietSanPham();
                 ThongKe thongKe = new ThongKe();
@@ -248,7 +257,9 @@ public class DonHangService {
         log.info("Tạo đơn hàng thành công với mã: {}", donHang.getMaDonHang());
         return ketQua;
     }
-
+    private String dinhDangTien(BigDecimal soTien) {
+        return String.format("%,.0f", soTien).replace(",", ".") + " VND";
+    }
     // Các phương thức khác giữ nguyên
     @Transactional
     public DonHangDTO giuDonHang(DonHangDTO donHangDTO) {
@@ -355,6 +366,7 @@ public class DonHangService {
             return dto;
         }).collect(Collectors.toList());
     }
+
 
     @Transactional
     public void xoaDonHangTam(UUID idDonHang) {

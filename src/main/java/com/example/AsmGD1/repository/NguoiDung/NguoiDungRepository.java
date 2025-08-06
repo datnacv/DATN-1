@@ -16,7 +16,9 @@ public interface NguoiDungRepository extends JpaRepository<NguoiDung, UUID> {
     Page<NguoiDung> findByVaiTroAndKeyword(String vaiTro, String keyword, Pageable pageable);
 
     List<NguoiDung> findByVaiTro(String vaiTro);
-    List<NguoiDung> findByVaiTroAndTrangThai(String vaiTro, boolean trangThai);
+    @Query("SELECT u FROM NguoiDung u WHERE LOWER(u.vaiTro) = LOWER(:vaiTro) AND u.trangThai = :trangThai")
+    List<NguoiDung> findByVaiTroAndTrangThai(@Param("vaiTro") String vaiTro, @Param("trangThai") boolean trangThai);
+
 
     @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro = 'CUSTOMER' AND u.trangThai = true AND (" +
             "LOWER(u.hoTen) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +

@@ -1,13 +1,14 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
-import com.example.AsmGD1.entity.ChiTietDonHang;
-import com.example.AsmGD1.entity.DanhGia;
-import com.example.AsmGD1.entity.HoaDon;
-import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
+import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,14 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/dsdon-mua")
 public class KHDonMuaController {
+    @Autowired
+    private ThongBaoNhomRepository thongBaoNhomRepository;
+
+    @Autowired
+    private ChiTietThongBaoNhomRepository chiTietThongBaoNhomRepository;
+
+    @Autowired
+    private NguoiDungRepository nguoiDungRepository;
 
     @Autowired
     private DanhGiaRepository danhGiaRepository;
@@ -36,7 +45,8 @@ public class KHDonMuaController {
     private HoaDonRepository hoaDonRepo;
 
     @Autowired
-    private NguoiDungService nguoiDungService;
+    private ThongBaoService thongBaoService;
+
 
     @Autowired
     private HoaDonService hoaDonService;
@@ -173,6 +183,12 @@ public class KHDonMuaController {
 
         try {
             hoaDonService.cancelOrder(id, ghiChu);
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Khách hàng hủy đơn hàng",
+                    "Đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã bị khách hàng hủy.",
+                    hoaDon.getDonHang()
+            );
             return ResponseEntity.ok("Đơn hàng đã được hủy thành công.");
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body("Chỉ có thể hủy đơn hàng ở trạng thái 'Chưa xác nhận', 'Đã xác nhận', 'Đã xác nhận Online', 'Đang xử lý Online' hoặc 'Đang vận chuyển'.");
@@ -190,25 +206,38 @@ public class KHDonMuaController {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xác nhận.");
         }
+
         NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng hoặc bạn không có quyền xác nhận.");
         }
+
         if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
             return ResponseEntity.badRequest().body("Chỉ có thể xác nhận khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
         }
+
         try {
             hoaDon.setTrangThai("Hoàn thành");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setGhiChu("Khách hàng xác nhận đã nhận hàng");
             hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
             HoaDon savedHoaDon = hoaDonService.save(hoaDon);
+
             System.out.println("Trạng thái HoaDon đã lưu: " + savedHoaDon.getTrangThai() + ", ID: " + savedHoaDon.getId());
             if (!"Hoàn thành".equals(savedHoaDon.getTrangThai())) {
                 throw new RuntimeException("Không thể cập nhật trạng thái thành 'Hoàn thành'.");
             }
-            return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công."));
+
+            // Gọi tạo thông báo qua service
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Đơn hàng đã hoàn thành",
+                    "Đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã được khách hàng xác nhận hoàn thành.",
+                    hoaDon.getDonHang()
+            );
+
+            return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công và gửi thông báo cho admin."));
         } catch (ObjectOptimisticLockingFailureException e) {
             System.err.println("Xung đột đồng thời khi lưu hóa đơn: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi xung đột đồng thời khi xác nhận. Vui lòng thử lại.");
@@ -217,6 +246,7 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xác nhận: " + e.getMessage());
         }
     }
+
 
     @GetMapping("/api/orders/{id}/products")
     public ResponseEntity<List<Map<String, Object>>> getOrderProducts(@PathVariable("id") UUID id, Authentication authentication) {
@@ -316,9 +346,20 @@ public class KHDonMuaController {
             }
 
             danhGiaRepository.save(danhGia);
+
+// Tạo thông báo cho admin về đánh giá mới
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Khách hàng đã gửi đánh giá",
+                    "Khách hàng " + nguoiDung.getHoTen() + " đã gửi đánh giá cho sản phẩm "
+                            + danhGia.getChiTietSanPham().getSanPham().getTenSanPham() + ".",
+                    null // hoặc truyền DonHang nếu bạn muốn liên kết
+            );
+
             response.put("success", true);
             response.put("message", "Đánh giá đã được gửi thành công.");
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Lỗi khi gửi đánh giá: " + e.getMessage());

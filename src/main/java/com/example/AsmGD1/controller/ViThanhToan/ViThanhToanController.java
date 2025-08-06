@@ -7,6 +7,7 @@ import com.example.AsmGD1.entity.ViThanhToan;
 import com.example.AsmGD1.entity.YeuCauRutTien;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.YeuCauRutTienRepository;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -32,6 +33,8 @@ public class ViThanhToanController {
 
     @Autowired
     private YeuCauRutTienRepository yeuCauRutTienRepository;
+    @Autowired
+    private ThongBaoService thongBaoService;
 
     // Trang xem ví
     @GetMapping
@@ -65,12 +68,21 @@ public class ViThanhToanController {
         if (vi == null) {
             viService.taoViMoi(idNguoiDung);
             attrs.addFlashAttribute("msg", "Tạo ví mới thành công!");
+
+            // Tạo thông báo cho admin
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Khách hàng tạo ví mới",
+                    "Khách hàng " + currentUser.getHoTen() + " (" + currentUser.getEmail() + ") đã tạo ví mới."
+            );
+
         } else {
             attrs.addFlashAttribute("msg", "Bạn đã có ví.");
         }
 
         return "redirect:/vi";
     }
+
 
     // POST nạp tiền
     @PostMapping("/nap-tien")
@@ -82,9 +94,19 @@ public class ViThanhToanController {
         NguoiDung currentUser = (NguoiDung) authentication.getPrincipal();
         UUID idNguoiDung = currentUser.getId();
 
-        viService.napTien(idNguoiDung, soTien);attrs.addFlashAttribute("msg", "Nạp tiền thành công");
+        viService.napTien(idNguoiDung, soTien);
+        attrs.addFlashAttribute("msg", "Nạp tiền thành công");
+
+        // Tạo thông báo cho admin
+        thongBaoService.taoThongBaoHeThong(
+                "admin",
+                "Khách hàng nạp tiền",
+                "Khách hàng " + currentUser.getHoTen() + " (" + currentUser.getEmail() + ") đã nạp tiền: " + soTien + " VNĐ."
+        );
+
         return "redirect:/vi";
     }
+
 
     // GET xem lịch sử ví
     @GetMapping("/lich-su")

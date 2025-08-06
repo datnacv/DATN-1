@@ -1,0 +1,61 @@
+[33m142944e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mnam[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull origin main: Fast-forward
+[33mbc3d269[m[33m ([m[1;31morigin/nam[m[33m)[m HEAD@{1}: reset: moving to HEAD
+[33mbc3d269[m[33m ([m[1;31morigin/nam[m[33m)[m HEAD@{2}: commit: nam
+[33m8167f6b[m HEAD@{3}: commit: thong bao
+[33m8382b38[m HEAD@{4}: commit: thong bao
+[33m46ac93f[m HEAD@{5}: commit: done pgg KH
+[33mca721db[m HEAD@{6}: commit: lỗi - số lượng
+[33m667d975[m HEAD@{7}: reset: moving to HEAD
+[33m667d975[m HEAD@{8}: commit: pgg %
+[33m36a4c50[m HEAD@{9}: pull origin main: Fast-forward
+[33m5953ed2[m HEAD@{10}: reset: moving to ORIG_HEAD
+[33m36a4c50[m HEAD@{11}: pull origin main: Fast-forward
+[33m5953ed2[m HEAD@{12}: commit: nam
+[33mad005a2[m HEAD@{13}: commit: đã đọc thông báo
+[33m20060a2[m HEAD@{14}: commit: thong bao
+[33md8cdad1[m HEAD@{15}: commit: thong bao modal
+[33m31af779[m HEAD@{16}: reset: moving to HEAD
+[33m31af779[m HEAD@{17}: reset: moving to HEAD
+[33m31af779[m HEAD@{18}: commit: modal thông báo
+[33m216747a[m HEAD@{19}: pull origin main: Fast-forward
+[33m76e0f83[m HEAD@{20}: commit: thong bao
+[33mc4eff6a[m[33m ([m[1;31morigin/long[m[33m)[m HEAD@{21}: pull origin long: Fast-forward
+[33m67d8c9b[m HEAD@{22}: commit: thongo baso
+[33m2ea7a36[m HEAD@{23}: commit: xong pgg và dgg
+[33mb03b90c[m HEAD@{24}: commit: xong pgg cá nhân tại quầy
+[33m0217ed5[m HEAD@{25}: pull origin main: Fast-forward
+[33m5e19a5b[m HEAD@{26}: checkout: moving from main to nam
+[33mdc473db[m[33m ([m[1;32mmain[m[33m)[m HEAD@{27}: reset: moving to HEAD
+[33mdc473db[m[33m ([m[1;32mmain[m[33m)[m HEAD@{28}: checkout: moving from nam to main
+[33m5e19a5b[m HEAD@{29}: commit: pgg online
+[33m7b3b3c2[m HEAD@{30}: commit: pgg công khai kh
+[33md8388c8[m HEAD@{31}: commit: xong đăng ký và pgg cá nhân
+[33m53bb672[m HEAD@{32}: commit: done đăng ký
+[33ma48ef1d[m HEAD@{33}: pull origin main: Fast-forward
+[33ma89f42d[m HEAD@{34}: reset: moving to HEAD
+[33ma89f42d[m HEAD@{35}: commit: xong otp
+[33mea5bdd0[m[33m ([m[1;31morigin/manh[m[33m)[m HEAD@{36}: pull origin manh: Fast-forward
+[33m18d87ef[m HEAD@{37}: pull origin main: Fast-forward
+[33mb44c8fc[m HEAD@{38}: commit: trang thai
+[33m380a19a[m HEAD@{39}: pull origin main: Fast-forward
+[33me348188[m HEAD@{40}: commit: chi tiết đơn hàng
+[33mb6ec881[m HEAD@{41}: commit: xong danh sách đơn mua người dùng
+[33m62543cb[m HEAD@{42}: pull origin main: Fast-forward
+[33mc7fee31[m HEAD@{43}: commit: sửa ảnh thống kê
+[33md9dfd6e[m HEAD@{44}: reset: moving to HEAD
+[33md9dfd6e[m HEAD@{45}: checkout: moving from main to nam
+[33mdc473db[m[33m ([m[1;32mmain[m[33m)[m HEAD@{46}: pull origin luc: Merge made by the 'ort' strategy.
+[33md9dfd6e[m HEAD@{47}: pull origin nam: Fast-forward
+[33m9cd2176[m HEAD@{48}: checkout: moving from nam to main
+[33md9dfd6e[m HEAD@{49}: checkout: moving from main to nam
+[33m9cd2176[m HEAD@{50}: pull origin main: Fast-forward
+[33mc9b7b9c[m HEAD@{51}: reset: moving to HEAD
+[33mc9b7b9c[m HEAD@{52}: checkout: moving from nam to main
+[33md9dfd6e[m HEAD@{53}: commit: dgg và dgg
+[33m2a5508d[m HEAD@{54}: commit: done ảnh thống kê , pgg , dgg
+[33m27d3172[m HEAD@{55}: commit: done pgg và dgg
+[33m9cd2176[m HEAD@{56}: pull origin main: Fast-forward
+[33m835e0dc[m HEAD@{57}: commit: face và phiếu giảm giá
+[33meeae31a[m HEAD@{58}: commit: xong face
+[33m4b258e4[m HEAD@{59}: checkout: moving from main to nam
+[33mc9b7b9c[m HEAD@{60}: clone: from https://github.com/datnacv/DATN-1.git
