@@ -102,13 +102,12 @@ public class KHDonMuaController {
 
             for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
                 chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
+                // Check if the product has been rated
+                boolean daDanhGia = danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
+                        hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()
+                );
+                chiTiet.setDaDanhGia(daDanhGia); // Add daDanhGia field to ChiTietDonHang entity or use a DTO
             }
-
-            // Kiểm tra đã đánh giá chưa
-            boolean daDanhGia = danhGiaRepository.existsByHoaDonIdAndNguoiDungId(
-                    hoaDon.getId(), nguoiDung.getId()
-            );
-            hoaDon.setDaDanhGia(daDanhGia); // cần thêm field này trong Entity hoặc tạo DTO riêng
         }
 
         model.addAttribute("danhSachHoaDon", danhSachHoaDon);
@@ -148,7 +147,7 @@ public class KHDonMuaController {
     }
 
     @GetMapping("/danh-gia/{id}")
-    public String danhGiaPage(@PathVariable("id") UUID id, Model model, Authentication authentication) {
+    public String danhGiaPage(@PathVariable("id") UUID id, @RequestParam(value = "chiTietSanPhamId", required = false) UUID chiTietSanPhamId, Model model, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return "redirect:/dang-nhap";
         }
@@ -159,18 +158,36 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
-        // Kiểm tra và xử lý nếu hoaDon.donHang là null
+        // Kiểm tra nếu hóa đơn hoặc chi tiết đơn hàng rỗng
         if (hoaDon.getDonHang() == null || hoaDon.getDonHang().getChiTietDonHangs() == null) {
             model.addAttribute("error", "Không có sản phẩm trong hóa đơn để đánh giá.");
-            return "error"; // Chuyển hướng đến trang lỗi tùy chỉnh
+            return "error";
         }
-        boolean alreadyRated = danhGiaRepository.existsByHoaDonIdAndNguoiDungId(id, nguoiDung.getId());
-        if (alreadyRated) {
-            return "redirect:/dsdon-mua"; // hoặc trả về trang thông báo
+
+        List<ChiTietDonHang> productsToRate;
+        if (chiTietSanPhamId != null) {
+            // Nếu có chiTietSanPhamId, chỉ lấy sản phẩm đó nếu chưa được đánh giá
+            productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                    .filter(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId)
+                            && !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
+                            hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
+                    .collect(Collectors.toList());
+        } else {
+            // Nếu không có chiTietSanPhamId, lấy tất cả sản phẩm chưa được đánh giá
+            productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                    .filter(chiTiet -> !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
+                            hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        if (productsToRate.isEmpty()) {
+            model.addAttribute("message", "Bạn đã đánh giá sản phẩm này hoặc không có sản phẩm nào để đánh giá.");
+            return "WebKhachHang/danh-gia";
         }
 
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
+        model.addAttribute("productsToRate", productsToRate);
         return "WebKhachHang/danh-gia";
     }
 

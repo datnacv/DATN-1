@@ -142,12 +142,13 @@
         }
 
         .btn-secondary {
-            border: 2px solid #153054;
+            border: 2px solid #9FD5F7;
             color: #153054;
             font-weight: 600;
             padding: 10px 24px;
             border-radius: 12px;
             transition: all 0.3s ease;
+            background-color: #9FD5F7;
         }
 
         .btn-secondary:hover {
@@ -162,8 +163,7 @@
         }
 
         .star-rating .fa-star.selected,
-        .star-rating .fa-star:hover,
-        .star-rating .fa-star:hover ~ .fa-star {
+        .star-rating .fa-star.hovered {
             color: #facc15;
         }
 
@@ -269,54 +269,59 @@
         <i class="fas fa-star mr-3"></i>Đánh giá đơn hàng
     </h1>
 
-    <div class="card">
+    <div th:if="${productsToRate != null and not #lists.isEmpty(productsToRate)}">
         <h3 class="text-xl font-semibold mb-4">Mã đơn hàng: <span th:text="${hoaDon.donHang.maDonHang}"></span></h3>
-        <form id="rateForm" th:action="@{/dsdon-mua/api/ratings}" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="hoaDonId" th:value="${hoaDon.id}"/>
-            <input type="hidden" name="userId" th:value="${user.id}"/>
-            <!-- Hiển thị thông tin sản phẩm mà không dùng select hoặc radio -->
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Sản phẩm trong đơn hàng:</label>
-                <div th:if="${hoaDon.donHang != null and not #lists.isEmpty(hoaDon.donHang.chiTietDonHangs)}"
-                     class="space-y-2">
-                    <div th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}"
-                         class="p-2 bg-gray-50 rounded-lg">
-                        <p th:text="'Tên sản phẩm: ' + ${chiTiet.tenSanPham}"></p>
+        <div class="space-y-6">
+            <div th:each="chiTiet : ${productsToRate}" class="card">
+                <div class="flex items-start gap-4">
+                    <img th:src="${chiTiet.chiTietSanPham.hinhAnhSanPhams != null and not #lists.isEmpty(chiTiet.chiTietSanPham.hinhAnhSanPhams) ? chiTiet.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}"
+                         class="w-24 h-24 object-cover rounded-lg" alt="Ảnh sản phẩm"/>
+                    <div class="flex-1">
+                        <h4 class="text-lg font-semibold" th:text="'Tên sản phẩm: ' + ${chiTiet.tenSanPham}"></h4>
                         <p th:text="'Màu sắc: ' + (${chiTiet.chiTietSanPham.mauSac != null ? chiTiet.chiTietSanPham.mauSac.tenMau : 'N/A'})"></p>
                         <p th:text="'Kích thước: ' + (${chiTiet.chiTietSanPham.kichCo != null ? chiTiet.chiTietSanPham.kichCo.ten : 'N/A'})"></p>
+                        <p th:text="'Số lượng: ' + ${chiTiet.soLuong}"></p>
                     </div>
                 </div>
-                <p th:unless="${hoaDon.donHang != null and not #lists.isEmpty(hoaDon.donHang.chiTietDonHangs)}"
-                   class="text-red-500">Không có sản phẩm nào để đánh giá.</p>
-                <!-- Gửi ID sản phẩm đầu tiên làm mặc định -->
-                <input type="hidden" name="chiTietSanPhamId"
-                       th:value="${hoaDon.donHang.chiTietDonHangs != null and not #lists.isEmpty(hoaDon.donHang.chiTietDonHangs) ? hoaDon.donHang.chiTietDonHangs[0].chiTietSanPham.id : ''}">
+                <form th:action="@{/dsdon-mua/api/ratings}" method="post" enctype="multipart/form-data" class="mt-4">
+                    <input type="hidden" name="hoaDonId" th:value="${hoaDon.id}"/>
+                    <input type="hidden" name="userId" th:value="${user.id}"/>
+                    <input type="hidden" name="chiTietSanPhamId" th:value="${chiTiet.chiTietSanPham.id}"/>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Xếp hạng:</label>
+                        <div class="star-rating flex gap-2" data-product-id="${chiTiet.chiTietSanPham.id}">
+                            <i class="fas fa-star text-2xl cursor-pointer" data-rating="1"></i>
+                            <i class="fas fa-star text-2xl cursor-pointer" data-rating="2"></i>
+                            <i class="fas fa-star text-2xl cursor-pointer" data-rating="3"></i>
+                            <i class="fas fa-star text-2xl cursor-pointer" data-rating="4"></i>
+                            <i class="fas fa-star text-2xl cursor-pointer" data-rating="5"></i>
+                            <input type="hidden" class="rating-input" name="rating" value="0">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Nội dung đánh giá:</label>
+                        <textarea name="content" rows="4" class="w-full p-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-[#9FD5F7] focus:border-[#9FD5F7]" placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Tải lên hình ảnh hoặc video:</label>
+                        <input type="file" name="media" accept="image/*,video/*" multiple class="form-control w-full p-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-[#9FD5F7] focus:border-[#9FD5F7]">
+                        <div class="media-preview mt-3 flex flex-wrap gap-3"></div>
+                    </div>
+                    <div class="text-right">
+                        <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+                    </div>
+                </form>
             </div>
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Xếp hạng:</label>
-                <div class="star-rating flex gap-2">
-                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="1"></i>
-                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="2"></i>
-                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="3"></i>
-                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="4"></i>
-                    <i class="fas fa-star text-2xl cursor-pointer" data-rating="5"></i>
-                    <input type="hidden" id="rating" name="rating" value="0">
-                </div>
-            </div>
-            <div class="mb-4">
-                <label for="content" class="block text-sm font-semibold text-gray-700 mb-2">Nội dung đánh giá:</label>
-                <textarea id="content" name="content" rows="4" class="w-full p-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-[#9FD5F7] focus:border-[#9FD5F7]" placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
-            </div>
-            <div class="mb-4">
-                <label for="media" class="block text-sm font-semibold text-gray-700 mb-2">Tải lên hình ảnh hoặc video:</label>
-                <input type="file" id="media" name="media" accept="image/*,video/*" multiple class="form-control w-full p-3 rounded-lg border-gray-300 focus:ring-2 focus:ring-[#9FD5F7] focus:border-[#9FD5F7]">
-                <div id="mediaPreview" class="mt-3 flex flex-wrap gap-3"></div>
-            </div>
-            <div class="text-right">
-                <a th:href="@{'/dsdon-mua'}" class="btn btn-secondary mr-2">Hủy</a>
-                <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
-            </div>
-        </form>
+        </div>
+        <div class="text-center mt-6">
+            <a th:href="@{'/dsdon-mua'}" class="btn btn-secondary">Quay lại danh sách đơn hàng</a>
+        </div>
+    </div>
+    <div th:unless="${productsToRate != null and not #lists.isEmpty(productsToRate)}" class="card text-center p-6">
+        <i class="fas fa-info-circle text-4xl text-gray-400 mb-4"></i>
+        <h3 class="text-lg font-semibold text-gray-700">Không còn sản phẩm nào để đánh giá</h3>
+        <p class="text-gray-500 mb-4">Bạn đã đánh giá tất cả sản phẩm trong hóa đơn này.</p>
+        <a th:href="@{'/dsdon-mua'}" class="btn btn-secondary">Quay lại danh sách đơn hàng</a>
     </div>
 </div>
 
@@ -378,70 +383,119 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Xử lý xếp hạng sao
-    document.querySelectorAll('.star-rating .fa-star').forEach(star => {
-        star.addEventListener('click', function() {
-            const rating = this.getAttribute('data-rating');
-            document.getElementById('rating').value = rating;
-            document.querySelectorAll('.star-rating .fa-star').forEach(s => {
-                s.classList.toggle('selected', s.getAttribute('data-rating') <= rating);
+    // Xử lý xếp hạng sao cho từng biểu mẫu
+    document.querySelectorAll('.star-rating').forEach(ratingContainer => {
+        const stars = ratingContainer.querySelectorAll('.fa-star');
+        const ratingInput = ratingContainer.querySelector('.rating-input');
+
+        stars.forEach(star => {
+            // Xử lý sự kiện click
+            star.addEventListener('click', function() {
+                const rating = this.getAttribute('data-rating');
+                ratingInput.value = rating;
+                stars.forEach(s => {
+                    s.classList.toggle('selected', s.getAttribute('data-rating') <= rating);
+                });
+            });
+
+            // Xử lý sự kiện hover
+            star.addEventListener('mouseenter', function() {
+                const rating = this.getAttribute('data-rating');
+                stars.forEach(s => {
+                    s.classList.toggle('hovered', s.getAttribute('data-rating') <= rating);
+                });
+            });
+
+            // Xóa hiệu ứng hover khi rời chuột
+            star.addEventListener('mouseleave', function() {
+                stars.forEach(s => {
+                    s.classList.remove('hovered');
+                });
             });
         });
     });
 
-    // Xử lý preview hình ảnh/video
-    document.getElementById('media').addEventListener('change', function(event) {
-        const preview = document.getElementById('mediaPreview');
-        preview.innerHTML = '';
-        Array.from(event.target.files).forEach(file => {
-            const url = URL.createObjectURL(file);
-            const element = file.type.startsWith('video/')
-                ? document.createElement('video')
-                : document.createElement('img');
-            element.src = url;
-            if (file.type.startsWith('video/')) {
-                element.controls = true;
-            }
-            preview.appendChild(element);
+    // Xử lý preview hình ảnh/video cho từng biểu mẫu
+    document.querySelectorAll('input[type="file"]').forEach(fileInput => {
+        fileInput.addEventListener('change', function(event) {
+            const preview = this.parentElement.querySelector('.media-preview');
+            preview.innerHTML = '';
+            Array.from(event.target.files).forEach(file => {
+                if (file.size > 0) {
+                    const url = URL.createObjectURL(file);
+                    const element = file.type.startsWith('video/') ? document.createElement('video') : document.createElement('img');
+                    element.src = url;
+                    element.className = 'max-w-[120px] max-h-[120px] object-cover rounded-lg shadow';
+                    if (file.type.startsWith('video/')) {
+                        element.controls = true;
+                        element.style.background = '#000';
+                    }
+                    preview.appendChild(element);
+                }
+            });
         });
     });
 
     // Gửi form đánh giá
-    document.getElementById('rateForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(this);
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
 
-        fetch('/dsdon-mua/api/ratings', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Thành công!',
-                        text: 'Đánh giá của bạn đã được gửi.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = '/dsdon-mua';
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi!',
-                        text: data.message || 'Không thể gửi đánh giá. Vui lòng thử lại.'
-                    });
-                }
-            })
-            .catch(error => {
+            // Kiểm tra client-side
+            const rating = formData.get('rating');
+            if (!rating || rating < 1 || rating > 5) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Lỗi!',
-                    text: 'Đã có lỗi xảy ra: ' + error.message
+                    text: 'Vui lòng chọn điểm đánh giá từ 1 đến 5.'
                 });
-            });
+                return;
+            }
+
+            const mediaFiles = formData.getAll('media');
+            const validFiles = mediaFiles.filter(file => file.size > 0);
+            if (validFiles.length > 3) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Chỉ được phép tải lên tối đa 3 hình ảnh hoặc video.'
+                });
+                return;
+            }
+
+            fetch('/dsdon-mua/api/ratings', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công!',
+                            text: 'Đánh giá của bạn đã được gửi.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.reload(); // Tải lại trang để cập nhật danh sách
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi!',
+                            text: data.message || 'Không thể gửi đánh giá. Vui lòng thử lại.'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi!',
+                        text: 'Đã có lỗi xảy ra: ' + error.message
+                    });
+                });
+        });
     });
 </script>
 </body>

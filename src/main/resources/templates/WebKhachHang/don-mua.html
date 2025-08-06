@@ -600,11 +600,20 @@
                     <div class="product-details flex-1">
                         <h6 th:text="${chiTiet.tenSanPham}"></h6>
                         <div class="product-meta">
-
                             <span><i class="fas fa-cubes mr-1"></i>Số lượng: <strong th:text="${chiTiet.soLuong}"></strong></span>
                             <span class="ml-4"><i class="fas fa-tag mr-1"></i>Giá: <strong th:text="${chiTiet.formattedGia} + ' VNĐ'"></strong></span>
                         </div>
                     </div>
+                    <!-- Nút đánh giá cho từng sản phẩm -->
+                    <div th:if="${hoaDon.trangThai == 'Hoàn thành' and !chiTiet.daDanhGia}" class="ml-4">
+                        <a th:href="@{'/dsdon-mua/danh-gia/' + ${hoaDon.id} + '?chiTietSanPhamId=' + ${chiTiet.chiTietSanPham.id}}"
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-star mr-2"></i>Đánh giá
+                        </a>
+                    </div>
+                    <span th:if="${hoaDon.trangThai == 'Hoàn thành' and chiTiet.daDanhGia}" class="text-success font-semibold ml-4">
+            <i class="fas fa-check mr-1"></i>Đã đánh giá
+        </span>
                 </div>
             </div>
 
@@ -616,17 +625,6 @@
                 <a th:href="@{'/dsdon-mua/chi-tiet/' + ${hoaDon.id}}" class="btn btn-outline-primary">
                     <i class="fas fa-eye mr-2"></i>Xem chi tiết
                 </a>
-                <a th:if="${hoaDon.trangThai == 'Hoàn thành' and !hoaDon.daDanhGia}"
-                   th:href="@{'/dsdon-mua/danh-gia/' + ${hoaDon.id}}"
-                   class="btn btn-outline-primary">
-                    <i class="fas fa-star mr-2"></i>Đánh giá
-                </a>
-
-                <span th:if="${hoaDon.trangThai == 'Hoàn thành' and hoaDon.daDanhGia}"
-                      class="text-success font-semibold">
-                    <i class="fas fa-check mr-1"></i>Đã đánh giá
-                </span>
-
             </div>
         </div>
     </div>

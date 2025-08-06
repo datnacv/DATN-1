@@ -635,7 +635,7 @@ CREATE TABLE lich_su_giao_dich_vi (
                                       id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
                                       id_vi_thanh_toan UNIQUEIDENTIFIER NOT NULL,
                                       id_don_hang UNIQUEIDENTIFIER, -- Liên kết với đơn hàng (nếu có)
-                                      loai_giao_dich NVARCHAR(50) NOT NULL CHECK (loai_giao_dich IN (N'Nạp tiền', N'Thanh toán', N'Hoàn tiền')),
+                                      loai_giao_dich NVARCHAR(50) NOT NULL CHECK (loai_giao_dich IN (N'Nạp tiền', N'Thanh toán', N'Hoàn tiền', N'Rút tiền')),
                                       so_tien DECIMAL(15, 2) NOT NULL,
                                       thoi_gian_giao_dich DATETIME NOT NULL DEFAULT GETDATE(),
                                       mo_ta NVARCHAR(MAX),
@@ -735,8 +735,9 @@ ALTER COLUMN ngay_ket_thuc DATETIME2(0) NOT NULL;
 ALTER TABLE thong_bao_nhom
 ALTER COLUMN id_don_hang UNIQUEIDENTIFIER NULL;
 
-SELECT * FROM don_hang
-SELECT * FROM phuong_thuc_thanh_toan
+UPDATE vi_thanh_toan
+SET so_du = 200000,
+    thoi_gian_cap_nhat = GETDATE()
+WHERE id = '3b98bb7e-be29-4b50-84f8-8e04f6546826';
 
-SELECT * FROM vi_thanh_toan
-
+select * from vi_thanh_toan

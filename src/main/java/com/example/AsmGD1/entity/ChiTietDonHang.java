@@ -47,6 +47,8 @@ public class ChiTietDonHang {
     @Transient
     private String formattedGia;
 
+    @Transient
+    private boolean daDanhGia;
 
     @Transient
     private String formattedThanhTien;
