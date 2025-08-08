@@ -177,10 +177,14 @@
             <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-4"></h1>
             <!-- Hiển thị giá -->
             <div class="mb-4">
-                <span class="text-[#153054] font-bold text-2xl" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'POINT')} + ' VNĐ'"></span>
-                <div th:if="${productDetail.oldPrice != null and productDetail.gia != productDetail.oldPrice}" class="text-sm text-red-600 line-through inline-block ml-2">
+                <span class="price text-[#153054] font-bold text-2xl" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'POINT')} + ' VNĐ'"></span>
+
+                <!-- Old Price (with line-through) -->
+                <div th:if="${productDetail.oldPrice != null and productDetail.gia != productDetail.oldPrice}" class="old-price text-sm text-red-600 line-through inline-block ml-2">
                     <span th:text="${#numbers.formatDecimal(productDetail.oldPrice, 0, 0, 'POINT')} + ' VNĐ'"></span>
                 </div>
+
+                <!-- Discount Campaign (if exists) -->
                 <div th:if="${productDetail.discountCampaignName != null}" class="text-sm text-green-600">
                     <span th:text="'Giảm giá: ' + ${productDetail.discountCampaignName}"></span>
                 </div>
@@ -243,10 +247,13 @@
                 <img th:src="${sp.urlHinhAnh}" th:alt="${sp.tenSanPham}" class="w-full h-52 object-cover rounded mb-3"/>
                 <h3 th:text="${sp.tenSanPham}" class="text-base font-semibold text-gray-700 line-clamp-2 h-[48px]"></h3>
                 <div class="mb-2">
-                    <span class="text-[#153054] font-bold text-sm" th:text="${#numbers.formatDecimal(sp.price, 0, 0, 'POINT')} + ' VNĐ'"></span>
-                    <div th:if="${sp.oldPrice != null and sp.price != sp.oldPrice}" class="text-sm text-red-600 line-through inline-block ml-2">
+                    <!-- Formatted Price -->
+                    <span class="price text-[#153054] font-bold text-sm" th:text="${#numbers.formatDecimal(sp.price, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                    <!-- Old Price with Line-through -->
+                    <div th:if="${sp.oldPrice != null and sp.price != sp.oldPrice}" class="old-price text-sm text-red-600 line-through inline-block ml-2">
                         <span th:text="${#numbers.formatDecimal(sp.oldPrice, 0, 0, 'POINT')} + ' VNĐ'"></span>
                     </div>
+                    <!-- Discount Campaign -->
                     <div th:if="${sp.discountCampaignName != null}" class="text-sm text-green-600">
                         <span th:text="'Giảm giá: ' + ${sp.discountCampaignName}"></span>
                     </div>
@@ -357,6 +364,25 @@
     /*<![CDATA[*/
     window.validCombinations = /*[[${productDetail.validCombinations}]]*/ [];
     /*]]>*/
+</script>
+
+<script>
+    // Format price (for both price and old price)
+    function formatPrice(selector) {
+        document.querySelectorAll(selector).forEach(el => {
+            const raw = el.textContent.trim().replace(' VNĐ', '').replace(/,/g, ''); // Remove commas and "VNĐ"
+            if (!raw || isNaN(raw)) return;
+
+            const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ'; // Format with commas and add "VNĐ"
+            el.textContent = formatted;
+        });
+    }
+
+    // Apply formatPrice to both price and old price elements
+    window.addEventListener('DOMContentLoaded', function() {
+        formatPrice('.price');
+        formatPrice('.old-price');
+    });
 </script>
 
 <script th:inline="javascript">

@@ -299,12 +299,12 @@
           <span th:text="${product.price}"></span> VNĐ
         </div>
         <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
-          <span th:text="${product.oldPrice}">Giá gốc</span> VNĐ
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
         </div>
-        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">
-          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>
-        </div>
-        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+<!--        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">-->
+<!--          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>-->
+<!--        </div>-->
+<!--        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>-->
         <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
           <span class="stars"></span>
           <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
@@ -342,12 +342,12 @@
           <span th:text="${product.price}"></span> VNĐ
         </div>
         <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
-          <span th:text="${product.oldPrice}">Giá gốc</span> VNĐ
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
         </div>
-        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">
-          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>
-        </div>
-        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+<!--        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">-->
+<!--          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>-->
+<!--        </div>-->
+<!--        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>-->
         <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
           <span class="stars"></span>
           <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
@@ -386,12 +386,12 @@
           <span th:text="${product.price}"></span> VNĐ
         </div>
         <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
-          <span th:text="${product.oldPrice}">Giá gốc</span> VNĐ
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
         </div>
-        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">
-          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>
-        </div>
-        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+<!--        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">-->
+<!--          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>-->
+<!--        </div>-->
+<!--        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>-->
         <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
           <span class="stars"></span>
           <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
@@ -509,6 +509,16 @@
     const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
     el.textContent = formatted;
   });
+  // Format the old price in the same way as the regular price
+  document.querySelectorAll('.formatted-old-price').forEach(el => {
+    const raw = el.textContent.trim();
+    if (!raw || isNaN(raw)) {
+      return;
+    }
+    const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
+    el.textContent = formatted;
+  });
+
 </script>
 <script>
   // Search suggestions

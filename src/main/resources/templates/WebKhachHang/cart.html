@@ -107,9 +107,9 @@
                         <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">+</button>
                     </div>
                 </td>
-                <td th:text="${#numbers.formatDecimal(item.gia, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
-                <td th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 'COMMA', 0, 'POINT') + ' VND' : '0 VND'}"></td>
-                <td th:text="${#numbers.formatDecimal(item.gia * item.soLuong - (item.tienGiam != null ? item.tienGiam : 0), 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
+                <td th:text="${#numbers.formatDecimal(item.gia, 0, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                <td th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 'POINT', 0, 'COMMA') + ' VND' : '0 VND'}"></td>
+                <td th:text="${#numbers.formatDecimal(item.gia * item.soLuong - (item.tienGiam != null ? item.tienGiam : 0), 0, 'POINT', 0, 'COMMA')} + ' VND'"></td>
                 <td>
                     <button class="btn bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded remove-item" th:attr="data-item-id=${item.id},data-gio-hang-id=${gioHangId},data-chi-tiet-san-pham-id=${item.chiTietSanPham.id}">
                         <i class="fas fa-trash"></i> Xóa
@@ -119,7 +119,7 @@
             </tbody>
         </table>
         <div class="mt-6 text-right">
-            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span></p>
+            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'POINT', 0, 'COMMA')} + ' VND'"></span></p>
             <a href="/thanh-toan?from=cart" id="checkout-btn" class="btn hover:bg-102b47 px-6 py-2 rounded mt-4">Thanh toán</a>
         </div>
     </div>
