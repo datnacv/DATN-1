@@ -163,7 +163,10 @@ public class KHDonMuaController {
     }
 
     @GetMapping("/danh-gia/{id}")
-    public String danhGiaPage(@PathVariable("id") UUID id, @RequestParam(value = "chiTietSanPhamId", required = false) UUID chiTietSanPhamId, Model model, Authentication authentication) {
+    public String danhGiaPage(@PathVariable("id") UUID id,
+                              @RequestParam(value = "chiTietSanPhamId", required = false) UUID chiTietSanPhamId,
+                              Model model,
+                              Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return "redirect:/dang-nhap";
         }
@@ -174,31 +177,14 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
-        // Kiểm tra nếu hóa đơn hoặc chi tiết đơn hàng rỗng
-        if (hoaDon.getDonHang() == null || hoaDon.getDonHang().getChiTietDonHangs() == null) {
-            model.addAttribute("error", "Không có sản phẩm trong hóa đơn để đánh giá.");
-            return "error";
-        }
+        // Lọc ra các sản phẩm chưa được đánh giá
+        List<ChiTietDonHang> productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                .filter(chiTiet -> !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
+                .collect(Collectors.toList());
 
-        List<ChiTietDonHang> productsToRate;
-        if (chiTietSanPhamId != null) {
-            // Nếu có chiTietSanPhamId, chỉ lấy sản phẩm đó nếu chưa được đánh giá
-            productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                    .filter(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId)
-                            && !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
-                            hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
-                    .collect(Collectors.toList());
-        } else {
-            // Nếu không có chiTietSanPhamId, lấy tất cả sản phẩm chưa được đánh giá
-            productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                    .filter(chiTiet -> !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
-                            hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
-                    .collect(Collectors.toList());
-        }
-
+        // Kiểm tra nếu không còn sản phẩm nào để đánh giá
         if (productsToRate.isEmpty()) {
-            model.addAttribute("message", "Bạn đã đánh giá sản phẩm này hoặc không có sản phẩm nào để đánh giá.");
-            return "WebKhachHang/danh-gia";
+            model.addAttribute("message", "Bạn đã đánh giá tất cả sản phẩm trong hóa đơn này.");
         }
 
         model.addAttribute("hoaDon", hoaDon);
@@ -353,14 +339,6 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        boolean validProduct = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                .anyMatch(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId));
-        if (!validProduct) {
-            response.put("success", false);
-            response.put("message", "Sản phẩm không thuộc hóa đơn này.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
         boolean alreadyRated = danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(hoaDonId, chiTietSanPhamId, userId);
         if (alreadyRated) {
             response.put("success", false);
@@ -368,59 +346,33 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        try {
-            DanhGia danhGia = new DanhGia();
-            danhGia.setHoaDon(hoaDon);
-            danhGia.setChiTietSanPham(hoaDon.getDonHang().getChiTietDonHangs().stream()
-                    .filter(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId))
-                    .findFirst().get().getChiTietSanPham());
-            danhGia.setNguoiDung(nguoiDung);
-            danhGia.setXepHang(rating);
-            danhGia.setNoiDung(content);
-            danhGia.setTrangThai(true);
-            danhGia.setThoiGianDanhGia(LocalDateTime.now());
+        // Tiến hành lưu đánh giá
+        DanhGia danhGia = new DanhGia();
+        danhGia.setHoaDon(hoaDon);
+        danhGia.setChiTietSanPham(hoaDon.getDonHang().getChiTietDonHangs().stream()
+                .filter(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId))
+                .findFirst().get().getChiTietSanPham());
+        danhGia.setNguoiDung(nguoiDung);
+        danhGia.setXepHang(rating);
+        danhGia.setNoiDung(content);
+        danhGia.setTrangThai(true);
+        danhGia.setThoiGianDanhGia(LocalDateTime.now());
 
-            // Xử lý upload media với giới hạn 3 file
-            if (media != null && media.length > 0) {
-                if (media.length > 3) {
-                    response.put("success", false);
-                    response.put("message", "Chỉ được phép tải lên tối đa 3 hình ảnh.");
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-                }
+        danhGiaRepository.save(danhGia);
 
-                StringBuilder mediaUrls = new StringBuilder();
-                for (MultipartFile file : media) {
-                    if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
-                        String url = uploadFile(file);
-                        mediaUrls.append(url).append(",");
-                    }
-                }
-                // Loại bỏ dấu phẩy cuối cùng nếu có
-                if (mediaUrls.length() > 0) {
-                    danhGia.setUrlHinhAnh(mediaUrls.toString().replaceAll(",$", ""));
-                }
-            }
+        // Kiểm tra xem người dùng đã đánh giá hết tất cả các sản phẩm trong đơn hàng hay chưa
+        boolean allRated = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                .allMatch(chiTiet -> danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(hoaDonId, chiTiet.getChiTietSanPham().getId(), userId));
 
-            danhGiaRepository.save(danhGia);
-
-// Tạo thông báo cho admin về đánh giá mới
-            thongBaoService.taoThongBaoHeThong(
-                    "admin",
-                    "Khách hàng đã gửi đánh giá",
-                    "Khách hàng " + nguoiDung.getHoTen() + " đã gửi đánh giá cho sản phẩm "
-                            + danhGia.getChiTietSanPham().getSanPham().getTenSanPham() + ".",
-                    null // hoặc truyền DonHang nếu bạn muốn liên kết
-            );
-
+        if (allRated) {
             response.put("success", true);
-            response.put("message", "Đánh giá đã được gửi thành công.");
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Lỗi khi gửi đánh giá: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            response.put("message", "Bạn đã hoàn thành việc đánh giá tất cả sản phẩm trong hóa đơn này.");
+        } else {
+            response.put("success", true);
+            response.put("message", "Đánh giá của bạn đã được gửi thành công.");
         }
+
+        return ResponseEntity.ok(response);
     }
 
     private String uploadFile(MultipartFile file) {
