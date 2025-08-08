@@ -259,7 +259,8 @@
         // Handle checkout button click
         const checkoutBtn = document.getElementById('checkout-btn');
         if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', async () => {
+            checkoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Ngăn hành vi mặc định của thẻ <a>
                 try {
                     const response = await fetch('/api/cart', { credentials: 'include' });
                     if (response.ok) {
@@ -277,7 +278,7 @@
                             colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A'
                         }));
                         localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
-                        window.location.href = '/thanh-toan';
+                        window.location.href = '/thanh-toan?from=cart'; // Thêm ?from=cart
                     } else if (response.status === 401) {
                         window.location.href = '/customers/login';
                     } else {
