@@ -31,22 +31,10 @@ public class ThongKeService {
         LocalDate homNay = LocalDate.now();
 
         switch (boLoc) {
-            case "day" -> {
-                ngayBatDau = homNay;
-                ngayKetThuc = homNay;
-            }
-            case "7days" -> {
-                ngayBatDau = homNay.minusDays(6);
-                ngayKetThuc = homNay;
-            }
-            case "month" -> {
-                ngayBatDau = homNay.withDayOfMonth(1);
-                ngayKetThuc = homNay;
-            }
-            case "year" -> {
-                ngayBatDau = homNay.withDayOfYear(1);
-                ngayKetThuc = homNay;
-            }
+            case "day" -> { ngayBatDau = homNay; ngayKetThuc = homNay; }
+            case "7days" -> { ngayBatDau = homNay.minusDays(6); ngayKetThuc = homNay; }
+            case "month" -> { ngayBatDau = homNay.withDayOfMonth(1); ngayKetThuc = homNay; }
+            case "year" -> { ngayBatDau = homNay.withDayOfYear(1); ngayKetThuc = homNay; }
             case "custom_range" -> {
                 if (ngayBatDau == null || ngayKetThuc == null)
                     throw new IllegalArgumentException("Ngày bắt đầu và kết thúc không được để trống.");
@@ -55,27 +43,42 @@ public class ThongKeService {
             }
         }
 
-        BigDecimal doanhThuNgay = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay, homNay));
-        BigDecimal doanhThuThang = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
-        BigDecimal doanhThuNam = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.withDayOfYear(1), homNay));
+        // mốc thời gian dùng cho HÓA ĐƠN Hoàn thành
+        LocalDateTime dayStart   = homNay.atStartOfDay();
+        LocalDateTime dayEnd     = homNay.atTime(LocalTime.MAX);
+        LocalDateTime monthStart = homNay.withDayOfMonth(1).atStartOfDay();
+        LocalDateTime yearStart  = homNay.withDayOfYear(1).atStartOfDay();
 
-        Integer donHangNgay = defaultInteger(thongKeRepository.demDonHangTheoKhoangThoiGian(homNay, homNay));
-        Integer donHangThang = defaultInteger(thongKeRepository.demDonHangTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
-        Integer sanPhamThang = defaultInteger(thongKeRepository.demSanPhamTheoKhoangThoiGian(homNay.withDayOfMonth(1), homNay));
+        BigDecimal doanhThuNgay  = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoHoaDon(dayStart, dayEnd));
+        BigDecimal doanhThuThang = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoHoaDon(monthStart, dayEnd));
+        BigDecimal doanhThuNam   = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoHoaDon(yearStart, dayEnd));
 
-        BigDecimal dtNgayTruoc = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(homNay.minusDays(1), homNay.minusDays(1)));
-        BigDecimal dtThangTruoc = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(
-                homNay.minusMonths(1).withDayOfMonth(1),
-                homNay.minusMonths(1).withDayOfMonth(homNay.minusMonths(1).lengthOfMonth())
-        ));
-        BigDecimal dtNamTruoc = defaultBigDecimal(thongKeRepository.tinhDoanhThuTheoKhoangThoiGian(
-                homNay.minusYears(1).withDayOfYear(1),
-                homNay.minusYears(1).withDayOfYear(homNay.minusYears(1).lengthOfYear())
-        ));
-        Integer spThangTruoc = defaultInteger(thongKeRepository.demSanPhamTheoKhoangThoiGian(
-                homNay.minusMonths(1).withDayOfMonth(1),
-                homNay.minusMonths(1).withDayOfMonth(homNay.minusMonths(1).lengthOfMonth())
-        ));
+        Integer donHangNgay  = defaultInteger(thongKeRepository.demHoaDonTheoKhoangThoiGian(dayStart, dayEnd));
+        Integer donHangThang = defaultInteger(thongKeRepository.demHoaDonTheoKhoangThoiGian(monthStart, dayEnd));
+        Integer sanPhamThang = defaultInteger(thongKeRepository.demSanPhamTheoHoaDon(monthStart, dayEnd));
+
+        // so sánh tăng trưởng
+        BigDecimal dtNgayTruoc = defaultBigDecimal(
+                thongKeRepository.tinhDoanhThuTheoHoaDon(
+                        dayStart.minusDays(1),
+                        homNay.minusDays(1).atTime(LocalTime.MAX)));
+
+        LocalDate prevMonth = homNay.minusMonths(1);
+        BigDecimal dtThangTruoc = defaultBigDecimal(
+                thongKeRepository.tinhDoanhThuTheoHoaDon(
+                        prevMonth.withDayOfMonth(1).atStartOfDay(),
+                        prevMonth.withDayOfMonth(prevMonth.lengthOfMonth()).atTime(LocalTime.MAX)));
+
+        LocalDate prevYear = homNay.minusYears(1);
+        BigDecimal dtNamTruoc = defaultBigDecimal(
+                thongKeRepository.tinhDoanhThuTheoHoaDon(
+                        prevYear.withDayOfYear(1).atStartOfDay(),
+                        prevYear.withDayOfYear(prevYear.lengthOfYear()).atTime(LocalTime.MAX)));
+
+        Integer spThangTruoc = defaultInteger(
+                thongKeRepository.demSanPhamTheoHoaDon(
+                        prevMonth.withDayOfMonth(1).atStartOfDay(),
+                        prevMonth.withDayOfMonth(prevMonth.lengthOfMonth()).atTime(LocalTime.MAX)));
 
         thongKe.setDoanhThuNgay(doanhThuNgay);
         thongKe.setDoanhThuThang(doanhThuThang);
@@ -92,26 +95,15 @@ public class ThongKeService {
         return thongKe;
     }
 
+
     public List<SanPhamBanChayDTO> laySanPhamBanChay(String boLoc, LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         LocalDate homNay = LocalDate.now();
 
         switch (boLoc) {
-            case "day" -> {
-                ngayBatDau = homNay;
-                ngayKetThuc = homNay;
-            }
-            case "7days" -> {
-                ngayBatDau = homNay.minusDays(6);
-                ngayKetThuc = homNay;
-            }
-            case "month" -> {
-                ngayBatDau = homNay.withDayOfMonth(1);
-                ngayKetThuc = homNay;
-            }
-            case "year" -> {
-                ngayBatDau = homNay.withDayOfYear(1);
-                ngayKetThuc = homNay;
-            }
+            case "day" -> { ngayBatDau = homNay; ngayKetThuc = homNay; }
+            case "7days" -> { ngayBatDau = homNay.minusDays(6); ngayKetThuc = homNay; }
+            case "month" -> { ngayBatDau = homNay.withDayOfMonth(1); ngayKetThuc = homNay; }
+            case "year" -> { ngayBatDau = homNay.withDayOfYear(1); ngayKetThuc = homNay; }
             case "custom_range" -> {
                 if (ngayBatDau == null || ngayKetThuc == null)
                     throw new IllegalArgumentException("Ngày bắt đầu và kết thúc không được để trống.");
@@ -121,15 +113,19 @@ public class ThongKeService {
             default -> throw new IllegalArgumentException("Bộ lọc không hợp lệ.");
         }
 
-        List<SanPhamBanChayDTO> list = thongKeRepository.laySanPhamBanChay(ngayBatDau, ngayKetThuc);
+        LocalDateTime start = ngayBatDau.atStartOfDay();
+        LocalDateTime end   = ngayKetThuc.atTime(LocalTime.MAX);
+
+        List<SanPhamBanChayDTO> list = thongKeRepository.laySanPhamBanChayTheoHoaDon(start, end);
         for (SanPhamBanChayDTO dto : list) {
             String img = hinhAnhSanPhamRepository
                     .findFirstImageByChiTietSanPham(dto.getIdChiTietSanPham())
-                    .orElse("/img/default.png"); // ảnh mặc định nếu không có
+                    .orElse("/img/default.png");
             dto.setImageUrl(img);
         }
         return list;
     }
+
 
     public List<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap() {
         List<SanPhamTonKhoThapDTO> list = thongKeRepository.laySanPhamTonKhoThap(30);
@@ -143,39 +139,36 @@ public class ThongKeService {
     }
 
 
-    public Double layPhanTramTrangThaiDonHang(Boolean trangThai, LocalDate ngayBatDau, LocalDate ngayKetThuc) {
-        LocalDateTime startDateTime = ngayBatDau.atStartOfDay();
-        LocalDateTime endDateTime = ngayKetThuc.atTime(LocalTime.MAX);
-        Double percent = thongKeRepository.tinhPhanTramTrangThaiDonHang(startDateTime, endDateTime, trangThai);
-        return percent != null ? percent : 0.0;
-    }
+
 
     public List<String> layNhanBieuDo(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
-        return thongKeRepository.layNhanBieuDo(ngayBatDau, ngayKetThuc)
-                .stream()
-                .map(LocalDate::toString)
-                .collect(Collectors.toList());
+        List<LocalDate> days = thongKeRepository.layNhanBieuDoTheoHoaDon(
+                ngayBatDau.atStartOfDay(), ngayKetThuc.atTime(LocalTime.MAX));
+        return days.stream().map(LocalDate::toString).collect(Collectors.toList());
     }
 
     public List<Integer> layDonHangBieuDo(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
-        List<LocalDate> days = thongKeRepository.layNhanBieuDo(ngayBatDau, ngayKetThuc);
+        List<LocalDate> days = thongKeRepository.layNhanBieuDoTheoHoaDon(
+                ngayBatDau.atStartOfDay(), ngayKetThuc.atTime(LocalTime.MAX));
         List<Integer> result = new ArrayList<>();
         for (LocalDate day : days) {
-            Integer count = thongKeRepository.layDonHangBieuDoTheoNgay(day);
+            Integer count = thongKeRepository.laySoHoaDonTheoNgay(day);
             result.add(count != null ? count : 0);
         }
         return result;
     }
 
     public List<Integer> laySanPhamBieuDo(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
-        List<LocalDate> days = thongKeRepository.layNhanBieuDo(ngayBatDau, ngayKetThuc);
+        List<LocalDate> days = thongKeRepository.layNhanBieuDoTheoHoaDon(
+                ngayBatDau.atStartOfDay(), ngayKetThuc.atTime(LocalTime.MAX));
         List<Integer> result = new ArrayList<>();
         for (LocalDate day : days) {
-            Integer count = thongKeRepository.laySanPhamBieuDoTheoNgay(day);
+            Integer count = thongKeRepository.laySoSanPhamTheoNgay(day);
             result.add(count != null ? count : 0);
         }
         return result;
     }
+
 
     private Double tinhTangTruong(BigDecimal hienTai, BigDecimal truocDo) {
         if (truocDo == null || truocDo.compareTo(BigDecimal.ZERO) == 0)
