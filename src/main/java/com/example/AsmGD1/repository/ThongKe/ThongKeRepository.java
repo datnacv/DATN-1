@@ -17,96 +17,122 @@ import java.util.UUID;
 @Repository
 public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
 
-    @Query("SELECT SUM(tk.doanhThu) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan BETWEEN :startDate AND :endDate")
-    BigDecimal tinhDoanhThuTheoKhoangThoiGian(@Param("startDate") LocalDate startDate,
-                                              @Param("endDate") LocalDate endDate);
+    @Query("""
+        SELECT COALESCE(SUM(hd.tongTien), 0)
+        FROM HoaDon hd
+        WHERE hd.trangThai = 'HOAN_THANH'
+          AND hd.ngayThanhToan BETWEEN :start AND :end
+    """)
+    BigDecimal tinhDoanhThuTheoHoaDon(@Param("start") LocalDateTime start,
+                                      @Param("end") LocalDateTime end);
 
-    @Query("SELECT COUNT(DISTINCT tk.idChiTietDonHang) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan BETWEEN :startDate AND :endDate")
-    Integer demDonHangTheoKhoangThoiGian(@Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate);
+    @Query("""
+        SELECT COUNT(hd.id)
+        FROM HoaDon hd
+        WHERE hd.trangThai = 'HOAN_THANH'
+          AND hd.ngayThanhToan BETWEEN :start AND :end
+    """)
+    Integer demHoaDonTheoKhoangThoiGian(@Param("start") LocalDateTime start,
+                                        @Param("end") LocalDateTime end);
 
-    @Query("SELECT SUM(tk.soLuongDaBan) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan BETWEEN :startDate AND :endDate")
-    Integer demSanPhamTheoKhoangThoiGian(@Param("startDate") LocalDate startDate,
-                                         @Param("endDate") LocalDate endDate);
+    @Query("""
+        SELECT COALESCE(SUM(ct.soLuong), 0)
+        FROM ChiTietDonHang ct
+        JOIN ct.donHang dh
+        JOIN HoaDon hd ON hd.donHang = dh
+        WHERE hd.trangThai = 'HOAN_THANH'
+          AND hd.ngayThanhToan BETWEEN :start AND :end
+    """)
+    Integer demSanPhamTheoHoaDon(@Param("start") LocalDateTime start,
+                                 @Param("end") LocalDateTime end);
 
-    @Query("SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO(" +
-            "tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, " +
-            "CASE WHEN SUM(tk.soLuongDaBan) > 0 THEN SUM(tk.doanhThu) / SUM(tk.soLuongDaBan) ELSE 0 END, " +
-            "SUM(tk.soLuongDaBan)) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan BETWEEN :startDate AND :endDate " +
-            "GROUP BY tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo " +
-            "ORDER BY SUM(tk.soLuongDaBan) DESC")
-    List<SanPhamBanChayDTO> laySanPhamBanChay(@Param("startDate") LocalDate startDate,
-                                              @Param("endDate") LocalDate endDate);
+    @Query("""
+        SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO(
+            ctp.id,
+            sp.id,
+            sp.tenSanPham,
+            COALESCE(ms.tenMau, 'Không xác định'),
+            COALESCE(kc.ten, 'Không xác định'),
+            CASE WHEN SUM(ct.soLuong) > 0
+                 THEN COALESCE(SUM(ct.thanhTien), 0) / SUM(ct.soLuong)
+                 ELSE 0 END,
+            SUM(ct.soLuong)
+        )
+        FROM ChiTietDonHang ct
+        JOIN ct.chiTietSanPham ctp
+        JOIN ctp.sanPham sp
+        LEFT JOIN ctp.mauSac ms
+        LEFT JOIN ctp.kichCo kc
+        JOIN ct.donHang dh
+        JOIN HoaDon hd ON hd.donHang = dh
+        WHERE hd.trangThai = 'HOAN_THANH'
+          AND hd.ngayThanhToan BETWEEN :start AND :end
+        GROUP BY ctp.id, sp.id, sp.tenSanPham, ms.tenMau, kc.ten
+        ORDER BY SUM(ct.soLuong) DESC
+    """)
+    List<SanPhamBanChayDTO> laySanPhamBanChayTheoHoaDon(@Param("start") LocalDateTime start,
+                                                        @Param("end") LocalDateTime end);
 
-
-    @Query("SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO(" +
-            "tk.idChiTietDonHang, tk.idChiTietSanPham, tk.idSanPham, tk.tenSanPham, tk.mauSac, tk.kichCo, " +
-            "CASE WHEN tk.soLuongDaBan > 0 THEN tk.doanhThu / tk.soLuongDaBan ELSE 0 END, " +
-            "tk.soLuongTonKho) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.soLuongTonKho < :threshold")
+    @Query("""
+        SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO(
+            NULL,
+            pd.id,
+            p.id,
+            p.tenSanPham,
+            COALESCE(ms.tenMau, 'Không xác định'),
+            COALESCE(kc.ten, 'Không xác định'),
+            COALESCE(pd.gia, 0),
+            pd.soLuongTonKho
+        )
+        FROM ChiTietSanPham pd
+        JOIN pd.sanPham p
+        LEFT JOIN pd.mauSac ms
+        LEFT JOIN pd.kichCo kc
+        WHERE pd.soLuongTonKho < :threshold
+        ORDER BY pd.soLuongTonKho ASC, p.tenSanPham ASC
+    """)
     List<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap(@Param("threshold") int threshold);
 
+    // ======= 3 hàm theo NGÀY dùng native SQL Server để tránh lỗi 'date' =======
 
-    // ✅ Sửa lỗi chia cho 0 trong truy vấn phần trăm trạng thái đơn hàng
+    @Query(value = """
+        SELECT DISTINCT CONVERT(date, hd.ngay_thanh_toan) AS d
+        FROM hoa_don hd
+        WHERE hd.trang_thai = 'HOAN_THANH'
+          AND hd.ngay_thanh_toan BETWEEN :start AND :end
+        ORDER BY CONVERT(date, hd.ngay_thanh_toan)
+    """, nativeQuery = true)
+    List<LocalDate> layNhanBieuDoTheoHoaDon(@Param("start") LocalDateTime start,
+                                            @Param("end") LocalDateTime end);
+
+    @Query(value = """
+        SELECT CAST(COUNT(*) AS int)
+        FROM hoa_don hd
+        WHERE hd.trang_thai = 'HOAN_THANH'
+          AND CONVERT(date, hd.ngay_thanh_toan) = :date
+    """, nativeQuery = true)
+    Integer laySoHoaDonTheoNgay(@Param("date") LocalDate date);
+
+    @Query(value = """
+        SELECT COALESCE(SUM(ct.so_luong), 0)
+        FROM chi_tiet_don_hang ct
+        JOIN don_hang dh ON dh.id = ct.id_don_hang
+        JOIN hoa_don  hd ON hd.id_don_hang = dh.id
+        WHERE hd.trang_thai = 'HOAN_THANH'
+          AND CONVERT(date, hd.ngay_thanh_toan) = :date
+    """, nativeQuery = true)
+    Integer laySoSanPhamTheoNgay(@Param("date") LocalDate date);
+
+
+
     @Query("""
-        SELECT 
-            CASE 
-                WHEN (SELECT COUNT(ctdh2) FROM ChiTietDonHang ctdh2 
-                      JOIN ctdh2.donHang dh2 
-                      WHERE dh2.thoiGianTao BETWEEN :batDau AND :ketThuc) = 0 
-                THEN 0.0 
-                ELSE 
-                    (COUNT(ctdh) * 1.0 / 
-                    (SELECT COUNT(ctdh2) FROM ChiTietDonHang ctdh2 
-                     JOIN ctdh2.donHang dh2 
-                     WHERE dh2.thoiGianTao BETWEEN :batDau AND :ketThuc)) * 100 
-            END
-        FROM ChiTietDonHang ctdh 
-        JOIN ctdh.donHang dh 
-        WHERE ctdh.trangThaiHoanTra = :trangThai AND dh.thoiGianTao BETWEEN :batDau AND :ketThuc
+        SELECT ls.trangThai, COUNT(ls)
+        FROM LichSuHoaDon ls
+        JOIN ls.hoaDon hd
+        WHERE ls.thoiGian BETWEEN :start AND :end
+          AND ls.trangThai IS NOT NULL
+        GROUP BY ls.trangThai
     """)
-    Double tinhPhanTramTrangThaiDonHang(@Param("batDau") LocalDateTime batDau,
-                                        @Param("ketThuc") LocalDateTime ketThuc,
-                                        @Param("trangThai") Boolean trangThai);
-
-    @Query("SELECT tk.ngayThanhToan " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan BETWEEN :startDate AND :endDate " +
-            "GROUP BY tk.ngayThanhToan " +
-            "ORDER BY tk.ngayThanhToan")
-    List<LocalDate> layNhanBieuDo(@Param("startDate") LocalDate startDate,
-                                  @Param("endDate") LocalDate endDate);
-
-    @Query("SELECT COUNT(DISTINCT tk.idChiTietDonHang) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan = :date")
-    Integer layDonHangBieuDoTheoNgay(@Param("date") LocalDate date);
-
-    @Query("SELECT SUM(tk.soLuongDaBan) " +
-            "FROM ThongKe tk " +
-            "WHERE tk.ngayThanhToan = :date")
-    Integer laySanPhamBieuDoTheoNgay(@Param("date") LocalDate date);
-    @Query("""
-    SELECT ls.trangThai, COUNT(ls)
-    FROM LichSuHoaDon ls
-    JOIN ls.hoaDon hd
-    JOIN hd.donHang dh
-    WHERE ls.thoiGian BETWEEN :batDau AND :ketThuc
-      AND ls.trangThai IS NOT NULL
-    GROUP BY ls.trangThai
-""")
-    List<Object[]> thongKePhanTramTatCaTrangThaiDonHang(
-            @Param("batDau") LocalDateTime batDau,
-            @Param("ketThuc") LocalDateTime ketThuc);
-
-
+    List<Object[]> thongKePhanTramTatCaTrangThaiDonHang(@Param("start") LocalDateTime start,
+                                                        @Param("end") LocalDateTime end);
 }
