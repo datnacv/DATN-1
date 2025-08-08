@@ -175,7 +175,16 @@
         </div>
         <div>
             <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-4"></h1>
-            <p class="text-[#153054] font-bold text-2xl mb-4" th:text="${giaFormatted}"></p>
+            <!-- Hiển thị giá -->
+            <div class="mb-4">
+                <span class="text-[#153054] font-bold text-2xl" th:text="${#numbers.formatDecimal(productDetail.gia, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                <div th:if="${productDetail.oldPrice != null and productDetail.gia != productDetail.oldPrice}" class="text-sm text-red-600 line-through inline-block ml-2">
+                    <span th:text="${#numbers.formatDecimal(productDetail.oldPrice, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                </div>
+                <div th:if="${productDetail.discountCampaignName != null}" class="text-sm text-green-600">
+                    <span th:text="'Giảm giá: ' + ${productDetail.discountCampaignName}"></span>
+                </div>
+            </div>
             <p class="text-gray-600 mb-4" th:text="${productDetail.moTa}"></p>
             <p class="text-gray-600 mb-2">Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span></p>
             <p class="text-gray-600 mb-2">Số lượng tồn kho: <span id="dynamic-stock">Chọn màu & size</span></p>
@@ -226,15 +235,22 @@
     </div>
 </section>
 
-
 <section class="container mx-auto py-12">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">Sản phẩm liên quan</h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <div th:each="sp : ${sanPhamLienQuan}" class="bg-white rounded-lg shadow hover:shadow-md transition p-3">
             <a th:href="@{/chitietsanpham(id=${sp.id})}">
-                <img th:src="${sp.urlHinhAnh}" alt="Ảnh sản phẩm" class="w-full h-52 object-cover rounded mb-3"/>
+                <img th:src="${sp.urlHinhAnh}" th:alt="${sp.tenSanPham}" class="w-full h-52 object-cover rounded mb-3"/>
                 <h3 th:text="${sp.tenSanPham}" class="text-base font-semibold text-gray-700 line-clamp-2 h-[48px]"></h3>
-                <p th:text="${giaFormatted}" class="text-[#153054] font-bold mt-2 text-sm"></p>
+                <div class="mb-2">
+                    <span class="text-[#153054] font-bold text-sm" th:text="${#numbers.formatDecimal(sp.price, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                    <div th:if="${sp.oldPrice != null and sp.price != sp.oldPrice}" class="text-sm text-red-600 line-through inline-block ml-2">
+                        <span th:text="${#numbers.formatDecimal(sp.oldPrice, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                    </div>
+                    <div th:if="${sp.discountCampaignName != null}" class="text-sm text-green-600">
+                        <span th:text="'Giảm giá: ' + ${sp.discountCampaignName}"></span>
+                    </div>
+                </div>
             </a>
         </div>
     </div>
@@ -813,65 +829,64 @@
         button.addEventListener('click', () => handleProductAction(button, 'buy'));
     });
 
-
-        document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function() {
         const sanPhamId = /*[[${productDetail.sanPhamId}]]*/ '';
 
         fetch(`/api/product/${sanPhamId}/ratings`, { credentials: 'include' })
-        .then(res => {
-        if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-    }
-        return res.json();
-    })
-        .then(data => {
-        const list = document.getElementById("ratings-list");
-        const avgRating = document.getElementById("avg-rating");
-        const totalReviews = document.getElementById("total-reviews");
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                const list = document.getElementById("ratings-list");
+                const avgRating = document.getElementById("avg-rating");
+                const totalReviews = document.getElementById("total-reviews");
 
-        const allReviews = [...(data.myReviews || []), ...(data.otherReviews || [])];
-        if (allReviews.length === 0) {
-        list.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
-        avgRating.textContent = "0";
-        totalReviews.textContent = "0";
-        return;
-    }
+                const allReviews = [...(data.myReviews || []), ...(data.otherReviews || [])];
+                if (allReviews.length === 0) {
+                    list.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
+                    avgRating.textContent = "0";
+                    totalReviews.textContent = "0";
+                    return;
+                }
 
-        const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
-        avgRating.textContent = avg.toFixed(1);
-        totalReviews.textContent = allReviews.length;
+                const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
+                avgRating.textContent = avg.toFixed(1);
+                totalReviews.textContent = allReviews.length;
 
-        list.innerHTML = "";
+                list.innerHTML = "";
 
-        // Hiển thị đánh giá của bạn
-        if (data.myReviews && data.myReviews.length > 0) {
-        list.innerHTML += `<h3 class="font-bold text-lg text-[#153054]">Đánh giá của bạn</h3>`;
-        data.myReviews.forEach(r => {
-        list.innerHTML += renderReview(r, true);
-    });
-        list.innerHTML += `<hr class="my-4"/>`;
-    }
+                // Hiển thị đánh giá của bạn
+                if (data.myReviews && data.myReviews.length > 0) {
+                    list.innerHTML += `<h3 class="font-bold text-lg text-[#153054]">Đánh giá của bạn</h3>`;
+                    data.myReviews.forEach(r => {
+                        list.innerHTML += renderReview(r, true);
+                    });
+                    list.innerHTML += `<hr class="my-4"/>`;
+                }
 
-        // Hiển thị đánh giá của người khác
-        if (data.otherReviews && data.otherReviews.length > 0) {
-        list.innerHTML += `<h3 class="font-bold text-lg">Đánh giá từ khách hàng khác</h3>`;
-        data.otherReviews.forEach(r => {
-        list.innerHTML += renderReview(r, false);
-    });
-    }
-    })
-        .catch(err => {
-        console.error("Lỗi khi tải đánh giá:", err);
-        const list = document.getElementById("ratings-list");
-        list.innerHTML = "<p>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
-    });
+                // Hiển thị đánh giá của người khác
+                if (data.otherReviews && data.otherReviews.length > 0) {
+                    list.innerHTML += `<h3 class="font-bold text-lg">Đánh giá từ khách hàng khác</h3>`;
+                    data.otherReviews.forEach(r => {
+                        list.innerHTML += renderReview(r, false);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi khi tải đánh giá:", err);
+                const list = document.getElementById("ratings-list");
+                list.innerHTML = "<p>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
+            });
 
         function renderReview(r, isMine) {
-        const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-        const mediaHtml = r.media
-        ? r.media.split(",").map(url => `<img src="${url}" class="w-20 h-20 object-cover rounded"/>`).join("")
-        : "";
-        return `
+            const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+            const mediaHtml = r.media
+                ? r.media.split(",").map(url => `<img src="${url}" class="w-20 h-20 object-cover rounded"/>`).join("")
+                : "";
+            return `
                 <div class="p-4 bg-white rounded-lg shadow ${isMine ? 'border border-[#153054]' : ''}">
                     <div class="flex items-center justify-between">
                         <span class="font-semibold">${r.user} ${isMine ? '(Bạn)' : ''}</span>
@@ -882,10 +897,8 @@
                     <small class="text-gray-400">${new Date(r.date).toLocaleDateString()}</small>
                 </div>
             `;
-    }
+        }
     });
-
-
 
 </script>
 </body>

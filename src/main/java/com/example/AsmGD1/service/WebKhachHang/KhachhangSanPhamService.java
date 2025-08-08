@@ -3,9 +3,9 @@ package com.example.AsmGD1.service.WebKhachHang;
 import com.example.AsmGD1.dto.KhachHang.*;
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
 import com.example.AsmGD1.entity.*;
-import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
+import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -32,27 +33,9 @@ public class KhachhangSanPhamService {
     private SanPhamService sanPhamService;
 
     @Autowired
-    private DanhGiaRepository danhGiaRepository;
+    private ChienDichGiamGiaService chienDichGiamGiaService; // Inject dependency
 
     private static final Logger logger = LoggerFactory.getLogger(KhachhangSanPhamService.class);
-
-    // Tính số sao trung bình cho một sản phẩm
-    public Double getAverageRating(UUID sanPhamId) {
-        List<DanhGia> danhGias = danhGiaRepository.findByChiTietSanPham_SanPham_IdOrderByThoiGianDanhGiaDesc(sanPhamId);
-        if (danhGias.isEmpty()) {
-            return 0.0; // Nếu chưa có đánh giá, trả về 0
-        }
-        double average = danhGias.stream()
-                .mapToInt(DanhGia::getXepHang)
-                .average()
-                .orElse(0.0);
-        // Làm tròn đến 1 chữ số thập phân
-        return Math.round(average * 10.0) / 10.0;
-    }
-
-
-
-
 
     // Lấy danh sách sản phẩm mới
     public List<SanPhamDto> getNewProducts() {
@@ -101,12 +84,27 @@ public class KhachhangSanPhamService {
         dto.setMaSanPham(chiTiet.getSanPham().getMaSanPham());
         dto.setMoTa(chiTiet.getSanPham().getMoTa());
         dto.setUrlHinhAnh(chiTiet.getSanPham().getUrlHinhAnh());
-        dto.setGia(chiTiet.getGia());
         dto.setSoLuongTonKho(chiTiet.getSoLuongTonKho());
         dto.setGioiTinh(chiTiet.getGioiTinh());
         dto.setTrangThai(chiTiet.getTrangThai());
         dto.setDanhMucId(chiTiet.getSanPham().getDanhMuc().getId());
         dto.setTenDanhMuc(chiTiet.getSanPham().getDanhMuc().getTenDanhMuc());
+
+        // Thiết lập giá gốc
+        BigDecimal originalPrice = chiTiet.getGia();
+        dto.setOldPrice(originalPrice);
+
+        // Kiểm tra chiến dịch giảm giá
+        Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProduct(chiTiet.getSanPham().getId());
+        if (chienDich.isPresent()) {
+            BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
+            BigDecimal discountedPrice = originalPrice.subtract(originalPrice.multiply(discountRate));
+            dto.setGia(discountedPrice);
+            dto.setDiscountCampaignName(chienDich.get().getTen());
+        } else {
+            dto.setGia(originalPrice);
+            dto.setDiscountCampaignName(null);
+        }
 
         // Lấy danh sách màu sắc
         List<MauSacDto> mauSacList = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId())
@@ -136,7 +134,6 @@ public class KhachhangSanPhamService {
 
         // Tổ hợp kích cỡ - màu sắc hợp lệ
         List<ChiTietSanPham> allDetails = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId());
-
         List<ChiTietSanPhamDto.SizeColorCombination> combinations = allDetails.stream()
                 .map(item -> {
                     ChiTietSanPhamDto.SizeColorCombination combo = new ChiTietSanPhamDto.SizeColorCombination();
@@ -146,9 +143,7 @@ public class KhachhangSanPhamService {
                 })
                 .distinct()
                 .collect(Collectors.toList());
-
         dto.setValidCombinations(combinations);
-
 
         // Lấy thông tin chất liệu, xuất xứ, thương hiệu, kiểu dáng, tay áo, cổ áo
         ChatLieuDto chatLieuDto = new ChatLieuDto();
@@ -200,24 +195,43 @@ public class KhachhangSanPhamService {
         dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
         dto.setThoiGianTao(sanPham.getThoiGianTao());
 
-        // Tính tổng soLuongTonKho từ ChiTietSanPham
+        // Tính tổng số lượng tồn kho từ ChiTietSanPham
         List<ChiTietSanPham> chiTietSanPhams = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPham.getId());
         Long tongSoLuong = chiTietSanPhams.stream()
-                .filter(chiTiet -> chiTiet.getTrangThai()) // Chỉ tính các chi tiết active
+                .filter(chiTiet -> chiTiet.getTrangThai())
                 .mapToLong(ChiTietSanPham::getSoLuongTonKho)
                 .sum();
         dto.setTongSoLuong(tongSoLuong != null ? tongSoLuong : 0L);
 
-        // Ánh xạ dữ liệu flash sale
+        // Lấy giá gốc (giá thấp nhất trong các biến thể)
         BigDecimal minPrice = khachHangSanPhamRepository.findMinPriceBySanPhamId(sanPham.getId());
-        dto.setPrice(minPrice != null ? minPrice.toString() : "0");
-        dto.setOldPrice(minPrice != null ? minPrice.add(new BigDecimal("10")).toString() : "0");
-        dto.setDiscount("10%");
-        dto.setSold("50");
-        dto.setProgress(50);
+        dto.setOldPrice(minPrice != null ? minPrice.toString() : "0");
+
+        // Kiểm tra chiến dịch giảm giá
+        BigDecimal discountedPrice = minPrice;
+        String discountCampaignName = null;
+        Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProduct(sanPham.getId());
+        if (chienDich.isPresent()) {
+            BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
+            discountedPrice = minPrice.subtract(minPrice.multiply(discountRate));
+            discountCampaignName = chienDich.get().getTen();
+            dto.setDiscount(chienDich.get().getPhanTramGiam().toString() + "%");
+        } else {
+            // Mặc định không giảm giá nếu không có chiến dịch
+            dto.setDiscount("0%");
+        }
+
+        // Thiết lập giá sau giảm
+        dto.setPrice(discountedPrice != null ? discountedPrice.toString() : minPrice.toString());
+        dto.setDiscountCampaignName(discountCampaignName);
+
+        // Ánh xạ số lượng đã bán
+        dto.setSold("50"); // Ví dụ: số lượng bán
+        dto.setProgress(50); // Tiến độ giảm giá (tùy chỉnh)
 
         return dto;
     }
+
 
     public List<SanPhamDto> getSanPhamBanChayDtos() {
         List<Object[]> results = khachHangSanPhamRepository.findSanPhamBanChayWithGiaAndSold();
@@ -238,8 +252,8 @@ public class KhachhangSanPhamService {
 
     private SanPhamDto mapProjectionToDto(Object[] row) {
         SanPham p = (SanPham) row[0];
-        BigDecimal minGia = (BigDecimal) row[1]; // giá thấp nhất trong các biến thể
-        BigDecimal maxGia = (BigDecimal) row[2]; // giá cao nhất trong các biến thể
+        BigDecimal minGia = (BigDecimal) row[1]; // Giá thấp nhất trong các biến thể
+        BigDecimal maxGia = (BigDecimal) row[2]; // Giá cao nhất trong các biến thể
         Long sold = row[3] != null ? ((Number) row[3]).longValue() : 0L;
 
         SanPhamDto dto = new SanPhamDto();
@@ -254,26 +268,52 @@ public class KhachhangSanPhamService {
             dto.setDanhMucId(p.getDanhMuc().getId());
             dto.setTenDanhMuc(p.getDanhMuc().getTenDanhMuc());
         }
-
         dto.setUrlHinhAnh(p.getUrlHinhAnh());
 
-        // ✅ Format giá đúng như bạn yêu cầu: hiển thị theo khoảng nếu có nhiều biến thể
+        // Tính tổng số lượng tồn kho từ ChiTietSanPham
+        List<ChiTietSanPham> chiTietSanPhams = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(p.getId());
+        Long tongSoLuong = chiTietSanPhams.stream()
+                .filter(chiTiet -> chiTiet.getTrangThai())
+                .mapToLong(ChiTietSanPham::getSoLuongTonKho)
+                .sum();
+        dto.setTongSoLuong(tongSoLuong != null ? tongSoLuong : 0L);
+
+        // Thiết lập giá gốc
+        String oldPrice = minGia != null ? minGia.toString() : "0";
         if (minGia != null && maxGia != null && minGia.compareTo(maxGia) < 0) {
-            dto.setOldPrice(minGia + " - " + maxGia);  // Giá gốc
-            dto.setPrice(minGia + " - " + maxGia);      // Giá hiện tại (nếu chưa có giảm)
-        } else {
-            String gia = minGia != null ? minGia.toString() : "0";
-            dto.setOldPrice(gia);
-            dto.setPrice(gia);
+            oldPrice = minGia + " - " + maxGia; // Giá gốc dạng khoảng
         }
+        dto.setOldPrice(oldPrice);
 
-        // ❌ Không tự tính % giảm nếu không có logic giảm thật
-        dto.setDiscount("0%");
-
+        // Kiểm tra chiến dịch giảm giá
+        BigDecimal discountedPrice = minGia;
+        String discountCampaignName = null;
+        Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProduct(p.getId());
+        if (chienDich.isPresent()) {
+            BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
+            if (minGia != null && maxGia != null && minGia.compareTo(maxGia) < 0) {
+                // Xử lý khoảng giá
+                BigDecimal discountedMinPrice = minGia.subtract(minGia.multiply(discountRate));
+                BigDecimal discountedMaxPrice = maxGia.subtract(maxGia.multiply(discountRate));
+                dto.setPrice(discountedMinPrice + " - " + discountedMaxPrice); // Giá sau giảm dạng khoảng
+            } else {
+                // Xử lý giá đơn
+                discountedPrice = minGia != null ? minGia.subtract(minGia.multiply(discountRate)) : null;
+                dto.setPrice(discountedPrice != null ? discountedPrice.toString() : minGia.toString());
+            }
+            discountCampaignName = chienDich.get().getTen();
+            dto.setDiscount(chienDich.get().getPhanTramGiam().toString() + "%");
+        } else {
+            // Không có chiến dịch, sử dụng giá gốc
+            dto.setPrice(oldPrice);
+            dto.setDiscount("0%");
+        }
+        dto.setDiscountCampaignName(discountCampaignName);
         dto.setSold(String.valueOf(sold));
 
         return dto;
     }
+
 
     public List<SanPhamDto> searchProducts(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {

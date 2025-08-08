@@ -169,4 +169,13 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
             chienDichRepository.save(cdgg);
         }
     }
+
+    @Override
+    public Optional<ChienDichGiamGia> getActiveCampaignForProduct(UUID sanPhamId) {
+        LocalDateTime now = LocalDateTime.now();
+        return chienDichRepository.findBySanPhamIdAndActive(sanPhamId, now)
+                .stream()
+                .filter(c -> c.getNgayBatDau().isBefore(now) && c.getNgayKetThuc().isAfter(now))
+                .findFirst();
+    }
 }
