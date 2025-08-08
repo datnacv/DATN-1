@@ -46,9 +46,62 @@
         .swal-cancel-button {
             color: #153054 !important;
         }
+        /* Loading Screen Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .loading-spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #153054;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            margin-top: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+<!-- Loading Overlay -->
+<div class="loading-overlay active" id="loading-overlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Đang tải trang thanh toán...</p>
+    </div>
+</div>
+
 <div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
     <marquee behavior="scroll" direction="left" scrollamount="5">
         🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
@@ -361,8 +414,22 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    let provinceList = [];
-    let districtList = [];
+    // Quản lý trạng thái loading
+    const loadingState = {
+        provinces: false,
+        addresses: false,
+        orderItems: false,
+        walletBalance: false,
+        shippingServices: false
+    };
+
+    function checkLoadingComplete() {
+        const allLoaded = Object.values(loadingState).every(state => state === true);
+        if (allLoaded) {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            loadingOverlay.classList.remove('active');
+        }
+    }
 
     // Format number to VND
     function formatVND(number) {
@@ -376,6 +443,10 @@
     }
 
     // Load tỉnh/thành phố từ GHN API
+    // Khai báo biến toàn cục
+    let provinceList = [];
+
+    // Load tỉnh/thành phố từ GHN API
     async function loadProvinces(target = 'province') {
         try {
             const response = await fetch('/api/ghn/provinces');
@@ -383,7 +454,7 @@
             if (!json || !json.data) throw new Error("Không có dữ liệu tỉnh/thành");
 
             const result = JSON.parse(json.data);
-            provinceList = result.data;
+            provinceList = result.data; // Gán giá trị cho provinceList
 
             const provinceSelect = document.getElementById(target);
             provinceSelect.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
@@ -393,6 +464,8 @@
                 opt.textContent = p.ProvinceName;
                 provinceSelect.appendChild(opt);
             });
+            loadingState.provinces = true;
+            checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải tỉnh/thành:', err);
             Swal.fire({
@@ -400,6 +473,8 @@
                 title: 'Lỗi tải tỉnh/thành',
                 text: err.message
             });
+            loadingState.provinces = true; // Vẫn đánh dấu là hoàn tất để tránh treo loading
+            checkLoadingComplete();
         }
     }
 
@@ -483,9 +558,13 @@
                 select.value = services[0].service_id;
                 await calculateShipping();
             }
+            loadingState.shippingServices = true;
+            checkLoadingComplete();
         } catch (err) {
             console.error("Lỗi tải dịch vụ vận chuyển:", err);
             Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Không lấy được dịch vụ vận chuyển: ' + err.message });
+            loadingState.shippingServices = true; // Vẫn đánh dấu là hoàn tất để tránh treo loading
+            checkLoadingComplete();
         }
     }
 
@@ -526,6 +605,11 @@
     // Load danh sách địa chỉ đã lưu
     async function loadSavedAddresses() {
         try {
+            // Đảm bảo provinceList đã được tải trước khi tiếp tục
+            if (!provinceList || provinceList.length === 0) {
+                await loadProvinces();
+            }
+
             const response = await fetch('/api/checkout/addresses', { credentials: 'include' });
             const data = await response.json();
             if (!response.ok || !data.success) throw new Error(data.message || 'Không thể tải danh sách địa chỉ');
@@ -567,7 +651,7 @@
                 addressIdInput.value = defaultAddress.id;
                 fullNameInput.value = defaultAddress.nguoiNhan || fullNameInput.value;
                 phoneInput.value = defaultAddress.soDienThoaiNguoiNhan || phoneInput.value;
-                addressInput.value = `${defaultAddress.chiTietDiaChi}, ${defaultAddress.phuongXa}, ${defaultAddress.quanHuyen}, ${defaultAddress.tinhThanhPho}`;
+                addressInput.value = `${defaultAddress.chiTietDiaChi || ''}, ${defaultAddress.phuongXa || ''}, ${defaultAddress.quanHuyen || ''}, ${defaultAddress.tinhThanhPho || ''}`.replace(/, ,/g, '').replace(/^,|,$/g, '');
 
                 // Hàm chuẩn hóa để so sánh
                 const normalize = str => str
@@ -578,45 +662,31 @@
                     .replace(/[\u0300-\u036f]/g, "");
 
                 // Cập nhật tỉnh, quận, phường
-                try {
-                    if (!provinceList.length) {
-                        await loadProvinces();
-                    }
+                const provinceMatch = provinceList.find(p =>
+                    normalize(p.ProvinceName).includes(normalize(defaultAddress.tinhThanhPho))
+                );
+                if (provinceMatch) {
+                    provinceSelect.value = provinceMatch.ProvinceID;
+                    await loadDistricts(provinceMatch.ProvinceID);
 
-                    const province = provinceList.find(p =>
-                        normalize(p.ProvinceName).includes(normalize(defaultAddress.tinhThanhPho))
+                    const districtMatch = districtList.find(d =>
+                        normalize(d.DistrictName).includes(normalize(defaultAddress.quanHuyen))
                     );
-                    if (province) {
-                        provinceSelect.value = province.ProvinceID;
-                        await loadDistricts(province.ProvinceID);
+                    if (districtMatch) {
+                        districtSelect.value = districtMatch.DistrictID;
+                        await loadWards(districtMatch.DistrictID);
 
-                        const district = districtList.find(d =>
-                            normalize(d.DistrictName).includes(normalize(defaultAddress.quanHuyen))
+                        const wardResponse = await fetch(`/api/ghn/wards?districtId=${districtMatch.DistrictID}`);
+                        const wardJson = await wardResponse.json();
+                        const wards = JSON.parse(wardJson.data).data;
+                        const wardMatch = wards.find(w =>
+                            normalize(w.WardName).includes(normalize(defaultAddress.phuongXa))
                         );
-                        if (district) {
-                            districtSelect.value = district.DistrictID;
-                            await loadWards(district.DistrictID);
-
-                            const wardResponse = await fetch(`/api/ghn/wards?districtId=${district.DistrictID}`);
-                            const wardJson = await wardResponse.json();
-                            const wards = JSON.parse(wardJson.data).data;
-                            const ward = wards.find(w =>
-                                normalize(w.WardName).includes(normalize(defaultAddress.phuongXa))
-                            );
-                            if (ward) {
-                                wardSelect.value = ward.WardCode;
-                                await loadShippingServices(district.DistrictID);
-                                await calculateShipping();
-                            }
+                        if (wardMatch) {
+                            wardSelect.value = wardMatch.WardCode;
+                            await loadShippingServices(districtMatch.DistrictID);
                         }
                     }
-                } catch (err) {
-                    console.error('Lỗi khi cập nhật địa chỉ mặc định:', err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Lỗi cập nhật địa chỉ',
-                        text: err.message
-                    });
                 }
 
                 // Tô sáng thẻ địa chỉ mặc định
@@ -626,6 +696,8 @@
                     defaultCard.classList.add('active');
                 }
             }
+            loadingState.addresses = true;
+            checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải danh sách địa chỉ:', err);
             Swal.fire({
@@ -633,6 +705,8 @@
                 title: 'Lỗi tải địa chỉ',
                 text: err.message
             });
+            loadingState.addresses = true; // Vẫn đánh dấu là hoàn tất để tránh treo loading
+            checkLoadingComplete();
         }
     }
 
@@ -691,7 +765,6 @@
                         if (ward) {
                             wardSelect.value = ward.WardCode;
                             await loadShippingServices(district.DistrictID);
-                            await calculateShipping();
                         }
                     }
                 }
@@ -781,6 +854,8 @@
                     text: data.message || 'Không thể tải số dư ví. Vui lòng thử lại!',
                 });
             }
+            loadingState.walletBalance = true;
+            checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải số dư ví:', err);
             walletBalanceElement.textContent = '(Lỗi tải số dư)';
@@ -789,6 +864,8 @@
                 title: 'Lỗi',
                 text: 'Không thể tải số dư ví. Vui lòng kiểm tra kết nối!',
             });
+            loadingState.walletBalance = true; // Vẫn đánh dấu là hoàn tất để tránh treo loading
+            checkLoadingComplete();
         } finally {
             walletBalanceElement.classList.remove('loading');
         }
@@ -849,28 +926,30 @@
         if (items.length === 0) {
             orderItemsContainer.innerHTML = `<p class="text-gray-600">Không có sản phẩm trong ${isFromCart() ? 'giỏ hàng' : 'đơn hàng'}.</p>`;
             document.getElementById('submit-order').disabled = true;
-            return;
-        }
-
-        orderItemsContainer.innerHTML = items.map(item => `
-        <div class="order-item flex items-center space-x-4">
-            <img src="${item.urlHinhAnh}" alt="${item.tenSanPham}" class="order-item-img" onerror="this.src='/images/default-product.jpg'"/>
-            <div class="flex-1">
-                <h6 class="font-semibold text-gray-800">${item.tenSanPham}</h6>
-                <p class="text-gray-600 text-sm">Kích cỡ: ${item.sizeName}</p>
-                <p class="text-gray-600 text-sm">Màu sắc: ${item.colorName}</p>
-                <p class="text-gray-600 text-sm">Số lượng: ${item.soLuong}</p>
-                <p class="text-gray-600 text-sm">Đơn giá: ${formatVND(item.gia)}</p>
-                <p class="text-[#153054] font-bold">Thành tiền: ${formatVND(item.gia * item.soLuong)}</p>
+        } else {
+            orderItemsContainer.innerHTML = items.map(item => `
+            <div class="order-item flex items-center space-x-4">
+                <img src="${item.urlHinhAnh}" alt="${item.tenSanPham}" class="order-item-img" onerror="this.src='/images/default-product.jpg'"/>
+                <div class="flex-1">
+                    <h6 class="font-semibold text-gray-800">${item.tenSanPham}</h6>
+                    <p class="text-gray-600 text-sm">Kích cỡ: ${item.sizeName}</p>
+                    <p class="text-gray-600 text-sm">Màu sắc: ${item.colorName}</p>
+                    <p class="text-gray-600 text-sm">Số lượng: ${item.soLuong}</p>
+                    <p class="text-gray-600 text-sm">Đơn giá: ${formatVND(item.gia)}</p>
+                    <p class="text-[#153054] font-bold">Thành tiền: ${formatVND(item.gia * item.soLuong)}</p>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `).join('');
+        }
 
         const shippingFee = parseFloat(document.getElementById('shipping-fee').textContent.replace(/[^\d]/g, '')) || 0;
         const discount = parseFloat(document.getElementById('discount').textContent.replace(/[^\d]/g, '')) || 0;
         document.getElementById('subtotal').textContent = formatVND(subtotal);
         document.getElementById('shipping-fee').textContent = formatVND(shippingFee);
         document.getElementById('total').textContent = formatVND(subtotal + shippingFee - discount);
+
+        loadingState.orderItems = true;
+        checkLoadingComplete();
     }
 
     // Áp dụng mã giảm giá khi chọn từ select
@@ -1243,8 +1322,7 @@
 
         document.getElementById('district').addEventListener('change', async (e) => {
             const districtId = parseInt(e.target.value);
-            if (!districtId) return;
-            await loadWards(districtId);
+            if (districtId) await loadWards(districtId);
             await loadShippingServices(districtId);
         });
 
