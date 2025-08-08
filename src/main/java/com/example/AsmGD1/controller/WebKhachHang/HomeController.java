@@ -156,10 +156,12 @@ public class HomeController {
             if (chiTiet == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại"));
             }
+            ChiTietSanPhamDto dto = khachhangSanPhamService.convertToChiTietSanPhamDto(chiTiet); // Sử dụng DTO để lấy cả oldPrice
             Map<String, Object> response = new HashMap<>();
-            response.put("id", chiTiet.getId());
-            response.put("gia", chiTiet.getGia());
-            response.put("soLuongTonKho", chiTiet.getSoLuongTonKho());
+            response.put("id", dto.getId());
+            response.put("gia", dto.getGia());
+            response.put("oldPrice", dto.getOldPrice()); // Thêm giá gốc
+            response.put("soLuongTonKho", dto.getSoLuongTonKho());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Lỗi khi lấy chi tiết sản phẩm với sanPhamId={}, sizeId={}, colorId={}: ", sanPhamId, sizeId, colorId, e);

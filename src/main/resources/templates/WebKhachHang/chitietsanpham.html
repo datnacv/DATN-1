@@ -587,6 +587,8 @@
         const selectedSize = document.querySelector('.size-option.active');
         const selectedColor = document.querySelector('.color-option.active');
         const stockElement = document.getElementById('dynamic-stock');
+        const priceElement = document.querySelector('.price');
+        const oldPriceElement = document.querySelector('.old-price'); // Thêm phần tử oldPrice
 
         if (!selectedSize || !selectedColor) {
             stockElement.textContent = 'Chọn màu & size';
@@ -601,7 +603,7 @@
         fetch(`/api/getChiTietSanPham?sanPhamId=${sanPhamId}&sizeId=${sizeId}&colorId=${colorId}`)
             .then(res => res.json())
             .then(data => {
-                console.log("Dữ liệu tồn kho nhận về từ API:", data); // ✅ debug log
+                console.log("Dữ liệu tồn kho nhận về từ API:", data);
 
                 if (typeof data.soLuongTonKho === 'number') {
                     if (data.soLuongTonKho === 0) {
@@ -620,9 +622,20 @@
                     stockElement.textContent = 'Không khả dụng';
                     quantityInput.max = 1;
                 }
+
+                // Cập nhật giá hiện tại và giá gốc
+                if (data.gia) {
+                    priceElement.textContent = new Intl.NumberFormat('vi-VN').format(data.gia) + ' VNĐ';
+                }
+                if (data.oldPrice && data.oldPrice !== data.gia) {
+                    oldPriceElement.textContent = new Intl.NumberFormat('vi-VN').format(data.oldPrice) + ' VNĐ';
+                    oldPriceElement.style.display = 'inline-block'; // Hiển thị nếu có giá cũ
+                } else {
+                    oldPriceElement.style.display = 'none'; // Ẩn nếu không có giá cũ
+                }
             })
             .catch(err => {
-                console.error('Lỗi khi gọi API tồn kho:', err); // ✅ log lỗi
+                console.error('Lỗi khi gọi API tồn kho:', err);
                 stockElement.textContent = 'Lỗi khi tải tồn kho';
             });
     }
