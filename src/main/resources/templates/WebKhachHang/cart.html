@@ -95,9 +95,7 @@
             <tbody>
             <tr th:each="item : ${chiTietGioHang}">
                 <td>
-                    <img th:each="hinhAnh : ${item.chiTietSanPham.hinhAnhSanPhams}"
-                         th:src="@{${hinhAnh.urlHinhAnh}}" alt="Image"
-                         style="width: 50px; height: 50px;"/>
+                    <img th:src="@{${item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh}}" alt="Image" style="width: 50px; height: 50px;"/>
                 </td>
                 <td th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
                 <td th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
@@ -261,7 +259,8 @@
         // Handle checkout button click
         const checkoutBtn = document.getElementById('checkout-btn');
         if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', async () => {
+            checkoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault(); // Ngăn hành vi mặc định của thẻ <a>
                 try {
                     const response = await fetch('/api/cart', { credentials: 'include' });
                     if (response.ok) {
@@ -272,10 +271,14 @@
                             tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
                             soLuong: item.soLuong,
                             gia: item.gia,
-                            urlHinhAnh: item.chiTietSanPham.urlHinhAnh || '/images/default-product.jpg'
+                            urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
+                                ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
+                                : item.chiTietSanPham.sanPham.urlHinhAnh || '/images/default-product.jpg',
+                            sizeName: item.chiTietSanPham.kichCo?.ten || 'N/A',
+                            colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A'
                         }));
                         localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
-                        window.location.href = '/thanh-toan';
+                        window.location.href = '/thanh-toan?from=cart'; // Thêm ?from=cart
                     } else if (response.status === 401) {
                         window.location.href = '/customers/login';
                     } else {
