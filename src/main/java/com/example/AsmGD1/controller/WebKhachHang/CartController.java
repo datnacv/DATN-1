@@ -57,7 +57,6 @@ public class CartController {
             GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDungId);
             List<ChiTietGioHang> chiTietGioHangs = khachHangGioHangService.getGioHangChiTiets(gioHang.getId());
 
-            // Ánh xạ chiTietGioHang
             List<Map<String, Object>> chiTietResponse = chiTietGioHangs.stream().map(item -> {
                 Map<String, Object> itemMap = new HashMap<>();
                 itemMap.put("id", item.getId());
@@ -68,7 +67,6 @@ public class CartController {
                 itemMap.put("thoiGianThem", item.getThoiGianThem());
                 itemMap.put("trangThai", item.getTrangThai());
 
-                // Ánh xạ chiTietSanPham
                 Map<String, Object> chiTietSanPhamMap = new HashMap<>();
                 chiTietSanPhamMap.put("id", item.getChiTietSanPham().getId());
                 chiTietSanPhamMap.put("gia", item.getChiTietSanPham().getGia());
@@ -77,7 +75,6 @@ public class CartController {
                 chiTietSanPhamMap.put("thoiGianTao", item.getChiTietSanPham().getThoiGianTao());
                 chiTietSanPhamMap.put("trangThai", item.getChiTietSanPham().getTrangThai());
 
-                // Ánh xạ sanPham
                 Map<String, Object> sanPhamMap = new HashMap<>();
                 sanPhamMap.put("id", item.getChiTietSanPham().getSanPham().getId());
                 sanPhamMap.put("maSanPham", item.getChiTietSanPham().getSanPham().getMaSanPham());
@@ -93,7 +90,6 @@ public class CartController {
                 sanPhamMap.put("minPriceFormatted", item.getChiTietSanPham().getSanPham().getMinPriceFormatted());
                 sanPhamMap.put("maxPriceFormatted", item.getChiTietSanPham().getSanPham().getMaxPriceFormatted());
 
-                // Ánh xạ danhMuc
                 Map<String, Object> danhMucMap = new HashMap<>();
                 danhMucMap.put("id", item.getChiTietSanPham().getSanPham().getDanhMuc().getId());
                 danhMucMap.put("tenDanhMuc", item.getChiTietSanPham().getSanPham().getDanhMuc().getTenDanhMuc());
@@ -101,7 +97,6 @@ public class CartController {
 
                 chiTietSanPhamMap.put("sanPham", sanPhamMap);
 
-                // Ánh xạ kichCo
                 if (item.getChiTietSanPham().getKichCo() != null) {
                     Map<String, Object> kichCoMap = new HashMap<>();
                     kichCoMap.put("id", item.getChiTietSanPham().getKichCo().getId());
@@ -109,7 +104,6 @@ public class CartController {
                     chiTietSanPhamMap.put("kichCo", kichCoMap);
                 }
 
-                // Ánh xạ mauSac
                 if (item.getChiTietSanPham().getMauSac() != null) {
                     Map<String, Object> mauSacMap = new HashMap<>();
                     mauSacMap.put("id", item.getChiTietSanPham().getMauSac().getId());
@@ -117,7 +111,6 @@ public class CartController {
                     chiTietSanPhamMap.put("mauSac", mauSacMap);
                 }
 
-                // Ánh xạ chatLieu
                 if (item.getChiTietSanPham().getChatLieu() != null) {
                     Map<String, Object> chatLieuMap = new HashMap<>();
                     chatLieuMap.put("id", item.getChiTietSanPham().getChatLieu().getId());
@@ -125,7 +118,6 @@ public class CartController {
                     chiTietSanPhamMap.put("chatLieu", chatLieuMap);
                 }
 
-                // Ánh xạ xuatXu
                 if (item.getChiTietSanPham().getXuatXu() != null) {
                     Map<String, Object> xuatXuMap = new HashMap<>();
                     xuatXuMap.put("id", item.getChiTietSanPham().getXuatXu().getId());
@@ -133,7 +125,6 @@ public class CartController {
                     chiTietSanPhamMap.put("xuatXu", xuatXuMap);
                 }
 
-                // Ánh xạ tayAo
                 if (item.getChiTietSanPham().getTayAo() != null) {
                     Map<String, Object> tayAoMap = new HashMap<>();
                     tayAoMap.put("id", item.getChiTietSanPham().getTayAo().getId());
@@ -141,7 +132,6 @@ public class CartController {
                     chiTietSanPhamMap.put("tayAo", tayAoMap);
                 }
 
-                // Ánh xạ coAo
                 if (item.getChiTietSanPham().getCoAo() != null) {
                     Map<String, Object> coAoMap = new HashMap<>();
                     coAoMap.put("id", item.getChiTietSanPham().getCoAo().getId());
@@ -149,7 +139,6 @@ public class CartController {
                     chiTietSanPhamMap.put("coAo", coAoMap);
                 }
 
-                // Ánh xạ kieuDang
                 if (item.getChiTietSanPham().getKieuDang() != null) {
                     Map<String, Object> kieuDangMap = new HashMap<>();
                     kieuDangMap.put("id", item.getChiTietSanPham().getKieuDang().getId());
@@ -157,7 +146,6 @@ public class CartController {
                     chiTietSanPhamMap.put("kieuDang", kieuDangMap);
                 }
 
-                // Ánh xạ thuongHieu
                 if (item.getChiTietSanPham().getThuongHieu() != null) {
                     Map<String, Object> thuongHieuMap = new HashMap<>();
                     thuongHieuMap.put("id", item.getChiTietSanPham().getThuongHieu().getId());
@@ -165,7 +153,6 @@ public class CartController {
                     chiTietSanPhamMap.put("thuongHieu", thuongHieuMap);
                 }
 
-                // Ánh xạ hinhAnhSanPhams
                 List<Map<String, Object>> hinhAnhList = item.getChiTietSanPham().getHinhAnhSanPhams().stream().map(hinhAnh -> {
                     Map<String, Object> hinhAnhMap = new HashMap<>();
                     hinhAnhMap.put("id", hinhAnh.getId());
@@ -178,9 +165,8 @@ public class CartController {
                 return itemMap;
             }).collect(Collectors.toList());
 
-            // Tính tổng tiền
             BigDecimal tongTien = chiTietGioHangs.stream()
-                    .map(item -> item.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())).subtract(item.getTienGiam() != null ? item.getTienGiam() : BigDecimal.ZERO))
+                    .map(item -> item.getGia().multiply(BigDecimal.valueOf(item.getSoLuong())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             if (!tongTien.equals(gioHang.getTongTien())) {

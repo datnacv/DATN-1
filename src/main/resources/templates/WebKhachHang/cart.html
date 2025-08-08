@@ -24,7 +24,7 @@
         .quantity-control { display: flex; align-items: center; gap: 10px; }
         .quantity-input { width: 60px; text-align: center; }
         .btn { background-color: #153054; color: white; }
-        .btn:hover { background-color: #102b47; } /* Darker shade for hover */
+        .btn:hover { background-color: #102b47; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -57,7 +57,7 @@
             </div>
         </div>
         <div class="flex items-center space-x-4" id="userSection">
-            <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
+            <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i> <span id="cart-count">0</span></a>
             <div class="user-info text-white" id="userInfo"></div>
             <a href="/customers/login" id="loginButton" class="text-white font-semibold hover:text-gray-300 focus:outline-none">Đăng nhập</a>
             <a href="/logout" id="logoutButton" class="text-white font-semibold hover:text-gray-300 focus:outline-none" style="display: none;">Đăng xuất</a>
@@ -86,8 +86,8 @@
                 <th>Màu sắc</th>
                 <th>Kích cỡ</th>
                 <th>Số lượng</th>
-                <th>Giá</th>
-                <th>Giảm giá</th>
+                <th>Giá gốc</th>
+                <th>Số tiền giảm</th>
                 <th>Thành tiền</th>
                 <th>Hành động</th>
             </tr>
@@ -97,9 +97,9 @@
                 <td>
                     <img th:src="@{${item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh}}" alt="Image" style="width: 50px; height: 50px;"/>
                 </td>
-                <td th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
-                <td th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
-                <td th:text="${item.chiTietSanPham.kichCo.ten}"></td>
+                <td style="color: #153054" th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
+                <td style="color: #153054" th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
+                <td style="color: #153054" th:text="${item.chiTietSanPham.kichCo.ten}"></td>
                 <td>
                     <div class="quantity-control">
                         <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">-</button>
@@ -107,9 +107,11 @@
                         <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">+</button>
                     </div>
                 </td>
-                <td th:text="${#numbers.formatDecimal(item.gia, 0, 'POINT', 0, 'COMMA')} + ' VND'"></td>
-                <td th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 'POINT', 0, 'COMMA') + ' VND' : '0 VND'}"></td>
-                <td th:text="${#numbers.formatDecimal(item.gia * item.soLuong - (item.tienGiam != null ? item.tienGiam : 0), 0, 'POINT', 0, 'COMMA')} + ' VND'"></td>
+                <td>
+                    <span style="font-weight: bold; color: #153054" class="original-price" th:text="${#numbers.formatDecimal(item.chiTietSanPham.gia, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></span>
+                </td>
+                <td style="text-decoration: line-through; color: #c51f1f; font-weight: bold;" th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 'POINT', 0, 'COMMA') + ' VNĐ' : '0 VNĐ'}"></td>
+                <td style="color: green; font-weight: bold;" th:text="${#numbers.formatDecimal(item.gia * item.soLuong, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
                 <td>
                     <button class="btn bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded remove-item" th:attr="data-item-id=${item.id},data-gio-hang-id=${gioHangId},data-chi-tiet-san-pham-id=${item.chiTietSanPham.id}">
                         <i class="fas fa-trash"></i> Xóa
@@ -119,7 +121,7 @@
             </tbody>
         </table>
         <div class="mt-6 text-right">
-            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'POINT', 0, 'COMMA')} + ' VND'"></span></p>
+            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></span></p>
             <a href="/thanh-toan?from=cart" id="checkout-btn" class="btn hover:bg-102b47 px-6 py-2 rounded mt-4">Thanh toán</a>
         </div>
     </div>
@@ -218,8 +220,6 @@
                 userInfo.classList.remove('active');
                 loginButton.style.display = 'inline';
                 logoutButton.style.display = 'none';
-                // Không redirect ngay, để người dùng thấy thông báo "Vui lòng đăng nhập"
-                // window.location.href = '/customers/login';
             }
         } catch (error) {
             console.error('Error checking authentication:', error);
@@ -260,7 +260,7 @@
         const checkoutBtn = document.getElementById('checkout-btn');
         if (checkoutBtn) {
             checkoutBtn.addEventListener('click', async (e) => {
-                e.preventDefault(); // Ngăn hành vi mặc định của thẻ <a>
+                e.preventDefault();
                 try {
                     const response = await fetch('/api/cart', { credentials: 'include' });
                     if (response.ok) {
@@ -271,6 +271,8 @@
                             tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
                             soLuong: item.soLuong,
                             gia: item.gia,
+                            giaGoc: item.chiTietSanPham.gia,
+                            tienGiam: item.tienGiam || BigDecimal.ZERO,
                             urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
                                 ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
                                 : item.chiTietSanPham.sanPham.urlHinhAnh || '/images/default-product.jpg',
@@ -278,7 +280,7 @@
                             colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A'
                         }));
                         localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
-                        window.location.href = '/thanh-toan?from=cart'; // Thêm ?from=cart
+                        window.location.href = '/thanh-toan?from=cart';
                     } else if (response.status === 401) {
                         window.location.href = '/customers/login';
                     } else {
