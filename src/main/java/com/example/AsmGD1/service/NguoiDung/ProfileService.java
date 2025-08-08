@@ -7,8 +7,11 @@ import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,9 +44,24 @@ public class ProfileService {
             Pattern.compile("^0[1-9][0-9]{8}$");
 
     public NguoiDung getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return profileRepository.findByTenDangNhapAndTrangThai(username, true)
-                .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại hoặc đã bị xóa"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Không có người dùng nào đang đăng nhập");
+        }
+
+        if (authentication instanceof OAuth2AuthenticationToken) {
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+            String email = oAuth2User.getAttribute("email");
+            if (email == null) {
+                throw new RuntimeException("Không tìm thấy email trong thông tin OAuth2");
+            }
+            return profileRepository.findByEmailAndTrangThai(email, true)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại hoặc đã bị xóa"));
+        } else {
+            String username = authentication.getName();
+            return profileRepository.findByTenDangNhapAndTrangThai(username, true)
+                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại hoặc đã bị xóa"));
+        }
     }
 
     public NguoiDung updateUser(NguoiDung userData) {

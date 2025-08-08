@@ -2,7 +2,6 @@ package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
-import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
@@ -19,6 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("/dsdon-mua")
 public class KHDonMuaController {
+
     @Autowired
     private ThongBaoNhomRepository thongBaoNhomRepository;
 
@@ -45,6 +47,9 @@ public class KHDonMuaController {
 
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
+
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     private static final Logger logger = LoggerFactory.getLogger(KHDonMuaController.class);
 
@@ -56,7 +61,6 @@ public class KHDonMuaController {
 
     @Autowired
     private ThongBaoService thongBaoService;
-
 
     @Autowired
     private HoaDonService hoaDonService;
@@ -80,6 +84,27 @@ public class KHDonMuaController {
         }
     }
 
+    private UUID getNguoiDungIdFromAuthentication(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails userDetails) {
+            NguoiDung nguoiDung = nguoiDungService.findByTenDangNhap(userDetails.getUsername());
+            return nguoiDung != null ? nguoiDung.getId() : null;
+        }
+
+        if (principal instanceof OAuth2User oAuth2User) {
+            String email = oAuth2User.getAttribute("email");
+            NguoiDung nguoiDung = nguoiDungService.findByEmail(email);
+            return nguoiDung != null ? nguoiDung.getId() : null;
+        }
+
+        return null;
+    }
+
     @GetMapping
     public String donMuaPage(@RequestParam(name = "status", defaultValue = "tat-ca") String status,
                              Model model,
@@ -88,7 +113,16 @@ public class KHDonMuaController {
             return "redirect:/dang-nhap";
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return "redirect:/dang-nhap";
+        }
+
         model.addAttribute("user", nguoiDung);
 
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
@@ -117,14 +151,12 @@ public class KHDonMuaController {
 
             for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
                 chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
-                // Check if the product has been rated
                 boolean daDanhGia = danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
                         hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()
                 );
-                chiTiet.setDaDanhGia(daDanhGia); // Add daDanhGia field to ChiTietDonHang entity or use a DTO
+                chiTiet.setDaDanhGia(daDanhGia);
             }
         }
-
 
         model.addAttribute("danhSachHoaDon", danhSachHoaDon);
         model.addAttribute("status", status);
@@ -137,7 +169,16 @@ public class KHDonMuaController {
             return "redirect:/dang-nhap";
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return "redirect:/dang-nhap";
+        }
+
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return "redirect:/dsdon-mua";
@@ -168,13 +209,21 @@ public class KHDonMuaController {
             return "redirect:/dang-nhap";
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return "redirect:/dang-nhap";
+        }
+
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId()) || !"Hoàn thành".equals(hoaDon.getTrangThai())) {
             return "redirect:/dsdon-mua";
         }
 
-        // Kiểm tra nếu hóa đơn hoặc chi tiết đơn hàng rỗng
         if (hoaDon.getDonHang() == null || hoaDon.getDonHang().getChiTietDonHangs() == null) {
             model.addAttribute("error", "Không có sản phẩm trong hóa đơn để đánh giá.");
             return "error";
@@ -182,14 +231,12 @@ public class KHDonMuaController {
 
         List<ChiTietDonHang> productsToRate;
         if (chiTietSanPhamId != null) {
-            // Nếu có chiTietSanPhamId, chỉ lấy sản phẩm đó nếu chưa được đánh giá
             productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
                     .filter(chiTiet -> chiTiet.getChiTietSanPham().getId().equals(chiTietSanPhamId)
                             && !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
                             hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
                     .collect(Collectors.toList());
         } else {
-            // Nếu không có chiTietSanPhamId, lấy tất cả sản phẩm chưa được đánh giá
             productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
                     .filter(chiTiet -> !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
                             hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
@@ -214,9 +261,17 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để hủy đơn hàng.");
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
-        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Không thể xác định người dùng.");
+        }
 
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng không tồn tại.");
+        }
+
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng hoặc bạn không có quyền hủy đơn hàng này.");
         }
@@ -252,7 +307,16 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xác nhận.");
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Không thể xác định người dùng.");
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng không tồn tại.");
+        }
+
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng hoặc bạn không có quyền xác nhận.");
@@ -263,21 +327,17 @@ public class KHDonMuaController {
         }
 
         try {
-            // Cập nhật hóa đơn
             hoaDon.setTrangThai("Hoàn thành");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setGhiChu("Khách hàng xác nhận đã nhận hàng");
 
-            // Cập nhật đơn hàng
             DonHang donHang = hoaDon.getDonHang();
             donHang.setTrangThai("THANH_CONG");
-            donHangRepository.save(donHang); // Cập nhật vào DB
+            donHangRepository.save(donHang);
 
-            // Lưu lịch sử và hóa đơn
             hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
             HoaDon savedHoaDon = hoaDonService.save(hoaDon);
 
-            // Gửi thông báo
             thongBaoService.taoThongBaoHeThong(
                     "admin",
                     "Đơn hàng đã hoàn thành",
@@ -292,16 +352,23 @@ public class KHDonMuaController {
         }
     }
 
-
     @GetMapping("/api/orders/{id}/products")
     public ResponseEntity<List<Map<String, Object>>> getOrderProducts(@PathVariable("id") UUID id, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
-        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
@@ -339,11 +406,18 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
-        if (!nguoiDung.getId().equals(userId)) {
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null || !nguoiDungId.equals(userId)) {
             response.put("success", false);
             response.put("message", "Bạn không có quyền gửi đánh giá này.");
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            response.put("success", false);
+            response.put("message", "Người dùng không tồn tại.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
         HoaDon hoaDon = hoaDonRepo.findById(hoaDonId).orElse(null);
@@ -380,7 +454,6 @@ public class KHDonMuaController {
             danhGia.setTrangThai(true);
             danhGia.setThoiGianDanhGia(LocalDateTime.now());
 
-            // Xử lý upload media với giới hạn 3 file
             if (media != null && media.length > 0) {
                 if (media.length > 3) {
                     response.put("success", false);
@@ -395,7 +468,6 @@ public class KHDonMuaController {
                         mediaUrls.append(url).append(",");
                     }
                 }
-                // Loại bỏ dấu phẩy cuối cùng nếu có
                 if (mediaUrls.length() > 0) {
                     danhGia.setUrlHinhAnh(mediaUrls.toString().replaceAll(",$", ""));
                 }
@@ -403,13 +475,12 @@ public class KHDonMuaController {
 
             danhGiaRepository.save(danhGia);
 
-// Tạo thông báo cho admin về đánh giá mới
             thongBaoService.taoThongBaoHeThong(
                     "admin",
                     "Khách hàng đã gửi đánh giá",
                     "Khách hàng " + nguoiDung.getHoTen() + " đã gửi đánh giá cho sản phẩm "
                             + danhGia.getChiTietSanPham().getSanPham().getTenSanPham() + ".",
-                    null // hoặc truyền DonHang nếu bạn muốn liên kết
+                    null
             );
 
             response.put("success", true);

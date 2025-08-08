@@ -14,6 +14,7 @@ import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
@@ -22,6 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -32,7 +35,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +49,9 @@ public class KHThanhToanController {
 
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
+
+    @Autowired
+    private NguoiDungService nguoiDungService;
 
     @Autowired
     private KhachHangGioHangService khachHangGioHangService;
@@ -90,15 +95,27 @@ public class KHThanhToanController {
     @Autowired
     private HoaDonService hoaDonService;
 
-    private String extractEmailFromAuthentication(Authentication authentication) {
+    private UUID getNguoiDungIdFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
-        if (authentication.getPrincipal() instanceof NguoiDung) {
-            return ((NguoiDung) authentication.getPrincipal()).getEmail();
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof UserDetails userDetails) {
+            NguoiDung nguoiDung = nguoiDungService.findByTenDangNhap(userDetails.getUsername());
+            return nguoiDung != null ? nguoiDung.getId() : null;
         }
-        return authentication.getName();
+
+        if (principal instanceof OAuth2User oAuth2User) {
+            String email = oAuth2User.getAttribute("email");
+            NguoiDung nguoiDung = nguoiDungService.findByEmail(email);
+            return nguoiDung != null ? nguoiDung.getId() : null;
+        }
+
+        return null;
     }
+
     private String dinhDangTien(BigDecimal soTien) {
         return String.format("%,.0f", soTien).replace(",", ".") + " VND";
     }
@@ -109,21 +126,25 @@ public class KHThanhToanController {
             model.addAttribute("error", "Vui lòng đăng nhập để thanh toán!");
             return "WebKhachHang/thanh-toan";
         }
+
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            model.addAttribute("error", "Không thể xác định người dùng. Vui lòng đăng nhập lại!");
+            return "WebKhachHang/thanh-toan";
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            model.addAttribute("error", "Người dùng không tồn tại!");
+            return "WebKhachHang/thanh-toan";
+        }
+
         try {
-            String email = extractEmailFromAuthentication(authentication);
-            if (email == null) {
-                model.addAttribute("error", "Không thể xác định người dùng. Vui lòng thử lại!");
-                return "WebKhachHang/thanh-toan";
-            }
-            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Người dùng với email " + email + " không tồn tại"));
             model.addAttribute("loggedInUser", nguoiDung);
 
-            // Fetch all addresses for the user
             List<DiaChiNguoiDung> addresses = diaChiNguoiDungRepository.findByNguoiDung_Id(nguoiDung.getId());
             model.addAttribute("addresses", addresses);
 
-            // Set default address if available
             Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
             if (defaultAddress.isPresent()) {
                 DiaChiNguoiDung address = defaultAddress.get();
@@ -140,7 +161,6 @@ public class KHThanhToanController {
                 model.addAttribute("soDienThoaiNguoiNhan", nguoiDung.getSoDienThoai());
             }
 
-            // Existing voucher logic remains unchanged
             List<PhieuGiamGia> publicVouchers = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> "cong_khai".equalsIgnoreCase(p.getKieuPhieu()))
                     .filter(p -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(p)))
@@ -156,41 +176,44 @@ public class KHThanhToanController {
         } catch (Exception e) {
             model.addAttribute("error", "Không thể tải thông tin người dùng: " + e.getMessage());
             model.addAttribute("defaultAddress", "");
-            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(extractEmailFromAuthentication(authentication)).orElse(null);
-            model.addAttribute("nguoiNhan", nguoiDung != null ? nguoiDung.getHoTen() : "");
-            model.addAttribute("soDienThoaiNguoiNhan", nguoiDung != null ? nguoiDung.getSoDienThoai() : "");
+            model.addAttribute("nguoiNhan", nguoiDung.getHoTen());
+            model.addAttribute("soDienThoaiNguoiNhan", nguoiDung.getSoDienThoai());
         }
         return "WebKhachHang/thanh-toan";
     }
+
     @Transactional
     @PostMapping("/dat-hang")
     public String datHang(
             @RequestParam("ptThanhToan") String ptThanhToan,
             @RequestParam("fullName") String fullName,
             @RequestParam("phone") String phone,
-            @RequestParam("addressId") UUID addressId, // New parameter for address selection
-            @RequestParam(value = "address", required = false) String customAddress, // Optional custom address
+            @RequestParam("addressId") UUID addressId,
+            @RequestParam(value = "address", required = false) String customAddress,
             @RequestParam(value = "note", required = false) String note,
             @RequestParam(value = "voucher", required = false) String voucher,
             @RequestParam(value = "shippingFee", required = false, defaultValue = "0") BigDecimal shippingFee,
             Authentication authentication,
             RedirectAttributes redirect) {
-        String email = extractEmailFromAuthentication(authentication);
-        if (email == null) {
-            redirect.addFlashAttribute("error", "Không thể xác định email người dùng. Vui lòng đăng nhập lại.");
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            redirect.addFlashAttribute("error", "Không thể xác định người dùng. Vui lòng đăng nhập lại.");
             return "redirect:/thanh-toan";
         }
-        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email).orElse(null);
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
         if (nguoiDung == null) {
-            redirect.addFlashAttribute("error", "Không tìm thấy người dùng với email: " + email);
+            redirect.addFlashAttribute("error", "Người dùng không tồn tại.");
             return "redirect:/thanh-toan";
         }
+
         GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
         List<ChiTietGioHang> chiTietList = chiTietGioHangService.getGioHangChiTietList(gioHang.getId());
         if (chiTietList.isEmpty()) {
             redirect.addFlashAttribute("error", "Giỏ hàng của bạn hiện đang rỗng.");
             return "redirect:/thanh-toan";
         }
+
         DonHang donHang = new DonHang();
         donHang.setNguoiDung(nguoiDung);
         donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
@@ -200,7 +223,6 @@ public class KHThanhToanController {
         donHang.setPhiVanChuyen(shippingFee);
         donHang.setGhiChu(note);
 
-        // Set address based on selected addressId
         if (addressId != null) {
             DiaChiNguoiDung selectedAddress = diaChiNguoiDungRepository.findById(addressId)
                     .orElseThrow(() -> new RuntimeException("Địa chỉ không hợp lệ."));
@@ -209,14 +231,11 @@ public class KHThanhToanController {
                     selectedAddress.getPhuongXa() + ", " +
                     selectedAddress.getQuanHuyen() + ", " +
                     selectedAddress.getTinhThanhPho());
-            // Override recipient details if provided
             donHang.setGhiChu(note != null ? note + " | Người nhận: " + fullName + ", SĐT: " + phone : "Người nhận: " + fullName + ", SĐT: " + phone);
         } else if (customAddress != null && !customAddress.trim().isEmpty()) {
-            // Handle custom address input
             donHang.setDiaChiGiaoHang(customAddress);
             donHang.setGhiChu(note != null ? note + " | Người nhận: " + fullName + ", SĐT: " + phone : "Người nhận: " + fullName + ", SĐT: " + phone);
         } else {
-            // Fallback to default address
             Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
             if (defaultAddress.isPresent()) {
                 donHang.setDiaChi(defaultAddress.get());
@@ -235,7 +254,6 @@ public class KHThanhToanController {
                 .orElseThrow(() -> new RuntimeException("Phương thức thanh toán không hợp lệ."));
         donHang.setPhuongThucThanhToan(pttt);
 
-        // Existing logic for order items, vouchers, and totals remains unchanged
         BigDecimal tongTien = BigDecimal.ZERO;
         List<ChiTietDonHang> chiTietListDH = new ArrayList<>();
         for (ChiTietGioHang item : chiTietList) {
@@ -302,13 +320,12 @@ public class KHThanhToanController {
         donHangRepo.save(donHang);
         donHangRepo.flush();
         chiTietDonHangRepo.saveAll(chiTietListDH);
-        hoaDonService.createHoaDonFromDonHang(donHang); // ← BẮT BUỘC
-        System.out.println("🔥 Đã lưu đơn hàng, chuẩn bị gửi thông báo tới admin...");
+        hoaDonService.createHoaDonFromDonHang(donHang);
         thongBaoService.taoThongBaoHeThong(
                 "admin",
                 "Khách hàng đặt đơn hàng online",
                 "Mã đơn hàng: " + donHang.getMaDonHang(),
-                donHang // ✅ Gửi vào để tránh lỗi null
+                donHang
         );
         chiTietGioHangService.clearGioHang(gioHang.getId());
 
@@ -316,16 +333,15 @@ public class KHThanhToanController {
         return "redirect:/thanh-toan";
     }
 
-
     @PostMapping("/api/checkout/apply-voucher")
     public ResponseEntity<?> applyVoucher(@RequestParam("voucher") String voucherCode, Authentication authentication) {
         try {
-            String email = extractEmailFromAuthentication(authentication);
-            if (email == null) {
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
             }
 
-            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email).orElse(null);
+            NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
             if (nguoiDung == null) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Người dùng không tồn tại."));
             }
@@ -378,13 +394,15 @@ public class KHThanhToanController {
     @GetMapping("/api/checkout/default-address")
     public ResponseEntity<?> getDefaultAddress(Authentication authentication) {
         try {
-            String email = extractEmailFromAuthentication(authentication);
-            if (email == null) {
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
             }
 
-            NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
-                    .orElseThrow(() -> new RuntimeException("Người dùng không tồn tại."));
+            NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+            if (nguoiDung == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Người dùng không tồn tại."));
+            }
 
             Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
             if (defaultAddress.isEmpty()) {
@@ -400,7 +418,6 @@ public class KHThanhToanController {
         }
     }
 
-    // Lớp hỗ trợ cho phản hồi API
     public static class ApiResponse {
         private boolean success;
         private String message;

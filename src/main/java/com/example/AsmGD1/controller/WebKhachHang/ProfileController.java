@@ -33,17 +33,14 @@ public class ProfileController {
     @GetMapping
     public String viewProfile(Model model, Authentication authentication) {
         try {
-            String username = authentication.getName();
+            System.out.println("Authentication name: " + authentication.getName());
+            System.out.println("Principal: " + authentication.getPrincipal());
             NguoiDung user = profileService.getCurrentUser();
             if (user == null || !user.getTrangThai()) {
                 model.addAttribute("error", "Người dùng không tồn tại hoặc đã bị khóa");
                 return "WebKhachHang/profile";
             }
-            Map<String, String> userInfo = new HashMap<>();
-            userInfo.put("hoTen", user.getHoTen());
-            userInfo.put("email", user.getEmail());
-            userInfo.put("soDienThoai", user.getSoDienThoai());
-            model.addAttribute("userInfo", userInfo);
+            model.addAttribute("user", user); // Truyền đối tượng NguoiDung với key "user"
             model.addAttribute("addresses", profileService.getUserAddresses());
             return "WebKhachHang/profile";
         } catch (Exception e) {

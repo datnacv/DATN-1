@@ -28,4 +28,6 @@ public interface ProfileRepository extends JpaRepository<NguoiDung, UUID> {
     @Modifying
     @Query("UPDATE DiaChiNguoiDung d SET d.macDinh = false WHERE d.nguoiDung.id = :nguoiDungId")
     void removeDefaultFlag(UUID nguoiDungId);
+
+    Optional<NguoiDung> findByEmailAndTrangThai(String email, boolean trangThai);
 }
