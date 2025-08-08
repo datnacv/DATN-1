@@ -5,6 +5,7 @@ import com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO;
 import com.example.AsmGD1.dto.ThongKe.ThongKeDoanhThuDTO;
 import com.example.AsmGD1.repository.SanPham.HinhAnhSanPhamRepository;
 import com.example.AsmGD1.repository.ThongKe.ThongKeRepository;
+import com.example.AsmGD1.service.BanHang.DonHangService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,8 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,7 +24,8 @@ public class ThongKeService {
 
     @Autowired
     private HinhAnhSanPhamRepository hinhAnhSanPhamRepository;
-
+    @Autowired
+    private DonHangService donHangService;
     public ThongKeDoanhThuDTO layThongKeDoanhThu(String boLoc, LocalDate ngayBatDau, LocalDate ngayKetThuc) {
         ThongKeDoanhThuDTO thongKe = new ThongKeDoanhThuDTO();
         LocalDate homNay = LocalDate.now();
@@ -202,4 +203,76 @@ public class ThongKeService {
     private Integer defaultInteger(Integer value) {
         return value != null ? value : 0;
     }
+    public Map<String, Map<String, Integer>> thongKeChiTietPhuongThucVaTrangThai(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
+        LocalDateTime start = ngayBatDau.atStartOfDay();
+        LocalDateTime end = ngayKetThuc.plusDays(1).atStartOfDay(); // không bỏ sót cuối ngày
+        return donHangService.thongKeChiTietTheoPhuongThucVaTrangThai(start, end);
+    }
+    private String normalize(String s) {
+        if (s == null) return "";
+        String lower = s.toLowerCase().trim();
+
+        // bỏ dấu cơ bản
+        lower = java.text.Normalizer.normalize(lower, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+
+        // thay khoảng trắng thành underscore để dễ so khớp
+        lower = lower.replaceAll("\\s+", "_");
+        return lower;
+    }
+
+    private String toDisplayLabel(String raw) {
+        String n = normalize(raw);
+
+        // gom nhóm "thành công" / "hoàn thành"
+        if (n.equals("thanh_cong") || n.equals("hoan_thanh")) return "Thành công";
+
+        // các trạng thái hay gặp (bạn có thể bổ sung nếu hệ thống có thêm)
+        return switch (n) {
+            case "cho_xac_nhan", "cho_duyet" -> "Chờ xác nhận";
+            case "dang_chuan_bi", "chuan_bi" -> "Đang chuẩn bị";
+            case "dang_giao", "giao_hang" -> "Đang giao";
+            case "da_huy", "huy" -> "Đã hủy";
+            case "tra_hang", "hoan_tra" -> "Trả hàng";
+            case "thanh_toan_that_bai" -> "Thanh toán thất bại";
+            // nếu không map được, trả lại bản gốc (viết hoa chữ cái đầu)
+            default -> {
+                String original = raw == null ? "" : raw.trim();
+                yield original.isEmpty() ? "Khác" :
+                        original.substring(0,1).toUpperCase() + original.substring(1);
+            }
+        };
+    }
+
+
+    public Map<String, Double> layPhanTramTatCaTrangThaiDonHang(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
+        LocalDateTime start = ngayBatDau.atStartOfDay();
+        LocalDateTime end = ngayKetThuc.atTime(LocalTime.MAX);
+
+        List<Object[]> rawData = thongKeRepository.thongKePhanTramTatCaTrangThaiDonHang(start, end);
+
+        // Tính tổng bản ghi lịch sử (để làm mẫu số)
+        int tong = rawData.stream()
+                .mapToInt(r -> ((Long) r[1]).intValue())
+                .sum();
+
+        // Gom và cộng dồn theo nhãn hiển thị
+        Map<String, Double> result = new LinkedHashMap<>();
+        for (Object[] row : rawData) {
+            String rawStatus = (String) row[0];
+            int count = ((Long) row[1]).intValue();
+
+            String label = toDisplayLabel(rawStatus);
+            double percent = (tong == 0) ? 0.0 : (count * 100.0 / tong);
+
+            result.merge(label, percent, Double::sum);
+        }
+
+        return result;
+    }
+
+
+
+
+
 }

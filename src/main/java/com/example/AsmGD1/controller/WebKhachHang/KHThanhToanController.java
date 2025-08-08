@@ -13,6 +13,7 @@ import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -81,6 +83,9 @@ public class KHThanhToanController {
     @Autowired
     private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
 
+    @Autowired
+    private ThongBaoService thongBaoService;
+
     private String extractEmailFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
@@ -89,6 +94,9 @@ public class KHThanhToanController {
             return ((NguoiDung) authentication.getPrincipal()).getEmail();
         }
         return authentication.getName();
+    }
+    private String dinhDangTien(BigDecimal soTien) {
+        return String.format("%,.0f", soTien).replace(",", ".") + " VND";
     }
 
     @GetMapping
@@ -150,7 +158,7 @@ public class KHThanhToanController {
         }
         return "WebKhachHang/thanh-toan";
     }
-
+    @Transactional
     @PostMapping("/dat-hang")
     public String datHang(
             @RequestParam("ptThanhToan") String ptThanhToan,
@@ -288,8 +296,17 @@ public class KHThanhToanController {
         donHang.setTongTien(tongTien.add(shippingFee).subtract(giamGia));
         donHang.setTienGiam(giamGia);
         donHangRepo.save(donHang);
+        donHangRepo.flush();
         chiTietDonHangRepo.saveAll(chiTietListDH);
+        System.out.println("🔥 Đã lưu đơn hàng, chuẩn bị gửi thông báo tới admin...");
+        thongBaoService.taoThongBaoHeThong(
+                "admin",
+                "Khách hàng đặt đơn hàng online",
+                "Mã đơn hàng: " + donHang.getMaDonHang(),
+                donHang // ✅ Gửi vào để tránh lỗi null
+        );
         chiTietGioHangService.clearGioHang(gioHang.getId());
+
         redirect.addFlashAttribute("success", "Đặt hàng thành công! Mã đơn hàng: " + donHang.getMaDonHang());
         return "redirect:/thanh-toan";
     }

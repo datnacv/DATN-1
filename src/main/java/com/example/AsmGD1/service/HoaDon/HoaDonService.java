@@ -609,4 +609,90 @@ public class HoaDonService {
                 .filter(item -> item.getTrangThaiHoanTra() == null || !item.getTrangThaiHoanTra())
                 .collect(Collectors.toList());
     }
+    private void validateTransition(String oldStatus, String newStatus, String salesMethod) {
+        String o = oldStatus == null ? "Chưa xác nhận" : oldStatus;
+
+        // Hủy đơn
+        if ("Hủy đơn hàng".equals(newStatus)) {
+            if (List.of("Chưa xác nhận", "Đã xác nhận", "Đã xác nhận Online", "Đang xử lý Online", "Đang vận chuyển").contains(o)) {
+                return;
+            }
+            throw new IllegalStateException("Không thể hủy từ trạng thái: " + o);
+        }
+
+        // Tại quầy
+        if ("Tại quầy".equalsIgnoreCase(salesMethod)) {
+            if (("Chưa xác nhận".equals(o) && "Hoàn thành".equals(newStatus)) || "Hoàn thành".equals(newStatus)) return;
+            throw new IllegalStateException("Luồng Tại quầy không hỗ trợ chuyển từ " + o + " -> " + newStatus);
+        }
+
+        // Giao hàng
+        if ("Giao hàng".equalsIgnoreCase(salesMethod)) {
+            if ("Chưa xác nhận".equals(o) && "Đã xác nhận".equals(newStatus)) return;
+            if ("Đã xác nhận".equals(o) && "Đang vận chuyển".equals(newStatus)) return;
+            if ("Đang vận chuyển".equals(o) && "Vận chuyển thành công".equals(newStatus)) return;
+            if ("Vận chuyển thành công".equals(o) && "Hoàn thành".equals(newStatus)) return;
+            throw new IllegalStateException("Luồng Giao hàng không hỗ trợ chuyển từ " + o + " -> " + newStatus);
+        }
+
+        // Online
+        if ("Online".equalsIgnoreCase(salesMethod)) {
+            if ("Chưa xác nhận".equals(o) && "Đã xác nhận Online".equals(newStatus)) return;
+            if ("Đã xác nhận Online".equals(o) && "Đang xử lý Online".equals(newStatus)) return;
+            if ("Đang xử lý Online".equals(o) && "Đang vận chuyển".equals(newStatus)) return;
+            if ("Đang vận chuyển".equals(o) && "Vận chuyển thành công".equals(newStatus)) return;
+            if ("Vận chuyển thành công".equals(o) && "Hoàn thành".equals(newStatus)) return;
+            throw new IllegalStateException("Luồng Online không hỗ trợ chuyển từ " + o + " -> " + newStatus);
+        }
+
+        throw new IllegalStateException("Phương thức bán hàng không hợp lệ: " + salesMethod);
+    }
+    private String mapHoaDonToDonHangStatus(String invoiceStatus) {
+        return switch (invoiceStatus) {
+            case "Chưa xác nhận" -> "cho_xac_nhan";
+            case "Đã xác nhận", "Đã xác nhận Online" -> "da_xac_nhan";
+            case "Đang xử lý Online" -> "dang_xu_ly";
+            case "Đang vận chuyển" -> "dang_giao";
+            case "Vận chuyển thành công" -> "da_giao";
+            case "Hoàn thành" -> "hoan_thanh";
+            case "Hủy đơn hàng" -> "huy";
+            default -> null; // không thay đổi trạng thái DonHang
+        };
+    }
+
+    @Transactional
+    public HoaDon updateStatus(UUID hoaDonId, String newStatus, String ghiChu, boolean updateDonHangToo) {
+        HoaDon hd = hoaDonRepository.findById(hoaDonId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
+        validateTransition(hd.getTrangThai(), newStatus, hd.getDonHang().getPhuongThucBanHang());
+
+        hd.setTrangThai(newStatus);
+        hd.setGhiChu(ghiChu);
+        if (List.of("Hoàn thành","Hủy đơn hàng","Vận chuyển thành công").contains(newStatus)) {
+            hd.setNgayThanhToan(LocalDateTime.now());
+        }
+
+        LichSuHoaDon ls = new LichSuHoaDon();
+        ls.setHoaDon(hd);
+        ls.setTrangThai(newStatus);
+        ls.setGhiChu(ghiChu);
+        ls.setThoiGian(LocalDateTime.now());
+        lichSuHoaDonRepository.save(ls);
+        hd.getLichSuHoaDons().add(ls);
+
+        if (updateDonHangToo) {
+            DonHang dh = hd.getDonHang();
+            if (dh != null) {
+                String s = mapHoaDonToDonHangStatus(newStatus);
+                dh.setTrangThai(s);
+                if ("hoan_thanh".equals(s)) {
+                    dh.setTrangThaiThanhToan(true);
+                    dh.setThoiGianThanhToan(LocalDateTime.now());
+                }
+                donHangRepository.save(dh);
+            }
+        }
+        return hoaDonRepository.saveAndFlush(hd);
+    }
+
 }

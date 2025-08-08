@@ -95,4 +95,18 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
             "FROM ThongKe tk " +
             "WHERE tk.ngayThanhToan = :date")
     Integer laySanPhamBieuDoTheoNgay(@Param("date") LocalDate date);
+    @Query("""
+    SELECT ls.trangThai, COUNT(ls)
+    FROM LichSuHoaDon ls
+    JOIN ls.hoaDon hd
+    JOIN hd.donHang dh
+    WHERE ls.thoiGian BETWEEN :batDau AND :ketThuc
+      AND ls.trangThai IS NOT NULL
+    GROUP BY ls.trangThai
+""")
+    List<Object[]> thongKePhanTramTatCaTrangThaiDonHang(
+            @Param("batDau") LocalDateTime batDau,
+            @Param("ketThuc") LocalDateTime ketThuc);
+
+
 }

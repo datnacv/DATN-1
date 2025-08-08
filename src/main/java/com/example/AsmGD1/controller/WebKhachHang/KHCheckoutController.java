@@ -2,13 +2,13 @@ package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.dto.KhachHang.ThanhToan.APIResponse;
 import com.example.AsmGD1.dto.KhachHang.ThanhToan.CheckoutRequest;
-import com.example.AsmGD1.entity.ChiTietGioHang;
-import com.example.AsmGD1.entity.DonHang;
-import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.entity.PhieuGiamGia;
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.KHDonHangRepository;
 import com.example.AsmGD1.repository.GiamGia.KHPhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.NguoiDung.KHNguoiDungRepository;
+import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
+import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
 import com.example.AsmGD1.service.WebKhachHang.CheckoutService;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/checkout")
@@ -52,9 +53,13 @@ public class KHCheckoutController {
 
     @Autowired
     private PhieuGiamGiaService phieuGiamGiaService;
-
     @Autowired
     private PhieuGiamGiaCuaNguoiDungService phieuGiamGiaCuaNguoiDungService;
+    @Autowired
+    private ThongBaoNhomRepository thongBaoNhomRepository;
+
+    @Autowired
+    private ChiTietThongBaoNhomRepository chiTietThongBaoNhomRepository;
 
     // DTO để nhận dữ liệu checkoutItem từ frontend
     public static class CheckoutItem {
@@ -181,8 +186,31 @@ public class KHCheckoutController {
 
             NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
             logger.info("Submitting order for user: {}", nguoiDung.getTenDangNhap());
+
             DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
             logger.info("Order submitted successfully: {}", donHang.getMaDonHang());
+
+            // ✅ Thêm đoạn tạo thông báo cho admin ở đây:
+            ThongBaoNhom thongBao = new ThongBaoNhom();
+            thongBao.setId(UUID.randomUUID());
+            thongBao.setDonHang(donHang);
+            thongBao.setVaiTroNhan("admin");
+            thongBao.setTieuDe("Khách hàng đặt đơn hàng");
+            thongBao.setNoiDung("Mã đơn: " + donHang.getMaDonHang());
+            thongBao.setThoiGianTao(LocalDateTime.now());
+            thongBao.setTrangThai("Mới");
+            thongBaoNhomRepository.save(thongBao);
+
+            List<NguoiDung> danhSachAdmin = nguoiDungRepository.findByVaiTro("admin");
+            for (NguoiDung admin : danhSachAdmin) {
+                ChiTietThongBaoNhom chiTiet = new ChiTietThongBaoNhom();
+                chiTiet.setId(UUID.randomUUID());
+                chiTiet.setNguoiDung(admin);
+                chiTiet.setThongBaoNhom(thongBao);
+                chiTiet.setDaXem(false);
+                chiTietThongBaoNhomRepository.save(chiTiet);
+            }
+
             return ResponseEntity.ok(new APIResponse("Đặt hàng thành công", donHang.getMaDonHang()));
         } catch (RuntimeException e) {
             logger.error("Error submitting order: {}", e.getMessage());
@@ -192,6 +220,7 @@ public class KHCheckoutController {
             return ResponseEntity.badRequest().body(new APIResponse("Lỗi không xác định: " + e.getMessage()));
         }
     }
+
 
     public static class ApiResponse {
         private boolean success;
