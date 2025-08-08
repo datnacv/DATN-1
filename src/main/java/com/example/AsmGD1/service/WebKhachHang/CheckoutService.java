@@ -16,6 +16,7 @@ import com.example.AsmGD1.repository.WebKhachHang.KhachHangChiTietSanPhamReposit
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
+import com.example.AsmGD1.service.SanPham.ChiTietSanPhamService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,6 +84,9 @@ public class CheckoutService {
     @Autowired
     private PhieuGiamGiaCuaNguoiDungService phieuGiamGiaCuaNguoiDungService;
 
+    @Autowired
+    private ChiTietSanPhamService chiTietSanPhamService;
+
     @Transactional
     public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request, UUID addressId) {
         DonHang donHang = new DonHang();
@@ -142,9 +146,11 @@ public class CheckoutService {
             chiTiet.setGhiChu(request.getNotes());
             chiTietList.add(chiTiet);
             tongTien = tongTien.add(thanhTien);
-            chiTietSP.setSoLuongTonKho(chiTietSP.getSoLuongTonKho() - soLuong);
-            chiTietSanPhamRepository.save(chiTietSP);
-            logger.info("Đã giảm tồn kho: {} -> {}", chiTietSP.getSanPham().getTenSanPham(), chiTietSP.getSoLuongTonKho());
+
+            // Cập nhật số lượng tồn kho và trạng thái
+            chiTietSanPhamService.updateStockAndStatus(chiTietSP.getId(), -soLuong);
+            logger.info("Đã cập nhật tồn kho và trạng thái cho sản phẩm: {} -> Số lượng còn lại: {}",
+                    chiTietSP.getSanPham().getTenSanPham(), chiTietSP.getSoLuongTonKho());
         }
 
         BigDecimal giamGia = BigDecimal.ZERO;

@@ -86,8 +86,9 @@ public class KHThanhToanController {
 
     @Autowired
     private ThongBaoService thongBaoService;
+
     @Autowired
-    HoaDonService hoaDonService;
+    private HoaDonService hoaDonService;
 
     private String extractEmailFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
