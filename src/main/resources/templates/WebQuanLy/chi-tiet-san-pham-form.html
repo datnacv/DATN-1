@@ -1361,6 +1361,18 @@
             const newStatus = $(this).is(':checked');
             const statusLabel = $(this).next('.form-check-label');
 
+            // Lấy số lượng tồn kho từ bảng
+            const row = $(this).closest('tr');
+            const stockQuantity = parseInt(row.find('td').eq(12).text()) || 0; // Cột số lượng tồn kho là cột thứ 13 (index 12)
+
+            // Nếu bật trạng thái (newStatus = true) nhưng số lượng tồn kho = 0
+            if (newStatus && stockQuantity === 0) {
+                showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
+                $(this).prop('checked', false); // Hoàn tác thay đổi
+                statusLabel.text('Ngừng Bán');
+                return;
+            }
+
             if (!confirm(`Bạn có chắc muốn thay đổi trạng thái thành "${newStatus ? 'Đang Bán' : 'Ngừng Bán'}"?`)) {
                 $(this).prop('checked', !newStatus);
                 return;
@@ -1397,6 +1409,7 @@
             const statusInput = $('#editStatus');
             const statusLabel = $('#statusLabel');
             const stockQuantity = parseInt($('#editStockQuantity').val()) || 0;
+
             if (stockQuantity === 0) {
                 statusInput.prop('checked', false).prop('disabled', true);
                 statusLabel.text('Ngừng Bán (Hết hàng)');

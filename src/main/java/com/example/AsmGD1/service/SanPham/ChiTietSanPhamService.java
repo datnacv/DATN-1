@@ -265,6 +265,12 @@ public class ChiTietSanPhamService {
         ThuongHieu thuongHieu = thuongHieuRepo.findById(dto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + dto.getBrandId()));
 
+        // Kiểm tra trạng thái khi thêm mới
+        boolean newStatus = dto.getStatus() != null ? dto.getStatus() : dto.getStockQuantity() > 0;
+        if (newStatus && dto.getStockQuantity() == 0) {
+            throw new RuntimeException("Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+        }
+
         ChiTietSanPham pd = new ChiTietSanPham();
         pd.setSanPham(sanPham);
         pd.setMauSac(mauSac);
@@ -279,7 +285,7 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(dto.getStockQuantity() > 0 ? true : dto.getStatus() != null ? dto.getStatus() : true);
+        pd.setTrangThai(newStatus);
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
@@ -315,7 +321,13 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
+
+        // Kiểm tra trạng thái: Không cho phép bật trạng thái nếu số lượng tồn kho = 0
+        boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0;
+        if (newStatus && updateDto.getStockQuantity() == 0) {
+            throw new RuntimeException("Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+        }
+        existingDetail.setTrangThai(newStatus);
 
         // Lưu chi tiết sản phẩm trước để đảm bảo ID tồn tại
         chiTietSanPhamRepo.save(existingDetail);

@@ -208,6 +208,13 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Kiểm tra số lượng tồn kho
+            if (trangThai != null && trangThai && chiTietSanPham.getSoLuongTonKho() == 0) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             chiTietSanPham.setTrangThai(trangThai != null ? trangThai : false);
             chiTietSanPhamService.save(chiTietSanPham);
 
