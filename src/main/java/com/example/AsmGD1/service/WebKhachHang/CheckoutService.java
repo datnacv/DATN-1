@@ -13,6 +13,7 @@ import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.KHChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.KHThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangChiTietSanPhamRepository;
+import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
@@ -28,6 +29,7 @@ import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -83,6 +85,9 @@ public class CheckoutService {
     @Autowired
     private PhieuGiamGiaCuaNguoiDungService phieuGiamGiaCuaNguoiDungService;
 
+    @Autowired
+    private ChienDichGiamGiaService chienDichGiamGiaService;
+
     @Transactional
     public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request, UUID addressId) {
         DonHang donHang = new DonHang();
@@ -131,6 +136,20 @@ public class CheckoutService {
             BigDecimal gia = chiTietSP.getGia();
             int soLuong = item.getSoLuong();
             BigDecimal thanhTien = gia.multiply(BigDecimal.valueOf(soLuong));
+
+            // Tính giảm giá theo chiến dịch
+            BigDecimal giamGiaChiTiet = BigDecimal.ZERO;
+            Optional<ChienDichGiamGia> activeCampaignOpt = chienDichGiamGiaService.getActiveCampaignForProduct(chiTietSP.getSanPham().getId());
+            if (activeCampaignOpt.isPresent()) {
+                ChienDichGiamGia activeCampaign = activeCampaignOpt.get();
+                if (activeCampaign.getStatus().equals("ONGOING")) {
+                    giamGiaChiTiet = gia.multiply(activeCampaign.getPhanTramGiam().divide(BigDecimal.valueOf(100)))
+                            .multiply(BigDecimal.valueOf(soLuong));
+                    thanhTien = thanhTien.subtract(giamGiaChiTiet);
+                }
+            }
+
+            // Tạo chi tiết đơn hàng
             ChiTietDonHang chiTiet = new ChiTietDonHang();
             chiTiet.setDonHang(donHang);
             chiTiet.setChiTietSanPham(chiTietSP);
@@ -147,6 +166,7 @@ public class CheckoutService {
             logger.info("Đã giảm tồn kho: {} -> {}", chiTietSP.getSanPham().getTenSanPham(), chiTietSP.getSoLuongTonKho());
         }
 
+        // Xử lý voucher giảm giá
         BigDecimal giamGia = BigDecimal.ZERO;
         if (request.getVoucher() != null && !request.getVoucher().isEmpty()) {
             PhieuGiamGia phieu = phieuGiamGiaRepository.findByMa(request.getVoucher())
@@ -162,7 +182,7 @@ public class CheckoutService {
                 throw new RuntimeException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.");
             }
 
-            // Kiểm tra loại phiếu: cá nhân / công khai và TRỪ LƯỢT **tại đây** (chỉ 1 lần khi chốt đơn)
+            // Kiểm tra loại phiếu: cá nhân / công khai và TRỪ LƯỢT
             boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
             boolean used = isCaNhan
                     ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
@@ -176,10 +196,8 @@ public class CheckoutService {
 
             // TÍNH GIẢM = cùng một hàm như bên KHThanhToanController
             giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
-
             donHang.setPhieuGiamGia(phieu);
         }
-
 
         donHang.setTienGiam(giamGia);
         donHang.setTongTien(tongTien.add(donHang.getPhiVanChuyen()).subtract(giamGia));
@@ -204,6 +222,7 @@ public class CheckoutService {
         logger.info("Đã lưu đơn hàng: {}", donHang.getMaDonHang());
 
         hoaDonService.createHoaDonFromDonHang(donHang);
+
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDung.getId());
         if (gioHang != null) {
             for (CheckoutRequest.OrderItem item : request.getOrderItems()) {
@@ -212,16 +231,11 @@ public class CheckoutService {
             }
         }
 
-// Định dạng tổng tiền thành tiền tệ
+        // Định dạng tổng tiền thành tiền tệ
         DecimalFormat formatter = new DecimalFormat("#,###.###");
         String formattedTongTien = formatter.format(donHang.getTongTien()) + " VNĐ";
 
-// Lấy thông tin người nhận từ request
-        String fullName = request.getFullName();  // Tên người nhận từ request
-        String phone = request.getPhone();  // Số điện thoại người nhận từ request
-        String shippingAddress = donHang.getDiaChiGiaoHang();  // Địa chỉ giao hàng từ đơn hàng
-
-// Gửi email cho khách hàng
+        // Gửi email cho khách hàng
         String subject = "Xác nhận đơn hàng #" + donHang.getMaDonHang();
         String paymentMethodName = donHang.getPhuongThucThanhToan().getTenPhuongThuc();
         String text = "<html>" +
@@ -323,9 +337,9 @@ public class CheckoutService {
                 "<p>Đơn hàng của bạn đã được đặt thành công! Chúng tôi sẽ nhanh chóng xử lý và gửi đơn hàng đến bạn trong thời gian sớm nhất. Dưới đây là thông tin chi tiết về đơn hàng:</p>" +
                 "<div class='order-details'>" +
                 "<p><strong>Mã đơn hàng:</strong> " + donHang.getMaDonHang() + "</p>" +
-                "<p><strong>Tên người nhận:</strong> " + fullName + "</p>" +
-                "<p><strong>Số điện thoại người nhận:</strong> " + phone + "</p>" +
-                "<p><strong>Địa chỉ giao hàng:</strong> " + shippingAddress + "</p>" +
+                "<p><strong>Tên người nhận:</strong> " + request.getFullName() + "</p>" +
+                "<p><strong>Số điện thoại người nhận:</strong> " + request.getPhone() + "</p>" +
+                "<p><strong>Địa chỉ giao hàng:</strong> " + donHang.getDiaChiGiaoHang() + "</p>" +
                 "<p><strong>Tổng tiền:</strong> " + formattedTongTien + "</p>" +
                 "<p><strong>Phương thức thanh toán:</strong> " + paymentMethodName + "</p>" +
                 "</div>" +
@@ -343,6 +357,7 @@ public class CheckoutService {
         emailService.sendEmail(nguoiDung.getEmail(), subject, text);
         return donHang;
     }
+
 
 
 }
