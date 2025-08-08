@@ -48,4 +48,7 @@ public interface ChienDichGiamGiaService {
     ChiTietSanPham layChiTietTheoId(UUID id);
 
     void truSoLuong(UUID idChienDich, int soLuongTru);
+
+    // Tìm chiến dịch giảm giá đang hoạt động cho sản phẩm
+    Optional<ChienDichGiamGia> getActiveCampaignForProduct(UUID sanPhamId);
 }
