@@ -87,9 +87,10 @@ public class ThongKeController {
         List<SanPhamBanChayDTO> sanPhamBanChay = thongKeDichVu.laySanPhamBanChay(boLoc, ngayBatDau, ngayKetThuc);
         List<SanPhamTonKhoThapDTO> sanPhamTonKhoThap = thongKeDichVu.laySanPhamTonKhoThap();
 
-        model.addAttribute("chartLabels", thongKeDichVu.layNhanBieuDo(ngayBatDau, ngayKetThuc));
-        model.addAttribute("chartOrders", thongKeDichVu.layDonHangBieuDo(ngayBatDau, ngayKetThuc));
-        model.addAttribute("chartProducts", thongKeDichVu.laySanPhamBieuDo(ngayBatDau, ngayKetThuc));
+        model.addAttribute("chartLabels",  thongKeDichVu.layNhanBieuDoLienTuc(ngayBatDau, ngayKetThuc));
+        model.addAttribute("chartOrders",  thongKeDichVu.layDonHangBieuDoLienTuc(ngayBatDau, ngayKetThuc));
+        model.addAttribute("chartRevenue", thongKeDichVu.layDoanhThuBieuDoLienTuc(ngayBatDau, ngayKetThuc));
+
 
         model.addAttribute("stats", thongKe);
         model.addAttribute("topSellingProducts", sanPhamBanChay);
