@@ -112,7 +112,63 @@
       <div class="col-md-4 stat-card">Doanh thu hôm nay<br><span class="text-primary" th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span></div>
       <div class="col-md-4 stat-card">Sản phẩm bán được tháng này<br><span class="text-primary" th:text="${stats.soSanPhamThang}"></span></div>
     </div>
+    <div class="row text-center mb-4">
+      <div class="col-md-4 stat-card">
+        Tại quầy<br>
+        <span class="text-primary"
+              th:text="${tongDonTheoPhuongThuc['Tại quầy'] ?: 0} + ' đơn'">
+    </span>
+      </div>
+      <div class="col-md-4 stat-card">
+        Giao hàng<br>
+        <span class="text-primary"
+              th:text="${tongDonTheoPhuongThuc['Giao hàng'] ?: 0} + ' đơn'">
+    </span>
+      </div>
+      <div class="col-md-4 stat-card">
+        Online<br>
+        <span class="text-primary"
+              th:text="${tongDonTheoPhuongThuc['Online'] ?: 0} + ' đơn'">
+    </span>
+      </div>
+    </div>
 
+
+    <!-- Hàng ngang 1 -->
+    <div class="row">
+      <div class="col-md-6">
+        <!-- Tốc độ tăng trưởng -->
+        <div class="card-box">
+          <h5 class="fw-bold mb-3">Tốc độ tăng trưởng ✨</h5>
+          <div class="growth-box"><span>📅</span> Doanh thu ngày: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>📅</span> Doanh thu tháng: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuThang, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>📅</span> Doanh thu năm: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNam, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNam % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNam, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNam, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>📦</span> Sản phẩm tháng: <span th:text="${stats.soSanPhamThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongSanPhamThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongSanPhamThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongSanPhamThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>🧾</span> Hóa đơn ngày: <span th:text="${stats.soDonHangNgay}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>🧾</span> Hóa đơn tháng: <span th:text="${stats.soDonHangThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <!-- Trạng thái đơn hàng tháng này -->
+        <div class="card-box">
+          <h5 class="fw-bold mb-3">Trạng thái đơn hàng </h5>
+          <div class="row">
+            <div class="col-md-6">
+              <ul class="status-list">
+                <li th:each="entry : ${trangThaiPercentMap}">
+                  <span th:text="${entry.key} + ': '"></span>
+                  <span th:text="${entry.value % 1 == 0 ? #numbers.formatInteger(entry.value, 0, 'POINT') + '%' : #numbers.formatDecimal(entry.value, 1, 'POINT', 1, 'COMMA') + '%'}"></span>
+                </li>
+              </ul>
+
+            </div>
+            <div class="col-md-6">
+              <canvas id="pieChart" height="230"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="card-box">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -145,60 +201,6 @@
       <div class="chart-title">Biểu Đồ Thống Kê Hóa Đơn Và Sản Phẩm</div>
       <canvas id="chart" height="150"></canvas>
     </div>
-
-    <!-- Hàng ngang 1 -->
-    <div class="row">
-      <div class="col-md-6">
-        <!-- Top sản phẩm bán chạy -->
-        <div class="card-box">
-          <h5 class="fw-bold mb-3">Top Sản Phẩm Bán Chạy</h5>
-          <div class="table-responsive">
-            <table class="table table-bordered table-hover text-center">
-              <thead style="background-color: #fef4d7;">
-              <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Số lượng đã bán</th></tr>
-              </thead>
-              <tbody>
-              <tr th:each="item, stat : ${topSellingProducts}">
-                <td th:text="${stat.index + 1}">1</td>
-                <td>
-                  <img th:if="${item.imageUrl != null}"
-                       th:src="${item.imageUrl}"
-                       style="height: 60px;"
-                       alt="ảnh"/>
-                </td>
-
-                <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
-                <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
-                <td th:text="${item.soLuongDaBan}"></td>
-              </tr>
-              <tr th:if="${topSellingProducts == null or #lists.isEmpty(topSellingProducts)}">
-                <td colspan="5">Không có dữ liệu.</td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <!-- Trạng thái đơn hàng tháng này -->
-        <div class="card-box">
-          <h5 class="fw-bold mb-3">Trạng thái đơn hàng </h5>
-          <div class="row">
-            <div class="col-md-6">
-              <ul class="status-list">
-                <li>Thành công: <span th:with="locale='vi_VN'" th:text="${successPercent % 1 == 0 ? #numbers.formatInteger(successPercent, 0, 'POINT') + '%' : #numbers.formatDecimal(successPercent, 1, 'POINT', 1, 'COMMA') + '%'}"></span></li>
-                <li>Đã hủy: <span th:with="locale='vi_VN'" th:text="${failedPercent % 1 == 0 ? #numbers.formatInteger(failedPercent, 0, 'POINT') + '%' : #numbers.formatDecimal(failedPercent, 1, 'POINT', 1, 'COMMA') + '%'}"></span></li>
-                <!-- Additional statuses can be added if provided by the backend -->
-              </ul>
-            </div>
-            <div class="col-md-6">
-              <canvas id="pieChart" height="230"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Hàng ngang 2 -->
     <div class="row">
       <div class="col-md-6">
@@ -232,15 +234,34 @@
         </div>
       </div>
       <div class="col-md-6">
-        <!-- Tốc độ tăng trưởng -->
+        <!-- Top sản phẩm bán chạy -->
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Tốc độ tăng trưởng ✨</h5>
-          <div class="growth-box"><span>📅</span> Doanh thu ngày: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>📅</span> Doanh thu tháng: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuThang, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>📅</span> Doanh thu năm: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNam, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNam % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNam, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNam, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>📦</span> Sản phẩm tháng: <span th:text="${stats.soSanPhamThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongSanPhamThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongSanPhamThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongSanPhamThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>🧾</span> Hóa đơn ngày: <span th:text="${stats.soDonHangNgay}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>🧾</span> Hóa đơn tháng: <span th:text="${stats.soDonHangThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <h5 class="fw-bold mb-3">Top Sản Phẩm Bán Chạy</h5>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center">
+              <thead style="background-color: #fef4d7;">
+              <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Số lượng đã bán</th></tr>
+              </thead>
+              <tbody>
+              <tr th:each="item, stat : ${topSellingProducts}">
+                <td th:text="${stat.index + 1}">1</td>
+                <td>
+                  <img th:if="${item.imageUrl != null}"
+                       th:src="${item.imageUrl}"
+                       style="height: 60px;"
+                       alt="ảnh"/>
+                </td>
+
+                <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
+                <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
+                <td th:text="${item.soLuongDaBan}"></td>
+              </tr>
+              <tr th:if="${topSellingProducts == null or #lists.isEmpty(topSellingProducts)}">
+                <td colspan="5">Không có dữ liệu.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -312,15 +333,23 @@
 
 <script th:inline="javascript">
   const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+  const pieLabels = [[${trangThaiPercentMap.keySet()}]];
+  const pieValues = [[${trangThaiPercentMap.values()}]];
+
+  const backgroundColors = [
+    '#3498db', '#f39c12', '#9b59b6', '#2ecc71',
+    '#e74c3c', '#95a5a6', '#1abc9c', '#34495e',
+    '#d35400', '#c0392b'
+  ];
+
   new Chart(pieCtx, {
     type: 'pie',
     data: {
-      labels: ['Thành công', 'Đã hủy'],
+      labels: pieLabels,
       datasets: [{
-        data: [
-          /*[[${successPercent}]]*/, /*[[${failedPercent}]]*/
-        ],
-        backgroundColor: ['#3498db', '#e74c3c'],
+        data: pieValues,
+        backgroundColor: backgroundColors.slice(0, pieLabels.length),
         borderWidth: 1
       }]
     },
@@ -329,7 +358,7 @@
       plugins: {
         title: {
           display: true,
-          text: 'Trạng thái đơn hàng tháng này',
+          text: 'Tỷ lệ trạng thái đơn hàng',
           font: { size: 16 }
         },
         legend: {
@@ -340,7 +369,7 @@
             generateLabels: function(chart) {
               const data = chart.data;
               return data.labels.map((label, i) => ({
-                text: label + ': ' + data.datasets[0].data[i] + '%',
+                text: label + ': ' + data.datasets[0].data[i].toFixed(1) + '%',
                 fillStyle: data.datasets[0].backgroundColor[i],
                 hidden: isNaN(data.datasets[0].data[i]) || data.datasets[0].data[i] === null,
                 index: i
@@ -352,6 +381,9 @@
     }
   });
 </script>
+
+
+
 
 <!-- Filter form ẩn -->
 <form id="filterForm" method="get" th:action="@{/acvstore/thong-ke}" style="display: none;">

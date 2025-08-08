@@ -1,6 +1,7 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.entity.*;
+import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
@@ -50,7 +51,8 @@ public class KHDonMuaController {
 
     @Autowired
     private HoaDonService hoaDonService;
-
+    @Autowired
+    private DonHangRepository donHangRepository;
     @GetMapping
     public String donMuaPage(@RequestParam(name = "status", defaultValue = "tat-ca") String status,
                              Model model,
@@ -218,18 +220,21 @@ public class KHDonMuaController {
         }
 
         try {
+            // Cập nhật hóa đơn
             hoaDon.setTrangThai("Hoàn thành");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setGhiChu("Khách hàng xác nhận đã nhận hàng");
+
+            // Cập nhật đơn hàng
+            DonHang donHang = hoaDon.getDonHang();
+            donHang.setTrangThai("THANH_CONG");
+            donHangRepository.save(donHang); // Cập nhật vào DB
+
+            // Lưu lịch sử và hóa đơn
             hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
             HoaDon savedHoaDon = hoaDonService.save(hoaDon);
 
-            System.out.println("Trạng thái HoaDon đã lưu: " + savedHoaDon.getTrangThai() + ", ID: " + savedHoaDon.getId());
-            if (!"Hoàn thành".equals(savedHoaDon.getTrangThai())) {
-                throw new RuntimeException("Không thể cập nhật trạng thái thành 'Hoàn thành'.");
-            }
-
-            // Gọi tạo thông báo qua service
+            // Gửi thông báo
             thongBaoService.taoThongBaoHeThong(
                     "admin",
                     "Đơn hàng đã hoàn thành",
@@ -238,9 +243,6 @@ public class KHDonMuaController {
             );
 
             return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công và gửi thông báo cho admin."));
-        } catch (ObjectOptimisticLockingFailureException e) {
-            System.err.println("Xung đột đồng thời khi lưu hóa đơn: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi xung đột đồng thời khi xác nhận. Vui lòng thử lại.");
         } catch (Exception e) {
             System.err.println("Lỗi khi xác nhận đơn hàng: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xác nhận: " + e.getMessage());

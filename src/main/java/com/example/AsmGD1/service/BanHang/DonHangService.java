@@ -210,9 +210,29 @@ public class DonHangService {
             donHang.setTrangThaiThanhToan(true);
             donHang.setThoiGianThanhToan(LocalDateTime.now());
         } else {
-            donHang.setTrangThaiThanhToan(false);
+            donHang.setTrangThaiThanhToan(true); // Cho các phương thức khác (ví dụ: chuyển khoản)
+            donHang.setThoiGianThanhToan(LocalDateTime.now());
         }
 
+// Set trạng thái đơn hàng theo logic mới
+        if ("Tại quầy".equalsIgnoreCase(donHangDTO.getPhuongThucBanHang())) {
+            if (donHang.getPhuongThucThanhToan() != null &&
+                    tienKhachDua != null &&
+                    tienKhachDua.compareTo(tongTienDonHang) >= 0) {
+
+                donHang.setTrangThaiThanhToan(true);
+                donHang.setThoiGianThanhToan(LocalDateTime.now());
+                donHang.setTrangThai("hoan_thanh"); // ✅ Đơn tại quầy đã thanh toán đủ tiền
+
+            } else {
+                donHang.setTrangThaiThanhToan(false);
+                donHang.setTrangThai("cho_xac_nhan"); // ❗ Chưa thanh toán
+            }
+        } else {
+            // Các đơn khác (Online / Giao hàng): luôn ở trạng thái chờ xác nhận ban đầu
+            donHang.setTrangThaiThanhToan(false);
+            donHang.setTrangThai("cho_xac_nhan");
+        }
         // Lưu đơn hàng
         donHangRepository.save(donHang);
 
@@ -385,4 +405,47 @@ public class DonHangService {
         ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
         return attr.getRequest().getSession();
     }
+    public Map<String, Map<String, Integer>> thongKeChiTietTheoPhuongThucVaTrangThai() {
+        List<Object[]> results = donHangRepository.thongKeTheoPhuongThucVaTrangThai();
+        Map<String, Map<String, Integer>> data = new LinkedHashMap<>();
+
+        for (Object[] row : results) {
+            String phuongThuc = (String) row[0];
+            String trangThai = (String) row[1]; // Dùng String thay vì enum
+            Long count = (Long) row[2];
+
+            data.computeIfAbsent(phuongThuc, k -> new LinkedHashMap<>())
+                    .put(trangThai, count.intValue());
+        }
+
+        return data;
+    }
+    public Map<String, Map<String, Integer>> thongKeChiTietTheoPhuongThucVaTrangThai(LocalDateTime start, LocalDateTime end) {
+        List<DonHang> donHangs = donHangRepository.findByThoiGianTaoBetween(start, end);
+
+        Map<String, Map<String, Integer>> result = new LinkedHashMap<>();
+
+        for (DonHang dh : donHangs) {
+            String phuongThuc = dh.getPhuongThucBanHang();
+            String trangThai = dh.getTrangThai();
+
+            result.putIfAbsent(phuongThuc, new LinkedHashMap<>());
+            Map<String, Integer> trangThaiMap = result.get(phuongThuc);
+            trangThaiMap.put(trangThai, trangThaiMap.getOrDefault(trangThai, 0) + 1);
+        }
+
+        return result;
+    }
+    public Map<String, Integer> demDonHangTheoPhuongThuc(LocalDateTime tuNgay, LocalDateTime denNgay) {
+        List<Object[]> ketQua = donHangRepository.demTheoPhuongThuc(tuNgay, denNgay);
+        Map<String, Integer> map = new HashMap<>();
+        for (Object[] obj : ketQua) {
+            String phuongThuc = (String) obj[0];
+            Long soLuong = (Long) obj[1];
+            map.put(phuongThuc, soLuong.intValue());
+        }
+        return map;
+    }
+
+
 }
