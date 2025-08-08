@@ -305,8 +305,9 @@
           <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>
         </div>
         <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
-        <div class="rating text-yellow-400 text-sm mt-1">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -347,8 +348,9 @@
           <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>
         </div>
         <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
-        <div class="rating text-yellow-400 text-sm mt-1">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -390,8 +392,9 @@
           <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>
         </div>
         <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
-        <div class="rating text-yellow-400 text-sm mt-1">
-          <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i><i class="far fa-star"></i>
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
