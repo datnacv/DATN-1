@@ -95,9 +95,7 @@
             <tbody>
             <tr th:each="item : ${chiTietGioHang}">
                 <td>
-                    <img th:each="hinhAnh : ${item.chiTietSanPham.hinhAnhSanPhams}"
-                         th:src="@{${hinhAnh.urlHinhAnh}}" alt="Image"
-                         style="width: 50px; height: 50px;"/>
+                    <img th:src="@{${item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh}}" alt="Image" style="width: 50px; height: 50px;"/>
                 </td>
                 <td th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
                 <td th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
