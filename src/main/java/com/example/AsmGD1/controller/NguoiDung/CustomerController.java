@@ -1,6 +1,7 @@
 package com.example.AsmGD1.controller.NguoiDung;
 
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.DiaChiKhachHangService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,6 +22,8 @@ public class CustomerController {
 
     @Autowired
     private NguoiDungService nguoiDungService;
+    @Autowired
+    private DiaChiKhachHangService diaChiKhachHangService;
 
     // Helper method để kiểm tra quyền admin
     private boolean isCurrentUserAdmin() {
@@ -95,7 +98,6 @@ public class CustomerController {
     public String addCustomer(@ModelAttribute("customer") NguoiDung customer,
                               RedirectAttributes redirectAttributes,
                               Authentication authentication) {
-        // Kiểm tra quyền admin hoặc employee
         if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền thêm khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
@@ -103,9 +105,10 @@ public class CustomerController {
         }
 
         try {
-            customer.setVaiTro("customer");
-            customer.setTrangThai(true); // Mặc định trạng thái là true khi thêm mới
-            nguoiDungService.save(customer);
+            // ⬇️ Đổi dòng dưới đây
+            // nguoiDungService.save(customer);
+            diaChiKhachHangService.saveCustomerWithDefaultAddress(customer);
+
             redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
@@ -115,11 +118,11 @@ public class CustomerController {
         return "redirect:/acvstore/customers";
     }
 
+
     @PostMapping("/edit")
     public String editCustomer(@ModelAttribute("customer") NguoiDung customer,
                                RedirectAttributes redirectAttributes,
                                Authentication authentication) {
-        // Kiểm tra quyền admin hoặc employee
         if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền sửa khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
@@ -127,8 +130,10 @@ public class CustomerController {
         }
 
         try {
-            customer.setVaiTro("customer");
-            nguoiDungService.save(customer);
+            // ⬇️ Đổi dòng dưới đây
+            // nguoiDungService.save(customer);
+            diaChiKhachHangService.updateCustomerAndAppendAddress(customer);
+
             redirectAttributes.addFlashAttribute("message", "Sửa khách hàng thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
@@ -137,6 +142,7 @@ public class CustomerController {
         }
         return "redirect:/acvstore/customers";
     }
+
 
 
 

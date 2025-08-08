@@ -13,6 +13,8 @@ import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.KHChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.KHThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangChiTietSanPhamRepository;
+import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
+import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
@@ -71,6 +73,11 @@ public class CheckoutService {
     @Autowired
     private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
 
+    @Autowired
+    private PhieuGiamGiaService phieuGiamGiaService;
+
+    @Autowired
+    private PhieuGiamGiaCuaNguoiDungService phieuGiamGiaCuaNguoiDungService;
     @Transactional
     public DonHang createOrder(NguoiDung nguoiDung, CheckoutRequest request, UUID addressId) {
         DonHang donHang = new DonHang();
@@ -137,18 +144,37 @@ public class CheckoutService {
 
         BigDecimal giamGia = BigDecimal.ZERO;
         if (request.getVoucher() != null && !request.getVoucher().isEmpty()) {
-            PhieuGiamGia voucher = phieuGiamGiaRepository.findByMa(request.getVoucher())
-                    .orElseThrow(() -> new RuntimeException("Mã giảm giá không hợp lệ"));
-            if (voucher.getSoLuong() <= 0
-                    || voucher.getNgayBatDau().isAfter(LocalDateTime.now())
-                    || voucher.getNgayKetThuc().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Mã giảm giá không còn hiệu lực.");
+            PhieuGiamGia phieu = phieuGiamGiaRepository.findByMa(request.getVoucher())
+                    .orElseThrow(() -> new RuntimeException("Mã giảm giá không tồn tại."));
+
+            // Trạng thái phiếu: phải đang diễn ra
+            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
+                throw new RuntimeException("Phiếu giảm giá không trong thời gian hiệu lực.");
             }
-            giamGia = voucher.getGiaTriGiam().min(tongTien);
-            donHang.setPhieuGiamGia(voucher);
-            voucher.setSoLuong(voucher.getSoLuong() - 1);
-            phieuGiamGiaRepository.save(voucher);
+
+            // Đạt giá trị tối thiểu mới cho áp mã
+            if (phieu.getGiaTriGiamToiThieu() != null && tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
+                throw new RuntimeException("Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã.");
+            }
+
+            // Kiểm tra loại phiếu: cá nhân / công khai và TRỪ LƯỢT **tại đây** (chỉ 1 lần khi chốt đơn)
+            boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
+            boolean used = isCaNhan
+                    ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
+                    : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
+
+            if (!used) {
+                throw new RuntimeException(isCaNhan
+                        ? "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng."
+                        : "Mã giảm giá công khai đã hết lượt sử dụng.");
+            }
+
+            // TÍNH GIẢM = cùng một hàm như bên KHThanhToanController
+            giamGia = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
+
+            donHang.setPhieuGiamGia(phieu);
         }
+
 
         donHang.setTienGiam(giamGia);
         donHang.setTongTien(tongTien.add(donHang.getPhiVanChuyen()).subtract(giamGia));

@@ -13,6 +13,7 @@ import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.GioHang.ChiTietGioHangService;
 import com.example.AsmGD1.service.GioHang.KhachHangGioHangService;
+import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.ViThanhToan.ViThanhToanService;
 import org.slf4j.Logger;
@@ -85,6 +86,8 @@ public class KHThanhToanController {
 
     @Autowired
     private ThongBaoService thongBaoService;
+    @Autowired
+    HoaDonService hoaDonService;
 
     private String extractEmailFromAuthentication(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -298,6 +301,7 @@ public class KHThanhToanController {
         donHangRepo.save(donHang);
         donHangRepo.flush();
         chiTietDonHangRepo.saveAll(chiTietListDH);
+        hoaDonService.createHoaDonFromDonHang(donHang); // ← BẮT BUỘC
         System.out.println("🔥 Đã lưu đơn hàng, chuẩn bị gửi thông báo tới admin...");
         thongBaoService.taoThongBaoHeThong(
                 "admin",
