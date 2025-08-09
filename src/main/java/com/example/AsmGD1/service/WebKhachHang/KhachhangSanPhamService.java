@@ -76,7 +76,7 @@ public class KhachhangSanPhamService {
         return convertToChiTietSanPhamDto(details.get(0));
     }
 
-    private ChiTietSanPhamDto convertToChiTietSanPhamDto(ChiTietSanPham chiTiet) {
+    public ChiTietSanPhamDto convertToChiTietSanPhamDto(ChiTietSanPham chiTiet) {
         ChiTietSanPhamDto dto = new ChiTietSanPhamDto();
         dto.setId(chiTiet.getId());
         dto.setSanPhamId(chiTiet.getSanPham().getId());
@@ -92,14 +92,12 @@ public class KhachhangSanPhamService {
 
         // Thiết lập giá gốc
         BigDecimal originalPrice = chiTiet.getGia();
-        dto.setOldPrice(originalPrice);
-
-        // Kiểm tra chiến dịch giảm giá
+        dto.setOldPrice(originalPrice); // Giá gốc
         Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProduct(chiTiet.getSanPham().getId());
         if (chienDich.isPresent()) {
             BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
             BigDecimal discountedPrice = originalPrice.subtract(originalPrice.multiply(discountRate));
-            dto.setGia(discountedPrice);
+            dto.setGia(discountedPrice); // Giá sau giảm
             dto.setDiscountCampaignName(chienDich.get().getTen());
         } else {
             dto.setGia(originalPrice);

@@ -86,7 +86,7 @@
         /* ===== LAYOUT ===== */
         .content {
             margin-left: 260px;
-            padding: 80px;
+            padding: 90px;
             min-height: 100vh;
             background: var(--pure-white);
             max-height: 100vh;
@@ -111,23 +111,35 @@
 
         /* ===== PAGE TITLE ===== */
         .page-title {
-            color: var(--primary-black);
-            margin-bottom: 48px;
-            font-weight: 800;
-            font-size: 2.5rem;
-            letter-spacing: -0.04em;
-            position: relative;
+            color: #153054;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-size: 2.25rem;
+            letter-spacing: -0.025em;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .page-title::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10%;
+            height: 4px; /* Tăng độ dày lên 4px để đậm hơn */
+            background-color: #1e90ff;
         }
 
         .page-title i {
-            font-size: 1.5rem;
-            background: var(--primary-black);
-            color: var(--pure-white);
-            padding: 8px;
-            border-radius: 8px;
+            background: #153054;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.25rem;
         }
 
         /* ===== CARDS ===== */

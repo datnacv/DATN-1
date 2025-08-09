@@ -272,7 +272,7 @@
                             soLuong: item.soLuong,
                             gia: item.gia,
                             giaGoc: item.chiTietSanPham.gia,
-                            tienGiam: item.tienGiam || BigDecimal.ZERO,
+                            tienGiam: item.tienGiam || 0,
                             urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
                                 ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
                                 : item.chiTietSanPham.sanPham.urlHinhAnh || '/images/default-product.jpg',
