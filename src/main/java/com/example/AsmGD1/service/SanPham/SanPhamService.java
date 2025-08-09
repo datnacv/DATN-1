@@ -76,6 +76,7 @@ public class SanPhamService {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
         Page<SanPham> sanPhamPage = sanPhamRepository.findAll(sortedByThoiGianTaoDesc);
         sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        sanPhamPage.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhamPage;
     }
 
@@ -83,6 +84,7 @@ public class SanPhamService {
         SanPham sanPham = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + id));
         setTongSoLuong(sanPham);
+        autoUpdateStatusBasedOnDetails(sanPham);
         return sanPham;
     }
 
@@ -132,6 +134,7 @@ public class SanPhamService {
     public List<SanPham> findByTenSanPhamContaining(String name) {
         List<SanPham> sanPhams = sanPhamRepository.findByTenSanPhamContainingIgnoreCase(name);
         sanPhams.forEach(this::setTongSoLuong);
+        sanPhams.forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhams;
     }
 
@@ -144,6 +147,7 @@ public class SanPhamService {
             sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCase(searchName, sortedByThoiGianTaoDesc);
         }
         sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        sanPhamPage.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhamPage;
     }
 
@@ -151,24 +155,28 @@ public class SanPhamService {
         Pageable sortedByThoiGianTaoDesc = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by(Sort.Direction.DESC, "thoiGianTao"));
         Page<SanPham> sanPhamPage = sanPhamRepository.findByTrangThai(trangThai, sortedByThoiGianTaoDesc);
         sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        sanPhamPage.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhamPage;
     }
 
     public Page<SanPham> getPagedProducts(Pageable pageable) {
         Page<SanPham> sanPhamPage = sanPhamRepository.findAll(pageable);
         sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        sanPhamPage.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhamPage;
     }
 
     public List<SanPham> getAll() {
         List<SanPham> sanPhams = sanPhamRepository.findAll();
         sanPhams.forEach(this::setTongSoLuong);
+        sanPhams.forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhams;
     }
 
     public Page<SanPham> searchByTenOrMa(String keyword, Pageable pageable) {
         Page<SanPham> sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(keyword, keyword, pageable);
         sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        sanPhamPage.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
         return sanPhamPage;
     }
 
@@ -178,6 +186,18 @@ public class SanPhamService {
                 .mapToLong(ChiTietSanPham::getSoLuongTonKho)
                 .sum();
         sanPham.setTongSoLuong(tongSoLuong);
+    }
+
+    public boolean hasActiveChiTietSanPham(UUID sanPhamId) {
+        List<ChiTietSanPham> chiTietList = chiTietSanPhamRepository.findBySanPhamId(sanPhamId);
+        return chiTietList.stream().anyMatch(ct -> Boolean.TRUE.equals(ct.getTrangThai()));
+    }
+
+    private void autoUpdateStatusBasedOnDetails(SanPham sanPham) {
+        if (sanPham.getTrangThai() && !hasActiveChiTietSanPham(sanPham.getId())) {
+            sanPham.setTrangThai(false);
+            save(sanPham);
+        }
     }
 
     public List<SanPhamDto> getAllSanPhamDtos() {

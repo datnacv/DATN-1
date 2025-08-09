@@ -1056,43 +1056,56 @@
         if (!container) return;
 
         const toast = document.createElement("div");
-        const colors = {
+        const bg = {
             success: "bg-success",
-            error: "bg-danger",
+            error:   "bg-danger",
             warning: "bg-warning",
-            info: "bg-primary"
+            info:    "bg-primary"
+        };
+        const icon = {
+            success: "fas fa-check-circle",
+            error:   "fas fa-exclamation-circle",
+            warning: "fas fa-exclamation-triangle",
+            info:    "fas fa-info-circle"
         };
 
-        toast.className = `toast show align-items-center text-white ${colors[type] || colors.info} border-0`;
+        // warning dùng chữ tối, các loại khác chữ trắng
+        const textClass = type === "warning" ? "text-dark" : "text-white";
+        const closeBtnClass = type === "warning" ? "btn-close" : "btn-close btn-close-white";
+
+        toast.className = `toast show align-items-center ${bg[type] || bg.info} ${textClass} border-0`;
         toast.setAttribute('role', 'alert');
         toast.setAttribute('aria-live', 'assertive');
         toast.setAttribute('aria-atomic', 'true');
 
-        const icon = {
-            success: "fas fa-check-circle",
-            error: "fas fa-exclamation-circle",
-            warning: "fas fa-exclamation-triangle",
-            info: "fas fa-info-circle"
-        };
-
         toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body d-flex align-items-center gap-2">
-                    <i class="${icon[type] || icon.info}"></i>
-                    <span class="fw-medium">${message}</span>
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="${icon[type] || icon.info}"></i>
+        <span class="fw-medium">${message}</span>
+      </div>
+      <button type="button" class="${closeBtnClass} me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
 
         container.appendChild(toast);
-
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, 4000);
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
     }
+
+    async function fetchJson(url, options) {
+        const res = await fetch(url, options);
+        let data = null;
+        try { data = await res.json(); } catch (_) {} // phòng khi body rỗng / không phải JSON
+
+        if (!res.ok) {
+            const err = new Error((data && data.message) ? data.message : `HTTP ${res.status}`);
+            err.status = res.status;
+            err.payload = data;
+            throw err;
+        }
+        return data || {};
+    }
+
 
     document.addEventListener('DOMContentLoaded', function() {
         // Chỉ khởi tạo các event listener cho Admin
@@ -1244,26 +1257,21 @@
 
                 console.log('Sending FormData:', { id, maSanPham, tenSanPham, moTa, trangThai, danhMucId, imageFile });
 
-                fetch('/acvstore/san-pham/save', {
+                fetchJson('/acvstore/san-pham/save', {
                     method: 'POST',
                     body: formData
                 })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('HTTP error ' + response.status);
-                        }
-                        return response.json();
-                    })
                     .then(data => {
                         if (data.success) {
                             const modal = bootstrap.Modal.getInstance(editSanPhamModal);
                             modal.hide();
+
                             const sanPham = data.sanPham;
                             let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
                             if (row) {
                                 row.cells[1].innerHTML = `<span class="fw-bold fs-8">${sanPham.maSanPham || ''}</span>`;
                                 row.cells[2].innerHTML = sanPham.urlHinhAnh
-                                    ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'d-flex align-items-center justify-content-center bg-light rounded\\' style=\\'width: 60px; height: 60px;\\' ><i class=\\'fas fa-image text-muted fs-3\\'></i></div>'"></div>`
+                                    ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'d-flex align-items-center justify-content-center bg-light rounded\\' style=\\'width: 60px; height: 60px;\\'><i class=\\'fas fa-image text-muted fs-3\\'></i></div>'"></div>`
                                     : `<div class="d-flex justify-content-center"><div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 60px; height: 60px;"><i class="fas fa-image text-muted fs-3"></i></div></div>`;
                                 row.cells[3].innerHTML = `<div class="fw-semibold text-dark">${sanPham.tenSanPham || ''}</div>`;
                                 row.cells[4].innerHTML = `<span class="badge badge-success">${sanPham.tenDanhMuc || 'N/A'}</span>`;
@@ -1272,24 +1280,22 @@
                                 const statusCell = row.cells[6];
                                 if (statusCell) {
                                     statusCell.innerHTML = `
-                                    <div class="form-check form-switch d-flex justify-content-center align-items-center">
-                                        <input class="form-check-input status-toggle"
-                                               type="checkbox"
-                                               ${sanPham.trangThai ? 'checked' : ''}
-                                               data-id="${sanPham.id}"
-                                               role="switch">
-                                        <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
-                                    </div>`;
+          <div class="form-check form-switch d-flex justify-content-center align-items-center">
+            <input class="form-check-input status-toggle" type="checkbox" ${sanPham.trangThai ? 'checked' : ''} data-id="${sanPham.id}" role="switch">
+            <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
+          </div>`;
                                 }
                             }
                             showToast("Cập nhật sản phẩm thành công!", "success");
                         } else {
-                            showToast("Lỗi: " + (data.message || "Không thể lưu sản phẩm."), "error");
+                            // Trường hợp BE trả 200 nhưng success=false (hiếm) -> warning
+                            showToast(data.message || "Không thể lưu sản phẩm.", "warning");
                         }
                     })
-                    .catch(error => {
-                        console.error('Error saving san pham:', error);
-                        showToast('Lỗi khi lưu sản phẩm: ' + error.message, 'error');
+                    .catch(err => {
+                        // 400 validate từ BE -> warning vàng + message chuẩn
+                        const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
+                        showToast((tone === "warning" ? "" : "Lỗi khi lưu sản phẩm: ") + (err.message || "Có lỗi xảy ra."), tone);
                     });
             });
         }
@@ -1308,35 +1314,29 @@
 
                 label.textContent = newTrangThai ? 'Đang Bán' : 'Ngừng Bán';
 
-                fetch('/acvstore/san-pham/update-status', {
+                fetchJson('/acvstore/san-pham/update-status', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({
-                        id: sanPhamId,
-                        trangThai: newTrangThai
-                    })
+                    body: JSON.stringify({ id: sanPhamId, trangThai: newTrangThai })
                 })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('HTTP error ' + response.status);
-                        }
-                        return response.json();
-                    })
                     .then(data => {
                         if (data.success) {
                             showToast('Cập nhật trạng thái thành công!', 'success');
                         } else {
-                            showToast('Lỗi: ' + (data.message || 'Không thể cập nhật trạng thái.'), 'error');
-                            this.checked = !newTrangThai;
+                            showToast(data.message || 'Không thể cập nhật trạng thái.', 'warning');
+                            // revert UI
+                            toggle.checked = !newTrangThai;
                             label.textContent = newTrangThai ? 'Ngừng Bán' : 'Đang Bán';
                         }
                     })
-                    .catch(error => {
-                        console.error('Error updating status:', error);
-                        showToast('Lỗi khi cập nhật trạng thái: ' + error.message, 'error');
-                        this.checked = !newTrangThai;
+                    .catch(err => {
+                        const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
+                        showToast(err.message || 'Không thể cập nhật trạng thái.', tone);
+                        // revert UI
+                        toggle.checked = !newTrangThai;
                         label.textContent = newTrangThai ? 'Ngừng Bán' : 'Đang Bán';
                     });
             });

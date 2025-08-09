@@ -138,6 +138,12 @@ public class SanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(id)) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào đang hoạt động!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             sanPham.setMaSanPham(maSanPham);
             sanPham.setTenSanPham(tenSanPham);
             sanPham.setMoTa(moTa);
@@ -224,6 +230,13 @@ public class SanPhamController {
             if (sanPham == null) {
                 response.put("success", false);
                 response.put("message", "Sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra nếu bật trạng thái mà không có chi tiết sản phẩm hoạt động
+            if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(id)) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào hoạt động!");
                 return ResponseEntity.badRequest().body(response);
             }
 
