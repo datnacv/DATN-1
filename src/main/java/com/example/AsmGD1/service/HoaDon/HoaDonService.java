@@ -334,15 +334,25 @@ public class HoaDonService {
             NguoiDung nhanVien = (NguoiDung) auth.getPrincipal();
             hoaDon.setNhanVien(nhanVien);
         } else {
-            // Nếu không có nhân viên đăng nhập, có thể đặt nhanVien là null hoặc xử lý theo yêu cầu
             hoaDon.setNhanVien(null);
         }
 
         String trangThai;
         String ghiChu;
-        if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
+        // Kiểm tra phương thức thanh toán để đặt trạng thái thanh toán
+        if ("Ví Thanh Toán".equalsIgnoreCase(refreshedDonHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
+            refreshedDonHang.setTrangThaiThanhToan(true); // Đặt trạng thái thanh toán thành true
+            refreshedDonHang.setThoiGianThanhToan(LocalDateTime.now());
+            donHangRepository.save(refreshedDonHang); // Lưu cập nhật DonHang
+            trangThai = "Đã xác nhận Online"; // Hoặc trạng thái phù hợp
+            ghiChu = "Thanh toán bằng ví điện tử thành công";
+
+        } else if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Hoàn thành";
             ghiChu = "Hoàn thành (Tại quầy)";
+            refreshedDonHang.setTrangThaiThanhToan(true); // Có thể đặt true nếu thanh toán tại quầy
+            refreshedDonHang.setThoiGianThanhToan(LocalDateTime.now());
+            donHangRepository.save(refreshedDonHang);
         } else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Chưa xác nhận";
             ghiChu = "Hóa đơn Online được tạo";

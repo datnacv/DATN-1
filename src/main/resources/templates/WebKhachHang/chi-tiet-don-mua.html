@@ -862,12 +862,12 @@
       </div>
 
       <div class="payment-info">
-        <span class="payment-label">
-          <i class="fas fa-info-circle mr-2"></i>Trạng thái thanh toán
-        </span>
+    <span class="payment-label">
+        <i class="fas fa-info-circle mr-2"></i>Trạng thái thanh toán
+    </span>
         <span class="payment-value"
-              th:classappend="${hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành' ? 'text-green-600' : 'text-orange-600'}"
-              th:text="${hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Hoàn thành' ? 'Đã thanh toán' : 'Chưa thanh toán'}"></span>
+              th:classappend="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' or hoaDon.donHang.trangThaiThanhToan} ? 'text-green-600' : 'text-orange-600'"
+              th:text="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' or hoaDon.donHang.trangThaiThanhToan} ? 'Đã thanh toán' : 'Chưa thanh toán'"></span>
       </div>
 
       <div class="payment-info">

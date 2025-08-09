@@ -277,9 +277,15 @@ public class HoaDonController {
             if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
                 trangThai = "Hoàn thành";
                 ghiChu = "Hoàn thành (Tại quầy)";
+                donHang.setTrangThaiThanhToan(true); // Thanh toán tại quầy
             } else if ("Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
                 trangThai = "Đã xác nhận Online";
                 ghiChu = "Đã xác nhận đơn hàng Online";
+                // Kiểm tra nếu thanh toán bằng ví điện tử
+                if ("Ví Thanh Toán".equalsIgnoreCase(donHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
+                    donHang.setTrangThaiThanhToan(true);
+                    donHang.setThoiGianThanhToan(LocalDateTime.now());
+                }
             } else {
                 trangThai = "Đã xác nhận";
                 ghiChu = "Đã xác nhận đơn hàng Giao hàng";
@@ -289,8 +295,7 @@ public class HoaDonController {
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setTrangThai(trangThai);
 
-            donHang.setTrangThaiThanhToan(true);
-            donHang.setThoiGianThanhToan(LocalDateTime.now());
+            donHangRepository.save(donHang); // Lưu trạng thái thanh toán của DonHang
             hoaDon.setDonHang(donHang);
 
             hoaDonService.addLichSuHoaDon(hoaDon, trangThai, ghiChu);
