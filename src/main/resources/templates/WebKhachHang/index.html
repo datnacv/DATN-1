@@ -521,6 +521,12 @@
 
 </script>
 <script>
+  function toVND(value) {
+    const n = Number(String(value).replace(/[^\d.-]/g, ''));
+    return Number.isFinite(n) && n > 0 ? n.toLocaleString('vi-VN') + ' VNĐ' : 'Liên hệ';
+  }
+</script>
+<script>
   // Search suggestions
   const searchInput = document.getElementById('searchInput');
   const searchSuggestions = document.getElementById('searchSuggestions');
@@ -543,15 +549,17 @@
           searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
         }
         products.forEach(product => {
+          const priceText = toVND(product.price);
+
           const suggestion = document.createElement('div');
           suggestion.className = 'suggestion-item';
           suggestion.innerHTML = `
-                    <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}"/>
-                    <div>
-                        <div class="font-semibold">${product.tenSanPham}</div>
-                        <div class="text-blue-800">${product.price.toLocaleString('vi-VN')} VNĐ</div>
-                    </div>
-                `;
+            <img src="${product.urlHinhAnh || '/images/placeholder.png'}" alt="${product.tenSanPham}"/>
+            <div>
+              <div class="font-semibold">${product.tenSanPham}</div>
+              <div class="text-blue-800">${priceText}</div>
+            </div>
+          `;
           suggestion.addEventListener('click', () => {
             window.location.href = `/chitietsanpham?id=${product.id}`;
           });

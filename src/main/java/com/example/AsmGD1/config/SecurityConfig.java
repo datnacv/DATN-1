@@ -106,7 +106,7 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet", "/api/san-pham/ban-chay", "/api/san-pham/moi-nhat", "/api/product/*/ratings", "/api/getChiTietSanPham").permitAll()
+                        .requestMatchers("/api/search", "/api/product/*/ratings", "/api/getChiTietSanPham", "/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet", "/api/san-pham/ban-chay", "/api/san-pham/moi-nhat", "/api/product/*/ratings", "/api/getChiTietSanPham").permitAll()
                         .requestMatchers("/api/orders/**").authenticated()
                         .anyRequest().authenticated()
                 )
