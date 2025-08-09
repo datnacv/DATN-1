@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,6 +28,26 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+    @Scheduled(cron = "0 0 * * * ?") // Chạy hàng giờ
+    @Transactional
+    public void cleanupEndedCampaigns() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ChiTietSanPham> endedDetails = chiTietSanPhamRepository.findAll().stream()
+                .filter(ct -> ct.getChienDichGiamGia() != null && ct.getChienDichGiamGia().getNgayKetThuc().isBefore(now))
+                .toList();
+        endedDetails.forEach(ct -> ct.setChienDichGiamGia(null));
+        chiTietSanPhamRepository.saveAll(endedDetails);
+    }
+    private String getStatus(ChienDichGiamGia chienDich) {
+        LocalDateTime now = LocalDateTime.now();
+        if (chienDich.getNgayBatDau().isAfter(now)) {
+            return "UPCOMING";
+        } else if (chienDich.getNgayKetThuc().isBefore(now)) {
+            return "ENDED";
+        } else {
+            return "ONGOING";
+        }
+    }
 
     @Override
     @Transactional
@@ -35,7 +56,13 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(chiTietId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm với ID: " + chiTietId));
             if (chiTiet.getChienDichGiamGia() != null) {
-                throw new RuntimeException("Chi tiết sản phẩm " + chiTietId + " đã tham gia chiến dịch: " + chiTiet.getChienDichGiamGia().getTen());
+                String status = getStatus(chiTiet.getChienDichGiamGia());
+                if (!"ENDED".equals(status)) {
+                    throw new RuntimeException("Chi tiết sản phẩm " + chiTietId + " đã tham gia chiến dịch: " + chiTiet.getChienDichGiamGia().getTen());
+                } else {
+                    chiTiet.setChienDichGiamGia(null);
+                    chiTietSanPhamRepository.save(chiTiet);
+                }
             }
         }
 
@@ -85,7 +112,13 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(chiTietId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm: " + chiTietId));
             if (chiTiet.getChienDichGiamGia() != null && !chiTiet.getChienDichGiamGia().getId().equals(existing.getId())) {
-                throw new RuntimeException("Chi tiết sản phẩm " + chiTietId + " đã tham gia chiến dịch: " + chiTiet.getChienDichGiamGia().getTen());
+                String status = getStatus(chiTiet.getChienDichGiamGia());
+                if (!"ENDED".equals(status)) {
+                    throw new RuntimeException("Chi tiết sản phẩm " + chiTietId + " đã tham gia chiến dịch: " + chiTiet.getChienDichGiamGia().getTen());
+                } else {
+                    chiTiet.setChienDichGiamGia(null);
+                    chiTietSanPhamRepository.save(chiTiet);
+                }
             }
             chiTiet.setChienDichGiamGia(existing);
             chiTietSanPhamRepository.save(chiTiet);
