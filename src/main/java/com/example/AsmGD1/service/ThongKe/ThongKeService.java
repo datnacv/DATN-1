@@ -263,9 +263,71 @@ public class ThongKeService {
 
         return result;
     }
+    // ===== NHÃN NGÀY LIÊN TỤC & DỮ LIỆU HOAN_THANH DÀNH CHO BIỂU ĐỒ =====
+    private List<LocalDate> taoTrucNgayLienTuc(LocalDate start, LocalDate end) {
+        List<LocalDate> days = new ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            days.add(d);
+        }
+        return days;
+    }
 
+    /** Nhãn biểu đồ dạng yyyy-MM-dd, phủ kín mọi ngày trong khoảng */
+    public List<String> layNhanBieuDoLienTuc(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
+        return taoTrucNgayLienTuc(ngayBatDau, ngayKetThuc)
+                .stream().map(LocalDate::toString).collect(Collectors.toList());
+    }
 
+    /** Số hóa đơn/ngày (chỉ HOAN_THANH), phủ kín mọi ngày trong khoảng */
+    public List<Integer> layDonHangBieuDoLienTuc(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
+        LocalDateTime start = ngayBatDau.atStartOfDay();
+        LocalDateTime end   = ngayKetThuc.atTime(LocalTime.MAX);
 
+        // lấy từ DB: chỉ trả các ngày có dữ liệu
+        List<Object[]> rows = thongKeRepository.thongKeSoHoaDonTheoNgay(start, end);
 
+        Map<LocalDate, Integer> map = new HashMap<>();
+        for (Object[] r : rows) {
+            // r[0] là java.sql.Date, r[1] là Integer
+            LocalDate d = ((java.sql.Date) r[0]).toLocalDate();
+            Integer c   = (Integer) r[1];
+            map.put(d, c);
+        }
+
+        // rải vào trục ngày liên tục, ngày trống -> 0
+        List<Integer> result = new ArrayList<>();
+        for (LocalDate d : taoTrucNgayLienTuc(ngayBatDau, ngayKetThuc)) {
+            result.add(map.getOrDefault(d, 0));
+        }
+        return result;
+    }
+
+    /** Doanh thu/ngày (VND, chỉ HOAN_THANH), phủ kín mọi ngày trong khoảng */
+    public List<Long> layDoanhThuBieuDoLienTuc(LocalDate ngayBatDau, LocalDate ngayKetThuc) {
+        LocalDateTime start = ngayBatDau.atStartOfDay();
+        LocalDateTime end   = ngayKetThuc.atTime(LocalTime.MAX);
+
+        // lấy từ DB: chỉ trả các ngày có dữ liệu
+        List<Object[]> rows = thongKeRepository.thongKeDoanhThuTheoNgay(start, end);
+
+        Map<LocalDate, Long> map = new HashMap<>();
+        for (Object[] r : rows) {
+            LocalDate d = ((java.sql.Date) r[0]).toLocalDate();
+            Long sum = 0L;
+            if (r[1] != null) {
+                sum = (r[1] instanceof BigDecimal)
+                        ? ((BigDecimal) r[1]).longValue()
+                        : ((Number) r[1]).longValue();
+            }
+            map.put(d, sum);
+        }
+
+        // rải vào trục ngày liên tục, ngày trống -> 0
+        List<Long> result = new ArrayList<>();
+        for (LocalDate d : taoTrucNgayLienTuc(ngayBatDau, ngayKetThuc)) {
+            result.add(map.getOrDefault(d, 0L));
+        }
+        return result;
+    }
 
 }

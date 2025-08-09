@@ -198,7 +198,7 @@
         <button class="btn btn-primary mt-3" onclick="applyCustomRange()">Áp dụng</button>
         <button class="btn btn-secondary mt-3" onclick="document.getElementById('customRange').style.display='none'">Hủy</button>
       </div>
-      <div class="chart-title">Biểu Đồ Thống Kê Hóa Đơn Và Sản Phẩm</div>
+      <div class="chart-title">Biểu đồ Doanh thu & Số hóa đơn</div>
       <canvas id="chart" height="150"></canvas>
     </div>
     <!-- Hàng ngang 2 -->
@@ -268,69 +268,84 @@
   </div>
 </div>
 
-<!-- Chart Script -->
 <script th:inline="javascript">
   const labels = /*[[${chartLabels}]]*/ [];
-  const chartOrders = /*[[${chartOrders}]]*/ [];
-  const chartProducts = /*[[${chartProducts}]]*/ [];
+  const chartOrders = /*[[${chartOrders}]]*/ [];     // số hóa đơn
+  const chartRevenue = /*[[${chartRevenue}]]*/ [];   // doanh thu (VND) -> nhớ truyền từ backend
+
+  const fmtVND = (v) => (v ?? 0).toLocaleString('vi-VN');
 
   const ctx = document.getElementById('chart').getContext('2d');
   new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: labels,
       datasets: [
         {
-          label: 'Số đơn',
-          backgroundColor: '#3498db',
-          data: chartOrders,
-          barThickness: 20
+          label: 'Doanh thu (VND)',
+          data: chartRevenue,
+          yAxisID: 'yRevenue',
+          tension: 0.35,
+          borderColor: '#2ecc71',
+          backgroundColor: 'rgba(46, 204, 113, 0.15)',
+          fill: true,
+          pointRadius: 3
         },
         {
-          label: 'Số sản phẩm',
-          backgroundColor: '#5dade2',
-          data: chartProducts,
-          barThickness: 20
+          label: 'Số hóa đơn',
+          data: chartOrders,
+          yAxisID: 'yCount',
+          tension: 0.35,
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231, 76, 60, 0.12)',
+          fill: false,
+          pointRadius: 3
         }
       ]
     },
     options: {
       responsive: true,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
           position: 'bottom',
-          labels: {
-            boxWidth: 15,
-            font: { size: 12 }
-          }
+          labels: { boxWidth: 14, font: { size: 12 } }
         },
         tooltip: {
           callbacks: {
-            label: function(context) {
-              return context.dataset.label + ': ' + context.raw;
+            label: function(ctx) {
+              const v = ctx.parsed.y;
+              return ctx.dataset.yAxisID === 'yRevenue'
+                      ? `${ctx.dataset.label}: ${fmtVND(v)} VND`
+                      : `${ctx.dataset.label}: ${v}`;
             }
           }
         }
       },
       scales: {
         x: {
-          title: {
-            display: true,
-            text: 'Ngày'
-          }
+          title: { display: true, text: 'Thời gian' }
         },
-        y: {
+        yCount: {
+          type: 'linear',
+          position: 'left',
           beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Số lượng'
+          title: { display: true, text: 'Số hóa đơn' }
+        },
+        yRevenue: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'Doanh thu (VND)' },
+          ticks: {
+            callback: (value) => fmtVND(value)
           }
         }
       }
     }
   });
 </script>
-
 <script th:inline="javascript">
   const pieCtx = document.getElementById('pieChart').getContext('2d');
 
