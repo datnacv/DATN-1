@@ -74,8 +74,8 @@
 
 
     /* Header tối, icon tròn */
-    .cb-header{ background:#9FD5F7; color:#fff; padding:10px 12px; display:flex; align-items:center; gap:10px; }
-    .brand-logo{ width:28px; height:28px; border-radius:6px; object-fit:cover; }
+    .cb-header{ background:#153054; color:#fff; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+    .brand-logo{ width:45px; height:45px; border-radius:30px; object-fit:cover; }
 
     .cb-header .brand{
       display:flex; align-items:center; gap:8px; font-weight:700;
@@ -127,11 +127,19 @@
       max-width:82%; margin:0 56px 10px 40px; /* chừa chỗ avatar trái */
       font-size:15px; line-height:1.45; word-wrap:break-word;
     }
-    .chatbot-msg-bot::before{
-      content:""; position:absolute; left:-34px; top:0;
-      width:28px; height:28px; border-radius:50%;
-      background-image:url('/image/acv-logo3.png'); background-size:cover;
+    .chatbot-msg-bot::before {
+      content: "";
+      position: absolute;
+      left: -40px;
+      top: 4px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-image: url('/image/ACV.jpg');
+      background-size: cover;
+      background-position: center;
     }
+
 
     .chatbot-msg-user{
       background:#153054; color:#fff;
@@ -544,7 +552,7 @@
             width: 60px; height: 60px; border-radius: 50%; display: flex;
             align-items: center; justify-content: center; z-index: 10000;
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-  <img th:src="@{/image/acv-logo3.png}" alt="ACV"
+  <img th:src="@{/image/ACV.jpg}" alt="ACV"
        style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
 </div>
 
@@ -553,7 +561,7 @@
   <!-- Header -->
   <div class="cb-header">
   <span class="brand">
-    <img th:src="@{/image/acv-logo3.png}" alt="ACV" class="brand-logo" />
+    <img th:src="@{/image/ACV.jpg}" alt="ACV" class="brand-logo" />
     ACV Store
   </span>
     <div class="cb-actions">
