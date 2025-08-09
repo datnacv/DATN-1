@@ -534,8 +534,8 @@
                 const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
                 document.getElementById('cart-count').textContent = cartCount;
             } else if (response.status === 401) {
+                // Chưa đăng nhập => để 0, KHÔNG redirect
                 document.getElementById('cart-count').textContent = 0;
-                window.location.href = '/customers/login';
             }
         } catch (error) {
             console.error('Error updating cart count:', error);
@@ -808,17 +808,25 @@
                                         timer: 1500
                                     });
                                     updateCartCount();
+                                } else if (addResponse.status === 401) {
+                                    window.location.href = '/customers/login';
                                 } else {
                                     addResponse.json().then(errorData => {
                                         Swal.fire({
                                             icon: 'error',
                                             title: 'Lỗi',
-                                            text: errorData.error || 'Có lỗi xảy ra khi thêm vào giỏ hàng!',
+                                            text: errorData.error || 'Có lỗi xảy ra khi thêm vào giỏ hàng!'
+                                        });
+                                    }).catch(() => {
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Lỗi',
+                                            text: 'Không thể xử lý phản hồi máy chủ.'
                                         });
                                     });
                                 }
                             })
-                            .catch(error => {
+                                .catch(error => {
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Lỗi',
