@@ -197,6 +197,24 @@
                         <input type="datetime-local" th:field="*{ngayKetThuc}" class="form-control">
                     </div>
                 </div>
+                <!-- Chọn Phương thức thanh toán -->
+
+                <div class="col-md-4 col-lg-4">
+                    <div class="floating-label">
+                        <label for="paymentMethodSelect">Phương thức thanh toán áp dụng</label>
+                        <select id="paymentMethodSelect"
+                                class="form-select"
+                                name="selectedPaymentMethodIds"
+                                multiple>
+                            <option th:each="pt : ${phuongThucList}"
+                                    th:value="${pt.id}"
+                                    th:text="${pt.tenPhuongThuc}"
+                                    th:selected="${selectedPaymentMethodIds != null and selectedPaymentMethodIds.contains(pt.id)}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
 
                 <div id="emailOptions" class="mb-3" style="display:none">
                     <label class="form-label"><i class="fas fa-user-check me-2"></i>Chọn khách hàng áp dụng:</label>
@@ -370,8 +388,18 @@
         $('#giaTriGiamToiDa').prop('readonly', !isPercent);
         if (!isPercent) $('#giaTriGiamToiDa').val('');
     }
+    $(function () {
+        $('#paymentMethodSelect').select2({
+            placeholder: 'Chọn phương thức...',
+            allowClear: true,
+            closeOnSelect: false,     // giữ menu mở để chọn nhiều
+            width: '100%'
+        });
+    });
 </script>
 <script th:src="@{/js/notification.js}"></script>
-
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- jQuery (đã có), Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>
