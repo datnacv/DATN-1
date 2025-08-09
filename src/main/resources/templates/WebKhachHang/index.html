@@ -29,8 +29,10 @@
     /* Ẩn mặc định bằng opacity + transform (để transition mượt) */
     #chatbot-box{
       position: fixed; bottom: 100px; right: 30px;
-      width: 420px; max-height: 640px;
-      display: flex;               /* luôn là flex, KHÔNG dùng display:none */
+      width: 420px;
+      height: clamp(520px, 70vh, 640px); /* <-- thêm */
+      max-height: none;                  /* <-- bỏ giới hạn cũ */
+      display: flex;
       flex-direction: column;
       background:#fff; border-radius:14px;
       box-shadow: 0 12px 32px rgba(0,0,0,.18);
@@ -47,6 +49,15 @@
       transition: opacity .25s ease, transform .25s ease, visibility .25s;
       will-change: opacity, transform;
     }
+
+    #chat-messages{
+      padding:12px 12px 6px;
+      flex: 1;           /* <-- thêm */
+      min-height: 0;     /* <-- rất quan trọng để phần này cuộn được trong flex */
+      overflow-y: auto;
+      background:#fff;
+    }
+
 
     /* trạng thái hiện */
     #chatbot-box.is-open{
@@ -156,8 +167,10 @@
     #chat-input:focus{ border-color:#b6c2ff; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
     #chat-send{
       width:44px;height:44px;border-radius:50%;border:0;
-      background:#153054; color:#fff; display:flex;align-items:center;justify-content:center;
+      background:#153054;
+      color:#fff; display:flex;align-items:center;justify-content:center;
     }
+
 
     /* Ghi chú nhỏ giống caption “Thông tin chỉ mang tính tham khảo…” */
     .cb-note{
@@ -258,11 +271,13 @@
     .history-item .delete-btn:hover {
       color: #b91c1c;
     }
-    @media (max-width: 640px) {
-      .swiper-slide img { height: 200px; }
-      .product-grid { grid-template-columns: repeat(2, 1fr); }
-      .dropdown-menu { width: 100%; left: 0; }
-      body { padding-top: 120px; }
+    @media (max-width: 640px){
+      #chatbot-box{
+        width: 92vw;
+        right: 4vw;
+        bottom: 90px;   /* tránh đè nút nổi */
+        height: 70vh;
+      }
     }
   </style>
 </head>
@@ -539,7 +554,7 @@
   <div class="cb-header">
   <span class="brand">
     <img th:src="@{/image/acv-logo3.png}" alt="ACV" class="brand-logo" />
-    ACV Bot
+    ACV Store
   </span>
     <div class="cb-actions">
       <button id="chat-reload" class="cb-icon" title="Xoá lịch sử chat">
@@ -900,6 +915,14 @@
     }
   }
 
+  function updateSendBtn() {
+    const hasText = chatInput.value.trim().length > 0;
+    sendBtn.style.backgroundColor = hasText ? '#1e4066' : '#9FD5F7';
+    sendBtn.disabled = !hasText;
+    sendBtn.style.opacity = hasText ? '1' : '.9';
+    sendBtn.style.cursor  = hasText ? 'pointer' : 'not-allowed';
+  }
+
   // Toggle chatbot
   const toggleBtn = document.getElementById('chatbot-toggle');
   const chatBox = document.getElementById('chatbot-box');
@@ -908,9 +931,11 @@
   const chatMessages = document.getElementById('chat-messages');
 
   chatInput.addEventListener('input', () => {
-    chatInput.style.height = 'auto'; // reset trước
+    chatInput.style.height = 'auto';
     chatInput.style.height = chatInput.scrollHeight + 'px';
+    updateSendBtn();
   });
+  document.addEventListener('DOMContentLoaded', updateSendBtn);
 
   function openChat(){
     if (!chatBox.classList.contains('is-open')) {
