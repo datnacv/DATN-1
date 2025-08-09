@@ -1,34 +1,36 @@
 package com.example.AsmGD1.entity;
 
-import lombok.Data;
 import jakarta.persistence.*;
+import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.Locale;
 import java.util.UUID;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "phieu_giam_gia")
 @Data
 public class PhieuGiamGia {
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(columnDefinition = "uniqueidentifier")
     private UUID id;
 
-    @Column(name = "ten")
+    @Column(name = "ten", nullable = false, length = 100)
     private String ten;
 
-    @Column(name = "loai")
+    @Column(name = "loai", nullable = false, length = 50)
     private String loai;
 
-    @Column(name = "gia_tri_giam")
+    @Column(name = "gia_tri_giam", nullable = false, precision = 10, scale = 2)
     private BigDecimal giaTriGiam;
 
-    @Column(name = "gia_tri_giam_toi_thieu")
+    @Column(name = "gia_tri_giam_toi_thieu", precision = 10, scale = 2)
     private BigDecimal giaTriGiamToiThieu;
 
     @Column(name = "so_luong")
@@ -36,9 +38,6 @@ public class PhieuGiamGia {
 
     @Column(name = "gioi_han_su_dung")
     private Integer gioiHanSuDung;
-
-//    @Column(name = "cong_khai")
-//    private Boolean congKhai;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     @Column(name = "ngay_bat_dau")
@@ -48,17 +47,30 @@ public class PhieuGiamGia {
     @Column(name = "ngay_ket_thuc")
     private LocalDateTime ngayKetThuc;
 
-
-
-    @Column(name = "thoi_gian_tao")
+    @Column(name = "thoi_gian_tao", nullable = false)
     private LocalDateTime thoiGianTao;
-    @Column(name = "kieu_phieu")
-    private String kieuPhieu; // "cong_khai" hoặc "ca_nhan"
+
+    @Column(name = "kieu_phieu", length = 20)
+    private String kieuPhieu;
+
     @Column(name = "gia_tri_giam_toi_da", precision = 10, scale = 2)
     private BigDecimal giaTriGiamToiDa;
 
-    @Column(name="ma")
+    @Column(name = "ma", nullable = false, length = 50)
     private String ma;
+    @PrePersist
+    public void prePersist() {
+        if (thoiGianTao == null) thoiGianTao = LocalDateTime.now();
+    }
+
+    // Many-to-many "thông thường" qua bảng nối
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "phieu_giam_gia_phuong_thuc_thanh_toan",
+            joinColumns = @JoinColumn(name = "id_phieu_giam_gia"),
+            inverseJoinColumns = @JoinColumn(name = "id_phuong_thuc_thanh_toan")
+    )
+    private Set<PhuongThucThanhToan> phuongThucThanhToans = new HashSet<>();
 
     public String getGiaTriGiamToiThieuFormatted() {
         NumberFormat formatter = NumberFormat.getNumberInstance(new Locale("vi", "VN"));

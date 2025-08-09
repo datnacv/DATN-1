@@ -260,14 +260,6 @@ CREATE TABLE phieu_giam_gia_cua_nguoi_dung (
                                                FOREIGN KEY (id_phieu_giam_gia) REFERENCES phieu_giam_gia(id)
 );
 
--- 21. Bảng chi tiết sản phẩm - chiến dịch giảm giá
-CREATE TABLE chi_tiet_san_pham_chien_dich_giam_gia (
-                                                       id UNIQUEIDENTIFIER PRIMARY KEY,
-                                                       id_chien_dich UNIQUEIDENTIFIER NOT NULL,
-                                                       id_chi_tiet_san_pham UNIQUEIDENTIFIER NOT NULL,
-                                                       FOREIGN KEY (id_chien_dich) REFERENCES chien_dich_giam_gia(id),
-                                                       FOREIGN KEY (id_chi_tiet_san_pham) REFERENCES chi_tiet_san_pham(id)
-);
 
 CREATE TABLE don_hang_tam (
                               id UNIQUEIDENTIFIER PRIMARY KEY,
@@ -468,10 +460,6 @@ INSERT INTO hoa_don (
 INSERT INTO phieu_giam_gia_cua_nguoi_dung (id, id_nguoi_dung, id_phieu_giam_gia, da_gui_mail) VALUES
     ('550E8400-E29B-41D4-A716-446655440031', '550E8400-E29B-41D4-A716-446655440014', '550E8400-E29B-41D4-A716-446655440016', 0);
 
--- 21. Insert vào bảng chi_tiet_san_pham_chien_dich_giam_gia
-INSERT INTO chi_tiet_san_pham_chien_dich_giam_gia (id, id_chien_dich, id_chi_tiet_san_pham) VALUES
-                                                                                                (NEWID(), '550E8400-E29B-41D4-A716-446655440019', '550E8400-E29B-41D4-A716-446655440022'),
-                                                                                                (NEWID(), '550E8400-E29B-41D4-A716-446655440019', '550E8400-E29B-41D4-A716-446655440023');
 
 ALTER TABLE don_hang ADD ghi_chu NVARCHAR(MAX);
 ALTER TABLE phieu_giam_gia ADD gia_tri_giam_toi_da DECIMAL(10, 2);
@@ -636,6 +624,14 @@ CREATE TABLE dia_chi_nguoi_dung (
                                     mac_dinh BIT DEFAULT 0, -- 1 nếu là địa chỉ mặc định
                                     thoi_gian_tao DATETIME DEFAULT GETDATE(),
                                     FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id) ON DELETE CASCADE
+);
+
+CREATE TABLE phieu_giam_gia_phuong_thuc_thanh_toan (
+                                                       id_phieu_giam_gia UNIQUEIDENTIFIER,
+                                                       id_phuong_thuc_thanh_toan UNIQUEIDENTIFIER,
+                                                       PRIMARY KEY (id_phieu_giam_gia, id_phuong_thuc_thanh_toan),
+                                                       FOREIGN KEY (id_phieu_giam_gia) REFERENCES phieu_giam_gia(id),
+                                                       FOREIGN KEY (id_phuong_thuc_thanh_toan) REFERENCES phuong_thuc_thanh_toan(id)
 );
 
 CREATE TABLE danh_gia (

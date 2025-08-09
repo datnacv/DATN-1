@@ -116,7 +116,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
             "JOIN FETCH ct.sanPham sp " +
             "JOIN FETCH ct.kichCo kc " +
             "JOIN FETCH ct.mauSac ms " +
-            "WHERE sp.id = :idSanPham AND ct.chienDichGiamGia IS NULL")
+            "WHERE sp.id = :idSanPham AND (ct.chienDichGiamGia IS NULL OR ct.chienDichGiamGia.ngayKetThuc < CURRENT_TIMESTAMP)")
     List<ChiTietSanPham> findAvailableBySanPhamId(@Param("idSanPham") UUID idSanPham);
 
 
