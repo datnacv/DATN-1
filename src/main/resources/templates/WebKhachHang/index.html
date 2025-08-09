@@ -26,32 +26,151 @@
     body { padding-top: 118px; }
     .user-info { display: none; color: white; }
     .user-info.active { display: inline; }
-    .chatbot-msg-user {
-      background-color: #153054;
-      color: white;
-      padding: 10px 14px;
-      border-radius: 20px;
-      max-width: 80%;
-      margin-left: auto;
-      margin-bottom: 10px;
-      text-align: right;
-      font-size: 15px;
-      line-height: 1.5;
-      word-wrap: break-word;
+    /* Ẩn mặc định bằng opacity + transform (để transition mượt) */
+    #chatbot-box{
+      position: fixed; bottom: 100px; right: 30px;
+      width: 420px; max-height: 640px;
+      display: flex;               /* luôn là flex, KHÔNG dùng display:none */
+      flex-direction: column;
+      background:#fff; border-radius:14px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.18);
+      overflow: hidden; z-index:10000;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+      /* trạng thái ẩn */
+      opacity: 0;
+      transform: translateY(12px) scale(.98);
+      pointer-events: none;
+      visibility: hidden;
+      transform-origin: bottom right;
+
+      transition: opacity .25s ease, transform .25s ease, visibility .25s;
+      will-change: opacity, transform;
     }
-    .chatbot-msg-bot {
-      background-color: #9FD5F7;
-      color: #153054;
-      padding: 10px 14px;
-      border-radius: 20px;
-      max-width: 80%;
-      margin-right: auto;
-      margin-bottom: 10px;
-      text-align: left;
-      font-size: 15px;
-      line-height: 1.5;
-      word-wrap: break-word;
+
+    /* trạng thái hiện */
+    #chatbot-box.is-open{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      visibility: visible;
     }
+
+    /* tôn trọng giảm chuyển động */
+    @media (prefers-reduced-motion: reduce){
+      #chatbot-box{ transition: none; }
+    }
+
+
+    /* Header tối, icon tròn */
+    .cb-header{ background:#9FD5F7; color:#fff; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+    .brand-logo{ width:28px; height:28px; border-radius:6px; object-fit:cover; }
+
+    .cb-header .brand{
+      display:flex; align-items:center; gap:8px; font-weight:700;
+    }
+    .cb-header .brand .dot{
+      width:28px;height:28px;border-radius:50%;
+      background:#9FD5F7; display:inline-block;
+    }
+    /* QR combobox bên trái input */
+    .qr-wrap{ position:relative; }
+    .qr-btn{
+      width:44px;height:44px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;color:#111827;
+      display:flex;align-items:center;justify-content:center; cursor:pointer;
+    }
+    .qr-btn:focus{ outline:none; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    .qr-menu{
+      position:absolute; left:0; bottom:52px; /* nổi phía trên input */
+      width:260px; max-height:260px; overflow:auto;
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+      box-shadow:0 12px 28px rgba(0,0,0,.12);
+      padding:8px; display:none; z-index:10001;
+    }
+    .qr-menu.show{ display:block; }
+    .qr-item{
+      width:100%; text-align:left; border:0; background:#fff; color:#111827;
+      padding:10px 12px; border-radius:10px; font-size:14px; cursor:pointer;
+    }
+    .qr-item:hover{ background:#f3f4f6; }
+
+    .cb-actions{ margin-left:auto; display:flex; gap:8px; }
+    .cb-icon{
+      width:32px;height:32px;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.08); color:#fff; cursor:pointer; border:0;
+    }
+    .cb-icon:hover{ background:rgba(255,255,255,.16); }
+
+    /* Vùng tin nhắn */
+    #chat-messages{
+      padding:12px 12px 6px;
+      height:420px; overflow-y:auto; background:#fff;
+    }
+
+    /* Bong bóng bot + avatar bằng ::before */
+    .chatbot-msg-bot{
+      position:relative;
+      background:#f3f4f6; color:#111827;
+      padding:10px 12px; border-radius:14px 14px 14px 4px;
+      max-width:82%; margin:0 56px 10px 40px; /* chừa chỗ avatar trái */
+      font-size:15px; line-height:1.45; word-wrap:break-word;
+    }
+    .chatbot-msg-bot::before{
+      content:""; position:absolute; left:-34px; top:0;
+      width:28px; height:28px; border-radius:50%;
+      background-image:url('/image/acv-logo3.png'); background-size:cover;
+    }
+
+    .chatbot-msg-user{
+      background:#153054; color:#fff;
+      padding:10px 12px; border-radius:14px 14px 4px 14px;
+      max-width:82%; margin:0 0 10px auto;
+      font-size:15px; line-height:1.45; word-wrap:break-word;
+    }
+
+    /* Typing indicator giả lập */
+    #typing-indicator{ opacity:.8; font-style:italic; }
+
+    /* Quick reply dạng pill dưới vùng chat */
+    .cb-quick{
+      padding:6px 12px 10px; background:#fff;
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .cb-pill{
+      border:1px solid #e5e7eb; background:#fff; color:#111827;
+      padding:8px 12px; border-radius:18px; font-size:14px;
+      cursor:pointer; transition:.15s;
+    }
+    .cb-pill:hover{ background:#f3f4f6; }
+
+    /* Thanh nhập + nút gửi */
+    .cb-inputbar{
+      border-top:1px solid #eee;
+      padding:10px; display:flex; gap:8px; align-items:center; background:#fff;
+    }
+    #chat-input{
+      flex:1; padding:12px 14px; border:1px solid #e5e7eb;
+      border-radius:24px; font-size:15px; outline:none;
+    }
+    #chat-input:focus{ border-color:#b6c2ff; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    #chat-send{
+      width:44px;height:44px;border-radius:50%;border:0;
+      background:#153054; color:#fff; display:flex;align-items:center;justify-content:center;
+    }
+
+    /* Ghi chú nhỏ giống caption “Thông tin chỉ mang tính tham khảo…” */
+    .cb-note{
+      padding:6px 14px 12px; font-size:10px; text-align: center ; color:#6b7280; background:#fff ;
+    }
+    #chat-input {
+      flex: 1;
+      resize: none;              /* không cho kéo thủ công */
+      overflow-y: hidden;        /* ẩn thanh cuộn */
+      line-height: 1.4;
+      max-height: 120px;         /* giới hạn chiều cao tối đa (tầm 5-6 dòng) */
+    }
+
     #confirmAddToCart.loading::after {
       content: '';
       display: inline-block;
@@ -405,66 +524,68 @@
 </section>
 
 <!-- Floating Chatbot Icon -->
-<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-  <i class="fas fa-robot fa-lg text-white"></i>
+<div id="chatbot-toggle"
+     style="position: fixed; bottom: 20px; right: 20px; background-color: #9FD5F7;
+            width: 60px; height: 60px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; z-index: 10000;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+  <img th:src="@{/image/acv-logo3.png}" alt="ACV"
+       style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
 </div>
 
 <!-- Chatbot Box -->
-<div id="chatbot-box" style="
-    position: fixed;
-    bottom: 100px;
-    right: 30px;
-    width: 420px;
-    max-height: 620px;
-    background: #fff;
-    border-radius: 7px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    z-index: 10000;
-    font-family: 'Segoe UI', sans-serif;
-  ">
+<div id="chatbot-box">
   <!-- Header -->
-  <div style="background-color: #9FD5F7; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
-    <img th:src="@{/image/acv-logo3.png}" style="width: 32px; height: 32px;">
-    <div style="font-weight: bold;">ACV Bot</div>
-    <button id="chat-reload" title="Xoá lịch sử chat" style="margin-left:auto;margin-right:8px;cursor:pointer;background:transparent;border:0;">
-      <i class="fas fa-rotate-right"></i>
-    </button>
-    <span id="chatbot-close" style="cursor: pointer;">×</span>
+  <div class="cb-header">
+  <span class="brand">
+    <img th:src="@{/image/acv-logo3.png}" alt="ACV" class="brand-logo" />
+    ACV Bot
+  </span>
+    <div class="cb-actions">
+      <button id="chat-reload" class="cb-icon" title="Xoá lịch sử chat">
+        <i class="fas fa-rotate-right"></i>
+      </button>
+      <button id="chatbot-close" class="cb-icon" title="Đóng">
+        <i class="fas fa-minus"></i>
+      </button>
+    </div>
   </div>
 
-  <!-- Messages -->
-  <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;"></div>
 
-  <!-- Quick Reply Combobox -->
-  <div class="px-4 pt-3">
-    <select id="quick-combobox" class="form-select text-sm">
-      <option value="">🔽 Quick reply</option>
-      <option>Sản phẩm mới nhất</option>
-      <option>Phương thức liên hệ</option>
-      <option>Địa chỉ của shop ở đâu</option>
-    </select>
+  <!-- Messages -->
+  <div id="chat-messages"></div>
+
+  <!-- Quick row (chỉ hiện trước khi có tin nhắn đầu tiên) -->
+  <div id="quick-row" class="cb-quick" style="display:none">
+    <button class="cb-pill quick-reply">Sản phẩm mới nhất</button>
+    <button class="cb-pill quick-reply">Thông tin liên hệ</button>
+    <button class="cb-pill quick-reply">Địa chỉ cửa hàng</button>
   </div>
 
   <!-- Input + Send Button -->
-  <div style="padding: 10px; border-top: 1px solid #eee; display:flex; gap:8px; align-items:center;">
-    <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
-        flex:1;
-        padding: 12px 16px;
-        border: 1px solid #ccc;
-        border-radius: 24px;
-        font-size: 15px;
-        outline: none;
-        transition: border 0.2s ease-in-out;
-      ">
-    <button id="chat-send" aria-label="Gửi" title="Gửi (Enter)" style="
-        width:44px;height:44px;border-radius:50%;
-        border:0;background:#153054;color:#fff;display:flex;align-items:center;justify-content:center;
-      ">
-      <i class="fas fa-arrow-turn-down-left"></i>
+  <div class="cb-inputbar">
+    <!-- Quick-reply combobox icon -->
+    <div class="qr-wrap">
+      <button id="qr-trigger" class="qr-btn" aria-haspopup="true" aria-expanded="false" title="Quick reply">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div id="qr-menu" class="qr-menu" role="menu" aria-hidden="true">
+        <button class="qr-item quick-reply" role="menuitem">Sản phẩm mới nhất</button>
+        <button class="qr-item quick-reply" role="menuitem">Thông tin liên hệ</button>
+        <button class="qr-item quick-reply" role="menuitem">Địa chỉ cửa hàng</button>
+      </div>
+    </div>
+
+    <textarea id="chat-input" placeholder="Nhập tin nhắn..." rows="1"></textarea>
+    <button id="chat-send" aria-label="Gửi" title="Gửi (Enter)">
+      <i class="fas fa-paper-plane"></i>
     </button>
+  </div>
+
+
+  <!-- Note -->
+  <div class="cb-note">
+    Thông tin chỉ mang tính tham khảo, được tư vấn bởi Trợ lý Trí tuệ Nhân Tạo.
   </div>
 </div>
 
@@ -512,6 +633,46 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script>
+  const qrTrigger = document.getElementById('qr-trigger');
+  const qrMenu    = document.getElementById('qr-menu');
+
+  qrTrigger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = qrMenu.classList.toggle('show');
+    qrTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    qrMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+  });
+
+  // click ngoài để đóng menu
+  document.addEventListener('click', (e) => {
+    if (!qrMenu) return;
+    if (!qrMenu.contains(e.target) && !qrTrigger.contains(e.target)) {
+      qrMenu.classList.remove('show');
+      qrTrigger.setAttribute('aria-expanded', 'false');
+      qrMenu.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+
+  function showQuickRow() {
+    const el = document.getElementById('quick-row');
+    if (el) el.style.display = 'flex';
+  }
+  function hideQuickRow() {
+    const el = document.getElementById('quick-row');
+    if (el) el.style.display = 'none';
+  }
+
+  // Đóng combobox khi chọn quick-reply trong menu
+  qrMenu?.addEventListener('click', (e) => {
+    const item = e.target.closest('.quick-reply');
+    if (!item) return;
+    // tắt menu ngay
+    qrMenu.classList.remove('show');
+    qrTrigger.setAttribute('aria-expanded', 'false');
+    qrMenu.setAttribute('aria-hidden', 'true');
+  });
+
 
   // ====== DOM refs mới ======
   const reloadBtn  = document.getElementById('chat-reload');
@@ -525,6 +686,8 @@
 
     // Xoá tin nhắn trên giao diện
     chatMessages.innerHTML = '';
+    showQuickRow();
+
 
     // Gọi lời chào mặc định như mới mở
     ensureGreeting();
@@ -567,15 +730,8 @@
     saveToHistory('bot', greet2);
 
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    showQuickRow(); // hiện quick-reply khi lần đầu mở
   }
-
-  // ====== Gọi ensureGreeting khi mở chat ======
-  toggleBtn.onclick = () => {
-    chatBox.style.display = "flex";
-    restoreHistory();
-    ensureGreeting(); // 👈 chèn lời chào nếu lần đầu
-    chatInput.focus();
-  };
 
   document.querySelectorAll('.price').forEach(el => {
     const raw = el.getAttribute('data-price');
@@ -751,14 +907,42 @@
   const chatInput = document.getElementById('chat-input');
   const chatMessages = document.getElementById('chat-messages');
 
-  toggleBtn.onclick = () => {
-    chatBox.style.display = "flex";
-    chatInput.focus();
-    restoreHistory();
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto'; // reset trước
+    chatInput.style.height = chatInput.scrollHeight + 'px';
+  });
+
+  function openChat(){
+    if (!chatBox.classList.contains('is-open')) {
+      chatBox.classList.add('is-open');
+      restoreHistory();
+      ensureGreeting();
+      requestAnimationFrame(() => chatInput?.focus());
+    }
+  }
+  function closeChat(){ chatBox.classList.remove('is-open'); }
+  function isOpen(){ return chatBox.classList.contains('is-open'); }
+
+  toggleBtn.onclick = (e) => {
+    e.stopPropagation();
+    isOpen() ? closeChat() : openChat();
   };
-  closeBtn.onclick = () => {
-    chatBox.style.display = "none";
+
+  closeBtn.onclick = (e) => {
+    e.stopPropagation();
+    closeChat();
   };
+
+  /* click ra ngoài để đóng */
+  document.addEventListener('click', (e) => {
+    if (!chatBox.contains(e.target) && !toggleBtn.contains(e.target)) closeChat(); // ✅
+  });
+
+
+  /* nhấn ESC để đóng */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) closeChat();
+  });
 
   function saveToHistory(role, msg) {
     const current = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
@@ -770,13 +954,19 @@
     const chatMessages = document.getElementById('chat-messages');
     chatMessages.innerHTML = '';
     const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+
+    // render lại lịch sử
     for (const item of items) {
       const div = document.createElement('div');
       div.className = item.role === 'user' ? 'chatbot-msg-user' : 'chatbot-msg-bot';
       div.innerHTML = item.msg;
       chatMessages.appendChild(div);
     }
-    // Thêm typing-indicator vào cuối
+
+    // hiện quick-reply nếu CHƯA có tin nhắn user nào
+    const hasUserMsg = items.some(i => i.role === 'user');
+    if (hasUserMsg) hideQuickRow(); else showQuickRow();
+
     const typingIndicator = document.createElement('div');
     typingIndicator.id = 'typing-indicator';
     typingIndicator.className = 'chatbot-msg-bot hidden';
@@ -784,6 +974,7 @@
     chatMessages.appendChild(typingIndicator);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
+
 
   document.querySelectorAll('.quick-reply').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -798,6 +989,7 @@
     event.preventDefault();
     const message = chatInput.value.trim();
     if (!message) return;
+    hideQuickRow();
 
     const userDiv = document.createElement('div');
     userDiv.className = 'chatbot-msg-user';
