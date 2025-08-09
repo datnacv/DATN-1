@@ -888,10 +888,8 @@
                         tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
                         soLuong: item.soLuong,
                         gia: item.gia,
-                        giaGoc: item.chiTietSanPham.giaGoc,  // Lấy giá gốc
-                        tenChienDich: item.chienDichGiamGia ? item.chienDichGiamGia.ten : null,  // Lấy tên chiến dịch
-                        urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPhams.length > 0
-                            ? item.chiTietSanPhams[0].urlHinhAnh
+                        urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
+                            ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
                             : item.chiTietSanPham.sanPham.urlHinhAnh || '/images/default-product.jpg',
                         sizeName: item.chiTietSanPham.kichCo?.ten || 'N/A',
                         colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A'
@@ -939,10 +937,6 @@
                     <p class="text-gray-600 text-sm">Số lượng: ${item.soLuong}</p>
                     <p class="text-gray-600 text-sm">Đơn giá: ${formatVND(item.gia)}</p>
                     <p class="text-[#153054] font-bold">Thành tiền: ${formatVND(item.gia * item.soLuong)}</p>
-
-                    <!-- Hiển thị giá gốc và chiến dịch giảm giá -->
-                    <p class="text-gray-600 text-sm">Giá gốc: ${formatVND(item.giaGoc)}</p>
-                    <p class="text-gray-600 text-sm">Chiến dịch giảm giá: ${item.tenChienDich || 'Không có'}</p>
                 </div>
             </div>
         `).join('');
