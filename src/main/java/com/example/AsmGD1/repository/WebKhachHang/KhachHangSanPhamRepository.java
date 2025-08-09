@@ -14,6 +14,9 @@ import java.math.BigDecimal;
 
 @Repository
 public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID> {
+    @Query("SELECT MAX(ct.gia) FROM ChiTietSanPham ct WHERE ct.sanPham.id = :sanPhamId AND ct.trangThai = true")
+    BigDecimal findMaxPriceBySanPhamId(@Param("sanPhamId") UUID sanPhamId);
+
     // Truy vấn sản phẩm đang hoạt động và có ít nhất một ChiTietSanPham hoạt động
     @Query("SELECT p FROM SanPham p JOIN p.danhMuc d " +
             "WHERE p.trangThai = true " +
