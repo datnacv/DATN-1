@@ -10,6 +10,8 @@ import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
+import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
+import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
@@ -68,6 +70,12 @@ public class HoaDonService {
 
     @Autowired
     private LichSuTraHangRepository lichSuTraHangRepository;
+
+    @Autowired
+    private ViThanhToanRepository viThanhToanRepo;
+
+    @Autowired
+    private LichSuGiaoDichViRepository lichSuRepo;
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -519,6 +527,31 @@ public class HoaDonService {
         String currentStatus = hoaDon.getTrangThai();
         if (!List.of("Chưa xác nhận", "Đã xác nhận", "Đã xác nhận Online", "Đang xử lý Online", "Đang vận chuyển").contains(currentStatus)) {
             throw new IllegalStateException("Hóa đơn không thể hủy khi ở trạng thái: " + currentStatus);
+        }
+
+        // Check if the order was paid using wallet
+        if ("Ví".equalsIgnoreCase(hoaDon.getPhuongThucThanhToan().getTenPhuongThuc())) {
+            BigDecimal refundAmount = hoaDon.getTongTien();
+
+            // Refund to wallet
+            NguoiDung nguoiDung = hoaDon.getNguoiDung();
+            ViThanhToan viThanhToan = viThanhToanRepo.findByNguoiDung(nguoiDung)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
+            // Add the refund amount to the wallet balance
+            viThanhToan.setSoDu(viThanhToan.getSoDu().add(refundAmount));
+            viThanhToan.setThoiGianCapNhat(LocalDateTime.now());
+            viThanhToanRepo.save(viThanhToan);
+
+            // Record the transaction in the wallet transaction history
+            LichSuGiaoDichVi lichSu = new LichSuGiaoDichVi();
+            lichSu.setIdViThanhToan(viThanhToan.getId());
+            lichSu.setLoaiGiaoDich("Hoàn tiền");
+            lichSu.setSoTien(refundAmount);
+            lichSu.setMoTa("Hoàn tiền do hủy đơn hàng: " + hoaDon.getDonHang().getMaDonHang());
+            lichSu.setCreatedAt(LocalDateTime.now());
+            lichSu.setThoiGianGiaoDich(LocalDateTime.now());
+            lichSuRepo.save(lichSu);
         }
 
         // Cập nhật trạng thái hóa đơn

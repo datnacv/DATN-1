@@ -801,14 +801,32 @@
     }
   }
 
+  function isImageUrl(url) {
+    // Nhận diện link ảnh phổ biến, cho phép có query string
+    return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
+  }
+
   function formatMessage(message) {
+    // Nếu bot đã gửi sẵn thẻ <img>, giữ nguyên (tránh replace URL bên trong thẻ)
+    if (/<\s*img\b[^>]*src=/i.test(message)) {
+      return message; // hoặc: return message.replace(/\n/g, '<br>'); nếu muốn ép xuống dòng
+    }
+
+    // Xử lý tất cả URLs: link ảnh -> <img>, link khác -> <a>
     return message
             .replace(
-                    /(https?:\/\/[^\s]+|acvstore\.site\/[^\s]+)/g,
-                    url => `<a href="${url.startsWith('http') ? url : 'https://' + url}" target="_blank" style="color: #153054; text-decoration: underline;">${url}</a>`
+                    /(https?:\/\/[^\s<]+|acvstore\.site\/[^\s<]+)/g,
+                    (raw) => {
+                      const url = raw.startsWith('http') ? raw : 'https://' + raw;
+                      if (isImageUrl(url)) {
+                        return `<img src="${url}" alt="Ảnh" loading="lazy" style="max-width:100%;height:auto;margin-top:8px;" />`;
+                      }
+                      return `<a href="${url}" target="_blank" rel="noopener" style="color:#153054;text-decoration:underline;">${raw}</a>`;
+                    }
             )
             .replace(/\n/g, '<br>');
   }
+
   new Swiper('.banner-slider', {
     loop: true,
     autoplay: { delay: 5000 },
