@@ -1660,19 +1660,36 @@
       addressSection: document.getElementById('addressSection')
     };
 
-    if (elements.customerPhone) elements.customerPhone.value = tab.customerPhone;
-    if (elements.customerName) elements.customerName.value = tab.customerName;
-    if (elements.customerEmail) elements.customerEmail.value = tab.customerEmail;
+    if (elements.customerPhone) elements.customerPhone.value = tab.customerPhone || '';
+    if (elements.customerName)  elements.customerName.value  = tab.customerName  || '';
+    if (elements.customerEmail) elements.customerEmail.value = tab.customerEmail || '';
+
     if (elements.saleMethod) elements.saleMethod.value = tab.saleMethod;
+
+// Nếu là Khách lẻ: không hiển thị SĐT & Email
     if (tab.customerPhone === '0999999999') {
-      elements.saleMethod.value = 'Tại quầy';
-      elements.saleMethod.setAttribute('disabled', 'true');
-      if (elements.addressSection) elements.addressSection.classList.add('d-none');
-      if (elements.shippingFeeContainer) elements.shippingFeeContainer.classList.add('d-none');
+      if (elements.customerPhone) {
+        elements.customerPhone.value = '';
+        elements.customerPhone.placeholder = 'Khách lẻ (không thu thập SĐT)';
+      }
+      if (elements.customerName)  elements.customerName.value  = 'Khách lẻ';
+      if (elements.customerEmail) elements.customerEmail.value = '';
+
+      // Khoá phần giao hàng + reset phí ship
+      if (elements.saleMethod) {
+        elements.saleMethod.value = 'Tại quầy';
+        elements.saleMethod.setAttribute('disabled', 'true');
+      }
+      const addressSection = document.getElementById('addressSection');
+      const shippingFeeContainer = document.getElementById('shippingFeeContainer');
+      if (addressSection) addressSection.classList.add('d-none');
+      if (shippingFeeContainer) shippingFeeContainer.classList.add('d-none');
+
       tab.saleMethod = 'Tại quầy';
       tab.shippingFee = 0;
+      updateSummary(tab);
     } else {
-      elements.saleMethod.removeAttribute('disabled');
+      if (elements.saleMethod) elements.saleMethod.removeAttribute('disabled');
     }
 
     if (elements.shippingFee) elements.shippingFee.value = tab.shippingFee;
@@ -1709,77 +1726,121 @@
   }
 
   async function fetchCustomerAddresses() {
-    const phoneInput = document.getElementById('customerPhone');
-    if (!phoneInput) return;
+    const phoneEl = document.getElementById('customerPhone');
+    const nameEl  = document.getElementById('customerName');
+    const emailEl = document.getElementById('customerEmail');
+    const addressSection        = document.getElementById('addressSection');
+    const shippingFeeContainer  = document.getElementById('shippingFeeContainer');
+    const addressSelect         = document.getElementById('addressSelect');
 
-    const phone = phoneInput.value;
-    if (!phone || !/^\d{10}$/.test(phone)) {
-      showToast('Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số.', 'warning');
-      const addressSection = document.getElementById('addressSection');
-      if (addressSection) addressSection.classList.add('d-none');
-      return;
-    }
+    if (!phoneEl) return;
 
+    const phone = (phoneEl.value || '').trim();
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
+    // ---- Validate SĐT
+    if (!phone || !/^\d{10}$/.test(phone)) {
+      showToast('Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số.', 'warning');
+      if (addressSection) addressSection.classList.add('d-none');
+      // không đụng tới name/email ở đây để user vẫn thấy info cũ (nếu có)
+      return;
+    }
+
+    // ---- Cập nhật vào state
     tab.customerPhone = phone;
 
+    // ---- Trường hợp KHÁCH LẺ
+    if (phone === '0999999999') {
+      // Input hiển thị
+      phoneEl.value = '';
+      phoneEl.placeholder = 'Khách lẻ (không thu thập SĐT)';
+      if (nameEl)  nameEl.value  = 'Khách lẻ';
+      if (emailEl) emailEl.value = '';
+
+      // Khoá cấu hình giao hàng
+      const saleMethodEl = document.getElementById('saleMethod');
+      if (saleMethodEl) {
+        saleMethodEl.value = 'Tại quầy';
+        saleMethodEl.setAttribute('disabled', 'true');
+      }
+      if (addressSection)       addressSection.classList.add('d-none');
+      if (shippingFeeContainer) shippingFeeContainer.classList.add('d-none');
+
+      // Reset shipping fee & summary
+      tab.customerName  = 'Khách lẻ';
+      tab.customerEmail = '';
+      tab.saleMethod    = 'Tại quầy';
+      tab.shippingFee   = 0;
+      updateSummary(tab);
+
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      return; // ❗ Dừng ở đây, không gọi API khách hàng
+    }
+
+    // ---- Khách thường: mở khoá saleMethod
+    const saleMethodEl = document.getElementById('saleMethod');
+    if (saleMethodEl) saleMethodEl.removeAttribute('disabled');
+
+    // ---- Gọi API lấy thông tin KH + địa chỉ
     try {
-      const response = await fetch(`${BASE_URL}/customer/${phone}/addresses`);
-      if (!response.ok) {
+      const res = await fetch(`${BASE_URL}/customer/${phone}/addresses`);
+      if (!res.ok) {
         let errorMessage = "Không tìm thấy khách hàng.";
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
+          const err = await res.json();
+          errorMessage = err.error || err.message || errorMessage;
+        } catch (_) { /* ignore */ }
+
         showToast(errorMessage, 'error');
-        const customerNameInput = document.getElementById('customerName');
-        const customerEmailInput = document.getElementById('customerEmail');
-        if (customerNameInput) customerNameInput.value = '';
-        if (customerEmailInput) customerEmailInput.value = '';
-        const addressSection = document.getElementById('addressSection');
+
+        // Clear name/email + ẩn địa chỉ
+        if (nameEl)  nameEl.value  = '';
+        if (emailEl) emailEl.value = '';
         if (addressSection) addressSection.classList.add('d-none');
+
+        // Không fail cứng UI
         return;
       }
 
-      const data = await response.json();
-      tab.customerName = data.hoTen || '';
-      tab.customerEmail = data.email || '';
+      const data = await res.json();
 
-      const customerNameInput = document.getElementById('customerName');
-      const customerEmailInput = document.getElementById('customerEmail');
-      if (customerNameInput) customerNameInput.value = tab.customerName;
-      if (customerEmailInput) customerEmailInput.value = tab.customerEmail;
+      // ---- Đổ thông tin KH
+      tab.customerName  = data.hoTen  || '';
+      tab.customerEmail = data.email  || '';
+      if (nameEl)  nameEl.value  = tab.customerName;
+      if (emailEl) emailEl.value = tab.customerEmail;
 
+      // ---- Đổ địa chỉ
       tab.addresses = data.addresses || [];
-      const addressSelect = document.getElementById('addressSelect');
       if (addressSelect) {
         addressSelect.innerHTML = '<option value="">Chọn địa chỉ</option>';
 
-        // Lọc địa chỉ hợp lệ: phải có ít nhất 3 dấu phẩy (chi tiết, phường, quận, tỉnh)
-        const uniqueValidAddresses = [...new Set(tab.addresses)].filter(addr => addr.split(',').length >= 3);
+        // Lọc địa chỉ hợp lệ (ít nhất 3 phần: phường, quận, tỉnh)
+        const uniqueValidAddresses = [...new Set(tab.addresses)]
+                .filter(addr => (addr || '').split(',').length >= 3);
 
         uniqueValidAddresses.forEach(address => {
-          const option = document.createElement('option');
-          option.value = address;
-          option.text = address;
-          addressSelect.appendChild(option);
+          const opt = document.createElement('option');
+          opt.value = address;
+          opt.text  = address;
+          addressSelect.appendChild(opt);
         });
 
-
-
+        // Giữ selection nếu có
         addressSelect.value = tab.selectedAddress || '';
       }
 
-      const addressSection = document.getElementById('addressSection');
+      // ---- Hiện/ẩn section địa chỉ theo saleMethod
       if (addressSection) {
-        if (tab.saleMethod === 'Giao hàng' && phone !== '0999999999') {
+        if (tab.saleMethod === 'Giao hàng') {
           addressSection.classList.remove('d-none');
+          if (shippingFeeContainer) shippingFeeContainer.classList.remove('d-none');
         } else {
           addressSection.classList.add('d-none');
+          if (shippingFeeContainer) shippingFeeContainer.classList.add('d-none');
+          tab.shippingFee = 0;
+          updateSummary(tab);
         }
       }
 
@@ -1787,6 +1848,9 @@
     } catch (error) {
       console.error('Lỗi khi lấy thông tin khách hàng:', error);
       showToast('Lỗi khi tải địa chỉ: ' + error.message, 'error');
+
+      // Ẩn địa chỉ để tránh UI sai
+      if (addressSection) addressSection.classList.add('d-none');
     }
   }
 
@@ -2480,23 +2544,30 @@
     if (!tab) return;
 
     tab.customerPhone = phone;
-    tab.customerName = name;
+    tab.customerName  = name;
     tab.customerEmail = email;
 
-    const elements = {
-      customerPhone: document.getElementById('customerPhone'),
-      customerName: document.getElementById('customerName'),
-      customerEmail: document.getElementById('customerEmail'),
-      customerModal: document.getElementById('customerModal')
-    };
+    const phoneEl   = document.getElementById('customerPhone');
+    const nameEl    = document.getElementById('customerName');
+    const emailEl   = document.getElementById('customerEmail');
+    const modalEl   = document.getElementById('customerModal');
 
-    if (elements.customerPhone) elements.customerPhone.value = phone;
-    if (elements.customerName) elements.customerName.value = name;
-    if (elements.customerEmail) elements.customerEmail.value = email;
-    if (elements.customerModal) elements.customerModal.style.display = 'none';
+    if (phoneEl) {
+      if (phone === '0999999999') { // Khách lẻ
+        phoneEl.value = '';
+        phoneEl.placeholder = 'Khách lẻ (không thu thập SĐT)';
+      } else {
+        phoneEl.value = phone;
+        phoneEl.placeholder = 'Nhập số điện thoại khách hàng';
+      }
+    }
 
-    fetchCustomerAddresses();
-    toggleAddressSection();
+    if (nameEl)  nameEl.value  = (phone === '0999999999') ? 'Khách lẻ' : (name || '');
+    if (emailEl) emailEl.value = (phone === '0999999999') ? ''         : (email || '');
+
+    if (modalEl) modalEl.style.display = 'none';
+
+    toggleAddressSection(); // sẽ khoá giao hàng nếu là Khách lẻ
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
   }
 
