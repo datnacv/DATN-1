@@ -296,64 +296,7 @@
   </marquee>
 </div>
 
-<nav class="navbar navbar-expand-lg sticky-top shadow-sm">
-  <div class="container d-flex justify-content-between align-items-center py-2">
-    <!-- Logo -->
-    <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
-
-    <!-- Dropdown Danh mục -->
-    <div class="dropdown me-3">
-      <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        Danh mục
-      </button>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="/category/nam">Thời trang Nam</a></li>
-        <li><a class="dropdown-item" href="/category/nu">Thời trang Nữ</a></li>
-        <li><a class="dropdown-item" href="/category/phu-kien">Phụ kiện</a></li>
-        <li><a class="dropdown-item" href="/category/gia-dung">Gia dụng</a></li>
-      </ul>
-    </div>
-
-    <!-- Tìm kiếm -->
-    <form class="flex-grow-1 mx-3 position-relative" style="max-width: 600px;" action="/search" method="get">
-      <div class="input-group">
-        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm..." aria-label="Tìm kiếm sản phẩm" name="keyword" id="searchInput" th:value="${keyword}" autocomplete="off">
-        <button class="btn btn-light rounded-end-pill px-4" type="submit">
-          <i class="fas fa-search text-blue-800"></i>
-        </button>
-      </div>
-      <div id="searchSuggestions" class="search-suggestions"></div>
-    </form>
-
-    <!-- Giỏ hàng + Người dùng -->
-    <div class="d-flex align-items-center gap-3">
-      <!-- Giỏ hàng -->
-      <a th:href="@{/cart}" class="text-white fs-5 position-relative" aria-label="Giỏ hàng">
-        <i class="fas fa-shopping-cart"></i>
-        <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
-      </a>
-
-      <!-- Nếu đã đăng nhập -->
-      <div th:if="${user != null}" class="dropdown">
-        <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" th:href="@{/profile}">Tài khoản của tôi</a></li>
-          <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
-          <li><a class="dropdown-item" th:href="@{/vi}">Ví thanh toán</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" th:href="@{/customers/logout}">Đăng xuất</a></li>
-        </ul>
-      </div>
-
-      <!-- Nếu chưa đăng nhập -->
-      <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3" id="loginButton">
-        Đăng nhập
-      </a>
-    </div>
-  </div>
-</nav>
+<div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
 
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -655,6 +598,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+<script src="/js/navbar.js"></script>
 <script>
   const qrTrigger = document.getElementById('qr-trigger');
   const qrMenu    = document.getElementById('qr-menu');
@@ -1144,32 +1088,6 @@
     pagination: { el: '.swiper-pagination', clickable: true },
   });
 
-  window.addEventListener('load', async () => {
-    const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
-    const data = await response.json();
-    const userInfo = document.getElementById('userInfo');
-    const loginButton = document.getElementById('loginButton');
-
-    if (data.isAuthenticated) {
-      const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
-      const userData = await userResponse.json();
-      if (userData.hoTen && userData.tenDangNhap) {
-        userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
-        userInfo.classList.add('active');
-        loginButton.style.display = 'none';
-      }
-    } else {
-      userInfo.classList.remove('active');
-      loginButton.style.display = 'inline';
-    }
-  });
-
-  document.getElementById('logoutButton')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    fetch('/customers/logout', { method: 'POST', credentials: 'include' }).then(() => {
-      window.location.href = '/';
-    });
-  });
 
   document.querySelectorAll('.cart-icon').forEach(button => {
     button.addEventListener('click', () => {

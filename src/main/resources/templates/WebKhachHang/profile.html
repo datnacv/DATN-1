@@ -9,7 +9,18 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    body { background: #f9fafb; font-family: 'Inter', sans-serif; }
+    .navbar {
+      background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding-top: 140px;
+      line-height: 1.6;
+    }
     .page-title { font-size: 1.8rem; font-weight: 700; color: #153054; margin-bottom: 20px; }
     .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .form-label { font-weight: 600; }
@@ -19,6 +30,7 @@
       padding: 10px;
       font-size: 0.95rem;
     }
+    .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
     .form-control:focus, .form-select:focus {
       border-color: #153054;
       box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
@@ -36,15 +48,13 @@
 </head>
 <body>
 
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg" style="background: linear-gradient(to right, #153054, #1e4066);">
-  <div class="container">
-    <a class="navbar-brand text-white fw-bold" href="/">ACV Store</a>
-    <div class="ms-auto">
-      <a href="/" class="btn btn-light btn-sm"><i class="fas fa-home me-1"></i>Trang chủ</a>
-    </div>
-  </div>
-</nav>
+<div class="ticker py-2 overflow-hidden fixed top-0 w-full z-50">
+  <marquee behavior="scroll" direction="left" scrollamount="5">
+    🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
+  </marquee>
+</div>
+
+<div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
 
 <!-- Toast Container -->
 <div class="toast-container"></div>
@@ -276,6 +286,7 @@
 </th:block>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/navbar.js"></script>
 <script>
   // Hàm hiển thị toast notification
   function showToast(message, type = 'success') {
