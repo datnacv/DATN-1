@@ -74,9 +74,6 @@
     }
 
     .sticky-header {
-      position: sticky;
-      top: 60px;
-      z-index: 1000;
       background: var(--glass-bg);
       backdrop-filter: blur(20px);
       padding: 1.5rem 2rem;
@@ -84,10 +81,12 @@
       border-bottom: 2px solid var(--border-color);
       border-radius: 20px 20px 0 0;
       box-shadow: var(--shadow-light);
+
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      justify-content: center; /* Căn giữa ngang */
+      align-items: center;     /* Căn giữa dọc */
     }
+
 
     .sticky-header h2 {
       font-weight: 700;
@@ -221,7 +220,6 @@
       margin-bottom: 0.5rem;
     }
 
-    /* Employee notice styles */
     .employee-notice {
       background-color: #cff4fc;
       border: 1px solid #b6effb;
@@ -241,16 +239,12 @@
   </nav>
 
   <div class="content" id="content">
-    <div class="sticky-header">
-      <h2><i class="fas fa-percentage me-2"></i>Đợt Giảm Giá</h2>
-      <div class="role-badge" th:classappend="${isAdmin} ? '' : 'employee'">
-        <i class="fas fa-user-shield me-1" th:if="${isAdmin}"></i>
-        <i class="fas fa-user me-1" th:unless="${isAdmin}"></i>
-        <span th:text="${isAdmin} ? 'ADMIN' : 'EMPLOYEE'"></span>
-      </div>
+    <div class="sticky-header" style="display: flex; justify-content: center; align-items: center;">
+      <h2 style="display: flex; align-items: center; margin: 0;">
+        <i class="fas fa-percentage me-2"></i>Đợt Giảm Giá
+      </h2>
     </div>
 
-    <!-- Employee Notice -->
     <div th:unless="${isAdmin}" class="employee-notice">
       <i class="fas fa-info-circle me-2"></i>
       <strong>Chế độ xem:</strong> Bạn đang ở chế độ chỉ xem. Không thể tạo mới, chỉnh sửa hoặc xóa chiến dịch.
@@ -300,7 +294,7 @@
             <button type="submit" class="btn btn-primary btn-filter">Tìm kiếm</button>
           </div>
           <input type="hidden" name="page" id="pageInput" th:value="${currentPage}">
-          <input type="hidden" name="size" value="10">
+          <input type="hidden" name="size" id="sizeInput" th:value="${pageSize != null ? pageSize : 10}">
         </form>
       </div>
     </div>
@@ -308,7 +302,6 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">Danh sách chiến dịch giảm giá</h5>
-        <!-- Chỉ Admin mới thấy nút Thêm mới -->
         <a th:href="@{/acvstore/chien-dich-giam-gia/create}" class="btn btn-primary" th:if="${isAdmin}">
           <i class="fas fa-plus me-1"></i>Thêm mới
         </a>
@@ -329,7 +322,7 @@
           </thead>
           <tbody>
           <tr th:each="campaign, iterStat : ${campaignList}" class="align-middle text-center">
-            <td th:text="${iterStat.count + currentPage * 10}"></td>
+            <td th:text="${iterStat.count + currentPage * pageSize}"></td>
             <td th:text="${campaign.ma}"></td>
             <td th:text="${campaign.ten}" class="text-start"></td>
             <td th:utext="${campaign.phanTramGiam % 1 == 0} ? ${campaign.phanTramGiam.intValue()} + '&#37;' : ${campaign.phanTramGiam} + '&#37;'"></td>
@@ -344,22 +337,17 @@
             </td>
             <td>
               <div class="action-buttons" th:with="status=${T(java.time.LocalDateTime).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' : (T(java.time.LocalDateTime).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}">
-                <!-- View button - Cả Admin và Employee đều có thể xem -->
                 <a th:href="@{'/acvstore/chien-dich-giam-gia/view/' + ${campaign.id}}"
                    class="btn btn-sm btn-success"
                    title="Xem chi tiết">
                   <i class="fas fa-eye"></i>
                 </a>
-
-                <!-- Edit button - Chỉ Admin và chỉ với chiến dịch UPCOMING -->
                 <a th:if="${isAdmin && status == 'UPCOMING'}"
                    th:href="@{'/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id}}"
                    class="btn btn-sm btn-warning"
                    title="Sửa">
                   <i class="fas fa-edit"></i>
                 </a>
-
-                <!-- Delete button - Chỉ Admin -->
                 <button th:if="${isAdmin}"
                         type="button"
                         class="btn btn-sm btn-danger delete-btn"
@@ -394,6 +382,21 @@
                 <span aria-hidden="true">»</span>
               </a>
             </li>
+            <li class="ms-2">
+              <form method="get" th:action="@{/acvstore/chien-dich-giam-gia}" class="d-inline">
+                <select name="size" class="form-select form-select-sm" onchange="this.form.submit()">
+                  <option th:value="5" th:selected="${pageSize == 5}">5 / trang</option>
+                  <option th:value="10" th:selected="${pageSize == 10}">10 / trang</option>
+                  <option th:value="20" th:selected="${pageSize == 20}">20 / trang</option>
+                </select>
+                <input type="hidden" name="page" th:value="${currentPage}">
+                <input type="hidden" name="keyword" th:value="${keyword}">
+                <input type="hidden" name="startDate" th:value="${startDate != null ? #temporals.format(startDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                <input type="hidden" name="endDate" th:value="${endDate != null ? #temporals.format(endDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                <input type="hidden" name="status" th:value="${status}">
+                <input type="hidden" name="discountLevel" th:value="${discountLevel}">
+              </form>
+            </li>
           </ul>
         </nav>
       </div>
@@ -401,7 +404,6 @@
   </div>
 </div>
 
-<!-- Delete Modal - chỉ hiển thị cho admin -->
 <div class="modal fade" id="deleteModal" tabindex="-1" th:if="${isAdmin}">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -428,7 +430,6 @@
 
 <script th:inline="javascript">
   document.addEventListener('DOMContentLoaded', function() {
-    // Xử lý nút phân trang
     const pageLinks = document.querySelectorAll('.page-nav');
     const pageInput = document.getElementById('pageInput');
     const currentPage = parseInt(pageInput.value);
@@ -453,19 +454,18 @@
       });
     });
 
-    // Xử lý nút reset bộ lọc
     document.getElementById('resetFilterBtn').addEventListener('click', function() {
       const form = document.getElementById('filterForm');
 
-      form.querySelectorAll('input[type="text"], input[type="date"], select').forEach(input => {
+      form.querySelectorAll('input[type="text"], input[type="datetime-local"], select').forEach(input => {
         input.value = '';
       });
 
       pageInput.value = '0';
+      document.getElementById('sizeInput').value = '10';
       form.submit();
     });
 
-    // Chỉ khởi tạo delete handlers cho admin
     const isAdmin = /*[[${isAdmin}]]*/ false;
     if (isAdmin) {
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -485,7 +485,6 @@
       });
     }
 
-    // Toast thông báo nếu có
     const success = /*[[${successMessage}]]*/ null;
     const error = /*[[${errorMessage}]]*/ null;
 
@@ -510,7 +509,6 @@
   });
 </script>
 
-<!-- Toast thông báo -->
 <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
   <div id="toastMessage" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="d-flex">

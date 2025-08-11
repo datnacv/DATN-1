@@ -344,6 +344,7 @@ public class BanHangController {
             response.put("tabId", donHangDTO.getTabId());
             response.put("newTabId", newTabId);
             response.put("remainingTabs", remainingTabs.size());
+            response.put("hasNewNotification", true);
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {

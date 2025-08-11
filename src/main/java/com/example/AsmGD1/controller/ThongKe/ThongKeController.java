@@ -8,6 +8,9 @@ import com.example.AsmGD1.service.BanHang.DonHangService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongKe.ThongKeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,6 +29,7 @@ import java.util.Map;
 @Controller
 @RequestMapping("/acvstore/thong-ke")
 public class ThongKeController {
+
     @Autowired
     private DonHangService donHangService;
 
@@ -40,6 +44,8 @@ public class ThongKeController {
             @RequestParam(defaultValue = "month") String boLoc,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayBatDau,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayKetThuc,
+            @RequestParam(defaultValue = "0") int topSellingPage,
+            @RequestParam(defaultValue = "0") int lowStockPage,
             Model model) {
 
         LocalDate homNay = LocalDate.now();
@@ -69,33 +75,42 @@ public class ThongKeController {
             case "custom_range" -> {
                 if (ngayBatDau == null || ngayKetThuc == null) {
                     model.addAttribute("error", "Vui lòng chọn ngày bắt đầu và kết thúc.");
-                    return "thongke";
+                    return "WebQuanLy/thong-ke";
                 }
                 if (ngayBatDau.isAfter(ngayKetThuc)) {
                     model.addAttribute("error", "Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
-                    return "thongke";
+                    return "WebQuanLy/thong-ke";
                 }
                 trangThaiBoLoc = "Tùy chỉnh: " + ngayBatDau + " đến " + ngayKetThuc;
             }
             default -> {
                 model.addAttribute("error", "Bộ lọc không hợp lệ.");
-                return "thongke";
+                return "WebQuanLy/thong-ke";
             }
         }
 
+        // Set page size (e.g., 5 items per page)
+        Pageable topSellingPageable = PageRequest.of(topSellingPage, 2);
+        Pageable lowStockPageable = PageRequest.of(lowStockPage, 5);
+
         ThongKeDoanhThuDTO thongKe = thongKeDichVu.layThongKeDoanhThu(boLoc, ngayBatDau, ngayKetThuc);
-        List<SanPhamBanChayDTO> sanPhamBanChay = thongKeDichVu.laySanPhamBanChay(boLoc, ngayBatDau, ngayKetThuc);
-        List<SanPhamTonKhoThapDTO> sanPhamTonKhoThap = thongKeDichVu.laySanPhamTonKhoThap();
+        Page<SanPhamBanChayDTO> sanPhamBanChay = thongKeDichVu.laySanPhamBanChay(boLoc, ngayBatDau, ngayKetThuc, topSellingPageable);
+        Page<SanPhamTonKhoThapDTO> sanPhamTonKhoThap = thongKeDichVu.laySanPhamTonKhoThap(lowStockPageable);
 
-        model.addAttribute("chartLabels",  thongKeDichVu.layNhanBieuDoLienTuc(ngayBatDau, ngayKetThuc));
-        model.addAttribute("chartOrders",  thongKeDichVu.layDonHangBieuDoLienTuc(ngayBatDau, ngayKetThuc));
+        model.addAttribute("chartLabels", thongKeDichVu.layNhanBieuDoLienTuc(ngayBatDau, ngayKetThuc));
+        model.addAttribute("chartOrders", thongKeDichVu.layDonHangBieuDoLienTuc(ngayBatDau, ngayKetThuc));
         model.addAttribute("chartRevenue", thongKeDichVu.layDoanhThuBieuDoLienTuc(ngayBatDau, ngayKetThuc));
-
 
         model.addAttribute("stats", thongKe);
         model.addAttribute("topSellingProducts", sanPhamBanChay);
         model.addAttribute("lowStockProducts", sanPhamTonKhoThap);
         model.addAttribute("filterStatus", trangThaiBoLoc);
+        model.addAttribute("boLoc", boLoc);
+        model.addAttribute("ngayBatDau", ngayBatDau);
+        model.addAttribute("ngayKetThuc", ngayKetThuc);
+        model.addAttribute("topSellingPage", topSellingPage);
+        model.addAttribute("lowStockPage", lowStockPage);
+
         List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
         model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -103,6 +118,7 @@ public class ThongKeController {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             model.addAttribute("user", user);
         }
+
         LocalDateTime startDateTime = ngayBatDau.atStartOfDay();
         LocalDateTime endDateTime = ngayKetThuc.atTime(LocalTime.MAX);
         Map<String, Integer> tongDonHangTheoPhuongThuc = donHangService.demDonHangTheoPhuongThuc(startDateTime, endDateTime);
@@ -110,8 +126,6 @@ public class ThongKeController {
         Map<String, Double> trangThaiPercentMap = thongKeDichVu.layPhanTramTatCaTrangThaiDonHang(ngayBatDau, ngayKetThuc);
         model.addAttribute("trangThaiPercentMap", trangThaiPercentMap);
 
-
         return "WebQuanLy/thong-ke";
     }
-
 }

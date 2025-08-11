@@ -6,6 +6,7 @@
     <title th:text="${getStatus.apply(voucher) == 'Sắp diễn ra'} ? 'Chỉnh Sửa Phiếu Giảm Giá' : 'Xem Chi Tiết Phiếu Giảm Giá'"></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
         :root {
@@ -405,6 +406,60 @@
         .input-group .form-control:focus + .input-group-text {
             border-color: var(--primary-color);
         }
+
+        /* Payment Tags for View Mode */
+        .payment-tags-static {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .payment-tag-static {
+            background: var(--gray-100);
+            color: var(--gray-600);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border: 1px solid var(--gray-200);
+        }
+
+        .payment-tag-static.empty {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            color: #92400e;
+            font-style: italic;
+        }
+
+        /* Select2 Styles */
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .select2-container .select2-selection--multiple {
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            min-height: 38px;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: var(--gray-100);
+            color: var(--gray-600);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: var(--danger-color);
+            margin-right: 0.25rem;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #b91c1c;
+        }
     </style>
     <script th:src="@{/js/sidebar.js}" defer></script>
 </head>
@@ -570,6 +625,25 @@
                                 <span class="input-group-text">₫</span>
                             </div>
                             <small class="text-muted">Giá trị đơn hàng tối thiểu để áp dụng voucher</small>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-credit-card section-icon"></i>
+                                Phương thức thanh toán áp dụng
+                            </label>
+                            <div th:if="${getStatus.apply(voucher) == 'Sắp diễn ra'}">
+                                <select id="paymentMethodSelect" class="form-select" name="selectedPtttIds[]" multiple>
+                                    <option th:each="pt : ${phuongThucList}" th:value="${pt.id}" th:text="${pt.tenPhuongThuc}"
+                                            th:selected="${selectedPtttIds != null and selectedPtttIds.contains(pt.id)}"></option>
+                                </select>
+                            </div>
+                            <div th:unless="${getStatus.apply(voucher) == 'Sắp diễn ra'}" class="payment-tags-static">
+                                <span th:each="pt : ${phuongThucList}" th:if="${selectedPtttIds != null and selectedPtttIds.contains(pt.id)}"
+                                      class="payment-tag-static" th:text="${pt.tenPhuongThuc}"></span>
+                                <span th:if="${selectedPtttIds == null or selectedPtttIds.isEmpty()}"
+                                      class="payment-tag-static empty">Không có phương thức được chọn</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -796,9 +870,10 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     // Enhanced JavaScript with better UX
-    function formatNumberVN(value, allowDecimal) {
+    function formatNumberVN(value, allowDecimal = false) {
         if (!value) return '';
         value = value.replace(/[^\d,]/g, '').replace(/\./g, '').replace(/,/g, '.');
         let number = parseFloat(value);
@@ -834,21 +909,26 @@
 
         if (isEditable || isPublicVoucher) {
             const fields = [
-                { id: '#giaTriGiam', allowDecimal: true, editable: isEditable },
-                { id: '#giaTriGiamToiDa', allowDecimal: true, editable: isEditable },
-                { id: '#giaTriGiamToiThieu', allowDecimal: true, editable: isEditable },
+                { id: '#giaTriGiam', allowDecimal: $('input[name="loai"]:checked').val() === 'PERCENT', editable: isEditable },
+                { id: '#giaTriGiamToiDa', allowDecimal: false, editable: isEditable },
+                { id: '#giaTriGiamToiThieu', allowDecimal: false, editable: isEditable },
                 { id: '#gioiHanSuDung', allowDecimal: false, editable: isEditable || isPublicVoucher }
             ];
 
             fields.forEach(function (field) {
                 if (field.editable) {
-                    $(field.id).on('blur', function () {
+                    const $field = $(field.id);
+                    // Format on load
+                    const formatted = formatNumberVN($field.val(), field.allowDecimal);
+                    $field.val(formatted);
+
+                    $field.on('blur', function () {
                         const formatted = formatNumberVN($(this).val(), field.allowDecimal);
                         $(this).val(formatted);
                     });
 
                     // Real-time validation
-                    $(field.id).on('input', function () {
+                    $field.on('input', function () {
                         $(this).removeClass('is-invalid');
                     });
                 }
@@ -887,6 +967,14 @@
         }
 
         if (isEditable) {
+            // Initialize Select2 for payment methods
+            $('#paymentMethodSelect').select2({
+                placeholder: 'Chọn phương thức thanh toán...',
+                allowClear: true,
+                closeOnSelect: false,
+                width: '100%'
+            });
+
             // Enhanced search with debounce
             let searchTimeout;
             $('#searchCustomerInput').on('keyup', function () {
@@ -977,6 +1065,11 @@
         $('#maxDiscountGroup').toggle(isPercent);
         $('#giaTriGiamToiDa').prop('readonly', !isPercent);
         if (!isPercent) $('#giaTriGiamToiDa').val('');
+
+        // Reformat giaTriGiam based on discount type
+        const $giaTriGiam = $('#giaTriGiam');
+        const formatted = formatNumberVN($giaTriGiam.val(), isPercent);
+        $giaTriGiam.val(formatted);
     }
 
     function toggleUsageCount() {
@@ -1026,3 +1119,5 @@
     }
 </script>
 <script th:src="@{/js/notification.js}"></script>
+</body>
+</html>

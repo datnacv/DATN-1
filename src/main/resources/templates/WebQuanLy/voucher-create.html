@@ -204,12 +204,12 @@
                         <label for="paymentMethodSelect">Phương thức thanh toán áp dụng</label>
                         <select id="paymentMethodSelect"
                                 class="form-select"
-                                name="selectedPaymentMethodIds"
+                                name="selectedPtttIds"
                                 multiple>
                             <option th:each="pt : ${phuongThucList}"
                                     th:value="${pt.id}"
                                     th:text="${pt.tenPhuongThuc}"
-                                    th:selected="${selectedPaymentMethodIds != null and selectedPaymentMethodIds.contains(pt.id)}">
+                                    th:selected="${selectedPtttIds != null and selectedPtttIds.contains(pt.id)}">
                             </option>
                         </select>
                     </div>
