@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -112,13 +113,17 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                 (Boolean) params.get("status")
         );
     }
-    @Query("SELECT ct FROM ChiTietSanPham ct " +
-            "JOIN FETCH ct.sanPham sp " +
-            "JOIN FETCH ct.kichCo kc " +
-            "JOIN FETCH ct.mauSac ms " +
-            "WHERE sp.id = :idSanPham AND ct.chienDichGiamGia IS NULL")
-    List<ChiTietSanPham> findAvailableBySanPhamId(@Param("idSanPham") UUID idSanPham);
-
+    @Query("""
+       SELECT ct FROM ChiTietSanPham ct
+       JOIN FETCH ct.sanPham sp
+       JOIN FETCH ct.kichCo kc
+       JOIN FETCH ct.mauSac ms
+       LEFT JOIN ct.chienDichGiamGia cdg
+       WHERE sp.id = :idSanPham
+         AND (cdg IS NULL OR cdg.ngayKetThuc < :now)
+       """)
+    List<ChiTietSanPham> findAvailableBySanPhamId(@Param("idSanPham") UUID idSanPham,
+                                                  @Param("now") LocalDateTime now);
 
     boolean existsByXuatXuId(UUID xuatXuId);
     boolean existsByThuongHieuId(UUID thuongHieuId);
