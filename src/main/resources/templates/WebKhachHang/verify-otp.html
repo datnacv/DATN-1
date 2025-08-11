@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary-color: #000000;
-            --secondary-color: #333333;
+            --primary-color: #153054;
+            --secondary-color: #9FD5F7;
             --accent-color: #666666;
             --light-gray: #f8f9fa;
             --medium-gray: #e9ecef;
@@ -448,9 +448,9 @@
                             input.classList.remove('is-invalid');
                         }
                     });
-                    hideLoading(submitButton); // Tắt loading nếu form không hợp lệ
+                    hideLoading(submitButton);
                 } else {
-                    showLoading(submitButton); // Chỉ bật loading khi form hợp lệ
+                    showLoading(submitButton);
                 }
                 form.classList.add('was-validated');
             }, false);
@@ -478,7 +478,7 @@
                 } else if (value.length === 0 && index > 0) {
                     otpInputs[index - 1].focus();
                 }
-                e.target.value = value.replace(/\D/g, '').slice(0, 1); // Chỉ cho phép số và giới hạn 1 ký tự
+                e.target.value = value.replace(/\D/g, '').slice(0, 1);
             });
 
             input.addEventListener('keydown', function(e) {
@@ -579,7 +579,7 @@
                     let seconds = remainingTime % 60;
                     countdownText.innerText = `Mã OTP sẽ hết hạn trong: ${minutes} phút ${seconds} giây`;
                 } else {
-                    countdownText.innerText = "Mã OTP đã hết hạn!";
+                    countdownText.innerText = "Mã OTP đã hết hiệu lực!";
                     resendOtpButton.classList.remove("disabled");
                     clearInterval(countdownInterval);
                 }
@@ -587,3 +587,5 @@
         }
     });
 </script>
+</body>
+</html>
