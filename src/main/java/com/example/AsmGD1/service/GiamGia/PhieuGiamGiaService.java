@@ -26,18 +26,6 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.findAll();
     }
 
-    public PhieuGiamGia layTheoId(UUID id) {
-        return phieuGiamGiaRepository.findById(id).orElse(null);
-    }
-
-    public PhieuGiamGia layTheoMa(String ma) {
-        return phieuGiamGiaRepository.findByMaIgnoreCase(ma).orElse(null);
-    }
-
-    public boolean tonTaiMa(String ma) {
-        return phieuGiamGiaRepository.existsByMaIgnoreCase(ma);
-    }
-
     public PhieuGiamGia luu(PhieuGiamGia phieu) {
         if (phieu.getThoiGianTao() == null) {
             phieu.setThoiGianTao(LocalDateTime.now());
@@ -58,9 +46,6 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.save(phieu);
     }
 
-    public void xoa(UUID id) {
-        phieuGiamGiaRepository.deleteById(id);
-    }
 
     public String tinhTrang(PhieuGiamGia v) {
         LocalDateTime now = LocalDateTime.now();

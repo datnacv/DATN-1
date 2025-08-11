@@ -644,7 +644,24 @@
                         </div>
                     </div>
                 </div>
-
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-credit-card me-2"></i>Phương thức thanh toán áp dụng:
+                        </label>
+                        <select id="paymentMethodSelect"
+                                class="form-select"
+                                name="selectedPtttIds"
+                                multiple
+                                th:disabled="${readOnly}">
+                            <option th:each="pt : ${phuongThucList}"
+                                    th:value="${pt.id}"
+                                    th:text="${pt.tenPhuongThuc}"
+                                    th:selected="${selectedPtttIds != null and selectedPtttIds.contains(pt.id)}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
                 <!-- Customer Selection Section -->
                 <div id="customerSelection" class="card-section">
                     <h3 class="section-title">

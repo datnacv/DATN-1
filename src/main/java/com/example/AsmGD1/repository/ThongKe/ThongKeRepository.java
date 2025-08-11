@@ -3,6 +3,8 @@ package com.example.AsmGD1.repository.ThongKe;
 import com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO;
 import com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO;
 import com.example.AsmGD1.entity.ThongKe;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,7 +19,6 @@ import java.util.UUID;
 @Repository
 public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
 
-    // ---- TỔNG DOANH THU (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH trong khoảng [start, end)
     @Query(value = """
         SELECT COALESCE(SUM(hd.tong_tien), 0)
         FROM hoa_don hd
@@ -29,7 +30,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     BigDecimal tinhDoanhThuTheoHoaDon(@Param("start") LocalDateTime start,
                                       @Param("end")   LocalDateTime end);
 
-    // ---- ĐẾM HÓA ĐƠN (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH trong khoảng [start, end)
     @Query(value = """
         SELECT CAST(COUNT(DISTINCT hd.id) AS int)
         FROM hoa_don hd
@@ -41,7 +41,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     Integer demHoaDonTheoKhoangThoiGian(@Param("start") LocalDateTime start,
                                         @Param("end")   LocalDateTime end);
 
-    // ---- ĐẾM SẢN PHẨM THEO HÓA ĐƠN (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH trong khoảng [start, end)
     @Query(value = """
         SELECT COALESCE(SUM(ct.so_luong), 0)
         FROM chi_tiet_don_hang ct
@@ -55,7 +54,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     Integer demSanPhamTheoHoaDon(@Param("start") LocalDateTime start,
                                  @Param("end")   LocalDateTime end);
 
-    // ---- TOP SẢN PHẨM BÁN CHẠY (JPQL) — CHỈ đổi bộ lọc thời gian theo lịch sử hoàn thành
     @Query("""
         SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamBanChayDTO(
             ctp.id,
@@ -82,10 +80,10 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
         GROUP BY ctp.id, sp.id, sp.tenSanPham, ms.tenMau, kc.ten
         ORDER BY SUM(ct.soLuong) DESC
     """)
-    List<SanPhamBanChayDTO> laySanPhamBanChayTheoHoaDon(@Param("start") LocalDateTime start,
-                                                        @Param("end")   LocalDateTime end);
+    Page<SanPhamBanChayDTO> laySanPhamBanChayTheoHoaDon(@Param("start") LocalDateTime start,
+                                                        @Param("end")   LocalDateTime end,
+                                                        Pageable pageable);
 
-    // ---- SẢN PHẨM TỒN KHO THẤP (JPQL) — GIỮ NGUYÊN (không liên quan thời gian)
     @Query("""
         SELECT new com.example.AsmGD1.dto.ThongKe.SanPhamTonKhoThapDTO(
             NULL,
@@ -104,9 +102,8 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
         WHERE pd.soLuongTonKho < :threshold
         ORDER BY pd.soLuongTonKho ASC, p.tenSanPham ASC
     """)
-    List<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap(@Param("threshold") int threshold);
+    Page<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap(@Param("threshold") int threshold, Pageable pageable);
 
-    // ---- NHÃN TRỤC NGÀY cho biểu đồ (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH
     @Query(value = """
         SELECT DISTINCT CAST(ls.thoi_gian AS date) AS d
         FROM lich_su_hoa_don ls
@@ -118,7 +115,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     List<LocalDate> layNhanBieuDoTheoHoaDon(@Param("start") LocalDateTime start,
                                             @Param("end")   LocalDateTime end);
 
-    // ---- SỐ HĐ THEO NGÀY CỤ THỂ (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH
     @Query(value = """
         SELECT CAST(COUNT(DISTINCT hd.id) AS int)
         FROM hoa_don hd
@@ -128,7 +124,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     """, nativeQuery = true)
     Integer laySoHoaDonTheoNgay(@Param("date") LocalDate date);
 
-    // ---- SỐ SẢN PHẨM THEO NGÀY CỤ THỂ (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH
     @Query(value = """
         SELECT COALESCE(SUM(ct.so_luong), 0)
         FROM chi_tiet_don_hang ct
@@ -140,7 +135,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     """, nativeQuery = true)
     Integer laySoSanPhamTheoNgay(@Param("date") LocalDate date);
 
-    // ---- PHẦN TRĂM TẤT CẢ TRẠNG THÁI DỰA TRÊN LỊCH SỬ (JPQL) — GIỮ NGUYÊN
     @Query("""
         SELECT ls.trangThai, COUNT(ls)
         FROM LichSuHoaDon ls
@@ -152,7 +146,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     List<Object[]> thongKePhanTramTatCaTrangThaiDonHang(@Param("start") LocalDateTime start,
                                                         @Param("end")   LocalDateTime end);
 
-    // ---- TỔNG SỐ HÓA ĐƠN THEO TỪNG NGÀY (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH
     @Query(value = """
         SELECT 
           CAST(ls.thoi_gian AS date) AS d,
@@ -169,7 +162,6 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
     List<Object[]> thongKeSoHoaDonTheoNgay(@Param("start") LocalDateTime start,
                                            @Param("end")   LocalDateTime end);
 
-    // ---- TỔNG DOANH THU THEO TỪNG NGÀY (Hoàn thành) theo THỜI ĐIỂM HOÀN THÀNH
     @Query(value = """
         SELECT CAST(ls.thoi_gian AS date) AS d,
                COALESCE(SUM(hd.tong_tien), 0)  AS s

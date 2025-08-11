@@ -58,12 +58,13 @@ public class PhieuGiamGia {
 
     @Column(name = "ma", nullable = false, length = 50)
     private String ma;
+
     @PrePersist
     public void prePersist() {
         if (thoiGianTao == null) thoiGianTao = LocalDateTime.now();
     }
 
-    // Many-to-many "thông thường" qua bảng nối
+    // Many-to-many "thông thường" qua bảng nối (SỬA: Bỏ cascade để tránh merge PTTT)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "phieu_giam_gia_phuong_thuc_thanh_toan",

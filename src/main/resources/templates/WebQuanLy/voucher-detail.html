@@ -373,6 +373,24 @@
                         </div>
                     </div>
                 </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-credit-card me-2"></i>Phương thức thanh toán áp dụng:
+                        </label>
+                        <select id="paymentMethodSelect"
+                                class="form-select"
+                                name="selectedPtttIds"
+                                multiple
+                                disabled>
+                            <option th:each="pt : ${phuongThucList}"
+                                    th:value="${pt.id}"
+                                    th:text="${pt.tenPhuongThuc}"
+                                    th:selected="${selectedPtttIds != null and selectedPtttIds.contains(pt.id)}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
 
                 <div id="customerSelection" class="mb-3" th:if="${voucher.kieuPhieu == 'ca_nhan'}">
                     <label class="form-label"><i class="fas fa-user-check me-2"></i>Khách hàng được áp dụng:</label>
