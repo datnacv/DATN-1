@@ -68,17 +68,17 @@
 
         /* Sticky Header */
         .sticky-header {
-            position: sticky;
-            top: 60px;
-            z-index: 1000;
             background: #ffffff;
             padding: 1.5rem 0;
             margin-bottom: 2rem;
             border-bottom: 2px solid #e5e7eb;
+
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: center; /* Căn giữa ngang */
+            align-items: center;     /* Căn giữa dọc */
         }
+
+
 
         .sticky-header h2 {
             color: #111827;
@@ -624,21 +624,13 @@
         </div>
 
         <div class="sticky-header">
-            <h2><i class="fas fa-ticket-alt"></i>Phiếu Giảm Giá</h2>
-            <div class="role-badge" th:classappend="${isAdmin} ? '' : 'employee'">
-                <i class="fas fa-user-shield me-1" th:if="${isAdmin}"></i>
-                <i class="fas fa-user me-1" th:unless="${isAdmin}"></i>
-                <span th:text="${isAdmin} ? 'ADMIN' : 'EMPLOYEE'"></span>
-            </div>
+            <h2 class="text-center">
+                <i class="fas fa-ticket-alt"></i> Phiếu Giảm Giá
+            </h2>
         </div>
 
-        <p class="page-subtitle">Quản lý phiếu giảm giá của hệ thống một cách hiệu quả</p>
-
-        <div class="d-flex justify-content-end align-items-center mb-4" th:if="${isAdmin}">
-            <a href="/acvstore/phieu-giam-gia/create" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Tạo Mới
-            </a>
-        </div>
+<!--        <p class="page-subtitle">Quản lý phiếu giảm giá của hệ thống một cách hiệu quả</p>-->
+        
 
         <form method="get" th:action="@{/acvstore/phieu-giam-gia}" class="row g-3 mb-4" id="filterForm">
             <div class="col-md-3">
@@ -671,6 +663,12 @@
                 </select>
             </div>
         </form>
+
+        <div class="d-flex justify-content-end align-items-center mb-4" th:if="${isAdmin}">
+            <a href="/acvstore/phieu-giam-gia/create" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Tạo Mới
+            </a>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle bg-white">
@@ -708,39 +706,37 @@
                     <td th:text="${#temporals.format(v.ngayBatDau, 'dd/MM/yyyy HH:mm')}"></td>
                     <td th:text="${#temporals.format(v.ngayKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
                     <td>
-                        <span th:switch="${getStatus.apply(v)}">
-                            <span th:case="'Sắp diễn ra'" class="badge bg-warning text-dark">Sắp diễn ra</span>
-                            <span th:case="'Đang diễn ra'" class="badge bg-success">Đang diễn ra</span>
-                            <span th:case="'Đã kết thúc'" class="badge bg-secondary">Đã kết thúc</span>
-                            <span th:case="'Không xác định'" class="badge bg-light text-dark border">Không xác định</span>
-                        </span>
+                <span th:switch="${getStatus.apply(v)}">
+                    <span th:case="'Sắp diễn ra'" class="badge bg-warning text-dark">Sắp diễn ra</span>
+                    <span th:case="'Đang diễn ra'" class="badge bg-success">Đang diễn ra</span>
+                    <span th:case="'Đã kết thúc'" class="badge bg-secondary">Đã kết thúc</span>
+                    <span th:case="'Không xác định'" class="badge bg-light text-dark border">Không xác định</span>
+                </span>
                     </td>
                     <td>
                         <div class="action-buttons">
-                            <!-- View button for both Admin and Employee -->
+                            <!-- View -->
                             <a th:href="@{'/acvstore/phieu-giam-gia/view/' + ${v.id}}"
                                class="btn btn-sm btn-outline-success"
                                title="Xem chi tiết phiếu giảm giá">
                                 <i class="fas fa-eye"></i>
                             </a>
-
-                            <!-- Edit button - only for Admin and only if status is 'Sắp diễn ra' -->
+                            <!-- Edit -->
                             <a th:if="${isAdmin and getStatus.apply(v) == 'Sắp diễn ra'}"
                                th:href="@{'/acvstore/phieu-giam-gia/edit/' + ${v.id}}"
                                class="btn btn-sm btn-outline-info"
                                title="Chỉnh sửa phiếu giảm giá">
                                 <i class="fas fa-edit"></i>
                             </a>
-
-                            <!-- Delete button - only for Admin -->
+                            <!-- Delete -->
                             <button th:if="${isAdmin}"
                                     type="button"
                                     class="btn btn-sm btn-outline-danger delete-btn"
                                     th:classappend="${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'disabled'"
                                     th:attr="data-voucher-id=${v.id},
-                                            data-bs-toggle=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? '' : 'modal',
-                                            data-bs-target=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? '' : '#deleteModal',
-                                            title=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'Không thể xóa do phiếu đang diễn ra hoặc không xác định' : 'Xóa phiếu giảm giá'"
+                                    data-bs-toggle=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? '' : 'modal',
+                                    data-bs-target=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? '' : '#deleteModal',
+                                    title=${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'Không thể xóa do phiếu đang diễn ra hoặc không xác định' : 'Xóa phiếu giảm giá'"
                                     th:onclick="${getStatus.apply(v) == 'Đang diễn ra' || getStatus.apply(v) == 'Không xác định'} ? 'return false;' : ''">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
@@ -750,6 +746,7 @@
                 </tbody>
             </table>
         </div>
+
 
         <nav>
             <ul class="pagination justify-content-end">

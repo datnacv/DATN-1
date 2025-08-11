@@ -395,12 +395,15 @@ public class PhieuGiamGiaController {
                 : phieuService.layTatCaKhachHangPhanTrang(pageable);
 
         List<UUID> selectedCustomerIds = new ArrayList<>();
-        List<UUID> selectedPtttIds = new ArrayList<>();
+        List<UUID> selectedPtttIds = voucher.getPhuongThucThanhToans().stream().map(PhuongThucThanhToan::getId).toList();
+        List<PhuongThucThanhToan> phuongThucList = selectedPtttIds.isEmpty()
+                ? new ArrayList<>()
+                : phuongThucThanhToanRepository.findAllById(selectedPtttIds);
+
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
             List<NguoiDung> daDuocGan = phieuService.layNguoiDungTheoPhieu(voucher.getId());
             selectedCustomerIds = daDuocGan.stream().map(NguoiDung::getId).toList();
         }
-        selectedPtttIds = voucher.getPhuongThucThanhToans().stream().map(PhuongThucThanhToan::getId).toList();
 
         model.addAttribute("voucher", voucher);
         model.addAttribute("giaTriGiamStr", giaTriGiamStr);
@@ -410,11 +413,11 @@ public class PhieuGiamGiaController {
         model.addAttribute("customers", customerPage.getContent());
         model.addAttribute("selectedCustomerIds", selectedCustomerIds);
         model.addAttribute("selectedPtttIds", selectedPtttIds);
+        model.addAttribute("phuongThucList", phuongThucList);
         model.addAttribute("currentCustomerPage", page);
         model.addAttribute("totalCustomerPages", customerPage.getTotalPages());
         model.addAttribute("search", search);
         model.addAttribute("getStatus", (Function<PhieuGiamGia, String>) this::getTrangThai);
-        model.addAttribute("phuongThucList", phuongThucThanhToanRepository.findAll());
         addUserInfoToModel(model);
 
         return "WebQuanLy/voucher-detail";
