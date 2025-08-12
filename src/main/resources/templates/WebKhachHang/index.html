@@ -287,6 +287,19 @@
         height: 70vh;
       }
     }
+    /* Active tab */
+    #mini-tabs .tab-link.is-active{
+      color:#153054;
+      background:#E8F2FF;
+    }
+
+    /* Ẩn scrollbar ngang tabs (mobile) */
+    .no-scrollbar::-webkit-scrollbar{ display:none; }
+    .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+    .cat-chip.active{ border-color:#153054; background:#E8F2FF; color:#153054; }
+
+    /* vì có thêm 2 thanh sticky (mini-tabs + categories), tăng offset khi scroll tới section */
+    #section-new, #section-all, #section-best{ scroll-margin-top: 170px; }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -297,6 +310,51 @@
 </div>
 
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
+<!-- Mini Tabs -->
+<nav id="mini-tabs" class="bg-white/90 backdrop-blur sticky top-[118px] z-[1039] border-b border-gray-200">
+  <div class="container mx-auto">
+    <ul class="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar px-3 sm:px-0 relative">
+      <li>
+        <a href="#section-new"
+           class="tab-link inline-flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-gray-700 hover:text-[#153054] hover:bg-[#E8F2FF]">
+          <i class="fa-solid fa-star"></i><span>Mới</span>
+        </a>
+      </li>
+      <li>
+        <a href="#section-all"
+           class="tab-link inline-flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-gray-700 hover:text-[#153054] hover:bg-[#E8F2FF]">
+          <i class="fa-solid fa-boxes-stacked"></i><span>Tất cả</span>
+        </a>
+      </li>
+      <li>
+        <a href="#section-best"
+           class="tab-link inline-flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-gray-700 hover:text-[#153054] hover:bg-[#E8F2FF]">
+          <i class="fa-solid fa-fire"></i><span>Bán chạy</span>
+        </a>
+      </li>
+
+      <!-- Indicator (gạch chân trượt) -->
+      <span id="tab-indicator" class="absolute bottom-0 h-[3px] bg-[#153054] rounded transition-all duration-300 ease-out"></span>
+    </ul>
+  </div>
+</nav>
+
+<!-- Thanh danh mục (đặt dưới mini-tabs) -->
+<nav class="bg-white/95 backdrop-blur sticky top-[158px] z-[1038] border-b border-gray-200">
+  <div class="container mx-auto">
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar px-3 py-2">
+      <a th:each="c : ${categories}"
+         th:href="@{/category/{id}(id=${c.id})}"
+         th:classappend="${currentCategoryId == c.id} ? ' active' : ''"
+         th:attr="data-name=${c.tenDanhMuc}"
+         class="cat-chip inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border
+                border-gray-200 text-gray-700 hover:border-[#153054] hover:bg-[#E8F2FF] hover:text-[#153054] whitespace-nowrap">
+        <i class="fa-regular fa-circle"></i>
+        <span th:text="${c.tenDanhMuc}">Danh mục</span>
+      </a>
+    </div>
+  </div>
+</nav>
 
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -359,14 +417,28 @@
   </div>
 </div>
 
-<section class="container mx-auto py-8 bg-white">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản Phẩm</h2>
+<section id="section-new" class="container mx-auto py-10 bg-white rounded-lg">
+  <!-- Header -->
+  <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Sản phẩm mới</h2>
+      <p class="text-sm text-gray-500 mt-1">Những item vừa cập bến — bắt trend ngay!</p>
+    </div>
+    <a href="/new" class="inline-flex items-center gap-2 text-blue-800 font-semibold hover:underline">
+      Xem tất cả <span aria-hidden="true">»</span>
+    </a>
+  </div>
+
+  <!-- Grid -->
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${summerProducts}">
+    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${newProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
+        <!-- Badge New -->
+        <span class="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">New</span>
+
         <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
                 th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
                 aria-label="Thêm vào giỏ hàng">
@@ -377,19 +449,19 @@
           <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <!-- Hiển thị giá -->
+
+        <!-- Giá (giữ nguyên logic data-price để script format) -->
         <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
           <span th:text="${product.price}"></span> VNĐ
         </div>
+
         <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
           <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
         </div>
-<!--        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">-->
-<!--          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>-->
-<!--        </div>-->
-<!--        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>-->
+
         <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
           <span class="stars"></span>
           <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
@@ -397,19 +469,28 @@
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
-    <a href="/all" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
-  </div>
 </section>
 
-<section class="container mx-auto py-8 bg-white">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản Phẩm</h2>
+<section id="section-all" class="container mx-auto py-10 bg-white rounded-lg mt-8">
+  <!-- Header -->
+  <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Tất cả sản phẩm</h2>
+      <p class="text-sm text-gray-500 mt-1">Khám phá toàn bộ danh mục tại ACV Store.</p>
+    </div>
+    <a href="/all" class="inline-flex items-center gap-2 text-blue-800 font-semibold hover:underline">
+      Xem tất cả <span aria-hidden="true">»</span>
+    </a>
+  </div>
+
+  <!-- Grid -->
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${summerProducts}">
+    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${allProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
+
         <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
                 th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
                 aria-label="Thêm vào giỏ hàng">
@@ -420,19 +501,18 @@
           <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <!-- Hiển thị giá -->
+
         <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
           <span th:text="${product.price}"></span> VNĐ
         </div>
+
         <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
           <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
         </div>
-<!--        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">-->
-<!--          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>-->
-<!--        </div>-->
-<!--        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>-->
+
         <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
           <span class="stars"></span>
           <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
@@ -440,20 +520,30 @@
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
-    <a href="/all" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
-  </div>
 </section>
 
-<section class="container mx-auto py-8">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản phẩm bán chạy</h2>
+<section id="section-best" class="container mx-auto py-10 bg-white rounded-lg mt-8">
+  <!-- Header -->
+  <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Sản phẩm bán chạy</h2>
+      <p class="text-sm text-gray-500 mt-1">Top pick được săn nhiều nhất thời gian qua.</p>
+    </div>
+    <a href="/bestsellers" class="inline-flex items-center gap-2 text-blue-800 font-semibold hover:underline">
+      Xem tất cả <span aria-hidden="true">»</span>
+    </a>
+  </div>
+
+  <!-- Grid -->
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-red-500">Hot</span>
+        <!-- Badge Hot -->
+        <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">Hot</span>
+
         <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
                 th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
                 aria-label="Thêm vào giỏ hàng">
@@ -464,28 +554,24 @@
           <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <!-- Hiển thị giá -->
+
         <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
           <span th:text="${product.price}"></span> VNĐ
         </div>
+
         <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
           <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
         </div>
-<!--        <div th:if="${product.discountCampaignName != null}" class="text-sm text-green-600">-->
-<!--          <span th:text="'Giảm giá: ' + ${product.discountCampaignName}"></span>-->
-<!--        </div>-->
-<!--        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>-->
+
         <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
           <span class="stars"></span>
           <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
-  </div>
-  <div class="see-all text-center mt-6">
-    <a href="/bestsellers" class="text-blue-800 font-semibold hover:underline">Xem tất cả »</a>
   </div>
 </section>
 
@@ -599,6 +685,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script src="/js/navbar.js"></script>
+<!--chatbot-->
 <script>
   const qrTrigger = document.getElementById('qr-trigger');
   const qrMenu    = document.getElementById('qr-menu');
@@ -720,12 +807,119 @@
   });
 
 </script>
+<!--scroll-->
 <script>
-  function toVND(value) {
-    const n = Number(String(value).replace(/[^\d.-]/g, ''));
-    return Number.isFinite(n) && n > 0 ? n.toLocaleString('vi-VN') + ' VNĐ' : 'Liên hệ';
-  }
+  (function(){
+    const ICONS = [
+      {k:/\b(ao|áo)\b.*\b(nam)\b/i, icon:'fa-shirt'},
+      {k:/\b(ao|áo)\b.*\b(nu|nữ)\b/i, icon:'fa-person-dress'},
+      {k:/\bquan|quần\b/i,           icon:'fa-person-walking'},
+      {k:/\bgiay|giày\b/i,            icon:'fa-shoe-prints'},
+      {k:/\bphu kien|phụ kiện\b/i,    icon:'fa-ring'},
+      {k:/\bdam|đầm|vay|váy\b/i,      icon:'fa-person-dress'},
+      {k:/\btre em|trẻ em|kid\b/i,    icon:'fa-child'},
+      {k:/\bouter|khoac|khoác\b/i,    icon:'fa-jacket' }, // fallback nếu có FA Pro; nếu ko, thay = fa-user
+    ];
+    document.querySelectorAll('.cat-chip').forEach(chip=>{
+      const name = (chip.dataset.name || '').toLowerCase();
+      const i = chip.querySelector('i'); if(!i) return;
+      let found = 'fa-tags';
+      for(const m of ICONS){ if(m.k.test(name)){ found = m.icon; break; } }
+      i.className = 'fa-solid ' + found; // set icon
+    });
+  })();
+  (function(){
+    const OFFSET = 130;
+    const ul = document.querySelector('#mini-tabs ul');
+    const tabs = Array.from(document.querySelectorAll('#mini-tabs .tab-link'));
+    const indicator = document.getElementById('tab-indicator');
+    const sections = ['#section-new', '#section-all', '#section-best']
+            .map(id => document.querySelector(id)).filter(Boolean);
+
+    let isProgrammatic = false;   // 🔒 khoá highlight khi cuộn do click
+    let io = null;
+
+    function moveIndicatorTo(el){
+      if(!el || !indicator || !ul) return;
+      const left = el.offsetLeft - ul.scrollLeft;
+      indicator.style.left = left + 'px';
+      indicator.style.width = el.offsetWidth + 'px';
+    }
+    function setActiveTab(activeEl){
+      tabs.forEach(t => t.classList.remove('is-active'));
+      activeEl?.classList.add('is-active');
+      moveIndicatorTo(activeEl);
+    }
+
+    // Smooth scroll khi click tab (khóa IO tạm thời)
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const href = tab.getAttribute('href');
+        if (!href || !href.startsWith('#')) return;
+        e.preventDefault();
+
+        const target = document.querySelector(href);
+        if (!target) return;
+
+        isProgrammatic = true;        // 🔒 khoá
+        setActiveTab(tab);            // highlight & indicator nhảy ngay
+
+        const y = target.getBoundingClientRect().top + window.pageYOffset - OFFSET;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+
+        // mở khoá sau khi cuộn xong
+        // Chrome hỗ trợ 'scrollend'; fallback = timeout ~600ms
+        const unlock = () => { isProgrammatic = false; };
+        if ('onscrollend' in window) {
+          const once = () => { window.removeEventListener('scrollend', once); unlock(); };
+          window.addEventListener('scrollend', once, { once:true });
+        } else {
+          // thời gian phụ thuộc quãng đường (tối đa 800ms)
+          const dist = Math.abs(window.scrollY - y);
+          const dur  = Math.min(800, Math.max(350, dist * 0.4));
+          setTimeout(unlock, dur);
+        }
+      });
+    });
+
+    // IO highlight theo scroll – bỏ qua khi đang cuộn do click
+    function attachObserver(){
+      if (!('IntersectionObserver' in window)) return;
+      io = new IntersectionObserver((entries) => {
+        if (isProgrammatic) return;  // 🚫 đừng đổi tab giữa đường
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const id = '#' + entry.target.id;
+            const current = tabs.find(t => t.getAttribute('href') === id);
+            setActiveTab(current);
+          }
+        });
+      }, {
+        root: null,
+        // ép chỉ active khi section chiếm phần lớn viewport → giảm nháy
+        rootMargin: `-${OFFSET + 1}px 0px -55% 0px`,
+        threshold: 0
+      });
+      sections.forEach(sec => io.observe(sec));
+    }
+    attachObserver();
+
+    // Giữ indicator đúng khi kéo ngang thanh tabs (mobile) & resize
+    ul?.addEventListener('scroll', () => {
+      const active = document.querySelector('#mini-tabs .tab-link.is-active') || tabs[0];
+      moveIndicatorTo(active);
+    }, { passive:true });
+    window.addEventListener('resize', () => {
+      const active = document.querySelector('#mini-tabs .tab-link.is-active') || tabs[0];
+      moveIndicatorTo(active);
+    });
+
+    // Active mặc định
+    const defaultTab = document.querySelector('#mini-tabs .tab-link[href="#section-new"]') || tabs[0];
+    setActiveTab(defaultTab);
+  })();
 </script>
+<!--main-->
 <script>
   function updateSendBtn() {
     const hasText = chatInput.value.trim().length > 0;

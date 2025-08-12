@@ -2,6 +2,7 @@ package com.example.AsmGD1.repository.WebKhachHang;
 
 import com.example.AsmGD1.dto.KhachHang.SanPhamProjection;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.DanhMuc;
 import com.example.AsmGD1.entity.SanPham;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -39,6 +40,30 @@ public interface KhachHangSanPhamRepository extends JpaRepository<SanPham, UUID>
             "GROUP BY p " +
             "ORDER BY totalSold DESC")
     List<Object[]> findBestSellingProducts();
+
+    @Query("""
+SELECT d FROM DanhMuc d
+WHERE EXISTS (
+  SELECT 1 FROM SanPham p
+  JOIN p.chiTietSanPhams ct
+  WHERE p.danhMuc.id = d.id
+    AND p.trangThai = true
+    AND ct.trangThai = true
+)
+ORDER BY d.tenDanhMuc ASC
+""")
+    List<DanhMuc> findCategoriesHavingActiveProducts();
+
+    @Query("""
+SELECT p FROM SanPham p
+JOIN p.chiTietSanPhams ct
+WHERE p.danhMuc.id = :categoryId
+  AND p.trangThai = true
+  AND ct.trangThai = true
+GROUP BY p
+ORDER BY p.thoiGianTao DESC
+""")
+    List<SanPham> findActiveProductsByCategory(UUID categoryId);
 
     // Truy vấn chi tiết sản phẩm
     @Query("SELECT c FROM ChiTietSanPham c " +

@@ -127,6 +127,26 @@ public class KhachhangSanPhamService {
                 .collect(Collectors.toList());
     }
 
+    public List<SanPhamDto> getAllActiveProductsDtos() {
+        List<SanPham> list = khachHangSanPhamRepository.findActiveProducts();
+        return list.stream().map(this::convertToSanPhamDto).collect(Collectors.toList());
+    }
+
+    public List<SanPhamDto> getAllActiveProductsDtosLimited(int limit) {
+        List<SanPham> list = khachHangSanPhamRepository.findActiveProducts();
+        return list.stream().map(this::convertToSanPhamDto).limit(limit).collect(Collectors.toList());
+    }
+
+    public List<DanhMuc> getActiveCategories(){
+        return khachHangSanPhamRepository.findCategoriesHavingActiveProducts();
+    }
+
+    public List<SanPhamDto> getProductsByCategory(UUID categoryId){
+        return khachHangSanPhamRepository.findActiveProductsByCategory(categoryId)
+                .stream().map(this::convertToSanPhamDto).toList();
+    }
+
+
     public ChiTietSanPhamDto getProductDetail(UUID sanPhamId) {
         List<ChiTietSanPham> details = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPhamId);
         if (details.isEmpty()) {
