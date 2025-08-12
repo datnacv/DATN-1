@@ -357,6 +357,80 @@ public class ChiTietSanPhamService {
     }
 
     @Transactional
+    public void updateChiTietSanPhamRestricted(ChiTietSanPhamUpdateDto updateDto,
+                                               MultipartFile[] imageFiles,
+                                               List<UUID> deletedImageIds) {
+        ChiTietSanPham existing = chiTietSanPhamRepo.findById(updateDto.getId())
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + updateDto.getId()));
+
+        // chỉ cho phép sửa:
+        existing.setGia(updateDto.getPrice());
+        existing.setSoLuongTonKho(updateDto.getStockQuantity());
+
+        boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus()
+                : (updateDto.getStockQuantity() != null && updateDto.getStockQuantity() > 0);
+        if (newStatus && (updateDto.getStockQuantity() == null || updateDto.getStockQuantity() == 0)) {
+            throw new RuntimeException("Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+        }
+        existing.setTrangThai(newStatus);
+
+        chiTietSanPhamRepo.save(existing);
+
+        // Ảnh: y hệt logic cũ
+        if (deletedImageIds != null && !deletedImageIds.isEmpty()) {
+            for (UUID imageId : deletedImageIds) deleteImage(imageId);
+            existing.setHinhAnhSanPhams(new ArrayList<>());
+            chiTietSanPhamRepo.save(existing);
+        }
+        if (imageFiles != null && imageFiles.length > 0) {
+            saveImagesToLocal(existing, Arrays.asList(imageFiles));
+        }
+
+        List<HinhAnhSanPham> updatedImages =
+                hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(existing.getId());
+        existing.setHinhAnhSanPhams(updatedImages);
+        chiTietSanPhamRepo.save(existing);
+    }
+
+
+    @Transactional
+    public int updateBulkFullAttributes(List<UUID> ids, ChiTietSanPhamUpdateDto dto) {
+        int count = 0;
+        for (UUID id : ids) {
+            ChiTietSanPham existing = chiTietSanPhamRepo.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm: " + id));
+
+            // cập nhật full thuộc tính
+            existing.setXuatXu(xuatXuRepo.findById(dto.getOriginId())
+                    .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại")));
+            existing.setChatLieu(chatLieuRepo.findById(dto.getMaterialId())
+                    .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại")));
+            existing.setKieuDang(kieuDangRepo.findById(dto.getStyleId())
+                    .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại")));
+            existing.setTayAo(tayAoRepo.findById(dto.getSleeveId())
+                    .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại")));
+            existing.setCoAo(coAoRepo.findById(dto.getCollarId())
+                    .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại")));
+            existing.setThuongHieu(thuongHieuRepo.findById(dto.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại")));
+            existing.setGioiTinh(dto.getGender());
+            existing.setGia(dto.getPrice());
+            existing.setSoLuongTonKho(dto.getStockQuantity());
+
+            boolean newStatus = dto.getStatus() != null ? dto.getStatus() : dto.getStockQuantity() > 0;
+            if (newStatus && dto.getStockQuantity() == 0) {
+                throw new RuntimeException("Không thể bật 'Đang Bán' khi tồn kho bằng 0!");
+            }
+            existing.setTrangThai(newStatus);
+
+            chiTietSanPhamRepo.save(existing);
+            count++;
+        }
+        return count;
+    }
+
+
+    @Transactional
     public void deleteImage(UUID imageId) {
         Optional<HinhAnhSanPham> optionalImage = hinhAnhSanPhamRepo.findById(imageId);
 

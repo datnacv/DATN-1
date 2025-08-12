@@ -924,7 +924,6 @@
                             <div class="floating-label">
                                 <label for="productFilter">Sản phẩm</label>
                                 <input type="text" class="form-control" id="productFilter" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
-                                <input type="hidden" name="productId" th:value="${selectedProductId}"/>
                             </div>
                         </div>
                         <div class="col-md-4 col-lg-4">
@@ -1036,10 +1035,22 @@
                     <span class="fs-5 fw-bold">Danh sách chi tiết sản phẩm</span>
                 </div>
             </div>
+            <div class="d-flex justify-content-between align-items-center p-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-pen fs-5 text-muted"></i>
+                    <span class="text-muted">Chọn biến thể để sửa nhanh</span>
+                </div>
+                <button id="bulkEditBtn" class="btn btn-primary" disabled>
+                    <i class="fas fa-edit me-2"></i>Sửa mục đã chọn
+                </button>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0" id="chiTietSanPhamTable">
                     <thead>
                     <tr>
+                        <th style="width:42px;">
+                            <input type="checkbox" id="selectAll" title="Chọn tất cả"/>
+                        </th>
                         <th>#</th>
                         <th>Ảnh</th>
                         <th>Sản phẩm</th>
@@ -1063,6 +1074,9 @@
                         <td th:colspan="${isAdmin} ? 16 : 15" class="text-center text-muted py-5">Chưa có chi tiết sản phẩm nào được thêm.</td>
                     </tr>
                     <tr th:each="pd, stats : ${chiTietSanPhamList}" th:data-id="${pd.id}">
+                        <td>
+                            <input type="checkbox" class="row-check" th:value="${pd.id}" />
+                        </td>
                         <td th:text="${stats.count}"></td>
                         <td>
                             <div th:if="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}">
@@ -1071,7 +1085,7 @@
                                          th:src="${img.urlHinhAnh}"
                                          class="product-image"
                                          alt="Ảnh sản phẩm"
-                                         onerror="this.src='/placeholder.svg?height=100&width=100'; this.alt='Ảnh lỗi';">
+                                         onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
                                     <span th:if="${img.urlHinhAnh == null or #strings.isEmpty(img.urlHinhAnh)}"
                                           class="text-muted">Không có</span>
                                 </div>
@@ -1128,20 +1142,21 @@
                     </div>
                     <form id="editChiTietSanPhamForm" enctype="multipart/form-data">
                         <div class="modal-body">
-                            <input type="hidden" name="deletedImageIds" id="deletedImageIds">
                             <input type="hidden" id="editId" name="id"/>
+                            <input type="hidden" name="deletedImageIds" id="deletedImageIds">
+                            <input type="hidden" id="editMode" name="restricted" value="false"/>
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editProduct">Sản phẩm</label>
-                                        <input type="text" class="form-control" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
-                                        <input type="hidden" id="editProductHidden" name="productId" th:value="${selectedProductId}"/>
+                                        <input type="text" class="form-control lockable" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
+                                        <input type="hidden" id="editProductHidden" name="productId" class="lockable" th:value="${selectedProductId}"/>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editOrigin">Xuất xứ</label>
-                                        <select class="form-select" id="editOrigin" name="originId" required>
+                                        <select class="form-select lockable" id="editOrigin" name="originId" required>
                                             <option value="">Chọn xuất xứ...</option>
                                             <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
                                         </select>
@@ -1152,7 +1167,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editSize">Kích cỡ</label>
-                                        <select class="form-select" id="editSize" name="sizeId" required>
+                                        <select class="form-select lockable" id="editSize" name="sizeId" required>
                                             <option value="">Chọn kích cỡ...</option>
                                             <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
                                         </select>
@@ -1161,7 +1176,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editColor">Màu sắc</label>
-                                        <select class="form-select" id="editColor" name="colorId" required>
+                                        <select class="form-select lockable" id="editColor" name="colorId" required>
                                             <option value="">Chọn màu...</option>
                                             <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
                                         </select>
@@ -1172,7 +1187,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editMaterial">Chất liệu</label>
-                                        <select class="form-select" id="editMaterial" name="materialId" required>
+                                        <select class="form-select lockable" id="editMaterial" name="materialId" required>
                                             <option value="">Chọn chất liệu...</option>
                                             <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
                                         </select>
@@ -1181,7 +1196,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editStyle">Kiểu dáng</label>
-                                        <select class="form-select" id="editStyle" name="styleId" required>
+                                        <select class="form-select lockable" id="editStyle" name="styleId" required>
                                             <option value="">Chọn kiểu dáng...</option>
                                             <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
                                         </select>
@@ -1192,7 +1207,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editSleeve">Tay áo</label>
-                                        <select class="form-select" id="editSleeve" name="sleeveId" required>
+                                        <select class="form-select lockable" id="editSleeve" name="sleeveId" required>
                                             <option value="">Chọn tay áo...</option>
                                             <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
                                         </select>
@@ -1201,7 +1216,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editCollar">Cổ áo</label>
-                                        <select class="form-select" id="editCollar" name="collarId" required>
+                                        <select class="form-select lockable" id="editCollar" name="collarId" required>
                                             <option value="">Chọn cổ áo...</option>
                                             <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
                                         </select>
@@ -1212,7 +1227,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editBrand">Thương hiệu</label>
-                                        <select class="form-select" id="editBrand" name="brandId" required>
+                                        <select class="form-select lockable" id="editBrand" name="brandId" required>
                                             <option value="">Chọn thương hiệu...</option>
                                             <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
                                         </select>
@@ -1221,7 +1236,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editGender">Giới tính</label>
-                                        <select class="form-select" id="editGender" name="gender" required>
+                                        <select class="form-select lockable" id="editGender" name="gender" required>
                                             <option value="">Chọn giới tính...</option>
                                             <option value="Nam">Nam</option>
                                             <option value="Nữ">Nữ</option>
@@ -1294,7 +1309,7 @@
                                         <i class="fas fa-qrcode me-2"></i>Mã QR
                                     </label>
                                     <div class="qr-container" id="qrCodeContainer">
-                                        <img id="qrCodeImage" src="" alt="Mã QR" class="qr-image" onerror="this.src='/placeholder.svg?height=200&width=200'; this.alt='Không có mã QR';">
+                                        <img id="qrCodeImage" src="" alt="Mã QR" class="qr-image" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Không có mã QR';">
                                         <a id="downloadQrLink" href="" download="qr_code.png" class="btn btn-primary btn-sm">
                                             <i class="fas fa-download me-2"></i>Tải mã QR
                                         </a>
@@ -1314,6 +1329,135 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="bulkFullEditModal" tabindex="-1" aria-hidden="true" th:if="${isAdmin}">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="bulkFullEditForm">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fas fa-tools me-2"></i>Sửa toàn bộ thuộc tính (tất cả biến thể)</h5>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="bulkIds" name="ids"/>
+                            <!-- Reuse các block select giống modal edit, NHƯNG không gắn class lockable -->
+                            <!-- LƯU Ý: Modal này KHÔNG xử lý ảnh (mỗi biến thể ảnh khác nhau). -->
+                            <!-- Sản phẩm -->
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Xuất xứ</label>
+                                        <select class="form-select" name="originId" required>
+                                            <option value="">Chọn xuất xứ...</option>
+                                            <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Chất liệu</label>
+                                        <select class="form-select" name="materialId" required>
+                                            <option value="">Chọn chất liệu...</option>
+                                            <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Kiểu dáng</label>
+                                        <select class="form-select" name="styleId" required>
+                                            <option value="">Chọn kiểu dáng...</option>
+                                            <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Tay áo</label>
+                                        <select class="form-select" name="sleeveId" required>
+                                            <option value="">Chọn tay áo...</option>
+                                            <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Cổ áo</label>
+                                        <select class="form-select" name="collarId" required>
+                                            <option value="">Chọn cổ áo...</option>
+                                            <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Thương hiệu</label>
+                                        <select class="form-select" name="brandId" required>
+                                            <option value="">Chọn thương hiệu...</option>
+                                            <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Giới tính</label>
+                                        <select class="form-select" name="gender" required>
+                                            <option value="">Chọn giới tính...</option>
+                                            <option value="Nam">Nam</option>
+                                            <option value="Nữ">Nữ</option>
+                                            <option value="Unisex">Unisex</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Giá bán</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">VNĐ</span>
+                                            <input type="text" class="form-control" id="bulkPrice" name="price" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Số lượng tồn</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                            <input type="number" class="form-control" name="stockQuantity" min="0" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
+                                    <div class="form-check form-switch d-flex align-items-center">
+                                        <input class="form-check-input" type="checkbox" id="bulkStatus" name="status" value="true">
+                                        <label class="form-check-label ms-3">Đang Bán</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Thao tác này áp dụng cho <strong>tất cả biến thể được chọn</strong>. Ảnh chi tiết không chỉnh hàng loạt.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi cho tất cả
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -1323,6 +1467,11 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+    let totalCheckable = 0;
+    function countSelected() {
+        return $('.row-check:checked').length;
+    }
+
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
         if (!container) return;
@@ -1390,7 +1539,7 @@
             const statusLabel = $(this).next('.form-check-label');
 
             const row = $(this).closest('tr');
-            const stockQuantity = parseInt(row.find('td').eq(12).text()) || 0;
+            const stockQuantity = parseInt(row.find('td').eq(13).text()) || 0;
 
             if (newStatus && stockQuantity === 0) {
                 showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
@@ -1431,6 +1580,80 @@
             });
         });
 
+        function setRestrictedMode(enabled) {
+            if (enabled) {
+                // khóa tất cả field lockable
+                $('#editChiTietSanPhamModal .lockable').prop('disabled', true);
+                // mở các field được phép
+                $('#editPrice, #editStockQuantity, #editStatus, #editImages').prop('disabled', false);
+            } else {
+                // mở tất cả
+                $('#editChiTietSanPhamModal .lockable').prop('disabled', false);
+            }
+        }
+
+        function openRestrictedEdit(productDetailId) {
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/edit/' + productDetailId,
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    // fill dữ liệu như logic hiện có:
+                    $('#editId').val(response.id);
+                    $('#editProductHidden').val(response.productId);
+                    $('#editColor').val(response.colorId).trigger('change');
+                    $('#editSize').val(response.sizeId).trigger('change');
+                    $('#editOrigin').val(response.originId).trigger('change');
+                    $('#editMaterial').val(response.materialId).trigger('change');
+                    $('#editStyle').val(response.styleId).trigger('change');
+                    $('#editSleeve').val(response.sleeveId).trigger('change');
+                    $('#editCollar').val(response.collarId).trigger('change');
+                    $('#editBrand').val(response.brandId).trigger('change');
+                    $('#editGender').val(response.gender).trigger('change');
+                    $('#editPrice').val(formatNumber(response.price || 0));
+                    $('#editStockQuantity').val(response.stockQuantity);
+                    $('#editStatus').prop('checked', response.status === true);
+
+                    const qrUrl = '/qr/qr_' + response.id + '.png';
+                    $('#qrCodeImage').attr('src', qrUrl);
+                    $('#downloadQrLink').attr('href', qrUrl);
+
+                    // ảnh cũ
+                    const existingImagesContainer = $('#existingImages');
+                    existingImagesContainer.empty();
+                    $('#deletedImageIds').val('');
+                    deletedImageIds = [];
+                    if (response.images && response.images.length > 0) {
+                        response.images.sort((a, b) => a.thuTu - b.thuTu);
+                        response.images.forEach(image => {
+                            if (image.imageUrl && image.imageUrl.trim() !== "") {
+                                existingImagesContainer.append(`
+              <div class="image-preview">
+                <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
+                <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
+              </div>
+            `);
+                            }
+                        });
+                        $('#noExistingImagePlaceholder').hide();
+                    } else {
+                        $('#noExistingImagePlaceholder').show();
+                    }
+
+                    // bật chế độ RESTRICTED
+                    setRestrictedMode(true);
+
+                    // mở modal
+                    const modal = new bootstrap.Modal(document.getElementById('editChiTietSanPhamModal'));
+                    modal.show();
+                    updateStatusLabel();
+                },
+                error: function (xhr) {
+                    showToast("Lỗi khi tải dữ liệu chi tiết sản phẩm: " + (xhr.responseText || xhr.statusText), 'error');
+                }
+            });
+        }
+
         function updateStatusLabel() {
             const statusInput = $('#editStatus');
             const statusLabel = $('#statusLabel');
@@ -1454,6 +1677,41 @@
                 $(this).val(formatNumber(value));
             }
         });
+
+        $('#bulkFullEditForm').on('submit', function(e){
+            e.preventDefault();
+            const fd = new FormData(this);
+
+            // chuẩn hóa price
+            const p = $('#bulkPrice').val();
+            if (p) fd.set('price', parseNumber(p));
+
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/update-bulk',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    showToast(res.message || 'Cập nhật thành công!', 'success');
+                    setTimeout(() => {
+                        // reload lại theo productId đang chọn (nếu có)
+                        const pidRaw = $('#editProductHidden').val() || $('[name="productId"]').val();
+                        const pid = (pidRaw && pidRaw !== 'undefined' && pidRaw !== 'null' && pidRaw.trim() !== '') ? pidRaw : '';
+
+                        const href = pid
+                            ? `/acvstore/chi-tiet-san-pham?productId=${pid}&success=Cập nhật thành công`
+                            : `/acvstore/chi-tiet-san-pham?success=Cập nhật thành công`;
+
+                        window.location.href = href;
+                    }, 800);
+                },
+                error: function (xhr) {
+                    showToast("Lỗi cập nhật hàng loạt: " + (xhr.responseText || xhr.statusText), 'error');
+                }
+            });
+        });
+
 
         $(document).on('click', '.edit-btn', function () {
             const productDetailId = $(this).data('id');
@@ -1492,7 +1750,7 @@
                             if (image.imageUrl && image.imageUrl.trim() !== "") {
                                 const imageHtml = `
                               <div class="image-preview">
-                                  <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.src='/placeholder.svg?height=100&width=100'; this.alt='Ảnh lỗi';">
+                                  <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
                                   <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
                               </div>
                           `;
@@ -1559,14 +1817,16 @@
 
         $('#editChiTietSanPhamForm').on('submit', function (e) {
             e.preventDefault();
+            const id = $('#editId').val();
+            if (!id || id === 'undefined' || id === 'null') {
+                showToast('Không xác định được ID chi tiết sản phẩm.', 'error');
+                return;
+            }
             const formData = new FormData(this);
             formData.set('status', $('#editStatus').is(':checked'));
             formData.set('deletedImageIds', deletedImageIds.join(','));
+            formData.set('price', parseNumber($('#editPrice').val()));
 
-            const priceValue = $('#editPrice').val();
-            formData.set('price', parseNumber(priceValue));
-
-            const id = $('#editId').val();
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/update/' + id,
                 type: 'POST',
@@ -1577,7 +1837,12 @@
                     $('#editChiTietSanPhamModal').modal('hide');
                     showToast("Cập nhật thành công!", "success");
                     setTimeout(() => {
-                        window.location.href = "/acvstore/chi-tiet-san-pham?productId=" + response.productId + "&success=Cập nhật thành công";
+                        const pid = (response.productId && response.productId !== 'undefined' && response.productId !== 'null')
+                            ? response.productId : '';
+                        const href = pid
+                            ? `/acvstore/chi-tiet-san-pham?productId=${pid}&success=Cập nhật thành công`
+                            : `/acvstore/chi-tiet-san-pham?success=Cập nhật thành công`;
+                        window.location.href = href;
                     }, 1000);
                 },
                 error: function (xhr) {
@@ -1585,7 +1850,64 @@
                 }
             });
         });
+
+        totalCheckable = $('.row-check').length;
+
+        $('#selectAll').on('change', function() {
+            const checked = $(this).is(':checked');
+            $('.row-check').prop('checked', checked);
+            $('#bulkEditBtn').prop('disabled', countSelected() === 0);
+        });
+
+        $(document).on('change', '.row-check', function() {
+            const allChecked = countSelected() === totalCheckable;
+            $('#selectAll').prop('checked', allChecked);
+            $('#bulkEditBtn').prop('disabled', countSelected() === 0);
+        });
+
+        $('#bulkEditBtn').on('click', function() {
+            const selected = $('.row-check:checked').map(function(){ return $(this).val(); }).get();
+            if (selected.length === 0) {
+                showToast('Hãy chọn ít nhất 1 biến thể.', 'warning');
+                return;
+            }
+            if (selected.length === totalCheckable && totalCheckable > 1) {
+                // FULL EDIT MODE: mở modal bulk
+                $('#bulkIds').val(selected.join(','));
+                const modal = new bootstrap.Modal(document.getElementById('bulkFullEditModal'));
+                modal.show();
+            } else {
+                // SINGLE/RESTRICTED MODE: chỉ cho sửa giá, tồn, trạng thái, ảnh
+                if (selected.length > 1) {
+                    showToast('Muốn sửa toàn bộ thuộc tính: hãy chọn TẤT CẢ biến thể.', 'info');
+                    return;
+                }
+                const id = selected[0];
+                if (!id) {
+                    showToast('Hãy tick đúng 1 dòng để sửa nhanh.', 'warning');
+                    return;
+                }
+                openRestrictedEdit(id);
+                setRestrictedMode(true);
+                $('#editMode').val('true');
+            }
+        });
+
+        // Khi bấm nút edit riêng từng dòng → luôn mở RESTRICTED (theo yêu cầu)
+        $(document).off('click', '.edit-btn').on('click', '.edit-btn', function () {
+            const id = $(this).data('id');
+            openRestrictedEdit(id);
+            setRestrictedMode(true);
+            $('#editMode').val('true');
+        });
+
+        // format số ở bulk price
+        $('#bulkPrice').on('input', function(){
+            let v = $(this).val().replace(/\./g, '');
+            if (v) $(this).val(formatNumber(v));
+        });
     });
+
 </script>
 <script th:src="@{/js/notification.js}"></script>
 </body>
