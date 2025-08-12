@@ -38,11 +38,62 @@ public class KhachhangSanPhamService {
     public Map<String, BigDecimal> getPriceRangeBySanPhamId(UUID sanPhamId) {
         List<ChiTietSanPham> list = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPhamId);
         if (list == null || list.isEmpty()) {
-            return Map.of("min", BigDecimal.ZERO, "max", BigDecimal.ZERO);
+            return Map.of(
+                    "minPrice", BigDecimal.ZERO,
+                    "maxPrice", BigDecimal.ZERO,
+                    "oldMinPrice", BigDecimal.ZERO,
+                    "oldMaxPrice", BigDecimal.ZERO
+            );
         }
-        BigDecimal min = list.stream().map(ChiTietSanPham::getGia).filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        BigDecimal max = list.stream().map(ChiTietSanPham::getGia).filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
-        return Map.of("min", min, "max", max);
+
+        // Lấy giá hiện tại (gia) min và max
+        BigDecimal minPrice = list.stream()
+                .map(chiTiet -> {
+                    BigDecimal originalPrice = chiTiet.getGia();
+                    Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTiet.getId());
+                    if (chienDich.isPresent()) {
+                        BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
+                        return originalPrice.subtract(originalPrice.multiply(discountRate));
+                    }
+                    return originalPrice;
+                })
+                .filter(Objects::nonNull)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal maxPrice = list.stream()
+                .map(chiTiet -> {
+                    BigDecimal originalPrice = chiTiet.getGia();
+                    Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTiet.getId());
+                    if (chienDich.isPresent()) {
+                        BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
+                        return originalPrice.subtract(originalPrice.multiply(discountRate));
+                    }
+                    return originalPrice;
+                })
+                .filter(Objects::nonNull)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        // Lấy giá gốc (oldPrice) min và max
+        BigDecimal oldMinPrice = list.stream()
+                .map(ChiTietSanPham::getGia)
+                .filter(Objects::nonNull)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        BigDecimal oldMaxPrice = list.stream()
+                .map(ChiTietSanPham::getGia)
+                .filter(Objects::nonNull)
+                .max(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        return Map.of(
+                "minPrice", minPrice,
+                "maxPrice", maxPrice,
+                "oldMinPrice", oldMinPrice,
+                "oldMaxPrice", oldMaxPrice
+        );
     }
 
     // Lấy danh sách sản phẩm mới
@@ -101,14 +152,14 @@ public class KhachhangSanPhamService {
         // Thiết lập giá gốc
         BigDecimal originalPrice = chiTiet.getGia();
         dto.setOldPrice(originalPrice); // Giá gốc
-        Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProduct(chiTiet.getSanPham().getId());
+        Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTiet.getId());
         if (chienDich.isPresent()) {
             BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
             BigDecimal discountedPrice = originalPrice.subtract(originalPrice.multiply(discountRate));
             dto.setGia(discountedPrice); // Giá sau giảm
             dto.setDiscountCampaignName(chienDich.get().getTen());
         } else {
-            dto.setGia(originalPrice);
+            dto.setGia(originalPrice); // Không có chiến dịch, dùng giá gốc
             dto.setDiscountCampaignName(null);
         }
 

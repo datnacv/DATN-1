@@ -321,9 +321,8 @@
                 <!-- Giá (khi chưa chọn: hiển thị min - max) -->
                 <span id="detail-price"
                       class="price text-[#153054] font-bold text-2xl"
-                      th:attr="data-min=${minPrice},data-max=${maxPrice}"
-                      th:text="${#numbers.formatDecimal(minPrice, 0, 0, 'POINT')} + ' - ' + ${#numbers.formatDecimal(maxPrice, 0, 0, 'POINT')} + ' VNĐ'">
-  </span>
+                      th:attr="data-min=${minPrice},data-max=${maxPrice},data-old-min=${oldMinPrice},data-old-max=${oldMaxPrice}">
+    </span>
 
                 <!-- Giá cũ (ẩn mặc định) -->
                 <div id="detail-old-price"
@@ -394,10 +393,10 @@
                 <h3 th:text="${sp.tenSanPham}" class="text-base font-semibold text-gray-700 line-clamp-2 h-[48px]"></h3>
                 <div class="mb-2">
                     <!-- Formatted Price -->
-                    <span class="price text-[#153054] font-bold text-sm" th:text="${#numbers.formatDecimal(sp.price, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                    <span class="price text-[#153054] font-bold text-sm" th:attr="data-price=${sp.price}"></span>
                     <!-- Old Price with Line-through -->
                     <div th:if="${sp.oldPrice != null and sp.price != sp.oldPrice}" class="old-price text-sm text-red-600 line-through inline-block ml-2">
-                        <span th:text="${#numbers.formatDecimal(sp.oldPrice, 0, 0, 'POINT')} + ' VNĐ'"></span>
+                        <span th:attr="data-old-price=${sp.oldPrice}"></span>
                     </div>
                     <!-- Discount Campaign -->
                     <div th:if="${sp.discountCampaignName != null}" class="text-sm text-green-600">
@@ -630,17 +629,55 @@
     function formatVND(n) {
         return new Intl.NumberFormat('vi-VN').format(n) + ' VNĐ';
     }
+    function formatPrice() {
+        // Format price
+        document.querySelectorAll('.price').forEach(el => {
+            const raw = el.dataset.price;
+            if (!raw || isNaN(raw)) return;
+            el.textContent = formatVND(raw);
+        });
+
+        // Format old price
+        document.querySelectorAll('.old-price span').forEach(el => {
+            const raw = el.dataset.oldPrice;
+            if (!raw || isNaN(raw)) return;
+            el.textContent = formatVND(raw);
+        });
+    }
 
     function showPriceRange() {
         const priceEl = document.getElementById('detail-price');
-        const oldEl   = document.getElementById('detail-old-price');
+        const oldEl = document.getElementById('detail-old-price');
         if (!priceEl) return;
-        const min = priceEl.dataset.min;
-        const max = priceEl.dataset.max;
+
+        const min = parseFloat(priceEl.dataset.min);
+        const max = parseFloat(priceEl.dataset.max);
+        const oldMin = parseFloat(priceEl.dataset.oldMin);
+        const oldMax = parseFloat(priceEl.dataset.oldMax);
+
         if (min && max) {
-            priceEl.textContent = `${formatVND(min)} - ${formatVND(max)}`;
+            if (min === max) {
+                // Nếu min và max bằng nhau, chỉ hiển thị một giá
+                priceEl.textContent = formatVND(min);
+            } else {
+                // Nếu khác nhau, hiển thị khoảng giá
+                priceEl.textContent = `${formatVND(min)} - ${formatVND(max)}`;
+            }
         }
-        if (oldEl) oldEl.style.display = 'none';
+
+        if (oldEl && oldMin && oldMax && (oldMin !== min || oldMax !== max)) {
+            if (oldMin === oldMax) {
+                // Nếu giá gốc min và max bằng nhau, chỉ hiển thị một giá gốc
+                oldEl.textContent = formatVND(oldMin);
+                oldEl.style.display = 'inline-block';
+            } else {
+                // Nếu giá gốc min và max khác nhau, hiển thị khoảng giá gốc
+                oldEl.textContent = `${formatVND(oldMin)} - ${formatVND(oldMax)}`;
+                oldEl.style.display = 'inline-block';
+            }
+        } else if (oldEl) {
+            oldEl.style.display = 'none';
+        }
     }
     // Format the old price in the same way as the regular price
     document.querySelectorAll('.formatted-old-price').forEach(el => {
@@ -866,21 +903,10 @@
             .replace(/\n/g, '<br>');
     }
 
-    // format giá tiền
-    function formatPrice(selector) {
-        document.querySelectorAll(selector).forEach(el => {
-            const raw = el.textContent.trim().replace(' VNĐ', '').replace(/,/g, ''); // Remove commas and "VNĐ"
-            if (!raw || isNaN(raw)) return;
-
-            const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ'; // Format with commas and add "VNĐ"
-            el.textContent = formatted;
-        });
-    }
-
     // Apply formatPrice to both price and old price elements
     window.addEventListener('DOMContentLoaded', function() {
         showPriceRange();
-        formatPrice('.old-price'); // bạn vẫn có hàm format này, giữ nếu muốn
+        formatPrice();
     });
 
     //sắp xếp size

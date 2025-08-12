@@ -94,23 +94,20 @@ public class HomeController {
         }
 
         // Lấy min/max giá của tất cả biến thể thuộc sản phẩm
-        // (triển khai trong service/repo của bạn)
         Map<String, BigDecimal> range = khachhangSanPhamService.getPriceRangeBySanPhamId(sanPhamId);
-        BigDecimal minPrice = range.getOrDefault("min", productDetail.getGia());
-        BigDecimal maxPrice = range.getOrDefault("max", productDetail.getGia());
-
-        NumberFormat format = NumberFormat.getInstance(new Locale("vi", "VN"));
-        String giaFormatted = format.format(productDetail.getGia()) + " VNĐ";
+        BigDecimal minPrice = range.getOrDefault("minPrice", productDetail.getGia());
+        BigDecimal maxPrice = range.getOrDefault("maxPrice", productDetail.getGia());
+        BigDecimal oldMinPrice = range.getOrDefault("oldMinPrice", productDetail.getOldPrice());
+        BigDecimal oldMaxPrice = range.getOrDefault("oldMaxPrice", productDetail.getOldPrice());
 
         List<SanPhamDto> sanPhamLienQuan = khachhangSanPhamService.getSanPhamLienQuan(sanPhamId, 6);
 
-        model.addAttribute("giaFormatted", giaFormatted);
         model.addAttribute("productDetail", productDetail);
         model.addAttribute("sanPhamLienQuan", sanPhamLienQuan);
-
-        // 👇 add vào model để Thymeleaf bind vào data-min/data-max
         model.addAttribute("minPrice", minPrice);
         model.addAttribute("maxPrice", maxPrice);
+        model.addAttribute("oldMinPrice", oldMinPrice);
+        model.addAttribute("oldMaxPrice", oldMaxPrice);
 
         return "WebKhachHang/chitietsanpham";
     }
