@@ -9,13 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Assuming admin.css is a shared file, if not, its content should be merged -->
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
         :root {
-            /* Màu chính */
             --primary-color: #153054;
             --primary-hover: #102C47;
             --secondary-color: #9FD5F7;
@@ -23,32 +21,22 @@
             --accent-color: #479BD3;
             --accent-hover: #CAEAFB;
             --border-active: #62B2E7;
-
-            /* Màu nền */
             --main-background: #F4F9FC;
             --content-background: #ffffff;
             --header-background: #153054;
-
-            /* Màu văn bản */
             --text-primary: #153054;
             --text-content: #333333;
             --text-secondary: #6B7280;
             --text-link: #479BD3;
             --text-white: #ffffff;
-
-            /* Màu nút */
             --btn-danger: #F44336;
             --btn-danger-hover: #D32F2F;
-
-            /* Màu trạng thái */
             --success-bg: #D1FADF;
             --success-text: #027A48;
             --warning-bg: #FEF3C7;
             --warning-text: #B45309;
             --error-bg: #FECACA;
             --error-text: #991B1B;
-
-            /* Màu khác */
             --border-color: #dee2e6;
             --light-gray: #f8f9fa;
             --shadow-light: 0 8px 32px rgba(21, 48, 84, 0.1);
@@ -135,9 +123,9 @@
         }
 
         .card-header span {
-            color: var(--text-white) !important; /* Đảm bảo màu chữ trắng */
-            font-weight: 700; /* Tăng độ đậm để nổi bật */
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Thêm bóng chữ để tăng độ tương phản */
+            color: var(--text-white) !important;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .card-header::before {
@@ -214,11 +202,10 @@
             left: 100%;
         }
 
-        /* Nút Primary (Thêm) */
         .btn-primary {
-            background: var(--primary-color); /* #153054 */
+            background: var(--primary-color);
             border-color: var(--primary-color);
-            color: var(--text-white) !important; /* Đảm bảo màu chữ luôn là trắng */
+            color: var(--text-white) !important;
             box-shadow: 0 4px 15px rgba(21, 48, 84, 0.2);
         }
 
@@ -230,7 +217,6 @@
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.3);
         }
 
-        /* Nút Secondary (Sửa) */
         .btn-warning {
             background: var(--secondary-color);
             border-color: var(--secondary-color);
@@ -246,7 +232,6 @@
             box-shadow: 0 8px 25px rgba(159, 213, 247, 0.4);
         }
 
-        /* Nút Success (Xem) */
         .btn-success {
             background: var(--accent-color);
             border-color: var(--accent-color);
@@ -262,7 +247,6 @@
             box-shadow: 0 8px 25px rgba(71, 155, 211, 0.4);
         }
 
-        /* Nút Danger (Xóa) */
         .btn-danger {
             background: var(--btn-danger);
             border-color: var(--btn-danger);
@@ -363,19 +347,16 @@
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
-        /* Action buttons - nằm ngang */
         .action-buttons {
-            position: relative; /* Make the td a positioning context */
-            /* The button will be absolutely positioned, so flex properties on the td are not needed for centering it */
+            position: relative;
         }
+
         .action-buttons .edit-btn {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1; /* Ensure it's on top if there are other elements */
-
-            /* Keep existing btn-sm styles for size and appearance */
+            z-index: 1;
             padding: 8px 16px;
             font-size: 0.875rem;
             min-width: 44px;
@@ -461,7 +442,6 @@
             margin-bottom: 0;
         }
 
-        /* Role Badge Styles */
         .role-badge {
             position: fixed;
             top: 20px;
@@ -498,7 +478,6 @@
             color: var(--text-content);
         }
 
-        /* Badge trạng thái */
         .badge {
             padding: 0.5rem 1rem;
             border-radius: 20px;
@@ -615,7 +594,7 @@
 
         .floating-label {
             position: relative;
-            margin-bottom: 2rem; /* Ensure consistent margin */
+            margin-bottom: 2rem;
         }
 
         .floating-label input,
@@ -665,10 +644,11 @@
             padding: 1.5rem;
             border: 2px dashed var(--border-color);
             transition: all 0.3s ease;
-            min-height: 150px; /* Ensure it has a minimum height */
-            align-items: center; /* Center content vertically */
-            justify-content: center; /* Center content horizontally */
+            min-height: 150px;
+            align-items: center;
+            justify-content: center;
         }
+
         .image-preview-container:hover {
             border-color: var(--border-active);
             background: rgba(248,249,250,0.95);
@@ -679,6 +659,7 @@
             width: 100px;
             height: 100px;
         }
+
         .image-preview img {
             width: 100%;
             height: 100%;
@@ -688,10 +669,12 @@
             box-shadow: 0 4px 12px rgba(21, 48, 84, 0.15);
             transition: all 0.3s ease;
         }
+
         .image-preview img:hover {
             transform: scale(1.05);
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
+
         .image-preview .remove-image {
             position: absolute;
             top: -10px;
@@ -710,6 +693,7 @@
             box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
             transition: all 0.2s ease;
         }
+
         .image-preview .remove-image:hover {
             transform: scale(1.1);
             background: var(--btn-danger-hover);
@@ -770,9 +754,43 @@
             align-items: center;
             gap: 1rem;
         }
+
         .employee-notice i {
             font-size: 1.5rem;
             color: var(--primary-color);
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 10px;
+            background: rgba(248,249,250,0.8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 2px dashed var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .qr-container:hover {
+            border-color: var(--border-active);
+            background: rgba(248,249,250,0.95);
+        }
+
+        .qr-image {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(21, 48, 84, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .qr-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
         @media (max-width: 768px) {
@@ -840,18 +858,22 @@
                 left: 20px;
                 top: 80px;
             }
+
+            .qr-image {
+                width: 150px;
+                height: 150px;
+            }
         }
 
-        /* Đảm bảo thanh gạt trong modal có cùng kích thước và căn chỉnh với thanh gạt trong bảng */
         .modal-body .form-check.form-switch .form-check-input {
-            width: 3em; /* Kích thước chuẩn như ở bảng */
-            height: 1.5em; /* Kích thước chuẩn như ở bảng */
+            width: 3em;
+            height: 1.5em;
         }
 
         .modal-body .form-check.form-switch .form-check-label {
-            margin-left: 1rem; /* Khoảng cách chuẩn như ở bảng */
-            white-space: nowrap; /* Đảm bảo chữ không xuống dòng */
-            line-height: 1.5em; /* Căn chỉnh chiều cao dòng với toggle */
+            margin-left: 1rem;
+            white-space: nowrap;
+            line-height: 1.5em;
         }
     </style>
 </head>
@@ -863,7 +885,6 @@
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
-    <!-- Role Badge -->
     <div th:if="${user != null}"
          th:class="'role-badge ' + (${isAdmin} ? 'role-admin' : 'role-employee')">
         <i class="fas fa-user-shield me-2"></i>
@@ -885,7 +906,6 @@
             </ol>
         </nav>
 
-        <!-- Employee Notice -->
         <div th:unless="${isAdmin}" class="employee-notice">
             <i class="fas fa-info-circle me-2"></i>
             <strong>Chế độ xem:</strong> Bạn đang ở chế độ chỉ xem. Không thể chỉnh sửa thông tin sản phẩm.
@@ -1035,7 +1055,6 @@
                         <th>Số lượng tồn</th>
                         <th>Giới tính</th>
                         <th style="min-width: 150px;">Trạng thái</th>
-                        <!-- Chỉ hiển thị cột Thao tác cho Admin -->
                         <th th:if="${isAdmin}">Thao tác</th>
                     </tr>
                     </thead>
@@ -1085,11 +1104,10 @@
                                 </div>
                             </th:block>
                             <th:block th:unless="${isAdmin}">
-      <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
-            th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
+                                <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+                                      th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
                             </th:block>
                         </td>
-                        <!-- Cột Thao tác chỉ hiển thị cho Admin -->
                         <td class="text-center action-buttons" th:if="${isAdmin}">
                             <button class="btn btn-warning btn-sm edit-btn" th:data-id="${pd.id}" data-bs-toggle="modal" data-bs-target="#editChiTietSanPhamModal" title="Sửa">
                                 <i class="fas fa-edit"></i>
@@ -1101,7 +1119,6 @@
             </div>
         </div>
 
-        <!-- Modal chỉ hiển thị cho Admin -->
         <div class="modal fade" id="editChiTietSanPhamModal" tabindex="-1" aria-labelledby="editChiTietSanPhamModalLabel" aria-hidden="true" th:if="${isAdmin}">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
@@ -1235,7 +1252,7 @@
                             </div>
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <div class="mb-3"> <!-- Sử dụng div để tạo khoảng cách dưới -->
+                                    <div class="mb-3">
                                         <label for="editStatus" class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
                                         <div class="form-check form-switch d-flex align-items-center">
                                             <input class="form-check-input" type="checkbox" id="editStatus" name="status" value="true">
@@ -1268,6 +1285,19 @@
                                             <i class="fas fa-upload fs-3 mb-2"></i>
                                             <span>Chọn ảnh để xem trước</span>
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold text-dark mb-3">
+                                        <i class="fas fa-qrcode me-2"></i>Mã QR
+                                    </label>
+                                    <div class="qr-container" id="qrCodeContainer">
+                                        <img id="qrCodeImage" src="" alt="Mã QR" class="qr-image" onerror="this.src='/placeholder.svg?height=200&width=200'; this.alt='Không có mã QR';">
+                                        <a id="downloadQrLink" href="" download="qr_code.png" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download me-2"></i>Tải mã QR
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -1336,13 +1366,11 @@
         }, 4000);
     }
 
-    // Function to format number with thousands separator
     function formatNumber(num) {
         if (num === null || num === undefined) return '';
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
-    // Function to parse formatted number back to integer
     function parseNumber(str) {
         if (str === null || str === undefined || str.trim() === '') return 0;
         return parseInt(str.replace(/\./g, ''));
@@ -1361,14 +1389,12 @@
             const newStatus = $(this).is(':checked');
             const statusLabel = $(this).next('.form-check-label');
 
-            // Lấy số lượng tồn kho từ bảng
             const row = $(this).closest('tr');
-            const stockQuantity = parseInt(row.find('td').eq(12).text()) || 0; // Cột số lượng tồn kho là cột thứ 13 (index 12)
+            const stockQuantity = parseInt(row.find('td').eq(12).text()) || 0;
 
-            // Nếu bật trạng thái (newStatus = true) nhưng số lượng tồn kho = 0
             if (newStatus && stockQuantity === 0) {
                 showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
-                $(this).prop('checked', false); // Hoàn tác thay đổi
+                $(this).prop('checked', false);
                 statusLabel.text('Ngừng Bán');
                 return;
             }
@@ -1393,13 +1419,13 @@
                         showToast(response.message, 'success');
                     } else {
                         showToast(response.message, 'error');
-                        $(this).prop('checked', !newStatus); // Hoàn tác nếu lỗi
+                        $(this).prop('checked', !newStatus);
                         statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                     }
                 },
                 error: function (xhr) {
                     showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseText || xhr.statusText), 'error');
-                    $(this).prop('checked', !newStatus); // Hoàn tác nếu lỗi
+                    $(this).prop('checked', !newStatus);
                     statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                 }
             });
@@ -1422,9 +1448,8 @@
         $('#editStatus').on('change', updateStatusLabel);
         $('#editStockQuantity').on('input', updateStatusLabel);
 
-        // Price input formatting
         $('#editPrice').on('input', function() {
-            let value = $(this).val().replace(/\./g, ''); // Remove existing dots
+            let value = $(this).val().replace(/\./g, '');
             if (value) {
                 $(this).val(formatNumber(value));
             }
@@ -1448,9 +1473,12 @@
                     $('#editCollar').val(response.collarId).trigger('change');
                     $('#editBrand').val(response.brandId).trigger('change');
                     $('#editGender').val(response.gender).trigger('change');
-                    $('#editPrice').val(formatNumber(response.price || 0)); // Format price on load
+                    $('#editPrice').val(formatNumber(response.price || 0));
                     $('#editStockQuantity').val(response.stockQuantity);
                     $('#editStatus').prop('checked', response.status === true);
+                    const qrUrl = '/qr/qr_' + response.id + '.png';
+                    $('#qrCodeImage').attr('src', qrUrl);
+                    $('#downloadQrLink').attr('href', qrUrl);
                     updateStatusLabel();
 
                     const existingImagesContainer = $('#existingImages');
@@ -1477,7 +1505,7 @@
                     }
                     $('#newImagesPreview').empty();
                     $('#editImages').val('');
-                    $('#noNewImagePlaceholder').show(); // Show placeholder for new images
+                    $('#noNewImagePlaceholder').show();
                 },
                 error: function (xhr) {
                     showToast("Lỗi khi tải dữ liệu chi tiết sản phẩm: " + (xhr.responseText || xhr.statusText), 'error');
@@ -1535,7 +1563,6 @@
             formData.set('status', $('#editStatus').is(':checked'));
             formData.set('deletedImageIds', deletedImageIds.join(','));
 
-            // Parse formatted price back to number
             const priceValue = $('#editPrice').val();
             formData.set('price', parseNumber(priceValue));
 
@@ -1560,8 +1587,6 @@
         });
     });
 </script>
-<!-- Assuming notification.js is a shared file, if not, its content should be merged -->
 <script th:src="@{/js/notification.js}"></script>
-
 </body>
 </html>
