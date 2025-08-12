@@ -16,7 +16,6 @@
         }
         .navbar { background: linear-gradient(to right, #153054, #1e4066); }
         .navbar { position: fixed; top: 38px; left: 0; width: 100%; z-index: 1040; }
-        .product-img { width: 100%; max-height: 400px; object-fit: cover; }
         .thumbnail-img { width: 80px; height: 80px; object-fit: cover; cursor: pointer; }
         .thumbnail-img:hover { opacity: 0.8; }
         .size-option.active, .color-option.active { background-color: #153054; color: white; }
@@ -292,6 +291,74 @@
                 height: 70vh;
             }
         }
+
+        /* --- Reviews UI revamp --- */
+        .rating-card{background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.06);padding:16px}
+        .star-big{font-size:40px;line-height:1}
+        .star-row i{margin-right:2px}
+        .star-fill{color:#f59e0b} /* vàng */
+        .star-empty{color:#e5e7eb}
+        .hist-row{display:flex;align-items:center;gap:10px}
+        .hist-label{width:24px;text-align:right;font-weight:600;color:#6b7280}
+        .hist-bar{flex:1;height:10px;background:#f3f4f6;border-radius:999px;overflow:hidden}
+        .hist-bar > span{display:block;height:100%;background:#f59e0b}
+        .hist-count{width:46px;text-align:left;color:#6b7280;font-size:12px}
+        .rating-actions{display:flex;flex-wrap:wrap;gap:8px}
+        .filter-chip{border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
+        .filter-chip.active{background:#153054;color:#fff;border-color:#153054}
+        .sort-select{border:1px solid #e5e7eb;border-radius:999px;padding:6px 10px;font-size:14px;background:#fff}
+        .review-card{border:1px solid #f1f5f9;border-radius:14px;padding:14px}
+        .review-card.my{border-color:#153054;box-shadow:0 4px 14px rgba(21,48,84,.08)}
+        .rev-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .user-badge{display:flex;align-items:center;gap:10px}
+        .avatar{width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#e8eef6;color:#153054;font-weight:700}
+        .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; margin-top: 8px;}
+        .media-grid img {width: 100%;max-width: 100px; height: 100px; object-fit: cover; border-radius: 8px; cursor: zoom-in;background: #f3f4f6;}
+        .rev-meta{color:#9ca3af;font-size:12px;margin-top:6px}
+        .skeleton{position:relative;overflow:hidden;background:#f3f4f6;border-radius:12px;height:88px}
+        .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);animation:skeleton 1s infinite}
+        @keyframes skeleton{to{transform:translateX(100%)}}
+        /* Lightbox */
+        .lb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:10550}
+        .lb-backdrop.show{display:flex}
+        .lb-backdrop img{max-width:min(92vw,1024px);max-height:86vh;border-radius:10px}
+
+        /* ===== ẢNH SẢN PHẨM ===== */
+        .product-img{
+            width:100%;
+            aspect-ratio: 4 / 3;          /* giữ tỉ lệ khung, responsive */
+            object-fit: contain;
+            border:1px solid #eef2f7;
+            cursor: zoom-in;
+            background: transparent;
+        }
+
+        /* Thumbnail: vuông, không méo, có focus ring */
+        .thumbnail-img{
+            width: 80px; height: 80px;
+            object-fit: cover;             /* chấp nhận crop nhẹ để đồng đều ô vuông */
+            border-radius:10px;
+            border:1px solid #e5e7eb;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .thumbnail-img:focus{ outline: 2px solid #153054; outline-offset:2px; }
+        .thumbnail-img:hover{ transform: translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.08); }
+        /* Lightbox: giữ tỉ lệ tự nhiên */
+        .lb-backdrop img{
+            max-width:min(92vw,1024px);
+            max-height:86vh;
+            width:auto; height:auto;
+            transition: transform .2s ease;
+        }
+
+        /* Responsive tweak */
+        @media (max-width: 640px){
+            .product-img{ aspect-ratio: 1 / 1; }  /* mobile: khung vuông cho gọn */
+            .thumbnail-img{ width:64px;height:64px; }
+        }
+        .hist-bar{ position:relative; overflow:hidden }
+        .hist-bar > span{ display:block; height:100%; background:#f59e0b; transform-origin:left; animation:grow .6s ease }
+        @keyframes grow{ from{transform:scaleX(.2)} to{transform:scaleX(1)} }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -372,16 +439,64 @@
             </div>
         </div>
     </div>
-</section>
+    <div class="bg-white rating-card mt-10">
+        <h2 class="text-2xl font-bold mb-4">Đánh giá sản phẩm</h2>
 
-<section class="mt-10">
-    <h2 class="text-2xl font-bold mb-4">Đánh giá sản phẩm</h2>
-    <div id="rating-summary" class="mb-6">
-        <p class="font-semibold text-lg">⭐ <span id="avg-rating">0</span>/5 từ <span id="total-reviews">0</span> đánh giá</p>
+        <!-- Summary + Histogram -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center mb-4">
+            <div class="flex items-center gap-4">
+                <div class="star-big" aria-label="Điểm trung bình">
+                    ⭐
+                </div>
+                <div>
+                    <p class="text-3xl font-extrabold text-gray-800"><span id="avg-rating">0</span>/5</p>
+                    <p class="text-gray-500 text-sm">Từ <span id="total-reviews">0</span> đánh giá</p>
+                    <div class="star-row mt-1" aria-hidden="true" id="avg-stars"></div>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 space-y-1" id="histogram">
+                <!-- rows injected by JS -->
+                <!-- template:
+                <div class="hist-row">
+                  <span class="hist-label">5</span>
+                  <div class="hist-bar"><span style="width: 60%"></span></div>
+                  <span class="hist-count">12</span>
+                </div>
+                -->
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="rating-actions mb-4">
+            <button class="filter-chip" data-star="all">Tất cả</button>
+            <button class="filter-chip" data-star="5">5 sao</button>
+            <button class="filter-chip" data-star="4">4 sao</button>
+            <button class="filter-chip" data-star="3">3 sao</button>
+            <button class="filter-chip" data-star="2">2 sao</button>
+            <button class="filter-chip" data-star="1">1 sao</button>
+            <button class="filter-chip" data-has-media="true">Có hình ảnh</button>
+
+            <div class="ml-auto">
+                <select id="sort-select" class="sort-select">
+                    <option value="newest">Mới nhất</option>
+                    <option value="oldest">Cũ nhất</option>
+                    <option value="highest">Cao → Thấp</option>
+                    <option value="lowest">Thấp → Cao</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- List -->
+        <div id="ratings-list" class="space-y-3">
+            <!-- skeletons -->
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+        </div>
     </div>
-    <div id="ratings-list" class="space-y-4">
-        <p>Đang tải đánh giá...</p>
-    </div>
+
+    <!-- Lightbox -->
+    <div id="lb" class="lb-backdrop"><img alt="preview"></div>
 </section>
 
 <section class="container mx-auto py-12">
@@ -933,6 +1048,67 @@
 </script>
 
 <script th:inline="javascript">
+    // === Click ảnh chính -> mở lightbox phóng to ===
+    document.addEventListener('DOMContentLoaded', () => {
+        const mainImage = document.querySelector('.product-img');
+        const lb = document.getElementById('lb');
+        const lbImg = lb?.querySelector('img');
+
+        if (!mainImage || !lb || !lbImg) return;
+
+        // cải thiện a11y
+        mainImage.setAttribute('tabindex', '0');
+        mainImage.setAttribute('draggable', 'false');
+
+        const openLightbox = () => {
+            // currentSrc ưu tiên nguồn ảnh thực tế (hữu ích với srcset), fallback src
+            lbImg.src = mainImage.currentSrc || mainImage.src;
+            lb.classList.add('show');
+        };
+
+        mainImage.addEventListener('click', openLightbox);
+        mainImage.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openLightbox();
+            }
+        });
+    });
+
+    // === Click thumbnail -> đổi ảnh lớn ===
+    document.querySelectorAll('.thumbnail-img').forEach(thumbnail => {
+        thumbnail.addEventListener('click', () => {
+            const mainImage = document.querySelector('.product-img');
+            if (!mainImage) return;
+            mainImage.src = thumbnail.src;
+            if (window.innerWidth < 640) {
+                mainImage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        });
+    });
+
+    // === Click ảnh trong review -> đổi ảnh lớn, double-click mở lightbox ===
+    document.querySelectorAll('.media-grid img').forEach(img => {
+        img.addEventListener('click', () => {
+            const mainImage = document.querySelector('.product-img');
+            if (mainImage) {
+                mainImage.src = img.dataset.preview || img.src;
+                if (window.innerWidth < 640) {
+                    mainImage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+
+        img.addEventListener('dblclick', () => {
+            const lb = document.getElementById('lb');
+            const lbImg = lb?.querySelector('img');
+            if (lb && lbImg) {
+                lbImg.src = img.dataset.preview || img.src;
+                lb.classList.add('show');
+            }
+        });
+    });
+
     // Update cart count
     async function updateCartCount() {
         try {
@@ -1295,75 +1471,204 @@
         button.addEventListener('click', () => handleProductAction(button, 'buy'));
     });
 
-    document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
         const sanPhamId = /*[[${productDetail.sanPhamId}]]*/ '';
+        const listEl = document.getElementById("ratings-list");
+        const avgEl = document.getElementById("avg-rating");
+        const totalEl = document.getElementById("total-reviews");
+        const avgStarsEl = document.getElementById("avg-stars");
+        const histogramEl = document.getElementById("histogram");
+        const sortSelect = document.getElementById("sort-select");
+        const chips = Array.from(document.querySelectorAll(".filter-chip"));
+        const lb = document.getElementById('lb');
+        const lbImg = lb.querySelector('img');
 
+        let rawData = { myReviews: [], otherReviews: [] };
+        let filtered = [];
+
+            const renderStars = (n=0) => {
+                const clamped = Math.max(0, Math.min(5, Number(n) || 0));
+                const full = Math.floor(clamped);
+                const hasHalf = clamped - full >= 0.25 && clamped - full < 0.75; // nửa sao khi lệch vừa
+                const stars = [];
+                for (let i=0;i<5;i++){
+                    if (i < full) stars.push('<i class="fa-solid fa-star star-fill" aria-hidden="true"></i>');
+                    else if (i === full && hasHalf) stars.push('<i class="fa-solid fa-star-half-stroke star-fill" aria-hidden="true"></i>');
+                    else stars.push('<i class="fa-regular fa-star star-empty" aria-hidden="true"></i>');
+                }
+                return stars.join('');
+            };
+
+            const fmtDate = (d) => {
+        try{
+        const dt = new Date(d);
+        return dt.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
+    }catch{ return d || ''; }
+    };
+
+            const buildHistogram = (reviews) => {
+                const counts = {1:0,2:0,3:0,4:0,5:0};
+                reviews.forEach(r => counts[r.rating] = (counts[r.rating]||0)+1);
+                const total = reviews.length || 1;
+                histogramEl.innerHTML = [5,4,3,2,1].map(s => {
+                    const pct = Math.round((counts[s] / total) * 100);
+                    return `
+      <div class="hist-row" title="${pct}% đánh giá là ${s} sao">
+        <span class="hist-label">${s}</span>
+        <div class="hist-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
+          <span style="width:${pct}%"></span>
+        </div>
+        <span class="hist-count">${counts[s]}</span>
+      </div>`;
+                }).join('');
+            };
+
+
+            const applyFilters = () => {
+        const activeStarChip = chips.find(c => c.dataset.star && c.classList.contains('active'));
+        const star = activeStarChip ? activeStarChip.dataset.star : 'all';
+        const hasMedia = chips.find(c => c.dataset.hasMedia === 'true' && c.classList.contains('active')) ? true : null;
+
+        let out = [...(rawData.myReviews||[]), ...(rawData.otherReviews||[])];
+
+        if (star !== 'all') {
+        const s = parseInt(star);
+        out = out.filter(r => r.rating === s);
+    }
+        if (hasMedia !== null) {
+        out = out.filter(r => r.media && r.media.trim() !== '');
+    }
+
+        // sort
+        switch (sortSelect.value) {
+        case 'newest': out.sort((a,b)=> new Date(b.date)-new Date(a.date)); break;
+        case 'oldest': out.sort((a,b)=> new Date(a.date)-new Date(b.date)); break;
+        case 'highest': out.sort((a,b)=> b.rating - a.rating); break;
+        case 'lowest': out.sort((a,b)=> a.rating - b.rating); break;
+    }
+
+        filtered = out;
+        renderList();
+    };
+
+        const avatarText = (name='?') => {
+        const t = (name||'?').trim();
+        const parts = t.split(' ');
+        const letters = (parts.length>=2 ? (parts[0][0]+parts[parts.length-1][0]) : t.slice(0,2)).toUpperCase();
+        return letters;
+    };
+
+        const renderReview = (r, isMine=false) => {
+        const mediaHtml = r.media
+        ? r.media.split(",").filter(Boolean).map(url => `<img src="${url}" alt="media" loading="lazy" data-preview="${url}">`).join("")
+        : "";
+        return `
+      <div class="review-card ${isMine ? 'my' : ''}">
+        <div class="rev-head">
+          <div class="user-badge">
+            <div class="avatar" aria-hidden="true">${avatarText(r.user)}</div>
+            <div>
+              <div class="font-semibold">${r.user || 'Ẩn danh'} ${isMine ? '<span class="text-xs text-white bg-[#153054] px-2 py-0.5 rounded-full align-middle">Bạn</span>' : ''}</div>
+              <div class="text-sm">${renderStars(r.rating)}</div>
+            </div>
+          </div>
+          <div class="text-right rev-meta">
+            <span>${fmtDate(r.date)}</span>
+          </div>
+        </div>
+        ${r.content ? `<p class="text-gray-700 mt-2">${r.content}</p>` : ''}
+        ${mediaHtml ? `<div class="media-grid">${mediaHtml}</div>` : ''}
+      </div>
+    `;
+    };
+
+        const renderList = () => {
+        if (!filtered.length) {
+        listEl.innerHTML = `<p class="text-gray-500">Không tìm thấy đánh giá phù hợp bộ lọc.</p>`;
+        return;
+    }
+        const mySet = new Set((rawData.myReviews||[]).map(x => x.id || JSON.stringify(x)));
+        listEl.innerHTML = filtered.map(r => {
+        const key = r.id || JSON.stringify(r);
+        const isMine = mySet.has(key);
+        return renderReview(r, isMine);
+    }).join('');
+
+        // Lightbox preview
+        listEl.querySelectorAll('.media-grid img').forEach(img => {
+        img.addEventListener('click', () => {
+        lbImg.src = img.dataset.preview || img.src;
+        lb.classList.add('show');
+    });
+    });
+    };
+
+        // Lightbox close
+        lb.addEventListener('click', () => lb.classList.remove('show'));
+        document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') lb.classList.remove('show') });
+
+        const hydrateHeader = (allReviews) => {
+        const avg = allReviews.reduce((s, r) => s + (r.rating || 0), 0) / (allReviews.length || 1);
+        avgEl.textContent = (allReviews.length ? avg.toFixed(1) : '0');
+        totalEl.textContent = allReviews.length;
+        avgStarsEl.innerHTML = renderStars(avg);
+        buildHistogram(allReviews);
+    };
+
+        // actions
+        chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+        // toggle single-select for star chips; multi with media chip
+        if (chip.dataset.star) {
+        chips.filter(c => c.dataset.star).forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+    } else if (chip.dataset.hasMedia === 'true') {
+        chip.classList.toggle('active');
+    }
+        applyFilters();
+    });
+    });
+        // set default: Tất cả active
+        const defaultAll = chips.find(c => c.dataset.star === 'all');
+        if (defaultAll) defaultAll.classList.add('active');
+
+        sortSelect.addEventListener('change', applyFilters);
+
+        // Fetch data (giữ nguyên endpoint/logic)
         fetch(`/api/product/${sanPhamId}/ratings`, { credentials: 'include' })
-            .then(res => {
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                const list = document.getElementById("ratings-list");
-                const avgRating = document.getElementById("avg-rating");
-                const totalReviews = document.getElementById("total-reviews");
+        .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+    })
+        .then(data => {
+        rawData = {
+        myReviews: data.myReviews || [],
+        otherReviews: data.otherReviews || []
+    };
 
-                const allReviews = [...(data.myReviews || []), ...(data.otherReviews || [])];
-                if (allReviews.length === 0) {
-                    list.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
-                    avgRating.textContent = "0";
-                    totalReviews.textContent = "0";
-                    return;
-                }
+        const allReviews = [...rawData.myReviews, ...rawData.otherReviews];
+        // header
+        hydrateHeader(allReviews);
 
-                const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
-                avgRating.textContent = avg.toFixed(1);
-                totalReviews.textContent = allReviews.length;
+        // init list
+        filtered = allReviews;
+        // default sort newest
+        filtered.sort((a,b)=> new Date(b.date)-new Date(a.date));
+        renderList();
 
-                list.innerHTML = "";
-
-                // Hiển thị đánh giá của bạn
-                if (data.myReviews && data.myReviews.length > 0) {
-                    list.innerHTML += `<h3 class="font-bold text-lg text-[#153054]">Đánh giá của bạn</h3>`;
-                    data.myReviews.forEach(r => {
-                        list.innerHTML += renderReview(r, true);
-                    });
-                    list.innerHTML += `<hr class="my-4"/>`;
-                }
-
-                // Hiển thị đánh giá của người khác
-                if (data.otherReviews && data.otherReviews.length > 0) {
-                    list.innerHTML += `<h3 class="font-bold text-lg">Đánh giá từ khách hàng khác</h3>`;
-                    data.otherReviews.forEach(r => {
-                        list.innerHTML += renderReview(r, false);
-                    });
-                }
-            })
-            .catch(err => {
-                console.error("Lỗi khi tải đánh giá:", err);
-                const list = document.getElementById("ratings-list");
-                list.innerHTML = "<p>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
-            });
-
-        function renderReview(r, isMine) {
-            const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-            const mediaHtml = r.media
-                ? r.media.split(",").map(url => `<img src="${url}" class="w-20 h-20 object-cover rounded"/>`).join("")
-                : "";
-            return `
-                <div class="p-4 bg-white rounded-lg shadow ${isMine ? 'border border-[#153054]' : ''}">
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold">${r.user} ${isMine ? '(Bạn)' : ''}</span>
-                        <span class="text-yellow-500">${stars}</span>
-                    </div>
-                    <p class="text-gray-600 mt-1">${r.content || ""}</p>
-                    <div class="flex gap-2 mt-2">${mediaHtml}</div>
-                    <small class="text-gray-400">${new Date(r.date).toLocaleDateString()}</small>
-                </div>
-            `;
-        }
+        // Nếu trống
+        if (!allReviews.length) {
+        listEl.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
+    }
+    })
+        .catch(err => {
+        console.error("Lỗi khi tải đánh giá:", err);
+        listEl.innerHTML = "<p class='text-red-500'>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
+        avgEl.textContent = "0";
+        totalEl.textContent = "0";
+        avgStarsEl.innerHTML = renderStars(0);
+        histogramEl.innerHTML = "";
+    });
     });
 
 </script>
