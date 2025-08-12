@@ -28,26 +28,25 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
-    @Scheduled(cron = "0 0 * * * ?") // Chạy hàng giờ
+    @Scheduled(cron = "0 0 * * * ?")
     @Transactional
     public void cleanupEndedCampaigns() {
         LocalDateTime now = LocalDateTime.now();
         List<ChiTietSanPham> endedDetails = chiTietSanPhamRepository.findAll().stream()
-                .filter(ct -> ct.getChienDichGiamGia() != null && ct.getChienDichGiamGia().getNgayKetThuc().isBefore(now))
+                .filter(ct -> ct.getChienDichGiamGia() != null
+                        && !ct.getChienDichGiamGia().getNgayKetThuc().isAfter(now)) // <= thay điều kiện
                 .toList();
         endedDetails.forEach(ct -> ct.setChienDichGiamGia(null));
         chiTietSanPhamRepository.saveAll(endedDetails);
     }
+
     private String getStatus(ChienDichGiamGia chienDich) {
         LocalDateTime now = LocalDateTime.now();
-        if (chienDich.getNgayBatDau().isAfter(now)) {
-            return "UPCOMING";
-        } else if (chienDich.getNgayKetThuc().isBefore(now)) {
-            return "ENDED";
-        } else {
-            return "ONGOING";
-        }
+        if (chienDich.getNgayBatDau().isAfter(now)) return "UPCOMING";
+        if (!chienDich.getNgayKetThuc().isAfter(now)) return "ENDED"; // <= trước hoặc đúng bằng now
+        return "ONGOING";
     }
+
 
     @Override
     @Transactional
@@ -136,8 +135,9 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
 
     @Override
     public List<ChiTietSanPham> layChiTietTheoSanPham(UUID idSanPham) {
-        return chiTietSanPhamRepository.findAvailableBySanPhamId(idSanPham);
+        return chiTietSanPhamRepository.findAvailableBySanPhamId(idSanPham, LocalDateTime.now());
     }
+
 
     @Override
     public List<ChiTietSanPham> layChiTietDaChonTheoChienDich(UUID idChienDich) {

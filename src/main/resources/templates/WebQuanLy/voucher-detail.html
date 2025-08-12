@@ -211,6 +211,47 @@
             margin-bottom: 1.5rem;
             border: 1px solid #b6effb;
         }
+
+        .floating-label {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .floating-label label {
+            position: absolute;
+            top: -0.5rem;
+            left: 1rem;
+            background: var(--glass-bg);
+            padding: 0 0.5rem;
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .payment-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .payment-tag {
+            background: linear-gradient(135deg, var(--light-gray), #e9ecef);
+            color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+        }
+
+        .payment-tag.empty {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
@@ -358,7 +399,20 @@
                     </div>
                 </div>
 
-
+                <div class="row mb-3">
+                    <div class="col-md-4 col-lg-4">
+                        <div class="floating-label">
+                            <label><i class="fas fa-credit-card me-2"></i>Phương thức thanh toán áp dụng:</label>
+                            <div class="payment-tags">
+                                <span th:each="pt : ${phuongThucList}"
+                                      class="payment-tag"
+                                      th:text="${pt.tenPhuongThuc}"></span>
+                                <span th:if="${phuongThucList.isEmpty()}"
+                                      class="payment-tag empty">Không có phương thức thanh toán nào được chọn</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="row mb-3">
                     <div class="col-md-12">
@@ -448,6 +502,5 @@
     });
 </script>
 <script th:src="@{/js/notification.js}"></script>
-
 </body>
 </html>

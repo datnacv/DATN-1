@@ -28,6 +28,6 @@ public class PhuongThucThanhToan {
     private LocalDateTime ngayTao;
 
     // Bên đối diện (không khai báo JoinTable lần nữa)
-    @ManyToMany(mappedBy = "phuongThucThanhToans", fetch = FetchType.LAZY)
-    private Set<PhieuGiamGia> phieuGiamGias = new HashSet<>();
+//    @ManyToMany(mappedBy = "phuongThucThanhToans", fetch = FetchType.LAZY)
+//    private Set<PhieuGiamGia> phieuGiamGias = new HashSet<>();
 }
