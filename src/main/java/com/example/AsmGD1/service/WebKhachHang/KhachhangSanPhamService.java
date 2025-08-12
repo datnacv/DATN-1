@@ -15,9 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +34,16 @@ public class KhachhangSanPhamService {
     private ChienDichGiamGiaService chienDichGiamGiaService; // Inject dependency
 
     private static final Logger logger = LoggerFactory.getLogger(KhachhangSanPhamService.class);
+
+    public Map<String, BigDecimal> getPriceRangeBySanPhamId(UUID sanPhamId) {
+        List<ChiTietSanPham> list = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPhamId);
+        if (list == null || list.isEmpty()) {
+            return Map.of("min", BigDecimal.ZERO, "max", BigDecimal.ZERO);
+        }
+        BigDecimal min = list.stream().map(ChiTietSanPham::getGia).filter(Objects::nonNull).min(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        BigDecimal max = list.stream().map(ChiTietSanPham::getGia).filter(Objects::nonNull).max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
+        return Map.of("min", min, "max", max);
+    }
 
     // Lấy danh sách sản phẩm mới
     public List<SanPhamDto> getNewProducts() {
