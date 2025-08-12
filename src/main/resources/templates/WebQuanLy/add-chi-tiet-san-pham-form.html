@@ -690,6 +690,7 @@
         #loadingOverlayQuickAttr {
             display: none !important;
         }
+        .ts-readonly .ts-control { opacity: .7; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -1172,30 +1173,26 @@
 
         // Disable các select thuộc tính chung và nút thêm nhanh (sử dụng TomSelect API)
         function disableAttributes() {
-            originTomSelect.disable();
-            materialTomSelect.disable();
-            styleTomSelect.disable();
-            sleeveTomSelect.disable();
-            collarTomSelect.disable();
-            brandTomSelect.disable();
-            genderTomSelect.disable();
+            [originTomSelect, materialTomSelect, styleTomSelect, sleeveTomSelect, collarTomSelect, brandTomSelect, genderTomSelect]
+                .forEach(ts => {
+                    ts.lock(); // KHÓA thay vì disable
+                    // thêm class mờ cho cảm giác "disable"
+                    ts.wrapper.classList.add('ts-readonly');
+                });
 
-            // Disable nút thêm nhanh cho các thuộc tính chung (không disable cho product, color, size)
             $('.quick-add-btn[data-entity="origin"], .quick-add-btn[data-entity="material"], .quick-add-btn[data-entity="style"], ' +
                 '.quick-add-btn[data-entity="sleeve"], .quick-add-btn[data-entity="collar"], .quick-add-btn[data-entity="brand"]').prop('disabled', true);
         }
 
+
         // Enable tất cả và reset nếu cần (sử dụng TomSelect API)
         function enableAllAttributes() {
-            originTomSelect.enable();
-            materialTomSelect.enable();
-            styleTomSelect.enable();
-            sleeveTomSelect.enable();
-            collarTomSelect.enable();
-            brandTomSelect.enable();
-            genderTomSelect.enable();
+            [originTomSelect, materialTomSelect, styleTomSelect, sleeveTomSelect, collarTomSelect, brandTomSelect, genderTomSelect]
+                .forEach(ts => {
+                    ts.unlock(); // MỞ KHÓA thay vì enable
+                    ts.wrapper.classList.remove('ts-readonly');
+                });
 
-            // Enable nút thêm nhanh
             $('.quick-add-btn:not([data-entity="product"])').prop('disabled', false);
         }
 

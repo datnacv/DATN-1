@@ -1140,10 +1140,10 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="floating-label">
-                                        <label for="editColor">Màu sắc</label>
-                                        <select class="form-select" id="editColor" name="colorId" required>
-                                            <option value="">Chọn màu...</option>
-                                            <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
+                                        <label for="editOrigin">Xuất xứ</label>
+                                        <select class="form-select" id="editOrigin" name="originId" required>
+                                            <option value="">Chọn xuất xứ...</option>
+                                            <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
                                         </select>
                                     </div>
                                 </div>
@@ -1160,10 +1160,10 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="floating-label">
-                                        <label for="editOrigin">Xuất xứ</label>
-                                        <select class="form-select" id="editOrigin" name="originId" required>
-                                            <option value="">Chọn xuất xứ...</option>
-                                            <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
+                                        <label for="editColor">Màu sắc</label>
+                                        <select class="form-select" id="editColor" name="colorId" required>
+                                            <option value="">Chọn màu...</option>
+                                            <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
                                         </select>
                                     </div>
                                 </div>
