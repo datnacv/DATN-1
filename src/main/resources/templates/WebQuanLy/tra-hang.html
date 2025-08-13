@@ -584,7 +584,6 @@
     function updateTotal() {
         const checkboxes = document.querySelectorAll('.select-item:checked');
         let total = 0;
-        let phiVanChuyen = /*[[${hoaDon.phiVanChuyen ?: 0}]]*/ 0;
         const returnItemsBody = document.getElementById('returnItemsBody');
         returnItemsBody.innerHTML = '';
 
@@ -598,23 +597,18 @@
                 const thanhTien = parseFloat(row.cells[7].innerText.replace(/\D/g, '')) || 0;
                 total += thanhTien;
 
-                const newRow = `<tr>
-                <td class="text-center">${index + 1}</td>
-                <td>${tenSanPham}</td>
-                <td class="text-center">${soLuong}</td>
-                <td class="text-right">${thanhTien.toLocaleString('vi-VN')} VNĐ</td>
-            </tr>`;
+                const newRow = `< intro
+                    <td class="text-center">${index + 1}</td>
+                    <td>${tenSanPham}</td>
+                    <td class="text-center">${soLuong}</td>
+                    <td class="text-right">${thanhTien.toLocaleString('vi-VN')} VNĐ</td>
+                </tr>`;
                 returnItemsBody.insertAdjacentHTML('beforeend', newRow);
             });
         }
 
-        const totalItems = /*[[${returnableItems.size()}]]*/ 0;
-        if (checkboxes.length === totalItems && totalItems > 0) {
-            total += phiVanChuyen;
-            document.getElementById('phiVanChuyenHoan').innerText = phiVanChuyen.toLocaleString('vi-VN') + ' VNĐ';
-        } else {
-            document.getElementById('phiVanChuyenHoan').innerText = '0 VNĐ';
-        }
+        // Không tính phí vận chuyển hoàn lại
+        document.getElementById('phiVanChuyenHoan').innerText = '0 VNĐ';
 
         const formattedTotal = total.toLocaleString('vi-VN') + ' VNĐ';
         document.getElementById('tongTienHoan').innerText = formattedTotal;

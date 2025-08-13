@@ -639,12 +639,7 @@ public class HoaDonService {
                 .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
                 .count();
 
-        if (returnedItems == totalItems) {
-            BigDecimal phiVanChuyen = hoaDon.getDonHang().getPhiVanChuyen() != null
-                    ? hoaDon.getDonHang().getPhiVanChuyen()
-                    : BigDecimal.ZERO;
-            tongTienHoan = tongTienHoan.add(phiVanChuyen);
-        }
+
 
         hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
 
