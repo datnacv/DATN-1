@@ -9,13 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Assuming admin.css is a shared file, if not, its content should be merged -->
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
         :root {
-            /* Màu chính */
             --primary-color: #153054;
             --primary-hover: #102C47;
             --secondary-color: #9FD5F7;
@@ -23,32 +21,22 @@
             --accent-color: #479BD3;
             --accent-hover: #CAEAFB;
             --border-active: #62B2E7;
-
-            /* Màu nền */
             --main-background: #F4F9FC;
             --content-background: #ffffff;
             --header-background: #153054;
-
-            /* Màu văn bản */
             --text-primary: #153054;
             --text-content: #333333;
             --text-secondary: #6B7280;
             --text-link: #479BD3;
             --text-white: #ffffff;
-
-            /* Màu nút */
             --btn-danger: #F44336;
             --btn-danger-hover: #D32F2F;
-
-            /* Màu trạng thái */
             --success-bg: #D1FADF;
             --success-text: #027A48;
             --warning-bg: #FEF3C7;
             --warning-text: #B45309;
             --error-bg: #FECACA;
             --error-text: #991B1B;
-
-            /* Màu khác */
             --border-color: #dee2e6;
             --light-gray: #f8f9fa;
             --shadow-light: 0 8px 32px rgba(21, 48, 84, 0.1);
@@ -135,9 +123,9 @@
         }
 
         .card-header span {
-            color: var(--text-white) !important; /* Đảm bảo màu chữ trắng */
-            font-weight: 700; /* Tăng độ đậm để nổi bật */
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Thêm bóng chữ để tăng độ tương phản */
+            color: var(--text-white) !important;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .card-header::before {
@@ -214,11 +202,10 @@
             left: 100%;
         }
 
-        /* Nút Primary (Thêm) */
         .btn-primary {
-            background: var(--primary-color); /* #153054 */
+            background: var(--primary-color);
             border-color: var(--primary-color);
-            color: var(--text-white) !important; /* Đảm bảo màu chữ luôn là trắng */
+            color: var(--text-white) !important;
             box-shadow: 0 4px 15px rgba(21, 48, 84, 0.2);
         }
 
@@ -230,7 +217,6 @@
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.3);
         }
 
-        /* Nút Secondary (Sửa) */
         .btn-warning {
             background: var(--secondary-color);
             border-color: var(--secondary-color);
@@ -246,7 +232,6 @@
             box-shadow: 0 8px 25px rgba(159, 213, 247, 0.4);
         }
 
-        /* Nút Success (Xem) */
         .btn-success {
             background: var(--accent-color);
             border-color: var(--accent-color);
@@ -262,7 +247,6 @@
             box-shadow: 0 8px 25px rgba(71, 155, 211, 0.4);
         }
 
-        /* Nút Danger (Xóa) */
         .btn-danger {
             background: var(--btn-danger);
             border-color: var(--btn-danger);
@@ -363,19 +347,16 @@
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
-        /* Action buttons - nằm ngang */
         .action-buttons {
-            position: relative; /* Make the td a positioning context */
-            /* The button will be absolutely positioned, so flex properties on the td are not needed for centering it */
+            position: relative;
         }
+
         .action-buttons .edit-btn {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 1; /* Ensure it's on top if there are other elements */
-
-            /* Keep existing btn-sm styles for size and appearance */
+            z-index: 1;
             padding: 8px 16px;
             font-size: 0.875rem;
             min-width: 44px;
@@ -461,7 +442,6 @@
             margin-bottom: 0;
         }
 
-        /* Role Badge Styles */
         .role-badge {
             position: fixed;
             top: 20px;
@@ -498,7 +478,6 @@
             color: var(--text-content);
         }
 
-        /* Badge trạng thái */
         .badge {
             padding: 0.5rem 1rem;
             border-radius: 20px;
@@ -615,7 +594,7 @@
 
         .floating-label {
             position: relative;
-            margin-bottom: 2rem; /* Ensure consistent margin */
+            margin-bottom: 2rem;
         }
 
         .floating-label input,
@@ -665,10 +644,11 @@
             padding: 1.5rem;
             border: 2px dashed var(--border-color);
             transition: all 0.3s ease;
-            min-height: 150px; /* Ensure it has a minimum height */
-            align-items: center; /* Center content vertically */
-            justify-content: center; /* Center content horizontally */
+            min-height: 150px;
+            align-items: center;
+            justify-content: center;
         }
+
         .image-preview-container:hover {
             border-color: var(--border-active);
             background: rgba(248,249,250,0.95);
@@ -679,6 +659,7 @@
             width: 100px;
             height: 100px;
         }
+
         .image-preview img {
             width: 100%;
             height: 100%;
@@ -688,10 +669,12 @@
             box-shadow: 0 4px 12px rgba(21, 48, 84, 0.15);
             transition: all 0.3s ease;
         }
+
         .image-preview img:hover {
             transform: scale(1.05);
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
+
         .image-preview .remove-image {
             position: absolute;
             top: -10px;
@@ -710,6 +693,7 @@
             box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
             transition: all 0.2s ease;
         }
+
         .image-preview .remove-image:hover {
             transform: scale(1.1);
             background: var(--btn-danger-hover);
@@ -770,9 +754,43 @@
             align-items: center;
             gap: 1rem;
         }
+
         .employee-notice i {
             font-size: 1.5rem;
             color: var(--primary-color);
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 10px;
+            background: rgba(248,249,250,0.8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 2px dashed var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .qr-container:hover {
+            border-color: var(--border-active);
+            background: rgba(248,249,250,0.95);
+        }
+
+        .qr-image {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(21, 48, 84, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .qr-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
         @media (max-width: 768px) {
@@ -840,18 +858,22 @@
                 left: 20px;
                 top: 80px;
             }
+
+            .qr-image {
+                width: 150px;
+                height: 150px;
+            }
         }
 
-        /* Đảm bảo thanh gạt trong modal có cùng kích thước và căn chỉnh với thanh gạt trong bảng */
         .modal-body .form-check.form-switch .form-check-input {
-            width: 3em; /* Kích thước chuẩn như ở bảng */
-            height: 1.5em; /* Kích thước chuẩn như ở bảng */
+            width: 3em;
+            height: 1.5em;
         }
 
         .modal-body .form-check.form-switch .form-check-label {
-            margin-left: 1rem; /* Khoảng cách chuẩn như ở bảng */
-            white-space: nowrap; /* Đảm bảo chữ không xuống dòng */
-            line-height: 1.5em; /* Căn chỉnh chiều cao dòng với toggle */
+            margin-left: 1rem;
+            white-space: nowrap;
+            line-height: 1.5em;
         }
     </style>
 </head>
@@ -863,7 +885,6 @@
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
-    <!-- Role Badge -->
     <div th:if="${user != null}"
          th:class="'role-badge ' + (${isAdmin} ? 'role-admin' : 'role-employee')">
         <i class="fas fa-user-shield me-2"></i>
@@ -885,7 +906,6 @@
             </ol>
         </nav>
 
-        <!-- Employee Notice -->
         <div th:unless="${isAdmin}" class="employee-notice">
             <i class="fas fa-info-circle me-2"></i>
             <strong>Chế độ xem:</strong> Bạn đang ở chế độ chỉ xem. Không thể chỉnh sửa thông tin sản phẩm.
@@ -904,7 +924,6 @@
                             <div class="floating-label">
                                 <label for="productFilter">Sản phẩm</label>
                                 <input type="text" class="form-control" id="productFilter" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
-                                <input type="hidden" name="productId" th:value="${selectedProductId}"/>
                             </div>
                         </div>
                         <div class="col-md-4 col-lg-4">
@@ -1016,10 +1035,22 @@
                     <span class="fs-5 fw-bold">Danh sách chi tiết sản phẩm</span>
                 </div>
             </div>
+            <div class="d-flex justify-content-between align-items-center p-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-pen fs-5 text-muted"></i>
+                    <span class="text-muted">Chọn biến thể để sửa nhanh</span>
+                </div>
+                <button id="bulkEditBtn" class="btn btn-primary" disabled>
+                    <i class="fas fa-edit me-2"></i>Sửa mục đã chọn
+                </button>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover mb-0" id="chiTietSanPhamTable">
                     <thead>
                     <tr>
+                        <th style="width:42px;">
+                            <input type="checkbox" id="selectAll" title="Chọn tất cả"/>
+                        </th>
                         <th>#</th>
                         <th>Ảnh</th>
                         <th>Sản phẩm</th>
@@ -1035,7 +1066,6 @@
                         <th>Số lượng tồn</th>
                         <th>Giới tính</th>
                         <th style="min-width: 150px;">Trạng thái</th>
-                        <!-- Chỉ hiển thị cột Thao tác cho Admin -->
                         <th th:if="${isAdmin}">Thao tác</th>
                     </tr>
                     </thead>
@@ -1044,6 +1074,9 @@
                         <td th:colspan="${isAdmin} ? 16 : 15" class="text-center text-muted py-5">Chưa có chi tiết sản phẩm nào được thêm.</td>
                     </tr>
                     <tr th:each="pd, stats : ${chiTietSanPhamList}" th:data-id="${pd.id}">
+                        <td>
+                            <input type="checkbox" class="row-check" th:value="${pd.id}" />
+                        </td>
                         <td th:text="${stats.count}"></td>
                         <td>
                             <div th:if="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}">
@@ -1052,7 +1085,7 @@
                                          th:src="${img.urlHinhAnh}"
                                          class="product-image"
                                          alt="Ảnh sản phẩm"
-                                         onerror="this.src='/placeholder.svg?height=100&width=100'; this.alt='Ảnh lỗi';">
+                                         onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
                                     <span th:if="${img.urlHinhAnh == null or #strings.isEmpty(img.urlHinhAnh)}"
                                           class="text-muted">Không có</span>
                                 </div>
@@ -1085,11 +1118,10 @@
                                 </div>
                             </th:block>
                             <th:block th:unless="${isAdmin}">
-      <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
-            th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
+                                <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+                                      th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
                             </th:block>
                         </td>
-                        <!-- Cột Thao tác chỉ hiển thị cho Admin -->
                         <td class="text-center action-buttons" th:if="${isAdmin}">
                             <button class="btn btn-warning btn-sm edit-btn" th:data-id="${pd.id}" data-bs-toggle="modal" data-bs-target="#editChiTietSanPhamModal" title="Sửa">
                                 <i class="fas fa-edit"></i>
@@ -1101,7 +1133,6 @@
             </div>
         </div>
 
-        <!-- Modal chỉ hiển thị cho Admin -->
         <div class="modal fade" id="editChiTietSanPhamModal" tabindex="-1" aria-labelledby="editChiTietSanPhamModalLabel" aria-hidden="true" th:if="${isAdmin}">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
@@ -1111,40 +1142,21 @@
                     </div>
                     <form id="editChiTietSanPhamForm" enctype="multipart/form-data">
                         <div class="modal-body">
-                            <input type="hidden" name="deletedImageIds" id="deletedImageIds">
                             <input type="hidden" id="editId" name="id"/>
+                            <input type="hidden" name="deletedImageIds" id="deletedImageIds">
+                            <input type="hidden" id="editMode" name="restricted" value="false"/>
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editProduct">Sản phẩm</label>
-                                        <input type="text" class="form-control" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
-                                        <input type="hidden" id="editProductHidden" name="productId" th:value="${selectedProductId}"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editColor">Màu sắc</label>
-                                        <select class="form-select" id="editColor" name="colorId" required>
-                                            <option value="">Chọn màu...</option>
-                                            <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editSize">Kích cỡ</label>
-                                        <select class="form-select" id="editSize" name="sizeId" required>
-                                            <option value="">Chọn kích cỡ...</option>
-                                            <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
-                                        </select>
+                                        <input type="text" class="form-control lockable" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
+                                        <input type="hidden" id="editProductHidden" name="productId" class="lockable" th:value="${selectedProductId}"/>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editOrigin">Xuất xứ</label>
-                                        <select class="form-select" id="editOrigin" name="originId" required>
+                                        <select class="form-select lockable" id="editOrigin" name="originId" required>
                                             <option value="">Chọn xuất xứ...</option>
                                             <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
                                         </select>
@@ -1154,8 +1166,28 @@
                             <div class="row g-4">
                                 <div class="col-md-6">
                                     <div class="floating-label">
+                                        <label for="editSize">Kích cỡ</label>
+                                        <select class="form-select lockable" id="editSize" name="sizeId" required>
+                                            <option value="">Chọn kích cỡ...</option>
+                                            <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label for="editColor">Màu sắc</label>
+                                        <select class="form-select lockable" id="editColor" name="colorId" required>
+                                            <option value="">Chọn màu...</option>
+                                            <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
                                         <label for="editMaterial">Chất liệu</label>
-                                        <select class="form-select" id="editMaterial" name="materialId" required>
+                                        <select class="form-select lockable" id="editMaterial" name="materialId" required>
                                             <option value="">Chọn chất liệu...</option>
                                             <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
                                         </select>
@@ -1164,7 +1196,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editStyle">Kiểu dáng</label>
-                                        <select class="form-select" id="editStyle" name="styleId" required>
+                                        <select class="form-select lockable" id="editStyle" name="styleId" required>
                                             <option value="">Chọn kiểu dáng...</option>
                                             <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
                                         </select>
@@ -1175,7 +1207,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editSleeve">Tay áo</label>
-                                        <select class="form-select" id="editSleeve" name="sleeveId" required>
+                                        <select class="form-select lockable" id="editSleeve" name="sleeveId" required>
                                             <option value="">Chọn tay áo...</option>
                                             <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
                                         </select>
@@ -1184,7 +1216,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editCollar">Cổ áo</label>
-                                        <select class="form-select" id="editCollar" name="collarId" required>
+                                        <select class="form-select lockable" id="editCollar" name="collarId" required>
                                             <option value="">Chọn cổ áo...</option>
                                             <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
                                         </select>
@@ -1195,7 +1227,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editBrand">Thương hiệu</label>
-                                        <select class="form-select" id="editBrand" name="brandId" required>
+                                        <select class="form-select lockable" id="editBrand" name="brandId" required>
                                             <option value="">Chọn thương hiệu...</option>
                                             <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
                                         </select>
@@ -1204,7 +1236,7 @@
                                 <div class="col-md-6">
                                     <div class="floating-label">
                                         <label for="editGender">Giới tính</label>
-                                        <select class="form-select" id="editGender" name="gender" required>
+                                        <select class="form-select lockable" id="editGender" name="gender" required>
                                             <option value="">Chọn giới tính...</option>
                                             <option value="Nam">Nam</option>
                                             <option value="Nữ">Nữ</option>
@@ -1235,7 +1267,7 @@
                             </div>
                             <div class="row g-4">
                                 <div class="col-md-6">
-                                    <div class="mb-3"> <!-- Sử dụng div để tạo khoảng cách dưới -->
+                                    <div class="mb-3">
                                         <label for="editStatus" class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
                                         <div class="form-check form-switch d-flex align-items-center">
                                             <input class="form-check-input" type="checkbox" id="editStatus" name="status" value="true">
@@ -1271,6 +1303,19 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row g-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold text-dark mb-3">
+                                        <i class="fas fa-qrcode me-2"></i>Mã QR
+                                    </label>
+                                    <div class="qr-container" id="qrCodeContainer">
+                                        <img id="qrCodeImage" src="" alt="Mã QR" class="qr-image" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Không có mã QR';">
+                                        <a id="downloadQrLink" href="" download="qr_code.png" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-download me-2"></i>Tải mã QR
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -1284,6 +1329,135 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="bulkFullEditModal" tabindex="-1" aria-hidden="true" th:if="${isAdmin}">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="bulkFullEditForm">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fas fa-tools me-2"></i>Sửa toàn bộ thuộc tính (tất cả biến thể)</h5>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="hidden" id="bulkIds" name="ids"/>
+                            <!-- Reuse các block select giống modal edit, NHƯNG không gắn class lockable -->
+                            <!-- LƯU Ý: Modal này KHÔNG xử lý ảnh (mỗi biến thể ảnh khác nhau). -->
+                            <!-- Sản phẩm -->
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Xuất xứ</label>
+                                        <select class="form-select" name="originId" required>
+                                            <option value="">Chọn xuất xứ...</option>
+                                            <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Chất liệu</label>
+                                        <select class="form-select" name="materialId" required>
+                                            <option value="">Chọn chất liệu...</option>
+                                            <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Kiểu dáng</label>
+                                        <select class="form-select" name="styleId" required>
+                                            <option value="">Chọn kiểu dáng...</option>
+                                            <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Tay áo</label>
+                                        <select class="form-select" name="sleeveId" required>
+                                            <option value="">Chọn tay áo...</option>
+                                            <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Cổ áo</label>
+                                        <select class="form-select" name="collarId" required>
+                                            <option value="">Chọn cổ áo...</option>
+                                            <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Thương hiệu</label>
+                                        <select class="form-select" name="brandId" required>
+                                            <option value="">Chọn thương hiệu...</option>
+                                            <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Giới tính</label>
+                                        <select class="form-select" name="gender" required>
+                                            <option value="">Chọn giới tính...</option>
+                                            <option value="Nam">Nam</option>
+                                            <option value="Nữ">Nữ</option>
+                                            <option value="Unisex">Unisex</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Giá bán</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">VNĐ</span>
+                                            <input type="text" class="form-control" id="bulkPrice" name="price" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4 mt-1">
+                                <div class="col-md-6">
+                                    <div class="floating-label">
+                                        <label>Số lượng tồn</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                            <input type="number" class="form-control" name="stockQuantity" min="0" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
+                                    <div class="form-check form-switch d-flex align-items-center">
+                                        <input class="form-check-input" type="checkbox" id="bulkStatus" name="status" value="true">
+                                        <label class="form-check-label ms-3">Đang Bán</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mt-4">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Thao tác này áp dụng cho <strong>tất cả biến thể được chọn</strong>. Ảnh chi tiết không chỉnh hàng loạt.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi cho tất cả
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -1293,6 +1467,11 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+    let totalCheckable = 0;
+    function countSelected() {
+        return $('.row-check:checked').length;
+    }
+
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
         if (!container) return;
@@ -1336,13 +1515,11 @@
         }, 4000);
     }
 
-    // Function to format number with thousands separator
     function formatNumber(num) {
         if (num === null || num === undefined) return '';
         return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
-    // Function to parse formatted number back to integer
     function parseNumber(str) {
         if (str === null || str === undefined || str.trim() === '') return 0;
         return parseInt(str.replace(/\./g, ''));
@@ -1361,14 +1538,12 @@
             const newStatus = $(this).is(':checked');
             const statusLabel = $(this).next('.form-check-label');
 
-            // Lấy số lượng tồn kho từ bảng
             const row = $(this).closest('tr');
-            const stockQuantity = parseInt(row.find('td').eq(12).text()) || 0; // Cột số lượng tồn kho là cột thứ 13 (index 12)
+            const stockQuantity = parseInt(row.find('td').eq(13).text()) || 0;
 
-            // Nếu bật trạng thái (newStatus = true) nhưng số lượng tồn kho = 0
             if (newStatus && stockQuantity === 0) {
                 showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
-                $(this).prop('checked', false); // Hoàn tác thay đổi
+                $(this).prop('checked', false);
                 statusLabel.text('Ngừng Bán');
                 return;
             }
@@ -1393,17 +1568,91 @@
                         showToast(response.message, 'success');
                     } else {
                         showToast(response.message, 'error');
-                        $(this).prop('checked', !newStatus); // Hoàn tác nếu lỗi
+                        $(this).prop('checked', !newStatus);
                         statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                     }
                 },
                 error: function (xhr) {
                     showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseText || xhr.statusText), 'error');
-                    $(this).prop('checked', !newStatus); // Hoàn tác nếu lỗi
+                    $(this).prop('checked', !newStatus);
                     statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                 }
             });
         });
+
+        function setRestrictedMode(enabled) {
+            if (enabled) {
+                // khóa tất cả field lockable
+                $('#editChiTietSanPhamModal .lockable').prop('disabled', true);
+                // mở các field được phép
+                $('#editPrice, #editStockQuantity, #editStatus, #editImages').prop('disabled', false);
+            } else {
+                // mở tất cả
+                $('#editChiTietSanPhamModal .lockable').prop('disabled', false);
+            }
+        }
+
+        function openRestrictedEdit(productDetailId) {
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/edit/' + productDetailId,
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    // fill dữ liệu như logic hiện có:
+                    $('#editId').val(response.id);
+                    $('#editProductHidden').val(response.productId);
+                    $('#editColor').val(response.colorId).trigger('change');
+                    $('#editSize').val(response.sizeId).trigger('change');
+                    $('#editOrigin').val(response.originId).trigger('change');
+                    $('#editMaterial').val(response.materialId).trigger('change');
+                    $('#editStyle').val(response.styleId).trigger('change');
+                    $('#editSleeve').val(response.sleeveId).trigger('change');
+                    $('#editCollar').val(response.collarId).trigger('change');
+                    $('#editBrand').val(response.brandId).trigger('change');
+                    $('#editGender').val(response.gender).trigger('change');
+                    $('#editPrice').val(formatNumber(response.price || 0));
+                    $('#editStockQuantity').val(response.stockQuantity);
+                    $('#editStatus').prop('checked', response.status === true);
+
+                    const qrUrl = '/qr/qr_' + response.id + '.png';
+                    $('#qrCodeImage').attr('src', qrUrl);
+                    $('#downloadQrLink').attr('href', qrUrl);
+
+                    // ảnh cũ
+                    const existingImagesContainer = $('#existingImages');
+                    existingImagesContainer.empty();
+                    $('#deletedImageIds').val('');
+                    deletedImageIds = [];
+                    if (response.images && response.images.length > 0) {
+                        response.images.sort((a, b) => a.thuTu - b.thuTu);
+                        response.images.forEach(image => {
+                            if (image.imageUrl && image.imageUrl.trim() !== "") {
+                                existingImagesContainer.append(`
+              <div class="image-preview">
+                <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
+                <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
+              </div>
+            `);
+                            }
+                        });
+                        $('#noExistingImagePlaceholder').hide();
+                    } else {
+                        $('#noExistingImagePlaceholder').show();
+                    }
+
+                    // bật chế độ RESTRICTED
+                    setRestrictedMode(true);
+
+                    // mở modal
+                    const modal = new bootstrap.Modal(document.getElementById('editChiTietSanPhamModal'));
+                    modal.show();
+                    updateStatusLabel();
+                },
+                error: function (xhr) {
+                    showToast("Lỗi khi tải dữ liệu chi tiết sản phẩm: " + (xhr.responseText || xhr.statusText), 'error');
+                }
+            });
+        }
 
         function updateStatusLabel() {
             const statusInput = $('#editStatus');
@@ -1422,13 +1671,47 @@
         $('#editStatus').on('change', updateStatusLabel);
         $('#editStockQuantity').on('input', updateStatusLabel);
 
-        // Price input formatting
         $('#editPrice').on('input', function() {
-            let value = $(this).val().replace(/\./g, ''); // Remove existing dots
+            let value = $(this).val().replace(/\./g, '');
             if (value) {
                 $(this).val(formatNumber(value));
             }
         });
+
+        $('#bulkFullEditForm').on('submit', function(e){
+            e.preventDefault();
+            const fd = new FormData(this);
+
+            // chuẩn hóa price
+            const p = $('#bulkPrice').val();
+            if (p) fd.set('price', parseNumber(p));
+
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/update-bulk',
+                type: 'POST',
+                data: fd,
+                processData: false,
+                contentType: false,
+                success: function (res) {
+                    showToast(res.message || 'Cập nhật thành công!', 'success');
+                    setTimeout(() => {
+                        // reload lại theo productId đang chọn (nếu có)
+                        const pidRaw = $('#editProductHidden').val() || $('[name="productId"]').val();
+                        const pid = (pidRaw && pidRaw !== 'undefined' && pidRaw !== 'null' && pidRaw.trim() !== '') ? pidRaw : '';
+
+                        const href = pid
+                            ? `/acvstore/chi-tiet-san-pham?productId=${pid}&success=Cập nhật thành công`
+                            : `/acvstore/chi-tiet-san-pham?success=Cập nhật thành công`;
+
+                        window.location.href = href;
+                    }, 800);
+                },
+                error: function (xhr) {
+                    showToast("Lỗi cập nhật hàng loạt: " + (xhr.responseText || xhr.statusText), 'error');
+                }
+            });
+        });
+
 
         $(document).on('click', '.edit-btn', function () {
             const productDetailId = $(this).data('id');
@@ -1448,9 +1731,12 @@
                     $('#editCollar').val(response.collarId).trigger('change');
                     $('#editBrand').val(response.brandId).trigger('change');
                     $('#editGender').val(response.gender).trigger('change');
-                    $('#editPrice').val(formatNumber(response.price || 0)); // Format price on load
+                    $('#editPrice').val(formatNumber(response.price || 0));
                     $('#editStockQuantity').val(response.stockQuantity);
                     $('#editStatus').prop('checked', response.status === true);
+                    const qrUrl = '/qr/qr_' + response.id + '.png';
+                    $('#qrCodeImage').attr('src', qrUrl);
+                    $('#downloadQrLink').attr('href', qrUrl);
                     updateStatusLabel();
 
                     const existingImagesContainer = $('#existingImages');
@@ -1464,7 +1750,7 @@
                             if (image.imageUrl && image.imageUrl.trim() !== "") {
                                 const imageHtml = `
                               <div class="image-preview">
-                                  <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.src='/placeholder.svg?height=100&width=100'; this.alt='Ảnh lỗi';">
+                                  <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
                                   <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
                               </div>
                           `;
@@ -1477,7 +1763,7 @@
                     }
                     $('#newImagesPreview').empty();
                     $('#editImages').val('');
-                    $('#noNewImagePlaceholder').show(); // Show placeholder for new images
+                    $('#noNewImagePlaceholder').show();
                 },
                 error: function (xhr) {
                     showToast("Lỗi khi tải dữ liệu chi tiết sản phẩm: " + (xhr.responseText || xhr.statusText), 'error');
@@ -1531,15 +1817,16 @@
 
         $('#editChiTietSanPhamForm').on('submit', function (e) {
             e.preventDefault();
+            const id = $('#editId').val();
+            if (!id || id === 'undefined' || id === 'null') {
+                showToast('Không xác định được ID chi tiết sản phẩm.', 'error');
+                return;
+            }
             const formData = new FormData(this);
             formData.set('status', $('#editStatus').is(':checked'));
             formData.set('deletedImageIds', deletedImageIds.join(','));
+            formData.set('price', parseNumber($('#editPrice').val()));
 
-            // Parse formatted price back to number
-            const priceValue = $('#editPrice').val();
-            formData.set('price', parseNumber(priceValue));
-
-            const id = $('#editId').val();
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/update/' + id,
                 type: 'POST',
@@ -1550,7 +1837,12 @@
                     $('#editChiTietSanPhamModal').modal('hide');
                     showToast("Cập nhật thành công!", "success");
                     setTimeout(() => {
-                        window.location.href = "/acvstore/chi-tiet-san-pham?productId=" + response.productId + "&success=Cập nhật thành công";
+                        const pid = (response.productId && response.productId !== 'undefined' && response.productId !== 'null')
+                            ? response.productId : '';
+                        const href = pid
+                            ? `/acvstore/chi-tiet-san-pham?productId=${pid}&success=Cập nhật thành công`
+                            : `/acvstore/chi-tiet-san-pham?success=Cập nhật thành công`;
+                        window.location.href = href;
                     }, 1000);
                 },
                 error: function (xhr) {
@@ -1558,10 +1850,65 @@
                 }
             });
         });
-    });
-</script>
-<!-- Assuming notification.js is a shared file, if not, its content should be merged -->
-<script th:src="@{/js/notification.js}"></script>
 
+        totalCheckable = $('.row-check').length;
+
+        $('#selectAll').on('change', function() {
+            const checked = $(this).is(':checked');
+            $('.row-check').prop('checked', checked);
+            $('#bulkEditBtn').prop('disabled', countSelected() === 0);
+        });
+
+        $(document).on('change', '.row-check', function() {
+            const allChecked = countSelected() === totalCheckable;
+            $('#selectAll').prop('checked', allChecked);
+            $('#bulkEditBtn').prop('disabled', countSelected() === 0);
+        });
+
+        $('#bulkEditBtn').on('click', function() {
+            const selected = $('.row-check:checked').map(function(){ return $(this).val(); }).get();
+            if (selected.length === 0) {
+                showToast('Hãy chọn ít nhất 1 biến thể.', 'warning');
+                return;
+            }
+            if (selected.length === totalCheckable && totalCheckable > 1) {
+                // FULL EDIT MODE: mở modal bulk
+                $('#bulkIds').val(selected.join(','));
+                const modal = new bootstrap.Modal(document.getElementById('bulkFullEditModal'));
+                modal.show();
+            } else {
+                // SINGLE/RESTRICTED MODE: chỉ cho sửa giá, tồn, trạng thái, ảnh
+                if (selected.length > 1) {
+                    showToast('Muốn sửa toàn bộ thuộc tính: hãy chọn TẤT CẢ biến thể.', 'info');
+                    return;
+                }
+                const id = selected[0];
+                if (!id) {
+                    showToast('Hãy tick đúng 1 dòng để sửa nhanh.', 'warning');
+                    return;
+                }
+                openRestrictedEdit(id);
+                setRestrictedMode(true);
+                $('#editMode').val('true');
+            }
+        });
+
+        // Khi bấm nút edit riêng từng dòng → luôn mở RESTRICTED (theo yêu cầu)
+        $(document).off('click', '.edit-btn').on('click', '.edit-btn', function () {
+            const id = $(this).data('id');
+            openRestrictedEdit(id);
+            setRestrictedMode(true);
+            $('#editMode').val('true');
+        });
+
+        // format số ở bulk price
+        $('#bulkPrice').on('input', function(){
+            let v = $(this).val().replace(/\./g, '');
+            if (v) $(this).val(formatNumber(v));
+        });
+    });
+
+</script>
+<script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

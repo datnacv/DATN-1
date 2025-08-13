@@ -3,12 +3,14 @@ package com.example.AsmGD1.controller.SanPham;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.entity.*;
+import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -43,6 +45,7 @@ public class ChiTietSanPhamController {
     @Autowired private DanhMucService danhMucService;
     @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository;
     @Autowired private NguoiDungService nguoiDungService;
+    @Autowired private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
     // Helper method to check if current user is admin
     private boolean isCurrentUserAdmin() {
@@ -347,36 +350,81 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> capNhatChiTietSanPham(
             @PathVariable UUID id,
+            @RequestParam(defaultValue = "false") boolean restricted,
             @ModelAttribute ChiTietSanPhamUpdateDto updateDto,
             @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
             @RequestParam(value = "deletedImageIds", required = false) String deletedImageIdsStr) {
+
+        Map<String, Object> body = new HashMap<>();
         try {
+            // 1) Quyền
             if (!isCurrentUserAdmin()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
+                body.put("error", "Bạn không có quyền thực hiện chức năng này");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
             }
 
-            updateDto.setId(id);
+            // 2) Lấy entity hiện có để:
+            //    - Lấy chắc productId trả về cho FE
+            //    - Fallback set productId vào DTO nếu chế độ restricted không gửi productId
+            ChiTietSanPham existing = chiTietSanPhamRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm"));
 
-            // 👇 Chuyển chuỗi về danh sách UUID
+            UUID productIdFromDb = (existing.getSanPham() != null) ? existing.getSanPham().getId() : null;
+
+            // 3) Set id vào DTO + fallback productId
+            updateDto.setId(id);
+            if (updateDto.getProductId() == null && productIdFromDb != null) {
+                updateDto.setProductId(productIdFromDb);
+            }
+
+            // 4) Parse danh sách ảnh xóa (an toàn)
             List<UUID> deletedIds = new ArrayList<>();
             if (deletedImageIdsStr != null && !deletedImageIdsStr.isBlank()) {
-                deletedIds = Arrays.stream(deletedImageIdsStr.split(","))
-                        .map(String::trim)
-                        .filter(s -> !s.isEmpty())
-                        .map(UUID::fromString)
-                        .collect(Collectors.toList());
+                for (String s : deletedImageIdsStr.split(",")) {
+                    String trimmed = s.trim();
+                    if (!trimmed.isEmpty()) {
+                        try {
+                            deletedIds.add(UUID.fromString(trimmed));
+                        } catch (IllegalArgumentException ex) {
+                            // Bỏ qua UUID lỗi, hoặc return 400 nếu muốn
+                            logger.warn("deletedImageIds chứa UUID không hợp lệ: {}", trimmed);
+                        }
+                    }
+                }
             }
 
-            chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles, deletedIds);
-            return ResponseEntity.ok(Map.of(
-                    "message", "Cập nhật chi tiết sản phẩm thành công",
-                    "productId", updateDto.getProductId()
-            ));
+            // 5) Lọc bỏ file ảnh rỗng
+            MultipartFile[] safeImages = imageFiles;
+            if (safeImages != null && safeImages.length > 0) {
+                List<MultipartFile> nonEmpty = Arrays.stream(safeImages)
+                        .filter(f -> f != null && !f.isEmpty())
+                        .toList();
+                safeImages = nonEmpty.toArray(new MultipartFile[0]);
+            }
+
+            // 6) Gọi service (vẫn là void)
+            if (restricted) {
+                chiTietSanPhamService.updateChiTietSanPhamRestricted(updateDto, safeImages, deletedIds);
+            } else {
+                chiTietSanPhamService.updateChiTietSanPham(updateDto, safeImages, deletedIds);
+            }
+
+            // 7) Build response an toàn (tránh null rơi vào Map.of)
+            body.put("message", "Cập nhật chi tiết sản phẩm thành công");
+            // ưu tiên id từ DB; fallback DTO
+            UUID productId = productIdFromDb != null ? productIdFromDb : updateDto.getProductId();
+            if (productId != null) body.put("productId", productId.toString());
+
+            return ResponseEntity.ok(body);
+
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật chi tiết sản phẩm ID {}: ", id, e);
-            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật chi tiết sản phẩm: " + e.getMessage()));
+            body.clear();
+            body.put("error", "Lỗi khi cập nhật chi tiết sản phẩm: " + (e.getMessage() == null ? "Không xác định" : e.getMessage()));
+            return ResponseEntity.badRequest().body(body);
         }
     }
+
 
 
     @PostMapping("/delete-image/{imageId}")
@@ -395,6 +443,36 @@ public class ChiTietSanPhamController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xóa ảnh: " + e.getMessage()));
         }
     }
+
+    @PostMapping("/update-bulk")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> capNhatHangLoat(
+            @RequestParam("ids") String idsCsv,
+            @ModelAttribute ChiTietSanPhamUpdateDto updateDto) {
+        try {
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
+            }
+
+            List<UUID> ids = Arrays.stream(idsCsv.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty())
+                    .map(UUID::fromString).collect(Collectors.toList());
+
+            // Validate bật trạng thái khi tồn kho = 0
+            boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus() :
+                    (updateDto.getStockQuantity() != null && updateDto.getStockQuantity() > 0);
+            if (newStatus && (updateDto.getStockQuantity() == null || updateDto.getStockQuantity() == 0)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không thể bật 'Đang Bán' khi tồn kho bằng 0!"));
+            }
+
+            int affected = chiTietSanPhamService.updateBulkFullAttributes(ids, updateDto);
+            return ResponseEntity.ok(Map.of("message", "Đã cập nhật " + affected + " biến thể."));
+        } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật hàng loạt: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật hàng loạt: " + e.getMessage()));
+        }
+    }
+
 
     @PostMapping("/save-auto-product")
     @ResponseBody
