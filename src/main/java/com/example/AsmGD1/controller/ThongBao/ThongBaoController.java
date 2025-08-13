@@ -10,16 +10,16 @@ import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Controller
@@ -37,6 +37,75 @@ public class ThongBaoController {
 
     @Autowired
     private ChiTietThongBaoNhomRepository chiTietThongBaoNhomRepository;
+
+    // ===========================================================
+    // SSE HUB: giữ emitter theo userId để đẩy số chưa đọc realtime
+    // ===========================================================
+    private static final Map<UUID, List<SseEmitter>> EMITTERS = new ConcurrentHashMap<>();
+
+    private static void removeEmitter(UUID userId, SseEmitter em) {
+        List<SseEmitter> list = EMITTERS.get(userId);
+        if (list != null) list.remove(em);
+    }
+
+    /** Cho phép Service hoặc các endpoint khác đẩy số mới xuống client */
+    public static void pushUnread(UUID userId, long unread) {
+        List<SseEmitter> list = EMITTERS.getOrDefault(userId, Collections.emptyList());
+        List<SseEmitter> dead = new ArrayList<>();
+        for (SseEmitter em : list) {
+            try {
+                em.send(SseEmitter.event()
+                        .name("message")
+                        .data("{\"type\":\"count\",\"unreadCount\":" + unread + "}"));
+            } catch (Exception e) {
+                dead.add(em);
+            }
+        }
+        list.removeAll(dead);
+    }
+
+    /** API đếm nhanh – dùng để sync lần đầu và fallback khi mất SSE */
+    @GetMapping("/count")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getUnreadCount(Principal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Chưa đăng nhập"));
+        }
+        Optional<NguoiDung> opt = nguoiDungRepository.findByTenDangNhap(principal.getName());
+        if (opt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Không tìm thấy người dùng"));
+        }
+        long unread = thongBaoService.demSoThongBaoChuaXem(opt.get().getId());
+        return ResponseEntity.ok(Map.of("unreadCount", unread));
+    }
+
+    /** Kết nối SSE – client mở 1 lần, mọi thay đổi sẽ tự đẩy xuống */
+    @GetMapping(path = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @ResponseBody
+    public SseEmitter stream(Principal principal) {
+        if (principal == null) return new SseEmitter(0L);
+        Optional<NguoiDung> opt = nguoiDungRepository.findByTenDangNhap(principal.getName());
+        if (opt.isEmpty()) return new SseEmitter(0L);
+
+        UUID userId = opt.get().getId();
+        SseEmitter emitter = new SseEmitter(0L); // không timeout
+        EMITTERS.computeIfAbsent(userId, k -> Collections.synchronizedList(new ArrayList<>())).add(emitter);
+
+        emitter.onCompletion(() -> removeEmitter(userId, emitter));
+        emitter.onTimeout(() -> removeEmitter(userId, emitter));
+        emitter.onError(e -> removeEmitter(userId, emitter));
+
+        // Gửi số hiện tại ngay khi kết nối
+        try {
+            long unread = thongBaoService.demSoThongBaoChuaXem(userId);
+            emitter.send(SseEmitter.event().name("message")
+                    .data("{\"type\":\"count\",\"unreadCount\":" + unread + "}"));
+        } catch (Exception ignored) {}
+
+        return emitter;
+    }
+
+    // ============================== CÁC API SẴN CÓ ==============================
 
     @GetMapping("/load")
     @ResponseBody
@@ -123,31 +192,29 @@ public class ThongBaoController {
     public ResponseEntity<Map<String, Object>> danhDauThongBaoDaXem(@RequestParam UUID idChiTietThongBao, Principal principal) {
         Map<String, Object> response = new HashMap<>();
         try {
-            System.out.println("Nhận yêu cầu đánh dấu đã đọc - idChiTietThongBao: " + idChiTietThongBao + ", Principal: " + (principal != null ? principal.getName() : "null"));
             if (principal == null) {
                 response.put("error", "Người dùng chưa đăng nhập.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
             Optional<NguoiDung> optionalNguoiDung = nguoiDungRepository.findByTenDangNhap(principal.getName());
             if (!optionalNguoiDung.isPresent()) {
-                System.out.println("Không tìm thấy người dùng với tên đăng nhập: " + principal.getName());
                 response.put("error", "Không tìm thấy người dùng.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             NguoiDung nguoiDung = optionalNguoiDung.get();
-            System.out.println("Người dùng tìm thấy: " + nguoiDung.getTenDangNhap() + ", id: " + nguoiDung.getId());
             thongBaoService.danhDauDaXem(idChiTietThongBao, nguoiDung.getId());
             long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId());
-            System.out.println("Số thông báo chưa đọc sau khi cập nhật: " + unreadCount);
+
+            // 🔔 đẩy realtime
+            ThongBaoController.pushUnread(nguoiDung.getId(), unreadCount);
+
             response.put("unreadCount", unreadCount);
             response.put("message", "Đã đánh dấu là đã đọc thành công");
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            System.err.println("Lỗi khi đánh dấu đã đọc: " + e.getMessage());
             response.put("error", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         } catch (Exception e) {
-            System.err.println("Lỗi server khi đánh dấu đã đọc: " + e.getMessage());
             response.put("error", "Lỗi server: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
@@ -166,6 +233,10 @@ public class ThongBaoController {
             NguoiDung nguoiDung = optionalNguoiDung.get();
             thongBaoService.danhDauTatCaDaXem(nguoiDung.getId());
             long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId());
+
+            // 🔔 đẩy realtime
+            ThongBaoController.pushUnread(nguoiDung.getId(), unreadCount);
+
             response.put("unreadCount", unreadCount);
             response.put("message", "Đã đánh dấu tất cả thông báo là đã đọc thành công");
             return ResponseEntity.ok(response);
@@ -204,6 +275,10 @@ public class ThongBaoController {
             NguoiDung nguoiDung = optionalNguoiDung.get();
             thongBaoService.danhDauChuaXem(idChiTietThongBao, nguoiDung.getId());
             long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDung.getId());
+
+            // 🔔 đẩy realtime
+            ThongBaoController.pushUnread(nguoiDung.getId(), unreadCount);
+
             response.put("unreadCount", unreadCount);
             response.put("message", "Đã đánh dấu là chưa xem thành công");
             return ResponseEntity.ok(response);
@@ -233,8 +308,13 @@ public class ThongBaoController {
             }
 
             thongBaoService.xoaThongBao(idChiTietThongBao, nguoiDungOpt.get().getId());
+            long unreadCount = thongBaoService.demSoThongBaoChuaXem(nguoiDungOpt.get().getId());
+
+            // 🔔 đẩy realtime
+            ThongBaoController.pushUnread(nguoiDungOpt.get().getId(), unreadCount);
+
             response.put("message", "Đã xóa thông báo.");
-            response.put("unreadCount", thongBaoService.demSoThongBaoChuaXem(nguoiDungOpt.get().getId()));
+            response.put("unreadCount", unreadCount);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             response.put("error", e.getMessage());
@@ -262,6 +342,10 @@ public class ThongBaoController {
             }
 
             thongBaoService.xoaTatCaThongBao(nguoiDungOpt.get().getId());
+
+            // 🔔 đẩy realtime = 0
+            ThongBaoController.pushUnread(nguoiDungOpt.get().getId(), 0L);
+
             response.put("message", "Đã xóa toàn bộ thông báo.");
             response.put("unreadCount", 0);
             return ResponseEntity.ok(response);
