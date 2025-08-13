@@ -794,7 +794,7 @@
       return;
     }
     const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
-    el.textContent = formatted;
+    el.textContent = 'Từ ' + formatted;
   });
   // Format the old price in the same way as the regular price
   document.querySelectorAll('.formatted-old-price').forEach(el => {
@@ -1148,7 +1148,7 @@
       const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
       document.getElementById('modalProductImage').src = button.dataset.productImg;
       document.getElementById('modalProductName').textContent = button.dataset.productName;
-      document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
+      document.getElementById('modalProductPrice').textContent = 'Từ ' + Number(button.dataset.productPrice).toLocaleString('vi-VN') + ' VNĐ';
       document.getElementById('modalProductStock').textContent = `Tồn kho: ${button.dataset.stock || 'N/A'}`;
 
       const sizeOptionsContainer = document.getElementById('modalSizeOptions');

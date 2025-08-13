@@ -507,15 +507,25 @@
                 <img th:src="${sp.urlHinhAnh}" th:alt="${sp.tenSanPham}" class="w-full h-52 object-cover rounded mb-3"/>
                 <h3 th:text="${sp.tenSanPham}" class="text-base font-semibold text-gray-700 line-clamp-2 h-[48px]"></h3>
                 <div class="mb-2">
-                    <!-- Formatted Price -->
+                    <!-- Giá hiện tại -->
                     <span class="price text-[#153054] font-bold text-sm" th:attr="data-price=${sp.price}"></span>
-                    <!-- Old Price with Line-through -->
-                    <div th:if="${sp.oldPrice != null and sp.price != sp.oldPrice}" class="old-price text-sm text-red-600 line-through inline-block ml-2">
+
+                    <!-- Giá gạch: chỉ hiện khi có giảm giá -->
+                    <div th:if="${sp.discount != null and !#strings.equalsIgnoreCase(sp.discount,'0%')}"
+                         class="old-price text-sm text-red-600 line-through inline-block ml-2">
                         <span th:attr="data-old-price=${sp.oldPrice}"></span>
                     </div>
-                    <!-- Discount Campaign -->
-                    <div th:if="${sp.discountCampaignName != null}" class="text-sm text-green-600">
-                        <span th:text="'Giảm giá: ' + ${sp.discountCampaignName}"></span>
+
+                    <!-- (tuỳ chọn) nhãn chiến dịch/ phần trăm -->
+                    <div th:if="${sp.discountCampaignName != null or (sp.discount != null and !#strings.equalsIgnoreCase(sp.discount,'0%'))}"
+                         class="text-sm text-green-600">
+                        <span th:text="${sp.discountCampaignName != null ? 'Giảm giá: ' + sp.discountCampaignName : 'Giảm ' + sp.discount}"></span>
+                    </div>
+
+                    <div class="rating text-yellow-400 text-xs mt-1" th:attr="data-product-id=${sp.id}">
+                        <span class="stars"></span>
+                        <span class="avg-rating">0</span>
+                        (<span class="total-reviews">0</span> đánh giá)
                     </div>
                 </div>
             </a>
@@ -1048,6 +1058,61 @@
 </script>
 
 <script th:inline="javascript">
+    function renderStarsFA6Mini(avg) {
+        const full = Math.floor(avg);
+        const half = (avg % 1) >= 0.5;
+        let html = '';
+        for (let i = 0; i < full; i++) html += '<i class="fa-solid fa-star"></i>';
+        if (half && full < 5) html += '<i class="fa-solid fa-star-half-stroke"></i>';
+        const remain = 5 - full - (half ? 1 : 0);
+        for (let i = 0; i < remain; i++) html += '<i class="fa-regular fa-star"></i>';
+        return html;
+    }
+
+    // --- Loader áp dụng cho “Sản phẩm liên quan” ---
+    function initRelatedRatings() {
+        const containers = document.querySelectorAll('.rating[data-product-id]');
+        containers.forEach(container => {
+            const id = container.getAttribute('data-product-id');
+            if (!id) return;
+
+            fetch(`/api/product/${id}/ratings`, { credentials: 'include' })
+                .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
+                .then(data => {
+                    const starsEl = container.querySelector('.stars');
+                    const avgEl   = container.querySelector('.avg-rating');
+                    const totalEl = container.querySelector('.total-reviews');
+
+                    const all = [ ...(data.myReviews || []), ...(data.otherReviews || []) ];
+                    if (!all.length) {
+                        starsEl.innerHTML = 'Chưa có đánh giá';
+                        avgEl.textContent = '0';
+                        totalEl.textContent = '0';
+                        return;
+                    }
+
+                    const avg = all.reduce((s, r) => s + (r.rating || 0), 0) / all.length;
+                    const rounded = Math.round(avg * 2) / 2; // làm tròn 0.5
+
+                    avgEl.textContent = rounded.toFixed(1);
+                    totalEl.textContent = all.length;
+                    starsEl.innerHTML = renderStarsFA6Mini(rounded);
+                    // a11y
+                    starsEl.setAttribute('aria-label', `Đánh giá ${rounded.toFixed(1)} trên 5`);
+                    starsEl.title = `Đánh giá ${rounded.toFixed(1)}/5 từ ${all.length} lượt`;
+                })
+                .catch(err => {
+                    console.error('Lỗi tải đánh giá liên quan', id, err);
+                    container.innerHTML = '<span class="text-gray-500">Lỗi tải đánh giá</span>';
+                });
+        });
+    }
+
+    // Khởi chạy khi DOM sẵn sàng (sau khi format giá)
+    document.addEventListener('DOMContentLoaded', () => {
+        initRelatedRatings();
+    });
+
     // === Click ảnh chính -> mở lightbox phóng to ===
     document.addEventListener('DOMContentLoaded', () => {
         const mainImage = document.querySelector('.product-img');
