@@ -1,12 +1,10 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
-import com.example.AsmGD1.entity.ChiTietSanPham;
-import com.example.AsmGD1.entity.DanhGia;
-import com.example.AsmGD1.entity.GioHang;
-import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.repository.SanPham.DanhMucRepository;
 import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuTimKiemRepository;
@@ -26,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class HomeController {
@@ -43,6 +42,8 @@ public class HomeController {
 
     @Autowired
     private DanhGiaRepository danhGiaRepository;
+    @Autowired
+    private DanhMucRepository danhMucRepository;
 
     @Autowired
     public HomeController(KhachhangSanPhamService khachhangSanPhamService, KhachHangGioHangService khachHangGioHangService) {
@@ -52,38 +53,131 @@ public class HomeController {
 
     @GetMapping("/")
     public String home(Model model, Authentication authentication) {
-        model.addAttribute("newProducts", khachhangSanPhamService.getNewProducts());
-        model.addAttribute("summerProducts", khachhangSanPhamService.getNewProducts());
-        model.addAttribute("bestsellerProducts", khachhangSanPhamService.getBestSellingProducts());
 
-        if (authentication != null && authentication.isAuthenticated()) {
-            try {
-                String email = extractEmailFromAuthentication(authentication);
-                if (email != null) {
-                    NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
-                            .orElseThrow(() -> new RuntimeException("Người dùng với email " + email + " không tồn tại"));
+        try {
+            // ====== Data cho 3 section trên trang chủ ======
+            // Sản phẩm mới (full + limited)
+            List<SanPhamDto> newProductsAll = khachhangSanPhamService.getNewProducts();
+            List<SanPhamDto> newProducts = newProductsAll.stream().limit(5).collect(Collectors.toList());
 
-                    model.addAttribute("loggedInUser", nguoiDung);
-                    model.addAttribute("user", nguoiDung); // ✅ Thêm dòng này
+            // Tất cả sản phẩm (full + limited)
+            List<SanPhamDto> allProductsAll = khachhangSanPhamService.getAllActiveProductsDtos();
+            List<SanPhamDto> allProducts = allProductsAll.stream().limit(5).collect(Collectors.toList());
 
-                    if ("customer".equals(nguoiDung.getVaiTro())) {
-                        GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
-                        model.addAttribute("gioHangId", gioHang.getId());
-                        model.addAttribute("chiTietGioHang", khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) != null
-                                ? khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) : java.util.Collections.emptyList());
-                        model.addAttribute("tongTien", gioHang.getTongTien() != null ? gioHang.getTongTien() : BigDecimal.ZERO);
+            // Bán chạy (full + limited)
+            List<SanPhamDto> bestsellerProductsAll = khachhangSanPhamService.getBestSellingProducts();
+            List<SanPhamDto> bestsellerProducts = bestsellerProductsAll.stream().limit(5).collect(Collectors.toList());
+
+            // Gắn vào model cho index
+            model.addAttribute("newProducts", newProducts);
+            model.addAttribute("allProducts", allProducts);
+            model.addAttribute("bestsellerProducts", bestsellerProducts);
+            model.addAttribute("categories", khachhangSanPhamService.getActiveCategories());
+
+            // (optional) nếu cần dùng ở nơi khác:
+            model.addAttribute("newProductsAll", newProductsAll);
+            model.addAttribute("allProductsAll", allProductsAll);
+            model.addAttribute("bestsellerProductsAll", bestsellerProductsAll);
+
+            // ====== Auth + Cart (giữ nguyên style của bạn) ======
+            if (authentication != null && authentication.isAuthenticated()) {
+                try {
+                    String email = extractEmailFromAuthentication(authentication);
+                    if (email != null) {
+                        NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("Người dùng với email " + email + " không tồn tại"));
+
+                        model.addAttribute("loggedInUser", nguoiDung);
+                        model.addAttribute("user", nguoiDung);
+
+                        if ("customer".equals(nguoiDung.getVaiTro())) {
+                            GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
+                            model.addAttribute("gioHangId", gioHang.getId());
+                            model.addAttribute("chiTietGioHang",
+                                    khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) != null
+                                            ? khachHangGioHangService.getGioHangChiTiets(gioHang.getId())
+                                            : java.util.Collections.emptyList());
+                            model.addAttribute("tongTien",
+                                    gioHang.getTongTien() != null ? gioHang.getTongTien() : java.math.BigDecimal.ZERO);
+                        }
                     }
+                } catch (Exception e) {
+                    model.addAttribute("cartError", "Không thể tải giỏ hàng hoặc thông tin người dùng: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                model.addAttribute("cartError", "Không thể tải giỏ hàng hoặc thông tin người dùng: " + e.getMessage());
+            } else {
+                model.addAttribute("loggedInUser", null);
+                model.addAttribute("user", null);
             }
-        } else {
-            model.addAttribute("loggedInUser", null);
-            model.addAttribute("user", null); // 👈 để tránh lỗi null trong navbar
+
+        } catch (Exception ex) {
+            model.addAttribute("newProducts", java.util.Collections.emptyList());
+            model.addAttribute("allProducts", java.util.Collections.emptyList());
+            model.addAttribute("bestsellerProducts", java.util.Collections.emptyList());
+            model.addAttribute("homeError", "Lỗi tải dữ liệu trang chủ: " + ex.getMessage());
         }
 
         return "WebKhachHang/index";
     }
+
+    @GetMapping("/new")
+    public String pageNewProducts(Model model, Authentication authentication) {
+        model.addAttribute("products", khachhangSanPhamService.getNewProducts());
+        commonUserCart(model, authentication); // optional: tách dùng chung
+        return "WebKhachHang/list-new";
+    }
+
+    @GetMapping("/all")
+    public String pageAllProducts(Model model, Authentication authentication) {
+        model.addAttribute("products", khachhangSanPhamService.getAllActiveProductsDtos());
+        commonUserCart(model, authentication);
+        return "WebKhachHang/list-all";
+    }
+
+    @GetMapping("/bestsellers")
+    public String pageBestSellers(Model model, Authentication authentication) {
+        model.addAttribute("products", khachhangSanPhamService.getBestSellingProducts());
+        commonUserCart(model, authentication);
+        return "WebKhachHang/list-bestsellers";
+    }
+
+    @GetMapping("/category/{id}")
+    public String categoryPage(@PathVariable UUID id, Model model, Authentication authentication){
+        model.addAttribute("products", khachhangSanPhamService.getProductsByCategory(id)); // id phải là id danh mục
+        DanhMuc dm = danhMucRepository.findById(id).orElse(null);
+        model.addAttribute("category", dm);
+        model.addAttribute("currentCategoryId", id);
+        commonUserCart(model, authentication);
+        return "WebKhachHang/list-category";
+    }
+
+
+    /* Optional helper để không lặp lại */
+    private void commonUserCart(Model model, Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                String email = extractEmailFromAuthentication(authentication);
+                if (email != null) {
+                    NguoiDung nguoiDung = nguoiDungRepository.findByEmail(email).orElse(null);
+                    model.addAttribute("loggedInUser", nguoiDung);
+                    model.addAttribute("user", nguoiDung);
+                    if (nguoiDung != null && "customer".equals(nguoiDung.getVaiTro())) {
+                        GioHang gioHang = khachHangGioHangService.getOrCreateGioHang(nguoiDung.getId());
+                        model.addAttribute("gioHangId", gioHang.getId());
+                        model.addAttribute("chiTietGioHang",
+                                khachHangGioHangService.getGioHangChiTiets(gioHang.getId()) != null
+                                        ? khachHangGioHangService.getGioHangChiTiets(gioHang.getId())
+                                        : java.util.Collections.emptyList());
+                        model.addAttribute("tongTien",
+                                gioHang.getTongTien() != null ? gioHang.getTongTien() : java.math.BigDecimal.ZERO);
+                    }
+                }
+            } catch (Exception ignored) {}
+        } else {
+            model.addAttribute("loggedInUser", null);
+            model.addAttribute("user", null);
+        }
+    }
+
 
     @GetMapping("/chitietsanpham")
     public String productDetail(@RequestParam("id") UUID sanPhamId, Model model) {
@@ -94,23 +188,20 @@ public class HomeController {
         }
 
         // Lấy min/max giá của tất cả biến thể thuộc sản phẩm
-        // (triển khai trong service/repo của bạn)
         Map<String, BigDecimal> range = khachhangSanPhamService.getPriceRangeBySanPhamId(sanPhamId);
-        BigDecimal minPrice = range.getOrDefault("min", productDetail.getGia());
-        BigDecimal maxPrice = range.getOrDefault("max", productDetail.getGia());
-
-        NumberFormat format = NumberFormat.getInstance(new Locale("vi", "VN"));
-        String giaFormatted = format.format(productDetail.getGia()) + " VNĐ";
+        BigDecimal minPrice = range.getOrDefault("minPrice", productDetail.getGia());
+        BigDecimal maxPrice = range.getOrDefault("maxPrice", productDetail.getGia());
+        BigDecimal oldMinPrice = range.getOrDefault("oldMinPrice", productDetail.getOldPrice());
+        BigDecimal oldMaxPrice = range.getOrDefault("oldMaxPrice", productDetail.getOldPrice());
 
         List<SanPhamDto> sanPhamLienQuan = khachhangSanPhamService.getSanPhamLienQuan(sanPhamId, 6);
 
-        model.addAttribute("giaFormatted", giaFormatted);
         model.addAttribute("productDetail", productDetail);
         model.addAttribute("sanPhamLienQuan", sanPhamLienQuan);
-
-        // 👇 add vào model để Thymeleaf bind vào data-min/data-max
         model.addAttribute("minPrice", minPrice);
         model.addAttribute("maxPrice", maxPrice);
+        model.addAttribute("oldMinPrice", oldMinPrice);
+        model.addAttribute("oldMaxPrice", oldMaxPrice);
 
         return "WebKhachHang/chitietsanpham";
     }

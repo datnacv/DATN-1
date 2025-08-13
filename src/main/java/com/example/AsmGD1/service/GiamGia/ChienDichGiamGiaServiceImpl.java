@@ -211,4 +211,16 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
                 .filter(c -> c.getNgayBatDau().isBefore(now) && c.getNgayKetThuc().isAfter(now))
                 .findFirst();
     }
+
+    @Override
+    public Optional<ChienDichGiamGia> getActiveCampaignForProductDetail(UUID chiTietSanPhamId) {
+        ChiTietSanPham ct = chiTietSanPhamRepository.findById(chiTietSanPhamId)
+                .orElse(null);
+        if (ct == null || ct.getChienDichGiamGia() == null) return Optional.empty();
+
+        LocalDateTime now = LocalDateTime.now();
+        ChienDichGiamGia cd = ct.getChienDichGiamGia();
+        boolean active = cd.getNgayBatDau().isBefore(now) && cd.getNgayKetThuc().isAfter(now);
+        return active ? Optional.of(cd) : Optional.empty();
+    }
 }

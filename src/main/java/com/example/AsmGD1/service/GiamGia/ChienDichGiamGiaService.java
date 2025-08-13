@@ -51,4 +51,7 @@ public interface ChienDichGiamGiaService {
 
     // Tìm chiến dịch giảm giá đang hoạt động cho sản phẩm
     Optional<ChienDichGiamGia> getActiveCampaignForProduct(UUID sanPhamId);
+
+    // ChienDichGiamGiaService.java
+    Optional<ChienDichGiamGia> getActiveCampaignForProductDetail(UUID chiTietSanPhamId);
 }

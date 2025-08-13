@@ -4,92 +4,105 @@ function toVND(value) {
     return Number.isFinite(n) && n > 0 ? n.toLocaleString('vi-VN') + ' VNĐ' : 'Liên hệ';
 }
 
-// ===== Search suggestions =====
+// ===== DOM refs =====
+const form = document.querySelector('form[action="/search"]');
 const searchInput = document.getElementById('searchInput');
 const searchSuggestions = document.getElementById('searchSuggestions');
-let debounceTimer;
 
-if (searchInput && searchSuggestions) {
-    searchInput.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(async () => {
-            const keyword = searchInput.value.trim();
-            searchSuggestions.innerHTML = '';
+// === tránh bind trùng nếu script bị include 2 lần ===
+if (form && !form.dataset.init) {
+    form.dataset.init = '1';
 
-            if (keyword.length < 2) {
-                showSearchHistory(keyword);
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
-                const products = await response.json();
-
+    // --- Suggestions (giữ logic gốc) ---
+    let debounceTimer;
+    if (searchInput && searchSuggestions) {
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                const keyword = searchInput.value.trim();
                 searchSuggestions.innerHTML = '';
-                if (!Array.isArray(products) || products.length === 0) {
-                    searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
-                } else {
-                    products.forEach((product) => {
-                        const priceText = toVND(product.price);
-                        const suggestion = document.createElement('div');
-                        suggestion.className = 'suggestion-item';
-                        suggestion.innerHTML = `
-              <img src="${product.urlHinhAnh || '/images/placeholder.png'}" alt="${product.tenSanPham}"/>
-              <div>
-                <div class="font-semibold">${product.tenSanPham}</div>
-                <div class="text-blue-800">${priceText}</div>
-              </div>
-            `;
-                        suggestion.addEventListener('click', () => {
-                            window.location.href = `/chitietsanpham?id=${product.id}`;
+
+                if (keyword.length < 2) {
+                    showSearchHistory(keyword);
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
+                    const products = await response.json();
+
+                    searchSuggestions.innerHTML = '';
+                    if (!Array.isArray(products) || products.length === 0) {
+                        searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
+                    } else {
+                        products.forEach((product) => {
+                            const priceText = toVND(product.price);
+                            const suggestion = document.createElement('div');
+                            suggestion.className = 'suggestion-item';
+                            suggestion.innerHTML = `
+                <img src="${product.urlHinhAnh || '/images/placeholder.png'}" alt="${product.tenSanPham}"/>
+                <div>
+                  <div class="font-semibold">${product.tenSanPham}</div>
+                  <div class="text-blue-800">${priceText}</div>
+                </div>`;
+                            suggestion.addEventListener('click', () => {
+                                window.location.href = `/chitietsanpham?id=${product.id}`;
+                            });
+                            searchSuggestions.appendChild(suggestion);
                         });
-                        searchSuggestions.appendChild(suggestion);
-                    });
+                    }
+                    searchSuggestions.classList.add('active');
+                } catch (error) {
+                    console.error('Error fetching search suggestions:', error);
+                    searchSuggestions.innerHTML = '<div class="suggestion-item">Lỗi khi tải gợi ý</div>';
+                    searchSuggestions.classList.add('active');
                 }
+            }, 300);
+        });
 
-                searchSuggestions.classList.add('active');
-            } catch (error) {
-                console.error('Error fetching search suggestions:', error);
-                searchSuggestions.innerHTML = '<div class="suggestion-item">Lỗi khi tải gợi ý</div>';
-                searchSuggestions.classList.add('active');
+        // ⚠️ bỏ keydown Enter cũ để không bắn POST 2 lần
+        // Thay bằng submit handler ở dưới.
+
+        // focus => show history
+        searchInput.addEventListener('focus', () => {
+            showSearchHistory(searchInput.value.trim());
+        });
+
+        // click outside => close
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
+                searchSuggestions.classList.remove('active');
             }
-        }, 300);
-    });
+        });
+    }
 
-    // enter => save history + chuyển trang
-    searchInput.addEventListener('keydown', async (event) => {
-        if (event.key === 'Enter') {
-            const keyword = searchInput.value.trim();
-            if (!keyword) return;
+    // --- Submit form: save history 1 lần, rồi điều hướng ---
+    form.addEventListener('submit', (e) => {
+        const kw = (searchInput?.value || '').trim();
+        if (!kw) return; // cho submit tiếp, server sẽ xử lý
 
-            try {
-                const resp = await fetch(`/api/save-search-history?keyword=${encodeURIComponent(keyword)}`, {
-                    method: 'POST',
-                    credentials: 'include',
-                });
-                if (!resp.ok) {
-                    console.error('Error saving search history:', await resp.text());
-                }
-                window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
-            } catch (e) {
-                console.error('Error saving search history:', e);
-            }
+        // Anti-spam trong 2s nếu user bấm loạn
+        const now = Date.now();
+        if (window.__lastSaveKw === kw && now - (window.__lastSaveAt || 0) < 2000) {
+            return; // vẫn cho submit, chỉ không bắn POST nữa
         }
-    });
+        window.__lastSaveKw = kw;
+        window.__lastSaveAt = now;
 
-    // focus => show history
-    searchInput.addEventListener('focus', () => {
-        showSearchHistory(searchInput.value.trim());
-    });
-
-    // click outside => close
-    document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
-            searchSuggestions.classList.remove('active');
+        // Không chặn submit; dùng sendBeacon/fire-and-forget để không delay điều hướng
+        const url = `/api/save-search-history?keyword=${encodeURIComponent(kw)}`;
+        if (navigator.sendBeacon) {
+            const blob = new Blob([], { type: 'application/json' });
+            navigator.sendBeacon(url, blob);
+        } else {
+            // keepalive để vẫn gửi khi đang chuyển trang
+            fetch(url, { method: 'POST', keepalive: true, credentials: 'include' }).catch(() => {});
         }
+        // không preventDefault => form vẫn GET /search như bình thường
     });
 }
 
+// ===== History =====
 async function showSearchHistory(filterKeyword = '') {
     if (!searchSuggestions) return;
 
@@ -114,13 +127,11 @@ async function showSearchHistory(filterKeyword = '') {
             filtered.forEach((keyword) => {
                 const row = document.createElement('div');
                 row.className = 'history-item';
-
                 row.innerHTML = `
           <span class="keyword">${
                     filterKeyword ? keyword.replace(new RegExp(safe, 'gi'), (m) => `<span class="highlight">${m}</span>`) : keyword
                 }</span>
-          <i class="fas fa-times delete-btn" title="Xóa mục này"></i>
-        `;
+          <i class="fas fa-times delete-btn" title="Xóa mục này"></i>`;
 
                 row.querySelector('.keyword').addEventListener('click', () => {
                     searchInput.value = keyword;
@@ -153,7 +164,7 @@ async function showSearchHistory(filterKeyword = '') {
     }
 }
 
-// ===== Cart count (global để trang khác gọi được) =====
+// ===== Cart count =====
 async function updateCartCount() {
     const el = document.getElementById('cart-count');
     if (!el) return;
@@ -170,5 +181,4 @@ async function updateCartCount() {
         console.error('Error updating cart count:', error);
     }
 }
-
 document.addEventListener('DOMContentLoaded', updateCartCount);

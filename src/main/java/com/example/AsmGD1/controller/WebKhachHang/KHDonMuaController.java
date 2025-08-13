@@ -475,6 +475,20 @@ public class KHDonMuaController {
         danhGia.setTrangThai(true);
         danhGia.setThoiGianDanhGia(LocalDateTime.now());
 
+        if (media != null && media.length > 0) {
+            java.util.List<String> urls = new java.util.ArrayList<>();
+            for (MultipartFile f : media) {
+                if (f == null || f.isEmpty()) continue;
+                String ct = f.getContentType();
+                if (ct == null || !ct.startsWith("image/")) continue; // hoặc throw nếu muốn chặn
+                String url = uploadFile(f); // 👈 giờ method này mới được gọi
+                urls.add(url);
+            }
+            if (!urls.isEmpty()) {
+                danhGia.setUrlHinhAnh(String.join(",", urls)); // backend đã trả "media" = chuỗi, FE split(",")
+            }
+        }
+
         danhGiaRepository.save(danhGia);
 
         // Kiểm tra xem người dùng đã đánh giá hết tất cả các sản phẩm trong đơn hàng hay chưa
