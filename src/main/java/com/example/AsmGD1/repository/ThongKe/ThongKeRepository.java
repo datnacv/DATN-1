@@ -20,15 +20,17 @@ import java.util.UUID;
 public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
 
     @Query(value = """
-        SELECT COALESCE(SUM(hd.tong_tien), 0)
-        FROM hoa_don hd
-        JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
-        WHERE ls.thoi_gian >= :start
-          AND ls.thoi_gian <  :end
-          AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
-    """, nativeQuery = true)
+    SELECT COALESCE(SUM(hd.tong_tien - COALESCE(dh.phi_van_chuyen, 0)), 0)
+    FROM hoa_don hd
+    JOIN don_hang dh ON dh.id = hd.id_don_hang
+    JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
+    WHERE ls.thoi_gian >= :start
+      AND ls.thoi_gian <  :end
+      AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
+""", nativeQuery = true)
     BigDecimal tinhDoanhThuTheoHoaDon(@Param("start") LocalDateTime start,
                                       @Param("end")   LocalDateTime end);
+
 
     @Query(value = """
         SELECT CAST(COUNT(DISTINCT hd.id) AS int)
@@ -163,16 +165,18 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
                                            @Param("end")   LocalDateTime end);
 
     @Query(value = """
-        SELECT CAST(ls.thoi_gian AS date) AS d,
-               COALESCE(SUM(hd.tong_tien), 0)  AS s
-        FROM hoa_don hd
-        JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
-        WHERE ls.thoi_gian >= :start
-          AND ls.thoi_gian <  :end
-          AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
-        GROUP BY CAST(ls.thoi_gian AS date)
-        ORDER BY d
-    """, nativeQuery = true)
+    SELECT CAST(ls.thoi_gian AS date) AS d,
+           COALESCE(SUM(hd.tong_tien - COALESCE(dh.phi_van_chuyen, 0)), 0) AS s
+    FROM hoa_don hd
+    JOIN don_hang dh ON dh.id = hd.id_don_hang
+    JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
+    WHERE ls.thoi_gian >= :start
+      AND ls.thoi_gian <  :end
+      AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
+    GROUP BY CAST(ls.thoi_gian AS date)
+    ORDER BY d
+""", nativeQuery = true)
     List<Object[]> thongKeDoanhThuTheoNgay(@Param("start") LocalDateTime start,
                                            @Param("end")   LocalDateTime end);
+
 }

@@ -1,73 +1,113 @@
-package com.example.AsmGD1.service.NguoiDung;
+    package com.example.AsmGD1.service.NguoiDung;
 
-import com.example.AsmGD1.entity.DiaChiNguoiDung;
-import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+    import com.example.AsmGD1.entity.DiaChiNguoiDung;
+    import com.example.AsmGD1.entity.NguoiDung;
+    import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
+    import com.example.AsmGD1.repository.NguoiDung.KHNguoiDungRepository;
+    import jakarta.transaction.Transactional;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.security.crypto.password.PasswordEncoder;
+    import org.springframework.stereotype.Service;
 
-@Service
-public class DiaChiKhachHangService {
+    @Service
+    public class DiaChiKhachHangService {
 
-    @Autowired
-    private NguoiDungService nguoiDungService;
+        @Autowired
+        private KHNguoiDungService khNguoiDungService;     // dùng để validate + encode khi tạo mới
 
-    @Autowired
-    private DiaChiNguoiDungRepository diaChiRepo;
+        @Autowired
+        private DiaChiNguoiDungRepository diaChiRepo;
 
-    @Transactional
-    public NguoiDung saveCustomerWithDefaultAddress(NguoiDung customer) {
-        customer.setVaiTro("customer");
-        customer.setTrangThai(true);
-        NguoiDung saved = nguoiDungService.save(customer);
+        @Autowired
+        private KHNguoiDungRepository nguoiDungRepository; // save lại user sau khi null địa chỉ
 
-        if (hasAddress(saved)) {
-            diaChiRepo.removeDefaultFlag(saved.getId());
+        @Autowired
+        private PasswordEncoder passwordEncoder;            // (tuỳ chọn) encode khi đổi mật khẩu lúc cập nhật
 
-            DiaChiNguoiDung dc = new DiaChiNguoiDung();
-            dc.setNguoiDung(saved);
-            dc.setChiTietDiaChi(saved.getChiTietDiaChi());
-            dc.setPhuongXa(saved.getPhuongXa());
-            dc.setQuanHuyen(saved.getQuanHuyen());
-            dc.setTinhThanhPho(saved.getTinhThanhPho());
-            dc.setMacDinh(true);
-            dc.setNguoiNhan(saved.getHoTen());
-            dc.setSoDienThoaiNguoiNhan(saved.getSoDienThoai());
-            diaChiRepo.save(dc);
+        @Transactional
+        public NguoiDung saveCustomerWithDefaultAddress(NguoiDung customer) {
+            // Set role & status chuẩn
+            customer.setVaiTro("CUSTOMER");
+            customer.setTrangThai(true);
+
+            // 1) Lưu user (service này đã validate + encode + set thoiGianTao)
+            khNguoiDungService.save(customer); // sau call này customer đã có ID
+
+            // 2) Nếu form có địa chỉ -> tạo địa chỉ mặc định
+            if (hasAddress(customer)) {
+                // Hạ cờ mặc định cũ (nếu có)
+                diaChiRepo.removeDefaultFlag(customer.getId());
+
+                DiaChiNguoiDung dc = new DiaChiNguoiDung();
+                dc.setNguoiDung(customer);
+                dc.setChiTietDiaChi(customer.getChiTietDiaChi());
+                dc.setPhuongXa(customer.getPhuongXa());
+                dc.setQuanHuyen(customer.getQuanHuyen());
+                dc.setTinhThanhPho(customer.getTinhThanhPho());
+                dc.setNguoiNhan(customer.getHoTen());
+                dc.setSoDienThoaiNguoiNhan(customer.getSoDienThoai());
+                dc.setMacDinh(true);
+                diaChiRepo.save(dc);
+
+                // 3) Xoá địa chỉ khỏi bảng nguoi_dung (đảm bảo chỉ lưu 1 nơi)
+                customer.setChiTietDiaChi(null);
+                customer.setPhuongXa(null);
+                customer.setQuanHuyen(null);
+                customer.setTinhThanhPho(null);
+                nguoiDungRepository.save(customer);
+            }
+
+            return customer;
         }
-        return saved;
-    }
 
-    @Transactional
-    public NguoiDung updateCustomerAndAppendAddress(NguoiDung customer) {
-        NguoiDung updated = nguoiDungService.save(customer);
 
-        if (hasAddress(updated)) {
-            diaChiRepo.removeDefaultFlag(updated.getId());
+        @Transactional
+        public NguoiDung updateCustomerAndAppendAddress(NguoiDung customer) {
+            // (tuỳ chọn) Nếu mật khẩu trong form KHÔNG rỗng và có vẻ là plaintext -> encode lại
+            if (customer.getMatKhau() != null && !customer.getMatKhau().isBlank()) {
+                // Bạn có thể thêm điều kiện nếu muốn tránh encode lại chuỗi đã encode
+                customer.setMatKhau(passwordEncoder.encode(customer.getMatKhau()));
+            }
 
-            DiaChiNguoiDung dc = new DiaChiNguoiDung();
-            dc.setNguoiDung(updated);
-            dc.setChiTietDiaChi(updated.getChiTietDiaChi());
-            dc.setPhuongXa(updated.getPhuongXa());
-            dc.setQuanHuyen(updated.getQuanHuyen());
-            dc.setTinhThanhPho(updated.getTinhThanhPho());
-            dc.setMacDinh(true);
-            dc.setNguoiNhan(updated.getHoTen());
-            dc.setSoDienThoaiNguoiNhan(updated.getSoDienThoai());
-            diaChiRepo.save(dc);
+            // Lưu cập nhật cơ bản của user trước
+            NguoiDung updated = nguoiDungRepository.save(customer);
+
+            // Nếu form kèm địa chỉ -> thêm địa chỉ mặc định mới
+            if (hasAddress(customer)) {
+                diaChiRepo.removeDefaultFlag(updated.getId());
+
+                DiaChiNguoiDung dc = new DiaChiNguoiDung();
+                dc.setNguoiDung(updated);
+                dc.setChiTietDiaChi(customer.getChiTietDiaChi());
+                dc.setPhuongXa(customer.getPhuongXa());
+                dc.setQuanHuyen(customer.getQuanHuyen());
+                dc.setTinhThanhPho(customer.getTinhThanhPho());
+                dc.setNguoiNhan(updated.getHoTen());
+                dc.setSoDienThoaiNguoiNhan(updated.getSoDienThoai());
+                dc.setMacDinh(true);
+                diaChiRepo.save(dc);
+
+                // Xoá địa chỉ khỏi bảng nguoi_dung
+                updated.setChiTietDiaChi(null);
+                updated.setPhuongXa(null);
+                updated.setQuanHuyen(null);
+                updated.setTinhThanhPho(null);
+                updated = nguoiDungRepository.save(updated);
+            }
+
+            return updated;
         }
-        return updated;
-    }
 
-    private boolean hasAddress(NguoiDung user) {
-        return notBlank(user.getChiTietDiaChi()) ||
-                notBlank(user.getPhuongXa()) ||
-                notBlank(user.getQuanHuyen()) ||
-                notBlank(user.getTinhThanhPho());
-    }
+        // ===== Helpers =====
 
-    private boolean notBlank(String s) {
-        return s != null && !s.trim().isEmpty();
+        private boolean hasAddress(NguoiDung user) {
+            return notBlank(user.getChiTietDiaChi())
+                    || notBlank(user.getPhuongXa())
+                    || notBlank(user.getQuanHuyen())
+                    || notBlank(user.getTinhThanhPho());
+        }
+
+        private boolean notBlank(String s) {
+            return s != null && !s.trim().isEmpty();
+        }
     }
-}

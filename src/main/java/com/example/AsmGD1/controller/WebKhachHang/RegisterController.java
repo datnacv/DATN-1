@@ -1,8 +1,7 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.service.NguoiDung.KHNguoiDungService;
-import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.example.AsmGD1.service.NguoiDung.DiaChiKhachHangService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
 import jakarta.validation.Valid;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -24,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 public class RegisterController {
 
     @Autowired
-    private KHNguoiDungService khNguoiDungService;
+    private DiaChiKhachHangService diaChiKhachHangService;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -72,9 +70,9 @@ public class RegisterController {
         }
 
         try {
-            khNguoiDungService.save(nguoiDung);
+            // Quan trọng: gọi service mới để tạo user + địa chỉ mặc định + dọn địa chỉ khỏi bảng nguoi_dung
+            diaChiKhachHangService.saveCustomerWithDefaultAddress(nguoiDung);
 
-            // ✅ Mã hóa chuỗi tiếng Việt để đưa vào URL redirect
             String msg = URLEncoder.encode("Đăng ký thành công! Vui lòng đăng nhập.", StandardCharsets.UTF_8);
             return "redirect:/customers/login?success=" + msg;
 

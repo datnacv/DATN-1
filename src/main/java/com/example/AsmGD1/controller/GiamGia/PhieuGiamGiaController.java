@@ -348,7 +348,7 @@ public class PhieuGiamGiaController {
 
                 if (sendMail) {
                     for (NguoiDung user : selectedUsers) {
-                        guiMailService.guiPhieuGiamGia(user.getEmail(), voucher.getTen(), voucher.getGiaTriGiam());
+                        guiMailService.guiPhieuGiamGia(user, savedVoucher);
                     }
                     redirectAttributes.addFlashAttribute("mailMessage", "Đã gửi email đến khách hàng được chọn.");
                 }
@@ -673,7 +673,7 @@ public class PhieuGiamGiaController {
                 if (sendMail) {
                     try {
                         for (NguoiDung user : selectedUsers) {
-                            guiMailService.guiPhieuGiamGia(user.getEmail(), voucher.getTen(), voucher.getGiaTriGiam());
+                            guiMailService.guiPhieuGiamGia(user, savedVoucher);
                         }
                         redirectAttributes.addFlashAttribute("mailMessage", "Đã gửi mail cập nhật cho khách hàng");
                     } catch (Exception e) {

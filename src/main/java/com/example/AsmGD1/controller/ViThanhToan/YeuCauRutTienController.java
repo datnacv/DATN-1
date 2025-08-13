@@ -5,6 +5,7 @@ import com.example.AsmGD1.entity.ViThanhToan;
 import com.example.AsmGD1.entity.YeuCauRutTien;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
 import com.example.AsmGD1.repository.ViThanhToan.YeuCauRutTienRepository;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -25,6 +26,9 @@ public class YeuCauRutTienController {
 
     @Autowired
     private YeuCauRutTienRepository rutTienRepo;
+    @Autowired
+    private ThongBaoService thongBaoService;
+
 
     @GetMapping("/rut-tien")
     public String showForm(Model model, @AuthenticationPrincipal NguoiDung user) {
@@ -51,7 +55,8 @@ public class YeuCauRutTienController {
                                 @RequestParam("nguoiThuHuong") String nguoiThuHuong,
                                 @RequestParam("tenNganHang") String tenNganHang,
                                 Model model,
-                                @AuthenticationPrincipal NguoiDung user, RedirectAttributes redirectAttributes) {
+                                @AuthenticationPrincipal NguoiDung user,
+                                RedirectAttributes redirectAttributes) {
 
         Optional<ViThanhToan> optionalVi = viRepo.findByNguoiDung(user);
 
@@ -61,7 +66,7 @@ public class YeuCauRutTienController {
         }
 
         ViThanhToan vi = optionalVi.get();
-        model.addAttribute("soDu", vi.getSoDu()); // ✅ Hiển thị số dư dù thành công hay lỗi
+        model.addAttribute("soDu", vi.getSoDu());
 
         BigDecimal tongDangCho = rutTienRepo.tongTienDangCho(vi.getId());
         BigDecimal soDuKhaDung = vi.getSoDu().subtract(tongDangCho);
@@ -70,7 +75,6 @@ public class YeuCauRutTienController {
             redirectAttributes.addFlashAttribute("error", "Số dư khả dụng không đủ để rút.");
             return "redirect:/rut-tien";
         }
-
 
         // Tạo yêu cầu rút tiền
         YeuCauRutTien yeuCau = new YeuCauRutTien();
@@ -82,14 +86,19 @@ public class YeuCauRutTienController {
         yeuCau.setSoTaiKhoan(soTaiKhoan);
         yeuCau.setNguoiThuHuong(nguoiThuHuong);
         yeuCau.setTenNganHang(tenNganHang);
-        model.addAttribute("vi", vi);
-        model.addAttribute("tongDangCho", tongDangCho);
-        model.addAttribute("soDuKhaDung", soDuKhaDung);
+
         rutTienRepo.save(yeuCau);
+
+        // Gửi thông báo cho admin
+        thongBaoService.taoThongBaoHeThong(
+                "admin",
+                "Khách hàng yêu cầu rút tiền",
+                "Khách hàng " + user.getHoTen() + " (" + user.getEmail() + ") đã gửi yêu cầu rút "
+                        + soTien + " VNĐ từ ví. Mã giao dịch: " + yeuCau.getMaGiaoDich()
+        );
 
         redirectAttributes.addFlashAttribute("success", "Gửi yêu cầu rút tiền thành công. Đang chờ duyệt.");
         return "redirect:/rut-tien";
-
-
     }
+
 }

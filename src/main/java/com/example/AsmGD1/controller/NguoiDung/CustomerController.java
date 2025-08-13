@@ -25,7 +25,8 @@ public class CustomerController {
     @Autowired
     private DiaChiKhachHangService diaChiKhachHangService;
 
-    // Helper method để kiểm tra quyền admin
+    // Helper method
+    // ể kiểm tra quyền admin
     private boolean isCurrentUserAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
