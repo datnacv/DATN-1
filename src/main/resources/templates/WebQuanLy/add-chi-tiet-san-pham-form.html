@@ -1019,72 +1019,87 @@
             $('body').css('overflow', 'auto'); // Fix cuộn bị khóa
         });
 
-        new TomSelect('#productSelect', {
+        // Khởi tạo TomSelect và lưu instances
+        const productTomSelect = new TomSelect('#productSelect', {
             create: false,
             placeholder: '-- Chọn sản phẩm --',
             maxOptions: 200,
             allowClear: true,
             onChange: function(value) {
                 if (value) {
+                    fetchProductDetails(value);
                     generateVariations(); // Tái tạo biến thể khi sản phẩm thay đổi
+                } else {
+                    enableAllAttributes();
+                    resetAttributeValues();
                 }
             }
         });
-        new TomSelect('#colorSelect', {
+
+        const colorTomSelect = new TomSelect('#colorSelect', {
             create: false,
             placeholder: 'Chọn màu...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#sizeSelect', {
+
+        const sizeTomSelect = new TomSelect('#sizeSelect', {
             create: false,
             placeholder: 'Chọn kích cỡ...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#originSelect', {
+
+        const originTomSelect = new TomSelect('#originSelect', {
             create: false,
             placeholder: 'Chọn xuất xứ...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#materialSelect', {
+
+        const materialTomSelect = new TomSelect('#materialSelect', {
             create: false,
             placeholder: 'Chọn chất liệu...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#styleSelect', {
+
+        const styleTomSelect = new TomSelect('#styleSelect', {
             create: false,
             placeholder: 'Chọn kiểu dáng...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#sleeveSelect', {
+
+        const sleeveTomSelect = new TomSelect('#sleeveSelect', {
             create: false,
             placeholder: 'Chọn tay áo...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#collarSelect', {
+
+        const collarTomSelect = new TomSelect('#collarSelect', {
             create: false,
             placeholder: 'Chọn cổ áo...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#brandSelect', {
+
+        const brandTomSelect = new TomSelect('#brandSelect', {
             create: false,
             placeholder: 'Chọn thương hiệu...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#genderSelect', {
+
+        const genderTomSelect = new TomSelect('#genderSelect', {
             create: false,
             placeholder: 'Chọn giới tính...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#quickAddDanhMuc', {
+
+        const quickAddDanhMucTomSelect = new TomSelect('#quickAddDanhMuc', {
             create: false,
             placeholder: '-- Chọn danh mục --',
             maxOptions: 200,
@@ -1116,7 +1131,84 @@
                 imageNameDisplay.text('Chưa chọn ảnh');
                 imagePreview.hide();
             }
+
+            var selectedProductId = /*[[${selectedProductId ?: null}]]*/ null;
+            if (selectedProductId) {
+                productTomSelect.setValue(selectedProductId);
+                fetchProductDetails(selectedProductId);
+            }
         });
+
+        function fetchProductDetails(productId) {
+            $.ajax({
+                url: `/acvstore/chi-tiet-san-pham/api/product-details/${productId}`,
+                type: 'GET',
+                success: function(response) {
+                    if (response.hasDetails) {
+                        setAttributeValues(response);
+                        disableAttributes();
+                    } else {
+                        enableAllAttributes();
+                        resetAttributeValues();
+                    }
+                },
+                error: function(xhr) {
+                    alert('Lỗi khi lấy thông tin sản phẩm: ' + (xhr.responseJSON ? xhr.responseJSON.error : xhr.statusText));
+                    enableAllAttributes();
+                }
+            });
+        }
+
+        // Set giá trị cho các select thuộc tính chung (sử dụng TomSelect API)
+        function setAttributeValues(data) {
+            originTomSelect.setValue(data.originId || '');
+            materialTomSelect.setValue(data.materialId || '');
+            styleTomSelect.setValue(data.styleId || '');
+            sleeveTomSelect.setValue(data.sleeveId || '');
+            collarTomSelect.setValue(data.collarId || '');
+            brandTomSelect.setValue(data.brandId || '');
+            genderTomSelect.setValue(data.gender || '');
+        }
+
+        // Disable các select thuộc tính chung và nút thêm nhanh (sử dụng TomSelect API)
+        function disableAttributes() {
+            originTomSelect.disable();
+            materialTomSelect.disable();
+            styleTomSelect.disable();
+            sleeveTomSelect.disable();
+            collarTomSelect.disable();
+            brandTomSelect.disable();
+            genderTomSelect.disable();
+
+            // Disable nút thêm nhanh cho các thuộc tính chung (không disable cho product, color, size)
+            $('.quick-add-btn[data-entity="origin"], .quick-add-btn[data-entity="material"], .quick-add-btn[data-entity="style"], ' +
+                '.quick-add-btn[data-entity="sleeve"], .quick-add-btn[data-entity="collar"], .quick-add-btn[data-entity="brand"]').prop('disabled', true);
+        }
+
+        // Enable tất cả và reset nếu cần (sử dụng TomSelect API)
+        function enableAllAttributes() {
+            originTomSelect.enable();
+            materialTomSelect.enable();
+            styleTomSelect.enable();
+            sleeveTomSelect.enable();
+            collarTomSelect.enable();
+            brandTomSelect.enable();
+            genderTomSelect.enable();
+
+            // Enable nút thêm nhanh
+            $('.quick-add-btn:not([data-entity="product"])').prop('disabled', false);
+        }
+
+        // Reset giá trị select thuộc tính chung (sử dụng TomSelect API)
+        function resetAttributeValues() {
+            originTomSelect.clear();
+            materialTomSelect.clear();
+            styleTomSelect.clear();
+            sleeveTomSelect.clear();
+            collarTomSelect.clear();
+            brandTomSelect.clear();
+            genderTomSelect.clear();
+        }
 
         $('#quickAddProductForm').on('submit', function(event) {
             event.preventDefault();

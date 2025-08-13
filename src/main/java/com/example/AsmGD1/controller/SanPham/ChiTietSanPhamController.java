@@ -187,6 +187,32 @@ public class ChiTietSanPhamController {
         }
     }
 
+    @GetMapping("/api/product-details/{productId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getProductDetails(@PathVariable UUID productId) {
+        try {
+            List<ChiTietSanPham> details = chiTietSanPhamService.findByProductId(productId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("hasDetails", !details.isEmpty());
+
+            if (!details.isEmpty()) {
+                ChiTietSanPham firstDetail = details.get(0);
+                response.put("originId", firstDetail.getXuatXu() != null ? firstDetail.getXuatXu().getId() : null);
+                response.put("materialId", firstDetail.getChatLieu() != null ? firstDetail.getChatLieu().getId() : null);
+                response.put("styleId", firstDetail.getKieuDang() != null ? firstDetail.getKieuDang().getId() : null);
+                response.put("sleeveId", firstDetail.getTayAo() != null ? firstDetail.getTayAo().getId() : null);
+                response.put("collarId", firstDetail.getCoAo() != null ? firstDetail.getCoAo().getId() : null);
+                response.put("brandId", firstDetail.getThuongHieu() != null ? firstDetail.getThuongHieu().getId() : null);
+                response.put("gender", firstDetail.getGioiTinh());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy chi tiết sản phẩm cho ID {}: ", productId, e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy thông tin sản phẩm: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/update-status")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
