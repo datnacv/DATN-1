@@ -10,6 +10,7 @@ import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
+import com.example.AsmGD1.service.WebKhachHang.EmailService;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,9 @@ public class KHDonMuaController {
 
     @Autowired
     private DonHangRepository donHangRepository;
+
+    @Autowired
+    private EmailService emailService;
 
     private final String UPLOAD_DIR;
 
@@ -184,6 +188,7 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
+
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
@@ -279,6 +284,16 @@ public class KHDonMuaController {
                     "Đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã bị khách hàng hủy.",
                     hoaDon.getDonHang()
             );
+
+            // Gửi email thông báo hủy đơn hàng
+            String emailContent = "<h2>Thông báo hủy đơn hàng</h2>" +
+                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p>Đơn hàng của bạn với mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được hủy thành công.</p>" +
+                    "<p><strong>Lý do hủy:</strong> " + ghiChu + "</p>" +
+                    "<p>Cảm ơn bạn đã sử dụng dịch vụ của ACV Store!</p>" +
+                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
+            emailService.sendEmail(nguoiDung.getEmail(), "Hủy đơn hàng - ACV Store", emailContent);
+
             return ResponseEntity.ok("Đơn hàng đã được hủy thành công.");
         } catch (IllegalStateException e) {
             return ResponseEntity.badRequest().body("Chỉ có thể hủy đơn hàng ở trạng thái 'Chưa xác nhận', 'Đã xác nhận', 'Đã xác nhận Online', 'Đang xử lý Online' hoặc 'Đang vận chuyển'.");
@@ -334,6 +349,14 @@ public class KHDonMuaController {
                     "Đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã được khách hàng xác nhận hoàn thành.",
                     hoaDon.getDonHang()
             );
+
+            // Gửi email thông báo hoàn thành đơn hàng
+            String emailContent = "<h2>Thông báo hoàn thành đơn hàng</h2>" +
+                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p>Đơn hàng của bạn với mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận hoàn thành.</p>" +
+                    "<p>Cảm ơn bạn đã mua sắm tại ACV Store! Chúng tôi mong được phục vụ bạn trong tương lai.</p>" +
+                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
+            emailService.sendEmail(nguoiDung.getEmail(), "Hoàn thành đơn hàng - ACV Store", emailContent);
 
             return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công và gửi thông báo cho admin."));
         } catch (Exception e) {

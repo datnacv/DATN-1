@@ -12,6 +12,7 @@ import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
+import com.example.AsmGD1.service.WebKhachHang.EmailService;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
@@ -76,6 +77,9 @@ public class HoaDonService {
 
     @Autowired
     private LichSuGiaoDichViRepository lichSuRepo;
+
+    @Autowired
+    private EmailService emailService;
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -603,12 +607,19 @@ public class HoaDonService {
                 throw new RuntimeException("Sản phẩm đã được trả trước đó: " + chiTiet.getTenSanPham());
             }
 
+            // Cập nhật trạng thái trả hàng và lý do
             chiTiet.setTrangThaiHoanTra(true);
             chiTiet.setLyDoTraHang(lyDoTraHang);
             chiTietDonHangRepository.save(chiTiet);
 
-            chiTietSanPhamRepository.updateStock(chiTiet.getChiTietSanPham().getId(), chiTiet.getSoLuong());
+            // Cập nhật số lượng tồn kho trực tiếp
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
+                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
+            int soLuongTra = chiTiet.getSoLuong();
+            chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + soLuongTra);
+            chiTietSanPhamRepository.save(chiTietSanPham);
 
+            // Ghi nhận lịch sử trả hàng
             LichSuTraHang lichSu = new LichSuTraHang();
             lichSu.setHoaDon(hoaDon);
             lichSu.setChiTietDonHang(chiTiet);
@@ -711,7 +722,7 @@ public class HoaDonService {
 
         hd.setTrangThai(newStatus);
         hd.setGhiChu(ghiChu);
-        if (List.of("Hoàn thành","Hủy đơn hàng","Vận chuyển thành công").contains(newStatus)) {
+        if (List.of("Hoàn thành", "Hủy đơn hàng", "Vận chuyển thành công").contains(newStatus)) {
             hd.setNgayThanhToan(LocalDateTime.now());
         }
 
@@ -735,7 +746,31 @@ public class HoaDonService {
                 donHangRepository.save(dh);
             }
         }
-        return hoaDonRepository.saveAndFlush(hd);
+
+        HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hd);
+
+        // Gửi email thông báo trạng thái đơn hàng
+        NguoiDung nguoiDung = hd.getNguoiDung();
+        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
+            String emailSubject = "Cập nhật trạng thái đơn hàng - ACV Store";
+            String emailContent = "<html>" +
+                    "<body style='font-family: Arial, sans-serif; color: #333;'>" +
+                    "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>" +
+                    "<img src='https://your-logo-url.com/logo.png' alt='ACV Store' style='width: 150px; margin-bottom: 20px;'>" +
+                    "<h2 style='color: #153054;'>Thông báo cập nhật đơn hàng</h2>" +
+                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p>Đơn hàng của bạn với mã <strong>" + hd.getDonHang().getMaDonHang() + "</strong> đã được cập nhật sang trạng thái: <strong>" + newStatus + "</strong>.</p>" +
+                    "<p><strong>Chi tiết:</strong> " + ghiChu + "</p>" +
+                    "<p style='margin-top: 20px;'>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +
+                    "<p style='margin-top: 20px;'>Trân trọng,<br>Đội ngũ ACV Store</p>" +
+                    "<a href='http://localhost:8080/dsdon-mua/chi-tiet/" + hd.getId() + "' style='display: inline-block; padding: 10px 20px; background: #153054; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px;'>Xem chi tiết đơn hàng</a>" +
+                    "</div>" +
+                    "</body>" +
+                    "</html>";
+            emailService.sendEmail(nguoiDung.getEmail(), emailSubject, emailContent);
+        }
+
+        return savedHoaDon;
     }
 
 }
