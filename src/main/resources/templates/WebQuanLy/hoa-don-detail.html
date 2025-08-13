@@ -1035,7 +1035,7 @@
             currency: 'VND',
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
-        }).format(value);
+        }).format(value).replace('₫', ' VNĐ'); // Thay '₫' bằng ' VNĐ' để rõ ràng
     }
 
     document.addEventListener('DOMContentLoaded', function () {

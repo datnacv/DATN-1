@@ -18,6 +18,9 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -28,8 +31,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -85,6 +86,7 @@ public class KHDonMuaController {
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
     private final String UPLOAD_DIR;
+
     @Autowired
     private ChiTietDonHangRepository chiTietDonHangRepository;
 
@@ -125,6 +127,7 @@ public class KHDonMuaController {
 
     @GetMapping
     public String donMuaPage(@RequestParam(name = "status", defaultValue = "tat-ca") String status,
+                             @RequestParam(name = "page", defaultValue = "0") int page,
                              Model model,
                              Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -147,9 +150,11 @@ public class KHDonMuaController {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-        List<HoaDon> danhSachHoaDon;
+        Pageable pageable = PageRequest.of(page, 5); // 5 đơn hàng mỗi trang
+        Page<HoaDon> hoaDonPage;
+
         if ("tat-ca".equalsIgnoreCase(status)) {
-            danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungId(nguoiDung.getId());
+            hoaDonPage = hoaDonRepo.findByDonHang_NguoiDungId(nguoiDung.getId(), pageable);
         } else {
             String statusDb = switch (status) {
                 case "cho-xac-nhan" -> "Chưa xác nhận";
@@ -162,9 +167,10 @@ public class KHDonMuaController {
                 case "hoan-tra" -> "Hoàn trả";
                 default -> "";
             };
-            danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb);
+            hoaDonPage = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb, pageable);
         }
 
+        List<HoaDon> danhSachHoaDon = hoaDonPage.getContent();
         for (HoaDon hoaDon : danhSachHoaDon) {
             hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
 
@@ -178,6 +184,8 @@ public class KHDonMuaController {
         }
 
         model.addAttribute("danhSachHoaDon", danhSachHoaDon);
+        model.addAttribute("currentPage", hoaDonPage.getNumber());
+        model.addAttribute("totalPages", hoaDonPage.getTotalPages());
         model.addAttribute("status", status);
         return "WebKhachHang/don-mua";
     }
@@ -202,7 +210,6 @@ public class KHDonMuaController {
         if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return "redirect:/dsdon-mua";
         }
-
 
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
