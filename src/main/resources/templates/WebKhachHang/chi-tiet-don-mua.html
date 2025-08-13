@@ -674,30 +674,34 @@
     </div>
 
     <!-- Enhanced Timeline -->
-    <div class="timeline-container" th:with="isCanceled=${currentStatus == 'Hủy đơn hàng'}">
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Chưa xác nhận' or currentStatus == 'Đã xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
+    <div class="timeline-container" th:with="isCanceled=${currentStatus == 'Hủy đơn hàng'}, isReturned=${currentStatus == 'Hoàn trả'}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Chưa xác nhận' or currentStatus == 'Đã xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-shopping-cart"></i></div>
         <div class="step-label">Đã đặt hàng</div>
       </div>
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Đã xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Đã xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-check-circle"></i></div>
         <div class="step-label">Cửa hàng xác nhận</div>
       </div>
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-cog"></i></div>
         <div class="step-label">Đang xử lý</div>
       </div>
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled or isReturned}">
         <div class="step-icon"><i class="fas fa-truck"></i></div>
         <div class="step-label">Đang vận chuyển</div>
       </div>
-      <div class="timeline-step" th:classappend="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
+      <div class="timeline-step" th:classappend="${isReturned or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled or isReturned}">
         <div class="step-icon"><i class="fas fa-box-open"></i></div>
         <div class="step-label">Đã giao hàng</div>
       </div>
-      <div class="timeline-step" th:classappend="${currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
+      <div class="timeline-step" th:classappend="${currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled or isReturned}">
         <div class="step-icon"><i class="fas fa-user-check"></i></div>
         <div class="step-label">Đã nhận hàng</div>
+      </div>
+      <div class="timeline-step" th:classappend="${#strings.contains(currentStatus, 'Đã trả hàng') ? 'completed return' : ''}">
+        <div class="step-icon"><i class="fas fa-undo-alt"></i></div>
+        <div class="step-label">Hoàn trả</div>
       </div>
       <div class="timeline-step" th:classappend="${isCanceled ? 'completed cancel' : ''}">
         <div class="step-icon"><i class="fas fa-times-circle"></i></div>
@@ -713,6 +717,13 @@
               onclick="confirmReceivedOrder(this)">
         <i class="fas fa-check-double"></i>
         Xác nhận đã nhận hàng
+      </button>
+
+      <button th:if="${currentStatus == 'Vận chuyển thành công'}"
+              class="btn-cancel"
+              th:attr="onclick=|window.location.href='/dsdon-mua/tra-hang/${hoaDon.id}'|">
+        <i class="fas fa-undo"></i>
+        Yêu cầu trả hàng
       </button>
 
       <button th:if="${currentStatus == 'Chưa xác nhận'}"

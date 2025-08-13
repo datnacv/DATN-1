@@ -1,9 +1,12 @@
 package com.example.AsmGD1.controller.WebKhachHang;
 
 import com.example.AsmGD1.entity.*;
+import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
+import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
+import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
@@ -26,7 +29,10 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+
+
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,7 +78,15 @@ public class KHDonMuaController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private LichSuTraHangRepository lichSuTraHangRepository;
+
+    @Autowired
+    private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
     private final String UPLOAD_DIR;
+    @Autowired
+    private ChiTietDonHangRepository chiTietDonHangRepository;
 
     public KHDonMuaController() {
         String os = System.getProperty("os.name").toLowerCase();
@@ -145,6 +159,7 @@ public class KHDonMuaController {
                 case "van-chuyen-thanh-cong" -> "Vận chuyển thành công";
                 case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
+                case "hoan-tra" -> "Hoàn trả";
                 default -> "";
             };
             danhSachHoaDon = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb);
@@ -496,5 +511,160 @@ public class KHDonMuaController {
             logger.error("Không thể lưu tệp: {}", file.getOriginalFilename(), e);
             throw new RuntimeException("Không thể lưu tệp: " + file.getOriginalFilename(), e);
         }
+    }
+
+    @GetMapping("/tra-hang/{id}")
+    public String traHangPage(@PathVariable("id") UUID id, Model model, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/dang-nhap";
+        }
+
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId()) || !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+            return "redirect:/dsdon-mua";
+        }
+
+        model.addAttribute("hoaDon", hoaDon);
+        model.addAttribute("user", nguoiDung);
+        return "WebKhachHang/tra-hang";
+    }
+
+    @PostMapping("/api/orders/return/{id}")
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> submitReturnRequest(
+            @PathVariable("id") UUID id,
+            @RequestParam("selectedProducts") List<UUID> selectedProductIds,
+            @RequestParam("reason") String reason,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam("email") String email,
+            Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            response.put("success", false);
+            response.put("message", "Vui lòng đăng nhập để gửi yêu cầu trả hàng.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            response.put("success", false);
+            response.put("message", "Không thể xác định người dùng.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            response.put("success", false);
+            response.put("message", "Người dùng không tồn tại.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId()) || !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+            response.put("success", false);
+            response.put("message", "Hóa đơn không hợp lệ hoặc không ở trạng thái cho phép trả hàng.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        if (selectedProductIds == null || selectedProductIds.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Vui lòng chọn ít nhất một sản phẩm để trả hàng.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        try {
+            // Tính tổng tiền hoàn và xử lý từng sản phẩm
+            double totalReturnAmount = 0;
+            for (UUID chiTietId : selectedProductIds) {
+                ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                        .filter(ct -> ct.getId().equals(chiTietId))
+                        .findFirst().orElse(null);
+                if (chiTiet == null || chiTiet.getTrangThaiHoanTra()) {
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm đã được trả hoặc không hợp lệ.");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                }
+
+                BigDecimal amount = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong()));
+                totalReturnAmount += amount.doubleValue();
+
+                // Tạo bản ghi lịch sử trả hàng
+                LichSuTraHang traHang = new LichSuTraHang();
+                traHang.setChiTietDonHang(chiTiet);
+                traHang.setHoaDon(hoaDon);
+                traHang.setSoLuong(chiTiet.getSoLuong());
+                traHang.setTongTienHoan(amount);
+                traHang.setLyDoTraHang(description != null ? reason + ": " + description : reason);
+                traHang.setThoiGianTra(LocalDateTime.now());
+                traHang.setTrangThai("Chờ xử lý");
+
+                // Lưu bản ghi trả hàng
+                lichSuTraHangRepository.save(traHang);
+
+                // Cập nhật trạng thái hoàn trả của chi tiết đơn hàng
+                chiTiet.setTrangThaiHoanTra(true);
+                chiTiet.setLyDoTraHang(description != null ? reason + ": " + description : reason);
+                chiTietDonHangRepository.save(chiTiet);
+
+                // Cập nhật số lượng tồn kho
+                ChiTietSanPham sanPham = chiTiet.getChiTietSanPham();
+                sanPham.setSoLuongTonKho(sanPham.getSoLuongTonKho() + chiTiet.getSoLuong());
+                chiTietSanPhamRepository.save(sanPham);
+            }
+
+            // Cập nhật trạng thái hóa đơn nếu tất cả sản phẩm đều được trả
+            boolean allReturned = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                    .allMatch(ChiTietDonHang::getTrangThaiHoanTra);
+            if (allReturned) {
+                hoaDon.setTrangThai("Hoàn trả");
+                hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn trả", "Khách hàng yêu cầu trả hàng: " + reason);
+                hoaDonService.save(hoaDon);
+            }
+
+            // Gửi thông báo hệ thống
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Yêu cầu trả hàng",
+                    "Khách hàng yêu cầu trả hàng cho đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + ". Lý do: " + reason,
+                    hoaDon.getDonHang()
+            );
+
+            // Gửi email thông báo
+            String emailContent = "<h2>Thông báo yêu cầu trả hàng</h2>" +
+                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
+                    "<p><strong>Lý do:</strong> " + reason + "</p>" +
+                    "<p><strong>Mô tả:</strong> " + (description != null ? description : "Không có") + "</p>" +
+                    "<p><strong>Tổng tiền hoàn:</strong> " + formatVND(totalReturnAmount) + "</p>" +
+                    "<p>Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.</p>" +
+                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
+            emailService.sendEmail(email, "Yêu cầu trả hàng - ACV Store", emailContent);
+
+            response.put("success", true);
+            response.put("message", "Yêu cầu trả hàng đã được gửi thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi gửi yêu cầu trả hàng: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    private String formatVND(double value) {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+        return formatter.format(value) + " VNĐ";
     }
 }
