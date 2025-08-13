@@ -70,7 +70,7 @@ public class KhachHangGioHangService {
         // Kiểm tra chiến dịch giảm giá
         BigDecimal giaGiam = chiTietSanPham.getGia();
         BigDecimal tienGiam = BigDecimal.ZERO;
-        Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProduct(chiTietSanPham.getSanPham().getId());
+        Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamId);
         if (activeCampaign.isPresent()) {
             ChienDichGiamGia campaign = activeCampaign.get();
             if (campaign.getPhanTramGiam() != null && campaign.getSoLuong() != null && campaign.getSoLuong() >= soLuong) {
