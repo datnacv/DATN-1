@@ -262,6 +262,7 @@ public class HomeController {
             response.put("gia", dto.getGia());
             response.put("oldPrice", dto.getOldPrice()); // Thêm giá gốc
             response.put("soLuongTonKho", dto.getSoLuongTonKho());
+            response.put("images", dto.getHinhAnhList());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Lỗi khi lấy chi tiết sản phẩm với sanPhamId={}, sizeId={}, colorId={}: ", sanPhamId, sizeId, colorId, e);

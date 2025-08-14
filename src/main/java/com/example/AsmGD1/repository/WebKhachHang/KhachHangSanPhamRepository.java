@@ -96,7 +96,7 @@ ORDER BY p.thoiGianTao DESC
     List<ChiTietSanPham> findActiveProductDetailsBySanPhamId(UUID sanPhamId);
 
     // Truy vấn hình ảnh sản phẩm
-    @Query("SELECT h.urlHinhAnh FROM HinhAnhSanPham h WHERE h.chiTietSanPham.id = :chiTietSanPhamId")
+    @Query("SELECT h.urlHinhAnh FROM HinhAnhSanPham h WHERE h.chiTietSanPham.id = :chiTietSanPhamId ORDER BY h.thuTu")
     List<String> findProductImagesByChiTietSanPhamId(UUID chiTietSanPhamId);
 
     // Truy vấn chi tiết sản phẩm theo sanPhamId, sizeId, colorId
@@ -148,5 +148,4 @@ ORDER BY p.thoiGianTao DESC
     ORDER BY SUM(ctdh.soLuong) DESC
 """)
     List<Object[]> findSanPhamBanChayWithGiaAndSold();
-
 }
