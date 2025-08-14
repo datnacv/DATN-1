@@ -736,7 +736,7 @@
 
     <!-- Enhanced Delivery Information -->
     <div class="info-section">
-      <h4><i class="fas fa-shipping-fast mr-2"></i>Thông tin giao hàng</h4>
+      <h4><i class="fas fo-shipping-fast mr-2"></i>Thông tin giao hàng</h4>
       <p><strong><i class="fas fa-map-marker-alt mr-2"></i>Địa chỉ:</strong> <span th:text="${hoaDon.donHang.diaChiGiaoHang}"></span></p>
       <p><strong><i class="fas fa-store mr-2"></i>Phương thức bán hàng:</strong> <span th:text="${hoaDon.donHang.phuongThucBanHang}"></span></p>
       <p><strong><i class="fas fa-sticky-note mr-2"></i>Ghi chú:</strong> <span th:text="${hoaDon.donHang.ghiChu != null ? hoaDon.donHang.ghiChu : 'Không có'}"></span></p>
@@ -827,12 +827,12 @@
       </div>
 
       <div class="payment-info">
-  <span class="payment-label">
-    <i class="fas fa-info-circle mr-2"></i>Trạng thái thanh toán
-  </span>
+        <span class="payment-label">
+          <i class="fas fa-info-circle mr-2"></i>Trạng thái thanh toán
+        </span>
         <span class="payment-value"
-              th:classappend="${(hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví thanh toán' or hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản')) or (hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví thanh toán' and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'chuyển khoản') and (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành')) ? 'text-green-600' : 'text-orange-600'}"
-              th:text="${(hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví thanh toán' or hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản')) or (hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví thanh toán' and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'chuyển khoản') and (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành')) ? 'Đã thanh toán' : 'Chưa thanh toán'}"></span>
+              th:classappend="${hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví' ? 'text-green-600' : (hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản' or (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví' and (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành'))) ? 'text-green-600' : 'text-orange-600')}"
+              th:text="${hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví' ? 'Đã thanh toán' : (hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản' or (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví' and (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành'))) ? 'Đã thanh toán' : 'Chưa thanh toán')}"></span>
       </div>
 
       <div class="payment-info">
@@ -842,7 +842,7 @@
         <span class="payment-value" th:text="${hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc == 'Tiền mặt' ? 'Thanh toán khi nhận hàng (COD)' : hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc}"></span>
       </div>
 
-      <p th:if="${!hoaDon.donHang.trangThaiThanhToan}" class="payment-note">
+      <p th:if="${!hoaDon.donHang.trangThaiThanhToan and hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví'}" class="payment-note">
         <i class="fas fa-exclamation-triangle mr-1"></i>Vui lòng thanh toán để hoàn tất đơn hàng
       </p>
     </div>
@@ -908,7 +908,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
-
   // Cập nhật số lượng giỏ hàng
   async function updateCartCount() {
     try {
@@ -924,7 +923,6 @@
       console.error('Lỗi khi cập nhật số lượng giỏ hàng:', error);
     }
   }
-
 
   // Format number for display
   function formatVND(value, isDiscount = false) {
@@ -1001,12 +999,12 @@
         if (logoutButton) logoutButton.style.display = 'none';
       }
     } catch (err) {
-      console.error('check-auth failed:', err); // KHÔNG redirect
+      console.error('check-auth failed:', err);
     }
   });
 
   // Logout
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEcventListener('DOMContentLoaded', () => {
     const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
       logoutButton.addEventListener('click', (e) => {
