@@ -557,7 +557,7 @@ public class HoaDonService {
 
         if ("Ví Thanh Toán".equalsIgnoreCase(pttt)
                 || "Ví".equalsIgnoreCase(pttt)
-                || "Chuyển khoản".equalsIgnoreCase(pttt) /* PayOS */) {
+                || "Chuyển khoản".equalsIgnoreCase(pttt)) {
             BigDecimal refundAmount = hoaDon.getTongTien();
             NguoiDung nguoiDung = hoaDon.getNguoiDung();
             ViThanhToan viThanhToan = viThanhToanRepo.findByNguoiDung(nguoiDung)
