@@ -47,4 +47,9 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
 
     List<HoaDon> findByDonHang_NguoiDungIdAndTrangThai(UUID nguoiDungId, String trangThai);
 
+    // Thêm phương thức hỗ trợ phân trang
+    Page<HoaDon> findByDonHang_NguoiDungId(UUID nguoiDungId, Pageable pageable);
+
+    // Thêm phương thức hỗ trợ phân trang với điều kiện trạng thái
+    Page<HoaDon> findByDonHang_NguoiDungIdAndTrangThai(UUID nguoiDungId, String trangThai, Pageable pageable);
 }

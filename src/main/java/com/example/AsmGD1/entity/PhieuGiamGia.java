@@ -24,6 +24,7 @@ public class PhieuGiamGia {
     @Column(name = "ten", nullable = false, length = 100)
     private String ten;
 
+
     @Column(name = "loai", nullable = false, length = 50)
     private String loai;
 
@@ -53,18 +54,24 @@ public class PhieuGiamGia {
     @Column(name = "kieu_phieu", length = 20)
     private String kieuPhieu;
 
+
     @Column(name = "gia_tri_giam_toi_da", precision = 10, scale = 2)
     private BigDecimal giaTriGiamToiDa;
 
     @Column(name = "ma", nullable = false, length = 50)
     private String ma;
 
+    @Column(name = "pham_vi_ap_dung", length = 20) // ORDER | SHIPPING
+    private String phamViApDung;
+
     @PrePersist
     public void prePersist() {
         if (thoiGianTao == null) thoiGianTao = LocalDateTime.now();
+        if (phamViApDung == null || phamViApDung.isBlank()) phamViApDung = "ORDER"; // default an toàn
+        if (giaTriGiam == null) giaTriGiam = BigDecimal.ZERO; // tránh null pointer
     }
 
-    // Many-to-many "thông thường" qua bảng nối (SỬA: Bỏ cascade để tránh merge PTTT)
+    // Many-to-many "thông thường" qua bảng nối (Bỏ cascade để tránh merge PTTT)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "phieu_giam_gia_phuong_thuc_thanh_toan",
@@ -72,6 +79,10 @@ public class PhieuGiamGia {
             inverseJoinColumns = @JoinColumn(name = "id_phuong_thuc_thanh_toan")
     )
     private Set<PhuongThucThanhToan> phuongThucThanhToans = new HashSet<>();
+
+    // Helpers
+    public boolean isOrderScope()    { return "ORDER".equalsIgnoreCase(phamViApDung); }
+    public boolean isShippingScope() { return "SHIPPING".equalsIgnoreCase(phamViApDung); }
 
     public String getGiaTriGiamToiThieuFormatted() {
         NumberFormat formatter = NumberFormat.getNumberInstance(new Locale("vi", "VN"));

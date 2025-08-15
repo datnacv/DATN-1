@@ -1,4 +1,3 @@
-
 package com.example.AsmGD1.service.HoaDon;
 
 import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
@@ -12,6 +11,7 @@ import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -81,6 +81,9 @@ public class HoaDonService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private ThongBaoService thongBaoService;
+
     public byte[] generateHoaDonPDF(String id) {
         try {
             UUID uuid = UUID.fromString(id);
@@ -142,7 +145,6 @@ public class HoaDonService {
             addInfoCell(infoTable, fontBold, fontNormal, "Khách hàng:", hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Khách lẻ");
             addInfoCell(infoTable, fontBold, fontNormal, "Số điện thoại:", hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ");
 
-            // Lấy tên nhân viên từ trường nhanVien
             String tenNhanVien = hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getHoTen() : "Không rõ";
             addInfoCell(infoTable, fontBold, fontNormal, "Tên nhân viên:", tenNhanVien);
 
@@ -193,25 +195,20 @@ public class HoaDonService {
 
             document.add(table);
 
-            // Tính tổng tiền hàng (tongTienHang) trước khi giảm giá
             BigDecimal tongTienHang = donHang.getChiTietDonHangs().stream()
                     .filter(chiTiet -> chiTiet.getTrangThaiHoanTra() == null || !chiTiet.getTrangThaiHoanTra())
                     .map(ChiTietDonHang::getThanhTien)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-// Xác định và tính số tiền giảm giá
             BigDecimal discountAmount;
             BigDecimal tienGiam = hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO;
             if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
-                // Nếu TienGiam > 100, giả định là tiền mặt (VD: 200,000 VNĐ)
                 discountAmount = tienGiam;
             } else {
-                // Nếu TienGiam <= 100, giả định là phần trăm (VD: 10 cho 10%)
                 discountAmount = tongTienHang.multiply(tienGiam)
                         .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
             }
 
-// Tạo bảng tổng kết
             PdfPTable summaryTable = new PdfPTable(2);
             summaryTable.setWidthPercentage(50);
             summaryTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
@@ -340,7 +337,6 @@ public class HoaDonService {
         hoaDon.setTienGiam(refreshedDonHang.getTienGiam() != null ? refreshedDonHang.getTienGiam() : BigDecimal.ZERO);
         hoaDon.setPhuongThucThanhToan(refreshedDonHang.getPhuongThucThanhToan());
 
-        // Lấy thông tin nhân viên từ SecurityContextHolder và lưu vào trường nhanVien
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung nhanVien = (NguoiDung) auth.getPrincipal();
@@ -351,24 +347,22 @@ public class HoaDonService {
 
         String trangThai;
         String ghiChu;
-        // Kiểm tra phương thức thanh toán để đặt trạng thái thanh toán
-        if ("Ví Thanh Toán".equalsIgnoreCase(refreshedDonHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
-            refreshedDonHang.setTrangThaiThanhToan(true); // Đặt trạng thái thanh toán thành true
+        if ("Ví Thanh Toán".equalsIgnoreCase(refreshedDonHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
+            refreshedDonHang.setTrangThaiThanhToan(true);
             refreshedDonHang.setThoiGianThanhToan(LocalDateTime.now());
-            donHangRepository.save(refreshedDonHang); // Lưu cập nhật DonHang
-            trangThai = "Đã xác nhận Online"; // Hoặc trạng thái phù hợp
+            donHangRepository.save(refreshedDonHang);
+            trangThai = "Đã xác nhận Online";
             ghiChu = "Thanh toán bằng ví điện tử thành công";
-
         } else if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Hoàn thành";
             ghiChu = "Hoàn thành (Tại quầy)";
-            refreshedDonHang.setTrangThaiThanhToan(true); // Có thể đặt true nếu thanh toán tại quầy
+            refreshedDonHang.setTrangThaiThanhToan(true);
             refreshedDonHang.setThoiGianThanhToan(LocalDateTime.now());
             donHangRepository.save(refreshedDonHang);
         } else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Chưa xác nhận";
             ghiChu = "Hóa đơn Online được tạo";
-        } else { // Giao hàng
+        } else {
             trangThai = "Đã xác nhận";
             ghiChu = "Đã xác nhận đơn hàng Giao hàng";
         }
@@ -384,9 +378,31 @@ public class HoaDonService {
         lichSu.setGhiChu(ghiChu);
         hoaDon.getLichSuHoaDons().add(lichSu);
 
-        hoaDonRepository.saveAndFlush(hoaDon);
-    }
+        HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hoaDon);
 
+
+        // Gửi email thông báo tạo hóa đơn
+        NguoiDung nguoiDung = hoaDon.getNguoiDung();
+        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
+            String emailSubject = "Tạo hóa đơn thành công - ACV Store";
+            String emailContent = "<html>" +
+                    "<body style='font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;'>" +
+                    "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #fff;'>" +
+                    "<h2 style='color: #0000FF; text-align: center;'>ACV Store Xin Chào</h2>" +
+                    "<h2 style='color: #153054; text-align: center;'>Hóa đơn mới được tạo</h2>" +
+                    "<p style='text-align: center;'>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p style='text-align: center;'>Hóa đơn của bạn với mã <strong>" + refreshedDonHang.getMaDonHang() + "</strong> đã được tạo thành công.</p>" +
+                    "<p style='text-align: center;'><strong>Trạng thái:</strong> " + trangThai + "</p>" +
+                    "<p style='text-align: center;'><strong>Chi tiết:</strong> " + ghiChu + "</p>" +
+                    "<p style='text-align: center; margin-top: 20px;'>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +
+                    "<p style='text-align: center; margin-top: 20px;'>Trân trọng,<br>Đội ngũ ACV Store</p>" +
+                    "<a href='http://localhost:8080/dsdon-mua/chi-tiet/" + savedHoaDon.getId() + "' style='display: block; padding: 10px 20px; background: #153054; color: white; text-decoration: none; text-align: center; border-radius: 5px; margin-top: 20px; margin-left: auto; margin-right: auto; width: fit-content;'>Xem chi tiết hóa đơn</a>" +
+                    "</div>" +
+                    "</body>" +
+                    "</html>";
+            emailService.sendEmail(nguoiDung.getEmail(), emailSubject, emailContent);
+        }
+    }
 
     public Page<HoaDon> findAll(String search, String trangThai, String paymentMethod, String salesMethod, Pageable pageable) {
         Sort sort = Sort.by(Sort.Direction.DESC, "ngayTao");
@@ -423,7 +439,7 @@ public class HoaDonService {
             dto.setDiaChi(hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getChiTietDiaChi() != null ? hoaDon.getNguoiDung().getChiTietDiaChi() : hoaDon.getGhiChu() != null ? hoaDon.getGhiChu() : "Không rõ");
             dto.setTongTienHang(hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
             dto.setTongTien(hoaDon.getTongTien());
-            dto.setTienGiam(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO); // Thêm dòng này
+            dto.setTienGiam(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO);
             dto.setPhiVanChuyen(hoaDon.getDonHang().getPhiVanChuyen() != null ? hoaDon.getDonHang().getPhiVanChuyen() : BigDecimal.ZERO);
             dto.setPhuongThucThanhToan(hoaDon.getPhuongThucThanhToan() != null ? hoaDon.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
             dto.setTrangThaiThanhToan(hoaDon.getTrangThai());
@@ -486,27 +502,23 @@ public class HoaDonService {
         lichSu.setGhiChu(ghiChu);
         lichSuHoaDonRepository.save(lichSu);
         hoaDon.getLichSuHoaDons().add(lichSu);
-        System.out.println("Đã thêm LichSuHoaDon: " + trangThai); // Thêm log
+        System.out.println("Đã thêm LichSuHoaDon: " + trangThai);
     }
 
     public String getCurrentStatus(HoaDon hoaDon) {
-        // Kiểm tra trạng thái Hủy đơn hàng trước
         if ("Hủy đơn hàng".equals(hoaDon.getTrangThai())) {
             return "Hủy đơn hàng";
         }
 
-        // Kiểm tra trạng thái Hoàn thành
         if ("Hoàn thành".equals(hoaDon.getTrangThai()) ||
                 hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
             return "Hoàn thành";
         }
 
-        // Ghi log lịch sử để debug
         System.out.println("LichSuHoaDon: " + hoaDon.getLichSuHoaDons().stream()
                 .map(ls -> ls.getTrangThai() + " at " + ls.getThoiGian())
                 .collect(Collectors.toList()));
 
-        // Kiểm tra lịch sử trả hàng
         List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
         long totalItems = chiTietDonHangs.size();
         long returnedItems = chiTietDonHangs.stream()
@@ -543,21 +555,22 @@ public class HoaDonService {
             throw new IllegalStateException("Hóa đơn không thể hủy khi ở trạng thái: " + currentStatus);
         }
 
-        // Check if the order was paid using wallet
-        if ("Ví".equalsIgnoreCase(hoaDon.getPhuongThucThanhToan().getTenPhuongThuc())) {
-            BigDecimal refundAmount = hoaDon.getTongTien();
+        String pttt = hoaDon.getPhuongThucThanhToan() != null
+                ? hoaDon.getPhuongThucThanhToan().getTenPhuongThuc().trim()
+                : "";
 
-            // Refund to wallet
+        if ("Ví Thanh Toán".equalsIgnoreCase(pttt)
+                || "Ví".equalsIgnoreCase(pttt)
+                || "Chuyển khoản".equalsIgnoreCase(pttt)) {
+            BigDecimal refundAmount = hoaDon.getTongTien();
             NguoiDung nguoiDung = hoaDon.getNguoiDung();
             ViThanhToan viThanhToan = viThanhToanRepo.findByNguoiDung(nguoiDung)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
 
-            // Add the refund amount to the wallet balance
             viThanhToan.setSoDu(viThanhToan.getSoDu().add(refundAmount));
             viThanhToan.setThoiGianCapNhat(LocalDateTime.now());
             viThanhToanRepo.save(viThanhToan);
 
-            // Record the transaction in the wallet transaction history
             LichSuGiaoDichVi lichSu = new LichSuGiaoDichVi();
             lichSu.setIdViThanhToan(viThanhToan.getId());
             lichSu.setLoaiGiaoDich("Hoàn tiền");
@@ -568,21 +581,12 @@ public class HoaDonService {
             lichSuRepo.save(lichSu);
         }
 
-        // Cập nhật trạng thái hóa đơn
-        hoaDon.setTrangThai("Hủy đơn hàng");
-        hoaDon.setGhiChu(ghiChu);
-        hoaDon.setNgayThanhToan(LocalDateTime.now());
+        // Gọi updateStatus để cập nhật trạng thái và gửi email
+        updateStatus(hoaDonId, "Hủy đơn hàng", ghiChu, true);
 
-        // Thêm lịch sử hóa đơn
-        addLichSuHoaDon(hoaDon, "Hủy đơn hàng", ghiChu);
-
-        // Khôi phục tồn kho sản phẩm
         for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
             chiTietSanPhamRepository.updateStock(chiTiet.getChiTietSanPham().getId(), chiTiet.getSoLuong());
         }
-
-        // Lưu hóa đơn
-        save(hoaDon);
     }
 
     @Transactional
@@ -607,19 +611,16 @@ public class HoaDonService {
                 throw new RuntimeException("Sản phẩm đã được trả trước đó: " + chiTiet.getTenSanPham());
             }
 
-            // Cập nhật trạng thái trả hàng và lý do
             chiTiet.setTrangThaiHoanTra(true);
             chiTiet.setLyDoTraHang(lyDoTraHang);
             chiTietDonHangRepository.save(chiTiet);
 
-            // Cập nhật số lượng tồn kho trực tiếp
             ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
             int soLuongTra = chiTiet.getSoLuong();
             chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + soLuongTra);
             chiTietSanPhamRepository.save(chiTietSanPham);
 
-            // Ghi nhận lịch sử trả hàng
             LichSuTraHang lichSu = new LichSuTraHang();
             lichSu.setHoaDon(hoaDon);
             lichSu.setChiTietDonHang(chiTiet);
@@ -639,16 +640,13 @@ public class HoaDonService {
                 .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
                 .count();
 
-
-
         hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
 
         String trangThaiTraHang = returnedItems == totalItems ? "Đã trả hàng" : "Đã trả hàng một phần";
         String ghiChu = "Lý do trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn trả: " + formatCurrency(tongTienHoan);
-        addLichSuHoaDon(hoaDon, trangThaiTraHang, ghiChu);
-        hoaDon.setGhiChu(ghiChu);
-        hoaDon.setTrangThai(trangThaiTraHang);
-        save(hoaDon);
+
+        // Gọi updateStatus để cập nhật trạng thái và gửi email
+        updateStatus(hoaDonId, trangThaiTraHang, ghiChu, true);
     }
 
     public List<ChiTietDonHang> getReturnableItems(UUID hoaDonId) {
@@ -658,10 +656,10 @@ public class HoaDonService {
                 .filter(item -> item.getTrangThaiHoanTra() == null || !item.getTrangThaiHoanTra())
                 .collect(Collectors.toList());
     }
+
     private void validateTransition(String oldStatus, String newStatus, String salesMethod) {
         String o = oldStatus == null ? "Chưa xác nhận" : oldStatus;
 
-        // Hủy đơn
         if ("Hủy đơn hàng".equals(newStatus)) {
             if (List.of("Chưa xác nhận", "Đã xác nhận", "Đã xác nhận Online", "Đang xử lý Online", "Đang vận chuyển").contains(o)) {
                 return;
@@ -669,13 +667,11 @@ public class HoaDonService {
             throw new IllegalStateException("Không thể hủy từ trạng thái: " + o);
         }
 
-        // Tại quầy
         if ("Tại quầy".equalsIgnoreCase(salesMethod)) {
             if (("Chưa xác nhận".equals(o) && "Hoàn thành".equals(newStatus)) || "Hoàn thành".equals(newStatus)) return;
             throw new IllegalStateException("Luồng Tại quầy không hỗ trợ chuyển từ " + o + " -> " + newStatus);
         }
 
-        // Giao hàng
         if ("Giao hàng".equalsIgnoreCase(salesMethod)) {
             if ("Chưa xác nhận".equals(o) && "Đã xác nhận".equals(newStatus)) return;
             if ("Đã xác nhận".equals(o) && "Đang vận chuyển".equals(newStatus)) return;
@@ -684,7 +680,6 @@ public class HoaDonService {
             throw new IllegalStateException("Luồng Giao hàng không hỗ trợ chuyển từ " + o + " -> " + newStatus);
         }
 
-        // Online
         if ("Online".equalsIgnoreCase(salesMethod)) {
             if ("Chưa xác nhận".equals(o) && "Đã xác nhận Online".equals(newStatus)) return;
             if ("Đã xác nhận Online".equals(o) && "Đang xử lý Online".equals(newStatus)) return;
@@ -696,6 +691,7 @@ public class HoaDonService {
 
         throw new IllegalStateException("Phương thức bán hàng không hợp lệ: " + salesMethod);
     }
+
     private String mapHoaDonToDonHangStatus(String invoiceStatus) {
         return switch (invoiceStatus) {
             case "Chưa xác nhận" -> "cho_xac_nhan";
@@ -705,7 +701,7 @@ public class HoaDonService {
             case "Vận chuyển thành công" -> "da_giao";
             case "Hoàn thành" -> "hoan_thanh";
             case "Hủy đơn hàng" -> "huy";
-            default -> null; // không thay đổi trạng thái DonHang
+            default -> null;
         };
     }
 
@@ -743,22 +739,61 @@ public class HoaDonService {
         }
 
         HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hd);
+        // 🔔 THÔNG BÁO CÁ NHÂN CHO CHỦ ĐƠN
+        try {
+            DonHang dh = savedHoaDon.getDonHang();
+            String ma = dh.getMaDonHang();
+            String tieuDe, noiDung;
 
-        // Gửi email thông báo trạng thái đơn hàng
+            switch (newStatus) {
+                case "Đã xác nhận":
+                case "Đã xác nhận Online":
+                    tieuDe = "Đơn hàng đã được xác nhận";
+                    noiDung = "Đơn " + ma + " của bạn đã được xác nhận. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Đang xử lý Online":
+                    tieuDe = "Đơn hàng đang xử lý";
+                    noiDung = "Đơn " + ma + " đang được xử lý. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Đang vận chuyển":
+                    tieuDe = "Đơn hàng đang vận chuyển";
+                    noiDung = "Đơn " + ma + " đang trên đường giao. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Vận chuyển thành công":
+                    tieuDe = "Vận chuyển thành công";
+                    noiDung = "Đơn " + ma + " đã giao thành công. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Hoàn thành":
+                    tieuDe = "Hoàn thành đơn hàng";
+                    noiDung = "Đơn " + ma + " đã hoàn thành. Cảm ơn bạn! " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Hủy đơn hàng":
+                    tieuDe = "Đơn hàng đã bị hủy";
+                    noiDung = "Đơn " + ma + " đã bị hủy. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                default:
+                    tieuDe = "Cập nhật đơn hàng";
+                    noiDung = "Đơn " + ma + " cập nhật: " + newStatus + ". " + (ghiChu != null ? ghiChu : "");
+            }
+
+            thongBaoService.thongBaoCapNhatTrangThai(dh.getId(), tieuDe, noiDung);
+        } catch (Exception ignore) {}
+
+
         NguoiDung nguoiDung = hd.getNguoiDung();
         if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
             String emailSubject = "Cập nhật trạng thái đơn hàng - ACV Store";
             String emailContent = "<html>" +
-                    "<body style='font-family: Arial, sans-serif; color: #333;'>" +
-                    "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;'>" +
-                    "<img src='https://your-logo-url.com/logo.png' alt='ACV Store' style='width: 150px; margin-bottom: 20px;'>" +
-                    "<h2 style='color: #153054;'>Thông báo cập nhật đơn hàng</h2>" +
-                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
-                    "<p>Đơn hàng của bạn với mã <strong>" + hd.getDonHang().getMaDonHang() + "</strong> đã được cập nhật sang trạng thái: <strong>" + newStatus + "</strong>.</p>" +
-                    "<p><strong>Chi tiết:</strong> " + ghiChu + "</p>" +
-                    "<p style='margin-top: 20px;'>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +
-                    "<p style='margin-top: 20px;'>Trân trọng,<br>Đội ngũ ACV Store</p>" +
-                    "<a href='http://localhost:8080/dsdon-mua/chi-tiet/" + hd.getId() + "' style='display: inline-block; padding: 10px 20px; background: #153054; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px;'>Xem chi tiết đơn hàng</a>" +
+                    "<body style='font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;'>" +
+                    "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #fff;'>" +
+                    "<h2 style='color: #0000FF; text-align: center;'>ACV Store Xin Chào</h2>" +
+                    "<h2 style='color: #153054; text-align: center;'>Cập nhật trạng thái đơn hàng</h2>" +
+                    "<p style='text-align: center;'>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p style='text-align: center;'>Đơn hàng của bạn với mã <strong>" + hd.getDonHang().getMaDonHang() + "</strong> đã được cập nhật sang trạng thái: <strong>" + newStatus + "</strong>.</p>" +
+                    "<p style='text-align: center;'><strong>Chi tiết:</strong> " + ghiChu + "</p>" +
+                    "<p style='text-align: center; margin-top: 20px;'>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +
+                    "<p style='text-align: center; margin-top: 20px;'>Trân trọng,<br>Đội ngũ ACV Store</p>" +
+                    "<a href='http://localhost:8080/dsdon-mua/chi-tiet/" + hd.getId() + "' style='display: block; padding: 10px 20px; background: #153054; color: white; text-decoration: none; text-align: center; border-radius: 5px; margin-top: 20px; margin-left: auto; margin-right: auto; width: fit-content;'>Xem chi tiết đơn hàng</a>" +
                     "</div>" +
                     "</body>" +
                     "</html>";
@@ -767,5 +802,4 @@ public class HoaDonService {
 
         return savedHoaDon;
     }
-
 }

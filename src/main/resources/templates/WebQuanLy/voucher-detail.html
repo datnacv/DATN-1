@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
-    <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
         :root {
             --primary-color: #000000;
@@ -318,7 +317,54 @@
                     <input type="text" th:field="*{ten}" class="form-control" readonly placeholder="Tên phiếu giảm giá"/>
                 </div>
 
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-alt me-2"></i>Ngày bắt đầu:
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               readonly
+                               th:value="${voucher.ngayBatDau != null ? #temporals.format(voucher.ngayBatDau, 'dd/MM/yyyy HH:mm') : ''}" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-check me-2"></i>Ngày kết thúc:
+                        </label>
+                        <input type="text"
+                               class="form-control"
+                               readonly
+                               th:value="${voucher.ngayKetThuc != null ? #temporals.format(voucher.ngayKetThuc, 'dd/MM/yyyy HH:mm') : ''}" />
+                    </div>
+                </div>
+
                 <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-truck me-2"></i>Phạm vi áp dụng:</label>
+                    <div>
+                        <label class="form-check-label me-3">
+                            <input type="radio" th:field="*{phamViApDung}" value="ORDER" disabled> Giảm giá đơn hàng
+                        </label>
+                        <label class="form-check-label">
+                            <input type="radio" th:field="*{phamViApDung}" value="SHIPPING" disabled> Giảm phí vận chuyển
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Kiểu freeship (chỉ hiện khi chọn SHIPPING) -->
+                <div class="mb-3" id="shipTypeGroup" th:style="${voucher.phamViApDung == 'SHIPPING' ? 'display: block;' : 'display: none;'}">
+                    <label class="form-label"><i class="fas fa-truck-fast me-2"></i>Kiểu freeship:</label>
+                    <div>
+                        <label class="form-check-label me-3">
+                            <input type="radio" th:field="*{loai}" value="FREESHIP_FULL" disabled> Miễn phí ship toàn phần
+                        </label>
+                        <label class="form-check-label">
+                            <input type="radio" th:field="*{loai}" value="FREESHIP_CAP" disabled> Miễn phí ship tối đa X₫
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Kiểu giảm (chỉ hiện khi chọn ORDER) -->
+                <div class="mb-3" id="discountTypeGroup" th:style="${voucher.phamViApDung == 'ORDER' ? 'display: block;' : 'display: none;'}">
                     <label class="form-label"><i class="fas fa-percentage me-2"></i>Kiểu giảm:</label>
                     <div>
                         <label class="form-check-label me-3">
@@ -331,33 +377,22 @@
                 </div>
 
                 <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-6" id="discountValueGroup" th:style="${voucher.loai == 'FREESHIP_FULL' ? 'display: none;' : 'display: block;'}">
                         <label class="form-label">Giá trị giảm:</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="giaTriGiam" name="giaTriGiam"
-                                   th:value="${giaTriGiamStr}" readonly placeholder="0">
-                            <span class="input-group-text" id="discountUnit" th:text="${voucher.loai == 'PERCENT' ? '%' : '₫'}">%</span>
+                                   th:value="${voucher.loai == 'FREESHIP_FULL' ? 'Miễn phí toàn phần' : (giaTriGiamStr)}" readonly placeholder="0">
+                            <span class="input-group-text" id="discountUnit"
+                                  th:text="${voucher.loai == 'PERCENT' ? '%' : (voucher.loai == 'FREESHIP_FULL' ? '' : '₫')}">%</span>
                         </div>
                     </div>
-                    <div class="col-md-6" th:if="${voucher.loai == 'PERCENT'}">
+                    <div class="col-md-6" id="maxDiscountGroup" th:style="${voucher.loai == 'PERCENT' || voucher.loai == 'FREESHIP_CAP' ? 'display: block;' : 'display: none;'}">
                         <label class="form-label">Giá trị giảm tối đa:</label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="giaTriGiamToiDa" name="giaTriGiamToiDa"
                                    th:value="${giaTriGiamToiDaStr}" readonly placeholder="0">
                             <span class="input-group-text">₫</span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-users me-2"></i>Loại phiếu:</label>
-                    <div>
-                        <label class="form-check-label me-3">
-                            <input type="radio" th:field="*{kieuPhieu}" value="cong_khai" disabled> Công khai
-                        </label>
-                        <label class="form-check-label">
-                            <input type="radio" th:field="*{kieuPhieu}" value="ca_nhan" disabled> Cá nhân
-                        </label>
                     </div>
                 </div>
 
@@ -378,24 +413,15 @@
                     </div>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">
-                            <i class="fas fa-calendar-alt me-2"></i>Ngày bắt đầu:
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-users me-2"></i>Loại phiếu:</label>
+                    <div>
+                        <label class="form-check-label me-3">
+                            <input type="radio" th:field="*{kieuPhieu}" value="cong_khai" disabled> Công khai
                         </label>
-                        <input type="text"
-                               class="form-control"
-                               readonly
-                               th:value="${voucher.ngayBatDau != null ? #temporals.format(voucher.ngayBatDau, 'dd/MM/yyyy HH:mm') : ''}" />
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">
-                            <i class="fas fa-calendar-check me-2"></i>Ngày kết thúc:
+                        <label class="form-check-label">
+                            <input type="radio" th:field="*{kieuPhieu}" value="ca_nhan" disabled> Cá nhân
                         </label>
-                        <input type="text"
-                               class="form-control"
-                               readonly
-                               th:value="${voucher.ngayKetThuc != null ? #temporals.format(voucher.ngayKetThuc, 'dd/MM/yyyy HH:mm') : ''}" />
                     </div>
                 </div>
 

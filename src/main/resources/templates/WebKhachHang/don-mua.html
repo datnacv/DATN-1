@@ -408,6 +408,54 @@
             background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%);
         }
 
+        /* Enhanced Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .pagination .page-item {
+            margin: 0;
+        }
+
+        .pagination .page-item .page-link {
+            color: #153054;
+            background: #f1f5f9;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(21, 48, 84, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .pagination .page-item .page-link:hover {
+            background: #e0ebf5;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 10px rgba(21, 48, 84, 0.1);
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #153054;
+            background: #e2e8f0;
+            cursor: not-allowed;
+        }
+
         /* Responsive improvements */
         @media (max-width: 768px) {
             body { padding-top: 100px; }
@@ -441,6 +489,16 @@
             .order-product-img {
                 margin-right: 0;
                 margin-bottom: 12px;
+            }
+
+            .pagination {
+                flex-direction: column;
+                gap: 10px;
+                padding: 8px;
+            }
+
+            .pagination .page-item .page-link {
+                padding: 8px 12px;
             }
         }
 
@@ -578,6 +636,26 @@
                 </a>
             </div>
         </div>
+
+        <!-- Phân trang -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <li class="page-item" th:class="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/dsdon-mua(status=${status}, page=${currentPage - 1})}" aria-label="Previous">
+                        <span aria-hidden="true">Trước</span>
+                    </a>
+                </li>
+                <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    th:class="${i == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/dsdon-mua(status=${status}, page=${i})}" th:text="${i + 1}"></a>
+                </li>
+                <li class="page-item" th:class="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/dsdon-mua(status=${status}, page=${currentPage + 1})}" aria-label="Next">
+                        <span aria-hidden="true">Sau</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
     <div th:if="${danhSachHoaDon == null or #lists.isEmpty(danhSachHoaDon)}" class="empty-state">

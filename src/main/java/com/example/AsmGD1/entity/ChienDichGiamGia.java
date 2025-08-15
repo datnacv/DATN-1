@@ -3,6 +3,7 @@ package com.example.AsmGD1.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import jakarta.persistence.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.UUID;
 import java.math.BigDecimal;
@@ -32,9 +33,11 @@ public class ChienDichGiamGia {
     @Column(name = "phan_tram_giam")
     private BigDecimal phanTramGiam;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     @Column(name = "ngay_bat_dau")
     private LocalDateTime ngayBatDau;
 
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     @Column(name = "ngay_ket_thuc")
     private LocalDateTime ngayKetThuc;
 
