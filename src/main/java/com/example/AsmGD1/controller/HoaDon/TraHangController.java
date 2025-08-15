@@ -3,9 +3,12 @@ package com.example.AsmGD1.controller.HoaDon;
 import com.example.AsmGD1.dto.HoaDonDTO;
 import com.example.AsmGD1.entity.ChiTietDonHang;
 import com.example.AsmGD1.entity.HoaDon;
+import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -26,13 +29,20 @@ public class TraHangController {
 
     @GetMapping("/{hoaDonId}")
     public String showReturnPage(@PathVariable String hoaDonId, @RequestParam(required = false) String chiTietDonHangId, Model model) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String tenDangNhap = authentication.getName();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
         try {
             UUID uuid = UUID.fromString(hoaDonId);
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
 
-            if (!"Hoàn thành".equals(hoaDon.getTrangThai()) && !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
-                throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành' hoặc 'Vận chuyển thành công' để thực hiện trả hàng.");
+            if (!"Hoàn thành".equals(hoaDon.getTrangThai()) && !"Vận chuyển thành công".equals(hoaDon.getTrangThai()) && !"Đã trả hàng một phần".equals(hoaDon.getTrangThai())) {
+                throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành', 'Vận chuyển thành công' hoặc 'Đã trả hàng một phần' để thực hiện trả hàng.");
             }
 
             HoaDonDTO hoaDonDTO = hoaDonService.getHoaDonDetail(hoaDonId);
@@ -40,6 +50,7 @@ public class TraHangController {
             model.addAttribute("hoaDon", hoaDonDTO);
             model.addAttribute("returnableItems", returnableItems);
             model.addAttribute("chiTietDonHangId", chiTietDonHangId != null ? UUID.fromString(chiTietDonHangId) : null);
+
             return "WebQuanLy/tra-hang";
         } catch (IllegalArgumentException e) {
             model.addAttribute("error", "ID hóa đơn không hợp lệ: " + hoaDonId);
@@ -63,8 +74,10 @@ public class TraHangController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
 
-            if (!"Hoàn thành".equals(hoaDon.getTrangThai())) {
-                throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành' để thực hiện trả hàng.");
+            // Cho phép trả hàng khi trạng thái là "Hoàn thành", "Vận chuyển thành công" hoặc "Đã trả hàng một phần"
+            if (!"Hoàn thành".equals(hoaDon.getTrangThai()) && !"Vận chuyển thành công".equals(hoaDon.getTrangThai())
+                    && !"Đã trả hàng một phần".equals(hoaDon.getTrangThai())) {
+                throw new IllegalStateException("Hóa đơn phải ở trạng thái 'Hoàn thành', 'Vận chuyển thành công' hoặc 'Đã trả hàng một phần' để thực hiện trả hàng.");
             }
 
             @SuppressWarnings("unchecked")

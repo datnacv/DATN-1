@@ -7,7 +7,6 @@ import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.DanhMucService;
 import com.example.AsmGD1.service.SanPham.SanPhamService;
-import com.example.AsmGD1.util.CloudinaryUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,10 +35,32 @@ public class SanPhamController {
     private DanhMucService danhMucService;
 
     @Autowired
-    private CloudinaryUtil cloudinaryUtil;
-
-    @Autowired
     private NguoiDungService nguoiDungService;
+
+    // Helper method to check if current user is admin
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "admin".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    // Helper method to add user info to model
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+        } else {
+            // Fallback for testing
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("isAdmin", false);
+        }
+    }
 
     @GetMapping
     public String viewSanPhamPage(
@@ -47,6 +68,9 @@ public class SanPhamController {
             @RequestParam(value = "searchName", required = false) String searchName,
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
             @RequestParam(value = "page", defaultValue = "0") int page) {
+
+        addUserInfoToModel(model);
+
         Pageable pageable = PageRequest.of(page, 5);
         Page<SanPham> sanPhamPage;
 
@@ -59,6 +83,7 @@ public class SanPhamController {
         }
 
         List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
+
         model.addAttribute("sanPhamList", sanPhamPage.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", sanPhamPage.getTotalPages());
@@ -66,58 +91,68 @@ public class SanPhamController {
         model.addAttribute("selectedTrangThai", trangThai);
         model.addAttribute("sanPham", new SanPham());
         model.addAttribute("danhMucList", danhMucList);
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+
         return "WebQuanLy/san-pham-list-form";
     }
 
     @GetMapping("/edit/{id}")
     public String editSanPham(@PathVariable("id") UUID id, Model model) {
+        if (!isCurrentUserAdmin()) {
+            return "redirect:/acvstore/san-pham?error=Bạn không có quyền truy cập chức năng này";
+        }
+
+        addUserInfoToModel(model);
+
         SanPham sanPham = sanPhamService.findById(id);
         List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
+
         model.addAttribute("sanPham", sanPham);
         model.addAttribute("sanPhamList", sanPhamService.findAll());
         model.addAttribute("danhMucList", danhMucList);
+
         return "WebQuanLy/san-pham-list-form";
     }
 
     @PostMapping("/save")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveSanPham(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<Map<String, Object>> saveSanPham(
+            @RequestParam("id") UUID id,
+            @RequestParam("maSanPham") String maSanPham,
+            @RequestParam("tenSanPham") String tenSanPham,
+            @RequestParam(value = "moTa", required = false) String moTa,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam(value = "trangThai", defaultValue = "false") Boolean trangThai,
+            @RequestParam(value = "danhMucId", required = false) UUID danhMucId) {
         Map<String, Object> response = new HashMap<>();
         try {
-            System.out.println("Received payload: " + payload.toString());
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
 
-            UUID id = UUID.fromString((String) payload.get("id"));
-            String maSanPham = (String) payload.get("maSanPham");
-            String tenSanPham = (String) payload.get("tenSanPham");
-            String moTa = (String) payload.get("moTa");
-            String urlHinhAnh = (String) payload.get("urlHinhAnh");
-            Boolean trangThai = (Boolean) payload.get("trangThai");
-            UUID danhMucId = payload.get("danhMucId") != null ? UUID.fromString((String) payload.get("danhMucId")) : null;
-
-            SanPham existingSanPham = sanPhamService.findById(id);
-            if (existingSanPham == null) {
+            SanPham sanPham = sanPhamService.findById(id);
+            if (sanPham == null) {
                 response.put("success", false);
                 response.put("message", "Sản phẩm không tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            existingSanPham.setMaSanPham(maSanPham);
-            existingSanPham.setTenSanPham(tenSanPham);
-            existingSanPham.setMoTa(moTa);
-            existingSanPham.setUrlHinhAnh(urlHinhAnh);
-            existingSanPham.setTrangThai(trangThai != null ? trangThai : false);
+            if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(id)) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào đang hoạt động!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            sanPham.setMaSanPham(maSanPham);
+            sanPham.setTenSanPham(tenSanPham);
+            sanPham.setMoTa(moTa);
+            sanPham.setTrangThai(trangThai != null ? trangThai : false);
 
             if (danhMucId != null) {
                 DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
                 if (danhMuc != null) {
-                    existingSanPham.setDanhMuc(danhMuc);
+                    sanPham.setDanhMuc(danhMuc);
                 } else {
                     response.put("success", false);
                     response.put("message", "Danh mục không tồn tại!");
@@ -125,21 +160,21 @@ public class SanPhamController {
                 }
             }
 
-            sanPhamService.save(existingSanPham);
+            sanPhamService.saveSanPhamWithImage(sanPham, imageFile);
 
             SanPhamDto dto = new SanPhamDto();
-            dto.setId(existingSanPham.getId());
-            dto.setMaSanPham(existingSanPham.getMaSanPham());
-            dto.setTenSanPham(existingSanPham.getTenSanPham());
-            dto.setMoTa(existingSanPham.getMoTa());
-            dto.setUrlHinhAnh(existingSanPham.getUrlHinhAnh());
-            dto.setTrangThai(existingSanPham.getTrangThai());
-            dto.setThoiGianTao(existingSanPham.getThoiGianTao());
-            dto.setTongSoLuong(existingSanPham.getTongSoLuong());
+            dto.setId(sanPham.getId());
+            dto.setMaSanPham(sanPham.getMaSanPham());
+            dto.setTenSanPham(sanPham.getTenSanPham());
+            dto.setMoTa(sanPham.getMoTa());
+            dto.setUrlHinhAnh(sanPham.getUrlHinhAnh());
+            dto.setTrangThai(sanPham.getTrangThai());
+            dto.setThoiGianTao(sanPham.getThoiGianTao());
+            dto.setTongSoLuong(sanPham.getTongSoLuong());
 
-            if (existingSanPham.getDanhMuc() != null) {
-                dto.setDanhMucId(existingSanPham.getDanhMuc().getId());
-                dto.setTenDanhMuc(existingSanPham.getDanhMuc().getTenDanhMuc());
+            if (sanPham.getDanhMuc() != null) {
+                dto.setDanhMucId(sanPham.getDanhMuc().getId());
+                dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
             }
 
             response.put("success", true);
@@ -147,31 +182,8 @@ public class SanPhamController {
             response.put("sanPham", dto);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            System.err.println("Exception: " + e.getMessage());
             response.put("success", false);
             response.put("message", "Lỗi khi lưu sản phẩm: " + e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    @PostMapping("/upload-image")
-    @ResponseBody
-    public ResponseEntity<Map<String, Object>> uploadImage(@RequestParam("imageFile") MultipartFile imageFile) {
-        Map<String, Object> response = new HashMap<>();
-        try {
-            if (imageFile != null && !imageFile.isEmpty()) {
-                String imageUrl = cloudinaryUtil.uploadImage(imageFile);
-                response.put("success", true);
-                response.put("url", imageUrl);
-                return ResponseEntity.ok(response);
-            } else {
-                response.put("success", false);
-                response.put("message", "Không có file ảnh được chọn!");
-                return ResponseEntity.badRequest().body(response);
-            }
-        } catch (Exception e) {
-            response.put("success", false);
-            response.put("message", "Lỗi khi tải ảnh lên: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -191,6 +203,7 @@ public class SanPhamController {
         dto.setTrangThai(sp.getTrangThai());
         dto.setThoiGianTao(sp.getThoiGianTao());
         dto.setTongSoLuong(sp.getTongSoLuong());
+
         if (sp.getDanhMuc() != null) {
             dto.setDanhMucId(sp.getDanhMuc().getId());
             dto.setTenDanhMuc(sp.getDanhMuc().getTenDanhMuc());
@@ -204,6 +217,12 @@ public class SanPhamController {
     public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
         try {
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             UUID id = UUID.fromString((String) payload.get("id"));
             Boolean trangThai = (Boolean) payload.get("trangThai");
 
@@ -211,6 +230,13 @@ public class SanPhamController {
             if (sanPham == null) {
                 response.put("success", false);
                 response.put("message", "Sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra nếu bật trạng thái mà không có chi tiết sản phẩm hoạt động
+            if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(id)) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào hoạt động!");
                 return ResponseEntity.badRequest().body(response);
             }
 

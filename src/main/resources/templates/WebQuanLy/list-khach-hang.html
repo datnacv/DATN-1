@@ -15,18 +15,17 @@
 
         body {
             background: #ffffff;
-            color: #1a1a1a;
+            color: #153054;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             margin: 0;
             padding: 0;
         }
 
-        /* Main Content */
         .content {
             margin-left: 250px;
             padding: 32px;
-            padding-top: 100px; /* Space for fixed navbar */
+            padding-top: 100px;
             min-height: 100vh;
             background: #ffffff;
             transition: all 0.3s ease;
@@ -35,25 +34,37 @@
         .content.full-width {
             margin-left: 0;
             width: 100%;
-            padding-top: 100px; /* Space for fixed navbar when sidebar is hidden */
+            padding-top: 100px;
         }
 
-        /* Page Header */
         .page-title {
-            color: #111827;
-            margin-bottom: 8px;
+            color: #153054;
+            margin-bottom: 10px;
             font-weight: 700;
             font-size: 2.25rem;
             letter-spacing: -0.025em;
             display: flex;
             align-items: center;
             gap: 16px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .page-title::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10%;
+            height: 4px; /* Tăng độ dày lên 4px để đậm hơn */
+            background-color: #1e90ff;
         }
 
         .page-title i {
-            background: linear-gradient(135deg, #000000 0%, #374151 100%);
+            background: #153054;
             color: white;
-            padding: 12px;
+            padding: 15px;
             border-radius: 12px;
             font-size: 1.25rem;
         }
@@ -63,9 +74,9 @@
             font-size: 1.1rem;
             margin-bottom: 32px;
             font-weight: 400;
+            text-align: center;
         }
 
-        /* Cards */
         .card {
             background: #ffffff;
             border: 1px solid #e5e7eb;
@@ -84,17 +95,15 @@
             padding: 24px;
         }
 
-        /* Search Section */
         .search-card {
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border: 1px solid #e2e8f0;
         }
 
-        /* Form Controls */
         .form-control, .form-select {
             background: #ffffff;
             border: 2px solid #e5e7eb;
-            color: #111827;
+            color: #153054;
             border-radius: 12px;
             padding: 12px 16px;
             font-size: 0.95rem;
@@ -103,10 +112,10 @@
         }
 
         .form-control:focus, .form-select:focus {
-            border-color: #000000;
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+            border-color: #153054;
+            box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
             background: #ffffff;
-            color: #111827;
+            color: #153054;
             outline: none;
         }
 
@@ -124,7 +133,7 @@
         }
 
         .form-label {
-            color: #374151;
+            color: #153054;
             font-weight: 600;
             font-size: 0.9rem;
             margin-bottom: 8px;
@@ -132,7 +141,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* Buttons */
         .btn {
             border-radius: 12px;
             font-weight: 600;
@@ -145,26 +153,26 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #000000 0%, #374151 100%);
+            background: #153054;
             color: #ffffff;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #374151 0%, #000000 100%);
+            background: #1e4a7a;
             color: #ffffff;
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
+            background: #153054;
             color: #ffffff;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .btn-success:hover {
-            background: linear-gradient(135deg, #1f2937 0%, #000000 100%);
+            background: #1e4a7a;
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
@@ -181,15 +189,19 @@
             box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
         }
 
+        .btn-danger i {
+            text-decoration: underline;
+        }
+
         .btn-secondary {
             background: #f3f4f6;
-            color: #374151;
+            color: #153054;
             border: 2px solid #e5e7eb;
         }
 
         .btn-secondary:hover {
             background: #e5e7eb;
-            color: #111827;
+            color: #153054;
             transform: translateY(-2px);
         }
 
@@ -201,12 +213,11 @@
             font-weight: 500;
         }
 
-        /* Table Styling with Horizontal Scroll */
         .table-container {
             background: #ffffff;
             border-radius: 16px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow-x: auto; /* Enable horizontal scrolling */
+            overflow-x: auto;
             overflow-y: visible;
             margin-top: 24px;
             border: 1px solid #e5e7eb;
@@ -216,7 +227,7 @@
         .table {
             margin-bottom: 0;
             font-size: 0.9rem;
-            min-width: 1200px; /* Minimum width to trigger horizontal scroll */
+            min-width: 1300px;
             width: 100%;
         }
 
@@ -224,7 +235,7 @@
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
             border: none;
             font-weight: 700;
-            color: #111827;
+            color: #153054;
             padding: 20px 16px;
             text-transform: uppercase;
             font-size: 0.8rem;
@@ -233,16 +244,16 @@
             top: 0;
             z-index: 10;
             border-bottom: 2px solid #e5e7eb;
-            white-space: nowrap; /* Prevent text wrapping in headers */
+            white-space: nowrap;
         }
 
         .table td {
             padding: 16px;
             vertical-align: middle;
-            color: #374151;
+            color: #153054;
             border-bottom: 1px solid #f3f4f6;
             font-weight: 400;
-            white-space: nowrap; /* Prevent text wrapping in cells */
+            white-space: nowrap;
         }
 
         .table tbody tr {
@@ -259,7 +270,6 @@
             border-bottom: none;
         }
 
-        /* Address column with text truncation */
         .address-cell {
             max-width: 200px;
             white-space: nowrap;
@@ -267,7 +277,6 @@
             text-overflow: ellipsis;
         }
 
-        /* Modal Styling */
         .modal-content {
             background: #ffffff;
             border: none;
@@ -277,7 +286,7 @@
         }
 
         .modal-header {
-            background: linear-gradient(135deg, #000000 0%, #374151 100%);
+            background: #153054;
             color: #ffffff;
             border-bottom: none;
             padding: 24px 32px;
@@ -299,7 +308,7 @@
 
         .modal-body {
             background: #ffffff;
-            color: #374151;
+            color: #153054;
             padding: 32px;
         }
 
@@ -307,7 +316,6 @@
             max-width: 900px;
         }
 
-        /* Alerts */
         .alert {
             border-radius: 12px;
             border: none;
@@ -328,13 +336,12 @@
             border-left: 4px solid #ef4444;
         }
 
-        /* Pagination */
         .pagination {
             gap: 8px;
         }
 
         .pagination .page-link {
-            color: #374151;
+            color: #153054;
             background: #ffffff;
             border: 2px solid #e5e7eb;
             border-radius: 12px;
@@ -350,9 +357,9 @@
         }
 
         .pagination .page-item.active .page-link {
-            background: linear-gradient(135deg, #000000 0%, #374151 100%);
+            background: #153054;
             color: #ffffff;
-            border-color: #000000;
+            border-color: #153054;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
@@ -362,7 +369,6 @@
             border-color: #e5e7eb;
         }
 
-        /* Badges */
         .badge {
             font-weight: 600;
             padding: 8px 16px;
@@ -373,19 +379,27 @@
         }
 
         .badge.bg-primary {
-            background: linear-gradient(135deg, #000000 0%, #374151 100%) !important;
+            background: #153054 !important;
             color: #ffffff !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
-        /* Action Buttons Container */
+        .badge.bg-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: #ffffff !important;
+        }
+
+        .badge.bg-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            color: #ffffff !important;
+        }
+
         .action-buttons {
             display: flex;
             gap: 8px;
             justify-content: center;
         }
 
-        /* Custom Scrollbar for table */
         .table-container::-webkit-scrollbar {
             height: 12px;
         }
@@ -405,17 +419,16 @@
             background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
         }
 
-        /* Responsive Design */
         @media (max-width: 768px) {
             .content {
                 margin-left: 0;
                 padding: 16px;
-                padding-top: 90px; /* Adjust for mobile */
+                padding-top: 90px;
             }
 
             .custom-navbar {
                 left: 0;
-                height: 60px; /* Smaller height on mobile */
+                height: 60px;
             }
 
             .page-title {
@@ -435,11 +448,10 @@
             }
 
             .table {
-                min-width: 800px; /* Smaller minimum width on mobile */
+                min-width: 900px;
             }
         }
 
-        /* Loading Animation */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -449,12 +461,10 @@
             animation: fadeIn 0.6s ease-out;
         }
 
-        /* Delete Modal Specific Styling */
         .modal-header.bg-danger {
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
         }
 
-        /* Form Row Spacing */
         .row {
             margin-bottom: 16px;
         }
@@ -463,7 +473,6 @@
             margin-bottom: 0;
         }
 
-        /* Text Colors */
         .text-danger {
             color: #dc2626 !important;
         }
@@ -476,7 +485,6 @@
             color: #f59e0b !important;
         }
 
-        /* Button Close Custom */
         .btn-close {
             background: none;
             border: none;
@@ -494,23 +502,18 @@
 </head>
 <body>
 <div class="d-flex">
-    <!-- Include sidebar fragment -->
     <div th:replace="~{fragments/sidebar :: sidebar}"></div>
 
-    <!-- Fixed Navbar -->
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4">
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
-    <!-- Nội dung chính bên phải -->
     <div class="content" id="mainContent">
         <h2 class="page-title">
             <i class="fa-solid fa-users"></i>
-            <span>Quản lý khách hàng</span>
+            <span>Quản Lý Khách Hàng</span>
         </h2>
-        <p class="page-subtitle">Quản lý thông tin khách hàng của hệ thống một cách hiệu quả</p>
 
-        <!-- Hiển thị thông báo -->
         <div th:if="${message}" class="alert mb-4" th:classappend="${messageType == 'success'} ? 'alert-success' : 'alert-danger'" role="alert">
             <i class="fa-solid fa-check-circle me-2" th:if="${messageType == 'success'}"></i>
             <i class="fa-solid fa-exclamation-triangle me-2" th:if="${messageType != 'success'}"></i>
@@ -518,7 +521,6 @@
             <button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
-        <!-- Form tìm kiếm -->
         <div class="card search-card mb-4">
             <div class="card-body">
                 <form th:action="@{/acvstore/customers}" method="get">
@@ -544,7 +546,6 @@
             </div>
         </div>
 
-        <!-- Nút thêm khách hàng -->
         <div class="mb-4 d-flex justify-content-between align-items-center">
             <div class="text-muted">
                 <i class="fa-solid fa-info-circle me-1"></i>
@@ -555,7 +556,6 @@
             </button>
         </div>
 
-        <!-- Bảng danh sách khách hàng với thanh cuộn ngang -->
         <div class="table-container">
             <table class="table table-hover mb-0">
                 <thead>
@@ -568,6 +568,7 @@
                     <th><i class="fa-solid fa-phone me-2"></i>Số điện thoại</th>
                     <th><i class="fa-solid fa-map-marker-alt me-2"></i>Địa chỉ</th>
                     <th><i class="fa-solid fa-tag me-2"></i>Vai trò</th>
+                    <th><i class="fa-solid fa-toggle-on me-2"></i>Trạng thái</th>
                     <th><i class="fa-solid fa-cogs me-2"></i>Hành động</th>
                 </tr>
                 </thead>
@@ -599,6 +600,10 @@
                         <span class="badge bg-primary" th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></span>
                     </td>
                     <td>
+                        <span class="badge" th:classappend="${customer.trangThai} ? 'bg-success' : 'bg-danger'"
+                              th:text="${customer.trangThai} ? 'Kích hoạt' : 'Vô hiệu hóa'"></span>
+                    </td>
+                    <td>
                         <div class="action-buttons">
                             <button type="button" class="btn btn-primary btn-sm btn-action"
                                     data-bs-toggle="modal"
@@ -619,7 +624,6 @@
             </table>
         </div>
 
-        <!-- Phân trang -->
         <nav aria-label="Phân trang" class="mt-5">
             <ul class="pagination justify-content-center">
                 <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
@@ -639,7 +643,6 @@
             </ul>
         </nav>
 
-        <!-- Modal Thêm khách hàng -->
         <div class="modal fade" id="addCustomerModal" tabindex="-1" aria-labelledby="addCustomerModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
@@ -764,7 +767,6 @@
             </div>
         </div>
 
-        <!-- Modal Sửa khách hàng -->
         <th:block th:each="customer : ${customers}">
             <div class="modal fade" th:id="'editCustomerModal' + ${customer.id}" tabindex="-1"
                  th:aria-labelledby="'editCustomerModalLabel' + ${customer.id}" aria-hidden="true">
@@ -843,6 +845,18 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
+                                            <label class="form-label">Trạng thái</label>
+                                            <select class="form-select" name="trangThai">
+                                                <option value="true" th:selected="${customer.trangThai == true}">Kích hoạt</option>
+                                                <option value="false" th:selected="${customer.trangThai == false}">Vô hiệu hóa</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
                                             <label class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
                                             <select class="form-select" th:id="'editTinhThanhPho' + ${customer.id}"
                                                     name="tinhThanhPho" required
@@ -851,9 +865,6 @@
                                             </select>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
@@ -864,6 +875,9 @@
                                             </select>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
@@ -874,10 +888,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-12">
+                                    <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Địa chỉ chi tiết</label>
                                             <input type="text" class="form-control" name="chiTietDiaChi"
@@ -901,7 +912,6 @@
             </div>
         </th:block>
 
-        <!-- Modal Xóa khách hàng -->
         <th:block th:each="customer : ${customers}">
             <div class="modal fade" th:id="'deleteCustomerModal' + ${customer.id}" tabindex="-1"
                  th:aria-labelledby="'deleteCustomerModalLabel' + ${customer.id}" aria-hidden="true">
@@ -949,7 +959,6 @@
     document.addEventListener("DOMContentLoaded", function () {
         let provincesData = [];
 
-        // Hàm tải tỉnh/thành phố
         async function fetchProvinces() {
             try {
                 let response = await fetch("https://provinces.open-api.vn/api/p/");
@@ -974,7 +983,6 @@
             }
         }
 
-        // Hàm tải quận/huyện
         async function fetchDistricts(provinceCode, districtSelect, wardSelect) {
             try {
                 let response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
@@ -994,7 +1002,6 @@
             }
         }
 
-        // Hàm tải phường/xã
         async function fetchWards(districtCode, wardSelect) {
             try {
                 let response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
@@ -1013,7 +1020,6 @@
             }
         }
 
-        // Hàm thiết lập giá trị hiện tại cho select
         function setSelectValue(selectElement, value) {
             if (value && selectElement) {
                 const options = selectElement.querySelectorAll('option');
@@ -1026,7 +1032,6 @@
             }
         }
 
-        // Hàm thiết lập địa chỉ cho form edit khi modal được mở
         function setupEditForm(customerId, currentProvince, currentDistrict, currentWard) {
             const provinceSelect = document.getElementById(`editTinhThanhPho${customerId}`);
             const districtSelect = document.getElementById(`editQuanHuyen${customerId}`);
@@ -1034,23 +1039,18 @@
 
             if (!provinceSelect || !districtSelect || !wardSelect) return;
 
-            // Thiết lập tỉnh/thành phố
             setSelectValue(provinceSelect, currentProvince);
 
-            // Tìm mã tỉnh
             const selectedProvinceOption = provinceSelect.querySelector(`option[value="${currentProvince}"]`);
             if (selectedProvinceOption) {
                 const provinceCode = selectedProvinceOption.getAttribute('data-code');
                 fetchDistricts(provinceCode, districtSelect, wardSelect).then(() => {
-                    // Thiết lập quận/huyện
                     setSelectValue(districtSelect, currentDistrict);
 
-                    // Tìm mã quận
                     const selectedDistrictOption = districtSelect.querySelector(`option[value="${currentDistrict}"]`);
                     if (selectedDistrictOption) {
                         const districtCode = selectedDistrictOption.getAttribute('data-code');
                         fetchWards(districtCode, wardSelect).then(() => {
-                            // Thiết lập phường/xã
                             setSelectValue(wardSelect, currentWard);
                         });
                     }
@@ -1058,9 +1058,7 @@
             }
         }
 
-        // Khởi tạo tải dữ liệu tỉnh/thành phố
         fetchProvinces().then(() => {
-            // Thiết lập dữ liệu cho form thêm
             const addProvinceSelect = document.getElementById('addTinhThanhPho');
             const addDistrictSelect = document.getElementById('addQuanHuyen');
             const addWardSelect = document.getElementById('addPhuongXa');
@@ -1088,7 +1086,6 @@
                 });
             }
 
-            // Thiết lập dữ liệu cho các form edit khi modal được mở
             const editModals = document.querySelectorAll('[id^="editCustomerModal"]');
             editModals.forEach(modal => {
                 modal.addEventListener('show.bs.modal', function (event) {
@@ -1108,7 +1105,6 @@
             });
         });
 
-        // Xử lý sự kiện thay đổi tỉnh/thành phố cho các form edit
         document.addEventListener('change', function(e) {
             if (e.target.matches('select[id^="editTinhThanhPho"]')) {
                 const customerId = e.target.id.replace('editTinhThanhPho', '');
@@ -1142,5 +1138,7 @@
         });
     });
 </script>
+<script th:src="@{/js/notification.js}"></script>
+
 </body>
 </html>

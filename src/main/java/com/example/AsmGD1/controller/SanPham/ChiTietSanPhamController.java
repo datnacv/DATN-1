@@ -3,12 +3,14 @@ package com.example.AsmGD1.controller.SanPham;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamBatchDto;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.entity.*;
+import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.KhachHangSanPhamRepository;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,16 +19,17 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/acvstore/chi-tiet-san-pham")
 public class ChiTietSanPhamController {
+
     private static final Logger logger = LoggerFactory.getLogger(ChiTietSanPhamController.class);
 
     @Autowired private ChiTietSanPhamService chiTietSanPhamService;
@@ -40,8 +43,34 @@ public class ChiTietSanPhamController {
     @Autowired private KieuDangService kieuDangService;
     @Autowired private ThuongHieuService thuongHieuService;
     @Autowired private DanhMucService danhMucService;
-    @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository; // Thêm repository
+    @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository;
     @Autowired private NguoiDungService nguoiDungService;
+    @Autowired private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
+    // Helper method to check if current user is admin
+    private boolean isCurrentUserAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            return "admin".equalsIgnoreCase(user.getVaiTro());
+        }
+        return false;
+    }
+
+    // Helper method to add user info to model
+    private void addUserInfoToModel(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+            model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+        } else {
+            // Fallback for testing
+            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+            model.addAttribute("isAdmin", false);
+        }
+    }
 
     @GetMapping
     public String xemTatCa(Model model,
@@ -57,6 +86,8 @@ public class ChiTietSanPhamController {
                            @RequestParam(value = "gender", required = false) String gender,
                            @RequestParam(value = "status", required = false) Boolean status) {
         try {
+            addUserInfoToModel(model);
+
             model.addAttribute("sanPham", new SanPham());
             model.addAttribute("sanPhams", sanPhamService.findAll());
             model.addAttribute("mauSacs", chiTietSanPhamService.findColorsByProductId(productId));
@@ -67,13 +98,6 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-                NguoiDung user = (NguoiDung) auth.getPrincipal();
-                model.addAttribute("user", user);
-            }
 
             if (productId != null) {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
@@ -82,6 +106,11 @@ public class ChiTietSanPhamController {
                     model.addAttribute("sanPhamDaChon", sanPhamDaChon);
                     List<ChiTietSanPham> chiTietList = chiTietSanPhamService.findByFilters(
                             productId, colorId, sizeId, originId, materialId, styleId, sleeveId, collarId, brandId, gender, status);
+                    for (ChiTietSanPham pd : chiTietList) {
+                        List<HinhAnhSanPham> images = chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId());
+                        pd.setHinhAnhSanPhams(images);
+                        logger.info("Tải {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), pd.getId());
+                    }
                     chiTietList.forEach(pd -> logger.info("Product ID: {}, Status: {}", pd.getId(), pd.getTrangThai()));
                     model.addAttribute("chiTietSanPhamList", chiTietList);
                     model.addAttribute("selectedColorId", colorId);
@@ -95,11 +124,24 @@ public class ChiTietSanPhamController {
                     model.addAttribute("selectedGender", gender);
                     model.addAttribute("selectedStatus", status);
                 } else {
-                    model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
+                    List<ChiTietSanPham> allDetails = chiTietSanPhamService.findAll();
+                    for (ChiTietSanPham pd : allDetails) {
+                        List<HinhAnhSanPham> images = chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId());
+                        pd.setHinhAnhSanPhams(images);
+                        logger.info("Tải {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), pd.getId());
+                    }
+                    model.addAttribute("chiTietSanPhamList", allDetails);
                 }
             } else {
-                model.addAttribute("chiTietSanPhamList", chiTietSanPhamService.findAll());
+                List<ChiTietSanPham> allDetails = chiTietSanPhamService.findAll();
+                for (ChiTietSanPham pd : allDetails) {
+                    List<HinhAnhSanPham> images = chiTietSanPhamService.findHinhAnhSanPhamByChiTietSanPhamIdOrdered(pd.getId());
+                    pd.setHinhAnhSanPhams(images);
+                    logger.info("Tải {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), pd.getId());
+                }
+                model.addAttribute("chiTietSanPhamList", allDetails);
             }
+
             return "WebQuanLy/chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang chi tiết sản phẩm: ", e);
@@ -111,6 +153,14 @@ public class ChiTietSanPhamController {
     @GetMapping("/add")
     public String hienThiFormThem(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền truy cập chức năng này";
+            }
+
+            // Add user info and role check
+            addUserInfoToModel(model);
+
             model.addAttribute("sanPham", new SanPham());
             model.addAttribute("sanPhams", sanPhamService.findAll());
             model.addAttribute("mauSacs", mauSacService.getAllMauSac());
@@ -121,16 +171,17 @@ public class ChiTietSanPhamController {
             model.addAttribute("coAos", coAoService.getAllCoAo());
             model.addAttribute("kieuDangs", kieuDangService.getAllKieuDang());
             model.addAttribute("thuongHieus", thuongHieuService.getAllThuongHieu());
-            List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-            model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+
             List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
             logger.info("Số lượng danh mục: {}", danhMucList.size());
             model.addAttribute("danhMucList", danhMucList);
+
             if (productId != null) {
                 SanPham sanPhamDaChon = sanPhamService.findById(productId);
                 model.addAttribute("selectedProductId", productId);
                 model.addAttribute("sanPhamDaChon", sanPhamDaChon);
             }
+
             return "WebQuanLy/add-chi-tiet-san-pham-form";
         } catch (Exception e) {
             logger.error("Lỗi khi tải trang thêm chi tiết sản phẩm: ", e);
@@ -139,11 +190,83 @@ public class ChiTietSanPhamController {
         }
     }
 
+    @GetMapping("/api/product-details/{productId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getProductDetails(@PathVariable UUID productId) {
+        try {
+            List<ChiTietSanPham> details = chiTietSanPhamService.findByProductId(productId);
+            Map<String, Object> response = new HashMap<>();
+            response.put("hasDetails", !details.isEmpty());
+
+            if (!details.isEmpty()) {
+                ChiTietSanPham firstDetail = details.get(0);
+                response.put("originId", firstDetail.getXuatXu() != null ? firstDetail.getXuatXu().getId() : null);
+                response.put("materialId", firstDetail.getChatLieu() != null ? firstDetail.getChatLieu().getId() : null);
+                response.put("styleId", firstDetail.getKieuDang() != null ? firstDetail.getKieuDang().getId() : null);
+                response.put("sleeveId", firstDetail.getTayAo() != null ? firstDetail.getTayAo().getId() : null);
+                response.put("collarId", firstDetail.getCoAo() != null ? firstDetail.getCoAo().getId() : null);
+                response.put("brandId", firstDetail.getThuongHieu() != null ? firstDetail.getThuongHieu().getId() : null);
+                response.put("gender", firstDetail.getGioiTinh());
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy chi tiết sản phẩm cho ID {}: ", productId, e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy thông tin sản phẩm: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/update-status")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            UUID id = UUID.fromString((String) payload.get("id"));
+            Boolean trangThai = (Boolean) payload.get("trangThai");
+
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamService.findById(id);
+            if (chiTietSanPham == null) {
+                response.put("success", false);
+                response.put("message", "Chi tiết sản phẩm không tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra số lượng tồn kho
+            if (trangThai != null && trangThai && chiTietSanPham.getSoLuongTonKho() == 0) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            chiTietSanPham.setTrangThai(trangThai != null ? trangThai : false);
+            chiTietSanPhamService.save(chiTietSanPham);
+
+            response.put("success", true);
+            response.put("message", "Cập nhật trạng thái thành công!");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
     @PostMapping("/save")
     public String luuChiTietSanPhamDon(@ModelAttribute ChiTietSanPhamUpdateDto dto,
                                        @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
                                        Model model) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
+            }
+
             chiTietSanPhamService.saveSingleChiTietSanPham(dto, imageFiles);
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + dto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
@@ -156,6 +279,11 @@ public class ChiTietSanPhamController {
     @PostMapping("/save-batch")
     public String luuChiTietSanPhamBatch(@ModelAttribute ChiTietSanPhamBatchDto batchDto, Model model) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
+            }
+
             chiTietSanPhamService.saveChiTietSanPhamVariationsDto(batchDto);
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + batchDto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
@@ -169,6 +297,10 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layChiTietSanPham(@PathVariable UUID id) {
         try {
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
+            }
+
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(id);
             if (chiTiet == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Không tìm thấy chi tiết sản phẩm"));
@@ -176,22 +308,36 @@ public class ChiTietSanPhamController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("id", chiTiet.getId());
-            response.put("productId", chiTiet.getSanPham().getId());
-            response.put("colorId", chiTiet.getMauSac().getId());
-            response.put("sizeId", chiTiet.getKichCo().getId());
-            response.put("originId", chiTiet.getXuatXu().getId());
-            response.put("materialId", chiTiet.getChatLieu().getId());
-            response.put("styleId", chiTiet.getKieuDang().getId());
-            response.put("sleeveId", chiTiet.getTayAo().getId());
-            response.put("collarId", chiTiet.getCoAo().getId());
-            response.put("brandId", chiTiet.getThuongHieu().getId());
+            response.put("productId", chiTiet.getSanPham() != null ? chiTiet.getSanPham().getId() : null);
+            response.put("colorId", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getId() : null);
+            response.put("sizeId", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getId() : null);
+            response.put("originId", chiTiet.getXuatXu() != null ? chiTiet.getXuatXu().getId() : null);
+            response.put("materialId", chiTiet.getChatLieu() != null ? chiTiet.getChatLieu().getId() : null);
+            response.put("styleId", chiTiet.getKieuDang() != null ? chiTiet.getKieuDang().getId() : null);
+            response.put("sleeveId", chiTiet.getTayAo() != null ? chiTiet.getTayAo().getId() : null);
+            response.put("collarId", chiTiet.getCoAo() != null ? chiTiet.getCoAo().getId() : null);
+            response.put("brandId", chiTiet.getThuongHieu() != null ? chiTiet.getThuongHieu().getId() : null);
             response.put("price", chiTiet.getGia());
             response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("gender", chiTiet.getGioiTinh());
             response.put("status", chiTiet.getTrangThai());
-            response.put("images", chiTiet.getHinhAnhSanPhams().stream()
-                    .map(img -> Map.of("id", img.getId(), "imageUrl", img.getUrlHinhAnh()))
-                    .collect(Collectors.toList()));
+
+            // Xử lý danh sách ảnh, kiểm tra null và sắp xếp
+            List<Map<String, Object>> images = new ArrayList<>();
+            if (chiTiet.getHinhAnhSanPhams() != null) {
+                images = chiTiet.getHinhAnhSanPhams().stream()
+                        .filter(Objects::nonNull)
+                        .sorted(Comparator.comparing(h -> h.getThuTu() != null ? h.getThuTu() : Integer.MAX_VALUE))
+                        .map(img -> {
+                            Map<String, Object> imageMap = new HashMap<>();
+                            imageMap.put("id", img.getId());
+                            imageMap.put("imageUrl", img.getUrlHinhAnh());
+                            imageMap.put("thuTu", img.getThuTu() != null ? img.getThuTu() : 0);
+                            return imageMap;
+                        })
+                        .collect(Collectors.toList());
+            }
+            response.put("images", images);
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -202,24 +348,94 @@ public class ChiTietSanPhamController {
 
     @PostMapping("/update/{id}")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> capNhatChiTietSanPham(@PathVariable UUID id,
-                                                                     @ModelAttribute ChiTietSanPhamUpdateDto updateDto,
-                                                                     @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles) {
+    public ResponseEntity<Map<String, Object>> capNhatChiTietSanPham(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "false") boolean restricted,
+            @ModelAttribute ChiTietSanPhamUpdateDto updateDto,
+            @RequestParam(value = "imageFiles", required = false) MultipartFile[] imageFiles,
+            @RequestParam(value = "deletedImageIds", required = false) String deletedImageIdsStr) {
+
+        Map<String, Object> body = new HashMap<>();
         try {
+            // 1) Quyền
+            if (!isCurrentUserAdmin()) {
+                body.put("error", "Bạn không có quyền thực hiện chức năng này");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
+            }
+
+            // 2) Lấy entity hiện có để:
+            //    - Lấy chắc productId trả về cho FE
+            //    - Fallback set productId vào DTO nếu chế độ restricted không gửi productId
+            ChiTietSanPham existing = chiTietSanPhamRepository.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm"));
+
+            UUID productIdFromDb = (existing.getSanPham() != null) ? existing.getSanPham().getId() : null;
+
+            // 3) Set id vào DTO + fallback productId
             updateDto.setId(id);
-            logger.info("Received updateDto with status: {}", updateDto.getStatus());
-            chiTietSanPhamService.updateChiTietSanPham(updateDto, imageFiles);
-            return ResponseEntity.ok(Map.of("message", "Cập nhật chi tiết sản phẩm thành công"));
+            if (updateDto.getProductId() == null && productIdFromDb != null) {
+                updateDto.setProductId(productIdFromDb);
+            }
+
+            // 4) Parse danh sách ảnh xóa (an toàn)
+            List<UUID> deletedIds = new ArrayList<>();
+            if (deletedImageIdsStr != null && !deletedImageIdsStr.isBlank()) {
+                for (String s : deletedImageIdsStr.split(",")) {
+                    String trimmed = s.trim();
+                    if (!trimmed.isEmpty()) {
+                        try {
+                            deletedIds.add(UUID.fromString(trimmed));
+                        } catch (IllegalArgumentException ex) {
+                            // Bỏ qua UUID lỗi, hoặc return 400 nếu muốn
+                            logger.warn("deletedImageIds chứa UUID không hợp lệ: {}", trimmed);
+                        }
+                    }
+                }
+            }
+
+            // 5) Lọc bỏ file ảnh rỗng
+            MultipartFile[] safeImages = imageFiles;
+            if (safeImages != null && safeImages.length > 0) {
+                List<MultipartFile> nonEmpty = Arrays.stream(safeImages)
+                        .filter(f -> f != null && !f.isEmpty())
+                        .toList();
+                safeImages = nonEmpty.toArray(new MultipartFile[0]);
+            }
+
+            // 6) Gọi service (vẫn là void)
+            if (restricted) {
+                chiTietSanPhamService.updateChiTietSanPhamRestricted(updateDto, safeImages, deletedIds);
+            } else {
+                chiTietSanPhamService.updateChiTietSanPham(updateDto, safeImages, deletedIds);
+            }
+
+            // 7) Build response an toàn (tránh null rơi vào Map.of)
+            body.put("message", "Cập nhật chi tiết sản phẩm thành công");
+            // ưu tiên id từ DB; fallback DTO
+            UUID productId = productIdFromDb != null ? productIdFromDb : updateDto.getProductId();
+            if (productId != null) body.put("productId", productId.toString());
+
+            return ResponseEntity.ok(body);
+
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật chi tiết sản phẩm ID {}: ", id, e);
-            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật chi tiết sản phẩm: " + e.getMessage()));
+            body.clear();
+            body.put("error", "Lỗi khi cập nhật chi tiết sản phẩm: " + (e.getMessage() == null ? "Không xác định" : e.getMessage()));
+            return ResponseEntity.badRequest().body(body);
         }
     }
+
+
 
     @PostMapping("/delete-image/{imageId}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> xoaAnh(@PathVariable UUID imageId) {
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
+            }
+
             chiTietSanPhamService.deleteImage(imageId);
             return ResponseEntity.ok(Map.of("message", "Xóa ảnh thành công"));
         } catch (Exception e) {
@@ -228,16 +444,69 @@ public class ChiTietSanPhamController {
         }
     }
 
+    @PostMapping("/update-bulk")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> capNhatHangLoat(
+            @RequestParam("ids") String idsCsv,
+            @ModelAttribute ChiTietSanPhamUpdateDto updateDto) {
+        try {
+            if (!isCurrentUserAdmin()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
+            }
+
+            List<UUID> ids = Arrays.stream(idsCsv.split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty())
+                    .map(UUID::fromString).collect(Collectors.toList());
+
+            // Validate bật trạng thái khi tồn kho = 0
+            boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus() :
+                    (updateDto.getStockQuantity() != null && updateDto.getStockQuantity() > 0);
+            if (newStatus && (updateDto.getStockQuantity() == null || updateDto.getStockQuantity() == 0)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không thể bật 'Đang Bán' khi tồn kho bằng 0!"));
+            }
+
+            int affected = chiTietSanPhamService.updateBulkFullAttributes(ids, updateDto);
+            return ResponseEntity.ok(Map.of("message", "Đã cập nhật " + affected + " biến thể."));
+        } catch (Exception e) {
+            logger.error("Lỗi khi cập nhật hàng loạt: ", e);
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật hàng loạt: " + e.getMessage()));
+        }
+    }
+
+
     @PostMapping("/save-auto-product")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(@ModelAttribute SanPham sanPham, @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId) {
+    public ResponseEntity<Map<String, Object>> saveQuickAddProduct(
+            @ModelAttribute SanPham sanPham,
+            @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
         try {
+            // Check admin permission
+            if (!isCurrentUserAdmin()) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền thực hiện chức năng này!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra trùng lặp Mã Sản Phẩm
+            if (sanPhamService.existsByMaSanPham(sanPham.getMaSanPham())) {
+                response.put("success", false);
+                response.put("message", "Mã sản phẩm đã tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra trùng lặp Tên Sản Phẩm
+            if (sanPhamService.existsByTenSanPham(sanPham.getTenSanPham())) {
+                response.put("success", false);
+                response.put("message", "Tên sản phẩm đã tồn tại!");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             SanPham newSanPham = new SanPham();
             newSanPham.setMaSanPham(sanPham.getMaSanPham());
             newSanPham.setTenSanPham(sanPham.getTenSanPham());
             newSanPham.setMoTa(sanPham.getMoTa());
-            newSanPham.setUrlHinhAnh(sanPham.getUrlHinhAnh());
             newSanPham.setTrangThai(true);
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
@@ -256,7 +525,20 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Lưu trữ ảnh cục bộ
+            String UPLOAD_DIR = System.getProperty("os.name").toLowerCase().contains("win")
+                    ? "C:/DATN/uploads/san_pham/"
+                    : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
+            if (imageFile != null && !imageFile.isEmpty()) {
+                String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
+                Path filePath = Paths.get(UPLOAD_DIR, fileName);
+                Files.createDirectories(filePath.getParent());
+                Files.write(filePath, imageFile.getBytes());
+                newSanPham.setUrlHinhAnh("/images/" + fileName);
+            }
+
             sanPhamService.save(newSanPham);
+
             response.put("success", true);
             response.put("id", newSanPham.getId());
             response.put("tenSanPham", newSanPham.getTenSanPham());
@@ -270,7 +552,7 @@ public class ChiTietSanPhamController {
         }
     }
 
-    // Thêm endpoint để lấy chiTietSanPhamId cho phía client
+    // API endpoint for client-side (no admin check needed for viewing)
     @GetMapping("/api")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getChiTietSanPhamId(
@@ -282,6 +564,7 @@ public class ChiTietSanPhamController {
             if (chiTiet == null) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại"));
             }
+
             Map<String, Object> response = new HashMap<>();
             response.put("id", chiTiet.getId());
             response.put("gia", chiTiet.getGia());

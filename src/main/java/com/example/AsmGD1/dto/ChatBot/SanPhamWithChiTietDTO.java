@@ -15,4 +15,6 @@ public class SanPhamWithChiTietDTO {
     private String urlHinhAnh;
     private long tongSoLuong;
     private List<ChiTietSanPhamDTO> chiTietSanPhams;
+
+    private List<HoaDonSanPhamDTO> hoaDonSanPhams;
 }

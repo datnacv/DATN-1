@@ -29,4 +29,22 @@ public class ChiTietSanPhamDto {
     private TayAoDto tayAo;
     private CoAoDto coAo;
     private List<String> hinhAnhList; // URLs từ bảng hinh_anh_san_pham
+
+    private List<SizeColorCombination> validCombinations;
+
+    // Thêm các trường hỗ trợ giảm giá
+    private String discount; // Phần trăm giảm giá (e.g., "10%")
+    private BigDecimal oldPrice; // Giá gốc
+    private BigDecimal discountPercentage; // Phần trăm giảm giá
+    private String discountCampaignName; // Tên chiến dịch giảm giá
+
+    private List<KichCoDto> kichCoDTOList; // Sử dụng KichCoDto thay vì KichCo
+    private List<MauSacDto  > mauSacDTOList; // Sử dụng MauSacDto thay vì MauSac
+
+    @Data
+    public static class SizeColorCombination {
+        private UUID sizeId;
+        private UUID colorId;
+    }
+
 }

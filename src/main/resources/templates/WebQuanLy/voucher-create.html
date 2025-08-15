@@ -56,12 +56,19 @@
             margin: -2rem -2rem 1rem -2rem;
             border-bottom: 1px solid #dee2e6;
             display: flex;
-            justify-content: center; /* Căn giữa tiêu đề */
+            justify-content: center;
             align-items: center;
         }
         .sticky-header h2 {
-            font-weight: bold; /* Tô đậm tiêu đề */
+            font-weight: bold;
             margin: 0;
+        }
+        .modal-content {
+            border-radius: 0.5rem;
+        }
+        .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
         }
     </style>
     <script th:src="@{/js/sidebar.js}" defer></script>
@@ -90,7 +97,7 @@
                 <div class="d-flex">
                     <div class="toast-body">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        <span th:text="${errorMessage}"></span>
+                        <span th:utext="${errorMessage}"></span>
                     </div>
                     <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                 </div>
@@ -183,13 +190,31 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label"><i class="fas fa-calendar-alt me-2"></i>Ngày bắt đầu:</label>
-                        <input type="date" th:field="*{ngayBatDau}" class="form-control">
+                        <input type="datetime-local" th:field="*{ngayBatDau}" class="form-control">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label"><i class="fas fa-calendar-check me-2"></i>Ngày kết thúc:</label>
-                        <input type="date" th:field="*{ngayKetThuc}" class="form-control">
+                        <input type="datetime-local" th:field="*{ngayKetThuc}" class="form-control">
                     </div>
                 </div>
+                <!-- Chọn Phương thức thanh toán -->
+
+                <div class="col-md-4 col-lg-4">
+                    <div class="floating-label">
+                        <label for="paymentMethodSelect">Phương thức thanh toán áp dụng</label>
+                        <select id="paymentMethodSelect"
+                                class="form-select"
+                                name="selectedPtttIds"
+                                multiple>
+                            <option th:each="pt : ${phuongThucList}"
+                                    th:value="${pt.id}"
+                                    th:text="${pt.tenPhuongThuc}"
+                                    th:selected="${selectedPtttIds != null and selectedPtttIds.contains(pt.id)}">
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
 
                 <div id="emailOptions" class="mb-3" style="display:none">
                     <label class="form-label"><i class="fas fa-user-check me-2"></i>Chọn khách hàng áp dụng:</label>
@@ -225,10 +250,29 @@
                 </div>
 
                 <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary me-2"><i class="fas fa-save me-2"></i>Lưu</button>
+                    <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#confirmModal"><i class="fas fa-save me-2"></i>Lưu</button>
                     <a th:href="@{/acvstore/phieu-giam-gia}" class="btn btn-secondary"><i class="fas fa-arrow-left me-2"></i>Quay lại</a>
                 </div>
             </form>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmModalLabel">Xác nhận lưu</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        Bạn có chắc chắn muốn lưu phiếu giảm giá này không?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" class="btn btn-primary" id="confirmSubmit">Xác nhận</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -256,6 +300,17 @@
         $('#selectAllCustomers').prop('checked', all > 0 && all === checked);
     }
 
+    function showToast(toastId) {
+        const toastEl = document.getElementById(toastId);
+        if (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 5000
+            });
+            toast.show();
+        }
+    }
+
     $(document).ready(function () {
         const inputs = [
             { selector: '#giaTriGiam', allowDecimal: true },
@@ -276,15 +331,12 @@
             }
         });
 
-        $('form').on('submit', function (e) {
-            if (!confirm('Bạn có chắc chắn muốn lưu không?')) {
-                e.preventDefault();
-                return false;
-            }
+        $('#confirmSubmit').on('click', function () {
             inputs.forEach(input => {
                 const $el = $(input.selector);
                 $el.val(parseNumber($el.val()));
             });
+            $('#createVoucherForm').submit();
         });
 
         toggleUsageCount();
@@ -311,13 +363,10 @@
             updateSelectAllCheckbox();
         });
 
-        // Hiển thị toast nếu có
-        const toastEl = document.getElementById('successToast');
-        if (toastEl) new bootstrap.Toast(toastEl).show();
-        const errorToastEl = document.getElementById('errorToast');
-        if (errorToastEl) new bootstrap.Toast(errorToastEl).show();
-        const infoToastEl = document.getElementById('infoToast');
-        if (infoToastEl) new bootstrap.Toast(infoToastEl).show();
+        // Hiển thị toasts nếu có
+        showToast('successToast');
+        showToast('errorToast');
+        showToast('infoToast');
     });
 
     function toggleUsageCount() {
@@ -339,6 +388,18 @@
         $('#giaTriGiamToiDa').prop('readonly', !isPercent);
         if (!isPercent) $('#giaTriGiamToiDa').val('');
     }
+    $(function () {
+        $('#paymentMethodSelect').select2({
+            placeholder: 'Chọn phương thức...',
+            allowClear: true,
+            closeOnSelect: false,     // giữ menu mở để chọn nhiều
+            width: '100%'
+        });
+    });
 </script>
+<script th:src="@{/js/notification.js}"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<!-- jQuery (đã có), Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>

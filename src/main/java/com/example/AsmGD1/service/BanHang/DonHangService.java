@@ -85,6 +85,7 @@ public class DonHangService {
             maxAttempts = 3,
             backoff = @Backoff(delay = 100)
     )
+
     public KetQuaDonHangDTO taoDonHang(DonHangDTO donHangDTO) {
         log.info("Bắt đầu tạo đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
 
@@ -157,31 +158,43 @@ public class DonHangService {
             PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
 
-            // Sửa lại logic tính toán giảm giá để khớp với GioHangService
-            if ("Phần trăm".equals(phieuGiamGia.getLoai()) || "PERCENT".equals(phieuGiamGia.getLoai())) {
+            // Tính tiền giảm
+            if ("Phần trăm".equalsIgnoreCase(phieuGiamGia.getLoai()) || "PERCENT".equalsIgnoreCase(phieuGiamGia.getLoai())) {
                 tienGiam = tongTien.multiply(phieuGiamGia.getGiaTriGiam())
                         .divide(new BigDecimal("100"), 0, RoundingMode.HALF_UP);
                 if (phieuGiamGia.getGiaTriGiamToiDa() != null && tienGiam.compareTo(phieuGiamGia.getGiaTriGiamToiDa()) > 0) {
                     tienGiam = phieuGiamGia.getGiaTriGiamToiDa();
                 }
-            } else if ("Tiền mặt".equals(phieuGiamGia.getLoai()) || "CASH".equals(phieuGiamGia.getLoai())) {
+            } else if ("Tiền mặt".equalsIgnoreCase(phieuGiamGia.getLoai()) || "CASH".equalsIgnoreCase(phieuGiamGia.getLoai())) {
                 tienGiam = phieuGiamGia.getGiaTriGiam().min(tongTien);
             }
 
-            PhieuGiamGiaCuaNguoiDung phieuGiam = phieuGiamGiaCuaNguoiDungRepository
-                    .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
+            // Trừ lượt nếu là phiếu cá nhân
+            if ("ca_nhan".equalsIgnoreCase(phieuGiamGia.getKieuPhieu())) {
+                PhieuGiamGiaCuaNguoiDung phieuCaNhan = phieuGiamGiaCuaNguoiDungRepository
+                        .findByPhieuGiamGia_IdAndNguoiDung_Id(phieuGiamGia.getId(), khachHang.getId()).orElse(null);
 
-            if (phieuGiam != null && phieuGiam.getSoLuotConLai() > 0) {
-                phieuGiam.setSoLuotConLai(phieuGiam.getSoLuotConLai() - 1);
-                phieuGiamGiaCuaNguoiDungRepository.save(phieuGiam);
-            } else if (phieuGiam != null) {
-                throw new RuntimeException("Phiếu giảm giá đã hết lượt sử dụng.");
+                if (phieuCaNhan != null && phieuCaNhan.getSoLuotConLai() != null && phieuCaNhan.getSoLuotConLai() > 0) {
+                    phieuCaNhan.setSoLuotConLai(phieuCaNhan.getSoLuotConLai() - 1);
+                    phieuGiamGiaCuaNguoiDungRepository.save(phieuCaNhan);
+                } else {
+                    throw new RuntimeException("Phiếu giảm giá cá nhân đã hết lượt sử dụng.");
+                }
+            }
+
+            // Trừ số lượng phiếu (cho cả công khai và cá nhân)
+            if (phieuGiamGia.getSoLuong() != null && phieuGiamGia.getSoLuong() > 0) {
+                phieuGiamGia.setSoLuong(phieuGiamGia.getSoLuong() - 1);
+                phieuGiamGiaRepository.save(phieuGiamGia);
+            } else {
+                throw new RuntimeException("Phiếu giảm giá đã hết số lượng.");
             }
 
             donHang.setTienGiam(tienGiam);
         } else {
             donHang.setTienGiam(BigDecimal.ZERO);
         }
+
 
         BigDecimal tongTienDonHang = tongTien.add(donHang.getPhiVanChuyen()).subtract(tienGiam);
         donHang.setTongTien(tongTienDonHang);
@@ -197,15 +210,43 @@ public class DonHangService {
             donHang.setTrangThaiThanhToan(true);
             donHang.setThoiGianThanhToan(LocalDateTime.now());
         } else {
-            donHang.setTrangThaiThanhToan(false);
+            donHang.setTrangThaiThanhToan(true); // Cho các phương thức khác (ví dụ: chuyển khoản)
+            donHang.setThoiGianThanhToan(LocalDateTime.now());
         }
 
+// Set trạng thái đơn hàng theo logic mới
+        if ("Tại quầy".equalsIgnoreCase(donHangDTO.getPhuongThucBanHang())) {
+            if (donHang.getPhuongThucThanhToan() != null &&
+                    tienKhachDua != null &&
+                    tienKhachDua.compareTo(tongTienDonHang) >= 0) {
+
+                donHang.setTrangThaiThanhToan(true);
+                donHang.setThoiGianThanhToan(LocalDateTime.now());
+                donHang.setTrangThai("hoan_thanh"); // ✅ Đơn tại quầy đã thanh toán đủ tiền
+
+            } else {
+                donHang.setTrangThaiThanhToan(false);
+                donHang.setTrangThai("cho_xac_nhan"); // ❗ Chưa thanh toán
+            }
+        } else {
+            // Các đơn khác (Online / Giao hàng): luôn ở trạng thái chờ xác nhận ban đầu
+            donHang.setTrangThaiThanhToan(false);
+            donHang.setTrangThai("cho_xac_nhan");
+        }
         // Lưu đơn hàng
         donHangRepository.save(donHang);
 
         // Nếu đã thanh toán thì lưu thống kê
         if (donHang.getTrangThaiThanhToan()) {
-            thongBaoService.taoThongBaoChoAdmin(donHang);
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Thanh toán tại quầy",
+                    "Khách hàng " + khachHang.getHoTen()
+                            + " đã thanh toán tại quầy. "
+                            + "Mã đơn: " + donHang.getMaDonHang()
+                            + ". Tổng tiền: " + dinhDangTien(donHang.getTongTien())
+            );
+
             for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
                 ChiTietSanPham chiTiet = chiTietDonHang.getChiTietSanPham();
                 ThongKe thongKe = new ThongKe();
@@ -236,7 +277,9 @@ public class DonHangService {
         log.info("Tạo đơn hàng thành công với mã: {}", donHang.getMaDonHang());
         return ketQua;
     }
-
+    private String dinhDangTien(BigDecimal soTien) {
+        return String.format("%,.0f", soTien).replace(",", ".") + " VND";
+    }
     // Các phương thức khác giữ nguyên
     @Transactional
     public DonHangDTO giuDonHang(DonHangDTO donHangDTO) {
@@ -344,6 +387,7 @@ public class DonHangService {
         }).collect(Collectors.toList());
     }
 
+
     @Transactional
     public void xoaDonHangTam(UUID idDonHang) {
         log.info("Xóa đơn hàng tạm với ID: {}", idDonHang);
@@ -361,4 +405,47 @@ public class DonHangService {
         ServletRequestAttributes attr = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
         return attr.getRequest().getSession();
     }
+    public Map<String, Map<String, Integer>> thongKeChiTietTheoPhuongThucVaTrangThai() {
+        List<Object[]> results = donHangRepository.thongKeTheoPhuongThucVaTrangThai();
+        Map<String, Map<String, Integer>> data = new LinkedHashMap<>();
+
+        for (Object[] row : results) {
+            String phuongThuc = (String) row[0];
+            String trangThai = (String) row[1]; // Dùng String thay vì enum
+            Long count = (Long) row[2];
+
+            data.computeIfAbsent(phuongThuc, k -> new LinkedHashMap<>())
+                    .put(trangThai, count.intValue());
+        }
+
+        return data;
+    }
+    public Map<String, Map<String, Integer>> thongKeChiTietTheoPhuongThucVaTrangThai(LocalDateTime start, LocalDateTime end) {
+        List<DonHang> donHangs = donHangRepository.findByThoiGianTaoBetween(start, end);
+
+        Map<String, Map<String, Integer>> result = new LinkedHashMap<>();
+
+        for (DonHang dh : donHangs) {
+            String phuongThuc = dh.getPhuongThucBanHang();
+            String trangThai = dh.getTrangThai();
+
+            result.putIfAbsent(phuongThuc, new LinkedHashMap<>());
+            Map<String, Integer> trangThaiMap = result.get(phuongThuc);
+            trangThaiMap.put(trangThai, trangThaiMap.getOrDefault(trangThai, 0) + 1);
+        }
+
+        return result;
+    }
+    public Map<String, Integer> demDonHangTheoPhuongThuc(LocalDateTime tuNgay, LocalDateTime denNgay) {
+        List<Object[]> ketQua = donHangRepository.demTheoPhuongThuc(tuNgay, denNgay);
+        Map<String, Integer> map = new HashMap<>();
+        for (Object[] obj : ketQua) {
+            String phuongThuc = (String) obj[0];
+            Long soLuong = (Long) obj[1];
+            map.put(phuongThuc, soLuong.intValue());
+        }
+        return map;
+    }
+
+
 }

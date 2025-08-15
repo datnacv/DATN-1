@@ -1,13 +1,11 @@
 package com.example.AsmGD1.service.GioHang;
 
-import com.example.AsmGD1.entity.ChiTietGioHang;
-import com.example.AsmGD1.entity.GioHang;
-import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.GioHang.ChiTietGioHangRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
+import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +30,9 @@ public class KhachHangGioHangService {
 
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
+
+    @Autowired
+    private ChienDichGiamGiaService chienDichGiamGiaService;
 
     public GioHang getOrCreateGioHang(UUID nguoiDungId) {
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDungId);
@@ -59,7 +60,6 @@ public class KhachHangGioHangService {
         GioHang gioHang = gioHangRepository.findById(gioHangId)
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại với ID: " + gioHangId));
 
-        // Lấy lại ChiTietSanPham để đảm bảo trạng thái mới nhất
         ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTietSanPhamId)
                 .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại với ID: " + chiTietSanPhamId));
 
@@ -67,71 +67,59 @@ public class KhachHangGioHangService {
             throw new RuntimeException("Số lượng tồn kho không đủ: " + chiTietSanPham.getSoLuongTonKho());
         }
 
+        // Kiểm tra chiến dịch giảm giá
+        BigDecimal giaGiam = chiTietSanPham.getGia();
+        BigDecimal tienGiam = BigDecimal.ZERO;
+        Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamId);
+        if (activeCampaign.isPresent()) {
+            ChienDichGiamGia campaign = activeCampaign.get();
+            if (campaign.getPhanTramGiam() != null && campaign.getSoLuong() != null && campaign.getSoLuong() >= soLuong) {
+                tienGiam = chiTietSanPham.getGia().multiply(campaign.getPhanTramGiam().divide(BigDecimal.valueOf(100)));
+                giaGiam = chiTietSanPham.getGia().subtract(tienGiam);
+                chienDichGiamGiaService.truSoLuong(campaign.getId(), soLuong);
+            }
+        }
+
         Optional<ChiTietGioHang> existingChiTiet = chiTietGioHangRepository.findByGioHangIdAndChiTietSanPhamId(gioHangId, chiTietSanPhamId);
         if (existingChiTiet.isPresent()) {
             ChiTietGioHang chiTiet = existingChiTiet.get();
             int newQuantity = chiTiet.getSoLuong() + soLuong;
 
-            // Lấy lại để kiểm tra trạng thái mới nhất
-            ChiTietSanPham updatedChiTietSanPham = chiTietSanPhamRepository.findById(chiTietSanPhamId)
-                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại với ID: " + chiTietSanPhamId));
-
-            if (updatedChiTietSanPham.getSoLuongTonKho() < newQuantity) {
-                throw new RuntimeException("Số lượng tồn kho không đủ sau khi cộng dồn: " + updatedChiTietSanPham.getSoLuongTonKho());
+            if (chiTietSanPham.getSoLuongTonKho() < newQuantity) {
+                throw new RuntimeException("Số lượng tồn kho không đủ sau khi cộng dồn: " + chiTietSanPham.getSoLuongTonKho());
             }
 
             chiTiet.setSoLuong(newQuantity);
+            chiTiet.setGia(giaGiam);
+            chiTiet.setTienGiam(tienGiam.multiply(BigDecimal.valueOf(newQuantity)));
             chiTietGioHangRepository.save(chiTiet);
+
+            BigDecimal tongTienMoi = gioHang.getTongTien().add(giaGiam.multiply(BigDecimal.valueOf(soLuong)));
+            gioHang.setTongTien(tongTienMoi);
+            gioHangRepository.save(gioHang);
+
             return chiTiet;
         }
 
         ChiTietGioHang chiTiet = new ChiTietGioHang();
-//        chiTiet.setId(UUID.randomUUID());
         chiTiet.setGioHang(gioHang);
         chiTiet.setChiTietSanPham(chiTietSanPham);
         chiTiet.setSoLuong(soLuong);
-        chiTiet.setGia(chiTietSanPham.getGia());
-        chiTiet.setTienGiam(BigDecimal.ZERO);
+        chiTiet.setGia(giaGiam);
+        chiTiet.setTienGiam(tienGiam.multiply(BigDecimal.valueOf(soLuong)));
         chiTiet.setThoiGianThem(LocalDateTime.now());
         chiTiet.setTrangThai(true);
         chiTiet = chiTietGioHangRepository.save(chiTiet);
 
-        BigDecimal tongTienMoi = gioHang.getTongTien().add(chiTietSanPham.getGia().multiply(BigDecimal.valueOf(soLuong)));
+        BigDecimal tongTienMoi = gioHang.getTongTien().add(giaGiam.multiply(BigDecimal.valueOf(soLuong)));
         gioHang.setTongTien(tongTienMoi);
         gioHangRepository.save(gioHang);
-
-        // Lấy lại để đảm bảo trạng thái mới nhất trước khi cập nhật kho
-        ChiTietSanPham finalChiTietSanPham = chiTietSanPhamRepository.findById(chiTietSanPhamId)
-                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại với ID: " + chiTietSanPhamId));
-        if (finalChiTietSanPham.getSoLuongTonKho() < soLuong) {
-            throw new RuntimeException("Số lượng tồn kho đã thay đổi, không đủ để hoàn tất: " + finalChiTietSanPham.getSoLuongTonKho());
-        }
-        finalChiTietSanPham.setSoLuongTonKho(finalChiTietSanPham.getSoLuongTonKho() - soLuong);
-        chiTietSanPhamRepository.save(finalChiTietSanPham);
 
         return chiTiet;
     }
 
     public List<ChiTietGioHang> getGioHangChiTiets(UUID gioHangId) {
-        List<ChiTietGioHang> chiTiets = chiTietGioHangRepository.findByGioHangId(gioHangId);
+        List<ChiTietGioHang> chiTiets = chiTietGioHangRepository.findByGioHangIdWithHinhAnh(gioHangId);
         return chiTiets != null ? chiTiets : java.util.Collections.emptyList();
-    }
-
-    @Transactional
-    public void removeFromGioHang(UUID gioHangId, UUID chiTietSanPhamId) {
-        ChiTietGioHang chiTiet = chiTietGioHangRepository.findByGioHangIdAndChiTietSanPhamId(gioHangId, chiTietSanPhamId)
-                .orElseThrow(() -> new RuntimeException("Chi tiết giỏ hàng không tồn tại"));
-        GioHang gioHang = gioHangRepository.findById(gioHangId)
-                .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
-        ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
-
-        chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + chiTiet.getSoLuong());
-        chiTietSanPhamRepository.save(chiTietSanPham);
-
-        BigDecimal tongTienGiam = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong())).subtract(chiTiet.getTienGiam());
-        gioHang.setTongTien(gioHang.getTongTien().subtract(tongTienGiam));
-        gioHangRepository.save(gioHang);
-
-        chiTietGioHangRepository.delete(chiTiet);
     }
 }

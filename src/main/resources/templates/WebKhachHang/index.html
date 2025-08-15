@@ -4,90 +4,353 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ACV Store - Trang chủ</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
-    .product-card { transition: transform 0.3s; }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .badge-new { background-color: #f97316; }
-    .size-option.active, .color-option.active { background-color: #f97316; color: white; }
-    .swiper-slide img { object-fit: cover; height: 400px; }
-    .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+    .navbar { background: linear-gradient(to right, #153054, #1e4066); }
+    .product-card { transition: transform 0.3s, box-shadow 0.3s; }
+    .product-card:hover { transform: translateY(-10px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+    .badge-new { background-color: #153054; }
+    .size-option, .color-option { padding: 8px 16px; border: 2px solid #ccc; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+    .size-option.active, .color-option.active { background-color: #153054; color: white; border-color: #153054; }
+    .color-option { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; }
+    .color-option.active { border-color: #153054; }
+    .swiper-slide img { object-fit: cover; height: 500px; width: 100%; }
+    .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
+    .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
     .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
     .dropdown:hover .dropdown-menu { display: block; }
-    body { padding-top: 100px; }
-    @media (max-width: 640px) {
-      .swiper-slide img { height: 200px; }
-      .product-grid { grid-template-columns: repeat(2, 1fr); }
-      .dropdown-menu { width: 100%; left: 0; }
-      body { padding-top: 80px; }
-    }
+    body { padding-top: 118px; }
     .user-info { display: none; color: white; }
     .user-info.active { display: inline; }
+    /* Ẩn mặc định bằng opacity + transform (để transition mượt) */
+    #chatbot-box{
+      position: fixed; bottom: 100px; right: 30px;
+      width: 420px;
+      height: clamp(520px, 70vh, 640px); /* <-- thêm */
+      max-height: none;                  /* <-- bỏ giới hạn cũ */
+      display: flex;
+      flex-direction: column;
+      background:#fff; border-radius:14px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.18);
+      overflow: hidden; z-index:10000;
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+
+      /* trạng thái ẩn */
+      opacity: 0;
+      transform: translateY(12px) scale(.98);
+      pointer-events: none;
+      visibility: hidden;
+      transform-origin: bottom right;
+
+      transition: opacity .25s ease, transform .25s ease, visibility .25s;
+      will-change: opacity, transform;
+    }
+
+    #chat-messages{
+      padding:12px 12px 6px;
+      flex: 1;           /* <-- thêm */
+      min-height: 0;     /* <-- rất quan trọng để phần này cuộn được trong flex */
+      overflow-y: auto;
+      background:#fff;
+    }
+
+
+    /* trạng thái hiện */
+    #chatbot-box.is-open{
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      visibility: visible;
+    }
+
+    /* tôn trọng giảm chuyển động */
+    @media (prefers-reduced-motion: reduce){
+      #chatbot-box{ transition: none; }
+    }
+
+
+    /* Header tối, icon tròn */
+    .cb-header{ background:#153054; color:#fff; padding:10px 12px; display:flex; align-items:center; gap:10px; }
+    .brand-logo{ width:45px; height:45px; border-radius:30px; object-fit:cover; }
+
+    .cb-header .brand{
+      display:flex; align-items:center; gap:8px; font-weight:700;
+    }
+    .cb-header .brand .dot{
+      width:28px;height:28px;border-radius:50%;
+      background:#9FD5F7; display:inline-block;
+    }
+    /* QR combobox bên trái input */
+    .qr-wrap{ position:relative; }
+    .qr-btn{
+      width:44px;height:44px;border-radius:12px;border:1px solid #e5e7eb;background:#fff;color:#111827;
+      display:flex;align-items:center;justify-content:center; cursor:pointer;
+    }
+    .qr-btn:focus{ outline:none; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    .qr-menu{
+      position:absolute; left:0; bottom:52px; /* nổi phía trên input */
+      width:260px; max-height:260px; overflow:auto;
+      background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+      box-shadow:0 12px 28px rgba(0,0,0,.12);
+      padding:8px; display:none; z-index:10001;
+    }
+    .qr-menu.show{ display:block; }
+    .qr-item{
+      width:100%; text-align:left; border:0; background:#fff; color:#111827;
+      padding:10px 12px; border-radius:10px; font-size:14px; cursor:pointer;
+    }
+    .qr-item:hover{ background:#f3f4f6; }
+
+    .cb-actions{ margin-left:auto; display:flex; gap:8px; }
+    .cb-icon{
+      width:32px;height:32px;border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.08); color:#fff; cursor:pointer; border:0;
+    }
+    .cb-icon:hover{ background:rgba(255,255,255,.16); }
+
+    /* Vùng tin nhắn */
+    #chat-messages{
+      padding:12px 12px 6px;
+      height:420px; overflow-y:auto; background:#fff;
+    }
+
+    /* Bong bóng bot + avatar bằng ::before */
+    .chatbot-msg-bot{
+      position:relative;
+      background:#f3f4f6; color:#111827;
+      padding:10px 12px; border-radius:14px 14px 14px 4px;
+      max-width:82%; margin:0 56px 10px 40px; /* chừa chỗ avatar trái */
+      font-size:15px; line-height:1.45; word-wrap:break-word;
+    }
+    .chatbot-msg-bot::before {
+      content: "";
+      position: absolute;
+      left: -40px;
+      top: 4px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background-image: url('/image/ACV.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+
+    .chatbot-msg-user{
+      background:#153054; color:#fff;
+      padding:10px 12px; border-radius:14px 14px 4px 14px;
+      max-width:82%; margin:0 0 10px auto;
+      font-size:15px; line-height:1.45; word-wrap:break-word;
+    }
+
+    /* Typing indicator giả lập */
+    #typing-indicator{ opacity:.8; font-style:italic; }
+
+    /* Quick reply dạng pill dưới vùng chat */
+    .cb-quick{
+      padding:6px 12px 10px; background:#fff;
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .cb-pill{
+      border:1px solid #e5e7eb; background:#fff; color:#111827;
+      padding:8px 12px; border-radius:18px; font-size:14px;
+      cursor:pointer; transition:.15s;
+    }
+    .cb-pill:hover{ background:#f3f4f6; }
+
+    /* Thanh nhập + nút gửi */
+    .cb-inputbar{
+      border-top:1px solid #eee;
+      padding:10px; display:flex; gap:8px; align-items:center; background:#fff;
+    }
+    #chat-input{
+      flex:1; padding:12px 14px; border:1px solid #e5e7eb;
+      border-radius:24px; font-size:15px; outline:none;
+    }
+    #chat-input:focus{ border-color:#b6c2ff; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+    #chat-send{
+      width:44px;height:44px;border-radius:50%;border:0;
+      background:#153054;
+      color:#fff; display:flex;align-items:center;justify-content:center;
+    }
+
+
+    /* Ghi chú nhỏ giống caption “Thông tin chỉ mang tính tham khảo…” */
+    .cb-note{
+      padding:6px 14px 12px; font-size:10px; text-align: center ; color:#6b7280; background:#fff ;
+    }
+    #chat-input {
+      flex: 1;
+      resize: none;              /* không cho kéo thủ công */
+      overflow-y: hidden;        /* ẩn thanh cuộn */
+      line-height: 1.4;
+      max-height: 120px;         /* giới hạn chiều cao tối đa (tầm 5-6 dòng) */
+    }
+
+    #confirmAddToCart.loading::after {
+      content: '';
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid white;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    #back-to-top {
+      transition: opacity 0.3s;
+    }
+    #back-to-top.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .search-suggestions.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .suggestion-item:hover {
+      background-color: #f1f5f9;
+    }
+    .suggestion-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+    .history-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+      background-color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-item:hover {
+      background-color: #e2e8f0;
+    }
+    .history-item .highlight {
+      background-color: #9FD5F7;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .history-item .delete-btn {
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s;
+    }
+    .history-item .delete-btn:hover {
+      color: #b91c1c;
+    }
+    @media (max-width: 640px){
+      #chatbot-box{
+        width: 92vw;
+        right: 4vw;
+        bottom: 90px;   /* tránh đè nút nổi */
+        height: 70vh;
+      }
+    }
+    /* Active tab */
+    #mini-tabs .tab-link.is-active{
+      color:#153054;
+      background:#E8F2FF;
+    }
+
+    /* Ẩn scrollbar ngang tabs (mobile) */
+    .no-scrollbar::-webkit-scrollbar{ display:none; }
+    .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+    .cat-chip.active{ border-color:#153054; background:#E8F2FF; color:#153054; }
+
+    /* vì có thêm 2 thanh sticky (mini-tabs + categories), tăng offset khi scroll tới section */
+    #section-new, #section-all, #section-best{ scroll-margin-top: 170px; }
   </style>
 </head>
 <body class="bg-gray-100">
-<div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
+<div class="ticker py-1 overflow-hidden" style="height: 40px;">
   <marquee behavior="scroll" direction="left" scrollamount="5">
     🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
   </marquee>
 </div>
 
-<nav class="navbar navbar-expand-lg sticky-top shadow-sm" style="background-color: #f97316;">
-  <div class="container d-flex justify-content-between align-items-center py-2">
-    <!-- Logo -->
-    <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
+<div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
+<!-- Mini Tabs -->
+<nav id="mini-tabs" class="bg-white/90 backdrop-blur sticky top-[118px] z-[1039] border-b border-gray-200">
+  <div class="container mx-auto">
+    <ul class="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar px-3 sm:px-0 relative">
+      <li>
+        <a href="#section-new"
+           class="tab-link inline-flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-gray-700 hover:text-[#153054] hover:bg-[#E8F2FF]">
+          <i class="fa-solid fa-star"></i><span>Mới</span>
+        </a>
+      </li>
+      <li>
+        <a href="#section-all"
+           class="tab-link inline-flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-gray-700 hover:text-[#153054] hover:bg-[#E8F2FF]">
+          <i class="fa-solid fa-boxes-stacked"></i><span>Tất cả</span>
+        </a>
+      </li>
+      <li>
+        <a href="#section-best"
+           class="tab-link inline-flex items-center gap-2 px-3 py-3 rounded-md text-sm font-semibold text-gray-700 hover:text-[#153054] hover:bg-[#E8F2FF]">
+          <i class="fa-solid fa-fire"></i><span>Bán chạy</span>
+        </a>
+      </li>
 
-    <!-- Dropdown Danh mục -->
-    <div class="dropdown me-3">
-      <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
-        Danh mục
-      </button>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="/category/nam">Thời trang Nam</a></li>
-        <li><a class="dropdown-item" href="/category/nu">Thời trang Nữ</a></li>
-        <li><a class="dropdown-item" href="/category/phu-kien">Phụ kiện</a></li>
-        <li><a class="dropdown-item" href="/category/gia-dung">Gia dụng</a></li>
-      </ul>
-    </div>
+      <!-- Indicator (gạch chân trượt) -->
+      <span id="tab-indicator" class="absolute bottom-0 h-[3px] bg-[#153054] rounded transition-all duration-300 ease-out"></span>
+    </ul>
+  </div>
+</nav>
 
-    <!-- Tìm kiếm -->
-    <form class="flex-grow-1 mx-3" style="max-width: 600px;">
-      <div class="input-group">
-        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm...">
-        <button class="btn btn-light rounded-end-pill px-4" type="submit">
-          <i class="fas fa-search text-orange-600"></i>
-        </button>
-      </div>
-    </form>
-
-    <!-- Giỏ hàng + Người dùng -->
-    <div class="d-flex align-items-center gap-3">
-      <!-- Giỏ hàng -->
-      <a th:href="@{/cart}" class="text-white fs-5 position-relative">
-        <i class="fas fa-shopping-cart"></i>
-      </a>
-
-      <!-- Nếu đã đăng nhập -->
-      <div th:if="${user != null}" class="dropdown">
-        <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
-          <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" th:href="@{/account/profile}">Tài khoản của tôi</a></li>
-          <li><a class="dropdown-item" th:href="@{/dsdon-mua}">Đơn mua</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item text-danger" th:href="@{/logout}">Đăng xuất</a></li>
-        </ul>
-      </div>
-
-      <!-- Nếu chưa đăng nhập -->
-      <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3">
-        Đăng nhập
+<!-- Thanh danh mục (đặt dưới mini-tabs) -->
+<nav class="bg-white/95 backdrop-blur sticky top-[158px] z-[1038] border-b border-gray-200">
+  <div class="container mx-auto">
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar px-3 py-2">
+      <a th:each="c : ${categories}"
+         th:href="@{/category/{id}(id=${c.id})}"
+         th:classappend="${currentCategoryId == c.id} ? ' active' : ''"
+         th:attr="data-name=${c.tenDanhMuc}"
+         class="cat-chip inline-flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium border
+                border-gray-200 text-gray-700 hover:border-[#153054] hover:bg-[#E8F2FF] hover:text-[#153054] whitespace-nowrap">
+        <i class="fa-regular fa-circle"></i>
+        <span th:text="${c.tenDanhMuc}">Danh mục</span>
       </a>
     </div>
   </div>
@@ -96,7 +359,7 @@
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-labelledby="addToCartModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-lg">
-      <div class="modal-header bg-orange-500 text-white">
+      <div class="modal-header" style="background-color: #153054; color: white;">
         <h5 class="modal-title" id="addToCartModalLabel">Thêm vào giỏ hàng</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -105,7 +368,8 @@
           <img id="modalProductImage" src="" alt="Product Image" class="w-20 h-20 object-cover rounded">
           <div>
             <h6 id="modalProductName" class="font-semibold"></h6>
-            <p id="modalProductPrice" class="text-orange-600 font-bold"></p>
+            <p id="modalProductPrice" class="text-blue-800 font-bold"></p>
+            <p id="modalProductStock" class="text-sm text-gray-600"></p>
           </div>
         </div>
         <div class="size-selection mt-4">
@@ -124,118 +388,260 @@
             <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
           </div>
         </div>
+        <div id="modalError" class="text-red-500 text-sm mt-2 hidden">Vui lòng chọn kích thước và màu sắc!</div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        <button type="button" class="btn bg-orange-500 text-white hover:bg-orange-600" id="confirmAddToCart">Thêm vào giỏ</button>
+        <button type="button" class="btn text-white" style="background-color: #153054;" id="confirmAddToCart">Thêm vào giỏ</button>
       </div>
     </div>
   </div>
 </div>
 
-<div class="mt-0">
+<div class="container mx-auto py-8">
   <div class="swiper banner-slider">
     <div class="swiper-wrapper">
-      <div class="swiper-slide"><img src="https://file.hstatic.net/200000503583/collection/ao-nam-2022_71fff4523ebe4fbd9722928187580776.jpg" alt="Banner 1" class="w-full"/></div>
-      <div class="swiper-slide"><img src="https://file.hstatic.net/1000253775/file/kt_dn_dk.jpg" alt="Banner 2" class="w-full"/></div>
-      <div class="swiper-slide"><img src="https://4menshop.com/images/thumbs/news/-602.jpg" alt="Banner 3" class="w-full"/></div>
+      <div class="swiper-slide">
+        <img loading="lazy" src="/image/banner1.png" alt="Banner thời trang nam" class="w-full h-full object-cover"/>
+      </div>
+      <div class="swiper-slide">
+        <img loading="lazy" src="/image/banner2.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+      </div>
+      <div class="swiper-slide">
+        <img loading="lazy" src="/image/banner3.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+      </div>
     </div>
-    <div class="swiper-button-next text-orange-500"></div>
-    <div class="swiper-button-prev text-orange-500"></div>
+    <div class="swiper-button-next text-blue-800"></div>
+    <div class="swiper-button-prev text-blue-800"></div>
     <div class="swiper-pagination"></div>
   </div>
 </div>
 
-<section class="container mx-auto py-8">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản phẩm mới</h2>
+<section id="section-new" class="container mx-auto py-10 bg-white rounded-lg">
+  <!-- Header -->
+  <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Sản phẩm mới</h2>
+      <p class="text-sm text-gray-500 mt-1">Những item vừa cập bến — bắt trend ngay!</p>
+    </div>
+    <a href="/new" class="inline-flex items-center gap-2 text-blue-800 font-semibold hover:underline">
+      Xem tất cả <span aria-hidden="true">»</span>
+    </a>
+  </div>
+
+  <!-- Grid -->
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${newProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-green-500">Mới</span>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList}">
-          <i class="fas fa-shopping-cart text-orange-500"></i>
+        <!-- Badge New -->
+        <span class="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">New</span>
+
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
+                aria-label="Thêm vào giỏ hàng">
+          <i class="fas fa-shopping-cart text-blue-800"></i>
+        </button>
+        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+          <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
-        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+
+        <!-- Giá (giữ nguyên logic data-price để script format) -->
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
+          <span th:text="${product.price}"></span> VNĐ
+        </div>
+
+        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
+        </div>
+
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
+        </div>
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
-    <a href="/new" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
-  </div>
 </section>
 
-<section class="container mx-auto py-8 bg-white">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản Phẩm</h2>
+<section id="section-all" class="container mx-auto py-10 bg-white rounded-lg mt-8">
+  <!-- Header -->
+  <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Tất cả sản phẩm</h2>
+      <p class="text-sm text-gray-500 mt-1">Khám phá toàn bộ danh mục tại ACV Store.</p>
+    </div>
+    <a href="/all" class="inline-flex items-center gap-2 text-blue-800 font-semibold hover:underline">
+      Xem tất cả <span aria-hidden="true">»</span>
+    </a>
+  </div>
+
+  <!-- Grid -->
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${summerProducts}">
+    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${allProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList}">
-          <i class="fas fa-shopping-cart text-orange-500"></i>
+
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
+                aria-label="Thêm vào giỏ hàng">
+          <i class="fas fa-shopping-cart text-blue-800"></i>
+        </button>
+        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+          <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
-        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
+          <span th:text="${product.price}"></span> VNĐ
+        </div>
+
+        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
+        </div>
+
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
+        </div>
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
-    <a href="/all" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
-  </div>
 </section>
 
-<section class="container mx-auto py-8">
-  <h2 class="text-2xl font-bold text-gray-800 mb-4">Sản phẩm bán chạy</h2>
+<section id="section-best" class="container mx-auto py-10 bg-white rounded-lg mt-8">
+  <!-- Header -->
+  <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-800">Sản phẩm bán chạy</h2>
+      <p class="text-sm text-gray-500 mt-1">Top pick được săn nhiều nhất thời gian qua.</p>
+    </div>
+    <a href="/bestsellers" class="inline-flex items-center gap-2 text-blue-800 font-semibold hover:underline">
+      Xem tất cả <span aria-hidden="true">»</span>
+    </a>
+  </div>
+
+  <!-- Grid -->
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <span class="badge-new absolute top-2 left-2 text-white text-xs font-semibold px-2 py-1 rounded bg-red-500">Hot</span>
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-orange-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList}">
-          <i class="fas fa-shopping-cart text-orange-500"></i>
+        <!-- Badge Hot -->
+        <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">Hot</span>
+
+        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}"
+                aria-label="Thêm vào giỏ hàng">
+          <i class="fas fa-shopping-cart text-blue-800"></i>
+        </button>
+        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
+                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+          <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
-        <div class="price text-orange-600 font-bold mt-2" th:text="${product.price} + ' VNĐ'"></div>
-        <div th:if="${product.tongSoLuong != null}" class="text-sm text-gray-600">Tồn kho: <span th:text="${product.tongSoLuong}"></span></div>
+
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
+          <span th:text="${product.price}"></span> VNĐ
+        </div>
+
+        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
+        </div>
+
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
+        </div>
       </a>
     </div>
   </div>
-  <div class="see-all text-center mt-6">
-    <a href="/bestsellers" class="text-orange-500 font-semibold hover:underline">Xem tất cả »</a>
-  </div>
 </section>
 
-<script type="text/javascript">
-  (function(d, m){
-    var kommunicateSettings =
-            {"appId":"20a19e8ec21190f7ec5621374f7a576ef","popupWidget":true,"automaticChatOpenOnNavigation":true};
-    var s = document.createElement("script"); s.type = "text/javascript"; s.async = true;
-    s.src = "https://widget.kommunicate.io/v2/kommunicate.app";
-    var h = document.getElementsByTagName("head")[0]; h.appendChild(s);
-    window.kommunicate = m; m._globals = kommunicateSettings;
-  })(document, window.kommunicate || {});
-  /* NOTE : Use web server to view HTML files as real-time update will not work if you directly open the HTML file in the browser. */
-</script>
+<!-- Floating Chatbot Icon -->
+<div id="chatbot-toggle"
+     style="position: fixed; bottom: 20px; right: 20px; background-color: #9FD5F7;
+            width: 60px; height: 60px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; z-index: 10000;
+            cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+  <img th:src="@{/image/ACV.jpg}" alt="ACV"
+       style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+</div>
 
-<footer class="bg-gray-800 text-white py-8">
+<!-- Chatbot Box -->
+<div id="chatbot-box">
+  <!-- Header -->
+  <div class="cb-header">
+  <span class="brand">
+    <img th:src="@{/image/ACV.jpg}" alt="ACV" class="brand-logo" />
+    ACV Store
+  </span>
+    <div class="cb-actions">
+      <button id="chat-reload" class="cb-icon" title="Xoá lịch sử chat">
+        <i class="fas fa-rotate-right"></i>
+      </button>
+      <button id="chatbot-close" class="cb-icon" title="Đóng">
+        <i class="fas fa-minus"></i>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- Messages -->
+  <div id="chat-messages"></div>
+
+  <!-- Quick row (chỉ hiện trước khi có tin nhắn đầu tiên) -->
+  <div id="quick-row" class="cb-quick" style="display:none">
+    <button class="cb-pill quick-reply">Sản phẩm mới nhất</button>
+    <button class="cb-pill quick-reply">Thông tin liên hệ</button>
+    <button class="cb-pill quick-reply">Địa chỉ cửa hàng</button>
+  </div>
+
+  <!-- Input + Send Button -->
+  <div class="cb-inputbar">
+    <!-- Quick-reply combobox icon -->
+    <div class="qr-wrap">
+      <button id="qr-trigger" class="qr-btn" aria-haspopup="true" aria-expanded="false" title="Quick reply">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div id="qr-menu" class="qr-menu" role="menu" aria-hidden="true">
+        <button class="qr-item quick-reply" role="menuitem">Sản phẩm mới nhất</button>
+        <button class="qr-item quick-reply" role="menuitem">Thông tin liên hệ</button>
+        <button class="qr-item quick-reply" role="menuitem">Địa chỉ cửa hàng</button>
+      </div>
+    </div>
+
+    <textarea id="chat-input" placeholder="Nhập tin nhắn..." rows="1"></textarea>
+    <button id="chat-send" aria-label="Gửi" title="Gửi (Enter)">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+
+
+  <!-- Note -->
+  <div class="cb-note">
+    Thông tin chỉ mang tính tham khảo, được tư vấn bởi Trợ lý Trí tuệ Nhân Tạo.
+  </div>
+</div>
+
+<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px; position: relative; z-index: 1;">
   <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
     <div>
       <h3 class="text-lg font-bold mb-4">ACV Store</h3>
@@ -244,28 +650,491 @@
     <div>
       <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
       <ul class="space-y-2">
-        <li><a href="/new" class="hover:text-orange-500">Sản phẩm mới</a></li>
-        <li><a href="/all" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
-        <li><a href="/bestsellers" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+        <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
+        <li><a href="/all" class="hover:text-blue-300">Tủ đồ mùa hè</a></li>
+        <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
       </ul>
     </div>
     <div>
       <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-      <p class="text-sm">Email: acvstore@gmail.com</p>
-      <p class="text-sm">Hotline: 0123 456 789</p>
+      <p class="text-sm">Địa chỉ: Chung Cư Le Capitole, Hà Nội, Việt Nam</p>
+      <p class="text-sm">Email: datn.acv@gmail.com</p>
+      <p class="text-sm">Hotline: 0911 006 045</p>
       <div class="flex space-x-4 mt-4">
-        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
-        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
-        <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+        <a href="https://www.facebook.com" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://www.instagram.com" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="https://twitter.com" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
       </div>
     </div>
   </div>
+  <div class="container mx-auto mt-8">
+    <div class="map-container relative overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.646955515961!2d105.81876547508028!3d21.00678448063709!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ad4154d7e2e9%3A0x4ac6110617de42bc!2sChung%20C%C6%B0%20Le%20Capitole!5e0!3m2!1sen!2s!4v1754127537191!5m2!1sen!2s" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+    <p class="text-center text-sm mt-2 text-gray-300">* Bản đồ hiển thị vị trí chi nhánh chính tại Chung Cư Le Capitole, Hà Nội. Vui lòng liên hệ để xác nhận giờ mở cửa.</p>
+  </div>
   <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+  <!-- Hiệu ứng nền -->
+  <div class="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%),linear-gradient(-45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%)] bg-[length:60px_60px] animate-[patternMove_20s_linear_infinite] -z-10"></div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<button id="back-to-top" class="fixed bottom-20 right-20 bg-blue-600 text-white p-3 rounded-full shadow-lg hidden" aria-label="Quay lại đầu trang">
+  <i class="fas fa-arrow-up"></i>
+</button>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+<script src="/js/navbar.js"></script>
+<!--chatbot-->
 <script>
+  const qrTrigger = document.getElementById('qr-trigger');
+  const qrMenu    = document.getElementById('qr-menu');
+
+  qrTrigger?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = qrMenu.classList.toggle('show');
+    qrTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    qrMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
+  });
+
+  // click ngoài để đóng menu
+  document.addEventListener('click', (e) => {
+    if (!qrMenu) return;
+    if (!qrMenu.contains(e.target) && !qrTrigger.contains(e.target)) {
+      qrMenu.classList.remove('show');
+      qrTrigger.setAttribute('aria-expanded', 'false');
+      qrMenu.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+
+  function showQuickRow() {
+    const el = document.getElementById('quick-row');
+    if (el) el.style.display = 'flex';
+  }
+  function hideQuickRow() {
+    const el = document.getElementById('quick-row');
+    if (el) el.style.display = 'none';
+  }
+
+  // Đóng combobox khi chọn quick-reply trong menu
+  qrMenu?.addEventListener('click', (e) => {
+    const item = e.target.closest('.quick-reply');
+    if (!item) return;
+    // tắt menu ngay
+    qrMenu.classList.remove('show');
+    qrTrigger.setAttribute('aria-expanded', 'false');
+    qrMenu.setAttribute('aria-hidden', 'true');
+  });
+
+
+  // ====== DOM refs mới ======
+  const reloadBtn  = document.getElementById('chat-reload');
+  const quickCombo = document.getElementById('quick-combobox');
+  const sendBtn    = document.getElementById('chat-send');
+
+  // ====== Reload lịch sử ======
+  reloadBtn?.addEventListener('click', () => {
+    // Xoá toàn bộ lịch sử chat trong sessionStorage
+    sessionStorage.removeItem('chat_history');
+
+    // Xoá tin nhắn trên giao diện
+    chatMessages.innerHTML = '';
+    showQuickRow();
+
+
+    // Gọi lời chào mặc định như mới mở
+    ensureGreeting();
+  });
+
+  // ====== Quick-reply combobox ======
+  quickCombo?.addEventListener('change', () => {
+    const v = quickCombo.value.trim();
+    if (!v) return;
+    chatInput.value = v;
+    chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    quickCombo.selectedIndex = 0; // reset lại option đầu
+  });
+
+  // ====== Nút gửi click = nhấn Enter ======
+  sendBtn?.addEventListener('click', () => {
+    chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+  });
+
+  // ====== Auto chào khi mở lần đầu ======
+  function ensureGreeting() {
+    const items = JSON.parse(sessionStorage.getItem('chat_history') || '[]');
+    if (items.length > 0) return;
+
+    const greet1 = 'Xin chào Bạn! Mình là trợ lý AI của ACV Store';
+    const greet2 = 'Mình rất sẵn lòng hỗ trợ Bạn 😊';
+
+    const g1 = document.createElement('div');
+    g1.className = 'chatbot-msg-bot';
+    g1.textContent = greet1;
+
+    const g2 = document.createElement('div');
+    g2.className = 'chatbot-msg-bot';
+    g2.textContent = greet2;
+
+    chatMessages.appendChild(g1);
+    chatMessages.appendChild(g2);
+
+    saveToHistory('bot', greet1);
+    saveToHistory('bot', greet2);
+
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    showQuickRow(); // hiện quick-reply khi lần đầu mở
+  }
+
+  document.querySelectorAll('.price').forEach(el => {
+    const raw = el.getAttribute('data-price');
+    if (!raw || isNaN(raw)) {
+      el.textContent = 'Liên hệ';
+      return;
+    }
+    const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
+    el.textContent = 'Từ ' + formatted;
+  });
+  // Format the old price in the same way as the regular price
+  document.querySelectorAll('.formatted-old-price').forEach(el => {
+    const raw = el.textContent.trim();
+    if (!raw || isNaN(raw)) {
+      return;
+    }
+    const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
+    el.textContent = formatted;
+  });
+
+</script>
+<!--scroll-->
+<script>
+  (function(){
+    const ICONS = [
+      {k:/\b(ao|áo)\b.*\b(nam)\b/i, icon:'fa-shirt'},
+      {k:/\b(ao|áo)\b.*\b(nu|nữ)\b/i, icon:'fa-person-dress'},
+      {k:/\bquan|quần\b/i,           icon:'fa-person-walking'},
+      {k:/\bgiay|giày\b/i,            icon:'fa-shoe-prints'},
+      {k:/\bphu kien|phụ kiện\b/i,    icon:'fa-ring'},
+      {k:/\bdam|đầm|vay|váy\b/i,      icon:'fa-person-dress'},
+      {k:/\btre em|trẻ em|kid\b/i,    icon:'fa-child'},
+      {k:/\bouter|khoac|khoác\b/i,    icon:'fa-jacket' }, // fallback nếu có FA Pro; nếu ko, thay = fa-user
+    ];
+    document.querySelectorAll('.cat-chip').forEach(chip=>{
+      const name = (chip.dataset.name || '').toLowerCase();
+      const i = chip.querySelector('i'); if(!i) return;
+      let found = 'fa-tags';
+      for(const m of ICONS){ if(m.k.test(name)){ found = m.icon; break; } }
+      i.className = 'fa-solid ' + found; // set icon
+    });
+  })();
+  (function(){
+    const OFFSET = 130;
+    const ul = document.querySelector('#mini-tabs ul');
+    const tabs = Array.from(document.querySelectorAll('#mini-tabs .tab-link'));
+    const indicator = document.getElementById('tab-indicator');
+    const sections = ['#section-new', '#section-all', '#section-best']
+            .map(id => document.querySelector(id)).filter(Boolean);
+
+    let isProgrammatic = false;   // 🔒 khoá highlight khi cuộn do click
+    let io = null;
+
+    function moveIndicatorTo(el){
+      if(!el || !indicator || !ul) return;
+      const left = el.offsetLeft - ul.scrollLeft;
+      indicator.style.left = left + 'px';
+      indicator.style.width = el.offsetWidth + 'px';
+    }
+    function setActiveTab(activeEl){
+      tabs.forEach(t => t.classList.remove('is-active'));
+      activeEl?.classList.add('is-active');
+      moveIndicatorTo(activeEl);
+    }
+
+    // Smooth scroll khi click tab (khóa IO tạm thời)
+    tabs.forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        const href = tab.getAttribute('href');
+        if (!href || !href.startsWith('#')) return;
+        e.preventDefault();
+
+        const target = document.querySelector(href);
+        if (!target) return;
+
+        isProgrammatic = true;        // 🔒 khoá
+        setActiveTab(tab);            // highlight & indicator nhảy ngay
+
+        const y = target.getBoundingClientRect().top + window.pageYOffset - OFFSET;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+
+        // mở khoá sau khi cuộn xong
+        // Chrome hỗ trợ 'scrollend'; fallback = timeout ~600ms
+        const unlock = () => { isProgrammatic = false; };
+        if ('onscrollend' in window) {
+          const once = () => { window.removeEventListener('scrollend', once); unlock(); };
+          window.addEventListener('scrollend', once, { once:true });
+        } else {
+          // thời gian phụ thuộc quãng đường (tối đa 800ms)
+          const dist = Math.abs(window.scrollY - y);
+          const dur  = Math.min(800, Math.max(350, dist * 0.4));
+          setTimeout(unlock, dur);
+        }
+      });
+    });
+
+    // IO highlight theo scroll – bỏ qua khi đang cuộn do click
+    function attachObserver(){
+      if (!('IntersectionObserver' in window)) return;
+      io = new IntersectionObserver((entries) => {
+        if (isProgrammatic) return;  // 🚫 đừng đổi tab giữa đường
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const id = '#' + entry.target.id;
+            const current = tabs.find(t => t.getAttribute('href') === id);
+            setActiveTab(current);
+          }
+        });
+      }, {
+        root: null,
+        // ép chỉ active khi section chiếm phần lớn viewport → giảm nháy
+        rootMargin: `-${OFFSET + 1}px 0px -55% 0px`,
+        threshold: 0
+      });
+      sections.forEach(sec => io.observe(sec));
+    }
+    attachObserver();
+
+    // Giữ indicator đúng khi kéo ngang thanh tabs (mobile) & resize
+    ul?.addEventListener('scroll', () => {
+      const active = document.querySelector('#mini-tabs .tab-link.is-active') || tabs[0];
+      moveIndicatorTo(active);
+    }, { passive:true });
+    window.addEventListener('resize', () => {
+      const active = document.querySelector('#mini-tabs .tab-link.is-active') || tabs[0];
+      moveIndicatorTo(active);
+    });
+
+    // Active mặc định
+    const defaultTab = document.querySelector('#mini-tabs .tab-link[href="#section-new"]') || tabs[0];
+    setActiveTab(defaultTab);
+  })();
+</script>
+<!--main-->
+<script>
+  function updateSendBtn() {
+    const hasText = chatInput.value.trim().length > 0;
+    sendBtn.style.backgroundColor = hasText ? '#1e4066' : '#9FD5F7';
+    sendBtn.disabled = !hasText;
+    sendBtn.style.opacity = hasText ? '1' : '.9';
+    sendBtn.style.cursor  = hasText ? 'pointer' : 'not-allowed';
+  }
+
+  // Toggle chatbot
+  const toggleBtn = document.getElementById('chatbot-toggle');
+  const chatBox = document.getElementById('chatbot-box');
+  const closeBtn = document.getElementById('chatbot-close');
+  const chatInput = document.getElementById('chat-input');
+  const chatMessages = document.getElementById('chat-messages');
+
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = chatInput.scrollHeight + 'px';
+    updateSendBtn();
+  });
+  document.addEventListener('DOMContentLoaded', updateSendBtn);
+
+  function openChat(){
+    if (!chatBox.classList.contains('is-open')) {
+      chatBox.classList.add('is-open');
+      restoreHistory();
+      ensureGreeting();
+      requestAnimationFrame(() => chatInput?.focus());
+    }
+  }
+  function closeChat(){ chatBox.classList.remove('is-open'); }
+  function isOpen(){ return chatBox.classList.contains('is-open'); }
+
+  toggleBtn.onclick = (e) => {
+    e.stopPropagation();
+    isOpen() ? closeChat() : openChat();
+  };
+
+  closeBtn.onclick = (e) => {
+    e.stopPropagation();
+    closeChat();
+  };
+
+  /* click ra ngoài để đóng */
+  document.addEventListener('click', (e) => {
+    if (!chatBox.contains(e.target) && !toggleBtn.contains(e.target)) closeChat(); // ✅
+  });
+
+
+  /* nhấn ESC để đóng */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) closeChat();
+  });
+
+  function saveToHistory(role, msg) {
+    const current = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+    current.push({ role, msg });
+    sessionStorage.setItem("chat_history", JSON.stringify(current));
+  }
+
+  function restoreHistory() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.innerHTML = '';
+    const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
+
+    // render lại lịch sử
+    for (const item of items) {
+      const div = document.createElement('div');
+      div.className = item.role === 'user' ? 'chatbot-msg-user' : 'chatbot-msg-bot';
+      div.innerHTML = item.msg;
+      chatMessages.appendChild(div);
+    }
+
+    // hiện quick-reply nếu CHƯA có tin nhắn user nào
+    const hasUserMsg = items.some(i => i.role === 'user');
+    if (hasUserMsg) hideQuickRow(); else showQuickRow();
+
+    const typingIndicator = document.createElement('div');
+    typingIndicator.id = 'typing-indicator';
+    typingIndicator.className = 'chatbot-msg-bot hidden';
+    typingIndicator.textContent = 'Đang soạn tin...';
+    chatMessages.appendChild(typingIndicator);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+
+  document.querySelectorAll('.quick-reply').forEach(btn => {
+    btn.addEventListener('click', () => {
+      chatInput.value = btn.textContent;
+      chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    });
+  });
+
+  chatInput.addEventListener('keydown', async (event) => {
+    if (event.key !== 'Enter' || event.repeat) return;
+
+    event.preventDefault();
+    const message = chatInput.value.trim();
+    if (!message) return;
+    hideQuickRow();
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chatbot-msg-user';
+    userDiv.textContent = message;
+    chatMessages.appendChild(userDiv);
+    saveToHistory('user', message);
+    chatInput.value = '';
+
+    const typingIndicator = addTypingIndicator();
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+      const response = await fetch('https://lucnguyenthanhoai.app.n8n.cloud/webhook/website-chatbot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: { from: 'user_123', message } })
+      });
+
+      const data = await response.json();
+      console.log('📥 Dữ liệu gốc từ bot:', data);
+
+      const rawMessage = extractMessageFromResponse(data);
+      const formattedMsg = formatMessage(rawMessage);
+
+      const botDiv = document.createElement('div');
+      botDiv.className = 'chatbot-msg-bot';
+      botDiv.innerHTML = formattedMsg;
+      chatMessages.appendChild(botDiv);
+      saveToHistory('bot', botDiv.innerHTML);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    } catch (error) {
+      console.error('💥 Lỗi kết nối:', error);
+      const botErr = document.createElement('div');
+      botErr.className = 'chatbot-msg-bot';
+      botErr.textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+      chatMessages.appendChild(botErr);
+      saveToHistory('bot', botErr.textContent);
+    } finally {
+      typingIndicator.classList.add('hidden');
+    }
+  });
+
+  function addTypingIndicator() {
+    const existingIndicator = document.getElementById('typing-indicator');
+    if (existingIndicator) existingIndicator.remove();
+
+    const indicator = document.createElement('div');
+    indicator.id = 'typing-indicator';
+    indicator.className = 'chatbot-msg-bot';
+    indicator.textContent = 'Đang soạn tin...';
+    chatMessages.appendChild(indicator);
+    return indicator;
+  }
+
+  function extractMessageFromResponse(data) {
+    if (typeof data.message !== 'string') {
+      if (typeof data.message === 'object' && data.message !== null && 'message' in data.message) {
+        console.log('🔍 Dữ liệu từ object:', data.message.message);
+        return data.message.message;
+      }
+      console.warn('🤷‍♂️ Không hiểu kiểu dữ liệu message:', data.message);
+      return 'Xin lỗi, bot không phản hồi đúng định dạng.';
+    }
+
+    let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
+    console.log('Trước khi làm sạch:', cleanedMessage);
+
+    cleanedMessage = cleanedMessage.replace(/[\u001F\u007F-\u009F]/g, '');
+    console.log('Sau khi làm sạch:', cleanedMessage);
+
+    try {
+      const parsedData = JSON.parse(cleanedMessage);
+      console.log('🧠 Dữ liệu sau parse:', parsedData.message);
+      return parsedData.message || cleanedMessage;
+    } catch (parseErr) {
+      console.log('❌ Lỗi parse JSON:', parseErr);
+      // Trích xuất thủ công nếu parse thất bại
+      const messageMatch = cleanedMessage.match(/"message":\s*"([^"]*)"/);
+      if (messageMatch && messageMatch[1]) {
+        console.log('✅ Trích xuất thủ công thành công:', messageMatch[1]);
+        return messageMatch[1];
+      }
+      console.log('⚠️ Không trích xuất được, sử dụng cleanedMessage:', cleanedMessage);
+      return cleanedMessage;
+    }
+  }
+
+  function isImageUrl(url) {
+    // Nhận diện link ảnh phổ biến, cho phép có query string
+    return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
+  }
+
+  function formatMessage(message) {
+    // Nếu bot đã gửi sẵn thẻ <img>, giữ nguyên (tránh replace URL bên trong thẻ)
+    if (/<\s*img\b[^>]*src=/i.test(message)) {
+      return message; // hoặc: return message.replace(/\n/g, '<br>'); nếu muốn ép xuống dòng
+    }
+
+    // Xử lý tất cả URLs: link ảnh -> <img>, link khác -> <a>
+    return message
+            .replace(
+                    /(https?:\/\/[^\s<]+|acvstore\.site\/[^\s<]+)/g,
+                    (raw) => {
+                      const url = raw.startsWith('http') ? raw : 'https://' + raw;
+                      if (isImageUrl(url)) {
+                        return `<img src="${url}" alt="Ảnh" loading="lazy" style="max-width:100%;height:auto;margin-top:8px;" />`;
+                      }
+                      return `<a href="${url}" target="_blank" rel="noopener" style="color:#153054;text-decoration:underline;">${raw}</a>`;
+                    }
+            )
+            .replace(/\n/g, '<br>');
+  }
+
   new Swiper('.banner-slider', {
     loop: true,
     autoplay: { delay: 5000 },
@@ -273,49 +1142,20 @@
     pagination: { el: '.swiper-pagination', clickable: true },
   });
 
-  window.addEventListener('load', async () => {
-    const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
-    const data = await response.json();
-    const userSection = document.getElementById('userSection');
-    const userInfo = document.getElementById('userInfo');
-    const loginButton = document.getElementById('loginButton');
-    const logoutButton = document.getElementById('logoutButton');
-
-    if (data.isAuthenticated) {
-      const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
-      const userData = await userResponse.json();
-      if (userData.hoTen && userData.tenDangNhap) {
-        userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
-        userInfo.classList.add('active');
-        loginButton.style.display = 'none';
-        logoutButton.style.display = 'inline';
-      }
-    } else {
-      userInfo.classList.remove('active');
-      loginButton.style.display = 'inline';
-      logoutButton.style.display = 'none';
-    }
-  });
-
-  document.getElementById('logoutButton').addEventListener('click', (e) => {
-    e.preventDefault();
-    fetch('/customers/logout', { method: 'POST', credentials: 'include' }).then(() => {
-      window.location.href = '/';
-    });
-  });
 
   document.querySelectorAll('.cart-icon').forEach(button => {
     button.addEventListener('click', () => {
       const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
       document.getElementById('modalProductImage').src = button.dataset.productImg;
       document.getElementById('modalProductName').textContent = button.dataset.productName;
-      document.getElementById('modalProductPrice').textContent = button.dataset.productPrice + ' VNĐ';
+      document.getElementById('modalProductPrice').textContent = 'Từ ' + Number(button.dataset.productPrice).toLocaleString('vi-VN') + ' VNĐ';
+      document.getElementById('modalProductStock').textContent = `Tồn kho: ${button.dataset.stock || 'N/A'}`;
 
       const sizeOptionsContainer = document.getElementById('modalSizeOptions');
       sizeOptionsContainer.innerHTML = '';
       JSON.parse(button.dataset.kichCo).forEach(size => {
         const sizeButton = document.createElement('button');
-        sizeButton.className = 'size-option px-4 py-2 border rounded hover:bg-orange-100';
+        sizeButton.className = 'size-option px-4 py-2 border rounded hover:bg-blue-100';
         sizeButton.textContent = size.ten;
         sizeButton.dataset.sizeId = size.id;
         sizeOptionsContainer.appendChild(sizeButton);
@@ -325,8 +1165,8 @@
       colorOptionsContainer.innerHTML = '';
       JSON.parse(button.dataset.mauSac).forEach(color => {
         const colorButton = document.createElement('button');
-        colorButton.className = 'color-option px-4 py-2 border rounded hover:bg-orange-100';
-        colorButton.textContent = color.tenMau;
+        colorButton.className = 'color-option';
+        colorButton.style.backgroundColor = color.maMauHex || color.tenMau;
         colorButton.dataset.colorId = color.id;
         colorOptionsContainer.appendChild(colorButton);
       });
@@ -357,17 +1197,19 @@
       confirmButton.onclick = async () => {
         const selectedSize = modal._element.querySelector('.size-option.active');
         const selectedColor = modal._element.querySelector('.color-option.active');
-        const quantity = input.value;
-
+        const modalError = modal._element.querySelector('#modalError');
         if (!selectedSize || !selectedColor) {
-          alert('Vui lòng chọn kích cỡ và màu sắc!');
+          modalError.classList.remove('hidden');
           return;
         }
+        modalError.classList.add('hidden');
+        confirmButton.classList.add('loading');
 
         const response = await fetch(`/acvstore/chi-tiet-san-pham/api?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
         const chiTietSanPham = await response.json();
         if (!chiTietSanPham.id) {
           alert('Sản phẩm với kích cỡ và màu sắc này không tồn tại!');
+          confirmButton.classList.remove('loading');
           return;
         }
 
@@ -375,10 +1217,11 @@
         const authData = await authResponse.json();
         if (!authData.isAuthenticated) {
           alert('Vui lòng đăng nhập để thêm vào giỏ hàng!');
+          confirmButton.classList.remove('loading');
           return;
         }
 
-        const payload = { id: chiTietSanPham.id, quantity: parseInt(quantity) };
+        const payload = { id:  chiTietSanPham.id, quantity: parseInt(input.value) };
         const addResponse = await fetch('/api/cart/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -392,28 +1235,115 @@
         } else {
           alert('Có lỗi xảy ra khi thêm vào giỏ hàng!');
         }
+        confirmButton.classList.remove('loading');
       };
 
       modal.show();
     });
   });
 
-  async function updateCartCount() {
-    try {
-      const response = await fetch('/api/cart', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
-        document.getElementById('cart-count').textContent = cartCount;
-      } else if (response.status === 401) {
-        document.getElementById('cart-count').textContent = 0;
-      }
-    } catch (error) {
-      console.error('Error updating cart count:', error);
-    }
-  }
+  document.querySelectorAll('.quick-view-btn').forEach(button => {
+    button.addEventListener('click', async () => {
+      const productId = button.dataset.productId;
+      const response = await fetch(`/api/product/${productId}`);
+      const product = await response.json();
+      const quickViewModal = new bootstrap.Modal(document.createElement('div'));
+      quickViewModal._element.innerHTML = `
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header" style="background-color: #153054; color: white;">
+                <h5 class="modal-title">${product.tenSanPham}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}" class="w-full h-64 object-cover rounded mb-4">
+                <p class="text-blue-800 font-bold">${product.price} VNĐ</p>
+                <p class="text-sm text-gray-600">Tồn kho: ${product.tongSoLuong || 'N/A'}</p>
+                <p class="text-sm">${product.moTa || 'Không có mô tả'}</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <a href="/chitietsanpham?id=${product.id}" class="btn text-white" style="background-color: #153054;">Xem chi tiết</a>
+              </div>
+            </div>
+          </div>
+        `;
+      document.body.appendChild(quickViewModal._element);
+      quickViewModal.show();
+    });
+  });
+
+
+  const backToTop = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    backToTop.classList.toggle('hidden', window.scrollY < 200);
+  });
+  backToTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   document.addEventListener('DOMContentLoaded', updateCartCount);
+
+  // Dynamic rating display
+  document.addEventListener("DOMContentLoaded", function() {
+    const ratingContainers = document.querySelectorAll('.rating');
+
+    ratingContainers.forEach(container => {
+      const sanPhamId = container.dataset.productId;
+      if (!sanPhamId) return;
+
+      fetch(`/api/product/${sanPhamId}/ratings`, { credentials: 'include' })
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+              })
+              .then(data => {
+                const starsContainer = container.querySelector('.stars');
+                const avgRatingElement = container.querySelector('.avg-rating');
+                const totalReviewsElement = container.querySelector('.total-reviews');
+
+                const allReviews = [...(data.myReviews || []), ...(data.otherReviews || [])];
+                if (allReviews.length === 0) {
+                  starsContainer.innerHTML = 'Chưa có đánh giá';
+                  avgRatingElement.textContent = '0';
+                  totalReviewsElement.textContent = '0';
+                  return;
+                }
+
+                const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
+                const roundedAvg = Math.round(avg * 2) / 2; // Làm tròn đến 0.5
+                avgRatingElement.textContent = roundedAvg.toFixed(1);
+                totalReviewsElement.textContent = allReviews.length;
+
+                starsContainer.innerHTML = renderStars(roundedAvg);
+              })
+              .catch(err => {
+                console.error(`Lỗi khi tải đánh giá cho sản phẩm ${sanPhamId}:`, err);
+                container.innerHTML = '<span class="text-gray-600">Lỗi tải đánh giá</span>';
+              });
+    });
+
+    function renderStars(avgRating) {
+      const fullStars = Math.floor(avgRating);
+      const hasHalfStar = avgRating % 1 >= 0.5;
+      let starsHtml = '';
+
+      for (let i = 0; i < fullStars; i++) {
+        starsHtml += '<i class="fas fa-star text-yellow-400"></i>';
+      }
+
+      if (hasHalfStar && fullStars < 5) {
+        starsHtml += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
+      }
+
+      const remainingStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+      for (let i = 0; i < remainingStars; i++) {
+        starsHtml += '<i class="far fa-star text-yellow-400"></i>';
+      }
+
+      return starsHtml;
+    }
+  });
 </script>
 </body>
 </html>

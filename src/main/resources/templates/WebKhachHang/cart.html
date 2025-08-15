@@ -8,8 +8,9 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .navbar { background: linear-gradient(to right, #f97316, #ea580c); }
-        .ticker { background-color: #fff3e6; color: #ea580c; font-weight: bold; }
+        .navbar { background: linear-gradient(to right, #153054, #153054); }
+        .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
+        .ticker { background-color: #e6eef7; color: #153054; font-weight: bold; }
         .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
         .dropdown:hover .dropdown-menu { display: block; }
         body { padding-top: 100px; }
@@ -19,10 +20,12 @@
         }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; }
-        th { background-color: #f97316; color: white; }
+        th { background-color: #153054; color: white; }
         tr:nth-child(even) { background-color: #f9f9f9; }
         .quantity-control { display: flex; align-items: center; gap: 10px; }
         .quantity-input { width: 60px; text-align: center; }
+        .btn { background-color: #153054; color: white; }
+        .btn:hover { background-color: #102b47; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -32,36 +35,7 @@
     </marquee>
 </div>
 
-<nav class="navbar fixed-top shadow-lg mt-10 z-40">
-    <div class="container mx-auto flex items-center justify-between py-2 px-4">
-        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
-        <div class="relative dropdown">
-            <button class="text-white font-semibold hover:text-orange-200 focus:outline-none">
-                Danh mục <i class="fas fa-caret-down"></i>
-            </button>
-            <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
-                <a href="/category/nam" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nam</a>
-                <a href="/category/nu" class="block px-4 py-2 hover:bg-orange-100">Thời trang Nữ</a>
-                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-orange-100">Phụ kiện</a>
-                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-orange-100">Gia dụng</a>
-            </div>
-        </div>
-        <div class="flex-1 mx-4 max-w-2xl">
-            <div class="relative">
-                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
-                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-orange-600 px-3 py-1 rounded-full">
-                    <i class="fas fa-search"></i>
-                </button>
-            </div>
-        </div>
-        <div class="flex items-center space-x-4" id="userSection">
-            <a href="/cart" class="text-white text-xl"><i class="fas fa-shopping-cart"></i></a>
-            <div class="user-info" id="userInfo"></div>
-            <a href="/customers/login" id="loginButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none">Đăng nhập</a>
-            <a href="/logout" id="logoutButton" class="text-white font-semibold hover:text-orange-200 focus:outline-none" style="display: none;">Đăng xuất</a>
-        </div>
-    </div>
-</nav>
+<div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
 
 <section class="container mx-auto py-8">
     <h1 class="text-3xl font-bold text-gray-800 mb-6">Giỏ hàng</h1>
@@ -71,7 +45,7 @@
     <div th:if="${chiTietGioHang == null or #lists.isEmpty(chiTietGioHang)}" class="bg-white p-6 rounded-lg shadow-md">
         <p class="text-gray-600 text-center">Giỏ hàng của bạn đang trống.</p>
         <div class="text-center mt-4">
-            <a href="/" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded">Tiếp tục mua sắm</a>
+            <a href="/" class="btn hover:bg-102b47 px-6 py-2 rounded">Tiếp tục mua sắm</a>
         </div>
     </div>
 
@@ -79,21 +53,25 @@
         <table>
             <thead>
             <tr>
+                <th>Hình ảnh</th>
                 <th>Sản phẩm</th>
                 <th>Màu sắc</th>
                 <th>Kích cỡ</th>
                 <th>Số lượng</th>
-                <th>Giá</th>
-                <th>Giảm giá</th>
+                <th>Giá gốc</th>
+                <th>Số tiền giảm</th>
                 <th>Thành tiền</th>
                 <th>Hành động</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="item : ${chiTietGioHang}">
-                <td th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
-                <td th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
-                <td th:text="${item.chiTietSanPham.kichCo.ten}"></td>
+                <td>
+                    <img th:src="@{${item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh}}" alt="Image" style="width: 50px; height: 50px;"/>
+                </td>
+                <td style="color: #153054" th:text="${item.chiTietSanPham.sanPham.tenSanPham}"></td>
+                <td style="color: #153054" th:text="${item.chiTietSanPham.mauSac.tenMau}"></td>
+                <td style="color: #153054" th:text="${item.chiTietSanPham.kichCo.ten}"></td>
                 <td>
                     <div class="quantity-control">
                         <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">-</button>
@@ -101,9 +79,11 @@
                         <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded" th:attr="data-item-id=${item.id}">+</button>
                     </div>
                 </td>
-                <td th:text="${#numbers.formatDecimal(item.gia, 0, 0, 'COMMA')} + ' VNĐ'"></td>
-                <td th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 0, 'COMMA') + ' VNĐ' : '0 VNĐ'}"></td>
-                <td th:text="${#numbers.formatDecimal(item.gia * item.soLuong - (item.tienGiam != null ? item.tienGiam : 0), 0, 0, 'COMMA')} + ' VNĐ'"></td>
+                <td>
+                    <span style="font-weight: bold; color: #153054" class="original-price" th:text="${#numbers.formatDecimal(item.chiTietSanPham.gia, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></span>
+                </td>
+                <td style="text-decoration: line-through; color: #c51f1f; font-weight: bold;" th:text="${item.tienGiam != null ? #numbers.formatDecimal(item.tienGiam, 0, 'POINT', 0, 'COMMA') + ' VNĐ' : '0 VNĐ'}"></td>
+                <td style="color: green; font-weight: bold;" th:text="${#numbers.formatDecimal(item.gia * item.soLuong, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
                 <td>
                     <button class="btn bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded remove-item" th:attr="data-item-id=${item.id},data-gio-hang-id=${gioHangId},data-chi-tiet-san-pham-id=${item.chiTietSanPham.id}">
                         <i class="fas fa-trash"></i> Xóa
@@ -113,46 +93,73 @@
             </tbody>
         </table>
         <div class="mt-6 text-right">
-            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 0, 'COMMA')} + ' VNĐ'"></span></p>
-            <a href="/thanh-toan?from=cart" id="checkout-btn" class="btn bg-orange-500 text-white hover:bg-orange-600 px-6 py-2 rounded mt-4">Thanh toán</a>
+            <p class="text-xl font-bold">Tổng tiền: <span th:text="${#numbers.formatDecimal(tongTien, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></span></p>
+            <a href="/thanh-toan?from=cart" id="checkout-btn" class="btn hover:bg-102b47 px-6 py-2 rounded mt-4">Thanh toán</a>
         </div>
     </div>
 
     <div class="mt-6">
-        <a href="/" class="text-orange-500 font-semibold hover:underline">Quay lại trang chủ</a>
+        <a href="/" class="text-153054 font-semibold hover:underline" style="color: #153054;">Quay lại trang chủ</a>
     </div>
 </section>
 
-<footer class="bg-gray-800 text-white py-8">
-    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+<footer style="background: linear-gradient(135deg, #153054 0%, #1e4066 100%); color: white; padding-top: 40px; padding-bottom: 20px; position: relative;">
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
         <div>
-            <h3 class="text-lg font-bold mb-4">ACV Store</h3>
-            <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-store mr-3"></i>ACV Store
+            </h3>
+            <p class="text-sm mb-6 opacity-90">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+            <div class="mt-6">
+                <h4 class="text-sm font-semibold mb-3 flex items-center">
+                    <i class="fas fa-envelope mr-2"></i>Đăng ký nhận tin
+                </h4>
+                <form class="flex gap-2 mt-3">
+                    <input type="email" class="flex-1 p-3 rounded-lg border-none focus:outline-none text-gray-800" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
+                    <button type="submit" class="bg-white text-[#153054] px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
         </div>
         <div>
-            <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
-            <ul class="space-y-2">
-                <li><a href="/new" class="hover:text-orange-500">Sản phẩm mới</a></li>
-                <li><a href="/all" class="hover:text-orange-500">Tủ đồ mùa hè</a></li>
-                <li><a href="/bestsellers" class="hover:text-orange-500">Sản phẩm bán chạy</a></li>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-link mr-3"></i>Liên kết nhanh
+            </h3>
+            <ul class="space-y-3">
+                <li><a href="/new" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-star mr-2"></i>Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-sun mr-2"></i>Tủ đồ mùa hè</a></li>
+                <li><a href="/bestsellers" class="hover:text-[#9FD5F7] transition-colors flex items-center"><i class="fas fa-fire mr-2"></i>Sản phẩm bán chạy</a></li>
             </ul>
         </div>
         <div>
-            <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-            <p class="text-sm">Email: support@160store.com</p>
-            <p class="text-sm">Hotline: 0123 456 789</p>
-            <div class="flex space-x-4 mt-4">
-                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-white hover:text-orange-500"><i class="fab fa-twitter"></i></a>
+            <h3 class="text-xl font-bold mb-6 flex items-center">
+                <i class="fas fa-phone mr-3"></i>Liên hệ
+            </h3>
+            <div class="space-y-3">
+                <p class="text-sm flex items-center"><i class="fas fa-envelope mr-3"></i>datn.acv@gmail.com</p>
+                <p class="text-sm flex items-center"><i class="fas fa-phone-alt mr-3"></i>0911 006 045</p>
+            </div>
+            <div class="flex space-x-4 mt-6">
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Facebook">
+                    <i class="fab fa-facebook-f"></i>
+                </a>
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="text-white hover:text-[#9FD5F7] text-xl transition-colors" aria-label="Twitter">
+                    <i class="fab fa-twitter"></i>
+                </a>
             </div>
         </div>
     </div>
-    <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+    <div class="text-center mt-8 pt-6 border-t border-white/20 text-sm opacity-75">
+        © 2025 ACV Store. All rights reserved.
+    </div>
 </footer>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="/js/navbar.js"></script>
 <script>
     // Format number to VND
     function formatVND(number) {
@@ -162,36 +169,34 @@
     // Authentication check
     window.addEventListener('load', async () => {
         try {
-            const response = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
-            const data = await response.json();
-            const userSection = document.getElementById('userSection');
-            const userInfo = document.getElementById('userInfo');
-            const loginButton = document.getElementById('loginButton');
+            const res = await fetch('/api/cart/check-auth', { method: 'GET', credentials: 'include' });
+            if (!res.ok) return; // không làm gì thêm
+            const data = await res.json();
+
+            const userInfo     = document.getElementById('userInfo');
+            const loginButton  = document.getElementById('loginButton');
             const logoutButton = document.getElementById('logoutButton');
 
             if (data.isAuthenticated) {
-                const userResponse = await fetch('/api/cart/get-user', { method: 'GET', credentials: 'include' });
-                if (userResponse.status === 401) {
-                    window.location.href = '/customers/login';
-                    return;
-                }
-                const userData = await userResponse.json();
-                if (userData.hoTen && userData.tenDangNhap) {
-                    userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`;
-                    userInfo.classList.add('active');
-                    loginButton.style.display = 'none';
-                    logoutButton.style.display = 'inline';
-                }
+                try {
+                    const u = await fetch('/api/cart/get-user', { method:'GET', credentials:'include' });
+                    if (u.ok) {
+                        const userData = await u.json();
+                        if (userData.hoTen && userData.tenDangNhap) {
+                            userInfo?.classList.add('active');
+                            if (loginButton)  loginButton.style.display  = 'none';
+                            if (logoutButton) logoutButton.style.display = 'inline';
+                            userInfo && (userInfo.textContent = `Chào ${userData.hoTen} (${userData.tenDangNhap})`);
+                        }
+                    }
+                } catch {}
             } else {
-                userInfo.classList.remove('active');
-                loginButton.style.display = 'inline';
-                logoutButton.style.display = 'none';
-                // Không redirect ngay, để người dùng thấy thông báo "Vui lòng đăng nhập"
-                // window.location.href = '/customers/login';
+                userInfo?.classList.remove('active');
+                if (loginButton)  loginButton.style.display  = 'inline';
+                if (logoutButton) logoutButton.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Error checking authentication:', error);
-            window.location.href = '/customers/login';
+        } catch (err) {
+            console.error('check-auth failed:', err); // ❗️không redirect
         }
     });
 
@@ -216,8 +221,7 @@
                     const cartCount = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
                     document.getElementById('cart-count').textContent = cartCount;
                 } else if (response.status === 401) {
-                    document.getElementById('cart-count').textContent = 0;
-                    window.location.href = '/customers/login';
+                    document.getElementById('cart-count').textContent = 0; // ✅ không redirect
                 }
             } catch (error) {
                 console.error('Error updating cart count:', error);
@@ -227,7 +231,8 @@
         // Handle checkout button click
         const checkoutBtn = document.getElementById('checkout-btn');
         if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', async () => {
+            checkoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
                 try {
                     const response = await fetch('/api/cart', { credentials: 'include' });
                     if (response.ok) {
@@ -238,10 +243,16 @@
                             tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
                             soLuong: item.soLuong,
                             gia: item.gia,
-                            urlHinhAnh: item.chiTietSanPham.urlHinhAnh || '/images/default-product.jpg'
+                            giaGoc: item.chiTietSanPham.gia,
+                            tienGiam: item.tienGiam || 0,
+                            urlHinhAnh: item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
+                                ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
+                                : item.chiTietSanPham.sanPham.urlHinhAnh || '/images/default-product.jpg',
+                            sizeName: item.chiTietSanPham.kichCo?.ten || 'N/A',
+                            colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A'
                         }));
                         localStorage.setItem('cartItems', JSON.stringify(checkoutItems));
-                        window.location.href = '/thanh-toan';
+                        window.location.href = '/thanh-toan?from=cart';
                     } else if (response.status === 401) {
                         window.location.href = '/customers/login';
                     } else {

@@ -12,19 +12,19 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         /* ===== MODERN DESIGN SYSTEM ===== */
         :root {
-            --primary-black: #000000;
-            --soft-black: #1a1a1a;
-            --medium-black: #333333;
-            --light-black: #666666;
+            --primary-black: #153054;
+            --soft-black: #153054; /* Changed from #1a1a1a */
+            --medium-black: #153054; /* Changed from #333333 */
+            --light-black: #153054; /* Changed from #666666 */
             --pure-white: #ffffff;
             --soft-white: #fafafa;
             --light-gray: #f5f5f5;
             --border-gray: #e0e0e0;
             --text-gray: #757575;
-            --success-green: #000000;
+            --success-green: #22c55e;
             --danger-red: #ff4444;
             --warning-orange: #ffbb33;
-            --info-blue: #070707;
+            --info-blue: #153054;
 
             /* Shadows */
             --shadow-sm: 0 2px 4px rgba(0,0,0,0.04);
@@ -53,7 +53,6 @@
         }
 
         /* ===== CUSTOM SCROLLBARS ===== */
-        /* Webkit browsers (Chrome, Safari, Edge) */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -87,7 +86,7 @@
         /* ===== LAYOUT ===== */
         .content {
             margin-left: 260px;
-            padding: 70px;
+            padding: 90px;
             min-height: 100vh;
             background: var(--pure-white);
             max-height: 100vh;
@@ -112,20 +111,35 @@
 
         /* ===== PAGE TITLE ===== */
         .page-title {
-            color: var(--primary-black);
-            margin-bottom: 48px;
-            font-weight: 800;
-            font-size: 2.5rem;
-            letter-spacing: -0.04em;
-            position: relative;
+            color: #153054;
+            margin-bottom: 20px;
+            font-weight: 700;
+            font-size: 2.25rem;
+            letter-spacing: -0.025em;
             display: flex;
             align-items: center;
             gap: 16px;
+            justify-content: center;
+            position: relative;
+        }
+
+        .page-title::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10%;
+            height: 4px; /* Tăng độ dày lên 4px để đậm hơn */
+            background-color: #1e90ff;
         }
 
         .page-title i {
-            font-size: 2rem;
-            opacity: 0.8;
+            background: #153054;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 1.25rem;
         }
 
         /* ===== CARDS ===== */
@@ -184,7 +198,7 @@
 
         .form-control:focus, .form-select:focus {
             border-color: var(--primary-black);
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
             background: var(--pure-white);
             outline: none;
         }
@@ -247,20 +261,20 @@
         }
 
         .btn-primary:hover {
-            background: var(--soft-black);
+            background: #1e4a7a;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
             color: var(--pure-white);
         }
 
         .btn-success {
-            background: var(--success-green);
+            background: var(--primary-black);
             color: var(--pure-white);
             box-shadow: var(--shadow-sm);
         }
 
         .btn-success:hover {
-            background: #0c0c0c;
+            background: #1e4a7a;
             transform: translateY(-2px);
             box-shadow: var(--shadow-md);
             color: var(--pure-white);
@@ -322,7 +336,6 @@
             position: relative;
         }
 
-        /* Enhanced scrollbar for table */
         .table-wrapper::-webkit-scrollbar {
             width: 12px;
             height: 12px;
@@ -351,7 +364,6 @@
             border-radius: 6px;
         }
 
-        /* Scrollbar indicators */
         .table-wrapper::before {
             content: '';
             position: absolute;
@@ -371,7 +383,7 @@
         .table {
             margin-bottom: 0;
             font-size: 14px;
-            min-width: 1200px;
+            min-width: 1500px; /* Tăng min-width để kéo dài cột */
         }
 
         .table thead th {
@@ -388,6 +400,10 @@
             top: 0;
             z-index: 10;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            white-space: nowrap; /* Ngăn tên cột xuống dòng */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-width: 120px; /* Đảm bảo độ rộng tối thiểu cho cột */
         }
 
         .table thead th i {
@@ -416,13 +432,13 @@
             border: none;
             color: var(--medium-black);
             font-weight: 400;
-            white-space: nowrap;
+            white-space: nowrap; /* Ngăn nội dung xuống dòng */
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 200px;
+            max-width: 300px; /* Tăng max-width để hiển thị đầy đủ dữ liệu */
+            min-width: 120px; /* Đảm bảo độ rộng tối thiểu cho cột */
         }
 
-        /* Tooltip for long text */
         .table td[title] {
             cursor: help;
         }
@@ -522,9 +538,9 @@
         }
 
         .status-inactive {
-            background-color: #f5f5f5;
-            color: var(--text-gray);
-            border: 1px solid var(--border-gray);
+            background-color: var(--danger-red); /* Changed to red */
+            color: var(--pure-white); /* Changed to white for contrast */
+            border: 1px solid var(--danger-red);
         }
 
         .status-active::before {
@@ -535,6 +551,7 @@
         .status-inactive::before {
             content: '●';
             font-size: 8px;
+            color: var(--pure-white); /* Changed to white for contrast */
         }
 
         /* ===== PAGINATION ===== */
@@ -631,7 +648,7 @@
 
             .table {
                 font-size: 12px;
-                min-width: 800px;
+                min-width: 900px; /* Điều chỉnh min-width cho màn hình nhỏ */
             }
 
             .table td, .table th {
@@ -713,7 +730,7 @@
         }
 
         .scroll-to-top:hover {
-            background: var(--soft-black);
+            background: #1e4a7a;
             transform: translateY(-3px);
             box-shadow: var(--shadow-xl);
         }
@@ -750,8 +767,7 @@
     <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-        <!-- Các phần tử khác bên trái (nếu có) -->
-        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
+        <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${currentUser})}"></div>
     </nav>
 
     <!-- Nội dung chính bên phải -->
@@ -805,7 +821,8 @@
 
         <!-- Nút thêm nhân viên -->
         <div class="mb-4">
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addEmployeeModal"
+                    th:disabled="${!isAdmin}">
                 <i class="fa-solid fa-plus me-2"></i>Thêm nhân sự
             </button>
         </div>
@@ -846,12 +863,14 @@
                         <td>
                             <button type="button" class="btn btn-primary btn-sm btn-action"
                                     data-bs-toggle="modal"
-                                    th:data-bs-target="'#editEmployeeModal' + ${employee.id}">
+                                    th:data-bs-target="'#editEmployeeModal' + ${employee.id}"
+                                    th:disabled="${!isAdmin}">
                                 <i class="fa-solid fa-edit"></i>
                             </button>
                             <button type="button" class="btn btn-danger btn-sm btn-action"
                                     data-bs-toggle="modal"
-                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}">
+                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}"
+                                    th:disabled="${!isAdmin}">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
@@ -982,7 +1001,7 @@
                                 <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
                                     <i class="fa-solid fa-times me-2"></i>Hủy
                                 </button>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" th:disabled="${!isAdmin}">
                                     <i class="fa-solid fa-save me-2"></i>Lưu
                                 </button>
                             </div>
@@ -1097,7 +1116,7 @@
                                     <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
                                         <i class="fa-solid fa-times me-2"></i>Hủy
                                     </button>
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary" th:disabled="${!isAdmin}">
                                         <i class="fa-solid fa-save me-2"></i>Cập nhật
                                     </button>
                                 </div>
@@ -1136,7 +1155,7 @@
                                 <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
                                     <i class="fa-solid fa-times me-2"></i>Hủy
                                 </button>
-                                <button type="submit" class="btn btn-danger">
+                                <button type="submit" class="btn btn-danger" th:disabled="${!isAdmin}">
                                     <i class="fa-solid fa-trash me-2"></i>Xóa
                                 </button>
                             </form>
@@ -1181,5 +1200,6 @@
         });
     });
 </script>
+<script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ import com.example.AsmGD1.dto.BanHang.*;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.DonHangTamRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
+import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.service.BanHang.DonHangService;
 import com.example.AsmGD1.service.BanHang.GioHangService;
@@ -35,6 +36,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -93,6 +95,10 @@ public class BanHangController {
     private ChienDichGiamGiaService chienDichGiamGiaService;
 
     @Autowired
+    private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
+
+
+    @Autowired
     private HttpSession session;
 
     @GetMapping("/customers")
@@ -140,16 +146,23 @@ public class BanHangController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
 
             List<String> addresses = new ArrayList<>();
-            if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().trim().isEmpty()) {
-                addresses.add(nguoiDung.getChiTietDiaChi());
-            }
-            String detailedAddress = constructDetailedAddress(nguoiDung);
-            if (detailedAddress != null && !addresses.contains(detailedAddress)) {
-                addresses.add(detailedAddress);
-            }
-            List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
-            if (sessionAddresses != null) {
-                addresses.addAll(sessionAddresses);
+
+            // Lấy địa chỉ mặc định trước (nếu có)
+            Optional<DiaChiNguoiDung> defaultDiaChi = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            defaultDiaChi.ifPresent(diaChi -> {
+                String addr = constructDetailedAddress(diaChi);
+                if (addr != null && !addr.isBlank()) {
+                    addresses.add("[Mặc định] " + addr);
+                }
+            });
+
+            // Lấy các địa chỉ khác (không phải mặc định)
+            List<DiaChiNguoiDung> diaChiKhac = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhFalse(nguoiDung.getId());
+            for (DiaChiNguoiDung diaChi : diaChiKhac) {
+                String otherAddr = constructDetailedAddress(diaChi);
+                if (otherAddr != null && !addresses.contains(otherAddr)) {
+                    addresses.add(otherAddr);
+                }
             }
 
             Map<String, Object> response = new HashMap<>();
@@ -162,35 +175,42 @@ public class BanHangController {
         }
     }
 
+
     @PostMapping("/customer/{phone}/add-address")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> addCustomerAddress(@PathVariable String phone, @RequestBody Map<String, String> request) {
         try {
             NguoiDung nguoiDung = nguoiDungRepository.findBySoDienThoai(phone)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với số điện thoại: " + phone));
-            String addressLine = request.get("addressLine");
-            String ward = request.get("ward");
-            String district = request.get("district");
-            String city = request.get("city");
-            if (addressLine != null && ward != null && district != null && city != null &&
-                    !addressLine.trim().isEmpty() && !ward.trim().isEmpty() && !district.trim().isEmpty() && !city.trim().isEmpty()) {
-                nguoiDung.setChiTietDiaChi(addressLine);
-                nguoiDung.setPhuongXa(ward);
-                nguoiDung.setQuanHuyen(district);
-                nguoiDung.setTinhThanhPho(city);
-                nguoiDungRepository.save(nguoiDung);
+
+            String chiTietDiaChi = request.get("chiTietDiaChi");
+            String phuongXa = request.get("phuongXa");
+            String quanHuyen = request.get("quanHuyen");
+            String tinhThanhPho = request.get("tinhThanhPho");
+
+            if (chiTietDiaChi != null && phuongXa != null && quanHuyen != null && tinhThanhPho != null &&
+                    !chiTietDiaChi.trim().isEmpty() && !phuongXa.trim().isEmpty() && !quanHuyen.trim().isEmpty() && !tinhThanhPho.trim().isEmpty()) {
+                DiaChiNguoiDung diaChi = new DiaChiNguoiDung();
+                diaChi.setNguoiDung(nguoiDung);
+                diaChi.setChiTietDiaChi(chiTietDiaChi);
+                diaChi.setPhuongXa(phuongXa);
+                diaChi.setQuanHuyen(quanHuyen);
+                diaChi.setTinhThanhPho(tinhThanhPho);
+                diaChi.setMacDinh(false); // Mặc định không phải địa chỉ mặc định
+                diaChi.setThoiGianTao(LocalDateTime.now());
+                diaChiNguoiDungRepository.save(diaChi);
 
                 List<String> sessionAddresses = (List<String>) session.getAttribute("customer_addresses_" + phone);
                 if (sessionAddresses == null) {
                     sessionAddresses = new ArrayList<>();
                 }
-                String fullAddress = addressLine + ", " + ward + ", " + district + ", " + city;
+                String fullAddress = chiTietDiaChi + ", " + phuongXa + ", " + quanHuyen + ", " + tinhThanhPho;
                 if (!sessionAddresses.contains(fullAddress)) {
                     sessionAddresses.add(fullAddress);
+                    session.setAttribute("customer_addresses_" + phone, sessionAddresses);
                 }
-                session.setAttribute("customer_addresses_" + phone, sessionAddresses);
 
-                return ResponseEntity.ok(Map.of("success", true));
+                return ResponseEntity.ok(Map.of("success", true, "message", "Đã thêm địa chỉ thành công"));
             }
             return ResponseEntity.badRequest().body(Map.of("success", false, "error", "Địa chỉ không hợp lệ"));
         } catch (Exception e) {
@@ -200,13 +220,19 @@ public class BanHangController {
 
     @GetMapping("/vouchers")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> getApplicableVouchers(@RequestParam String subTotal, @RequestParam(required = false) BigDecimal shippingFee, @RequestParam String tabId) {
+    public ResponseEntity<Map<String, Object>> getApplicableVouchers(
+            @RequestParam String subTotal,
+            @RequestParam(required = false) BigDecimal shippingFee,
+            @RequestParam String tabId,
+            @RequestParam(required = false) UUID customerId
+    ) {
         try {
             String cleanSubTotal = subTotal.replaceAll("[^0-9]", "");
             BigDecimal amount = new BigDecimal(cleanSubTotal.isEmpty() ? "0" : cleanSubTotal);
-            System.out.println("Debug - Cleaned subTotal: " + amount + ", tabId: " + tabId);
-
-            GioHangDTO gioHang = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO, tabId);
+            GioHangDTO gioHang = gioHangService.layGioHang(
+                    shippingFee != null ? shippingFee : BigDecimal.ZERO,
+                    tabId
+            );
             gioHang.setTongTienHang(amount);
 
             if (gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
@@ -217,24 +243,40 @@ public class BanHangController {
                 dummyItem.setGia(amount);
                 dummyItem.setThanhTien(amount);
                 gioHang.setDanhSachSanPham(Collections.singletonList(dummyItem));
-                System.out.println("Debug - Added dummy item to cart with amount: " + amount);
             }
 
-            List<PhieuGiamGia> applicableVouchers = phieuGiamGiaRepository.findAll().stream()
+            // Phiếu công khai còn hạn và còn lượt
+            List<PhieuGiamGia> congKhai = phieuGiamGiaService.layTatCa().stream()
+                    .filter(v -> "cong_khai".equalsIgnoreCase(v.getKieuPhieu()))
                     .filter(v -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)))
+                    .filter(v -> v.getSoLuong() == null || v.getSoLuong() > 0)
                     .filter(v -> amount.compareTo(v.getGiaTriGiamToiThieu()) >= 0)
                     .collect(Collectors.toList());
-            System.out.println("Debug - Applicable vouchers count: " + applicableVouchers.size());
+
+            // Phiếu cá nhân còn hạn và còn lượt
+            List<PhieuGiamGia> caNhan = new ArrayList<>();
+            if (customerId != null) {
+                caNhan = phieuGiamGiaCuaNguoiDungService.layPhieuCaNhanConHan(customerId).stream()
+                        .filter(v -> amount.compareTo(v.getGiaTriGiamToiThieu()) >= 0)
+                        .collect(Collectors.toList());
+            }
+
+            List<PhieuGiamGia> applicableVouchers = new ArrayList<>();
+            applicableVouchers.addAll(congKhai);
+            applicableVouchers.addAll(caNhan);
 
             Map<String, Object> response = new HashMap<>();
             response.put("gioHang", gioHang);
             response.put("vouchers", applicableVouchers);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
-            System.err.println("Debug - Error in getApplicableVouchers: " + e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy phiếu giảm giá: " + e.getMessage()));
         }
     }
+
+
+
 
     @PostMapping("/create-order")
     @ResponseBody
@@ -244,30 +286,27 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // Kiểm tra tồn kho trước khi tạo đơn
-            for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
-                ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
-                if (chiTiet == null) {
-                    return ResponseEntity.badRequest().body(Map.of("error", "Sản phẩm không tồn tại: " + item.getIdChiTietSanPham()));
-                }
-                int availableStock = getAvailableStock(item.getIdChiTietSanPham(), chiTiet.getSoLuongTonKho());
-                if (availableStock < item.getSoLuong()) {
-                    return ResponseEntity.badRequest().body(Map.of("error", "Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham()));
-                }
-            }
-
             // Tạo đơn hàng
             KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
 
-            // Cập nhật tồn kho & số lượng chiến dịch nếu có
+            // ✅ Trừ số lượng phiếu giảm giá nếu có
+            UUID phieuId = donHangDTO.getIdPhieuGiamGia();
+            UUID khachHangId = donHangDTO.getKhachHangId();
+//            if (phieuId != null) {
+//                PhieuGiamGia phieu = phieuGiamGiaService.layTheoId(phieuId);
+//                if (phieu != null) {
+//                    if ("ca_nhan".equalsIgnoreCase(phieu.getKieuPhieu()) && khachHangId != null) {
+//                        phieuGiamGiaCuaNguoiDungService.suDungPhieu(khachHangId, phieuId);
+//                    } else if ("cong_khai".equalsIgnoreCase(phieu.getKieuPhieu())) {
+//                        phieuGiamGiaService.apDungPhieuGiamGia(phieuId);
+//                    }
+//                }
+//            }
+
+            // Cập nhật số lượng chiến dịch nếu có
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                 ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
                 if (chiTiet != null) {
-                    // Trừ tồn kho
-                    chiTiet.setSoLuongTonKho(chiTiet.getSoLuongTonKho() - item.getSoLuong());
-                    chiTietSanPhamService.save(chiTiet);
-
-                    // Trừ số lượng chiến dịch giảm giá nếu có
                     ChienDichGiamGia cdgg = chiTiet.getChienDichGiamGia();
                     if (cdgg != null && "ONGOING".equals(cdgg.getStatus())) {
                         chienDichGiamGiaService.truSoLuong(cdgg.getId(), item.getSoLuong());
@@ -275,9 +314,23 @@ public class BanHangController {
                 }
             }
 
-            // Dọn dẹp dữ liệu tạm
+            // Xóa tab hiện tại
             donHangTamRepository.deleteByTabId(donHangDTO.getTabId());
+            gioHangService.xoaTatCaGioHang(donHangDTO.getTabId());
+
+            // Kiểm tra số lượng tab còn lại
+            List<DonHangTam> remainingTabs = donHangTamRepository.findAll();
+            String newTabId = null;
+            if (remainingTabs.isEmpty()) {
+                GioHangDTO newCart = gioHangService.xoaTatCaGioHang("1");
+                newTabId = "1";
+            } else {
+                newTabId = remainingTabs.get(remainingTabs.size() - 1).getTabId();
+            }
+
+            // Dọn dẹp session
             session.removeAttribute("tempStockChanges");
+            session.removeAttribute("pendingOrder_" + donHangDTO.getTabId());
 
             // Tạo hóa đơn PDF
             byte[] pdfData = hoaDonService.taoHoaDon(ketQua.getMaDonHang());
@@ -288,11 +341,18 @@ public class BanHangController {
             response.put("message", "Tạo đơn hàng thành công!");
             response.put("maDonHang", ketQua.getMaDonHang());
             response.put("pdfData", pdfBase64);
+            response.put("tabId", donHangDTO.getTabId());
+            response.put("newTabId", newTabId);
+            response.put("remainingTabs", remainingTabs.size());
+            response.put("hasNewNotification", true);
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
+
 
 
     private int getAvailableStock(UUID productDetailId, int originalStock) {
@@ -338,23 +398,21 @@ public class BanHangController {
     }
 
     private String constructDetailedAddress(NguoiDung nguoiDung) {
-        StringBuilder address = new StringBuilder();
-        if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().trim().isEmpty()) {
-            address.append(nguoiDung.getChiTietDiaChi());
-        }
-        if (nguoiDung.getPhuongXa() != null && !nguoiDung.getPhuongXa().trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(nguoiDung.getPhuongXa());
-        }
-        if (nguoiDung.getQuanHuyen() != null && !nguoiDung.getQuanHuyen().trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(nguoiDung.getQuanHuyen());
-        }
-        if (nguoiDung.getTinhThanhPho() != null && !nguoiDung.getTinhThanhPho().trim().isEmpty()) {
-            if (address.length() > 0) address.append(", ");
-            address.append(nguoiDung.getTinhThanhPho());
-        }
-        return address.length() > 0 ? address.toString() : null;
+        StringBuilder sb = new StringBuilder();
+        if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().isBlank()) sb.append(nguoiDung.getChiTietDiaChi());
+        if (nguoiDung.getPhuongXa() != null && !nguoiDung.getPhuongXa().isBlank()) sb.append(", ").append(nguoiDung.getPhuongXa());
+        if (nguoiDung.getQuanHuyen() != null && !nguoiDung.getQuanHuyen().isBlank()) sb.append(", ").append(nguoiDung.getQuanHuyen());
+        if (nguoiDung.getTinhThanhPho() != null && !nguoiDung.getTinhThanhPho().isBlank()) sb.append(", ").append(nguoiDung.getTinhThanhPho());
+        return sb.length() > 0 ? sb.toString() : null;
+    }
+
+    private String constructDetailedAddress(DiaChiNguoiDung diaChi) {
+        StringBuilder sb = new StringBuilder();
+        if (diaChi.getChiTietDiaChi() != null && !diaChi.getChiTietDiaChi().isBlank()) sb.append(diaChi.getChiTietDiaChi());
+        if (diaChi.getPhuongXa() != null && !diaChi.getPhuongXa().isBlank()) sb.append(", ").append(diaChi.getPhuongXa());
+        if (diaChi.getQuanHuyen() != null && !diaChi.getQuanHuyen().isBlank()) sb.append(", ").append(diaChi.getQuanHuyen());
+        if (diaChi.getTinhThanhPho() != null && !diaChi.getTinhThanhPho().isBlank()) sb.append(", ").append(diaChi.getTinhThanhPho());
+        return sb.length() > 0 ? sb.toString() : null;
     }
 
     @GetMapping
@@ -560,7 +618,7 @@ public class BanHangController {
                 result.put("tenSanPham", variant.getSanPham().getTenSanPham());
                 result.put("mauSac", variant.getMauSac().getTenMau());
                 result.put("kichCo", variant.getKichCo().getTen());
-                result.put("hinhAnh", variant.getSanPham().getUrlHinhAnh());
+                result.put("hinhAnh", chiTietSanPhamService.layAnhDauTien(variant));
                 return ResponseEntity.ok(result);
             } else {
                 result.put("error", "Không tìm thấy biến thể.");
@@ -630,7 +688,7 @@ public class BanHangController {
             Map<String, Object> response = new HashMap<>();
             response.put("productId", chiTiet.getSanPham().getId());
             response.put("tenSanPham", chiTiet.getSanPham().getTenSanPham());
-            response.put("hinhAnh", chiTiet.getSanPham().getUrlHinhAnh());
+            response.put("hinhAnh", chiTietSanPhamService.layAnhDauTien(chiTiet));
             response.put("availableStock", getAvailableStock(id, chiTiet.getSoLuongTonKho()));
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

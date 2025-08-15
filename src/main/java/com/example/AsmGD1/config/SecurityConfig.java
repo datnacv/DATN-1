@@ -26,7 +26,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
-
 import java.io.PrintWriter;
 
 @Configuration
@@ -68,6 +67,7 @@ public class SecurityConfig implements ApplicationContextAware {
     @Bean
     public AuthenticationEntryPoint employeeAuthEntryPoint() {
         return (request, response, authException) -> {
+            System.out.println("Đang chuyển hướng đến /acvstore/login do: " + authException.getMessage());
             response.setStatus(HttpServletResponse.SC_FOUND);
             response.sendRedirect("/acvstore/login");
         };
@@ -76,6 +76,7 @@ public class SecurityConfig implements ApplicationContextAware {
     @Bean
     public AuthenticationEntryPoint customerAuthEntryPoint() {
         return (request, response, authException) -> {
+            System.out.println("Đang chuyển hướng đến /customers/login do: " + authException.getMessage());
             response.setStatus(HttpServletResponse.SC_FOUND);
             response.sendRedirect("/customers/login");
         };
@@ -95,9 +96,28 @@ public class SecurityConfig implements ApplicationContextAware {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             PrintWriter writer = response.getWriter();
-            writer.write("{\"success\": false, \"message\": \"Unauthorized\"}");
+            writer.write("{\"success\": false, \"message\": \"Không được phép\"}");
             writer.flush();
         };
+    }
+
+    @Bean
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/api/**")
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/search", "/api/product/*/ratings", "/api/getChiTietSanPham", "/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet", "/api/san-pham/ban-chay", "/api/san-pham/moi-nhat", "/api/product/*/ratings", "/api/getChiTietSanPham").permitAll()
+                        .requestMatchers("/api/orders/**").authenticated()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                )
+                .csrf(csrf -> csrf.disable())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(jsonAuthEntryPoint())
+                );
+        return http.build();
     }
 
     @Bean
@@ -111,10 +131,37 @@ public class SecurityConfig implements ApplicationContextAware {
                 .addFilterBefore(faceVerificationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
+                        .requestMatchers("/acvstore/vi/**").hasRole("ADMIN")
                         .requestMatchers("/acvstore/verify-success").authenticated()
-                        .requestMatchers("/acvstore/**").hasRole("ADMIN")
-                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
+
+                        // Quản lý sản phẩm - Cả ADMIN và EMPLOYEE đều có thể xem sản phẩm
+                        .requestMatchers("/acvstore/san-pham", "/acvstore/san-pham/get/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                        .requestMatchers("/acvstore/san-pham/save", "/acvstore/san-pham/update-status", "/acvstore/san-pham/upload-image").hasRole("ADMIN")
+
+                        // Thuộc tính sản phẩm - CHỈ ADMIN
+                        .requestMatchers("/acvstore/xuat-xu/**", "/acvstore/mau-sac/**", "/acvstore/kich-co/**",
+                                "/acvstore/chat-lieu/**", "/acvstore/kieu-dang/**", "/acvstore/co-ao/**",
+                                "/acvstore/tay-ao/**", "/acvstore/danh-muc/**", "/acvstore/thuong-hieu/**").hasRole("ADMIN")
+
+                        // Quản lý nhân viên - CHỈ ADMIN
+                        .requestMatchers("/acvstore/employees/**").hasRole("ADMIN")
+
+                        // Truy cập bảng điều khiển
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
+                        .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
+
+                        // Thống kê - Cả ADMIN và EMPLOYEE
+                        .requestMatchers("/acvstore/thong-ke").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // Bán hàng và hóa đơn - Cả ADMIN và EMPLOYEE
+                        .requestMatchers("/acvstore/ban-hang/**", "/acvstore/hoa-don/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // Giảm giá - Cả ADMIN và EMPLOYEE
+                        .requestMatchers("/acvstore/phieu-giam-gia/**", "/acvstore/chien-dich-giam-gia/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
+                        // Khách hàng - Cả ADMIN và EMPLOYEE
+                        .requestMatchers("/acvstore/customers/**").hasAnyRole("ADMIN", "EMPLOYEE")
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -126,11 +173,18 @@ public class SecurityConfig implements ApplicationContextAware {
                             request.getSession().setAttribute("faceVerified", false);
 
                             if (nguoiDung != null) {
-                                byte[] descriptor = nguoiDung.getFaceDescriptor();
-                                if (descriptor == null || descriptor.length == 0) {
-                                    response.sendRedirect("/acvstore/register-face");
+                                String vaiTro = nguoiDung.getVaiTro();
+                                if ("EMPLOYEE".equalsIgnoreCase(vaiTro)) {
+                                    response.sendRedirect("/acvstore/thong-ke");
+                                } else if ("ADMIN".equalsIgnoreCase(vaiTro)) {
+                                    byte[] descriptor = nguoiDung.getFaceDescriptor();
+                                    if (descriptor == null || descriptor.length == 0) {
+                                        response.sendRedirect("/acvstore/register-face");
+                                    } else {
+                                        response.sendRedirect("/acvstore/verify-face");
+                                    }
                                 } else {
-                                    response.sendRedirect("/acvstore/verify-face");
+                                    response.sendRedirect("/acvstore/login?error=unauthorizedRole");
                                 }
                             } else {
                                 response.sendRedirect("/acvstore/login?error=notfound");
@@ -178,7 +232,16 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/customers/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/customers/login", "/customers/oauth2/register").permitAll()
+                        .requestMatchers(
+                                "/customers/login",
+                                "/customers/register",
+                                "/customers/register/**",
+                                "/customers/oauth2/register",
+                                "/customers/auth/forgot-password",
+                                "/customers/auth/verify-otp",
+                                "/customers/auth/reset-password",
+                                "/customers/auth/resend-otp"
+                        ).permitAll()
                         .anyRequest().hasRole("CUSTOMER")
                 )
                 .formLogin(form -> form
@@ -198,7 +261,6 @@ public class SecurityConfig implements ApplicationContextAware {
                             if (session.getAttribute("pendingUser") != null) {
                                 response.sendRedirect("/customers/oauth2/register");
                             } else {
-                                // Đảm bảo chuyển hướng đến /cart với session hợp lệ
                                 SecurityContextHolder.getContext().setAuthentication(authentication);
                                 response.sendRedirect("/");
                             }
@@ -217,7 +279,7 @@ public class SecurityConfig implements ApplicationContextAware {
                         .accessDeniedHandler(accessDeniedHandlerCustomers())
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Đảm bảo session được tạo nếu cần
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionConcurrency(concurrency -> concurrency
                                 .maximumSessions(1)
                                 .expiredUrl("/customers/login?expired")
@@ -230,25 +292,10 @@ public class SecurityConfig implements ApplicationContextAware {
     }
 
     @Bean
-    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .securityMatcher("/api/**")
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cart/check-auth", "/api/cart/get-user").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                )
-                .csrf(csrf -> csrf.disable());
-        return http.build();
-    }
-
-    @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/","/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user","/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/", "/chitietsanpham", "/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user", "/css/**", "/js/**", "/image/**", "/images/**", "/vi/**", "/uploads/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -269,7 +316,7 @@ public class SecurityConfig implements ApplicationContextAware {
                             if (session.getAttribute("pendingUser") != null) {
                                 response.sendRedirect("/customers/oauth2/register");
                             } else {
-                                response.sendRedirect("/"); // Redirect trực tiếp đến /cart
+                                response.sendRedirect("/");
                             }
                         })
                 )
@@ -304,7 +351,7 @@ public class SecurityConfig implements ApplicationContextAware {
             if (session.getAttribute("pendingUser") != null) {
                 response.sendRedirect("/customers/oauth2/register");
             } else {
-                response.sendRedirect("/"); // Redirect trực tiếp đến /cart
+                response.sendRedirect("/");
             }
         };
     }
@@ -314,10 +361,9 @@ public class SecurityConfig implements ApplicationContextAware {
                                                             PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider auth = new DaoAuthenticationProvider();
         auth.setUserDetailsService(userDetailsService);
-        auth.setPasswordEncoder(passwordEncoder); // ✅ Dùng bean được inject
+        auth.setPasswordEncoder(passwordEncoder);
         return auth;
     }
-
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,4 +20,7 @@ public interface HinhAnhSanPhamRepository extends JpaRepository<HinhAnhSanPham, 
        LIMIT 1
        """)
     Optional<String> findFirstImageByChiTietSanPham(@Param("idChiTietSanPham") UUID idChiTietSanPham);
+
+    @Query("SELECT h FROM HinhAnhSanPham h WHERE h.chiTietSanPham.id = :chiTietSanPhamId ORDER BY h.thuTu")
+    List<HinhAnhSanPham> findByChiTietSanPhamIdOrderByThuTu(UUID chiTietSanPhamId);
 }

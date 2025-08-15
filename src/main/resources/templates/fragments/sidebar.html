@@ -1,6 +1,14 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head>
+    <meta charset="UTF-8">
+    <title>Sidebar</title>
+</head>
+<body>
 <div th:fragment="sidebar" class="sidebar d-flex flex-column p-3 bg-white text-black" id="sidebar">
     <div class="sidebar-header d-flex align-items-center gap-3 px-2 mb-4">
-        <img th:src="@{/images/acv-logo3.png}" alt="ACV Logo" style="width: 45px; height: 45px;">
+        <img th:src="@{/image/acv-logo3.png}" alt="ACV Logo" style="width: 45px; height: 45px;">
         <div class="text-start lh-sm">
             <div class="fw-bold" style="font-size: 16px;">ACV Store</div>
             <div class="text-muted" style="font-size: 13px;">Cửa hàng bán áo</div>
@@ -12,24 +20,31 @@
     </button>
     <div class="nav-container flex-grow-1">
         <ul class="nav flex-column">
+            <!-- Thống kê - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a th:href="@{/acvstore/thong-ke}" class="nav-link text-black d-flex align-items-center">
                     <i class="fa-solid fa-chart-line"></i>
                     <span class="nav-text">Thống kê</span>
                 </a>
             </li>
+
+            <!-- Bán hàng tại quầy - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a th:href="@{/acvstore/ban-hang}" class="nav-link text-black d-flex align-items-center">
                     <i class="fa-solid fa-cash-register"></i>
                     <span class="nav-text">Bán hàng tại quầy</span>
                 </a>
             </li>
+
+            <!-- Hóa đơn - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a th:href="@{/acvstore/hoa-don}" class="nav-link text-black d-flex align-items-center">
                     <i class="fa-solid fa-file-invoice"></i>
                     <span class="nav-text">Hóa đơn</span>
                 </a>
             </li>
+
+            <!-- Sản phẩm - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a class="nav-link text-black d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse" href="#sanphamSubmenu" role="button" aria-expanded="false" aria-controls="sanphamSubmenu">
                     <span class="d-flex align-items-center"><i class="fa-solid fa-box-open"></i><span class="nav-text">Sản phẩm</span></span>
@@ -37,13 +52,16 @@
                 </a>
                 <div class="collapse" id="sanphamSubmenu">
                     <ul class="nav flex-column ms-3">
+                        <!-- Danh sách sản phẩm - Available for both ADMIN and EMPLOYEE -->
                         <li class="nav-item">
                             <a th:href="@{/acvstore/san-pham}" class="nav-link text-black">
                                 <i class="fa-solid fa-list-check"></i>
                                 <span class="nav-text">Danh sách sản phẩm</span>
                             </a>
                         </li>
-                        <li class="nav-item">
+
+                        <!-- Thuộc tính sản phẩm - ONLY for ADMIN -->
+                        <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                             <a class="nav-link text-black d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse" href="#thuocTinhSubmenu" role="button" aria-expanded="false" aria-controls="thuocTinhSubmenu">
                                 <span class="d-flex align-items-center"><i class="fa-solid fa-tags"></i><span class="nav-text">Thuộc tính sản phẩm</span></span>
                                 <i class="fa-solid fa-chevron-down toggle-icon"></i>
@@ -110,6 +128,8 @@
                     </ul>
                 </div>
             </li>
+
+            <!-- Giảm giá - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a class="nav-link text-black d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse" href="#giamgiaSubmenu" role="button" aria-expanded="false" aria-controls="giamgiaSubmenu">
                     <span class="d-flex align-items-center"><i class="fa-solid fa-ticket"></i><span class="nav-text">Giảm giá</span></span>
@@ -132,18 +152,52 @@
                     </ul>
                 </div>
             </li>
+
+            <!-- Khách hàng - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a th:href="@{/acvstore/customers}" class="nav-link text-black d-flex align-items-center">
                     <i class="fa-solid fa-users"></i>
                     <span class="nav-text">Khách hàng</span>
                 </a>
             </li>
-            <li class="nav-item">
+
+            <!-- Nhân sự - ONLY for ADMIN -->
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a th:href="@{/acvstore/employees}" class="nav-link text-black d-flex align-items-center">
                     <i class="fa-solid fa-user-tie"></i>
-                    <span class="nav-text">Nhân sự</span>
+                    <span class="nav-text">Nhân sự</span>
                 </a>
             </li>
+
+            <!-- Ví điện tử ACV - ONLY for ADMIN -->
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                <a class="nav-link text-black d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse" href="#viSubmenu" role="button" aria-expanded="false" aria-controls="viSubmenu">
+        <span class="d-flex align-items-center">
+            <i class="fa-solid fa-wallet"></i>
+            <span class="nav-text">Ví điện tử ACV</span>
+        </span>
+                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                </a>
+                <div class="collapse" id="viSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a th:href="@{/acvstore/vi/tong-hop}" class="nav-link text-black">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <span class="nav-text">Tổng hợp ví</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a th:href="@{/acvstore/vi/yeu-cau-rut-tien}" class="nav-link text-black">
+                                <i class="fa-solid fa-money-bill-transfer"></i>
+                                <span class="nav-text">Yêu cầu rút tiền</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
         </ul>
     </div>
 </div>
+</body>
+</html>

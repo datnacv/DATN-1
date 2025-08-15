@@ -7,6 +7,29 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
   <style>
+    :root {
+      --primary-color: #000000;
+      --primary-hover: #333333;
+      --secondary-color: #666666;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #17a2b8;
+      --light-gray: #f8f9fa;
+      --border-color: #dee2e6;
+      --glass-bg: rgba(255, 255, 255, 0.95);
+      --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --shadow-medium: 0 12px 40px rgba(0, 0, 0, 0.15);
+      --shadow-heavy: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #333;
+      min-height: 100vh;
+    }
+
     .table th, .table td {
       vertical-align: middle;
     }
@@ -15,11 +38,17 @@
       padding: 0.5em 0.75em;
     }
     .card-header {
-      background-color: #f8f9fa;
+      background: linear-gradient(135deg, var(--light-gray), #e9ecef);
+      color: var(--primary-color);
+      font-weight: 600;
+      border-bottom: 2px solid var(--border-color);
     }
     .filter-box {
-      border-radius: 6px;
-      box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      border-radius: 20px;
+      box-shadow: var(--shadow-light);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.2);
     }
     .btn-filter {
       min-width: 100px;
@@ -37,6 +66,168 @@
     .btn-sm i {
       font-size: 0.875rem;
     }
+
+    .content {
+      padding: 2rem;
+      margin-left: 256px;
+      margin-top: 70px;
+    }
+
+    .sticky-header {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      padding: 1.5rem 2rem;
+      margin: -2rem -2rem 2rem -2rem;
+      border-bottom: 2px solid var(--border-color);
+      border-radius: 20px 20px 0 0;
+      box-shadow: var(--shadow-light);
+
+      display: flex;
+      justify-content: center; /* Căn giữa ngang */
+      align-items: center;     /* Căn giữa dọc */
+    }
+
+
+    .sticky-header h2 {
+      font-weight: 700;
+      background: linear-gradient(135deg, #000000, #333333);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0;
+      font-size: 2rem;
+      position: relative;
+    }
+
+    .sticky-header h2::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+      border-radius: 2px;
+    }
+
+    .role-badge {
+      background: linear-gradient(135deg, #6f42c1, #8b5cf6);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+    }
+
+    .role-badge.employee {
+      background: linear-gradient(135deg, #28a745, #34ce57);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #000000, #333333);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #333333, #555555);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, #ffc107, #ffca2c);
+      color: #000;
+      box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+      border: none;
+    }
+
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #ffca2c, #ffd43b);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+      color: #000;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #e85d75);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+      border: none;
+    }
+
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #e85d75, #f08ba4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #34ce57);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      border: none;
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #34ce57, #40d865);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    }
+
+    .card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: var(--shadow-light);
+      border-radius: 20px;
+    }
+
+    .table-responsive {
+      border-radius: 0 0 20px 20px;
+      overflow: hidden;
+    }
+
+    .form-control, .form-select {
+      border-radius: 12px;
+      border: 2px solid var(--border-color);
+      background-color: #fff;
+      transition: all 0.3s ease;
+      padding: 12px 16px;
+      font-weight: 500;
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: var(--primary-color);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+    }
+
+    .employee-notice {
+      background-color: #cff4fc;
+      border: 1px solid #b6effb;
+      color: #055160;
+      padding: 0.75rem 1rem;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -44,15 +235,24 @@
   <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
   <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-    <!-- Các phần tử khác bên trái (nếu có) -->
-
     <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
   </nav>
-  <!-- Nội dung chính bên phải -->
+
   <div class="content" id="content">
+    <div class="sticky-header" style="display: flex; justify-content: center; align-items: center;">
+      <h2 style="display: flex; align-items: center; margin: 0;">
+        <i class="fas fa-percentage me-2"></i>Đợt Giảm Giá
+      </h2>
+    </div>
+
+    <div th:unless="${isAdmin}" class="employee-notice">
+      <i class="fas fa-info-circle me-2"></i>
+      <strong>Chế độ xem:</strong> Bạn đang ở chế độ chỉ xem. Không thể tạo mới, chỉnh sửa hoặc xóa chiến dịch.
+    </div>
+
     <div class="card mb-4 filter-box">
       <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Bộ lọc</h5>
+        <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Bộ lọc</h5>
       </div>
       <div class="card-body">
         <form class="row g-3" method="get" th:action="@{/acvstore/chien-dich-giam-gia}" id="filterForm">
@@ -63,13 +263,13 @@
           </div>
           <div class="col-md-2">
             <label class="form-label small">Từ ngày</label>
-            <input type="date" name="startDate" class="form-control"
-                   th:value="${startDate}">
+            <input type="datetime-local" name="startDate" class="form-control"
+                   th:value="${startDate != null ? #temporals.format(startDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
           </div>
           <div class="col-md-2">
             <label class="form-label small">Đến ngày</label>
-            <input type="date" name="endDate" class="form-control"
-                   th:value="${endDate}">
+            <input type="datetime-local" name="endDate" class="form-control"
+                   th:value="${endDate != null ? #temporals.format(endDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
           </div>
           <div class="col-md-2">
             <label class="form-label small">Trạng thái</label>
@@ -94,7 +294,7 @@
             <button type="submit" class="btn btn-primary btn-filter">Tìm kiếm</button>
           </div>
           <input type="hidden" name="page" id="pageInput" th:value="${currentPage}">
-          <input type="hidden" name="size" value="10">
+          <input type="hidden" name="size" id="sizeInput" th:value="${pageSize != null ? pageSize : 10}">
         </form>
       </div>
     </div>
@@ -102,8 +302,8 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0">Danh sách chiến dịch giảm giá</h5>
-        <a th:href="@{/acvstore/chien-dich-giam-gia/create}" class="btn btn-primary">
-          <i class="bi bi-plus-lg me-1"></i>Thêm mới
+        <a th:href="@{/acvstore/chien-dich-giam-gia/create}" class="btn btn-primary" th:if="${isAdmin}">
+          <i class="fas fa-plus me-1"></i>Thêm mới
         </a>
       </div>
       <div class="table-responsive">
@@ -122,32 +322,39 @@
           </thead>
           <tbody>
           <tr th:each="campaign, iterStat : ${campaignList}" class="align-middle text-center">
-            <td th:text="${iterStat.count + currentPage * 10}"></td>
+            <td th:text="${iterStat.count + currentPage * pageSize}"></td>
             <td th:text="${campaign.ma}"></td>
             <td th:text="${campaign.ten}" class="text-start"></td>
             <td th:utext="${campaign.phanTramGiam % 1 == 0} ? ${campaign.phanTramGiam.intValue()} + '&#37;' : ${campaign.phanTramGiam} + '&#37;'"></td>
-
-
-            <td th:text="${#temporals.format(campaign.ngayBatDau, 'dd/MM/yyyy')}"></td>
-            <td th:text="${#temporals.format(campaign.ngayKetThuc, 'dd/MM/yyyy')}"></td>
+            <td th:text="${#temporals.format(campaign.ngayBatDau, 'dd/MM/yyyy HH:mm')}"></td>
+            <td th:text="${#temporals.format(campaign.ngayKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
             <td>
               <span class="badge"
-                    th:classappend="${campaign.status == 'ONGOING'} ? 'bg-success' :
-                                   (${campaign.status == 'UPCOMING'} ? 'bg-primary' :
-                                   (${campaign.status == 'ENDED'} ? 'bg-secondary' : ''))"
-                    th:text="${campaign.status == 'ONGOING'} ? 'Đang diễn ra' :
-                              (${campaign.status == 'UPCOMING'} ? 'Sắp diễn ra' :
-                              (${campaign.status == 'ENDED'} ? 'Đã kết thúc' : ''))">
+                    th:with="status=${T(java.time.LocalDateTime).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' : (T(java.time.LocalDateTime).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}"
+                    th:classappend="${status == 'ONGOING'} ? 'bg-success' : (${status == 'UPCOMING'} ? 'bg-primary' : (${status == 'ENDED'} ? 'bg-secondary' : ''))"
+                    th:text="${status == 'ONGOING'} ? 'Đang diễn ra' : (${status == 'UPCOMING'} ? 'Sắp diễn ra' : (${status == 'ENDED'} ? 'Đã kết thúc' : ''))">
               </span>
             </td>
             <td>
-              <div class="action-buttons">
-                <a th:href="@{'/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id}}" class="btn btn-sm btn-warning" title="Sửa">
-                  <i class="bi bi-pencil-square"></i>
+              <div class="action-buttons" th:with="status=${T(java.time.LocalDateTime).now().isAfter(campaign.ngayKetThuc) ? 'ENDED' : (T(java.time.LocalDateTime).now().isBefore(campaign.ngayBatDau) ? 'UPCOMING' : 'ONGOING')}">
+                <a th:href="@{'/acvstore/chien-dich-giam-gia/view/' + ${campaign.id}}"
+                   class="btn btn-sm btn-success"
+                   title="Xem chi tiết">
+                  <i class="fas fa-eye"></i>
                 </a>
-                <button type="button" class="btn btn-sm btn-danger delete-btn"
-                        th:data-id="${campaign.id}" th:data-name="${campaign.ten}" title="Xóa">
-                  <i class="bi bi-trash"></i>
+                <a th:if="${isAdmin && status == 'UPCOMING'}"
+                   th:href="@{'/acvstore/chien-dich-giam-gia/edit/' + ${campaign.id}}"
+                   class="btn btn-sm btn-warning"
+                   title="Sửa">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <button th:if="${isAdmin}"
+                        type="button"
+                        class="btn btn-sm btn-danger delete-btn"
+                        th:data-id="${campaign.id}"
+                        th:data-name="${campaign.ten}"
+                        title="Xóa">
+                  <i class="fas fa-trash"></i>
                 </button>
               </div>
             </td>
@@ -175,6 +382,21 @@
                 <span aria-hidden="true">»</span>
               </a>
             </li>
+            <li class="ms-2">
+              <form method="get" th:action="@{/acvstore/chien-dich-giam-gia}" class="d-inline">
+                <select name="size" class="form-select form-select-sm" onchange="this.form.submit()">
+                  <option th:value="5" th:selected="${pageSize == 5}">5 / trang</option>
+                  <option th:value="10" th:selected="${pageSize == 10}">10 / trang</option>
+                  <option th:value="20" th:selected="${pageSize == 20}">20 / trang</option>
+                </select>
+                <input type="hidden" name="page" th:value="${currentPage}">
+                <input type="hidden" name="keyword" th:value="${keyword}">
+                <input type="hidden" name="startDate" th:value="${startDate != null ? #temporals.format(startDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                <input type="hidden" name="endDate" th:value="${endDate != null ? #temporals.format(endDate, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                <input type="hidden" name="status" th:value="${status}">
+                <input type="hidden" name="discountLevel" th:value="${discountLevel}">
+              </form>
+            </li>
           </ul>
         </nav>
       </div>
@@ -182,7 +404,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<div class="modal fade" id="deleteModal" tabindex="-1" th:if="${isAdmin}">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -194,7 +416,9 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-        <a href="#" id="confirmDeleteBtn" class="btn btn-danger">Xác nhận xóa</a>
+        <form id="deleteForm" method="post" style="display: inline;">
+          <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+        </form>
       </div>
     </div>
   </div>
@@ -204,12 +428,12 @@
 <script th:src="@{/js/sidebar.js}"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 
-<script>
+<script th:inline="javascript">
   document.addEventListener('DOMContentLoaded', function() {
-    // Xử lý nút phân trang
     const pageLinks = document.querySelectorAll('.page-nav');
     const pageInput = document.getElementById('pageInput');
     const currentPage = parseInt(pageInput.value);
+    const totalPages = /*[[${totalPages}]]*/ 0;
 
     pageLinks.forEach(link => {
       link.addEventListener('click', function(e) {
@@ -220,7 +444,7 @@
         if (targetPage === 'prev') {
           targetPage = Math.max(0, currentPage - 1);
         } else if (targetPage === 'next') {
-          targetPage = Math.min(/*[[${totalPages}]]*/ - 1, currentPage + 1);
+          targetPage = Math.min(totalPages - 1, currentPage + 1);
         } else {
           targetPage = parseInt(targetPage);
         }
@@ -230,56 +454,61 @@
       });
     });
 
-    // Xử lý nút reset bộ lọc
     document.getElementById('resetFilterBtn').addEventListener('click', function() {
       const form = document.getElementById('filterForm');
 
-      form.querySelectorAll('input[type="text"], input[type="date"], select').forEach(input => {
+      form.querySelectorAll('input[type="text"], input[type="datetime-local"], select').forEach(input => {
         input.value = '';
       });
 
       pageInput.value = '0';
+      document.getElementById('sizeInput').value = '10';
       form.submit();
     });
 
-    // Xử lý nút xóa và hiện modal xác nhận
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    const deleteButtons = document.querySelectorAll('.delete-btn');
+    const isAdmin = /*[[${isAdmin}]]*/ false;
+    if (isAdmin) {
+      const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+      const deleteButtons = document.querySelectorAll('.delete-btn');
+      const deleteForm = document.getElementById('deleteForm');
 
-    deleteButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        const campaignId = this.getAttribute('data-id');
-        const campaignName = this.getAttribute('data-name');
+      deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const campaignId = this.getAttribute('data-id');
+          const campaignName = this.getAttribute('data-name');
 
-        document.getElementById('campaignNameToDelete').textContent = campaignName;
-        document.getElementById('confirmDeleteBtn').href = '/acvstore/chien-dich-giam-gia/delete/' + campaignId;
+          document.getElementById('campaignNameToDelete').textContent = campaignName;
+          deleteForm.action = '/acvstore/chien-dich-giam-gia/delete/' + campaignId;
 
-        deleteModal.show();
+          deleteModal.show();
+        });
       });
-    });
-  });
-  document.addEventListener('DOMContentLoaded', function () {
-    // Toast thông báo nếu có
+    }
+
     const success = /*[[${successMessage}]]*/ null;
     const error = /*[[${errorMessage}]]*/ null;
 
-    const toastEl = document.getElementById('toastMessage');
-    const toastBody = toastEl.querySelector('.toast-body');
+    if (success || error) {
+      const toastEl = document.getElementById('toastMessage');
+      if (toastEl) {
+        const toastBody = toastEl.querySelector('.toast-body');
 
-    if (success) {
-      toastEl.classList.remove('bg-danger');
-      toastEl.classList.add('bg-success');
-      toastBody.textContent = success;
-      new bootstrap.Toast(toastEl).show();
-    } else if (error) {
-      toastEl.classList.remove('bg-success');
-      toastEl.classList.add('bg-danger');
-      toastBody.textContent = error;
-      new bootstrap.Toast(toastEl).show();
+        if (success) {
+          toastEl.classList.remove('bg-danger');
+          toastEl.classList.add('bg-success');
+          toastBody.textContent = success;
+          new bootstrap.Toast(toastEl).show();
+        } else if (error) {
+          toastEl.classList.remove('bg-success');
+          toastEl.classList.add('bg-danger');
+          toastBody.textContent = error;
+          new bootstrap.Toast(toastEl).show();
+        }
+      }
     }
   });
 </script>
-<!-- Toast thông báo -->
+
 <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
   <div id="toastMessage" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="d-flex">
@@ -288,6 +517,7 @@
     </div>
   </div>
 </div>
+<script th:src="@{/js/notification.js}"></script>
 
 </body>
 </html>

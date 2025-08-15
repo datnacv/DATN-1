@@ -62,7 +62,9 @@ public class DonHang {
     @Column(name = "trang_thai", nullable = false)
     private String trangThai = "CHO_XAC_NHAN";
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_dia_chi")
+    private DiaChiNguoiDung diaChi;
 
     @ManyToOne
     @JoinColumn(name = "id_phieu_giam_gia")
@@ -76,4 +78,13 @@ public class DonHang {
         chiTietDonHangs.add(chiTiet);
         chiTiet.setDonHang(this);
     }
+
+    @Transient
+    private String formattedPhiVanChuyen;
+
+    @Transient
+    private String formattedTienGiam;
+
+
+
 }

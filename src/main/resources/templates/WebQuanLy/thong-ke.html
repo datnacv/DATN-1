@@ -87,6 +87,20 @@
     .status-list li {
       margin-bottom: 5px;
     }
+
+    .pagination .page-item.active .page-link {
+      background-color: #3498db;
+      border-color: #3498db;
+      color: white;
+    }
+
+    .pagination .page-item .page-link {
+      color: #3498db;
+    }
+
+    .pagination .page-item.disabled .page-link {
+      color: #6c757d;
+    }
   </style>
 </head>
 <body>
@@ -94,17 +108,12 @@
   <div th:replace="~{fragments/sidebar :: sidebar}" class="fixed top-0 left-0 h-full bg-gray-800 text-white w-64"></div>
 
   <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
-    <!-- Các phần tử khác bên trái (nếu có) -->
-
     <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
   </nav>
-  <!-- Nội dung chính bên phải -->
+
   <div class="content" id="content">
     <h1 style="text-align: center">THỐNG KÊ</h1>
-    <!-- Hiển thị thông báo lỗi -->
     <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>
-
-    <!-- Hiển thị trạng thái bộ lọc -->
     <div id="filterStatus" class="alert alert-info" th:text="${filterStatus}" th:if="${filterStatus != null}"></div>
 
     <div class="row text-center mb-4">
@@ -112,7 +121,43 @@
       <div class="col-md-4 stat-card">Doanh thu hôm nay<br><span class="text-primary" th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span></div>
       <div class="col-md-4 stat-card">Sản phẩm bán được tháng này<br><span class="text-primary" th:text="${stats.soSanPhamThang}"></span></div>
     </div>
+    <div class="row text-center mb-4">
+      <div class="col-md-4 stat-card">Tại quầy<br><span class="text-primary" th:text="${tongDonTheoPhuongThuc['Tại quầy'] ?: 0} + ' đơn'"></span></div>
+      <div class="col-md-4 stat-card">Giao hàng<br><span class="text-primary" th:text="${tongDonTheoPhuongThuc['Giao hàng'] ?: 0} + ' đơn'"></span></div>
+      <div class="col-md-4 stat-card">Online<br><span class="text-primary" th:text="${tongDonTheoPhuongThuc['Online'] ?: 0} + ' đơn'"></span></div>
+    </div>
 
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card-box">
+          <h5 class="fw-bold mb-3">Tốc độ tăng trưởng ✨</h5>
+          <div class="growth-box"><span>📅</span> Doanh thu ngày: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>📅</span> Doanh thu tháng: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuThang, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>📅</span> Doanh thu năm: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNam, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNam % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNam, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNam, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>📦</span> Sản phẩm tháng: <span th:text="${stats.soSanPhamThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongSanPhamThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongSanPhamThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongSanPhamThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>🧾</span> Hóa đơn ngày: <span th:text="${stats.soDonHangNgay}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>🧾</span> Hóa đơn tháng: <span th:text="${stats.soDonHangThang}"></span> <span class="growth-percent"><i class="fa fa-arrowibou-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card-box">
+          <h5 class="fw-bold mb-3">Trạng thái đơn hàng</h5>
+          <div class="row">
+            <div class="col-md-6">
+              <ul class="status-list">
+                <li th:each="entry : ${trangThaiPercentMap}">
+                  <span th:text="${entry.key} + ': '"></span>
+                  <span th:text="${entry.value % 1 == 0 ? #numbers.formatInteger(entry.value, 0, 'POINT') + '%' : #numbers.formatDecimal(entry.value, 1, 'POINT', 1, 'COMMA') + '%'}"></span>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <canvas id="pieChart" height="230"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="card-box">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -127,7 +172,6 @@
           <button class="btn btn-outline-secondary filter-btn" data-filter="custom_range" onclick="showCustomRange()">Tuỳ chỉnh</button>
         </div>
       </div>
-      <!-- Form chọn ngày tùy chỉnh -->
       <div id="customRange" style="display: none;">
         <div class="row">
           <div class="col-md-6">
@@ -142,67 +186,11 @@
         <button class="btn btn-primary mt-3" onclick="applyCustomRange()">Áp dụng</button>
         <button class="btn btn-secondary mt-3" onclick="document.getElementById('customRange').style.display='none'">Hủy</button>
       </div>
-      <div class="chart-title">Biểu Đồ Thống Kê Hóa Đơn Và Sản Phẩm</div>
+      <div class="chart-title">Biểu đồ Doanh thu & Số hóa đơn</div>
       <canvas id="chart" height="150"></canvas>
     </div>
-
-    <!-- Hàng ngang 1 -->
     <div class="row">
       <div class="col-md-6">
-        <!-- Top sản phẩm bán chạy -->
-        <div class="card-box">
-          <h5 class="fw-bold mb-3">Top Sản Phẩm Bán Chạy</h5>
-          <div class="table-responsive">
-            <table class="table table-bordered table-hover text-center">
-              <thead style="background-color: #fef4d7;">
-              <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Số lượng đã bán</th></tr>
-              </thead>
-              <tbody>
-              <tr th:each="item, stat : ${topSellingProducts}">
-                <td th:text="${stat.index + 1}">1</td>
-                <td>
-                  <img th:if="${item.imageUrl != null}"
-                       th:src="${item.imageUrl}"
-                       style="height: 60px;"
-                       alt="ảnh"/>
-                </td>
-
-                <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
-                <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
-                <td th:text="${item.soLuongDaBan}"></td>
-              </tr>
-              <tr th:if="${topSellingProducts == null or #lists.isEmpty(topSellingProducts)}">
-                <td colspan="5">Không có dữ liệu.</td>
-              </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <!-- Trạng thái đơn hàng tháng này -->
-        <div class="card-box">
-          <h5 class="fw-bold mb-3">Trạng thái đơn hàng </h5>
-          <div class="row">
-            <div class="col-md-6">
-              <ul class="status-list">
-                <li>Thành công: <span th:with="locale='vi_VN'" th:text="${successPercent % 1 == 0 ? #numbers.formatInteger(successPercent, 0, 'POINT') + '%' : #numbers.formatDecimal(successPercent, 1, 'POINT', 1, 'COMMA') + '%'}"></span></li>
-                <li>Đã hủy: <span th:with="locale='vi_VN'" th:text="${failedPercent % 1 == 0 ? #numbers.formatInteger(failedPercent, 0, 'POINT') + '%' : #numbers.formatDecimal(failedPercent, 1, 'POINT', 1, 'COMMA') + '%'}"></span></li>
-                <!-- Additional statuses can be added if provided by the backend -->
-              </ul>
-            </div>
-            <div class="col-md-6">
-              <canvas id="pieChart" height="230"></canvas>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hàng ngang 2 -->
-    <div class="row">
-      <div class="col-md-6">
-        <!-- Sản phẩm sắp hết hàng -->
         <div class="card-box">
           <h5 class="fw-bold mb-3">Sản Phẩm Sắp Hết Hàng</h5>
           <div class="table-responsive">
@@ -211,8 +199,8 @@
               <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Tồn Kho</th></tr>
               </thead>
               <tbody>
-              <tr th:each="item, stat : ${lowStockProducts}">
-                <td th:text="${stat.index + 1}">1</td>
+              <tr th:each="item, stat : ${lowStockProducts.content}">
+                <td th:text="${stat.index + 1 + lowStockProducts.number * lowStockProducts.size}">1</td>
                 <td>
                   <img th:if="${item.imageUrl != null}"
                        th:src="${item.imageUrl}"
@@ -223,104 +211,184 @@
                 <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
                 <td th:text="${item.soLuongTonKho}"></td>
               </tr>
-              <tr th:if="${lowStockProducts == null or #lists.isEmpty(lowStockProducts)}">
+              <tr th:if="${lowStockProducts == null or lowStockProducts.isEmpty()}">
                 <td colspan="5">Không có sản phẩm sắp hết hàng.</td>
               </tr>
               </tbody>
             </table>
           </div>
+          <!-- Pagination for Low Stock Products -->
+          <nav aria-label="Low Stock Products navigation" th:if="${lowStockProducts != null and lowStockProducts.totalPages > 1}">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" th:classappend="${lowStockProducts.first} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},lowStockPage=0)}">«</a>
+              </li>
+              <li class="page-item" th:classappend="${lowStockProducts.first} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},lowStockPage=${lowStockProducts.number - 1})}">Trước</a>
+              </li>
+              <li th:each="i : ${#numbers.sequence(0, lowStockProducts.totalPages - 1)}" class="page-item" th:classappend="${i == lowStockProducts.number} ? 'active'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},lowStockPage=${i})}" th:text="${i + 1}"></a>
+              </li>
+              <li class="page-item" th:classappend="${lowStockProducts.last} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},lowStockPage=${lowStockProducts.number + 1})}">Sau</a>
+              </li>
+              <li class="page-item" th:classappend="${lowStockProducts.last} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},lowStockPage=${lowStockProducts.totalPages - 1})}">»</a>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
       <div class="col-md-6">
-        <!-- Tốc độ tăng trưởng -->
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Tốc độ tăng trưởng ✨</h5>
-          <div class="growth-box"><span>📅</span> Doanh thu ngày: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>📅</span> Doanh thu tháng: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuThang, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>📅</span> Doanh thu năm: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNam, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNam % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNam, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNam, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>📦</span> Sản phẩm tháng: <span th:text="${stats.soSanPhamThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongSanPhamThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongSanPhamThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongSanPhamThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>🧾</span> Hóa đơn ngày: <span th:text="${stats.soDonHangNgay}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>🧾</span> Hóa đơn tháng: <span th:text="${stats.soDonHangThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <h5 class="fw-bold mb-3">Top Sản Phẩm Bán Chạy</h5>
+          <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center">
+              <thead style="background-color: #fef4d7;">
+              <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Số lượng đã bán</th></tr>
+              </thead>
+              <tbody>
+              <tr th:each="item, stat : ${topSellingProducts.content}">
+                <td th:text="${stat.index + 1 + topSellingProducts.number * topSellingProducts.size}">1</td>
+                <td>
+                  <img th:if="${item.imageUrl != null}"
+                       th:src="${item.imageUrl}"
+                       style="height: 60px;"
+                       alt="ảnh"/>
+                </td>
+                <td><div th:text="${item.tenSanPham}"></div><small th:text="'Màu: ' + ${item.mauSac} + ', Size: ' + ${item.kichCo}"></small></td>
+                <td th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(item.gia, 0, 'POINT')} + ' VND'"></td>
+                <td th:text="${item.soLuongDaBan}"></td>
+              </tr>
+              <tr th:if="${topSellingProducts == null or topSellingProducts.isEmpty()}">
+                <td colspan="5">Không có dữ liệu.</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination for Top Selling Products -->
+          <nav aria-label="Top Selling Products navigation" th:if="${topSellingProducts != null and topSellingProducts.totalPages > 1}">
+            <ul class="pagination justify-content-center">
+              <li class="page-item" th:classappend="${topSellingProducts.first} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},topSellingPage=0)}">«</a>
+              </li>
+              <li class="page-item" th:classappend="${topSellingProducts.first} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},topSellingPage=${topSellingProducts.number - 1})}">Trước</a>
+              </li>
+              <li th:each="i : ${#numbers.sequence(0, topSellingProducts.totalPages - 1)}" class="page-item" th:classappend="${i == topSellingProducts.number} ? 'active'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},topSellingPage=${i})}" th:text="${i + 1}"></a>
+              </li>
+              <li class="page-item" th:classappend="${topSellingProducts.last} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},topSellingPage=${topSellingProducts.number + 1})}">Sau</a>
+              </li>
+              <li class="page-item" th:classappend="${topSellingProducts.last} ? 'disabled'">
+                <a class="page-link" th:href="@{/acvstore/thong-ke(boLoc=${boLoc},ngayBatDau=${ngayBatDau},ngayKetThuc=${ngayKetThuc},topSellingPage=${topSellingProducts.totalPages - 1})}">»</a>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Chart Script -->
 <script th:inline="javascript">
   const labels = /*[[${chartLabels}]]*/ [];
   const chartOrders = /*[[${chartOrders}]]*/ [];
-  const chartProducts = /*[[${chartProducts}]]*/ [];
+  const chartRevenue = /*[[${chartRevenue}]]*/ [];
+
+  const fmtVND = (v) => (v ?? 0).toLocaleString('vi-VN');
 
   const ctx = document.getElementById('chart').getContext('2d');
   new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: labels,
       datasets: [
         {
-          label: 'Số đơn',
-          backgroundColor: '#3498db',
-          data: chartOrders,
-          barThickness: 20
+          label: 'Doanh thu (VND)',
+          data: chartRevenue,
+          yAxisID: 'yRevenue',
+          tension: 0.35,
+          borderColor: '#2ecc71',
+          backgroundColor: 'rgba(46, 204, 113, 0.15)',
+          fill: true,
+          pointRadius: 3
         },
         {
-          label: 'Số sản phẩm',
-          backgroundColor: '#5dade2',
-          data: chartProducts,
-          barThickness: 20
+          label: 'Số hóa đơn',
+          data: chartOrders,
+          yAxisID: 'yCount',
+          tension: 0.35,
+          borderColor: '#e74c3c',
+          backgroundColor: 'rgba(231, 76, 60, 0.12)',
+          fill: false,
+          pointRadius: 3
         }
       ]
     },
     options: {
       responsive: true,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
           position: 'bottom',
-          labels: {
-            boxWidth: 15,
-            font: { size: 12 }
-          }
+          labels: { boxWidth: 14, font: { size: 12 } }
         },
         tooltip: {
           callbacks: {
-            label: function(context) {
-              return context.dataset.label + ': ' + context.raw;
+            label: function(ctx) {
+              const v = ctx.parsed.y;
+              return ctx.dataset.yAxisID === 'yRevenue'
+                      ? `${ctx.dataset.label}: ${fmtVND(v)} VND`
+                      : `${ctx.dataset.label}: ${v}`;
             }
           }
         }
       },
       scales: {
         x: {
-          title: {
-            display: true,
-            text: 'Ngày'
-          }
+          title: { display: true, text: 'Thời gian' }
         },
-        y: {
+        yCount: {
+          type: 'linear',
+          position: 'left',
           beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Số lượng'
+          title: { display: true, text: 'Số hóa đơn' }
+        },
+        yRevenue: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'Doanh thu (VND)' },
+          ticks: {
+            callback: (value) => fmtVND(value)
           }
         }
       }
     }
   });
 </script>
-
 <script th:inline="javascript">
   const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+  const pieLabels = [[${trangThaiPercentMap.keySet()}]];
+  const pieValues = [[${trangThaiPercentMap.values()}]];
+
+  const backgroundColors = [
+    '#3498db', '#f39c12', '#9b59b6', '#2ecc71',
+    '#e74c3c', '#95a5a6', '#1abc9c', '#34495e',
+    '#d35400', '#c0392b'
+  ];
+
   new Chart(pieCtx, {
     type: 'pie',
     data: {
-      labels: ['Thành công', 'Đã hủy'],
+      labels: pieLabels,
       datasets: [{
-        data: [
-          /*[[${successPercent}]]*/, /*[[${failedPercent}]]*/
-        ],
-        backgroundColor: ['#3498db', '#e74c3c'],
+        data: pieValues,
+        backgroundColor: backgroundColors.slice(0, pieLabels.length),
         borderWidth: 1
       }]
     },
@@ -329,7 +397,7 @@
       plugins: {
         title: {
           display: true,
-          text: 'Trạng thái đơn hàng tháng này',
+          text: 'Tỷ lệ trạng thái đơn hàng',
           font: { size: 16 }
         },
         legend: {
@@ -340,7 +408,7 @@
             generateLabels: function(chart) {
               const data = chart.data;
               return data.labels.map((label, i) => ({
-                text: label + ': ' + data.datasets[0].data[i] + '%',
+                text: label + ': ' + data.datasets[0].data[i].toFixed(1) + '%',
                 fillStyle: data.datasets[0].backgroundColor[i],
                 hidden: isNaN(data.datasets[0].data[i]) || data.datasets[0].data[i] === null,
                 index: i
@@ -353,19 +421,18 @@
   });
 </script>
 
-<!-- Filter form ẩn -->
 <form id="filterForm" method="get" th:action="@{/acvstore/thong-ke}" style="display: none;">
   <input type="hidden" name="boLoc" id="filterInput">
   <input type="hidden" name="ngayBatDau" id="startDateInput">
   <input type="hidden" name="ngayKetThuc" id="endDateInput">
+  <input type="hidden" name="topSellingPage" id="topSellingPageInput" th:value="${topSellingPage}">
+  <input type="hidden" name="lowStockPage" id="lowStockPageInput" th:value="${lowStockPage}">
 </form>
 
 <script>
-  // Khởi tạo Flatpickr
   flatpickr("#startDatePicker", { dateFormat: "Y-m-d", defaultDate: new Date() });
   flatpickr("#endDatePicker", { dateFormat: "Y-m-d", defaultDate: new Date() });
 
-  // Hàm highlight button được chọn
   function highlightFilterButton(selectedFilter) {
     const buttons = document.querySelectorAll('.filter-btn');
     buttons.forEach(button => {
@@ -379,7 +446,6 @@
     });
   }
 
-  // Khi trang tải, không highlight button nào trừ khi filter được gửi từ URL
   document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const currentFilter = urlParams.get('boLoc');
@@ -452,7 +518,6 @@
     window.location.href = '/acvstore/thong-ke/export?' + new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
   }
 </script>
-
-
+<script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

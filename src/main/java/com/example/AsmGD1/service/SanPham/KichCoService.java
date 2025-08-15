@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.KichCo;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.KichCoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,12 +19,19 @@ public class KichCoService {
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
 
+    // Lấy danh sách kích cỡ với phân trang
+    public Page<KichCo> getAllKichCo(Pageable pageable) {
+        return kichCoRepository.findAll(pageable);
+    }
+
+    // Lấy tất cả kích cỡ (không phân trang)
     public List<KichCo> getAllKichCo() {
         return kichCoRepository.findAll();
     }
 
-    public List<KichCo> searchKichCo(String ten) {
-        return kichCoRepository.findByTenContainingIgnoreCase(ten);
+    // Tìm kiếm kích cỡ với phân trang
+    public Page<KichCo> searchKichCo(String ten, Pageable pageable) {
+        return kichCoRepository.findByTenContainingIgnoreCase(ten, pageable);
     }
 
     public KichCo getKichCoById(UUID id) {

@@ -14,29 +14,56 @@
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
         :root {
-            --primary-color: #000000;
-            --primary-hover: #333333;
-            --secondary-color: #666666;
-            --success-color: #28a745;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --light-gray: #f8f9fa;
+            /* Màu chính */
+            --primary-color: #153054;
+            --primary-hover: #102C47;
+            --secondary-color: #9FD5F7;
+            --secondary-hover: #84C7EA;
+            --accent-color: #479BD3;
+            --accent-hover: #CAEAFB;
+            --border-active: #62B2E7;
+
+            /* Màu nền */
+            --main-background: #F4F9FC;
+            --content-background: #ffffff;
+            --header-background: #153054;
+
+            /* Màu văn bản */
+            --text-primary: #153054;
+            --text-content: #333333;
+            --text-secondary: #6B7280;
+            --text-link: #479BD3;
+            --text-white: #ffffff;
+
+            /* Màu nút */
+            --btn-danger: #F44336;
+            --btn-danger-hover: #D32F2F;
+
+            /* Màu trạng thái */
+            --success-bg: #D1FADF;
+            --success-text: #027A48;
+            --warning-bg: #FEF3C7;
+            --warning-text: #B45309;
+            --error-bg: #FECACA;
+            --error-text: #991B1B;
+
+            /* Màu khác */
             --border-color: #dee2e6;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --shadow-light: 0 8px 32px rgba(0, 0, 0, 0.1);
-            --shadow-medium: 0 12px 40px rgba(0, 0, 0, 0.15);
-            --shadow-heavy: 0 20px 60px rgba(0, 0, 0, 0.2);
+            --light-gray: #f8f9fa;
+            --shadow-light: 0 8px 32px rgba(21, 48, 84, 0.1);
+            --shadow-medium: 0 12px 40px rgba(21, 48, 84, 0.15);
+            --shadow-heavy: 0 20px 60px rgba(21, 48, 84, 0.2);
         }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #000;
+            background-color: var(--main-background);
+            color: var(--text-content);
             min-height: 100vh;
         }
 
         .glass-card {
-            background: var(--glass-bg);
+            background: var(--content-background);
             backdrop-filter: blur(20px);
             border: 1px solid var(--border-color);
             box-shadow: var(--shadow-light);
@@ -56,7 +83,7 @@
         }
 
         .page-title {
-            background: linear-gradient(135deg, #000000, #333333);
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -75,7 +102,7 @@
             transform: translateX(-50%);
             width: 100px;
             height: 4px;
-            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
             border-radius: 2px;
         }
 
@@ -85,7 +112,7 @@
             box-shadow: var(--shadow-light);
             margin-bottom: 2rem;
             overflow: hidden;
-            background: var(--glass-bg);
+            background: var(--content-background);
             backdrop-filter: blur(20px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -96,14 +123,20 @@
         }
 
         .card-header {
-            background: linear-gradient(135deg, #000000, #333333);
-            color: white;
+            background: linear-gradient(135deg, var(--header-background), var(--primary-hover));
+            color: var(--text-white);
             border-bottom: none;
             padding: 1.5rem 2rem;
             font-weight: 600;
             font-size: 1.1rem;
             position: relative;
             overflow: hidden;
+        }
+
+        .card-header span {
+            color: var(--text-white) !important;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .card-header::before {
@@ -113,7 +146,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(159, 213, 247, 0.2), transparent);
             transition: left 0.5s;
         }
 
@@ -131,12 +164,13 @@
             padding: 12px 16px;
             font-weight: 500;
             transition: all 0.3s ease;
-            background: white;
+            background: var(--content-background);
+            color: var(--text-content);
         }
 
         .form-control:focus, .form-select:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+            border-color: var(--border-active);
+            box-shadow: 0 0 0 4px rgba(98, 178, 231, 0.1);
             outline: none;
             transform: translateY(-1px);
         }
@@ -146,7 +180,7 @@
             border: 2px solid var(--border-color);
             border-right: none;
             border-radius: 12px 0 0 12px;
-            color: var(--secondary-color);
+            color: var(--text-primary);
         }
 
         .input-group .form-control {
@@ -179,70 +213,89 @@
             left: 100%;
         }
 
+        /* Nút Primary (Thêm) */
         .btn-primary {
-            background: linear-gradient(135deg, #000000, #333333);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-white) !important;
+            box-shadow: 0 4px 15px rgba(21, 48, 84, 0.2);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #333333, #555555);
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: var(--text-white);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.3);
         }
 
+        /* Nút Secondary (Sửa) */
         .btn-warning {
-            background: linear-gradient(135deg, #ffc107, #ffca2c);
-            color: #000;
-            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+            background: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: var(--text-primary);
+            box-shadow: 0 4px 15px rgba(159, 213, 247, 0.3);
         }
 
         .btn-warning:hover {
-            background: linear-gradient(135deg, #ffca2c, #ffd43b);
+            background: var(--secondary-hover);
+            border-color: var(--secondary-hover);
+            color: var(--text-primary);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+            box-shadow: 0 8px 25px rgba(159, 213, 247, 0.4);
         }
 
+        /* Nút Success (Xem) */
         .btn-success {
-            background: linear-gradient(135deg, #28a745, #34ce57);
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-white);
+            box-shadow: 0 4px 15px rgba(71, 155, 211, 0.3);
         }
 
         .btn-success:hover {
-            background: linear-gradient(135deg, #34ce57, #40d865);
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-white);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 8px 25px rgba(71, 155, 211, 0.4);
         }
 
+        /* Nút Danger (Xóa) */
         .btn-danger {
-            background: linear-gradient(135deg, #dc3545, #e85d75);
-            color: white;
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            background: var(--btn-danger);
+            border-color: var(--btn-danger);
+            color: var(--text-white);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
         }
 
         .btn-danger:hover {
-            background: linear-gradient(135deg, #e85d75, #f08ba4);
+            background: var(--btn-danger-hover);
+            border-color: var(--btn-danger-hover);
+            color: var(--text-white);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+            box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
         }
 
         .btn-secondary {
-            background: linear-gradient(135deg, #6c757d, #868e96);
-            color: white;
-            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+            background: var(--text-secondary);
+            border-color: var(--text-secondary);
+            color: var(--text-white);
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
         }
 
         .btn-secondary:hover {
-            background: linear-gradient(135deg, #868e96, #adb5bd);
+            background: #4b5563;
+            border-color: #4b5563;
+            color: var(--text-white);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
         }
 
         .btn-sm {
             padding: 8px 16px;
             font-size: 0.875rem;
-            width: 44px;
+            min-width: 44px;
             height: 40px;
             display: flex;
             align-items: center;
@@ -253,17 +306,16 @@
         .table {
             margin-bottom: 0;
             border-color: var(--border-color);
-            vertical-align: middle;
             width: 100%;
-            background: white;
+            background: var(--content-background);
             border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--shadow-light);
         }
 
         .table thead {
-            background: linear-gradient(135deg, var(--light-gray), #e9ecef);
-            color: var(--primary-color);
+            background: var(--light-gray);
+            color: var(--text-primary);
             font-weight: 600;
             border-bottom: 2px solid var(--border-color);
         }
@@ -274,13 +326,16 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             text-align: center;
+            color: var(--text-primary);
+            vertical-align: middle;
         }
 
         .table td {
             padding: 1.5rem 1rem;
             border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
+            vertical-align: middle; /* Đây là key fix - đảm bảo tất cả nội dung trong ô được căn giữa theo chiều dọc */
             text-align: center;
+            color: var(--text-content);
         }
 
         .table-hover > tbody > tr {
@@ -288,44 +343,52 @@
         }
 
         .table-hover > tbody > tr:hover {
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.05));
+            background: var(--accent-hover);
             transform: scale(1.01);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(71, 155, 211, 0.1);
         }
 
         .product-image {
-            max-width: 50px; /* Further reduced size */
-            max-height: 50px; /* Further reduced size */
+            max-width: 50px;
+            max-height: 50px;
             object-fit: cover;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(21, 48, 84, 0.15);
             transition: all 0.3s ease;
         }
 
         .product-image:hover {
             transform: scale(1.1);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
+        /* Action buttons - đã sửa để căn giữa hoàn hảo */
         .action-buttons {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             height: 100%;
-            min-height: 90px;
+            width: 100%;
+            /* Loại bỏ min-height và flex-wrap để tránh conflict */
+        }
+
+        /* Đảm bảo các nút trong action-buttons được căn giữa */
+        .action-buttons .btn {
+            margin: 0; /* Loại bỏ margin mặc định */
         }
 
         .form-switch {
             display: flex;
             align-items: center;
             justify-content: center;
+            height: 100%;
         }
 
         .form-check-input {
             cursor: pointer;
-            width: 1000000em;
-            height: 1.0em;
+            width: 3em;
+            height: 1.5em;
             border-radius: 2em;
             transition: all 0.3s ease;
             border: 2px solid var(--border-color);
@@ -333,15 +396,15 @@
         }
 
         .form-check-input:checked {
-            background-color: var(--success-color);
-            border-color: var(--success-color);
-            box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.2);
+            background-color: var(--success-text);
+            border-color: var(--success-text);
+            box-shadow: 0 0 0 4px rgba(2, 122, 72, 0.2);
         }
 
         .form-check-input:not(:checked) {
-            background-color: var(--danger-color);
-            border-color: var(--danger-color);
-            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2);
+            background-color: var(--btn-danger);
+            border-color: var(--btn-danger);
+            box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.2);
         }
 
         .form-check-label {
@@ -349,14 +412,7 @@
             font-weight: 600;
             margin-left: 1rem;
             transition: all 0.3s ease;
-        }
-
-        .form-check-input:checked + .form-check-label {
-            color: var(--success-color);
-        }
-
-        .form-check-input:not(:checked) + .form-check-label {
-            color: var(--danger-color);
+            color: var(--text-content);
         }
 
         .pagination-custom {
@@ -369,43 +425,43 @@
         }
 
         .pagination-custom .page-link {
-            color: var(--primary-color);
-            background: white;
+            color: var(--text-primary);
+            background: var(--content-background);
             border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 12px 18px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 600;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(21, 48, 84, 0.1);
         }
 
         .pagination-custom .page-link:hover {
-            color: white;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-            border-color: var(--primary-color);
+            color: var(--text-white);
+            background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+            border-color: var(--accent-color);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 25px rgba(71, 155, 211, 0.2);
         }
 
         .pagination-custom .page-item.active .page-link {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             border-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            color: var(--text-white);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.3);
         }
 
         .modal-content {
             border-radius: 24px;
             border: none;
             box-shadow: var(--shadow-heavy);
-            background: var(--glass-bg);
+            background: var(--content-background);
             backdrop-filter: blur(20px);
             overflow: hidden;
         }
 
         .modal-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--text-white);
             border-bottom: none;
             border-radius: 24px 24px 0 0;
             padding: 2rem 2.5rem;
@@ -419,7 +475,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(159, 213, 247, 0.2), transparent);
             transition: left 0.5s;
         }
 
@@ -439,6 +495,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            color: var(--text-white);
         }
 
         .modal-body {
@@ -468,7 +525,7 @@
             top: 2rem;
             right: 2rem;
             background: var(--primary-color);
-            color: white;
+            color: var(--text-white);
             padding: 1rem 1.5rem;
             border-radius: 12px;
             box-shadow: var(--shadow-medium);
@@ -496,13 +553,14 @@
             border-radius: 12px;
             border: 2px solid var(--border-color);
             transition: all 0.3s ease;
+            color: var(--text-content);
         }
 
         .floating-label input:focus,
         .floating-label select:focus,
         .floating-label textarea:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.1);
+            border-color: var(--border-active);
+            box-shadow: 0 0 0 4px rgba(98, 178, 231, 0.1);
             transform: translateY(-1px);
         }
 
@@ -512,17 +570,17 @@
             top: 0.5rem;
             font-size: 0.75rem;
             font-weight: 600;
-            color: var(--primary-color);
+            color: var(--text-primary);
             pointer-events: none;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            background: white;
+            background: var(--content-background);
             padding: 0 0.5rem;
             border-radius: 4px;
         }
 
         .search-section {
-            background: var(--glass-bg);
+            background: var(--content-background);
             backdrop-filter: blur(20px);
             border-radius: 20px;
             padding: 2.5rem;
@@ -543,7 +601,7 @@
         .section-icon {
             width: 32px;
             height: 32px;
-            color: var(--primary-color);
+            color: var(--accent-color);
         }
 
         .search-form-row {
@@ -569,19 +627,81 @@
         }
 
         #imagePreviewContainer:hover {
-            border-color: var(--primary-color);
+            border-color: var(--border-active);
             background: rgba(248,249,250,0.95);
         }
 
         #imagePreview {
             border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.15);
             transition: all 0.3s ease;
         }
 
         #imagePreview:hover {
             transform: scale(1.05);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.2);
+            box-shadow: 0 12px 35px rgba(21, 48, 84, 0.2);
+        }
+
+        /* Role Badge Styles */
+        .role-badge {
+            position: fixed;
+            top: 20px;
+            left: 280px;
+            z-index: 1000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 12px rgba(21, 48, 84, 0.15);
+        }
+
+        .role-admin {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--text-white);
+        }
+
+        .role-employee {
+            background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+            color: var(--text-primary);
+        }
+
+        .text-dark {
+            color: var(--text-primary) !important;
+        }
+
+        .fw-semibold {
+            color: var(--text-content);
+        }
+
+        .fw-bold {
+            color: var(--text-content);
+        }
+
+        /* Badge trạng thái */
+        .badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-success {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .badge-warning {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+        }
+
+        .badge-danger {
+            background: var(--error-bg);
+            color: var(--error-text);
         }
 
         @media (max-width: 768px) {
@@ -617,25 +737,31 @@
             }
 
             .product-image {
-                max-width: 40px; /* Further reduced for mobile */
-                max-height: 40px; /* Further reduced for mobile */
+                max-width: 40px;
+                max-height: 40px;
             }
 
             .action-buttons {
-                flex-direction: column;
-                gap: 8px;
-                min-height: auto;
+                flex-direction: row;
+                gap: 4px;
+                justify-content: center;
             }
 
             .btn-sm {
-                width: 100%;
-                height: auto;
-                padding: 8px 12px;
+                min-width: 36px;
+                height: 36px;
+                padding: 6px 8px;
+                font-size: 0.75rem;
             }
 
             .form-check-input {
-                width: 10em;
-                height: 2em;
+                width: 2.5em;
+                height: 1.25em;
+            }
+
+            .role-badge {
+                left: 20px;
+                top: 80px;
             }
         }
 
@@ -654,25 +780,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        .badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .badge-success {
-            background: linear-gradient(135deg, var(--success-color), #34ce57);
-            color: white;
-        }
-
-        .badge-danger {
-            background: linear-gradient(135deg, var(--danger-color), #e85d75);
-            color: white;
-        }
     </style>
 </head>
 <body>
@@ -682,6 +789,14 @@
     <nav class="navbar custom-navbar navbar-expand-lg navbar-light bg-white shadow-sm px-4 fixed top-0 right-0 w-[calc(100%-256px)] d-flex">
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
+
+    <!-- Role Badge -->
+    <div th:if="${user != null}"
+         th:class="'role-badge ' + (${isAdmin} ? 'role-admin' : 'role-employee')">
+        <i class="fas fa-user-shield me-2"></i>
+        <span th:text="${isAdmin} ? 'Admin' : 'Employee'">Role</span>
+    </div>
+
     <div class="content" id="content">
         <div class="text-center mb-2 mt-3">
             <h2 class="page-title">QUẢN LÝ SẢN PHẨM</h2>
@@ -713,10 +828,10 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-4" th:if="${isAdmin}">
                             <a th:href="@{/acvstore/chi-tiet-san-pham/add}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" style="height: 58px; margin-bottom: 6px;">
                                 <i class="fas fa-plus"></i>
-                                <span class="fw-semibold">Thêm sản phẩm mới</span>
+                                <span class="">Thêm sản phẩm mới</span>
                             </a>
                         </div>
                     </div>
@@ -740,7 +855,7 @@
                             <th>Tên sản phẩm</th>
                             <th>Danh mục</th>
                             <th>Tồn kho</th>
-                            <th>Trạng thái</th>
+                            <th th:if="${isAdmin}">Trạng thái</th>
                             <th>Ngày tạo</th>
                             <th>Thao tác</th>
                         </tr>
@@ -756,9 +871,10 @@
                             <td>
                                 <div class="d-flex justify-content-center">
                                     <img th:if="${sp.urlHinhAnh != null and sp.urlHinhAnh != ''}"
-                                         th:src="${sp.urlHinhAnh}"
+                                         th:src="@{${sp.urlHinhAnh}}"
                                          class="product-image"
-                                         alt="Product Image">
+                                         alt="Product Image"
+                                         onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\'d-flex align-items-center justify-content-center bg-light rounded\' style=\'width: 60px; height: 60px;\'><i class=\'fas fa-image text-muted fs-3\'></i></div>'">
                                     <div th:if="${sp.urlHinhAnh == null or sp.urlHinhAnh == ''}"
                                          class="d-flex align-items-center justify-content-center bg-light rounded"
                                          style="width: 60px; height: 60px;">
@@ -775,7 +891,7 @@
                             <td>
                                 <span class="fw-bold fs-8" th:text="${sp.tongSoLuong}"></span>
                             </td>
-                            <td>
+                            <td th:if="${isAdmin}">
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                     <input class="form-check-input status-toggle"
                                            type="checkbox"
@@ -789,19 +905,33 @@
                             <td>
                                 <span class="fw-bold" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
                             </td>
-                            <td class="action-buttons">
-                                <button class="btn btn-warning btn-sm"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#editSanPhamModal"
-                                        th:data-sanpham="${sp.id}"
-                                        title="Chỉnh sửa">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
-                                   class="btn btn-success btn-sm"
-                                   title="Xem chi tiết">
-                                    <i class="fas fa-eye"></i>
-                                </a>
+                            <!-- Cột Thao tác với nút đã được sửa lỗi căn giữa -->
+                            <td>
+                                <div class="action-buttons">
+                                    <!-- Nút cho Admin: Edit + View nằm ngang -->
+                                    <div th:if="${isAdmin}" class="d-flex gap-2">
+                                        <button class="btn btn-warning btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editSanPhamModal"
+                                                th:data-sanpham="${sp.id}"
+                                                title="Chỉnh sửa">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
+                                           class="btn btn-success btn-sm"
+                                           title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                    <!-- Nút cho Employee: Chỉ View -->
+                                    <div th:unless="${isAdmin}">
+                                        <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
+                                           class="btn btn-success btn-sm"
+                                           title="Xem chi tiết">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         </tbody>
@@ -829,7 +959,8 @@
                 </nav>
             </div>
 
-            <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true">
+            <!-- Modal chỉ hiển thị cho Admin -->
+            <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true" th:if="${isAdmin}">
                 <div class="modal-dialog modal-dialog-centered modal-xl">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -839,7 +970,7 @@
                             </h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form id="editSanPhamForm">
+                        <form id="editSanPhamForm" enctype="multipart/form-data">
                             <div class="modal-body">
                                 <input type="hidden" name="id">
                                 <div class="row g-4">
@@ -876,10 +1007,7 @@
                                                 <i class="fas fa-image me-2"></i>Hình ảnh sản phẩm
                                             </label>
                                             <div class="d-flex align-items-center gap-3 mb-3">
-                                                <button type="button" class="btn btn-primary" id="openCloudinaryWidget">
-                                                    <i class="fas fa-cloud-upload-alt me-2"></i>Chọn ảnh
-                                                </button>
-                                                <input type="hidden" id="editUrlHinhAnh" name="urlHinhAnh">
+                                                <input type="file" class="form-control" id="editImageFile" name="imageFile" accept="image/*">
                                                 <span id="imageNameDisplay" class="text-muted fw-medium">Chưa chọn ảnh</span>
                                             </div>
                                         </div>
@@ -897,9 +1025,9 @@
                                     </div>
                                     <div class="col-12">
                                         <div id="imagePreviewContainer" class="text-center">
-                                            <img class="product-image" alt="Current Image" id="imagePreview" style="max-width: 250px; max-height: 250px; display: none;">
-                                            <div id="noImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px; display: none;">
-                                            </div>
+                                            <img class="product-image" alt="Current Image" id="imagePreview" style="max-width: 250px; max-height: 250px; display: none;"
+                                                 onerror="this.onerror=null; this.parentNode.querySelector('#noImagePlaceholder').style.display='flex'; this.style.display='none';">
+                                            <div id="noImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center" style="min-height: 200px;"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -922,56 +1050,75 @@
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
-<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
         if (!container) return;
 
         const toast = document.createElement("div");
-        const colors = {
+        const bg = {
             success: "bg-success",
-            error: "bg-danger",
+            error:   "bg-danger",
             warning: "bg-warning",
-            info: "bg-primary"
+            info:    "bg-primary"
+        };
+        const icon = {
+            success: "fas fa-check-circle",
+            error:   "fas fa-exclamation-circle",
+            warning: "fas fa-exclamation-triangle",
+            info:    "fas fa-info-circle"
         };
 
-        toast.className = `toast show align-items-center text-white ${colors[type] || colors.info} border-0`;
+        // warning dùng chữ tối, các loại khác chữ trắng
+        const textClass = type === "warning" ? "text-dark" : "text-white";
+        const closeBtnClass = type === "warning" ? "btn-close" : "btn-close btn-close-white";
+
+        toast.className = `toast show align-items-center ${bg[type] || bg.info} ${textClass} border-0`;
         toast.setAttribute('role', 'alert');
         toast.setAttribute('aria-live', 'assertive');
         toast.setAttribute('aria-atomic', 'true');
 
-        const icon = {
-            success: "fas fa-check-circle",
-            error: "fas fa-exclamation-circle",
-            warning: "fas fa-exclamation-triangle",
-            info: "fas fa-info-circle"
-        };
-
         toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body d-flex align-items-center gap-2">
-                    <i class="${icon[type] || icon.info}"></i>
-                    <span class="fw-medium">${message}</span>
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="${icon[type] || icon.info}"></i>
+        <span class="fw-medium">${message}</span>
+      </div>
+      <button type="button" class="${closeBtnClass} me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
 
         container.appendChild(toast);
-
-        setTimeout(() => {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, 4000);
+        setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
     }
 
+    async function fetchJson(url, options) {
+        const res = await fetch(url, options);
+        let data = null;
+        try { data = await res.json(); } catch (_) {} // phòng khi body rỗng / không phải JSON
+
+        if (!res.ok) {
+            const err = new Error((data && data.message) ? data.message : `HTTP ${res.status}`);
+            err.status = res.status;
+            err.payload = data;
+            throw err;
+        }
+        return data || {};
+    }
+
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Chỉ khởi tạo các event listener cho Admin
+        const isAdmin = document.querySelector('.role-admin') !== null;
+
+        if (!isAdmin) {
+            console.log('Employee user - Management functions disabled');
+            return;
+        }
+
         const editSanPhamModal = document.getElementById('editSanPhamModal');
         const editSanPhamForm = document.getElementById('editSanPhamForm');
-        const openCloudinaryWidgetBtn = document.getElementById('openCloudinaryWidget');
-        const urlHinhAnhInput = document.getElementById('editUrlHinhAnh');
+        const imageFileInput = document.getElementById('editImageFile');
         const imagePreview = document.getElementById('imagePreview');
         const imageNameDisplay = document.getElementById('imageNameDisplay');
         const trangThaiInput = document.getElementById('editTrangThai');
@@ -979,29 +1126,51 @@
         const noImagePlaceholder = document.getElementById('noImagePlaceholder');
 
         function updateTrangThaiLabel() {
-            trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
+            if (trangThaiLabel && trangThaiInput) {
+                trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
+            }
         }
 
-        function updateImagePreview(imageUrl = urlHinhAnhInput.value) {
-            if (imageUrl && imageUrl.trim() !== '' && isValidImageUrl(imageUrl)) {
-                imagePreview.src = imageUrl;
+        function updateImagePreview(imageUrl = null, file = null) {
+            if (!imagePreview || !noImagePlaceholder || !imageNameDisplay) return;
+
+            console.log('updateImagePreview called with imageUrl:', imageUrl, 'file:', file);
+
+            if (file) {
+                console.log('Previewing uploaded file:', file.name);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    noImagePlaceholder.style.display = 'none';
+                    imageNameDisplay.textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            } else if (imageUrl && imageUrl.trim() !== '') {
+                console.log('Previewing server image:', imageUrl);
+                const absoluteUrl = imageUrl.startsWith('/') ? `${window.location.origin}${imageUrl}` : imageUrl;
+                imagePreview.src = absoluteUrl;
                 imagePreview.style.display = 'block';
                 noImagePlaceholder.style.display = 'none';
                 imageNameDisplay.textContent = 'Đã chọn ảnh';
             } else {
+                console.log('No image to preview');
                 imagePreview.style.display = 'none';
                 noImagePlaceholder.style.display = 'flex';
-                imageNameDisplay.textContent = 'Chưa có ảnh được chọn';
+                imageNameDisplay.textContent = 'Chưa chọn ảnh';
             }
         }
 
-        function isValidImageUrl(url) {
-            try {
-                new URL(url);
-                return /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
-            } catch {
-                return false;
-            }
+        if (imageFileInput) {
+            imageFileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                console.log('Image file selected:', file ? file.name : 'No file');
+                if (file) {
+                    updateImagePreview(null, file);
+                } else {
+                    updateImagePreview();
+                }
+            });
         }
 
         if (editSanPhamModal) {
@@ -1016,7 +1185,7 @@
                 const moTaInput = modalForm.querySelector('textarea[name="moTa"]');
                 const danhMucSelect = modalForm.querySelector('#editDanhMuc');
                 const trangThaiInput = modalForm.querySelector('input[name="trangThai"]');
-                const urlHinhAnhInput = modalForm.querySelector('input[name="urlHinhAnh"]');
+                const imageFileInput = modalForm.querySelector('input[name="imageFile"]');
 
                 modalTitle.innerHTML = `<i class="fas fa-edit"></i> Chỉnh sửa sản phẩm #${sanPhamId}`;
                 sanPhamIdInput.value = sanPhamId;
@@ -1026,9 +1195,11 @@
                 moTaInput.value = '';
                 danhMucSelect.value = '';
                 trangThaiInput.checked = false;
+                imageFileInput.value = '';
                 updateTrangThaiLabel();
-                urlHinhAnhInput.value = '';
                 updateImagePreview();
+
+                console.log('Fetching product data for ID:', sanPhamId);
 
                 fetch(`/acvstore/san-pham/get/${sanPhamId}`)
                     .then(response => {
@@ -1038,18 +1209,14 @@
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Received data:', data);
+                        console.log('Received product data:', data);
                         maSanPhamInput.value = data.maSanPham || '';
                         tenSanPhamInput.value = data.tenSanPham || '';
                         moTaInput.value = data.moTa || '';
                         danhMucSelect.value = data.danhMucId || '';
                         trangThaiInput.checked = data.trangThai != null ? data.trangThai : false;
                         updateTrangThaiLabel();
-
-                        const imageUrl = data.urlHinhAnh || '';
-                        urlHinhAnhInput.value = imageUrl;
-                        console.log('Image URL:', imageUrl);
-                        updateImagePreview(imageUrl);
+                        updateImagePreview(data.urlHinhAnh || '');
                     })
                     .catch(error => {
                         console.error('Error fetching san pham data:', error);
@@ -1070,106 +1237,70 @@
                 const maSanPham = editSanPhamForm.querySelector('input[name="maSanPham"]').value.trim();
                 const tenSanPham = editSanPhamForm.querySelector('input[name="tenSanPham"]').value.trim();
                 const moTa = editSanPhamForm.querySelector('textarea[name="moTa"]').value.trim();
-                const urlHinhAnh = editSanPhamForm.querySelector('input[name="urlHinhAnh"]').value.trim();
                 const trangThai = editSanPhamForm.querySelector('input[name="trangThai"]').checked;
                 const danhMucId = editSanPhamForm.querySelector('select[name="danhMucId"]').value;
+                const imageFile = editSanPhamForm.querySelector('input[name="imageFile"]').files[0];
 
                 if (!id || !maSanPham || !tenSanPham) {
                     showToast('Vui lòng điền đầy đủ thông tin bắt buộc!', 'warning');
                     return;
                 }
 
-                const formData = {
-                    id: id,
-                    maSanPham: maSanPham,
-                    tenSanPham: tenSanPham,
-                    moTa: moTa || '',
-                    urlHinhAnh: urlHinhAnh || '',
-                    trangThai: trangThai,
-                    danhMucId: danhMucId || null
-                };
+                const formData = new FormData();
+                formData.append('id', id);
+                formData.append('maSanPham', maSanPham);
+                formData.append('tenSanPham', tenSanPham);
+                formData.append('moTa', moTa || '');
+                formData.append('trangThai', trangThai);
+                if (danhMucId) formData.append('danhMucId', danhMucId);
+                if (imageFile) formData.append('imageFile', imageFile);
 
-                console.log('Sending data:', JSON.stringify(formData, null, 2));
+                console.log('Sending FormData:', { id, maSanPham, tenSanPham, moTa, trangThai, danhMucId, imageFile });
 
-                fetch('/acvstore/san-pham/save', {
+                fetchJson('/acvstore/san-pham/save', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
+                    body: formData
                 })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('HTTP error ' + response.status);
-                        }
-                        return response.json();
-                    })
                     .then(data => {
                         if (data.success) {
                             const modal = bootstrap.Modal.getInstance(editSanPhamModal);
                             modal.hide();
+
                             const sanPham = data.sanPham;
                             let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
                             if (row) {
-                                row.cells[1].innerHTML = `<code class="fw-bold">${sanPham.maSanPham || ''}</code>`;
+                                row.cells[1].innerHTML = `<span class="fw-bold fs-8">${sanPham.maSanPham || ''}</span>`;
                                 row.cells[2].innerHTML = sanPham.urlHinhAnh
-                                    ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image"></div>`
+                                    ? `<div class="d-flex justify-content-center"><img src="${sanPham.urlHinhAnh}" class="product-image" alt="Product Image" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\\'d-flex align-items-center justify-content-center bg-light rounded\\' style=\\'width: 60px; height: 60px;\\'><i class=\\'fas fa-image text-muted fs-3\\'></i></div>'"></div>`
                                     : `<div class="d-flex justify-content-center"><div class="d-flex align-items-center justify-content-center bg-light rounded" style="width: 60px; height: 60px;"><i class="fas fa-image text-muted fs-3"></i></div></div>`;
                                 row.cells[3].innerHTML = `<div class="fw-semibold text-dark">${sanPham.tenSanPham || ''}</div>`;
                                 row.cells[4].innerHTML = `<span class="badge badge-success">${sanPham.tenDanhMuc || 'N/A'}</span>`;
-                                row.cells[5].innerHTML = `<span class="fw-bold fs-5">${sanPham.tongSoLuong || 0}</span>`;
-                                row.cells[6].innerHTML = `
-                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
-                                    <input class="form-check-input status-toggle"
-                                           type="checkbox"
-                                           ${sanPham.trangThai ? 'checked' : ''}
-                                           data-id="${sanPham.id}"
-                                           role="switch">
-                                    <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
-                                </div>`;
+                                row.cells[5].innerHTML = `<span class="fw-bold fs-8">${sanPham.tongSoLuong || 0}</span>`;
+
+                                const statusCell = row.cells[6];
+                                if (statusCell) {
+                                    statusCell.innerHTML = `
+          <div class="form-check form-switch d-flex justify-content-center align-items-center">
+            <input class="form-check-input status-toggle" type="checkbox" ${sanPham.trangThai ? 'checked' : ''} data-id="${sanPham.id}" role="switch">
+            <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
+          </div>`;
+                                }
                             }
                             showToast("Cập nhật sản phẩm thành công!", "success");
                         } else {
-                            showToast("Lỗi: " + (data.message || "Không thể lưu sản phẩm."), "error");
+                            // Trường hợp BE trả 200 nhưng success=false (hiếm) -> warning
+                            showToast(data.message || "Không thể lưu sản phẩm.", "warning");
                         }
                     })
-                    .catch(error => {
-                        console.error('Error saving san pham:', error);
-                        showToast('Lỗi khi lưu sản phẩm: ' + error.message, 'error');
+                    .catch(err => {
+                        // 400 validate từ BE -> warning vàng + message chuẩn
+                        const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
+                        showToast((tone === "warning" ? "" : "Lỗi khi lưu sản phẩm: ") + (err.message || "Có lỗi xảy ra."), tone);
                     });
             });
         }
 
-        if (openCloudinaryWidgetBtn) {
-            const myWidget = cloudinary.createUploadWidget(
-                {
-                    cloudName: 'dfwbuxr0c',
-                    uploadPreset: 'acvstore_unsigned_preset',
-                    folder: 'acvstore/products',
-                    sources: ['local', 'url', 'google_drive', 'dropbox'],
-                    multiple: false,
-                    clientAllowedFormats: ['image'],
-                    maxImageFileSize: 2000000,
-                    theme: 'minimal'
-                },
-                (error, result) => {
-                    if (!error && result && result.event === 'success') {
-                        const imageUrl = result.info.secure_url;
-                        urlHinhAnhInput.value = imageUrl;
-                        updateImagePreview(imageUrl);
-                        showToast('Tải ảnh lên thành công!', 'success');
-                    } else if (error) {
-                        console.error('Cloudinary upload error:', error);
-                        showToast('Lỗi khi tải ảnh lên. Vui lòng thử lại.', 'error');
-                    }
-                }
-            );
-
-            openCloudinaryWidgetBtn.addEventListener('click', () => {
-                myWidget.open();
-            }, false);
-        }
-
+        // Status toggle functionality - chỉ cho admin
         document.querySelectorAll('.status-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const sanPhamId = this.getAttribute('data-id');
@@ -1183,40 +1314,35 @@
 
                 label.textContent = newTrangThai ? 'Đang Bán' : 'Ngừng Bán';
 
-                fetch('/acvstore/san-pham/update-status', {
+                fetchJson('/acvstore/san-pham/update-status', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({
-                        id: sanPhamId,
-                        trangThai: newTrangThai
-                    })
+                    body: JSON.stringify({ id: sanPhamId, trangThai: newTrangThai })
                 })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('HTTP error ' + response.status);
-                        }
-                        return response.json();
-                    })
                     .then(data => {
                         if (data.success) {
                             showToast('Cập nhật trạng thái thành công!', 'success');
                         } else {
-                            showToast('Lỗi: ' + (data.message || 'Không thể cập nhật trạng thái.'), 'error');
-                            this.checked = !newTrangThai;
+                            showToast(data.message || 'Không thể cập nhật trạng thái.', 'warning');
+                            // revert UI
+                            toggle.checked = !newTrangThai;
                             label.textContent = newTrangThai ? 'Ngừng Bán' : 'Đang Bán';
                         }
                     })
-                    .catch(error => {
-                        console.error('Error updating status:', error);
-                        showToast('Lỗi khi cập nhật trạng thái: ' + error.message, 'error');
-                        this.checked = !newTrangThai;
+                    .catch(err => {
+                        const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
+                        showToast(err.message || 'Không thể cập nhật trạng thái.', tone);
+                        // revert UI
+                        toggle.checked = !newTrangThai;
                         label.textContent = newTrangThai ? 'Ngừng Bán' : 'Đang Bán';
                     });
             });
         });
     });
 </script>
+<script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

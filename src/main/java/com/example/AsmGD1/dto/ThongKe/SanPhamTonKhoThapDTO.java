@@ -1,7 +1,6 @@
 package com.example.AsmGD1.dto.ThongKe;
 
 import lombok.Data;
-
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -21,6 +20,19 @@ public class SanPhamTonKhoThapDTO {
                                 String tenSanPham, String mauSac, String kichCo,
                                 BigDecimal gia, Integer soLuongTonKho) {
         this.idChiTietDonHang = idChiTietDonHang;
+        this.idChiTietSanPham = idChiTietSanPham;
+        this.idSanPham = idSanPham;
+        this.tenSanPham = tenSanPham;
+        this.mauSac = mauSac;
+        this.kichCo = kichCo;
+        this.gia = gia;
+        this.soLuongTonKho = soLuongTonKho;
+    }
+
+    // ✅ Constructor rút gọn không cần idChiTietDonHang
+    public SanPhamTonKhoThapDTO(UUID idChiTietSanPham, UUID idSanPham,
+                                String tenSanPham, String mauSac, String kichCo,
+                                BigDecimal gia, Integer soLuongTonKho) {
         this.idChiTietSanPham = idChiTietSanPham;
         this.idSanPham = idSanPham;
         this.tenSanPham = tenSanPham;

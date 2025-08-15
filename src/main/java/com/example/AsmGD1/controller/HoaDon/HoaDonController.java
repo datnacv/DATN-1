@@ -50,8 +50,8 @@ public class HoaDonController {
         model.addAttribute("hoaDonPage", hoaDonPage);
         model.addAttribute("search", search);
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String tenDangNhap = authentication.getName();
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
@@ -79,11 +79,12 @@ public class HoaDonController {
                         Map<String, Object> hoaDonInfo = new HashMap<>();
                         hoaDonInfo.put("id", row.getId());
                         hoaDonInfo.put("maHoaDon", row.getDonHang().getMaDonHang());
-                        hoaDonInfo.put("tenKhachHang", row.getNguoiDung().getHoTen());
+                        hoaDonInfo.put("tenKhachHang", row.getNguoiDung() != null ? row.getNguoiDung().getHoTen() : "Khách lẻ");
+                        hoaDonInfo.put("tenNhanVien", row.getNhanVien() != null ? row.getNhanVien().getHoTen() : "Không rõ");
                         hoaDonInfo.put("tongTien", row.getTongTien());
                         hoaDonInfo.put("thoiGianTao", row.getNgayTao());
                         hoaDonInfo.put("phuongThucThanhToan", row.getPhuongThucThanhToan() != null ? row.getPhuongThucThanhToan().getTenPhuongThuc() : "Chưa chọn");
-                        hoaDonInfo.put("trangThai", row.getTrangThai());
+                        hoaDonInfo.put("trangThai", hoaDonService.getCurrentStatus(row));
                         hoaDonInfo.put("phuongThucBanHang", row.getDonHang().getPhuongThucBanHang());
                         return hoaDonInfo;
                     })
@@ -110,21 +111,28 @@ public class HoaDonController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
 
-            // Kiểm tra và tự động hoàn thành nếu phương thức bán hàng là "Tại quầy"
             if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
                     !"Hoàn thành".equals(hoaDon.getTrangThai())) {
-                hoaDon.setGhiChu("Hoàn thành (Tại quầy)");
-                hoaDon.setTrangThai("Hoàn thành");
-                hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Hoàn thành tự động (Tại quầy)");
-                hoaDonService.save(hoaDon);
+                hoaDonService.updateStatus(uuid, "Hoàn thành", "Hoàn thành tự động (Tại quầy)", true);
             }
 
             model.addAttribute("hoaDon", hoaDon);
+            model.addAttribute("currentStatus", hoaDonService.getCurrentStatus(hoaDon));
             return "WebQuanLy/hoa-don-detail";
         } catch (Exception e) {
             model.addAttribute("error", "Lỗi khi tải chi tiết hóa đơn: " + e.getMessage());
             return "error";
         }
+    }
+
+    @GetMapping("/status/{id}")
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> getOrderStatus(@PathVariable UUID id) {
+        HoaDon hoaDon = hoaDonService.findById(id)
+                .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+        Map<String, String> response = new HashMap<>();
+        response.put("currentStatus", hoaDonService.getCurrentStatus(hoaDon));
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/delete/{id}")
@@ -205,6 +213,30 @@ public class HoaDonController {
         }
     }
 
+    @PostMapping("/cancel/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> cancelOrder(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            hoaDonService.cancelOrder(uuid, ghiChu);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được hủy thành công.");
+            response.put("currentStatus", "Hủy đơn hàng");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi hủy đơn hàng: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/confirm/{id}")
     @ResponseBody
     @Transactional(rollbackOn = Exception.class)
@@ -228,22 +260,29 @@ public class HoaDonController {
             donHang = donHangRepository.findById(donHang.getId())
                     .orElseThrow(() -> new RuntimeException("Đơn hàng không tìm thấy trong cơ sở dữ liệu."));
 
-            // Kiểm tra trạng thái hiện tại
             if (!"Chưa xác nhận".equals(hoaDon.getTrangThai())) {
                 throw new RuntimeException("Hóa đơn phải ở trạng thái 'Chưa xác nhận' để xác nhận.");
             }
 
-            String trangThai = "Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang()) ? "Hoàn thành" : "Đã xác nhận";
-            hoaDon.setGhiChu(ghiChu);
-            hoaDon.setNgayThanhToan(LocalDateTime.now());
-            hoaDon.setTrangThai(trangThai);
+            String trangThai;
+            if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                trangThai = "Hoàn thành";
+                ghiChu = "Hoàn thành (Tại quầy)";
+                donHang.setTrangThaiThanhToan(true);
+            } else if ("Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                trangThai = "Đã xác nhận Online";
+                ghiChu = "Đã xác nhận đơn hàng Online";
+                if ("Ví Thanh Toán".equalsIgnoreCase(donHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
+                    donHang.setTrangThaiThanhToan(true);
+                    donHang.setThoiGianThanhToan(LocalDateTime.now());
+                }
+            } else {
+                trangThai = "Đã xác nhận";
+                ghiChu = "Đã xác nhận đơn hàng Giao hàng";
+            }
 
-            donHang.setTrangThaiThanhToan(true);
-            donHang.setThoiGianThanhToan(LocalDateTime.now());
-            hoaDon.setDonHang(donHang);
-
-            hoaDonService.addLichSuHoaDon(hoaDon, trangThai, ghiChu);
-            hoaDonService.save(hoaDon);
+            donHangRepository.save(donHang);
+            hoaDonService.updateStatus(uuid, trangThai, ghiChu, true);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Đơn hàng đã được " + trangThai.toLowerCase() + " thành công.");
@@ -282,11 +321,7 @@ public class HoaDonController {
                 throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đã xác nhận' để chuyển sang 'Đang vận chuyển'.");
             }
 
-            hoaDon.setGhiChu(ghiChu);
-            hoaDon.setTrangThai("Đang vận chuyển");
-            hoaDon.setNgayThanhToan(LocalDateTime.now());
-            hoaDonService.addLichSuHoaDon(hoaDon, "Đang vận chuyển", ghiChu);
-            hoaDonService.save(hoaDon);
+            hoaDonService.updateStatus(uuid, "Đang vận chuyển", ghiChu, true);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Đơn hàng đã được xác nhận giao hàng thành công.");
@@ -323,11 +358,118 @@ public class HoaDonController {
                 throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đang vận chuyển' để chuyển sang 'Vận chuyển thành công'.");
             }
 
-            hoaDon.setGhiChu(ghiChu);
-            hoaDon.setTrangThai("Vận chuyển thành công");
-            hoaDon.setNgayThanhToan(LocalDateTime.now());
-            hoaDonService.addLichSuHoaDon(hoaDon, "Vận chuyển thành công", ghiChu);
-            hoaDonService.save(hoaDon);
+            hoaDonService.updateStatus(uuid, "Vận chuyển thành công", ghiChu, true);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được xác nhận vận chuyển thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xác nhận vận chuyển thành công: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/confirm-online-processing/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> confirmOnlineProcessing(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            HoaDon hoaDon = hoaDonService.findById(uuid)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Online' mới có thể chuyển sang trạng thái 'Đang xử lý Online'.");
+            }
+            if (!"Đã xác nhận Online".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đã xác nhận Online' để chuyển sang 'Đang xử lý Online'.");
+            }
+
+            hoaDonService.updateStatus(uuid, "Đang xử lý Online", ghiChu, true);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được xác nhận đang xử lý Online thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xác nhận xử lý Online: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/confirm-online-shipping/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> confirmOnlineShipping(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            HoaDon hoaDon = hoaDonService.findById(uuid)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Online' mới có thể chuyển sang trạng thái 'Đang vận chuyển'.");
+            }
+            if (!"Đang xử lý Online".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đang xử lý Online' để chuyển sang 'Đang vận chuyển'.");
+            }
+
+            hoaDonService.updateStatus(uuid, "Đang vận chuyển", ghiChu, true);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Đơn hàng đã được xác nhận đang vận chuyển thành công.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xác nhận đang vận chuyển: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/confirm-online-delivered/{id}")
+    @ResponseBody
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> confirmOnlineDelivered(@PathVariable String id, @RequestBody Map<String, String> request) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                throw new IllegalArgumentException("ID hóa đơn không được để trống.");
+            }
+            UUID uuid = UUID.fromString(id);
+            String ghiChu = request.get("ghiChu");
+            if (ghiChu == null || ghiChu.trim().isEmpty()) {
+                throw new IllegalArgumentException("Ghi chú không được để trống.");
+            }
+            HoaDon hoaDon = hoaDonService.findById(uuid)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
+
+            DonHang donHang = hoaDon.getDonHang();
+            if (donHang == null) {
+                throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
+            }
+            if (!"Online".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
+                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Online' mới có thể chuyển sang trạng thái 'Vận chuyển thành công'.");
+            }
+            if (!"Đang vận chuyển".equals(hoaDon.getTrangThai())) {
+                throw new RuntimeException("Hóa đơn phải ở trạng thái 'Đang vận chuyển' để chuyển sang 'Vận chuyển thành công'.");
+            }
+
+            hoaDonService.updateStatus(uuid, "Vận chuyển thành công", ghiChu, true);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Đơn hàng đã được xác nhận vận chuyển thành công.");
@@ -357,21 +499,25 @@ public class HoaDonController {
             if (donHang == null) {
                 throw new RuntimeException("Đơn hàng liên quan không tồn tại.");
             }
-            if (!"Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
-                throw new RuntimeException("Chỉ các đơn hàng có phương thức 'Giao hàng' mới có thể chuyển sang trạng thái 'Hoàn thành'.");
-            }
             if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
                 throw new RuntimeException("Hóa đơn phải ở trạng thái 'Vận chuyển thành công' để chuyển sang 'Hoàn thành'.");
             }
 
-            hoaDon.setGhiChu(ghiChu);
-            hoaDon.setTrangThai("Hoàn thành");
-            hoaDon.setNgayThanhToan(LocalDateTime.now());
-            hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", ghiChu);
-            hoaDonService.save(hoaDon);
+            // Kiểm tra quyền của người dùng (chỉ khách hàng được phép xác nhận hoàn thành)
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !(auth.getPrincipal() instanceof NguoiDung)) {
+                throw new RuntimeException("Chỉ khách hàng có thể xác nhận hoàn thành đơn hàng.");
+            }
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            if (!user.getId().equals(hoaDon.getNguoiDung().getId())) {
+                throw new RuntimeException("Bạn không có quyền xác nhận hoàn thành đơn hàng này.");
+            }
+
+            hoaDonService.updateStatus(uuid, "Hoàn thành", ghiChu, true);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Đơn hàng đã được xác nhận hoàn thành thành công.");
+            response.put("currentStatus", "Hoàn thành");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi xác nhận hoàn thành: " + e.getMessage()));

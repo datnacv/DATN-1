@@ -5,9 +5,9 @@ import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamUpdateDto;
 import com.example.AsmGD1.dto.ChiTietSanPham.ChiTietSanPhamVariationDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.SanPham.*;
-import com.example.AsmGD1.util.CloudinaryUtil;
 import com.example.AsmGD1.util.QRCodeUtil;
 import com.google.zxing.WriterException;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,30 +39,86 @@ public class ChiTietSanPhamService {
     @Autowired private CoAoRepository coAoRepo;
     @Autowired private KieuDangRepository kieuDangRepo;
     @Autowired private ThuongHieuRepository thuongHieuRepo;
-    @Autowired private CloudinaryUtil cloudinaryUtil;
 
     private final String UPLOAD_DIR;
 
-    public List<ChiTietSanPham> findAllByTrangThaiAndKeyword(String keyword) {
-        return chiTietSanPhamRepo.findAllByTrangThaiAndKeyword(keyword);
-    }
     public ChiTietSanPhamService() {
         String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("win")) {
-            UPLOAD_DIR = "C:/DATN/uploads/";
-        } else {
-            UPLOAD_DIR = System.getProperty("user.home") + "/DATN/uploads/";
-        }
-
+        UPLOAD_DIR = os.contains("win") ? "C:/DATN/uploads/san_pham/" : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
         try {
             Path uploadPath = Paths.get(UPLOAD_DIR);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
-                System.out.println("Created directory: " + UPLOAD_DIR);
+                logger.info("Created directory: {}", UPLOAD_DIR);
             }
         } catch (IOException e) {
             throw new RuntimeException("Could not create upload directory: " + UPLOAD_DIR, e);
         }
+    }
+
+
+
+
+    @PostConstruct
+    public void syncAllProductDetailsQRCode() {
+        List<ChiTietSanPham> allDetails = chiTietSanPhamRepo.findAll();
+
+        Set<String> validFileNames = allDetails.stream()
+                .map(detail -> "qr_" + detail.getId() + ".png")
+                .collect(Collectors.toSet());
+
+        File qrDirectory = new File(QRCodeUtil.getBaseDir());
+
+        if (qrDirectory.exists() && qrDirectory.isDirectory()) {
+            File[] existingFiles = qrDirectory.listFiles((dir, name) -> name.endsWith(".png"));
+            if (existingFiles != null) {
+                for (File file : existingFiles) {
+                    if (!validFileNames.contains(file.getName())) {
+                        boolean deleted = file.delete();
+                        if (deleted) {
+                            logger.info("🗑️ Đã xóa file QR không còn hợp lệ: {}", file.getName());
+                        }
+                    }
+                }
+            }
+        }
+
+        for (ChiTietSanPham detail : allDetails) {
+            String qrFileName = "qr_" + detail.getId() + ".png";
+            Path qrFilePath = Paths.get(QRCodeUtil.getBaseDir(), qrFileName);
+
+            if (!Files.exists(qrFilePath)) {
+                try {
+                    QRCodeUtil.generateQRCodeImage(detail.getId().toString(), 250, 250, qrFileName);
+                    logger.info("✅ QR code created for product detail ID: {}", detail.getId());
+                } catch (Exception e) {
+                    logger.error("❌ Lỗi khi tạo QR cho ID: {}", detail.getId(), e);
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void deleteChiTietSanPham(UUID id) {
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm với ID: " + id));
+
+        String qrFileName = "qr_" + chiTiet.getId() + ".png";
+        Path qrPath = Paths.get(QRCodeUtil.getBaseDir(), qrFileName);
+        try {
+            if (Files.exists(qrPath)) {
+                Files.delete(qrPath);
+                logger.info("🗑️ Đã xoá QR Code file: {}", qrPath);
+            }
+        } catch (IOException e) {
+            logger.error("❌ Lỗi khi xóa QR Code file: {}", qrPath, e);
+        }
+
+        chiTietSanPhamRepo.delete(chiTiet);
+    }
+
+    public List<ChiTietSanPham> findAllByTrangThaiAndKeyword(String keyword) {
+        return chiTietSanPhamRepo.findAllByTrangThaiAndKeyword(keyword);
     }
 
     public List<ChiTietSanPham> findByFilters(UUID productId, UUID colorId, UUID sizeId, UUID originId, UUID materialId,
@@ -147,6 +203,14 @@ public class ChiTietSanPhamService {
             KichCo kichCo = kichCoRepo.findById(variationDto.getSizeId())
                     .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại ID: " + variationDto.getSizeId()));
 
+            ChiTietSanPham existing = chiTietSanPhamRepo.findBySanPhamIdAndMauSacIdAndKichCoId(
+                    sanPham.getId(), mauSac.getId(), kichCo.getId());
+            if (existing != null) {
+                logger.warn("Biến thể đã tồn tại: productId={}, colorId={}, sizeId={}",
+                        sanPham.getId(), mauSac.getId(), kichCo.getId());
+                continue;
+            }
+
             ChiTietSanPham pd = new ChiTietSanPham();
             pd.setSanPham(sanPham);
             pd.setXuatXu(xuatXu);
@@ -168,15 +232,14 @@ public class ChiTietSanPhamService {
             try {
                 QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
             } catch (IOException | WriterException e) {
-                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: " + savedDetail.getId(), e);
+                logger.error("Không thể tạo QR Code cho biến thể sản phẩm ID: {}", savedDetail.getId(), e);
             }
 
-            // Lưu ảnh cho biến thể dựa trên colorId
             List<MultipartFile> variationImages = batchDto.getColorImages() != null
                     ? batchDto.getColorImages().getOrDefault(variationDto.getColorId(), new ArrayList<>())
                     : new ArrayList<>();
             if (!variationImages.isEmpty()) {
-                saveImagesToCloudinary(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
+                saveImagesToLocal(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
         }
     }
@@ -202,6 +265,12 @@ public class ChiTietSanPhamService {
         ThuongHieu thuongHieu = thuongHieuRepo.findById(dto.getBrandId())
                 .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại ID: " + dto.getBrandId()));
 
+        // Kiểm tra trạng thái khi thêm mới
+        boolean newStatus = dto.getStatus() != null ? dto.getStatus() : dto.getStockQuantity() > 0;
+        if (newStatus && dto.getStockQuantity() == 0) {
+            throw new RuntimeException("Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+        }
+
         ChiTietSanPham pd = new ChiTietSanPham();
         pd.setSanPham(sanPham);
         pd.setMauSac(mauSac);
@@ -216,20 +285,21 @@ public class ChiTietSanPhamService {
         pd.setSoLuongTonKho(dto.getStockQuantity());
         pd.setGioiTinh(dto.getGender());
         pd.setThoiGianTao(LocalDateTime.now());
-        pd.setTrangThai(dto.getStockQuantity() > 0 ? true : dto.getStatus() != null ? dto.getStatus() : true);
+        pd.setTrangThai(newStatus);
 
         ChiTietSanPham savedDetail = chiTietSanPhamRepo.save(pd);
 
         if (imageFiles != null && !imageFiles.isEmpty()) {
-            saveImagesToCloudinary(savedDetail, imageFiles);
+            saveImagesToLocal(savedDetail, imageFiles);
         }
     }
 
     @Transactional
-    public void updateChiTietSanPham(ChiTietSanPhamUpdateDto updateDto, MultipartFile[] imageFiles) {
+    public void updateChiTietSanPham(ChiTietSanPhamUpdateDto updateDto, MultipartFile[] imageFiles, List<UUID> deletedImageIds) {
         ChiTietSanPham existingDetail = chiTietSanPhamRepo.findById(updateDto.getId())
                 .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + updateDto.getId()));
 
+        // Cập nhật các thuộc tính sản phẩm
         existingDetail.setSanPham(sanPhamRepo.findById(updateDto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại")));
         existingDetail.setMauSac(mauSacRepo.findById(updateDto.getColorId())
@@ -251,45 +321,192 @@ public class ChiTietSanPhamService {
         existingDetail.setGia(updateDto.getPrice());
         existingDetail.setSoLuongTonKho(updateDto.getStockQuantity());
         existingDetail.setGioiTinh(updateDto.getGender());
-        existingDetail.setTrangThai(updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0);
-        logger.info("Updating status to: {}", existingDetail.getTrangThai());
 
+        // Kiểm tra trạng thái: Không cho phép bật trạng thái nếu số lượng tồn kho = 0
+        boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus() : updateDto.getStockQuantity() > 0;
+        if (newStatus && updateDto.getStockQuantity() == 0) {
+            throw new RuntimeException("Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+        }
+        existingDetail.setTrangThai(newStatus);
+
+        // Lưu chi tiết sản phẩm trước để đảm bảo ID tồn tại
         chiTietSanPhamRepo.save(existingDetail);
 
-        if (imageFiles != null && imageFiles.length > 0) {
-            saveImagesToCloudinary(existingDetail, List.of(imageFiles));
+        // Xóa các ảnh được chọn
+        if (deletedImageIds != null && !deletedImageIds.isEmpty()) {
+            for (UUID imageId : deletedImageIds) {
+                deleteImage(imageId);
+            }
+            // Xóa danh sách ảnh hiện tại trong đối tượng để đảm bảo đồng bộ
+            existingDetail.setHinhAnhSanPhams(new ArrayList<>());
+            chiTietSanPhamRepo.save(existingDetail);
         }
+
+        // Thêm ảnh mới nếu có
+        if (imageFiles != null && imageFiles.length > 0) {
+            saveImagesToLocal(existingDetail, Arrays.asList(imageFiles));
+        }
+
+        // Làm mới danh sách ảnh từ cơ sở dữ liệu
+        List<HinhAnhSanPham> updatedImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(existingDetail.getId());
+        logger.info("Danh sách ảnh sau cập nhật cho ID {}: {} ảnh", existingDetail.getId(), updatedImages.size());
+        existingDetail.setHinhAnhSanPhams(updatedImages);
+
+        // Lưu lại lần cuối để đảm bảo tất cả thay đổi được áp dụng
+        chiTietSanPhamRepo.save(existingDetail);
     }
 
     @Transactional
+    public void updateChiTietSanPhamRestricted(ChiTietSanPhamUpdateDto updateDto,
+                                               MultipartFile[] imageFiles,
+                                               List<UUID> deletedImageIds) {
+        ChiTietSanPham existing = chiTietSanPhamRepo.findById(updateDto.getId())
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + updateDto.getId()));
+
+        // chỉ cho phép sửa:
+        existing.setGia(updateDto.getPrice());
+        existing.setSoLuongTonKho(updateDto.getStockQuantity());
+
+        boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus()
+                : (updateDto.getStockQuantity() != null && updateDto.getStockQuantity() > 0);
+        if (newStatus && (updateDto.getStockQuantity() == null || updateDto.getStockQuantity() == 0)) {
+            throw new RuntimeException("Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
+        }
+        existing.setTrangThai(newStatus);
+
+        chiTietSanPhamRepo.save(existing);
+
+        // Ảnh: y hệt logic cũ
+        if (deletedImageIds != null && !deletedImageIds.isEmpty()) {
+            for (UUID imageId : deletedImageIds) deleteImage(imageId);
+            existing.setHinhAnhSanPhams(new ArrayList<>());
+            chiTietSanPhamRepo.save(existing);
+        }
+        if (imageFiles != null && imageFiles.length > 0) {
+            saveImagesToLocal(existing, Arrays.asList(imageFiles));
+        }
+
+        List<HinhAnhSanPham> updatedImages =
+                hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(existing.getId());
+        existing.setHinhAnhSanPhams(updatedImages);
+        chiTietSanPhamRepo.save(existing);
+    }
+
+
+    @Transactional
+    public int updateBulkFullAttributes(List<UUID> ids, ChiTietSanPhamUpdateDto dto) {
+        int count = 0;
+        for (UUID id : ids) {
+            ChiTietSanPham existing = chiTietSanPhamRepo.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm: " + id));
+
+            // cập nhật full thuộc tính
+            existing.setXuatXu(xuatXuRepo.findById(dto.getOriginId())
+                    .orElseThrow(() -> new RuntimeException("Xuất xứ không tồn tại")));
+            existing.setChatLieu(chatLieuRepo.findById(dto.getMaterialId())
+                    .orElseThrow(() -> new RuntimeException("Chất liệu không tồn tại")));
+            existing.setKieuDang(kieuDangRepo.findById(dto.getStyleId())
+                    .orElseThrow(() -> new RuntimeException("Kiểu dáng không tồn tại")));
+            existing.setTayAo(tayAoRepo.findById(dto.getSleeveId())
+                    .orElseThrow(() -> new RuntimeException("Tay áo không tồn tại")));
+            existing.setCoAo(coAoRepo.findById(dto.getCollarId())
+                    .orElseThrow(() -> new RuntimeException("Cổ áo không tồn tại")));
+            existing.setThuongHieu(thuongHieuRepo.findById(dto.getBrandId())
+                    .orElseThrow(() -> new RuntimeException("Thương hiệu không tồn tại")));
+            existing.setGioiTinh(dto.getGender());
+            existing.setGia(dto.getPrice());
+            existing.setSoLuongTonKho(dto.getStockQuantity());
+
+            boolean newStatus = dto.getStatus() != null ? dto.getStatus() : dto.getStockQuantity() > 0;
+            if (newStatus && dto.getStockQuantity() == 0) {
+                throw new RuntimeException("Không thể bật 'Đang Bán' khi tồn kho bằng 0!");
+            }
+            existing.setTrangThai(newStatus);
+
+            chiTietSanPhamRepo.save(existing);
+            count++;
+        }
+        return count;
+    }
+
+
+    @Transactional
     public void deleteImage(UUID imageId) {
-        HinhAnhSanPham image = hinhAnhSanPhamRepo.findById(imageId)
-                .orElseThrow(() -> new RuntimeException("Hình ảnh không tồn tại"));
+        Optional<HinhAnhSanPham> optionalImage = hinhAnhSanPhamRepo.findById(imageId);
+
+        if (optionalImage.isEmpty()) {
+            logger.warn("Ảnh với ID {} không tồn tại trong CSDL, bỏ qua xóa.", imageId);
+            return;
+        }
+
+        HinhAnhSanPham image = optionalImage.get();
+
         try {
-            String url = image.getUrlHinhAnh();
-            String publicId = url.substring(url.lastIndexOf("acvstore/products/") + "acvstore/products/".length(), url.lastIndexOf("."));
-            cloudinaryUtil.deleteImage(publicId);
+            String fileName = null;
+            if (image.getUrlHinhAnh() != null) {
+                fileName = image.getUrlHinhAnh().replace("/images/", "");
+            }
+
+            if (fileName != null) {
+                Path filePath = Paths.get(UPLOAD_DIR, fileName);
+                if (Files.exists(filePath)) {
+                    Files.delete(filePath);
+                    logger.info("Đã xóa tệp ảnh: {}", filePath);
+                } else {
+                    logger.warn("Tệp ảnh không tồn tại trên ổ đĩa: {}", filePath);
+                }
+            }
+
             hinhAnhSanPhamRepo.delete(image);
+            logger.info("Đã xóa bản ghi ảnh trong CSDL: {}", imageId);
+
         } catch (IOException e) {
-            throw new RuntimeException("Không thể xóa ảnh từ Cloudinary: " + e.getMessage());
+            throw new RuntimeException("Không thể xóa ảnh từ thư mục local: " + e.getMessage());
         }
     }
 
-    private void saveImagesToCloudinary(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
-        for (int i = 0; i < imageFiles.size() && i < 3; i++) {
-            MultipartFile file = imageFiles.get(i);
-            if (file != null && !file.isEmpty()) {
-                try {
-                    String imageUrl = cloudinaryUtil.uploadImage(file);
-                    HinhAnhSanPham img = new HinhAnhSanPham();
-                    img.setChiTietSanPham(chiTietSanPham);
-                    img.setUrlHinhAnh(imageUrl);
-                    hinhAnhSanPhamRepo.save(img);
-                } catch (IOException e) {
-                    logger.error("Không thể lưu ảnh lên Cloudinary: ", e);
-                }
+
+    public void saveImagesToLocal(ChiTietSanPham chiTietSanPham, List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.isEmpty()) {
+            logger.warn("Không có ảnh để lưu cho chi tiết sản phẩm ID: {}", chiTietSanPham.getId());
+            return;
+        }
+
+        List<HinhAnhSanPham> existingImages = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPham.getId());
+        int nextOrder = existingImages.size(); // Bắt đầu thứ tự sau ảnh cũ
+
+        for (MultipartFile imageFile : imageFiles) {
+            if (imageFile == null || imageFile.isEmpty()) {
+                logger.warn("Tệp ảnh rỗng, bỏ qua.");
+                continue;
+            }
+
+            String fileName = UUID.randomUUID() + "_" + imageFile.getOriginalFilename();
+            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+            try {
+                Files.createDirectories(filePath.getParent());
+                Files.copy(imageFile.getInputStream(), filePath);
+                String imageUrl = "/images/" + fileName;
+
+                HinhAnhSanPham newImage = new HinhAnhSanPham();
+                newImage.setChiTietSanPham(chiTietSanPham);
+                newImage.setUrlHinhAnh(imageUrl);
+                newImage.setThuTu(nextOrder++);
+                hinhAnhSanPhamRepo.save(newImage);
+
+                logger.info("Đã lưu ảnh mới: {} cho chi tiết sản phẩm ID: {}", imageUrl, chiTietSanPham.getId());
+            } catch (IOException e) {
+                logger.error("Không thể lưu ảnh {}: {}", fileName, e.getMessage());
+                throw new RuntimeException("Không thể lưu ảnh mới: " + e.getMessage(), e);
             }
         }
+    }
+
+    public List<HinhAnhSanPham> findHinhAnhSanPhamByChiTietSanPhamIdOrdered(UUID chiTietSanPhamId) {
+        List<HinhAnhSanPham> images = hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(chiTietSanPhamId);
+        logger.info("Tìm thấy {} ảnh cho chi tiết sản phẩm ID: {}", images.size(), chiTietSanPhamId);
+        images.forEach(img -> logger.info("Ảnh ID: {}, URL: {}, ThuTu: {}", img.getId(), img.getUrlHinhAnh(), img.getThuTu()));
+        return images;
     }
 
     public List<ChiTietSanPham> findAll() {
@@ -301,7 +518,8 @@ public class ChiTietSanPhamService {
     }
 
     public ChiTietSanPham findById(UUID id) {
-        return chiTietSanPhamRepo.findById(id).orElse(null);
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(id).orElse(null);
+        return chiTiet;
     }
 
     public ChiTietSanPham findBySanPhamIdAndMauSacIdAndKichCoId(UUID productId, UUID mauSacId, UUID kichCoId) {
@@ -329,21 +547,6 @@ public class ChiTietSanPhamService {
         return chiTietSanPhamRepo.save(chiTietSanPham);
     }
 
-    public List<ChiTietSanPham> getAllChiTietSanPhamsWithQR() {
-        List<ChiTietSanPham> list = chiTietSanPhamRepo.findAll();
-        for (ChiTietSanPham pd : list) {
-            try {
-                String qrDir = "src/main/resources/static/qrcodes/";
-                new File(qrDir).mkdirs();
-                String path = qrDir + "qr_" + pd.getId() + ".png";
-                QRCodeUtil.generateQRCodeImage(String.valueOf(pd.getId()), 200, 200, path);
-            } catch (WriterException | IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return list;
-    }
-
     public List<ChiTietSanPham> findAllByTrangThai() {
         return chiTietSanPhamRepo.findAllByTrangThai();
     }
@@ -355,57 +558,46 @@ public class ChiTietSanPhamService {
         try {
             QRCodeUtil.generateQRCodeForProduct(savedDetail.getId());
         } catch (IOException | WriterException e) {
-            System.err.println("❌ Không thể tạo QR Code cho sản phẩm ID: " + savedDetail.getId());
-            e.printStackTrace();
+            logger.error("Không thể tạo QR Code cho sản phẩm ID: {}", savedDetail.getId(), e);
         }
 
-        saveImagesForChiTietSanPham(savedDetail, imageFiles);
-    }
-
-    private void saveImagesForChiTietSanPham(ChiTietSanPham chiTietSanPham, MultipartFile[] imageFiles) {
-        if (imageFiles != null) {
-            for (MultipartFile file : imageFiles) {
-                if (file != null && !file.isEmpty() && file.getOriginalFilename() != null && !file.getOriginalFilename().isEmpty()) {
-                    try {
-                        Path uploadPath = Paths.get(UPLOAD_DIR);
-                        if (!Files.exists(uploadPath)) {
-                            Files.createDirectories(uploadPath);
-                        }
-                        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
-                        Path filePath = uploadPath.resolve(filename);
-                        Files.write(filePath, file.getBytes());
-
-                        HinhAnhSanPham img = new HinhAnhSanPham();
-                        img.setChiTietSanPham(chiTietSanPham);
-                        img.setUrlHinhAnh(filename);
-                        hinhAnhSanPhamRepo.save(img);
-                    } catch (IOException e) {
-                        System.err.println("Không thể lưu tệp ảnh: " + e.getMessage());
-                        e.printStackTrace();
-                    }
-                }
-            }
+        if (imageFiles != null && imageFiles.length > 0) {
+            saveImagesToLocal(savedDetail, Arrays.asList(imageFiles));
         }
     }
 
-    /* Hàm xét số lượng về 0 khi bán hàng tại quầy */
     @Transactional
     public ChiTietSanPham updateStockAndStatus(UUID productDetailId, int quantityChange) {
         ChiTietSanPham productDetail = chiTietSanPhamRepo.findById(productDetailId)
                 .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại ID: " + productDetailId));
 
-        // Cập nhật số lượng tồn kho
         int newStock = productDetail.getSoLuongTonKho() + quantityChange;
         if (newStock < 0) {
             throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + productDetail.getSanPham().getTenSanPham());
         }
 
         productDetail.setSoLuongTonKho(newStock);
-
-        // Tự động cập nhật trạng thái
         productDetail.setTrangThai(newStock > 0);
 
-        // Lưu thay đổi vào cơ sở dữ liệu
         return chiTietSanPhamRepo.save(productDetail);
     }
+
+    public void updateStock(UUID productDetailId, int quantity) {
+        ChiTietSanPham chiTiet = chiTietSanPhamRepo.findById(productDetailId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sản phẩm."));
+        int newStock = chiTiet.getSoLuongTonKho() - quantity;
+        if (newStock < 0) {
+            throw new IllegalStateException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
+        }
+        chiTiet.setSoLuongTonKho(newStock);
+        chiTietSanPhamRepo.save(chiTiet);
+    }
+
+    public String layAnhDauTien(ChiTietSanPham chiTiet) {
+        if (chiTiet.getHinhAnhSanPhams() != null && !chiTiet.getHinhAnhSanPhams().isEmpty()) {
+            return chiTiet.getHinhAnhSanPhams().get(0).getUrlHinhAnh();
+        }
+        return "https://via.placeholder.com/50";
+    }
+
 }

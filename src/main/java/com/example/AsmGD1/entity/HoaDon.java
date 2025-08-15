@@ -1,5 +1,6 @@
 package com.example.AsmGD1.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -16,6 +17,10 @@ public class HoaDon {
     @GeneratedValue
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
+
+    @ManyToOne
+    @JoinColumn(name = "nhan_vien_id")
+    private NguoiDung nhanVien; // Thêm trường này
 
     @ManyToOne
     @JoinColumn(name = "id_nguoi_dung", nullable = false)
@@ -52,18 +57,17 @@ public class HoaDon {
     private String ghiChu;
 
     @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<LichSuHoaDon> lichSuHoaDons = new ArrayList<>();
 
     // Trường mới để lưu tổng tiền đã định dạng
     @Transient
     private String formattedTongTien;
 
-    // Getter và Setter cho formattedTongTien
-    public String getFormattedTongTien() {
-        return formattedTongTien;
-    }
+    @Transient
+    private boolean daDanhGia;
 
-    public void setFormattedTongTien(String formattedTongTien) {
-        this.formattedTongTien = formattedTongTien;
-    }
+
+
+
 }

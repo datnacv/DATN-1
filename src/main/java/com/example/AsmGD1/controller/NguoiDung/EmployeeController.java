@@ -2,10 +2,9 @@ package com.example.AsmGD1.controller.NguoiDung;
 
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -13,13 +12,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -28,12 +20,18 @@ public class EmployeeController {
 
     @Autowired
     private NguoiDungService nguoiDungService;
+    @Autowired
+    private ThongBaoService thongBaoService;
 
     @GetMapping
     public String listEmployees(@RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "") String keyword,
                                 @RequestParam(defaultValue = "") String vaiTro,
                                 Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        NguoiDung currentUser = auth != null && auth.getPrincipal() instanceof NguoiDung ? (NguoiDung) auth.getPrincipal() : null;
+        boolean isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getVaiTro());
+
         Page<NguoiDung> employees;
         if (vaiTro.isEmpty()) {
             employees = nguoiDungService.findUsersByVaiTroNotCustomer(keyword, page, 5);
@@ -46,27 +44,46 @@ public class EmployeeController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("vaiTro", vaiTro);
         model.addAttribute("employee", new NguoiDung());
+        model.addAttribute("isAdmin", isAdmin); // Truyền trạng thái ADMIN để kiểm soát giao diện
+        model.addAttribute("currentUser", currentUser); // Gán người dùng hiện tại
 
-        List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            model.addAttribute("user", user);
-        }
+        // Loại bỏ logic lấy admin đầu tiên, chỉ giữ currentUser
+        // List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
+        // model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
 
         return "WebQuanLy/list-nhan-vien";
     }
 
     @PostMapping("/add")
-    public String addEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes) {
+    public String addEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes, Authentication authentication) {
         try {
+            NguoiDung currentUser = (NguoiDung) authentication.getPrincipal();
+
+            if (!"ADMIN".equalsIgnoreCase(currentUser.getVaiTro())) {
+                redirectAttributes.addFlashAttribute("message", "Bạn không có quyền thêm nhân viên!");
+                redirectAttributes.addFlashAttribute("messageType", "danger");
+                return "redirect:/acvstore/employees";
+            }
+
             if (employee.getTrangThai() == null) {
                 employee.setTrangThai(true);
             }
+
+            // 💡 Lấy thông tin cần thiết NGAY trước khi session bị detach
+            String hoTenNguoiThem = currentUser.getHoTen();
+            String hoTenNhanVienMoi = employee.getHoTen();
+
             nguoiDungService.save(employee);
+
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Thêm nhân viên",
+                    "Nhân viên " + hoTenNhanVienMoi + " đã được thêm bởi " + hoTenNguoiThem
+            );
+
             redirectAttributes.addFlashAttribute("message", "Thêm nhân viên thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
+
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Thêm nhân viên thất bại: " + e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "danger");
@@ -74,13 +91,30 @@ public class EmployeeController {
         return "redirect:/acvstore/employees";
     }
 
+
     @PostMapping("/edit")
-    public String editEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes) {
+    public String editEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes, Authentication authentication) {
         try {
+            NguoiDung currentUser = (NguoiDung) authentication.getPrincipal();
+
+            if (!"ADMIN".equalsIgnoreCase(currentUser.getVaiTro())) {
+                redirectAttributes.addFlashAttribute("message", "Bạn không có quyền sửa nhân viên!");
+                redirectAttributes.addFlashAttribute("messageType", "danger");
+                return "redirect:/acvstore/employees";
+            }
+
             if (employee.getTrangThai() == null) {
                 employee.setTrangThai(true);
             }
+
             nguoiDungService.save(employee);
+
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Cập nhật nhân viên",
+                    "Thông tin nhân viên **" + employee.getHoTen() + "** đã được cập nhật bởi **" + currentUser.getHoTen() + "**"
+            );
+
             redirectAttributes.addFlashAttribute("message", "Sửa nhân viên thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
         } catch (Exception e) {
@@ -90,12 +124,30 @@ public class EmployeeController {
         return "redirect:/acvstore/employees";
     }
 
+
     @PostMapping("/delete/{id}")
-    public String deleteEmployee(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    public String deleteEmployee(@PathVariable UUID id, RedirectAttributes redirectAttributes, Authentication authentication) {
         try {
+            NguoiDung currentUser = (NguoiDung) authentication.getPrincipal();
+
+            if (!"ADMIN".equalsIgnoreCase(currentUser.getVaiTro())) {
+                redirectAttributes.addFlashAttribute("message", "Bạn không có quyền xóa nhân viên!");
+                redirectAttributes.addFlashAttribute("messageType", "danger");
+                return "redirect:/acvstore/employees";
+            }
+
+            NguoiDung deletedUser = nguoiDungService.findById(id);
             nguoiDungService.deleteById(id);
+
+            thongBaoService.taoThongBaoHeThong(
+                    "admin",
+                    "Xóa nhân viên",
+                    "Nhân viên **" + deletedUser.getHoTen() + "** đã bị xóa bởi **" + currentUser.getHoTen() + "**"
+            );
+
             redirectAttributes.addFlashAttribute("message", "Xóa nhân viên thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
+
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("message", "Xóa nhân viên thất bại: " + e.getMessage());
             redirectAttributes.addFlashAttribute("messageType", "danger");
@@ -103,17 +155,13 @@ public class EmployeeController {
         return "redirect:/acvstore/employees";
     }
 
-    @GetMapping("/admin-dashboard")
-    public String showAdminDashboard(Model model) {
-        model.addAttribute("message", "Chào mừng Admin đến với dashboard!");
-        model.addAttribute("messageType", "success");
-        return "WebQuanLy/admin-dashboard";
-    }
 
     @GetMapping("/employee-dashboard")
-    public String showEmployeeDashboard(Model model) {
+    public String showEmployeeDashboard(Model model, Authentication authentication) {
+        NguoiDung currentUser = (NguoiDung) authentication.getPrincipal();
         model.addAttribute("message", "Chào mừng Nhân viên đến với dashboard!");
         model.addAttribute("messageType", "success");
+        model.addAttribute("user", currentUser);
         return "WebQuanLy/employee-dashboard";
     }
 
@@ -121,55 +169,6 @@ public class EmployeeController {
     public String showLoginForm() {
         return "WebQuanLy/employee-login";
     }
-//    @PostMapping("/verify-face")
-//    @ResponseBody
-//    public ResponseEntity<Map<String, Object>> verifyFace(@RequestBody Map<String, String> payload) {
-//        String imageBase64 = payload.get("image");
-//
-//        // Loại bỏ tiền tố base64
-//        String base64Data = imageBase64.split(",")[1];
-//
-//        try {
-//            byte[] imageBytes = Base64.getDecoder().decode(base64Data);
-//
-//            // ✅ Lưu ảnh vào thư mục src/main/resources/static/images/faces/
-//            String folderPath = "src/main/resources/static/images/faces/";
-//            Files.createDirectories(Paths.get(folderPath)); // Tạo folder nếu chưa có
-//
-//            // ✅ Tạo tên file ảnh với thời gian hiện tại
-//            String fileName = "face_" + System.currentTimeMillis() + ".jpg";
-//            Path imagePath = Paths.get(folderPath + fileName);
-//            Files.write(imagePath, imageBytes);
-//
-//            // TODO: Gọi AI/so sánh ảnh nếu cần ở đây
-//            boolean isFaceVerified = true; // Giả lập xác thực thành công
-//
-//            if (isFaceVerified) {
-//                return ResponseEntity.ok(Map.of(
-//                        "success", true,
-//                        "message", "Xác minh thành công",
-//                        "redirect", "/acvstore/thong-ke"
-//                ));
-//            } else {
-//                return ResponseEntity.badRequest().body(Map.of(
-//                        "success", false,
-//                        "message", "Xác minh thất bại"
-//                ));
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-//                    "success", false,
-//                    "message", "Lỗi khi lưu ảnh"
-//            ));
-//        }
-//    }
 
-
-    @GetMapping("/verify-face")
-    public String showVerifyFacePage() {
-        return "WebQuanLy/verify-face";
-    }
-
-
+    // Phần verify-face có thể tạm thời bỏ qua nếu chưa sử dụng
 }

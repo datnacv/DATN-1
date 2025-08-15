@@ -106,21 +106,31 @@
             <input type="text" class="form-control" id="soDienThoai" name="soDienThoai" required>
         </div>
         <div class="mb-3">
-            <label for="diaChi" class="form-label">Địa chỉ</label>
-            <input type="text" class="form-control" id="diaChi" name="diaChi" required>
-        </div>
-        <div class="mb-3">
             <label for="tinhThanhPho" class="form-label">Tỉnh/Thành phố</label>
-            <input type="text" class="form-control" id="tinhThanhPho" name="tinhThanhPho" required>
+            <select class="form-control" id="province" name="tinhThanhPho" required>
+                <option value="">Chọn Tỉnh/Thành phố</option>
+                <option th:each="province : ${provinces.data}"
+                        th:value="${province.ProvinceName}"
+                        th:text="${province.ProvinceName}"
+                        th:data-id="${province.ProvinceID}">
+                </option>
+            </select>
         </div>
+
         <div class="mb-3">
             <label for="quanHuyen" class="form-label">Quận/Huyện</label>
-            <input type="text" class="form-control" id="quanHuyen" name="quanHuyen" required>
+            <select class="form-control" id="district" name="quanHuyen" required>
+                <option value="">Chọn Quận/Huyện</option>
+            </select>
         </div>
+
         <div class="mb-3">
             <label for="phuongXa" class="form-label">Phường/Xã</label>
-            <input type="text" class="form-control" id="phuongXa" name="phuongXa" required>
+            <select class="form-control" id="ward" name="phuongXa" required>
+                <option value="">Chọn Phường/Xã</option>
+            </select>
         </div>
+
         <div class="mb-3">
             <label for="chiTietDiaChi" class="form-label">Chi tiết địa chỉ</label>
             <input type="text" class="form-control" id="chiTietDiaChi" name="chiTietDiaChi" required>
@@ -132,5 +142,36 @@
         </div>
     </form>
 </div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#province').change(function() {
+            let provinceId = $(this).find('option:selected').data('id');
+            if (provinceId) {
+                $.get('/customers/register/districts', { provinceId: provinceId }, function(response) {
+                    let districts = response.data;
+                    $('#district').empty().append('<option value="">Chọn Quận/Huyện</option>');
+                    districts.forEach(function(district) {
+                        $('#district').append('<option value="' + district.DistrictName + '" data-id="' + district.DistrictID + '">' + district.DistrictName + '</option>');
+                    });
+                    $('#ward').empty().append('<option value="">Chọn Phường/Xã</option>');
+                });
+            }
+        });
+
+        $('#district').change(function() {
+            let districtId = $(this).find('option:selected').data('id');
+            if (districtId) {
+                $.get('/customers/register/wards', { districtId: districtId }, function(response) {
+                    let wards = response.data;
+                    $('#ward').empty().append('<option value="">Chọn Phường/Xã</option>');
+                    wards.forEach(function(ward) {
+                        $('#ward').append('<option value="' + ward.WardName + '">' + ward.WardName + '</option>');
+                    });
+                });
+            }
+        });
+    });
+</script>
 </body>
 </html>

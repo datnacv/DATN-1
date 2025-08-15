@@ -14,6 +14,48 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
+        :root {
+            /* Màu chính - giống như trang sản phẩm */
+            --primary-color: #153054;
+            --primary-hover: #102C47;
+            --secondary-color: #9FD5F7;
+            --secondary-hover: #84C7EA;
+            --accent-color: #479BD3;
+            --accent-hover: #CAEAFB;
+            --border-active: #62B2E7;
+
+            /* Màu nền */
+            --main-background: #F4F9FC;
+            --content-background: #ffffff;
+            --header-background: #153054;
+
+            /* Màu văn bản */
+            --text-primary: #153054;
+            --text-content: #333333;
+            --text-secondary: #6B7280;
+            --text-link: #479BD3;
+            --text-white: #ffffff;
+
+            /* Màu nút */
+            --btn-danger: #F44336;
+            --btn-danger-hover: #D32F2F;
+
+            /* Màu trạng thái */
+            --success-bg: #D1FADF;
+            --success-text: #027A48;
+            --warning-bg: #FEF3C7;
+            --warning-text: #B45309;
+            --error-bg: #FECACA;
+            --error-text: #991B1B;
+
+            /* Màu khác */
+            --border-color: #dee2e6;
+            --light-gray: #f8f9fa;
+            --shadow-light: 0 8px 32px rgba(21, 48, 84, 0.1);
+            --shadow-medium: 0 12px 40px rgba(21, 48, 84, 0.15);
+            --shadow-heavy: 0 20px 60px rgba(21, 48, 84, 0.2);
+        }
+
         /* Updated CSS to match exact width of product management page */
         .content {
             margin-left: 250px;
@@ -28,8 +70,8 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #333;
+            background-color: var(--main-background);
+            color: var(--text-content);
             min-height: 100vh;
             margin: 0;
             padding: 0;
@@ -49,7 +91,7 @@
         }
 
         .page-title {
-            background: linear-gradient(135deg, #000000, #333333);
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -68,31 +110,31 @@
             transform: translateX(-50%);
             width: 100px;
             height: 4px;
-            background: linear-gradient(90deg, #000000, #28a745);
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
             border-radius: 2px;
         }
 
         .card {
             border: none;
             border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--shadow-light);
             margin-bottom: 2rem;
             margin-left: 2rem;
             margin-right: 2rem;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--content-background);
             backdrop-filter: blur(20px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-medium);
         }
 
         .card-header {
-            background: linear-gradient(135deg, #000000, #333333);
-            color: white;
+            background: linear-gradient(135deg, var(--header-background), var(--primary-hover));
+            color: var(--text-white);
             border-bottom: none;
             padding: 1.5rem 2rem;
             font-weight: 600;
@@ -108,7 +150,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(159, 213, 247, 0.2), transparent);
             transition: left 0.5s;
         }
 
@@ -121,11 +163,11 @@
         }
 
         .variation-block {
-            background-color: #f8f9fa;
+            background-color: var(--light-gray);
             padding: 1.5rem;
             border-radius: 12px;
             margin-bottom: 1.5rem;
-            border: 1px solid #e9ecef;
+            border: 1px solid var(--border-color);
         }
 
         .table-responsive {
@@ -135,7 +177,7 @@
         }
 
         .table {
-            background-color: #fff;
+            background-color: var(--content-background);
             margin-bottom: 0;
             border-radius: 12px;
             overflow: hidden;
@@ -144,32 +186,33 @@
         .table th, .table td {
             vertical-align: middle;
             padding: 1rem;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .table th {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            background: var(--light-gray);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-size: 0.875rem;
+            color: var(--text-primary);
         }
 
         .custom-file-input-wrapper {
             position: relative;
             display: flex;
             align-items: center;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--border-color);
             border-radius: 12px;
-            background-color: #fff;
+            background-color: var(--content-background);
             transition: all 0.3s ease;
             height: calc(1.5em + 0.6rem + 4px);
             overflow: hidden;
         }
 
         .custom-file-input-wrapper:focus-within {
-            border-color: #000000;
-            box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
+            border-color: var(--border-active);
+            box-shadow: 0 0 0 0.25rem rgba(98, 178, 231, 0.1);
         }
 
         .custom-file-input-wrapper input[type="file"] {
@@ -184,29 +227,29 @@
         }
 
         .custom-file-input-button {
-            background: linear-gradient(135deg, #000000, #333333);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--text-white);
             padding: 0.5rem 1rem;
-            border-right: 1px solid #e9ecef;
+            border-right: 1px solid var(--border-color);
             font-weight: 500;
             transition: all 0.3s ease;
             z-index: 1;
         }
 
         .custom-file-input-button:hover {
-            background: linear-gradient(135deg, #333333, #555555);
+            background: linear-gradient(135deg, var(--primary-hover), var(--primary-color));
         }
 
         .custom-file-input-label {
             flex-grow: 1;
             padding: 0.5rem 1rem;
-            color: #6c757d;
+            color: var(--text-secondary);
             font-size: 0.875rem;
             line-height: 1.2;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            background-color: #f8f9fa;
+            background-color: var(--light-gray);
         }
 
         .image-preview-container {
@@ -227,15 +270,15 @@
             height: 100%;
             object-fit: cover;
             border-radius: 8px;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--border-color);
         }
 
         .image-preview .remove-image {
             position: absolute;
             top: -8px;
             right: -8px;
-            background: #dc3545;
-            color: white;
+            background: var(--btn-danger);
+            color: var(--text-white);
             border: none;
             border-radius: 50%;
             width: 20px;
@@ -248,8 +291,8 @@
         }
 
         .modal-header {
-            background: linear-gradient(135deg, #000000, #333333);
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: var(--text-white);
             border-bottom: none;
         }
 
@@ -260,25 +303,28 @@
         .modal-content {
             border-radius: 20px;
             border: none;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            box-shadow: var(--shadow-heavy);
         }
 
         .modal-footer {
-            border-top: 1px solid #e9ecef;
+            border-top: 1px solid var(--border-color);
         }
 
         .form-control, .form-select {
             border-radius: 12px;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--border-color);
             padding: 12px 16px;
             font-weight: 500;
             transition: all 0.3s ease;
+            background: var(--content-background);
+            color: var(--text-content);
         }
 
         .form-control:focus, .form-select:focus {
-            border-color: #000000;
-            box-shadow: 0 0 0 0.25rem rgba(0, 0, 0, 0.1);
+            border-color: var(--border-active);
+            box-shadow: 0 0 0 0.25rem rgba(98, 178, 231, 0.1);
             outline: none;
+            transform: translateY(-1px);
         }
 
         .btn {
@@ -307,27 +353,63 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #000000, #333333);
-            color: white;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-white) !important;
+            box-shadow: 0 4px 15px rgba(21, 48, 84, 0.2);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #333333, #555555);
+            background: var(--primary-hover);
+            border-color: var(--primary-hover);
+            color: var(--text-white);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 25px rgba(21, 48, 84, 0.3);
         }
 
         .btn-success {
-            background: linear-gradient(135deg, #28a745, #34ce57);
-            color: white;
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--text-white);
+            box-shadow: 0 4px 15px rgba(71, 155, 211, 0.3);
         }
 
         .btn-success:hover {
-            background: linear-gradient(135deg, #34ce57, #40d865);
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--text-white);
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+            box-shadow: 0 8px 25px rgba(71, 155, 211, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            border-color: var(--text-secondary);
+            color: var(--text-white);
+            box-shadow: 0 4px 15px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            border-color: #4b5563;
+            color: var(--text-white);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--btn-danger);
+            border-color: var(--btn-danger);
+            color: var(--text-white);
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: var(--btn-danger-hover);
+            border-color: var(--btn-danger-hover);
+            color: var(--text-white);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4);
         }
 
         .btn-sm {
@@ -344,35 +426,55 @@
             cursor: pointer;
             width: 3em;
             height: 1.5em;
+            border-radius: 2em;
+            transition: all 0.3s ease;
+            border: 2px solid var(--border-color);
+        }
+
+        .form-check-input:checked {
+            background-color: var(--success-text);
+            border-color: var(--success-text);
+            box-shadow: 0 0 0 4px rgba(2, 122, 72, 0.2);
+        }
+
+        .form-check-input:not(:checked) {
+            background-color: var(--btn-danger);
+            border-color: var(--btn-danger);
+            box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.2);
         }
 
         .form-check-label {
             font-size: 1rem;
-            color: #333;
+            color: var(--text-content);
             margin-left: 1rem;
             transition: color 0.2s ease;
         }
 
         .form-check-input:checked + .form-check-label {
-            color: #28a745;
+            color: var(--success-text);
         }
 
         .form-check-input:not(:checked) + .form-check-label {
-            color: #dc3545;
+            color: var(--btn-danger);
         }
 
         .ts-wrapper.single .ts-control, .ts-wrapper.multi .ts-control {
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--border-color);
             border-radius: 12px;
             padding: 12px;
             font-size: 14px;
-            background-color: #fff;
+            background-color: var(--content-background);
+        }
+
+        .ts-wrapper.single .ts-control:focus, .ts-wrapper.multi .ts-control:focus {
+            border-color: var(--border-active);
+            box-shadow: 0 0 0 0.25rem rgba(98, 178, 231, 0.1);
         }
 
         .ts-dropdown {
             font-size: 14px;
             border-radius: 12px;
-            border: 2px solid #e9ecef;
+            border: 2px solid var(--border-color);
         }
 
         .ts-control input {
@@ -380,7 +482,7 @@
         }
 
         .bulk-edit-row {
-            background-color: #e9ecef;
+            background-color: var(--light-gray);
             padding: 1rem;
             border-radius: 12px;
             display: none;
@@ -405,10 +507,11 @@
             margin-top: 1.5rem;
             margin-bottom: 1.5rem;
         }
+
         #quickAddImagePreviewContainer {
-            display: block; /* Sử dụng block để căn trái */
-            margin-top: 0.5rem; /* Giảm khoảng cách để sát nút Chọn ảnh */
-            margin-left: 0; /* Căn trái */
+            display: block;
+            margin-top: 0.5rem;
+            margin-left: 0;
         }
 
         #quickAddImagePreview {
@@ -418,9 +521,10 @@
             height: auto;
             object-fit: contain;
             border-radius: 8px;
-            border: 2px solid #e9ecef;
-            display: none; /* Ẩn ban đầu, chỉ hiển thị khi có ảnh */
+            border: 2px solid var(--border-color);
+            display: none;
         }
+
         .table td:nth-child(4), .table td:nth-child(5) {
             padding: 1rem;
             font-size: 1rem;
@@ -437,7 +541,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(21, 48, 84, 0.7);
             display: none;
             justify-content: center;
             align-items: center;
@@ -446,12 +550,12 @@
 
         .loading-content {
             text-align: center;
-            color: #fff;
+            color: var(--text-white);
         }
 
         .spinner {
             border: 8px solid #f3f3f3;
-            border-top: 8px solid #000000;
+            border-top: 8px solid var(--primary-color);
             border-radius: 50%;
             width: 60px;
             height: 60px;
@@ -484,11 +588,11 @@
             position: fixed;
             top: 20px;
             right: 20px;
-            background-color: #28a745;
-            color: white;
+            background-color: var(--success-text);
+            color: var(--text-white);
             padding: 15px 20px;
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-medium);
             display: none;
             z-index: 10000;
             font-size: 1rem;
@@ -518,17 +622,17 @@
         }
 
         .breadcrumb-item a {
-            color: #000000;
+            color: var(--text-link);
             text-decoration: none;
             font-weight: 500;
         }
 
         .breadcrumb-item a:hover {
-            color: #333333;
+            color: var(--primary-color);
         }
 
         .breadcrumb-item.active {
-            color: #6c757d;
+            color: var(--text-secondary);
         }
 
         /* Responsive adjustments */
@@ -582,6 +686,11 @@
             margin: 0;
             padding: 0;
         }
+
+        #loadingOverlayQuickAttr {
+            display: none !important;
+        }
+        .ts-readonly .ts-control { opacity: .7; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -805,6 +914,7 @@
             </div>
 
             <!-- Modal Thêm Nhanh Sản Phẩm -->
+            <!-- Modal Thêm Nhanh Sản Phẩm -->
             <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -812,7 +922,7 @@
                             <h5 class="modal-title" id="quickAddProductModalLabel"><i class="fas fa-plus me-2"></i> Thêm Nhanh Sản Phẩm</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                        <form id="quickAddProductForm">
+                        <form id="quickAddProductForm" enctype="multipart/form-data">
                             <div class="modal-body">
                                 <input type="hidden" name="id" value="">
                                 <div class="mb-3">
@@ -837,15 +947,11 @@
                                 <div class="mb-3">
                                     <label class="form-label">Ảnh sản phẩm</label>
                                     <div class="d-flex align-items-center">
-                                        <button type="button" class="btn btn-primary" id="quickAddCloudinaryWidget">
-                                            <i class="fas fa-image"></i> Chọn ảnh
-                                        </button>
-                                        <input type="hidden" id="quickAddUrlHinhAnh" name="urlHinhAnh">
-                                        <span id="quickAddImageNameDisplay" class="ms-2 text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+                                        <input type="file" class="form-control" id="quickAddImageFile" name="imageFile" accept="image/*">
+                                        <span id="quickAddImageNameDisplay" class="ms-2 text-muted" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Chưa chọn ảnh</span>
                                     </div>
-                                    <div class="mt-2" id="quickAddImagePreviewContainer">
-                                        <img class="product-image" alt="" id="quickAddImagePreview">
-                                        <small class="d-block mt-1">Ảnh hiện tại</small>
+                                    <div id="quickAddImagePreviewContainer" class="mt-2">
+                                        <img id="quickAddImagePreview" class="product-image" alt="Preview Image" style="max-width: 200px; max-height: 200px; display: none;">
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -865,18 +971,39 @@
                 </div>
             </div>
 
-            <!-- Loading Overlay -->
-            <div class="loading-overlay" id="loadingOverlay">
+            <!-- Loading & Success: Lưu chi tiết sản phẩm -->
+            <div class="loading-overlay" id="loadingOverlayDetail">
                 <div class="loading-content">
                     <div class="spinner"></div>
                     <div class="loading-text">Đang thêm chi tiết sản phẩm...</div>
                 </div>
             </div>
-
-            <!-- Success Notification -->
-            <div class="success-notification" id="successNotification">
+            <div class="success-notification" id="successNotificationDetail">
                 <i class="fas fa-check-circle me-2"></i>Thêm chi tiết sản phẩm thành công!
             </div>
+
+            <!-- Loading & Success: Thêm nhanh sản phẩm -->
+            <div class="loading-overlay" id="loadingOverlayQuickProduct">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Đang thêm sản phẩm...</div>
+                </div>
+            </div>
+            <div class="success-notification" id="successNotificationQuickProduct">
+                <i class="fas fa-check-circle me-2"></i>Thêm sản phẩm thành công!
+            </div>
+
+            <!-- Loading & Success: Thêm nhanh thuộc tính -->
+            <div class="loading-overlay" id="loadingOverlayQuickAttr">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Đang thêm thuộc tính...</div>
+                </div>
+            </div>
+            <div class="success-notification" id="successNotificationQuickAttr">
+                <i class="fas fa-check-circle me-2"></i>Thêm thuộc tính thành công!
+            </div>
+
         </div>
     </div>
 </div>
@@ -884,75 +1011,96 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-<script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
 <script>
     $(document).ready(function () {
-        new TomSelect('#productSelect', {
+
+        $('.modal').on('hidden.bs.modal', function () {
+            $('.modal-backdrop').remove(); // Xoá lớp nền đen
+            $('body').removeClass('modal-open'); // Trả lại cuộn trang
+            $('body').css('overflow', 'auto'); // Fix cuộn bị khóa
+        });
+
+        // Khởi tạo TomSelect và lưu instances
+        const productTomSelect = new TomSelect('#productSelect', {
             create: false,
             placeholder: '-- Chọn sản phẩm --',
             maxOptions: 200,
             allowClear: true,
             onChange: function(value) {
                 if (value) {
+                    fetchProductDetails(value);
                     generateVariations(); // Tái tạo biến thể khi sản phẩm thay đổi
+                } else {
+                    enableAllAttributes();
+                    resetAttributeValues();
                 }
             }
         });
-        new TomSelect('#colorSelect', {
+
+        const colorTomSelect = new TomSelect('#colorSelect', {
             create: false,
             placeholder: 'Chọn màu...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#sizeSelect', {
+
+        const sizeTomSelect = new TomSelect('#sizeSelect', {
             create: false,
             placeholder: 'Chọn kích cỡ...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#originSelect', {
+
+        const originTomSelect = new TomSelect('#originSelect', {
             create: false,
             placeholder: 'Chọn xuất xứ...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#materialSelect', {
+
+        const materialTomSelect = new TomSelect('#materialSelect', {
             create: false,
             placeholder: 'Chọn chất liệu...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#styleSelect', {
+
+        const styleTomSelect = new TomSelect('#styleSelect', {
             create: false,
             placeholder: 'Chọn kiểu dáng...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#sleeveSelect', {
+
+        const sleeveTomSelect = new TomSelect('#sleeveSelect', {
             create: false,
             placeholder: 'Chọn tay áo...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#collarSelect', {
+
+        const collarTomSelect = new TomSelect('#collarSelect', {
             create: false,
             placeholder: 'Chọn cổ áo...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#brandSelect', {
+
+        const brandTomSelect = new TomSelect('#brandSelect', {
             create: false,
             placeholder: 'Chọn thương hiệu...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#genderSelect', {
+
+        const genderTomSelect = new TomSelect('#genderSelect', {
             create: false,
             placeholder: 'Chọn giới tính...',
             maxOptions: 200,
             allowClear: true,
         });
-        new TomSelect('#quickAddDanhMuc', {
+
+        const quickAddDanhMucTomSelect = new TomSelect('#quickAddDanhMuc', {
             create: false,
             placeholder: '-- Chọn danh mục --',
             maxOptions: 200,
@@ -967,34 +1115,97 @@
                 $('#quickAddModalLabel').text('Thêm Nhanh ' + capitalize(entity));
             }
         });
-
-        const quickAddCloudinaryWidget = cloudinary.createUploadWidget(
-            {
-                cloudName: 'dfwbuxr0c',
-                uploadPreset: 'acvstore_unsigned_preset',
-                folder: 'acvstore/products',
-                sources: ['local', 'url', 'google_drive', 'dropbox', 'shutterstock', 'getty'],
-                multiple: false,
-                clientAllowedFormats: ['image'],
-                maxImageFileSize: 2000000,
-                theme: 'minimal'
-            },
-            (error, result) => {
-                if (!error && result && result.event === 'success') {
-                    $('#quickAddUrlHinhAnh').val(result.info.secure_url);
-                    $('#quickAddImagePreview').attr('src', result.info.secure_url).show();
-                    $('#quickAddImageNameDisplay').text(result.info.original_filename);
-                    console.log('Ảnh đã được tải: ', result.info.secure_url);
-                } else if (error) {
-                    console.error('Cloudinary upload error:', error);
-                    alert('Lỗi khi tải ảnh lên Cloudinary. Vui lòng thử lại.');
-                }
+// Xóa phần khởi tạo Cloudinary widget
+// Thêm sự kiện cho input file để xem trước ảnh
+        $('#quickAddImageFile').on('change', function() {
+            const file = this.files[0];
+            const imageNameDisplay = $('#quickAddImageNameDisplay');
+            const imagePreview = $('#quickAddImagePreview');
+            if (file) {
+                imageNameDisplay.text(file.name);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.attr('src', e.target.result).show();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                imageNameDisplay.text('Chưa chọn ảnh');
+                imagePreview.hide();
             }
-        );
 
-        $('#quickAddCloudinaryWidget').on('click', function() {
-            quickAddCloudinaryWidget.open();
+            var selectedProductId = /*[[${selectedProductId ?: null}]]*/ null;
+            if (selectedProductId) {
+                productTomSelect.setValue(selectedProductId);
+                fetchProductDetails(selectedProductId);
+            }
         });
+
+        function fetchProductDetails(productId) {
+            $.ajax({
+                url: `/acvstore/chi-tiet-san-pham/api/product-details/${productId}`,
+                type: 'GET',
+                success: function(response) {
+                    if (response.hasDetails) {
+                        setAttributeValues(response);
+                        disableAttributes();
+                    } else {
+                        enableAllAttributes();
+                        resetAttributeValues();
+                    }
+                },
+                error: function(xhr) {
+                    alert('Lỗi khi lấy thông tin sản phẩm: ' + (xhr.responseJSON ? xhr.responseJSON.error : xhr.statusText));
+                    enableAllAttributes();
+                }
+            });
+        }
+
+        // Set giá trị cho các select thuộc tính chung (sử dụng TomSelect API)
+        function setAttributeValues(data) {
+            originTomSelect.setValue(data.originId || '');
+            materialTomSelect.setValue(data.materialId || '');
+            styleTomSelect.setValue(data.styleId || '');
+            sleeveTomSelect.setValue(data.sleeveId || '');
+            collarTomSelect.setValue(data.collarId || '');
+            brandTomSelect.setValue(data.brandId || '');
+            genderTomSelect.setValue(data.gender || '');
+        }
+
+        // Disable các select thuộc tính chung và nút thêm nhanh (sử dụng TomSelect API)
+        function disableAttributes() {
+            [originTomSelect, materialTomSelect, styleTomSelect, sleeveTomSelect, collarTomSelect, brandTomSelect, genderTomSelect]
+                .forEach(ts => {
+                    ts.lock(); // KHÓA thay vì disable
+                    // thêm class mờ cho cảm giác "disable"
+                    ts.wrapper.classList.add('ts-readonly');
+                });
+
+            $('.quick-add-btn[data-entity="origin"], .quick-add-btn[data-entity="material"], .quick-add-btn[data-entity="style"], ' +
+                '.quick-add-btn[data-entity="sleeve"], .quick-add-btn[data-entity="collar"], .quick-add-btn[data-entity="brand"]').prop('disabled', true);
+        }
+
+
+        // Enable tất cả và reset nếu cần (sử dụng TomSelect API)
+        function enableAllAttributes() {
+            [originTomSelect, materialTomSelect, styleTomSelect, sleeveTomSelect, collarTomSelect, brandTomSelect, genderTomSelect]
+                .forEach(ts => {
+                    ts.unlock(); // MỞ KHÓA thay vì enable
+                    ts.wrapper.classList.remove('ts-readonly');
+                });
+
+            $('.quick-add-btn:not([data-entity="product"])').prop('disabled', false);
+        }
+
+        // Reset giá trị select thuộc tính chung (sử dụng TomSelect API)
+        function resetAttributeValues() {
+            originTomSelect.clear();
+            materialTomSelect.clear();
+            styleTomSelect.clear();
+            sleeveTomSelect.clear();
+            collarTomSelect.clear();
+            brandTomSelect.clear();
+            genderTomSelect.clear();
+        }
 
         $('#quickAddProductForm').on('submit', function(event) {
             event.preventDefault();
@@ -1006,25 +1217,34 @@
                 processData: false,
                 contentType: false,
                 beforeSend: function() {
-                    $('#loadingOverlay').css('display', 'flex');
+                    $('#loadingOverlayQuickProduct').fadeIn(100);
                 },
                 success: function(response) {
+                    $('#loadingOverlayQuickProduct').fadeOut(200);
                     $('#quickAddProductModal').modal('hide');
-                    $('#loadingOverlay').hide();
-                    $('#successNotification').css('display', 'block');
+                    $('#successNotificationQuickProduct').css('display', 'block');
                     setTimeout(() => {
-                        $('#successNotification').css('display', 'none');
+                        $('#successNotificationQuickProduct').css('display', 'none');
                     }, 3000);
                     refreshProductSelect(response.id, response.tenSanPham);
                 },
                 error: function(xhr) {
-                    $('#loadingOverlay').hide();
+                    $('#loadingOverlayQuickProduct').hide();
                     let errorMessage = xhr.statusText;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
                         errorMessage = errorResponse.message || xhr.responseText;
                     } catch (e) {}
-                    alert('Lỗi khi thêm sản phẩm: ' + errorMessage);
+                    // Hiển thị thông báo lỗi trong modal
+                    $('#quickAddProductModal .modal-body').prepend(
+                        `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            ${errorMessage}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`
+                    );
+                    setTimeout(() => {
+                        $('.alert').alert('close');
+                    }, 8000); // Tự động đóng thông báo sau 8 giây
                 }
             });
         });
@@ -1039,18 +1259,19 @@
                 processData: false,
                 contentType: false,
                 beforeSend: function() {
-                    $('#loadingOverlay').css('display', 'flex');
+                    $('#loadingOverlayDetail').css('display', 'flex');
                 },
                 success: function(response) {
-                    $('#loadingOverlay').hide();
-                    $('#successNotification').css('display', 'block');
+                    $('#loadingOverlayDetail').hide();
+                    $('#successNotificationDetail').css('display', 'block');
+
                     setTimeout(() => {
-                        $('#successNotification').css('display', 'none');
+                        $('#successNotificationDetail').css('display', 'none');
                         window.location.href = '/acvstore/chi-tiet-san-pham?productId=' + $('#productSelect').val() + '&success=Thêm thành công';
-                    }, 3000);
+                    }, 2000); // giảm thời gian hiển thị xuống 2s
                 },
                 error: function(xhr) {
-                    $('#loadingOverlay').hide();
+                    $('#loadingOverlayDetail').hide();
                     let errorMessage = xhr.statusText;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
@@ -1256,19 +1477,21 @@
             contentType: 'application/json',
             data: JSON.stringify(data),
             beforeSend: function() {
-                $('#loadingOverlay').css('display', 'flex');
+                $('#loadingOverlayQuickAttr').fadeIn(100);
             },
             success: function(response) {
+                $('#loadingOverlayQuickAttr').fadeOut(200, function() {
+                    $(this).css('display', 'none');
+                });
                 $('#quickAddModal').modal('hide');
-                $('#loadingOverlay').hide();
-                $('#successNotification').css('display', 'block');
+                $('#successNotificationQuickAttr').css('display', 'block');
                 setTimeout(() => {
-                    $('#successNotification').css('display', 'none');
+                    $('#successNotificationQuickAttr').css('display', 'none');
                 }, 3000);
                 refreshSelectOptions(entity, response.id, name);
             },
             error: function(xhr) {
-                $('#loadingOverlay').hide();
+                $('#loadingOverlayQuickAttr').hide();
                 let errorMessage = xhr.statusText;
                 try {
                     const errorResponse = JSON.parse(xhr.responseText);

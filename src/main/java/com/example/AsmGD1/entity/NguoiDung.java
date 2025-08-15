@@ -75,6 +75,12 @@ public class NguoiDung implements UserDetails { // Thêm "implements UserDetails
     @Column(name = "face_verified")
     private Boolean faceVerified = false;
 
+    @Column(name = "reset_otp")
+    private String resetOtp;
+
+    @Column(name = "otp_expiry")
+    private LocalDateTime otpExpiry;
+
     // --- Các phương thức của UserDetails (BẮT BUỘC) ---
 
     /**

@@ -4,6 +4,11 @@ import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,6 +28,16 @@ import java.util.Map;
 
 @Controller
 public class OAuth2RegistrationController {
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${ghn.api.token}")
+    private String ghnToken;
+
+    @Value("${ghn.api.url}")
+    private String ghnApiUrl;
+
 
     private final NguoiDungService nguoiDungService;
     private final HttpSession session;
@@ -34,19 +50,32 @@ public class OAuth2RegistrationController {
     @GetMapping("/customers/oauth2/register")
     public String showRegistrationForm(Model model) {
         NguoiDung nguoiDung = (NguoiDung) session.getAttribute("pendingUser");
-        if (nguoiDung == null) {
-            return "redirect:/";
-        }
+        if (nguoiDung == null) return "redirect:/";
+
         model.addAttribute("nguoiDung", nguoiDung);
+
+        // Gọi API GHN để load tỉnh/thành
+        try {
+            String provinceUrl = ghnApiUrl + "/master-data/province";
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Token", ghnToken);
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            Object response = restTemplate.exchange(provinceUrl, HttpMethod.GET, entity, Object.class).getBody();
+            model.addAttribute("provinces", response);
+        } catch (Exception e) {
+            model.addAttribute("error", "Không thể tải danh sách tỉnh/thành: " + e.getMessage());
+        }
+
         return "WebQuanLy/oauth2-register";
     }
+
 
     @PostMapping("/customers/oauth2/register")
     public String completeRegistration(
             @RequestParam("tenDangNhap") String tenDangNhap,
             @RequestParam("matKhau") String matKhau,
             @RequestParam("soDienThoai") String soDienThoai,
-            @RequestParam("diaChi") String diaChi,
             @RequestParam("tinhThanhPho") String tinhThanhPho,
             @RequestParam("quanHuyen") String quanHuyen,
             @RequestParam("phuongXa") String phuongXa,
@@ -73,17 +102,17 @@ public class OAuth2RegistrationController {
             return "WebQuanLy/oauth2-register";
         }
 
+        // Cập nhật và lưu người dùng
         nguoiDung.setTenDangNhap(tenDangNhap);
         nguoiDung.setMatKhau(matKhau);
         nguoiDung.setSoDienThoai(soDienThoai);
-        nguoiDung.setChiTietDiaChi(diaChi);
         nguoiDung.setTinhThanhPho(tinhThanhPho);
         nguoiDung.setQuanHuyen(quanHuyen);
         nguoiDung.setPhuongXa(phuongXa);
         nguoiDung.setChiTietDiaChi(chiTietDiaChi);
         nguoiDungService.save(nguoiDung);
 
-        // Cập nhật Authentication
+        // Cập nhật lại authentication cho session hiện tại
         if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
             Map<String, Object> attributes = new HashMap<>(((OAuth2User) authentication.getPrincipal()).getAttributes());
             attributes.put("id", nguoiDung.getId().toString());
@@ -101,14 +130,17 @@ public class OAuth2RegistrationController {
                     updatedOAuth2User.getAuthorities(),
                     authentication.getName()
             );
+
             SecurityContextHolder.getContext().setAuthentication(newAuth);
 
-            // Làm mới session
+            // ✅ Xóa session attribute trước khi hủy
+            session.removeAttribute("pendingUser");
+
+            // ✅ Hủy session và tạo lại
             request.getSession().invalidate();
-            request.getSession(true); // Tạo session mới
+            request.getSession(true);
         }
 
-        session.removeAttribute("pendingUser");
         return "redirect:/cart";
     }
 }

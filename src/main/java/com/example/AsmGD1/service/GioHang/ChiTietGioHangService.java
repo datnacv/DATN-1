@@ -2,12 +2,15 @@ package com.example.AsmGD1.service.GioHang;
 
 import com.example.AsmGD1.entity.ChiTietGioHang;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.ChienDichGiamGia;
 import com.example.AsmGD1.entity.GioHang;
 import com.example.AsmGD1.repository.GioHang.ChiTietGioHangRepository;
 import com.example.AsmGD1.repository.GioHang.GioHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
+import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,28 +29,46 @@ public class ChiTietGioHangService {
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
+    @Autowired
+    private ChienDichGiamGiaService chienDichGiamGiaService;
+
     public ChiTietGioHang updateSoLuong(UUID chiTietGioHangId, Integer soLuongMoi) {
         ChiTietGioHang chiTiet = chiTietGioHangRepository.findById(chiTietGioHangId)
                 .orElseThrow(() -> new RuntimeException("Chi tiết giỏ hàng không tồn tại với ID: " + chiTietGioHangId));
 
         ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
-        int khoChenhLech = soLuongMoi - chiTiet.getSoLuong();
+        int soLuongTonKho = chiTietSanPham.getSoLuongTonKho();
 
-        if (chiTietSanPham.getSoLuongTonKho() < khoChenhLech) {
-            throw new RuntimeException("Số lượng tồn kho không đủ: " + chiTietSanPham.getSoLuongTonKho());
+        if (soLuongMoi > soLuongTonKho) {
+            throw new RuntimeException("Số lượng yêu cầu vượt quá tồn kho hiện tại: " + soLuongTonKho);
+        }
+
+        int soLuongCu = chiTiet.getSoLuong();
+
+        // Cập nhật giảm giá
+        BigDecimal giaGiam = chiTietSanPham.getGia();
+        BigDecimal tienGiam = BigDecimal.ZERO;
+        Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProduct(chiTietSanPham.getSanPham().getId());
+        if (activeCampaign.isPresent()) {
+            ChienDichGiamGia campaign = activeCampaign.get();
+            if (campaign.getPhanTramGiam() != null && campaign.getSoLuong() != null && campaign.getSoLuong() >= soLuongMoi) {
+                tienGiam = chiTietSanPham.getGia().multiply(campaign.getPhanTramGiam().divide(BigDecimal.valueOf(100)));
+                giaGiam = chiTietSanPham.getGia().subtract(tienGiam);
+                chienDichGiamGiaService.truSoLuong(campaign.getId(), soLuongMoi - soLuongCu);
+            }
         }
 
         chiTiet.setSoLuong(soLuongMoi);
+        chiTiet.setGia(giaGiam);
+        chiTiet.setTienGiam(tienGiam.multiply(BigDecimal.valueOf(soLuongMoi)));
         chiTiet = chiTietGioHangRepository.save(chiTiet);
 
-        chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - khoChenhLech);
-        chiTietSanPhamRepository.save(chiTietSanPham);
+        BigDecimal thanhTienMoi = giaGiam.multiply(BigDecimal.valueOf(soLuongMoi));
+        BigDecimal thanhTienCu = chiTiet.getGia().multiply(BigDecimal.valueOf(soLuongCu));
 
         GioHang gioHang = gioHangRepository.findById(chiTiet.getGioHang().getId())
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
-        BigDecimal giaMoi = chiTiet.getGia().multiply(BigDecimal.valueOf(soLuongMoi)).subtract(chiTiet.getTienGiam());
-        BigDecimal giaCu = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong() - khoChenhLech)).subtract(chiTiet.getTienGiam());
-        gioHang.setTongTien(gioHang.getTongTien().add(giaMoi).subtract(giaCu));
+        gioHang.setTongTien(gioHang.getTongTien().add(thanhTienMoi).subtract(thanhTienCu));
         gioHangRepository.save(gioHang);
 
         return chiTiet;
@@ -80,15 +101,13 @@ public class ChiTietGioHangService {
                 .orElseThrow(() -> new RuntimeException("Chi tiết giỏ hàng không tồn tại"));
         GioHang gioHang = gioHangRepository.findById(gioHangId)
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
-        ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
 
-        chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + chiTiet.getSoLuong());
-        chiTietSanPhamRepository.save(chiTietSanPham);
-
+        // Cập nhật tổng tiền giỏ hàng
         BigDecimal tongTienGiam = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong())).subtract(chiTiet.getTienGiam());
         gioHang.setTongTien(gioHang.getTongTien().subtract(tongTienGiam));
         gioHangRepository.save(gioHang);
 
+        // Xóa chi tiết giỏ hàng
         chiTietGioHangRepository.delete(chiTiet);
     }
 
@@ -102,7 +121,15 @@ public class ChiTietGioHangService {
     }
 
     // ✅ THÊM MỚI: Xóa toàn bộ chi tiết giỏ hàng theo ID giỏ hàng
+    @Transactional
     public void clearGioHang(UUID gioHangId) {
+        // Xóa tất cả chi tiết giỏ hàng
         chiTietGioHangRepository.deleteByGioHang_Id(gioHangId);
+
+        // Cập nhật tổng tiền của giỏ hàng về 0
+        GioHang gioHang = gioHangRepository.findById(gioHangId)
+                .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại"));
+        gioHang.setTongTien(BigDecimal.ZERO);
+        gioHangRepository.save(gioHang);
     }
 }

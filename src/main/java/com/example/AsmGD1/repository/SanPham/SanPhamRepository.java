@@ -30,4 +30,23 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
     List<SanPham> findAllByTrangThai();
 
     boolean existsByDanhMucId(UUID danhMucId);
+
+    @Query("""
+    SELECT sp FROM SanPham sp
+    WHERE sp.id <> :idSanPham
+      AND sp.trangThai = true
+      AND (
+          sp.danhMuc.id = :idDanhMuc
+          OR LOWER(sp.tenSanPham) LIKE %:tenSanPham%
+      )
+    ORDER BY sp.thoiGianTao DESC
+    """)
+    List<SanPham> findSanPhamLienQuan(
+            @Param("idSanPham") UUID idSanPham,
+            @Param("idDanhMuc") UUID idDanhMuc,
+            @Param("tenSanPham") String tenSanPham,
+            Pageable pageable
+    );
+    boolean existsByMaSanPham(String maSanPham);
+    boolean existsByTenSanPham(String tenSanPham);
 }
