@@ -551,7 +551,13 @@ public class HoaDonService {
             throw new IllegalStateException("Hóa đơn không thể hủy khi ở trạng thái: " + currentStatus);
         }
 
-        if ("Ví Thanh Toán".equalsIgnoreCase(hoaDon.getPhuongThucThanhToan().getTenPhuongThuc())) {
+        String pttt = hoaDon.getPhuongThucThanhToan() != null
+                ? hoaDon.getPhuongThucThanhToan().getTenPhuongThuc().trim()
+                : "";
+
+        if ("Ví Thanh Toán".equalsIgnoreCase(pttt)
+                || "Ví".equalsIgnoreCase(pttt)
+                || "Chuyển khoản".equalsIgnoreCase(pttt)) {
             BigDecimal refundAmount = hoaDon.getTongTien();
             NguoiDung nguoiDung = hoaDon.getNguoiDung();
             ViThanhToan viThanhToan = viThanhToanRepo.findByNguoiDung(nguoiDung)
