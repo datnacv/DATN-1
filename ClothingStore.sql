@@ -653,3 +653,16 @@ ALTER COLUMN id_don_hang UNIQUEIDENTIFIER NULL;
 ALTER TABLE hoa_don
     ADD nhan_vien_id UNIQUEIDENTIFIER NULL,
 FOREIGN KEY (nhan_vien_id) REFERENCES nguoi_dung(id);
+
+ALTER TABLE dbo.phieu_giam_gia
+    ADD pham_vi_ap_dung NVARCHAR(20) NULL;
+
+UPDATE dbo.phieu_giam_gia
+SET pham_vi_ap_dung = 'ORDER'
+WHERE pham_vi_ap_dung IS NULL;
+
+ALTER TABLE dbo.phieu_giam_gia
+    ADD CONSTRAINT DF_phieu_giam_gia_pham_vi_ap_dung DEFAULT N'ORDER' FOR pham_vi_ap_dung;
+
+ALTER TABLE dbo.phieu_giam_gia
+ALTER COLUMN pham_vi_ap_dung NVARCHAR(20) NOT NULL;
