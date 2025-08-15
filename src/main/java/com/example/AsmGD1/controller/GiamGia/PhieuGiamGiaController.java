@@ -1,14 +1,14 @@
 package com.example.AsmGD1.controller.GiamGia;
 
+import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.entity.PhieuGiamGia;
 import com.example.AsmGD1.entity.PhuongThucThanhToan;
 import com.example.AsmGD1.repository.BanHang.PhuongThucThanhToanRepository;
+import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaSpecification;
 import com.example.AsmGD1.service.GiamGia.GuiMailService;
 import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
-import com.example.AsmGD1.entity.NguoiDung;
-import com.example.AsmGD1.entity.PhieuGiamGia;
-import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
-import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,7 +19,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import jakarta.transaction.Transactional;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -114,11 +113,27 @@ public class PhieuGiamGiaController {
         Map<UUID, Map<String, String>> formats = new HashMap<>();
         for (PhieuGiamGia v : vouchers) {
             Map<String, String> map = new HashMap<>();
-            map.put("giaTriGiam", nf.format(v.getGiaTriGiam()) + ("PERCENT".equalsIgnoreCase(v.getLoai()) ? " %" : " ₫"));
-            if (v.getGiaTriGiamToiDa() != null)
-                map.put("giaTriGiamToiDa", nf.format(v.getGiaTriGiamToiDa()) + " ₫");
-            if (v.getGiaTriGiamToiThieu() != null)
+            // Hiển thị theo phạm vi
+            if ("SHIPPING".equalsIgnoreCase(v.getPhamViApDung())) {
+                if ("FREESHIP_FULL".equalsIgnoreCase(v.getLoai())) {
+                    map.put("giaTriGiam", "Freeship toàn phần");
+                } else if ("FREESHIP_CAP".equalsIgnoreCase(v.getLoai())) {
+                    String cap = v.getGiaTriGiamToiDa() != null ? nf.format(v.getGiaTriGiamToiDa()) + " ₫" : "0 ₫";
+                    map.put("giaTriGiam", "Giảm phí ship tối đa " + cap);
+                } else {
+                    map.put("giaTriGiam", "-");
+                }
+            } else {
+                // ORDER
+                String suffix = "PERCENT".equalsIgnoreCase(v.getLoai()) ? " %" : " ₫";
+                map.put("giaTriGiam", (v.getGiaTriGiam() != null ? nf.format(v.getGiaTriGiam()) : "0") + suffix);
+                if (v.getGiaTriGiamToiDa() != null && "PERCENT".equalsIgnoreCase(v.getLoai())) {
+                    map.put("giaTriGiamToiDa", nf.format(v.getGiaTriGiamToiDa()) + " ₫");
+                }
+            }
+            if (v.getGiaTriGiamToiThieu() != null) {
                 map.put("giaTriGiamToiThieu", nf.format(v.getGiaTriGiamToiThieu()) + " ₫");
+            }
             formats.put(v.getId(), map);
         }
 
@@ -162,7 +177,9 @@ public class PhieuGiamGiaController {
             return "redirect:/acvstore/phieu-giam-gia";
         }
 
-        model.addAttribute("voucher", new PhieuGiamGia());
+        PhieuGiamGia voucher = new PhieuGiamGia();
+        voucher.setPhamViApDung("ORDER"); // mặc định
+        model.addAttribute("voucher", voucher);
         model.addAttribute("customers", phieuService.layTatCaKhachHang());
         model.addAttribute("phuongThucList", phuongThucThanhToanRepository.findAll());
         model.addAttribute("selectedPtttIds", new ArrayList<UUID>());
@@ -172,7 +189,7 @@ public class PhieuGiamGiaController {
 
     @PostMapping("/create")
     @Transactional
-    public String create(@RequestParam String giaTriGiam,
+    public String create(@RequestParam(required = false) String giaTriGiam,
                          @RequestParam(required = false) String giaTriGiamToiDa,
                          @RequestParam(required = false) String giaTriGiamToiThieu,
                          @ModelAttribute PhieuGiamGia voucher,
@@ -181,8 +198,6 @@ public class PhieuGiamGiaController {
                          @RequestParam(required = false) List<UUID> selectedPtttIds,
                          Model model,
                          RedirectAttributes redirectAttributes) {
-
-        System.out.println("Selected PTTT IDs: " + selectedPtttIds); // Log để debug
 
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
@@ -204,94 +219,132 @@ public class PhieuGiamGiaController {
         // Validate tên phiếu
         if (voucher.getTen() == null || voucher.getTen().trim().isEmpty()) {
             errors.add("Tên phiếu không được để trống.");
+        } else {
+            voucher.setTen(voucher.getTen().trim());
         }
 
-        // Validate kiểu giảm
-        if (voucher.getLoai() == null || (!voucher.getLoai().equalsIgnoreCase("PERCENT") && !voucher.getLoai().equalsIgnoreCase("CASH"))) {
-            errors.add("Kiểu giảm không hợp lệ.");
+        // Validate phạm vi áp dụng
+        if (voucher.getPhamViApDung() == null ||
+                !(voucher.getPhamViApDung().equalsIgnoreCase("ORDER") ||
+                        voucher.getPhamViApDung().equalsIgnoreCase("SHIPPING"))) {
+            errors.add("Phạm vi áp dụng không hợp lệ (chỉ ORDER hoặc SHIPPING).");
         }
 
-        // Validate giá trị giảm
+        // Parse helpers
+        BigDecimal parsedGiaTriGiam = BigDecimal.ZERO;
+        BigDecimal parsedGiaTriGiamToiDa = null;
+        BigDecimal parsedGiaTriGiamToiThieu = null;
+
         try {
-            BigDecimal giaTri = new BigDecimal(giaTriGiam.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
-            if (giaTri.compareTo(BigDecimal.ZERO) <= 0) {
-                errors.add("Giá trị giảm phải lớn hơn 0.");
-            } else {
-                voucher.setGiaTriGiam(giaTri);
-            }
-
-            if ("PERCENT".equalsIgnoreCase(voucher.getLoai()) && giaTri.compareTo(new BigDecimal("100")) > 0) {
-                errors.add("Giảm theo % không được vượt quá 100.");
+            if (giaTriGiam != null && !giaTriGiam.isBlank()) {
+                parsedGiaTriGiam = new BigDecimal(giaTriGiam.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
             }
         } catch (NumberFormatException e) {
             errors.add("Giá trị giảm không hợp lệ.");
         }
 
-        // Validate giá trị giảm tối đa
-        if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
-            try {
-                if (giaTriGiamToiDa != null && !giaTriGiamToiDa.isEmpty()) {
-                    BigDecimal gtd = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
-                    if (gtd.compareTo(BigDecimal.ZERO) <= 0) {
-                        errors.add("Giá trị giảm tối đa phải lớn hơn 0.");
-                    } else {
-                        voucher.setGiaTriGiamToiDa(gtd);
-                    }
-                } else {
-                    errors.add("Phải nhập giá trị giảm tối đa khi giảm theo %.");
-                }
-            } catch (NumberFormatException e) {
-                errors.add("Giá trị giảm tối đa không hợp lệ.");
+        try {
+            if (giaTriGiamToiDa != null && !giaTriGiamToiDa.isBlank()) {
+                parsedGiaTriGiamToiDa = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
             }
-        } else {
-            voucher.setGiaTriGiamToiDa(null);
+        } catch (NumberFormatException e) {
+            errors.add("Giá trị giảm tối đa không hợp lệ.");
         }
 
-        // Validate đơn tối thiểu
         try {
-            if (giaTriGiamToiThieu != null && !giaTriGiamToiThieu.isEmpty()) {
-                BigDecimal min = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
-                if (min.compareTo(BigDecimal.ZERO) < 0) {
+            if (giaTriGiamToiThieu != null && !giaTriGiamToiThieu.isBlank()) {
+                parsedGiaTriGiamToiThieu = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
+                if (parsedGiaTriGiamToiThieu.compareTo(BigDecimal.ZERO) < 0) {
                     errors.add("Đơn tối thiểu phải >= 0.");
-                } else {
-                    voucher.setGiaTriGiamToiThieu(min);
                 }
             }
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ.");
         }
 
-        // Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
-        if ("CASH".equalsIgnoreCase(voucher.getLoai())
-                && voucher.getGiaTriGiam() != null
-                && voucher.getGiaTriGiamToiThieu() != null
-                && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
-            errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+        // Nhánh validate theo phạm vi
+        if ("ORDER".equalsIgnoreCase(voucher.getPhamViApDung())) {
+            if (voucher.getLoai() == null ||
+                    !(voucher.getLoai().equalsIgnoreCase("PERCENT") || voucher.getLoai().equalsIgnoreCase("CASH"))) {
+                errors.add("Kiểu giảm (ORDER) không hợp lệ (PERCENT hoặc CASH).");
+            } else {
+                if (parsedGiaTriGiam == null || parsedGiaTriGiam.compareTo(BigDecimal.ZERO) <= 0) {
+                    errors.add("Giá trị giảm phải lớn hơn 0.");
+                } else {
+                    voucher.setGiaTriGiam(parsedGiaTriGiam);
+                }
+                if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
+                    if (parsedGiaTriGiam.compareTo(new BigDecimal("100")) > 0) {
+                        errors.add("Giảm theo % không được vượt quá 100.");
+                    }
+                    if (parsedGiaTriGiamToiDa == null || parsedGiaTriGiamToiDa.compareTo(BigDecimal.ZERO) <= 0) {
+                        errors.add("Phải nhập giá trị giảm tối đa khi giảm theo %.");
+                    } else {
+                        voucher.setGiaTriGiamToiDa(parsedGiaTriGiamToiDa);
+                    }
+                } else {
+                    // CASH
+                    voucher.setGiaTriGiamToiDa(null);
+                    if (parsedGiaTriGiamToiThieu != null &&
+                            parsedGiaTriGiam.compareTo(parsedGiaTriGiamToiThieu) > 0) {
+                        errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+                    }
+                }
+            }
+        } else if ("SHIPPING".equalsIgnoreCase(voucher.getPhamViApDung())) {
+            if (voucher.getLoai() == null ||
+                    !(voucher.getLoai().equalsIgnoreCase("FREESHIP_FULL") ||
+                            voucher.getLoai().equalsIgnoreCase("FREESHIP_CAP"))) {
+                errors.add("Loại freeship không hợp lệ (FREESHIP_FULL hoặc FREESHIP_CAP).");
+            } else {
+                voucher.setGiaTriGiam(BigDecimal.ZERO); // freeship không dùng giaTriGiam
+                if ("FREESHIP_CAP".equalsIgnoreCase(voucher.getLoai())) {
+                    if (parsedGiaTriGiamToiDa == null || parsedGiaTriGiamToiDa.compareTo(BigDecimal.ZERO) <= 0) {
+                        errors.add("Phải nhập 'Giảm phí ship tối đa' (> 0) cho FREESHIP_CAP.");
+                    } else {
+                        voucher.setGiaTriGiamToiDa(parsedGiaTriGiamToiDa);
+                        // Thêm validation: giaTriGiamToiDa <= 150% giaTriGiamToiThieu
+                        if (parsedGiaTriGiamToiThieu != null && parsedGiaTriGiamToiThieu.compareTo(BigDecimal.ZERO) > 0) {
+                            BigDecimal maxAllowedDiscount = parsedGiaTriGiamToiThieu.multiply(new BigDecimal("1.5"));
+                            if (parsedGiaTriGiamToiDa.compareTo(maxAllowedDiscount) > 0) {
+                                errors.add("Phí giảm tối đa không được vượt quá 150% giá trị đơn hàng tối thiểu.");
+                            }
+                        }
+                    }
+                } else {
+                    // FREESHIP_FULL
+                    voucher.setGiaTriGiamToiDa(null);
+                }
+            }
+        }
+
+        // Gán đơn tối thiểu (dùng chung)
+        if (parsedGiaTriGiamToiThieu != null) {
+            voucher.setGiaTriGiamToiThieu(parsedGiaTriGiamToiThieu);
         }
 
         LocalDateTime now = LocalDateTime.now();
-
         if (voucher.getNgayBatDau() == null) {
             errors.add("Ngày bắt đầu không được để trống.");
         } else if (voucher.getNgayBatDau().isBefore(now)) {
             errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
-
         if (voucher.getNgayKetThuc() == null) {
             errors.add("Ngày kết thúc không được để trống.");
         } else if (voucher.getNgayKetThuc().isBefore(now)) {
             errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
-
         if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
 
-        // Phiếu cá nhân: phải có khách hàng
+        // Phiếu cá nhân/công khai
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
             if (selectedCustomerIds == null || selectedCustomerIds.isEmpty()) {
                 errors.add("Vui lòng chọn ít nhất một khách hàng khi tạo phiếu cá nhân.");
+            } else {
+                voucher.setGioiHanSuDung(1);
             }
         } else if ("cong_khai".equalsIgnoreCase(voucher.getKieuPhieu())) {
             Integer gioiHan = voucher.getGioiHanSuDung();
@@ -302,16 +355,15 @@ public class PhieuGiamGiaController {
             }
         }
 
-        // Xử lý phương thức thanh toán (SỬA: Bỏ vòng lặp)
+        // Phương thức thanh toán áp dụng
         Set<PhuongThucThanhToan> phuongThucThanhToans = new HashSet<>();
         if (selectedPtttIds != null && !selectedPtttIds.isEmpty()) {
             List<PhuongThucThanhToan> foundPttts = phuongThucThanhToanRepository.findAllById(selectedPtttIds);
-            System.out.println("Found PTTTs: " + foundPttts);
             if (foundPttts.size() != selectedPtttIds.size()) {
                 errors.add("Một hoặc nhiều phương thức thanh toán không hợp lệ.");
             } else {
                 phuongThucThanhToans = new HashSet<>(foundPttts);
-                voucher.setPhuongThucThanhToans(phuongThucThanhToans); // Hibernate sẽ tự đồng bộ quan hệ
+                voucher.setPhuongThucThanhToans(phuongThucThanhToans);
             }
         } else {
             voucher.setPhuongThucThanhToans(new HashSet<>());
@@ -327,18 +379,8 @@ public class PhieuGiamGiaController {
             return "WebQuanLy/voucher-create";
         }
 
-        if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
-            voucher.setGioiHanSuDung(1);
-        }
-
         try {
             PhieuGiamGia savedVoucher = phieuGiamGiaRepository.save(voucher);
-            System.out.println("Saved Voucher ID: " + savedVoucher.getId());
-            System.out.println("Saved Voucher PTTTs: " + savedVoucher.getPhuongThucThanhToans());
-
-            // Kiểm tra bảng nối
-            List<Object[]> joinTableRecords = phieuGiamGiaRepository.findJoinTableRecords(savedVoucher.getId());
-            System.out.println("Join Table Records: " + joinTableRecords);
 
             if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) && selectedCustomerIds != null) {
                 List<NguoiDung> selectedUsers = phieuService.layNguoiDungTheoIds(selectedCustomerIds);
@@ -357,7 +399,6 @@ public class PhieuGiamGiaController {
             redirectAttributes.addFlashAttribute("successMessage", "Tạo phiếu giảm giá thành công!");
             return "redirect:/acvstore/phieu-giam-gia";
         } catch (Exception e) {
-            System.err.println("Error saving voucher: " + e.getMessage());
             e.printStackTrace();
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi lưu phiếu giảm giá: " + e.getMessage());
             return "redirect:/acvstore/phieu-giam-gia";
@@ -384,10 +425,22 @@ public class PhieuGiamGiaController {
         model.addAttribute("readOnly", true);
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
-        String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
+        String giaTriGiamStr;
         String giaTriGiamToiDaStr = voucher.getGiaTriGiamToiDa() != null ? nf.format(voucher.getGiaTriGiamToiDa()) : "";
         String giaTriGiamToiThieuStr = voucher.getGiaTriGiamToiThieu() != null ? nf.format(voucher.getGiaTriGiamToiThieu()) : "";
         String gioiHanSuDungStr = voucher.getGioiHanSuDung() != null ? String.valueOf(voucher.getGioiHanSuDung()) : "";
+
+        if ("SHIPPING".equalsIgnoreCase(voucher.getPhamViApDung())) {
+            if ("FREESHIP_FULL".equalsIgnoreCase(voucher.getLoai())) {
+                giaTriGiamStr = "Freeship toàn phần";
+            } else if ("FREESHIP_CAP".equalsIgnoreCase(voucher.getLoai())) {
+                giaTriGiamStr = "Giảm phí ship tối đa " + (voucher.getGiaTriGiamToiDa() != null ? nf.format(voucher.getGiaTriGiamToiDa()) + " ₫" : "0 ₫");
+            } else {
+                giaTriGiamStr = "-";
+            }
+        } else {
+            giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
+        }
 
         Pageable pageable = PageRequest.of(page, size);
         Page<NguoiDung> customerPage = (search != null && !search.isBlank())
@@ -449,10 +502,22 @@ public class PhieuGiamGiaController {
         model.addAttribute("readOnly", false);
 
         NumberFormat nf = NumberFormat.getInstance(new Locale("vi", "VN"));
-        String giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
+        String giaTriGiamStr;
         String giaTriGiamToiDaStr = voucher.getGiaTriGiamToiDa() != null ? nf.format(voucher.getGiaTriGiamToiDa()) : "";
         String giaTriGiamToiThieuStr = voucher.getGiaTriGiamToiThieu() != null ? nf.format(voucher.getGiaTriGiamToiThieu()) : "";
         String gioiHanSuDungStr = voucher.getGioiHanSuDung() != null ? String.valueOf(voucher.getGioiHanSuDung()) : "";
+
+        if ("SHIPPING".equalsIgnoreCase(voucher.getPhamViApDung())) {
+            if ("FREESHIP_FULL".equalsIgnoreCase(voucher.getLoai())) {
+                giaTriGiamStr = "Freeship toàn phần";
+            } else if ("FREESHIP_CAP".equalsIgnoreCase(voucher.getLoai())) {
+                giaTriGiamStr = "Giảm phí ship tối đa " + (voucher.getGiaTriGiamToiDa() != null ? nf.format(voucher.getGiaTriGiamToiDa()) + " ₫" : "0 ₫");
+            } else {
+                giaTriGiamStr = "-";
+            }
+        } else {
+            giaTriGiamStr = nf.format(voucher.getGiaTriGiam());
+        }
 
         Pageable pageable = PageRequest.of(page, size);
         Page<NguoiDung> customerPage = (search != null && !search.isBlank())
@@ -460,12 +525,11 @@ public class PhieuGiamGiaController {
                 : phieuService.layTatCaKhachHangPhanTrang(pageable);
 
         List<UUID> selectedCustomerIds = new ArrayList<>();
-        List<UUID> selectedPtttIds = new ArrayList<>();
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
             List<NguoiDung> daDuocGan = phieuService.layNguoiDungTheoPhieu(voucher.getId());
             selectedCustomerIds = daDuocGan.stream().map(NguoiDung::getId).toList();
         }
-        selectedPtttIds = voucher.getPhuongThucThanhToans().stream().map(PhuongThucThanhToan::getId).toList();
+        List<UUID> selectedPtttIds = voucher.getPhuongThucThanhToans().stream().map(PhuongThucThanhToan::getId).toList();
 
         model.addAttribute("voucher", voucher);
         model.addAttribute("giaTriGiamStr", giaTriGiamStr);
@@ -488,7 +552,7 @@ public class PhieuGiamGiaController {
     @PostMapping("/edit/{id}")
     @Transactional
     public String update(@PathVariable UUID id,
-                         @RequestParam String giaTriGiam,
+                         @RequestParam(required = false) String giaTriGiam,
                          @RequestParam(required = false) String giaTriGiamToiDa,
                          @RequestParam(required = false) String giaTriGiamToiThieu,
                          @ModelAttribute PhieuGiamGia voucher,
@@ -498,8 +562,6 @@ public class PhieuGiamGiaController {
                          Model model,
                          RedirectAttributes redirectAttributes) {
 
-        System.out.println("Selected PTTT IDs: " + selectedPtttIds); // Log để debug
-
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
             return "redirect:/acvstore/phieu-giam-gia";
@@ -508,6 +570,7 @@ public class PhieuGiamGiaController {
         voucher.setId(id);
         PhieuGiamGia existing = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+
         String status = getTrangThai(existing);
         if (!"Sắp diễn ra".equals(status)) {
             redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể chỉnh sửa phiếu giảm giá ở trạng thái 'Sắp diễn ra'.");
@@ -535,97 +598,136 @@ public class PhieuGiamGiaController {
             voucher.setTen(voucher.getTen().trim());
         }
 
-        // Giá trị giảm
+        // Validate phạm vi
+        if (voucher.getPhamViApDung() == null ||
+                !(voucher.getPhamViApDung().equalsIgnoreCase("ORDER") ||
+                        voucher.getPhamViApDung().equalsIgnoreCase("SHIPPING"))) {
+            errors.add("Phạm vi áp dụng không hợp lệ (chỉ ORDER hoặc SHIPPING).");
+        }
+
+        // Parse values
+        BigDecimal parsedGiaTriGiam = BigDecimal.ZERO;
+        BigDecimal parsedGiaTriGiamToiDa = null;
+        BigDecimal parsedGiaTriGiamToiThieu = null;
+
         try {
-            BigDecimal value = new BigDecimal(giaTriGiam.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
-            if (value.compareTo(BigDecimal.ZERO) <= 0) {
-                errors.add("Giá trị giảm phải lớn hơn 0");
+            if (giaTriGiam != null && !giaTriGiam.isBlank()) {
+                parsedGiaTriGiam = new BigDecimal(giaTriGiam.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
             }
-            voucher.setGiaTriGiam(value);
         } catch (NumberFormatException e) {
             errors.add("Giá trị giảm không hợp lệ");
         }
 
-        // Giá trị giảm tối đa
         try {
-            if (giaTriGiamToiDa != null && !giaTriGiamToiDa.trim().isEmpty()) {
-                BigDecimal max = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
-                if ("PERCENT".equalsIgnoreCase(voucher.getLoai()) && max.compareTo(BigDecimal.ZERO) <= 0) {
-                    errors.add("Giá trị giảm tối đa phải lớn hơn 0");
-                }
-                voucher.setGiaTriGiamToiDa(max);
-            } else if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
-                errors.add("Phải nhập giá trị giảm tối đa khi chọn giảm theo %");
+            if (giaTriGiamToiDa != null && !giaTriGiamToiDa.isBlank()) {
+                parsedGiaTriGiamToiDa = new BigDecimal(giaTriGiamToiDa.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
             }
         } catch (NumberFormatException e) {
             errors.add("Giá trị giảm tối đa không hợp lệ");
         }
 
-        // Đơn tối thiểu
         try {
-            if (giaTriGiamToiThieu != null && !giaTriGiamToiThieu.trim().isEmpty()) {
-                BigDecimal min = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
-                if (min.compareTo(BigDecimal.ZERO) < 0) {
+            if (giaTriGiamToiThieu != null && !giaTriGiamToiThieu.isBlank()) {
+                parsedGiaTriGiamToiThieu = new BigDecimal(giaTriGiamToiThieu.replaceAll("[^\\d.]", "").replaceFirst("\\.(\\d+?)\\.", "$1"));
+                if (parsedGiaTriGiamToiThieu.compareTo(BigDecimal.ZERO) < 0) {
                     errors.add("Đơn tối thiểu không được âm");
                 }
-                voucher.setGiaTriGiamToiThieu(min);
             }
         } catch (NumberFormatException e) {
             errors.add("Đơn tối thiểu không hợp lệ");
         }
 
-        // Kiểm tra nếu giảm tiền mặt thì giá trị giảm không được lớn hơn đơn tối thiểu
-        if ("CASH".equalsIgnoreCase(voucher.getLoai())
-                && voucher.getGiaTriGiam() != null
-                && voucher.getGiaTriGiamToiThieu() != null
-                && voucher.getGiaTriGiam().compareTo(voucher.getGiaTriGiamToiThieu()) > 0) {
-            errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
-        }
-
-        // Validate loại giảm
-        if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
-            if (voucher.getGiaTriGiam() != null && voucher.getGiaTriGiam().compareTo(BigDecimal.ZERO) <= 0) {
-                errors.add("Giảm theo % phải lớn hơn 0");
-            } else if (voucher.getGiaTriGiam() != null && voucher.getGiaTriGiam().compareTo(new BigDecimal("100")) > 0) {
-                errors.add("Giảm theo % không được vượt quá 100");
+        // Nhánh validate theo phạm vi
+        if ("ORDER".equalsIgnoreCase(voucher.getPhamViApDung())) {
+            if (voucher.getLoai() == null ||
+                    !(voucher.getLoai().equalsIgnoreCase("PERCENT") || voucher.getLoai().equalsIgnoreCase("CASH"))) {
+                errors.add("Kiểu giảm (ORDER) không hợp lệ (PERCENT hoặc CASH).");
+            } else {
+                if (parsedGiaTriGiam == null || parsedGiaTriGiam.compareTo(BigDecimal.ZERO) <= 0) {
+                    errors.add("Giá trị giảm phải lớn hơn 0");
+                } else {
+                    voucher.setGiaTriGiam(parsedGiaTriGiam);
+                }
+                if ("PERCENT".equalsIgnoreCase(voucher.getLoai())) {
+                    if (parsedGiaTriGiam.compareTo(new BigDecimal("100")) > 0) {
+                        errors.add("Giảm theo % không được vượt quá 100");
+                    }
+                    if (parsedGiaTriGiamToiDa == null || parsedGiaTriGiamToiDa.compareTo(BigDecimal.ZERO) <= 0) {
+                        errors.add("Phải nhập giá trị giảm tối đa khi chọn giảm theo %");
+                    } else {
+                        voucher.setGiaTriGiamToiDa(parsedGiaTriGiamToiDa);
+                    }
+                } else {
+                    // CASH
+                    voucher.setGiaTriGiamToiDa(null);
+                    if (parsedGiaTriGiamToiThieu != null &&
+                            parsedGiaTriGiam.compareTo(parsedGiaTriGiamToiThieu) > 0) {
+                        errors.add("Giá trị giảm không được lớn hơn đơn tối thiểu áp dụng.");
+                    }
+                }
+            }
+        } else if ("SHIPPING".equalsIgnoreCase(voucher.getPhamViApDung())) {
+            if (voucher.getLoai() == null ||
+                    !(voucher.getLoai().equalsIgnoreCase("FREESHIP_FULL") ||
+                            voucher.getLoai().equalsIgnoreCase("FREESHIP_CAP"))) {
+                errors.add("Loại freeship không hợp lệ (FREESHIP_FULL hoặc FREESHIP_CAP).");
+            } else {
+                voucher.setGiaTriGiam(BigDecimal.ZERO);
+                if ("FREESHIP_CAP".equalsIgnoreCase(voucher.getLoai())) {
+                    if (parsedGiaTriGiamToiDa == null || parsedGiaTriGiamToiDa.compareTo(BigDecimal.ZERO) <= 0) {
+                        errors.add("Phải nhập 'Giảm phí ship tối đa' (> 0) cho FREESHIP_CAP");
+                    } else {
+                        voucher.setGiaTriGiamToiDa(parsedGiaTriGiamToiDa);
+                        // Thêm validation: giaTriGiamToiDa <= 150% giaTriGiamToiThieu
+                        if (parsedGiaTriGiamToiThieu != null && parsedGiaTriGiamToiThieu.compareTo(BigDecimal.ZERO) > 0) {
+                            BigDecimal maxAllowedDiscount = parsedGiaTriGiamToiThieu.multiply(new BigDecimal("1.5"));
+                            if (parsedGiaTriGiamToiDa.compareTo(maxAllowedDiscount) > 0) {
+                                errors.add("Phí giảm tối đa không được vượt quá 150% giá trị đơn hàng tối thiểu.");
+                            }
+                        }
+                    }
+                } else {
+                    voucher.setGiaTriGiamToiDa(null);
+                }
             }
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        // Gán đơn tối thiểu (dùng chung)
+        if (parsedGiaTriGiamToiThieu != null) {
+            voucher.setGiaTriGiamToiThieu(parsedGiaTriGiamToiThieu);
+        }
 
+        LocalDateTime now = LocalDateTime.now();
         if (voucher.getNgayBatDau() == null) {
             errors.add("Ngày bắt đầu không được để trống.");
         } else if (voucher.getNgayBatDau().isBefore(now)) {
             errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
-
         if (voucher.getNgayKetThuc() == null) {
             errors.add("Ngày kết thúc không được để trống.");
         } else if (voucher.getNgayKetThuc().isBefore(now)) {
             errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
-
         if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
                 voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
 
-        // Phiếu cá nhân phải chọn khách hàng
+        // Phiếu cá nhân
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) &&
                 (selectedCustomerIds == null || selectedCustomerIds.isEmpty())) {
             errors.add("Vui lòng chọn khách hàng áp dụng cho phiếu cá nhân");
         }
 
-        // Xử lý phương thức thanh toán (SỬA: Bỏ vòng lặp)
+        // Phương thức thanh toán
         Set<PhuongThucThanhToan> phuongThucThanhToans = new HashSet<>();
         if (selectedPtttIds != null && !selectedPtttIds.isEmpty()) {
             List<PhuongThucThanhToan> foundPttts = phuongThucThanhToanRepository.findAllById(selectedPtttIds);
-            System.out.println("Found PTTTs: " + foundPttts);
             if (foundPttts.size() != selectedPtttIds.size()) {
                 errors.add("Một hoặc nhiều phương thức thanh toán không hợp lệ.");
             } else {
                 phuongThucThanhToans = new HashSet<>(foundPttts);
-                voucher.setPhuongThucThanhToans(phuongThucThanhToans); // Hibernate sẽ tự đồng bộ quan hệ
+                voucher.setPhuongThucThanhToans(phuongThucThanhToans);
             }
         } else {
             voucher.setPhuongThucThanhToans(new HashSet<>());
@@ -657,12 +759,6 @@ public class PhieuGiamGiaController {
 
         try {
             PhieuGiamGia savedVoucher = phieuGiamGiaRepository.save(voucher);
-            System.out.println("Saved Voucher ID: " + savedVoucher.getId());
-            System.out.println("Saved Voucher PTTTs: " + savedVoucher.getPhuongThucThanhToans());
-
-            // Kiểm tra bảng nối
-            List<Object[]> joinTableRecords = phieuGiamGiaRepository.findJoinTableRecords(savedVoucher.getId());
-            System.out.println("Join Table Records: " + joinTableRecords);
 
             if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) && selectedCustomerIds != null) {
                 List<NguoiDung> selectedUsers = phieuService.layNguoiDungTheoIds(selectedCustomerIds);
@@ -685,7 +781,6 @@ public class PhieuGiamGiaController {
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật phiếu giảm giá thành công!");
             return "redirect:/acvstore/phieu-giam-gia";
         } catch (Exception e) {
-            System.err.println("Error updating voucher: " + e.getMessage());
             e.printStackTrace();
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi cập nhật phiếu giảm giá: " + e.getMessage());
             return "redirect:/acvstore/phieu-giam-gia";

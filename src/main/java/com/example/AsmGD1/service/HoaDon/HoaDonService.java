@@ -11,6 +11,7 @@ import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
+import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -79,6 +80,9 @@ public class HoaDonService {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private ThongBaoService thongBaoService;
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -735,6 +739,46 @@ public class HoaDonService {
         }
 
         HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hd);
+        // 🔔 THÔNG BÁO CÁ NHÂN CHO CHỦ ĐƠN
+        try {
+            DonHang dh = savedHoaDon.getDonHang();
+            String ma = dh.getMaDonHang();
+            String tieuDe, noiDung;
+
+            switch (newStatus) {
+                case "Đã xác nhận":
+                case "Đã xác nhận Online":
+                    tieuDe = "Đơn hàng đã được xác nhận";
+                    noiDung = "Đơn " + ma + " của bạn đã được xác nhận. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Đang xử lý Online":
+                    tieuDe = "Đơn hàng đang xử lý";
+                    noiDung = "Đơn " + ma + " đang được xử lý. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Đang vận chuyển":
+                    tieuDe = "Đơn hàng đang vận chuyển";
+                    noiDung = "Đơn " + ma + " đang trên đường giao. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Vận chuyển thành công":
+                    tieuDe = "Vận chuyển thành công";
+                    noiDung = "Đơn " + ma + " đã giao thành công. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Hoàn thành":
+                    tieuDe = "Hoàn thành đơn hàng";
+                    noiDung = "Đơn " + ma + " đã hoàn thành. Cảm ơn bạn! " + (ghiChu != null ? ghiChu : "");
+                    break;
+                case "Hủy đơn hàng":
+                    tieuDe = "Đơn hàng đã bị hủy";
+                    noiDung = "Đơn " + ma + " đã bị hủy. " + (ghiChu != null ? ghiChu : "");
+                    break;
+                default:
+                    tieuDe = "Cập nhật đơn hàng";
+                    noiDung = "Đơn " + ma + " cập nhật: " + newStatus + ". " + (ghiChu != null ? ghiChu : "");
+            }
+
+            thongBaoService.thongBaoCapNhatTrangThai(dh.getId(), tieuDe, noiDung);
+        } catch (Exception ignore) {}
+
 
         NguoiDung nguoiDung = hd.getNguoiDung();
         if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {

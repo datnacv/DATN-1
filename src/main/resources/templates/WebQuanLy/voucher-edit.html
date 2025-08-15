@@ -37,7 +37,6 @@
             line-height: 1.6;
         }
 
-        /* Header Improvements */
         .sticky-header {
             position: sticky;
             top: 60px;
@@ -66,7 +65,6 @@
             font-size: 1.25rem;
         }
 
-        /* Content Layout */
         .content {
             padding: 2rem;
             margin-left: 256px;
@@ -74,7 +72,6 @@
             max-width: 1400px;
         }
 
-        /* Card Improvements */
         .main-card {
             background: white;
             border-radius: var(--border-radius);
@@ -107,7 +104,6 @@
             font-size: 1.1rem;
         }
 
-        /* Form Improvements */
         .form-label {
             font-weight: 600;
             color: var(--gray-700);
@@ -138,7 +134,6 @@
             color: var(--gray-600);
         }
 
-        /* Radio Button Improvements */
         .radio-group {
             display: flex;
             gap: 1.5rem;
@@ -170,7 +165,6 @@
             font-weight: 600;
         }
 
-        /* Button Improvements */
         .btn {
             border-radius: 8px;
             font-weight: 600;
@@ -211,7 +205,6 @@
             transform: none !important;
         }
 
-        /* Alert Improvements */
         .alert {
             border-radius: var(--border-radius);
             border: none;
@@ -228,7 +221,6 @@
             border-left: 4px solid var(--warning-color);
         }
 
-        /* Table Improvements */
         .table-container {
             background: white;
             border-radius: var(--border-radius);
@@ -262,7 +254,6 @@
             background: var(--gray-50);
         }
 
-        /* Search Input */
         .search-container {
             position: relative;
             margin-bottom: 1rem;
@@ -280,7 +271,6 @@
             color: var(--gray-400);
         }
 
-        /* Checkbox Improvements */
         .form-check {
             display: flex;
             align-items: center;
@@ -300,14 +290,12 @@
             border-color: var(--primary-color);
         }
 
-        /* Toast Improvements */
         .toast {
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
             border: none;
         }
 
-        /* Modal Improvements */
         .modal-content {
             border-radius: var(--border-radius);
             border: none;
@@ -332,7 +320,6 @@
             border-top: 1px solid var(--gray-200);
         }
 
-        /* Responsive Design */
         @media (max-width: 768px) {
             .content {
                 margin-left: 0;
@@ -358,7 +345,6 @@
             }
         }
 
-        /* Loading States */
         .loading {
             opacity: 0.7;
             pointer-events: none;
@@ -378,7 +364,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Status Badge */
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -391,7 +376,6 @@
             color: white;
         }
 
-        /* Input Group Improvements */
         .input-group-text {
             background: var(--gray-50);
             border: 2px solid var(--gray-200);
@@ -407,7 +391,6 @@
             border-color: var(--primary-color);
         }
 
-        /* Payment Tags for View Mode */
         .payment-tags-static {
             display: flex;
             flex-wrap: wrap;
@@ -431,7 +414,6 @@
             font-style: italic;
         }
 
-        /* Select2 Styles */
         .select2-container {
             width: 100% !important;
         }
@@ -562,6 +544,54 @@
                     </h3>
 
                     <div class="mb-4">
+                        <label class="form-label">Phạm vi áp dụng</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{phamViApDung}" value="ORDER"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onchange="toggleDiscountFields()" id="order">
+                                <label for="order">
+                                    <i class="fas fa-shopping-cart me-1"></i>
+                                    Giảm giá đơn hàng
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{phamViApDung}" value="SHIPPING"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onchange="toggleDiscountFields()" id="shipping">
+                                <label for="shipping">
+                                    <i class="fas fa-truck me-1"></i>
+                                    Giảm phí vận chuyển
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4" id="shipTypeGroup" th:style="${voucher.phamViApDung == 'SHIPPING' ? 'display: block;' : 'display: none;'}">
+                        <label class="form-label">Kiểu giảm phí vận chuyển</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{loai}" value="FREESHIP_FULL"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onchange="toggleDiscountFields()" id="freeship_full">
+                                <label for="freeship_full">
+                                    <i class="fas fa-truck-fast me-1"></i>
+                                    Miễn phí ship toàn phần
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" th:field="*{loai}" value="FREESHIP_CAP"
+                                       th:disabled="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       onchange="toggleDiscountFields()" id="freeship_cap">
+                                <label for="freeship_cap">
+                                    <i class="fas fa-money-bill-wave me-1"></i>
+                                    Miễn phí ship tối đa
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4" id="discountTypeGroup" th:style="${voucher.phamViApDung == 'ORDER' ? 'display: block;' : 'display: none;'}">
                         <label class="form-label">Kiểu giảm giá</label>
                         <div class="radio-group">
                             <div class="radio-option">
@@ -586,28 +616,29 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3" id="discountValueGroup" th:style="${voucher.loai == 'FREESHIP_FULL' ? 'display: none;' : 'display: block;'}">
                             <label class="form-label">
                                 Giá trị giảm <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="giaTriGiam" name="giaTriGiam"
-                                       th:value="${giaTriGiamStr}"
-                                       th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
+                                       th:value="${voucher.loai == 'FREESHIP_FULL' ? '0' : (giaTriGiamStr)}"
+                                       th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra' || voucher.loai == 'FREESHIP_CAP'}"
                                        oninput="this.value=this.value.replace(/[^0-9,]/g,'')"
-                                       placeholder="0" required>
-                                <span class="input-group-text" id="discountUnit">%</span>
+                                       placeholder="0" th:required="${voucher.phamViApDung == 'ORDER'}">
+                                <span class="input-group-text" id="discountUnit"
+                                      th:text="${voucher.loai == 'PERCENT' ? '%' : (voucher.loai == 'FREESHIP_FULL' ? '' : '₫')}">%</span>
                             </div>
                         </div>
 
-                        <div class="col-md-6 mb-3" id="maxDiscountGroup">
+                        <div class="col-md-6 mb-3" id="maxDiscountGroup" th:style="${voucher.loai == 'PERCENT' || voucher.loai == 'FREESHIP_CAP' ? 'display: block;' : 'display: none;'}">
                             <label class="form-label">Giá trị giảm tối đa</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="giaTriGiamToiDa" name="giaTriGiamToiDa"
                                        th:value="${giaTriGiamToiDaStr}"
                                        th:readonly="${getStatus.apply(voucher) != 'Sắp diễn ra'}"
                                        oninput="this.value=this.value.replace(/[^0-9,]/g,'')"
-                                       placeholder="0">
+                                       placeholder="0" th:required="${voucher.loai == 'FREESHIP_CAP'}">
                                 <span class="input-group-text">₫</span>
                             </div>
                         </div>
@@ -691,7 +722,7 @@
                                    inputmode="numeric"
                                    oninput="this.value=this.value.replace(/[^0-9]/g,'')"
                                    placeholder="Nhập số lượt sử dụng">
-                            <small class="text-muted" id="caNhanNote" style="display: none;">
+                            <small class="text-muted" id="caNhanNote" th:style="${voucher.kieuPhieu == 'ca_nhan' ? 'display: block;' : 'display: none;'}">
                                 <i class="fas fa-info-circle"></i>
                                 Phiếu cá nhân chỉ áp dụng 1 lượt sử dụng
                             </small>
@@ -720,7 +751,7 @@
                 </div>
 
                 <!-- Customer Selection Section -->
-                <div id="customerSelection" class="card-section">
+                <div id="customerSelection" class="card-section" th:style="${voucher.kieuPhieu == 'ca_nhan' ? 'display: block;' : 'display: none;'}">
                     <h3 class="section-title">
                         <i class="fas fa-user-check section-icon"></i>
                         Chọn khách hàng áp dụng
@@ -872,7 +903,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    // Enhanced JavaScript with better UX
     function formatNumberVN(value, allowDecimal = false) {
         if (!value) return '';
         value = value.replace(/[^\d,]/g, '').replace(/\./g, '').replace(/,/g, '.');
@@ -900,145 +930,168 @@
         element.innerHTML = originalText;
     }
 
-    $(document).ready(function () {
-        toggleDiscountFields();
-        toggleUsageCount();
-
+    function toggleDiscountFields() {
+        const scope = $('input[name="phamViApDung"]:checked').val();
+        const type = $('input[name="loai"]:checked').val();
         const isEditable = [[${getStatus.apply(voucher) == 'Sắp diễn ra'}]];
-        const isPublicVoucher = [[${kieuPhieu == 'cong_khai'}]];
+        const isPercent = type === 'PERCENT';
+        const isFreeshipFull = type === 'FREESHIP_FULL';
+        const isFreeshipCap = type === 'FREESHIP_CAP';
 
-        if (isEditable || isPublicVoucher) {
-            const fields = [
-                { id: '#giaTriGiam', allowDecimal: $('input[name="loai"]:checked').val() === 'PERCENT', editable: isEditable },
-                { id: '#giaTriGiamToiDa', allowDecimal: false, editable: isEditable },
-                { id: '#giaTriGiamToiThieu', allowDecimal: false, editable: isEditable },
-                { id: '#gioiHanSuDung', allowDecimal: false, editable: isEditable || isPublicVoucher }
-            ];
+        $('#shipTypeGroup').toggle(scope === 'SHIPPING');
+        $('#discountTypeGroup').toggle(scope === 'ORDER');
+        $('#discountValueGroup').toggle(!isFreeshipFull);
+        $('#maxDiscountGroup').toggle(isPercent || isFreeshipCap);
 
-            fields.forEach(function (field) {
-                if (field.editable) {
-                    const $field = $(field.id);
-                    // Format on load
-                    const formatted = formatNumberVN($field.val(), field.allowDecimal);
-                    $field.val(formatted);
+        $('#discountUnit').text(isPercent ? '%' : (isFreeshipFull ? '' : '₫'));
 
-                    $field.on('blur', function () {
-                        const formatted = formatNumberVN($(this).val(), field.allowDecimal);
-                        $(this).val(formatted);
-                    });
+        const $giaTriGiam = $('#giaTriGiam');
+        const $giaTriGiamToiDa = $('#giaTriGiamToiDa');
 
-                    // Real-time validation
-                    $field.on('input', function () {
-                        $(this).removeClass('is-invalid');
-                    });
-                }
-            });
-
-            // Enhanced form submission with loading state
-            const $form = $('#editVoucherForm');
-            const $saveButton = $('#saveButton');
-            const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
-
-            $form.on('submit', function (e) {
-                e.preventDefault();
-
-                // Form validation
-                if (!validateForm()) {
-                    return;
-                }
-
-                confirmModal.show();
-            });
-
-            $('#confirmEditButton').on('click', function () {
-                const originalText = showLoading(this);
-
-                fields.forEach(function (field) {
-                    if (field.editable) {
-                        const $el = $(field.id);
-                        $el.val(parseNumber($el.val()));
-                    }
-                });
-
-                setTimeout(() => {
-                    $form[0].submit();
-                }, 500);
-            });
+        if (isFreeshipFull || isFreeshipCap) {
+            $giaTriGiam.val('0').prop('readonly', true);
+            if (isFreeshipFull) {
+                $giaTriGiamToiDa.val('').prop('readonly', true);
+            } else {
+                $giaTriGiamToiDa.prop('readonly', !isEditable);
+            }
+        } else {
+            $giaTriGiam.prop('readonly', !isEditable);
+            $giaTriGiamToiDa.prop('readonly', !isPercent || !isEditable);
         }
 
         if (isEditable) {
-            // Initialize Select2 for payment methods
-            $('#paymentMethodSelect').select2({
-                placeholder: 'Chọn phương thức thanh toán...',
-                allowClear: true,
-                closeOnSelect: false,
-                width: '100%'
-            });
-
-            // Enhanced search with debounce
-            let searchTimeout;
-            $('#searchCustomerInput').on('keyup', function () {
-                clearTimeout(searchTimeout);
-                const keyword = $(this).val().toLowerCase();
-
-                searchTimeout = setTimeout(() => {
-                    $('#customerTableBody tr').each(function () {
-                        const text = $(this).text().toLowerCase();
-                        $(this).toggle(text.indexOf(keyword) > -1);
-                    });
-
-                    // Update select all checkbox state
-                    updateSelectAllState();
-                }, 300);
-            });
-
-            // Enhanced select all functionality
-            $('#selectAllCheckbox').on('change', function () {
-                const checked = $(this).is(':checked');
-                $('#customerTableBody tr:visible input[type="checkbox"]').prop('checked', checked);
-            });
-
-            // Update select all state when individual checkboxes change
-            $(document).on('change', '#customerTableBody input[type="checkbox"]', function () {
-                updateSelectAllState();
-            });
+            const formattedGiaTriGiam = formatNumberVN($giaTriGiam.val(), isPercent);
+            $giaTriGiam.val(formattedGiaTriGiam);
+            const formattedGiaTriGiamToiDa = formatNumberVN($giaTriGiamToiDa.val(), false);
+            $giaTriGiamToiDa.val(formattedGiaTriGiamToiDa);
         }
-
-        // Enhanced toast display
-        showToasts();
-
-        // Auto-hide alerts after 5 seconds
-        setTimeout(() => {
-            $('.alert').fadeOut();
-        }, 5000);
-    });
+    }
 
     function validateForm() {
         let isValid = true;
-        const requiredFields = ['input[name="ten"]', '#giaTriGiam', 'input[name="ngayBatDau"]', 'input[name="ngayKetThuc"]'];
+        $('.invalid-feedback').text('').hide();
+        $('.form-control').removeClass('is-invalid');
 
-        requiredFields.forEach(selector => {
-            const $field = $(selector);
-            if (!$field.val().trim()) {
-                $field.addClass('is-invalid');
-                isValid = false;
-            } else {
-                $field.removeClass('is-invalid');
-            }
-        });
+        // Validate ngày bắt đầu
+        const ngayBatDau = $('#ngayBatDau').val();
+        const ngayKetThuc = $('#ngayKetThuc').val();
+        const now = new Date('2025-08-15T01:03:00+07:00'); // Current time: 15/08/2025 01:03 +07
 
-        // Date validation
-        const startDate = new Date($('input[name="ngayBatDau"]').val());
-        const endDate = new Date($('input[name="ngayKetThuc"]').val());
-
-        if (startDate >= endDate) {
-            $('input[name="ngayKetThuc"]').addClass('is-invalid');
-            showToast('Ngày kết thúc phải sau ngày bắt đầu!', 'error');
+        if (!ngayBatDau) {
+            $('#ngayBatDau').addClass('is-invalid');
+            $('#ngayBatDauError').text('Ngày bắt đầu không được để trống.').show();
+            isValid = false;
+        } else if (new Date(ngayBatDau) < now) {
+            $('#ngayBatDau').addClass('is-invalid');
+            $('#ngayBatDauError').text('Ngày bắt đầu không được trong quá khứ.').show();
             isValid = false;
         }
 
-        if (!isValid) {
-            showToast('Vui lòng điền đầy đủ thông tin bắt buộc!', 'error');
+        // Validate ngày kết thúc
+        if (!ngayKetThuc) {
+            $('#ngayKetThuc').addClass('is-invalid');
+            $('#ngayKetThucError').text('Ngày kết thúc không được để trống.').show();
+            isValid = false;
+        } else if (new Date(ngayKetThuc) < now) {
+            $('#ngayKetThuc').addClass('is-invalid');
+            $('#ngayKetThucError').text('Ngày kết thúc không được trong quá khứ.').show();
+            isValid = false;
+        }
+
+        // Validate ngày bắt đầu <= ngày kết thúc
+        if (ngayBatDau && ngayKetThuc && new Date(ngayBatDau) > new Date(ngayKetThuc)) {
+            $('#ngayBatDau').addClass('is-invalid');
+            $('#ngayBatDauError').text('Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.').show();
+            isValid = false;
+        }
+
+        // Validate giá trị giảm
+        const type = $('input[name="loai"]:checked').val();
+        const giaTriGiam = parseNumber($('#giaTriGiam').val() || '0');
+        const giaTriGiamToiDa = parseNumber($('#giaTriGiamToiDa').val() || '0');
+        const giaTriGiamToiThieu = parseNumber($('#giaTriGiamToiThieu').val() || '0');
+
+        if (type === 'PERCENT' || type === 'CASH') {
+            if (!giaTriGiam || parseFloat(giaTriGiam) <= 0) {
+                $('#giaTriGiam').addClass('is-invalid');
+                $('#giaTriGiamError').text('Giá trị giảm phải lớn hơn 0.').show();
+                isValid = false;
+            }
+            if (type === 'PERCENT' && parseFloat(giaTriGiam) > 100) {
+                $('#giaTriGiam').addClass('is-invalid');
+                $('#giaTriGiamError').text('Giảm theo % không được vượt quá 100.').show();
+                isValid = false;
+            }
+            if (type === 'PERCENT' && (!giaTriGiamToiDa || parseFloat(giaTriGiamToiDa) <= 0)) {
+                $('#giaTriGiamToiDa').addClass('is-invalid');
+                $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải lớn hơn 0 khi giảm theo %.').show();
+                isValid = false;
+            }
+            if (type === 'CASH' && giaTriGiamToiThieu && parseFloat(giaTriGiam) > parseFloat(giaTriGiamToiThieu)) {
+                $('#giaTriGiam').addClass('is-invalid');
+                $('#giaTriGiamError').text('Giá trị giảm không được lớn hơn đơn tối thiểu.').show();
+                isValid = false;
+            }
+        } else if (type === 'FREESHIP_CAP') {
+            if (!giaTriGiamToiDa || parseFloat(giaTriGiamToiDa) <= 0) {
+                $('#giaTriGiamToiDa').addClass('is-invalid');
+                $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải lớn hơn 0 cho FREESHIP_CAP.').show();
+                isValid = false;
+            }
+            // Thêm validation: giaTriGiamToiDa <= 150% giaTriGiamToiThieu
+            if (giaTriGiamToiThieu && parseFloat(giaTriGiamToiThieu) > 0) {
+                const maxAllowedDiscount = parseFloat(giaTriGiamToiThieu) * 1.5;
+                if (parseFloat(giaTriGiamToiDa) > maxAllowedDiscount) {
+                    $('#giaTriGiamToiDa').addClass('is-invalid');
+                    $('#giaTriGiamToiDaError').text('Phí giảm tối đa không được vượt quá 150% giá trị đơn hàng tối thiểu.').show();
+                    isValid = false;
+                }
+            }
+        } else if (type === 'FREESHIP_FULL') {
+            // Không cần giaTriGiam hoặc giaTriGiamToiDa
+        }
+
+        // Validate đơn tối thiểu
+        if (giaTriGiamToiThieu && parseFloat(giaTriGiamToiThieu) < 0) {
+            $('#giaTriGiamToiThieu').addClass('is-invalid');
+            $('#giaTriGiamToiThieuError').text('Đơn tối thiểu không được âm.').show();
+            isValid = false;
+        }
+
+        // Validate mã phiếu
+        const ma = $('#ma').val();
+        if (!ma || ma.trim() === '') {
+            $('#ma').addClass('is-invalid');
+            $('#maError').text('Mã phiếu không được để trống.').show();
+            isValid = false;
+        }
+
+        // Validate tên phiếu
+        const ten = $('#ten').val();
+        if (!ten || ten.trim() === '') {
+            $('#ten').addClass('is-invalid');
+            $('#tenError').text('Tên phiếu không được để trống.').show();
+            isValid = false;
+        }
+
+        // Validate lượt sử dụng
+        const isCaNhan = $('input[name="kieuPhieu"]:checked').val() === 'ca_nhan';
+        const gioiHanSuDung = $('#gioiHanSuDung').val();
+        if (!isCaNhan && (!gioiHanSuDung || parseInt(gioiHanSuDung) <= 0)) {
+            $('#gioiHanSuDung').addClass('is-invalid');
+            $('#gioiHanSuDungError').text('Lượt sử dụng phải lớn hơn 0 cho phiếu công khai.').show();
+            isValid = false;
+        }
+
+        // Validate khách hàng cho phiếu cá nhân
+        if (isCaNhan && $('.customerCheckbox:checked').length === 0) {
+            $('#emailOptions').prepend('<div class="alert alert-danger">Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân.</div>');
+            isValid = false;
+        }
+
+        if (isValid) {
+            $('#confirmModal').modal('show');
         }
 
         return isValid;
@@ -1056,20 +1109,6 @@
         } else {
             $selectAll.prop('indeterminate', true);
         }
-    }
-
-    function toggleDiscountFields() {
-        const type = $('input[name="loai"]:checked').val();
-        const isPercent = type === 'PERCENT';
-        $('#discountUnit').text(isPercent ? '%' : '₫');
-        $('#maxDiscountGroup').toggle(isPercent);
-        $('#giaTriGiamToiDa').prop('readonly', !isPercent);
-        if (!isPercent) $('#giaTriGiamToiDa').val('');
-
-        // Reformat giaTriGiam based on discount type
-        const $giaTriGiam = $('#giaTriGiam');
-        const formatted = formatNumberVN($giaTriGiam.val(), isPercent);
-        $giaTriGiam.val(formatted);
     }
 
     function toggleUsageCount() {
@@ -1112,11 +1151,117 @@
         const $toast = $(toastHtml).appendTo($container);
         new bootstrap.Toast($toast[0], { delay: 4000 }).show();
 
-        // Remove toast element after it's hidden
         $toast.on('hidden.bs.toast', function () {
             $(this).remove();
         });
     }
+
+    $(document).ready(function () {
+        toggleDiscountFields();
+        toggleUsageCount();
+
+        const isEditable = [[${getStatus.apply(voucher) == 'Sắp diễn ra'}]];
+        const isPublicVoucher = [[${kieuPhieu == 'cong_khai'}]];
+
+        if (isEditable || isPublicVoucher) {
+            const fields = [
+                { id: '#giaTriGiamToiThieu', allowDecimal: false, editable: isEditable },
+                { id: '#gioiHanSuDung', allowDecimal: false, editable: isEditable || isPublicVoucher }
+            ];
+
+            if ($('input[name="phamViApDung"]:checked').val() === 'ORDER') {
+                fields.push({ id: '#giaTriGiam', allowDecimal: $('input[name="loai"]:checked').val() === 'PERCENT', editable: isEditable });
+            }
+            if ($('input[name="loai"]:checked').val() === 'PERCENT' || $('input[name="loai"]:checked').val() === 'FREESHIP_CAP') {
+                fields.push({ id: '#giaTriGiamToiDa', allowDecimal: false, editable: isEditable });
+            }
+
+            fields.forEach(function (field) {
+                if (field.editable) {
+                    const $field = $(field.id);
+                    const formatted = formatNumberVN($field.val(), field.allowDecimal);
+                    $field.val(formatted);
+
+                    $field.on('blur', function () {
+                        const formatted = formatNumberVN($(this).val(), field.allowDecimal);
+                        $(this).val(formatted);
+                    });
+
+                    $field.on('input', function () {
+                        $(this).removeClass('is-invalid');
+                    });
+                }
+            });
+
+            const $form = $('#editVoucherForm');
+            const $saveButton = $('#saveButton');
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmEditModal'));
+
+            $form.on('submit', function (e) {
+                e.preventDefault();
+
+                if (!validateForm()) {
+                    return;
+                }
+
+                confirmModal.show();
+            });
+
+            $('#confirmEditButton').on('click', function () {
+                const originalText = showLoading(this);
+
+                fields.forEach(function (field) {
+                    if (field.editable) {
+                        const $el = $(field.id);
+                        $el.val(parseNumber($el.val()));
+                    }
+                });
+
+                setTimeout(() => {
+                    $form[0].submit();
+                }, 500);
+            });
+        }
+
+        if (isEditable) {
+            $('#paymentMethodSelect').select2({
+                placeholder: 'Chọn phương thức thanh toán...',
+                allowClear: true,
+                closeOnSelect: false,
+                width: '100%'
+            });
+
+            let searchTimeout;
+            $('#searchCustomerInput').on('keyup', function () {
+                clearTimeout(searchTimeout);
+                const keyword = $(this).val().toLowerCase();
+
+                searchTimeout = setTimeout(() => {
+                    $('#customerTableBody tr').each(function () {
+                        const text = $(this).text().toLowerCase();
+                        $(this).toggle(text.indexOf(keyword) > -1);
+                    });
+
+                    updateSelectAllState();
+                }, 300);
+            });
+
+            $('#selectAllCheckbox').on('change', function () {
+                const checked = $(this).is(':checked');
+                $('#customerTableBody tr:visible input[type="checkbox"]').prop('checked', checked);
+            });
+
+            $(document).on('change', '#customerTableBody input[type="checkbox"]', function () {
+                updateSelectAllState();
+            });
+        }
+
+        showToasts();
+
+        setTimeout(() => {
+            $('.alert').fadeOut();
+        }, 5000);
+    });
 </script>
 <script th:src="@{/js/notification.js}"></script>
 </body>

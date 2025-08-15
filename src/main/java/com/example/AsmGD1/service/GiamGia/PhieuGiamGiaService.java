@@ -46,7 +46,6 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.save(phieu);
     }
 
-
     public String tinhTrang(PhieuGiamGia v) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime batDau = v.getNgayBatDau();
@@ -86,6 +85,7 @@ public class PhieuGiamGiaService {
         return false;
     }
 
+    /** Giảm trên tổng đơn (ORDER): đã có sẵn */
     public BigDecimal tinhTienGiamGia(PhieuGiamGia phieu, BigDecimal tongTien) {
         if (phieu == null || tongTien == null || tongTien.compareTo(BigDecimal.ZERO) <= 0) {
             logger.warn("⚠️ Đầu vào không hợp lệ - phieu: {}, tongTien: {}", phieu, tongTien);
@@ -135,5 +135,35 @@ public class PhieuGiamGiaService {
 
         logger.info("✅ Số tiền được giảm: {}", giamGia);
         return giamGia;
+    }
+
+    /** Giảm phí vận chuyển (SHIPPING): thêm mới cho freeship */
+    public BigDecimal tinhGiamPhiShip(PhieuGiamGia phieu, BigDecimal phiShip, BigDecimal tongTruocShip) {
+        if (phieu == null || phiShip == null || phiShip.compareTo(BigDecimal.ZERO) <= 0) return BigDecimal.ZERO;
+        if (!"SHIPPING".equalsIgnoreCase(phieu.getPhamViApDung())) return BigDecimal.ZERO;
+
+        // Đơn tối thiểu (nếu có) so với subtotal
+        if (phieu.getGiaTriGiamToiThieu() != null &&
+                tongTruocShip != null &&
+                tongTruocShip.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
+            logger.info("🚫 Không đạt đơn tối thiểu freeship | yêu cầu: {}, thực tế: {}",
+                    phieu.getGiaTriGiamToiThieu(), tongTruocShip);
+            return BigDecimal.ZERO;
+        }
+
+        String loai = phieu.getLoai() == null ? "" : phieu.getLoai().trim().toUpperCase();
+        switch (loai) {
+            case "FREESHIP_FULL":
+                return phiShip; // miễn toàn bộ
+            case "FREESHIP_CAP":
+                if (phieu.getGiaTriGiamToiDa() == null || phieu.getGiaTriGiamToiDa().compareTo(BigDecimal.ZERO) <= 0) {
+                    logger.warn("⚠️ FREESHIP_CAP thiếu/không hợp lệ giaTriGiamToiDa");
+                    return BigDecimal.ZERO;
+                }
+                return phiShip.min(phieu.getGiaTriGiamToiDa()); // miễn tối đa X₫
+            default:
+                logger.warn("⚠️ Loại freeship không hỗ trợ: {}", loai);
+                return BigDecimal.ZERO;
+        }
     }
 }
