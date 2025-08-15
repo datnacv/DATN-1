@@ -1,117 +1,40 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Bootstrap & FontAwesome -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
-  <style>
-    .right-actions {
-      display: flex;
-      align-items: center;
-      gap: 1.2rem; /* Adjusted gap for consistent spacing between cart, bell, and login/user */
-      flex-wrap: nowrap;
-    }
-    /* Ensure icons have consistent sizing for alignment */
-    .right-actions .fas, .right-actions .dropdown > a, .right-actions .btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-width: 40px; /* Consistent width for icons and buttons */
-    }
-    /* ===== Dropdown thông báo kiểu Shopee ===== */
-    .notif-panel{width:420px;max-width:calc(100vw - 24px);border-radius:12px;overflow:hidden}
-    .notif-list{max-height:480px;overflow-y:auto;background:#fff}
-    .notif-item{display:flex;gap:12px;padding:12px 16px;background:#fff}
-    .notif-item:hover{background:#f6f6f6;cursor:pointer}
-    .notif-thumb{width:40px;height:40px;flex:0 0 40px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#eff4ff}
-    .notif-body{flex:1 1 auto;min-width:0}
-    .notif-title{font-weight:600;color:#111;margin:0}
-    .notif-preview{color:#5f6368;margin:2px 0 0;font-size:.9rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .notif-meta{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
-    .notif-time{font-size:.8rem;color:#9aa0a6}
-    .notif-badge{font-size:.7rem}
-    .notif-unread-dot{width:8px;height:8px;border-radius:50%;background:#1a73e8;display:inline-block;margin-left:8px}
-    /* Badge trên icon chuông */
-    #notifBadge{transform:translate(-50%,-50%);min-width:22px}
-    /* Search gợi ý (nếu dùng) */
-    .search-suggestions{position:absolute;top:100%;left:0;right:0;z-index:1050;background:#fff;border:1px solid #e9ecef;border-top:none;border-radius:0 0 .5rem .5rem;max-height:320px;overflow-y:auto;display:none}
-  </style>
-</head>
 <body>
-<nav th:fragment="navbar(user, keyword, cartCount)" class="navbar navbar-expand-lg sticky-top shadow-sm">
+<nav th:fragment="navbar(user, keyword, cartCount)"
+     class="navbar navbar-expand-lg sticky-top shadow-sm">
   <div class="container d-flex justify-content-between align-items-center py-2">
     <!-- Logo -->
     <a class="navbar-brand text-white fw-bold fs-4" href="/">ACV Store</a>
 
+
     <!-- Tìm kiếm -->
-    <form class="flex-grow-1 mx-3 position-relative" style="max-width:600px" action="/search" method="get">
+    <form class="flex-grow-1 mx-3 position-relative" style="max-width: 600px;" action="/search" method="get">
       <div class="input-group">
-        <input type="text" class="form-control rounded-start-pill border-0" placeholder="Tìm kiếm sản phẩm..." name="keyword" id="searchInput" th:value="${keyword}" autocomplete="off">
+        <input type="text" class="form-control rounded-start-pill border-0"
+               placeholder="Tìm kiếm sản phẩm..."
+               name="keyword" id="searchInput" th:value="${keyword}" autocomplete="off">
         <button class="btn btn-light rounded-end-pill px-4" type="submit">
-          <i class="fas fa-search"></i>
+          <i class="fas fa-search text-blue-800"></i>
         </button>
       </div>
       <div id="searchSuggestions" class="search-suggestions"></div>
     </form>
 
-    <!-- Giỏ hàng + Thông báo + Người dùng -->
-    <div class="d-flex align-items-center right-actions">
+    <!-- Giỏ hàng + Người dùng -->
+    <div class="d-flex align-items-center gap-3">
       <!-- Giỏ hàng -->
       <a th:href="@{/cart}" class="text-white fs-5 position-relative" aria-label="Giỏ hàng">
         <i class="fas fa-shopping-cart"></i>
-        <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" th:text="${cartCount != null} ? ${cartCount} : 0">0</span>
+        <span id="cart-count"
+              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              th:text="${cartCount != null} ? ${cartCount} : 0">0</span>
       </a>
 
-      <!-- Thông báo (kiểu Shopee) -->
-      <div class="dropdown">
-        <a href="#" class="position-relative text-decoration-none" id="notifBell" data-bs-toggle="dropdown" data-bs-offset="0,10" aria-expanded="false">
-          <i class="fas fa-bell fa-lg text-primary"></i>
-          <span id="notifBadge"
-                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                th:classappend="${unreadCount != null and unreadCount > 0} ? '' : ' d-none'"
-                th:text="${unreadCount}">0</span>
-        </a>
-
-        <div class="dropdown-menu dropdown-menu-end p-0 shadow border-0 notif-panel" aria-labelledby="notifBell">
-          <!-- Header sticky -->
-          <div class="d-flex align-items-center justify-content-between p-3 border-bottom bg-white sticky-top">
-            <div class="fw-semibold">Thông báo</div>
-            <div class="d-flex gap-2">
-              <button id="btnMarkAll" class="btn btn-sm btn-outline-primary d-none">Đánh dấu đã đọc</button>
-              <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#notificationModal">
-                <i class="fas fa-external-link-alt"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Danh sách -->
-          <div id="notifList" class="list-group list-group-flush notif-list">
-            <div id="notifLoading" class="py-4 text-center">
-              <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
-              <div class="small text-muted mt-2">Đang tải thông báo...</div>
-            </div>
-            <div id="notifEmpty" class="py-5 text-center d-none">
-              <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
-              <div class="text-muted">Không có thông báo</div>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div class="p-2 border-top bg-white">
-            <a class="btn btn-link w-100 text-decoration-none fw-semibold" data-bs-toggle="modal" data-bs-target="#notificationModal">
-              Xem tất cả
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tài khoản -->
+      <!-- Nếu đã đăng nhập -->
       <div th:if="${user != null}" class="dropdown">
         <button class="btn text-white fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="fas fa-user-circle me-1"></i>
-          <span th:text="${user.hoTen}">Tên người dùng</span>
+          <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li><a class="dropdown-item" th:href="@{/profile}">Tài khoản của tôi</a></li>
@@ -122,6 +45,7 @@
         </ul>
       </div>
 
+      <!-- Nếu chưa đăng nhập -->
       <a th:if="${user == null}" th:href="@{/customers/login}" class="btn btn-light fw-semibold rounded-pill px-3" id="loginButton">
         Đăng nhập
       </a>
@@ -129,32 +53,9 @@
   </div>
 </nav>
 
-<!-- Modal “Xem tất cả” (tối giản) -->
-<div class="modal fade" id="notificationModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Tất cả thông báo</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-      </div>
-      <div class="modal-body">
-        <div id="modalList" class="list-group"></div>
-        <div id="modalEmpty" class="text-center text-muted py-5 d-none">Không có thông báo</div>
-      </div>
-      <div class="modal-footer">
-        <button id="modalMarkAll" type="button" class="btn btn-outline-primary d-none">Đánh dấu tất cả đã đọc</button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Inject script -->
+<!-- Nếu muốn inject script qua fragment (tuỳ chọn) -->
 <th:block th:fragment="navbarScripts">
-  <script src="/js/notify.customer.js"></script>
+  <script src="/js/navbar.js"></script>
 </th:block>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
