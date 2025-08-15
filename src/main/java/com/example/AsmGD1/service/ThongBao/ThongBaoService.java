@@ -4,6 +4,8 @@ import com.example.AsmGD1.entity.ChiTietThongBaoNhom;
 import com.example.AsmGD1.entity.DonHang;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.ThongBaoNhom;
+import com.example.AsmGD1.repository.BanHang.DonHangRepository;
+import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
@@ -34,6 +36,8 @@ public class ThongBaoService {
 
     @Autowired
     private NguoiDungRepository nguoiDungRepository;
+    @Autowired
+    private DonHangRepository donHangRepository;
 
     public void taoThongBaoHeThong(String vaiTroNhan, String tieuDe, String noiDung) {
         ThongBaoNhom thongBao = new ThongBaoNhom();
@@ -229,5 +233,38 @@ public class ThongBaoService {
     @Transactional
     public void xoaTatCaThongBao(UUID idNguoiDung) {
         chiTietThongBaoNhomRepository.deleteByNguoiDungId(idNguoiDung);
+    }
+    @Transactional
+    public UUID thongBaoCapNhatTrangThai(UUID donHangId, String tieuDe, String noiDung) {
+        DonHang dh = donHangRepository.findById(donHangId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng"));
+
+        NguoiDung kh = dh.getNguoiDung();
+        if (kh == null) throw new IllegalStateException("Đơn hàng không gắn khách hàng");
+
+        // ThongBaoNhom (lưu ý: entity của bạn chưa @GeneratedValue => setId thủ công)
+        ThongBaoNhom tbn = new ThongBaoNhom();
+        tbn.setId(UUID.randomUUID());
+        tbn.setDonHang(dh);
+        tbn.setVaiTroNhan("customer");
+        tbn.setTieuDe(tieuDe);
+        tbn.setNoiDung(noiDung);
+        tbn.setTrangThai("ACTIVE");
+        tbn.setThoiGianTao(LocalDateTime.now());
+        thongBaoNhomRepository.save(tbn);
+
+        // ChiTietThongBaoNhom
+        ChiTietThongBaoNhom ct = new ChiTietThongBaoNhom();
+        ct.setId(UUID.randomUUID());
+        ct.setThongBaoNhom(tbn);
+        ct.setNguoiDung(kh);
+        ct.setDaXem(false);
+        chiTietThongBaoNhomRepository.save(ct);
+
+        // 🔔 Cập nhật badge realtime qua SSE
+        long unread = chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(kh.getId());
+        com.example.AsmGD1.controller.ThongBao.ThongBaoController.pushUnread(kh.getId(), unread);
+
+        return tbn.getId();
     }
 }
