@@ -9,6 +9,8 @@
     import org.springframework.security.crypto.password.PasswordEncoder;
     import org.springframework.stereotype.Service;
 
+    import java.util.UUID;
+
     @Service
     public class DiaChiKhachHangService {
 
@@ -23,6 +25,14 @@
 
         @Autowired
         private PasswordEncoder passwordEncoder;            // (tuỳ chọn) encode khi đổi mật khẩu lúc cập nhật
+
+        /**
+         * Lấy địa chỉ mặc định của một khách hàng
+         */
+        public DiaChiNguoiDung getDefaultAddress(UUID nguoiDungId) {
+            return diaChiRepo.findByNguoiDung_IdAndMacDinhTrue(nguoiDungId)
+                    .orElse(null);
+        }
 
         @Transactional
         public NguoiDung saveCustomerWithDefaultAddress(NguoiDung customer) {

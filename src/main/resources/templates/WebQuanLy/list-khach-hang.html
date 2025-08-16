@@ -593,8 +593,12 @@
                     <td>
                         <a th:href="'tel:' + ${customer.soDienThoai}" class="text-decoration-none" th:text="${customer.soDienThoai}"></a>
                     </td>
-                    <td class="address-cell" th:title="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.chiTietDiaChi}">
-                        <span th:text="${customer.tinhThanhPho} + ', ' + ${customer.quanHuyen} + ', ' + ${customer.phuongXa} + ', ' + ${customer.chiTietDiaChi}"></span>
+                    <td class="address-cell">
+                        <span th:if="${defaultAddresses[customerStat.index] != null}"
+                              th:text="${defaultAddresses[customerStat.index].tinhThanhPho} + ', ' + ${defaultAddresses[customerStat.index].quanHuyen} + ', ' + ${defaultAddresses[customerStat.index].phuongXa} + ', ' + ${defaultAddresses[customerStat.index].chiTietDiaChi}"
+                              th:title="${defaultAddresses[customerStat.index].tinhThanhPho} + ', ' + ${defaultAddresses[customerStat.index].quanHuyen} + ', ' + ${defaultAddresses[customerStat.index].phuongXa} + ', ' + ${defaultAddresses[customerStat.index].chiTietDiaChi}">
+                        </span>
+                        <span th:unless="${defaultAddresses[customerStat.index] != null}" class="text-muted">Chưa có địa chỉ</span>
                     </td>
                     <td>
                         <span class="badge bg-primary" th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></span>
@@ -718,7 +722,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addTinhThanhPho" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="addTinhThanhPho" th:field="*{tinhThanhPho}" required>
+                                        <select class="form-select" id="addTinhThanhPho" name="tinhThanhPho" required>
                                             <option value="">Chọn tỉnh/thành phố</option>
                                         </select>
                                     </div>
@@ -729,7 +733,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addQuanHuyen" class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="addQuanHuyen" th:field="*{quanHuyen}" required>
+                                        <select class="form-select" id="addQuanHuyen" name="quanHuyen" required>
                                             <option value="">Chọn quận/huyện</option>
                                         </select>
                                     </div>
@@ -737,7 +741,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addPhuongXa" class="form-label">Phường/Xã <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="addPhuongXa" th:field="*{phuongXa}" required>
+                                        <select class="form-select" id="addPhuongXa" name="phuongXa" required>
                                             <option value="">Chọn phường/xã</option>
                                         </select>
                                     </div>
@@ -748,7 +752,7 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="addChiTietDiaChi" class="form-label">Địa chỉ chi tiết</label>
-                                        <input type="text" class="form-control" id="addChiTietDiaChi" th:field="*{chiTietDiaChi}">
+                                        <input type="text" class="form-control" id="addChiTietDiaChi" name="chiTietDiaChi">
                                     </div>
                                 </div>
                             </div>
@@ -767,7 +771,7 @@
             </div>
         </div>
 
-        <th:block th:each="customer : ${customers}">
+        <th:block th:each="customer, customerStat : ${customers}">
             <div class="modal fade" th:id="'editCustomerModal' + ${customer.id}" tabindex="-1"
                  th:aria-labelledby="'editCustomerModalLabel' + ${customer.id}" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -860,7 +864,7 @@
                                             <label class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
                                             <select class="form-select" th:id="'editTinhThanhPho' + ${customer.id}"
                                                     name="tinhThanhPho" required
-                                                    th:data-current-value="${customer.tinhThanhPho}">
+                                                    th:data-current-value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].tinhThanhPho : ''}">
                                                 <option value="">Chọn tỉnh/thành phố</option>
                                             </select>
                                         </div>
@@ -870,7 +874,7 @@
                                             <label class="form-label">Quận/Huyện <span class="text-danger">*</span></label>
                                             <select class="form-select" th:id="'editQuanHuyen' + ${customer.id}"
                                                     name="quanHuyen" required
-                                                    th:data-current-value="${customer.quanHuyen}">
+                                                    th:data-current-value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].quanHuyen : ''}">
                                                 <option value="">Chọn quận/huyện</option>
                                             </select>
                                         </div>
@@ -883,7 +887,7 @@
                                             <label class="form-label">Phường/Xã <span class="text-danger">*</span></label>
                                             <select class="form-select" th:id="'editPhuongXa' + ${customer.id}"
                                                     name="phuongXa" required
-                                                    th:data-current-value="${customer.phuongXa}">
+                                                    th:data-current-value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].phuongXa : ''}">
                                                 <option value="">Chọn phường/xã</option>
                                             </select>
                                         </div>
@@ -892,7 +896,7 @@
                                         <div class="mb-3">
                                             <label class="form-label">Địa chỉ chi tiết</label>
                                             <input type="text" class="form-control" name="chiTietDiaChi"
-                                                   th:value="${customer.chiTietDiaChi}">
+                                                   th:value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].chiTietDiaChi : ''}">
                                         </div>
                                     </div>
                                 </div>

@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.NguoiDung;
 
+import com.example.AsmGD1.entity.DiaChiNguoiDung;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.NguoiDung.DiaChiKhachHangService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
@@ -75,18 +76,21 @@ public class CustomerController {
                                 @RequestParam(defaultValue = "") String keyword,
                                 Model model,
                                 RedirectAttributes redirectAttributes) {
-        // Kiểm tra quyền truy cập - cả admin và employee đều có thể xem
         if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền truy cập chức năng này!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
             return "redirect:/acvstore/thong-ke";
         }
 
-        // Thêm thông tin user và quyền vào model
         addUserInfoToModel(model);
 
         Page<NguoiDung> customers = nguoiDungService.findUsersByVaiTro("customer", keyword, page, 5);
+        List<DiaChiNguoiDung> defaultAddresses = customers.getContent().stream()
+                .map(customer -> diaChiKhachHangService.getDefaultAddress(customer.getId()))
+                .toList();
+
         model.addAttribute("customers", customers.getContent());
+        model.addAttribute("defaultAddresses", defaultAddresses);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", customers.getTotalPages());
         model.addAttribute("keyword", keyword);
@@ -97,8 +101,11 @@ public class CustomerController {
 
     @PostMapping("/add")
     public String addCustomer(@ModelAttribute("customer") NguoiDung customer,
-                              RedirectAttributes redirectAttributes,
-                              Authentication authentication) {
+                              @RequestParam(required = false) String tinhThanhPho,
+                              @RequestParam(required = false) String quanHuyen,
+                              @RequestParam(required = false) String phuongXa,
+                              @RequestParam(required = false) String chiTietDiaChi,
+                              RedirectAttributes redirectAttributes) {
         if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền thêm khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
@@ -106,8 +113,13 @@ public class CustomerController {
         }
 
         try {
-            // ⬇️ Đổi dòng dưới đây
-            // nguoiDungService.save(customer);
+            // Đặt các trường địa chỉ từ form vào customer để DiaChiKhachHangService xử lý
+            customer.setTinhThanhPho(tinhThanhPho);
+            customer.setQuanHuyen(quanHuyen);
+            customer.setPhuongXa(phuongXa);
+            customer.setChiTietDiaChi(chiTietDiaChi);
+
+            // Lưu khách hàng và địa chỉ
             diaChiKhachHangService.saveCustomerWithDefaultAddress(customer);
 
             redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thành công!");
@@ -119,11 +131,13 @@ public class CustomerController {
         return "redirect:/acvstore/customers";
     }
 
-
     @PostMapping("/edit")
     public String editCustomer(@ModelAttribute("customer") NguoiDung customer,
-                               RedirectAttributes redirectAttributes,
-                               Authentication authentication) {
+                               @RequestParam(required = false) String tinhThanhPho,
+                               @RequestParam(required = false) String quanHuyen,
+                               @RequestParam(required = false) String phuongXa,
+                               @RequestParam(required = false) String chiTietDiaChi,
+                               RedirectAttributes redirectAttributes) {
         if (!isCurrentUserAdminOrEmployee()) {
             redirectAttributes.addFlashAttribute("message", "Bạn không có quyền sửa khách hàng!");
             redirectAttributes.addFlashAttribute("messageType", "danger");
@@ -131,8 +145,13 @@ public class CustomerController {
         }
 
         try {
-            // ⬇️ Đổi dòng dưới đây
-            // nguoiDungService.save(customer);
+            // Đặt các trường địa chỉ từ form vào customer để DiaChiKhachHangService xử lý
+            customer.setTinhThanhPho(tinhThanhPho);
+            customer.setQuanHuyen(quanHuyen);
+            customer.setPhuongXa(phuongXa);
+            customer.setChiTietDiaChi(chiTietDiaChi);
+
+            // Cập nhật khách hàng và địa chỉ
             diaChiKhachHangService.updateCustomerAndAppendAddress(customer);
 
             redirectAttributes.addFlashAttribute("message", "Sửa khách hàng thành công!");
