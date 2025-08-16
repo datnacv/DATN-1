@@ -9,88 +9,43 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        button[disabled] {
-            pointer-events: none;
-            opacity: 0.5;
-            cursor: not-allowed;
+        button[disabled]{pointer-events:none;opacity:.5;cursor:not-allowed}
+        .navbar{background:linear-gradient(to right,#153054,#1e4066)}
+        .ticker{background-color:#9FD5F7;color:#153054;font-weight:700;position:fixed;top:0;left:0;width:100%;z-index:1050}
+        .dropdown-menu{display:none;position:absolute;background-color:#fff;min-width:160px;box-shadow:0 8px 16px rgba(0,0,0,.2);z-index:1000}
+        .dropdown:hover .dropdown-menu{display:block}
+        body{padding-top:100px}
+        @media (max-width:640px){
+            .dropdown-menu{width:100%;left:0}
+            body{padding-top:80px}
+            .order-item-img{width:60px;height:60px}
+            .section-box{padding:16px}
+            .container{padding:0 16px}
         }
-        .navbar { background: linear-gradient(to right, #153054, #1e4066); }
-        .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
-        .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
-        .dropdown:hover .dropdown-menu { display: block; }
-        body { padding-top: 100px; }
-        @media (max-width: 640px) {
-            .dropdown-menu { width: 100%; left: 0; }
-            body { padding-top: 80px; }
-            .order-item-img { width: 60px; height: 60px; }
-            .section-box { padding: 16px; }
-            .container { padding: 0 16px; }
-        }
-        .section-box { background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
-        .section-box:hover { transform: translateY(-4px); box-shadow: 0 6px 24px rgba(0,0,0,0.1); }
-        .section-title { font-size: 20px; font-weight: 700; color: #153054; display: flex; align-items: center; }
-        .order-item-img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
-        .form-control { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
-        .form-control:focus { border-color: #153054; box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1); outline: none; }
-        .btn-primary { background: #153054; border: none; border-radius: 8px; padding: 12px; font-weight: 600; color: white; transition: background 0.3s ease, transform 0.2s ease; }
-        .btn-primary:hover { background: #1e4066; transform: translateY(-2px); }
-        .payment-method { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; cursor: pointer; transition: all 0.3s ease; }
-        .payment-method:hover { border-color: #153054; background: #e0ebf5; }
-        .payment-method.active { border-color: #153054; background: #e0ebf5; }
-        .order-item { border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; }
-        .submit-btn { position: sticky; bottom: 20px; }
-        .loading { opacity: 0.6; pointer-events: none; }
-        .address-card { cursor: pointer; transition: all 0.3s ease; }
-        .address-card:hover { background: #e0ebf5; }
-        .address-card.active { border-color: #153054; background: #e0ebf5; }
-        .swal-cancel-button {
-            color: #153054 !important;
-        }
-        /* Loading Screen Styles */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .loading-spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #153054;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .loading-text {
-            color: white;
-            font-size: 18px;
-            margin-top: 16px;
-            font-weight: bold;
-            text-align: center;
-        }
-        .loading-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+        .section-box{background:#fff;border-radius:12px;padding:24px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.05);transition:transform .3s ease,box-shadow .3s ease}
+        .section-box:hover{transform:translateY(-4px);box-shadow:0 6px 24px rgba(0,0,0,.1)}
+        .section-title{font-size:20px;font-weight:700;color:#153054;display:flex;align-items:center}
+        .order-item-img{width:80px;height:80px;object-fit:cover;border-radius:8px}
+        .form-control{border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;transition:border-color .3s ease,box-shadow .3s ease}
+        .form-control:focus{border-color:#153054;box-shadow:0 0 0 3px rgba(21,48,84,.1);outline:none}
+        .btn-primary{background:#153054;border:none;border-radius:8px;padding:12px;font-weight:600;color:#fff;transition:background .3s ease,transform .2s ease}
+        .btn-primary:hover{background:#1e4066;transform:translateY(-2px)}
+        .payment-method{padding:12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;cursor:pointer;transition:all .3s ease}
+        .payment-method:hover{border-color:#153054;background:#e0ebf5}
+        .payment-method.active{border-color:#153054;background:#e0ebf5}
+        .order-item{border-bottom:1px solid #e5e7eb;padding-bottom:16px}
+        .submit-btn{position:sticky;bottom:20px}
+        .loading{opacity:.6;pointer-events:none}
+        .address-card{cursor:pointer;transition:all .3s ease}
+        .address-card:hover{background:#e0ebf5}
+        .address-card.active{border-color:#153054;background:#e0ebf5}
+        .swal-cancel-button{color:#153054!important}
+        .loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;justify-content:center;align-items:center;z-index:9999;opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s ease}
+        .loading-overlay.active{opacity:1;visibility:visible}
+        .loading-spinner{border:8px solid #f3f3f3;border-top:8px solid #153054;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}
+        @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+        .loading-text{color:#fff;font-size:18px;margin-top:16px;font-weight:700;text-align:center}
+        .loading-content{display:flex;flex-direction:column;align-items:center;justify-content:center}
     </style>
 </head>
 <body class="bg-gray-100">
@@ -154,12 +109,13 @@
 <section class="container mx-auto py-8">
     <h1 class="text-3xl font-bold text-gray-800 mb-6">Thanh toán</h1>
     <div th:if="${error}" class="bg-red-100 text-red-700 p-4 rounded mb-4" th:text="${error}"></div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- LEFT -->
         <div class="lg:col-span-2 space-y-6">
             <div class="section-box">
                 <h2 class="section-title mb-4"><i class="fas fa-user mr-2"></i> Thông tin khách hàng</h2>
                 <form id="checkout-form">
-                    <!-- Address Selection Button -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ giao hàng</label>
                         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addressModal">
@@ -181,6 +137,8 @@
                         <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ nhận hàng</label>
                         <input type="text" id="address" name="address" class="form-control w-full" th:value="${loggedInUser?.chiTietDiaChi}" required disabled/>
                     </div>
+
+                    <!-- hidden region selects for shipping calc -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 mt-4" hidden>
                         <select id="province" class="form-control" required disabled>
                             <option value="">-- Chọn tỉnh/thành --</option>
@@ -226,33 +184,30 @@
             </div>
         </div>
 
+        <!-- RIGHT -->
         <div class="section-box">
             <h2 class="section-title mb-4"><i class="fas fa-shopping-bag mr-2"></i> Đơn hàng</h2>
             <div id="order-items" class="space-y-4 mb-6"></div>
-            <div class="border-t pt-4">
-                <div class="flex justify-between mb-2 text-sm">
-                    <span>Tạm tính:</span>
-                    <span id="subtotal" class="font-semibold">0 VNĐ</span>
+
+            <div class="border-top pt-3">
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span>Tạm tính:</span><span id="subtotal" class="fw-semibold">0 VNĐ</span>
                 </div>
-                <div class="flex justify-between mb-2 text-sm">
-                    <span>Phí vận chuyển:</span>
-                    <span id="shipping-fee" class="font-semibold">0 VNĐ</span>
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span>Phí vận chuyển:</span><span id="shipping-fee" class="fw-semibold">0 VNĐ</span>
                 </div>
-                <div class="flex justify-between mb-1 text-sm">
-                    <span>Giảm giá đơn (ORDER):</span>
-                    <span id="discount-order" class="font-semibold">0 VNĐ</span>
+                <div class="d-flex justify-content-between mb-1 small">
+                    <span>Giảm giá đơn (ORDER):</span><span id="discount-order" class="fw-semibold">0 VNĐ</span>
                 </div>
-                <div class="flex justify-between mb-2 text-sm">
-                    <span>Giảm phí vận chuyển (FREESHIP):</span>
-                    <span id="discount-ship" class="font-semibold">0 VNĐ</span>
+                <div class="d-flex justify-content-between mb-2 small">
+                    <span>Giảm phí vận chuyển (FREESHIP):</span><span id="discount-ship" class="fw-semibold">0 VNĐ</span>
                 </div>
-                <div class="flex justify-between text-lg font-bold">
-                    <span>Tổng tiền:</span>
-                    <span id="total" class="text-[#153054]">0 VNĐ</span>
+                <div class="d-flex justify-content-between fs-5 fw-bold">
+                    <span>Tổng tiền:</span><span id="total" class="text-[#153054]">0 VNĐ</span>
                 </div>
             </div>
 
-            <div class="mt-6">
+            <div class="mt-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Mã giảm giá (ORDER)</label>
                 <select id="order-voucher" class="form-control w-full">
                     <option value="">-- Chọn mã giảm giá đơn --</option>
@@ -278,102 +233,83 @@
                 </select>
             </div>
 
-            <button id="submit-order" class="btn btn-primary w-full mt-6 submit-btn">
-                <i class="fas fa-check-circle mr-2"></i> Đặt hàng
+            <button id="submit-order" class="btn btn-primary w-100 mt-4 submit-btn">
+                <i class="fas fa-check-circle me-2"></i> Đặt hàng
             </button>
         </div>
     </div>
 </section>
 
-<!-- Address Selection Modal -->
+<!-- Address Modal -->
 <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addressModalLabel">Chọn địa chỉ giao hàng</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div id="address-list" class="mb-4">
-                    <!-- Saved addresses will be populated here -->
-                </div>
-                <button type="button" class="btn btn-outline-primary w-100 mb-3" onclick="showAddAddressForm()">
-                    Thêm địa chỉ mới
-                </button>
-                <div id="add-address-form" class="d-none">
-                    <h6 class="mb-3">Thêm địa chỉ mới</h6>
-                    <form id="new-address-form">
-                        <div class="mb-3">
-                            <label for="new-fullName" class="form-label">Họ và tên</label>
-                            <input type="text" id="new-fullName" class="form-control" required/>
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="addressModalLabel">Chọn địa chỉ giao hàng</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+            <div id="address-list" class="mb-4"></div>
+            <button type="button" class="btn btn-outline-primary w-100 mb-3" onclick="showAddAddressForm()">Thêm địa chỉ mới</button>
+
+            <div id="add-address-form" class="d-none">
+                <h6 class="mb-3">Thêm địa chỉ mới</h6>
+                <form id="new-address-form">
+                    <div class="mb-3">
+                        <label for="new-fullName" class="form-label">Họ và tên</label>
+                        <input type="text" id="new-fullName" class="form-control" required/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-phone" class="form-label">Số điện thoại</label>
+                        <input type="tel" id="new-phone" class="form-control" required/>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-address" class="form-label">Địa chỉ</label>
+                        <input type="text" id="new-address" class="form-control" required/>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="new-province" class="form-label">Tỉnh/Thành phố</label>
+                            <select id="new-province" class="form-control" required>
+                                <option value="">-- Chọn tỉnh/thành --</option>
+                            </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="new-phone" class="form-label">Số điện thoại</label>
-                            <input type="tel" id="new-phone" class="form-control" required/>
+                        <div class="col-md-4 mb-3">
+                            <label for="new-district" class="form-label">Quận/Huyện</label>
+                            <select id="new-district" class="form-control" required>
+                                <option value="">-- Chọn quận/huyện --</option>
+                            </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="new-address" class="form-label">Địa chỉ</label>
-                            <input type="text" id="new-address" class="form-control" required/>
+                        <div class="col-md-4 mb-3">
+                            <label for="new-ward" class="form-label">Phường/Xã</label>
+                            <select id="new-ward" class="form-control" required>
+                                <option value="">-- Chọn phường/xã --</option>
+                            </select>
                         </div>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label for="new-province" class="form-label">Tỉnh/Thành phố</label>
-                                <select id="new-province" class="form-control" required>
-                                    <option value="">-- Chọn tỉnh/thành --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="new-district" class="form-label">Quận/Huyện</label>
-                                <select id="new-district" class="form-control" required>
-                                    <option value="">-- Chọn quận/huyện --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="new-ward" class="form-label">Phường/Xã</label>
-                                <select id="new-ward" class="form-control" required>
-                                    <option value="">-- Chọn phường/xã --</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="button" class="btn btn-primary" onclick="saveNewAddress()">Lưu địa chỉ</button>
-                        <button type="button" class="btn btn-secondary" onclick="hideAddAddressForm()">Hủy</button>
-                    </form>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="saveNewAddress()">Lưu địa chỉ</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideAddAddressForm()">Hủy</button>
+                </form>
             </div>
         </div>
-    </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+    </div></div>
 </div>
 
-<!-- Floating Chatbot Icon -->
-<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+<!-- Chatbot Icon (optional UI) -->
+<div id="chatbot-toggle" style="position:fixed;bottom:20px;right:20px;background-color:#153054;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);">
     <i class="fas fa-robot fa-lg text-white"></i>
 </div>
-
-<!-- Chatbot Box -->
-<div id="chatbot-box" style="
-    position: fixed;
-    bottom: 100px;
-    right: 30px;
-    width: 420px;
-    max-height: 620px;
-    background: #fff;
-    border-radius: 7px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-    display: none;
-    flex-direction: column;
-    overflow: hidden;
-    z-index: 10000;
-    font-family: 'Segoe UI', sans-serif;
-  ">
-    <div style="background-color: #153054; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
-        <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
-        <div style="font-weight: bold;">ACV Bot</div>
-        <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">×</span>
+<div id="chatbot-box" style="position:fixed;bottom:100px;right:30px;width:420px;max-height:620px;background:#fff;border-radius:7px;box-shadow:0 8px 24px rgba(0,0,0,.2);display:none;flex-direction:column;overflow:hidden;z-index:10000;font-family:'Segoe UI',sans-serif;">
+    <div style="background-color:#153054;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px;">
+        <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width:32px;height:32px;">
+        <div style="font-weight:bold;">ACV Bot</div>
+        <span id="chatbot-close" style="margin-left:auto;cursor:pointer;">×</span>
     </div>
-    <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;">
+    <div id="chat-messages" style="padding:12px;height:300px;overflow-y:auto;font-size:14px;line-height:1.4;background:#f9fafb;">
         <div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>
     </div>
     <div id="quick-replies" class="flex flex-wrap gap-2 p-4">
@@ -381,20 +317,12 @@
         <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Kiểm tra đơn hàng</button>
         <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Chính sách đổi trả</button>
     </div>
-    <div style="padding: 10px; border-top: 1px solid #eee;">
-        <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
-        width: 100%;
-        padding: 12px 16px;
-        border: 1px solid #ccc;
-        border-radius: 24px;
-        font-size: 15px;
-        outline: none;
-        transition: border 0.2s ease-in-out;
-      ">
+    <div style="padding:10px;border-top:1px solid #eee;">
+        <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="width:100%;padding:12px 16px;border:1px solid #ccc;border-radius:24px;font-size:15px;outline:none;transition:border .2s ease-in-out;">
     </div>
 </div>
 
-<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px">
+<footer style="background:linear-gradient(to right,#153054,#1e4066);color:#fff;padding-top:30px;padding-bottom:20px">
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
             <h3 class="text-lg font-bold mb-4">ACV Store</h3>
@@ -429,10 +357,6 @@
     <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
 </footer>
 
-<button id="back-to-top" class="fixed bottom-20 right-20 bg-blue-600 text-white p-3 rounded-full shadow-lg hidden" aria-label="Quay lại đầu trang">
-    <i class="fas fa-arrow-up"></i>
-</button>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
@@ -442,32 +366,25 @@
         addresses: false,
         orderItems: false,
         walletBalance: false,
-        shippingServices: false
+        shippingServices: false,
     };
 
     function checkLoadingComplete() {
-        const allLoaded = Object.values(loadingState).every((s) => s === true);
-        if (allLoaded) {
-            document.getElementById("loading-overlay").classList.remove("active");
-        }
+        const allLoaded = Object.values(loadingState).every(s => s === true);
+        if (allLoaded) document.getElementById('loading-overlay').classList.remove('active');
     }
 
     function formatVND(number) {
-        return (
-            new Intl.NumberFormat("vi-VN", {
-                style: "decimal",
-                minimumFractionDigits: 0
-            }).format(number) + " VNĐ"
-        );
+        return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(Number(number||0)) + ' VNĐ';
     }
 
-    function onlyDigits(s) {
-        return Number((s || '').toString().replace(/[^\d]/g, '')) || 0;
-    }
+    function onlyDigits(s) { return Number((s || '').toString().replace(/[^\d]/g, '')) || 0; }
 
-    function isFromCart() {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get("from") === "cart";
+    function getCheckoutMode() {
+        const from = new URLSearchParams(location.search).get('from');
+        if (from === 'cart') return 'cart';
+        if (from === 'cart-selected') return 'cart-selected';
+        return 'buy-now';
     }
 
     // ================== GHN LOCATION & SHIPPING ==================
@@ -476,17 +393,16 @@
 
     async function loadProvinces(target = "province") {
         try {
-            const response = await fetch("/api/ghn/provinces");
-            const json = await response.json();
-            if (!json || !json.data) throw new Error("Không có dữ liệu tỉnh/thành");
-
+            const res = await fetch('/api/ghn/provinces');
+            const json = await res.json();
+            if (!json || !json.data) throw new Error('Không có dữ liệu tỉnh/thành');
             const result = JSON.parse(json.data);
-            provinceList = result.data;
+            provinceList = result.data || [];
 
             const select = document.getElementById(target);
             select.innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
-            provinceList.forEach((p) => {
-                const opt = document.createElement("option");
+            provinceList.forEach(p => {
+                const opt = document.createElement('option');
                 opt.value = p.ProvinceID;
                 opt.textContent = p.ProvinceName;
                 select.appendChild(opt);
@@ -495,8 +411,8 @@
             loadingState.provinces = true;
             checkLoadingComplete();
         } catch (err) {
-            console.error("Lỗi tải tỉnh/thành:", err);
-            Swal.fire({ icon: "error", title: "Lỗi tải tỉnh/thành", text: err.message });
+            console.error('Lỗi tải tỉnh/thành:', err);
+            Swal.fire({ icon: 'error', title: 'Lỗi tải tỉnh/thành', text: err.message });
             loadingState.provinces = true;
             checkLoadingComplete();
         }
@@ -504,73 +420,70 @@
 
     async function loadDistricts(provinceId, target = "district") {
         try {
-            const response = await fetch(`/api/ghn/districts?provinceId=${provinceId}`);
-            const json = await response.json();
-            if (!json || !json.data) throw new Error("Không có dữ liệu quận/huyện");
+            const res = await fetch(`/api/ghn/districts?provinceId=${provinceId}`);
+            const json = await res.json();
+            if (!json || !json.data) throw new Error('Không có dữ liệu quận/huyện');
 
             const result = JSON.parse(json.data);
-            districtList = result.data;
+            districtList = result.data || [];
 
             const select = document.getElementById(target);
             select.innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
-            districtList.forEach((d) => {
-                const opt = document.createElement("option");
+            districtList.forEach(d => {
+                const opt = document.createElement('option');
                 opt.value = d.DistrictID;
                 opt.textContent = d.DistrictName;
                 select.appendChild(opt);
             });
 
-            document.getElementById(target === "district" ? "ward" : "new-ward").innerHTML =
+            document.getElementById(target === 'district' ? 'ward' : 'new-ward').innerHTML =
                 '<option value="">-- Chọn phường/xã --</option>';
         } catch (err) {
-            console.error("Lỗi tải quận/huyện:", err);
-            Swal.fire({ icon: "error", title: "Lỗi tải quận/huyện", text: err.message });
+            console.error('Lỗi tải quận/huyện:', err);
+            Swal.fire({ icon: 'error', title: 'Lỗi tải quận/huyện', text: err.message });
         }
     }
 
     async function loadWards(districtId, target = "ward") {
         try {
-            const response = await fetch(`/api/ghn/wards?districtId=${districtId}`);
-            const json = await response.json();
-            if (!json || !json.data) throw new Error("Không có dữ liệu phường/xã");
+            const res = await fetch(`/api/ghn/wards?districtId=${districtId}`);
+            const json = await res.json();
+            if (!json || !json.data) throw new Error('Không có dữ liệu phường/xã');
 
             const result = JSON.parse(json.data);
-            const wards = result.data;
+            const wards = result.data || [];
 
             const select = document.getElementById(target);
             select.innerHTML = '<option value="">-- Chọn phường/xã --</option>';
-            wards.forEach((w) => {
-                const opt = document.createElement("option");
+            wards.forEach(w => {
+                const opt = document.createElement('option');
                 opt.value = w.WardCode;
                 opt.textContent = w.WardName;
                 select.appendChild(opt);
             });
         } catch (err) {
-            console.error("Lỗi tải phường/xã:", err);
-            Swal.fire({ icon: "error", title: "Lỗi tải phường/xã", text: err.message });
+            console.error('Lỗi tải phường/xã:', err);
+            Swal.fire({ icon: 'error', title: 'Lỗi tải phường/xã', text: err.message });
         }
     }
 
     async function loadShippingServices(toDistrictId) {
         const fromDistrictId = 1542;
         try {
-            const res = await fetch(
-                `/api/ghn/available-services?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}`
-            );
+            const res = await fetch(`/api/ghn/available-services?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}`);
             const json = await res.json();
-            const services = JSON.parse(json.data).data;
+            const services = JSON.parse(json.data).data || [];
 
-            const select = document.getElementById("shippingMethod");
-            select.innerHTML = "";
-
-            services.forEach((service) => {
-                const opt = document.createElement("option");
-                opt.value = service.service_id;
-                opt.textContent = service.short_name + ` (${service.service_type_id})`;
+            const select = document.getElementById('shippingMethod');
+            select.innerHTML = '';
+            services.forEach(srv => {
+                const opt = document.createElement('option');
+                opt.value = srv.service_id;
+                opt.textContent = srv.short_name + ` (${srv.service_type_id})`;
                 select.appendChild(opt);
             });
 
-            if (services.length > 0) {
+            if (services.length) {
                 select.value = services[0].service_id;
                 await calculateShipping();
             }
@@ -578,145 +491,114 @@
             loadingState.shippingServices = true;
             checkLoadingComplete();
         } catch (err) {
-            console.error("Lỗi tải dịch vụ vận chuyển:", err);
-            Swal.fire({
-                icon: "error",
-                title: "Lỗi",
-                text: "Không lấy được dịch vụ vận chuyển: " + err.message
-            });
+            console.error('Lỗi tải dịch vụ vận chuyển:', err);
+            Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Không lấy được dịch vụ vận chuyển: ' + err.message });
             loadingState.shippingServices = true;
             checkLoadingComplete();
         }
     }
 
     async function calculateShipping() {
-        const toDistrictId = document.getElementById("district").value;
-        const toWardCode = document.getElementById("ward").value;
-        const serviceId = document.getElementById("shippingMethod").value;
+        const toDistrictId = document.getElementById('district').value;
+        const toWardCode = document.getElementById('ward').value;
+        const serviceId = document.getElementById('shippingMethod').value;
         const fromDistrictId = 1542;
-
         if (!toDistrictId || !toWardCode || !serviceId) return;
 
         try {
-            const response = await fetch(
-                `/api/ghn/shipping-fee?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}&toWardCode=${toWardCode}&weight=500&length=20&width=15&height=10&serviceId=${serviceId}&insuranceValue=100000`
-            );
-            const json = await response.json();
-            const fee = JSON.parse(json.data).data.total;
+            const res = await fetch(`/api/ghn/shipping-fee?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}&toWardCode=${toWardCode}&weight=500&length=20&width=15&height=10&serviceId=${serviceId}&insuranceValue=100000`);
+            const json = await res.json();
+            const fee = JSON.parse(json.data).data.total || 0;
 
-            document.getElementById("shipping-fee").textContent = formatVND(fee);
+            document.getElementById('shipping-fee').textContent = formatVND(fee);
 
-            // Re-apply freeship if user had selected a shipping voucher
-            if (document.getElementById("ship-voucher").value) {
-                await applyShipVoucher(); // recalc based on new fee
+            if (document.getElementById('ship-voucher').value) {
+                await applyShipVoucher(); // re-apply freeship with new fee
             } else {
-                document.getElementById("discount-ship").textContent = formatVND(0);
+                document.getElementById('discount-ship').textContent = formatVND(0);
             }
-
             updateTotal();
         } catch (err) {
-            console.error("Lỗi tính phí vận chuyển:", err);
-            Swal.fire({ icon: "error", title: "Lỗi tính phí vận chuyển", text: err.message });
+            console.error('Lỗi tính phí vận chuyển:', err);
+            Swal.fire({ icon: 'error', title: 'Lỗi tính phí vận chuyển', text: err.message });
         }
     }
 
     // ================== TOTAL & UI FNs ==================
     function updateTotal() {
-        const subtotal = onlyDigits(document.getElementById("subtotal").textContent);
-        const shipping = onlyDigits(document.getElementById("shipping-fee").textContent);
-        const discountOrder = onlyDigits(document.getElementById("discount-order").textContent);
-        const discountShip = onlyDigits(document.getElementById("discount-ship").textContent);
-
-        // Tính tổng tiền, đảm bảo không âm
+        const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
+        const shipping = onlyDigits(document.getElementById('shipping-fee').textContent);
+        const discountOrder = onlyDigits(document.getElementById('discount-order').textContent);
+        const discountShip = onlyDigits(document.getElementById('discount-ship').textContent);
         const total = Math.max(0, subtotal + shipping - discountOrder - discountShip);
-        document.getElementById("total").textContent = formatVND(total);
-        console.log(`updateTotal: subtotal=${subtotal}, shipping=${shipping}, discountOrder=${discountOrder}, discountShip=${discountShip}, total=${total}`);
+        document.getElementById('total').textContent = formatVND(total);
     }
 
     // ================== ADDRESS BOOK ==================
     async function loadSavedAddresses() {
         try {
-            if (!provinceList || !provinceList.length) {
-                await loadProvinces();
-            }
+            if (!provinceList.length) await loadProvinces();
 
-            const response = await fetch("/api/checkout/addresses", { credentials: "include" });
-            const data = await response.json();
-            if (!response.ok || !data.success)
-                throw new Error(data.message || "Không thể tải danh sách địa chỉ");
+            const res = await fetch('/api/checkout/addresses', { credentials: 'include' });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'Không thể tải danh sách địa chỉ');
 
-            const addressListEl = document.getElementById("address-list");
-            addressListEl.innerHTML = data.data.length ? "" : "<p>Không có địa chỉ nào được lưu.</p>";
+            const listEl = document.getElementById('address-list');
+            listEl.innerHTML = data.data.length ? '' : '<p>Không có địa chỉ nào được lưu.</p>';
 
-            data.data.forEach((address) => {
-                const card = document.createElement("div");
-                card.className = "address-card card mb-2 p-3";
-                card.setAttribute("data-id", address.id);
-                card.setAttribute("data-nguoi-nhan", address.nguoiNhan || "");
-                card.setAttribute("data-sdt", address.soDienThoaiNguoiNhan || "");
-                card.setAttribute("data-chi-tiet", address.chiTietDiaChi || "");
-                card.setAttribute("data-phuong-xa", address.phuongXa || "");
-                card.setAttribute("data-quan-huyen", address.quanHuyen || "");
-                card.setAttribute("data-tinh-thanh-pho", address.tinhThanhPho || "");
+            data.data.forEach(address => {
+                const card = document.createElement('div');
+                card.className = 'address-card card mb-2 p-3';
+                card.setAttribute('data-id', address.id);
+                card.setAttribute('data-nguoi-nhan', address.nguoiNhan || '');
+                card.setAttribute('data-sdt', address.soDienThoaiNguoiNhan || '');
+                card.setAttribute('data-chi-tiet', address.chiTietDiaChi || '');
+                card.setAttribute('data-phuong-xa', address.phuongXa || '');
+                card.setAttribute('data-quan-huyen', address.quanHuyen || '');
+                card.setAttribute('data-tinh-thanh-pho', address.tinhThanhPho || '');
                 card.innerHTML = `
           <div class="card-body">
-            <h6 class="card-title">
-              ${address.nguoiNhan}
-              ${address.macDinh ? '<span class="badge bg-primary ms-2">Mặc định</span>' : ""}
-            </h6>
+            <h6 class="card-title">${address.nguoiNhan} ${address.macDinh ? '<span class="badge bg-primary ms-2">Mặc định</span>' : ''}</h6>
             <p class="card-text">${address.chiTietDiaChi}, ${address.phuongXa}, ${address.quanHuyen}, ${address.tinhThanhPho}</p>
             <p class="card-text">SĐT: ${address.soDienThoaiNguoiNhan}</p>
             <button type="button" class="btn btn-primary btn-sm" onclick="selectAddress(this)">Chọn</button>
           </div>`;
-                addressListEl.appendChild(card);
+                listEl.appendChild(card);
             });
 
-            const defaultAddress = data.data.find((a) => a.macDinh);
+            const defaultAddress = data.data.find(a => a.macDinh);
             if (defaultAddress) {
-                const fullNameInput = document.getElementById("fullName");
-                const phoneInput = document.getElementById("phone");
-                const addressInput = document.getElementById("address");
-                const addressIdInput = document.getElementById("addressId");
-                const provinceSelect = document.getElementById("province");
-                const districtSelect = document.getElementById("district");
-                const wardSelect = document.getElementById("ward");
+                const fullNameInput = document.getElementById('fullName');
+                const phoneInput = document.getElementById('phone');
+                const addressInput = document.getElementById('address');
+                const addressIdInput = document.getElementById('addressId');
+                const provinceSelect = document.getElementById('province');
+                const districtSelect = document.getElementById('district');
+                const wardSelect = document.getElementById('ward');
 
                 addressIdInput.value = defaultAddress.id;
                 fullNameInput.value = defaultAddress.nguoiNhan || fullNameInput.value;
                 phoneInput.value = defaultAddress.soDienThoaiNguoiNhan || phoneInput.value;
-                addressInput.value = `${defaultAddress.chiTietDiaChi || ""}, ${defaultAddress.phuongXa || ""}, ${defaultAddress.quanHuyen || ""}, ${defaultAddress.tinhThanhPho || ""}`
-                    .replace(/, ,/g, "")
-                    .replace(/^,|,$/g, "");
+                addressInput.value = `${defaultAddress.chiTietDiaChi || ''}, ${defaultAddress.phuongXa || ''}, ${defaultAddress.quanHuyen || ''}, ${defaultAddress.tinhThanhPho || ''}`
+                    .replace(/, ,/g, '').replace(/^,|,$/g, '');
 
-                const normalize = (str) =>
-                    str
-                        ?.toLowerCase()
-                        .replace(/(tỉnh|thành phố)/gi, "")
-                        .replace(/[\s.\-]/g, "")
-                        .normalize("NFD")
-                        .replace(/[\u0300-\u036f]/g, "");
+                const normalize = (str) => str?.toLowerCase().replace(/(tỉnh|thành phố)/gi,'').replace(/[\s.\-]/g,'')
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
-                const provinceMatch = provinceList.find((p) =>
-                    normalize(p.ProvinceName).includes(normalize(defaultAddress.tinhThanhPho))
-                );
+                const provinceMatch = provinceList.find(p => normalize(p.ProvinceName).includes(normalize(defaultAddress.tinhThanhPho)));
                 if (provinceMatch) {
                     provinceSelect.value = provinceMatch.ProvinceID;
                     await loadDistricts(provinceMatch.ProvinceID);
 
-                    const districtMatch = districtList.find((d) =>
-                        normalize(d.DistrictName).includes(normalize(defaultAddress.quanHuyen))
-                    );
+                    const districtMatch = districtList.find(d => normalize(d.DistrictName).includes(normalize(defaultAddress.quanHuyen)));
                     if (districtMatch) {
                         districtSelect.value = districtMatch.DistrictID;
                         await loadWards(districtMatch.DistrictID);
 
                         const wardRes = await fetch(`/api/ghn/wards?districtId=${districtMatch.DistrictID}`);
                         const wardJson = await wardRes.json();
-                        const wards = JSON.parse(wardJson.data).data;
-
-                        const wardMatch = wards.find((w) =>
-                            normalize(w.WardName).includes(normalize(defaultAddress.phuongXa))
-                        );
+                        const wards = JSON.parse(wardJson.data).data || [];
+                        const wardMatch = wards.find(w => normalize(w.WardName).includes(normalize(defaultAddress.phuongXa)));
                         if (wardMatch) {
                             wardSelect.value = wardMatch.WardCode;
                             await loadShippingServices(districtMatch.DistrictID);
@@ -724,72 +606,63 @@
                     }
                 }
 
-                const defaultCard = addressListEl.querySelector(`[data-id="${defaultAddress.id}"]`);
+                const defaultCard = listEl.querySelector(`[data-id="${defaultAddress.id}"]`);
                 if (defaultCard) {
-                    document.querySelectorAll(".address-card").forEach((c) => c.classList.remove("active"));
-                    defaultCard.classList.add("active");
+                    document.querySelectorAll('.address-card').forEach(c => c.classList.remove('active'));
+                    defaultCard.classList.add('active');
                 }
+            } else {
+                // Không có địa chỉ mặc định -> tránh kẹt overlay
+                loadingState.shippingServices = true;
+                checkLoadingComplete();
             }
 
             loadingState.addresses = true;
             checkLoadingComplete();
         } catch (err) {
-            console.error("Lỗi tải danh sách địa chỉ:", err);
-            Swal.fire({ icon: "error", title: "Lỗi tải địa chỉ", text: err.message });
+            console.error('Lỗi tải danh sách địa chỉ:', err);
+            Swal.fire({ icon: 'error', title: 'Lỗi tải địa chỉ', text: err.message });
             loadingState.addresses = true;
+            loadingState.shippingServices = true; // tránh kẹt overlay
             checkLoadingComplete();
         }
     }
 
     window.selectAddress = function (button) {
-        const card = button.closest(".address-card");
-        const addressId = card.dataset.id;
-        const fullNameInput = document.getElementById("fullName");
-        const phoneInput = document.getElementById("phone");
-        const addressInput = document.getElementById("address");
-        const addressIdInput = document.getElementById("addressId");
-        const provinceSelect = document.getElementById("province");
-        const districtSelect = document.getElementById("district");
-        const wardSelect = document.getElementById("ward");
+        const card = button.closest('.address-card');
+        const fullNameInput = document.getElementById('fullName');
+        const phoneInput = document.getElementById('phone');
+        const addressInput = document.getElementById('address');
+        const addressIdInput = document.getElementById('addressId');
+        const provinceSelect = document.getElementById('province');
+        const districtSelect = document.getElementById('district');
+        const wardSelect = document.getElementById('ward');
 
-        addressIdInput.value = addressId;
+        addressIdInput.value = card.dataset.id;
         fullNameInput.value = card.dataset.nguoiNhan || fullNameInput.value;
         phoneInput.value = card.dataset.sdt || phoneInput.value;
         addressInput.value = `${card.dataset.chiTiet}, ${card.dataset.phuongXa}, ${card.dataset.quanHuyen}, ${card.dataset.tinhThanhPho}`;
 
-        const normalize = (str) =>
-            str
-                ?.toLowerCase()
-                .replace(/(tỉnh|thành phố)/gi, "")
-                .replace(/[\s.\-]/g, "")
-                .normalize("NFD")
-                .replace(/[\u0300-\u036f]/g, "");
+        const normalize = (str)=>str?.toLowerCase().replace(/(tỉnh|thành phố)/gi,'').replace(/[\s.\-]/g,'')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
         (async function updateAddressDetails() {
             try {
                 if (!provinceList.length) await loadProvinces();
-
-                const province = provinceList.find((p) =>
-                    normalize(p.ProvinceName).includes(normalize(card.dataset.tinhThanhPho))
-                );
+                const province = provinceList.find(p => normalize(p.ProvinceName).includes(normalize(card.dataset.tinhThanhPho)));
                 if (province) {
                     provinceSelect.value = province.ProvinceID;
                     await loadDistricts(province.ProvinceID);
 
-                    const district = districtList.find((d) =>
-                        normalize(d.DistrictName).includes(normalize(card.dataset.quanHuyen))
-                    );
+                    const district = districtList.find(d => normalize(d.DistrictName).includes(normalize(card.dataset.quanHuyen)));
                     if (district) {
                         districtSelect.value = district.DistrictID;
                         await loadWards(district.DistrictID);
 
                         const wardRes = await fetch(`/api/ghn/wards?districtId=${district.DistrictID}`);
                         const wardJson = await wardRes.json();
-                        const wards = JSON.parse(wardJson.data).data;
-
-                        const ward = wards.find((w) =>
-                            normalize(w.WardName).includes(normalize(card.dataset.phuongXa))
-                        );
+                        const wards = JSON.parse(wardJson.data).data || [];
+                        const ward = wards.find(w => normalize(w.WardName).includes(normalize(card.dataset.phuongXa)));
                         if (ward) {
                             wardSelect.value = ward.WardCode;
                             await loadShippingServices(district.DistrictID);
@@ -797,282 +670,234 @@
                     }
                 }
             } catch (err) {
-                console.error("Lỗi khi cập nhật địa chỉ:", err);
-                Swal.fire({ icon: "error", title: "Lỗi cập nhật địa chỉ", text: err.message });
+                console.error('Lỗi khi cập nhật địa chỉ:', err);
+                Swal.fire({ icon: 'error', title: 'Lỗi cập nhật địa chỉ', text: err.message });
             }
         })();
 
-        document.querySelectorAll(".address-card").forEach((c) => c.classList.remove("active"));
-        card.classList.add("active");
-        bootstrap.Modal.getInstance(document.getElementById("addressModal")).hide();
+        document.querySelectorAll('.address-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
     };
 
     window.showAddAddressForm = function () {
-        document.getElementById("add-address-form").classList.remove("d-none");
-        document.getElementById("new-fullName").value = "";
-        document.getElementById("new-phone").value = "";
-        document.getElementById("new-address").value = "";
-        document.getElementById("new-province").value = "";
-        document.getElementById("new-district").innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
-        document.getElementById("new-ward").innerHTML = '<option value="">-- Chọn phường/xã --</option>';
-        loadProvinces("new-province");
+        document.getElementById('add-address-form').classList.remove('d-none');
+        document.getElementById('new-fullName').value = '';
+        document.getElementById('new-phone').value = '';
+        document.getElementById('new-address').value = '';
+        document.getElementById('new-province').value = '';
+        document.getElementById('new-district').innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+        document.getElementById('new-ward').innerHTML = '<option value="">-- Chọn phường/xã --</option>';
+        loadProvinces('new-province');
     };
 
     window.hideAddAddressForm = function () {
-        document.getElementById("add-address-form").classList.add("d-none");
+        document.getElementById('add-address-form').classList.add('d-none');
     };
 
     window.saveNewAddress = async function () {
-        const fullName = document.getElementById("new-fullName").value.trim();
-        const phone = document.getElementById("new-phone").value.trim();
-        const address = document.getElementById("new-address").value.trim();
-        const provinceSel = document.getElementById("new-province");
-        const districtSel = document.getElementById("new-district");
-        const wardSel = document.getElementById("new-ward");
+        const fullName = document.getElementById('new-fullName').value.trim();
+        const phone = document.getElementById('new-phone').value.trim();
+        const address = document.getElementById('new-address').value.trim();
+        const pSel = document.getElementById('new-province');
+        const dSel = document.getElementById('new-district');
+        const wSel = document.getElementById('new-ward');
 
-        const province = provinceSel.options[provinceSel.selectedIndex]?.text || "";
-        const district = districtSel.options[districtSel.selectedIndex]?.text || "";
-        const ward = wardSel.options[wardSel.selectedIndex]?.text || "";
+        const province = pSel.options[pSel.selectedIndex]?.text || '';
+        const district = dSel.options[dSel.selectedIndex]?.text || '';
+        const ward = wSel.options[wSel.selectedIndex]?.text || '';
 
         if (!fullName || !phone || !address || !province || !district || !ward) {
-            Swal.fire({ icon: "warning", title: "Lỗi", text: "Vui lòng điền đầy đủ thông tin địa chỉ!" });
+            Swal.fire({ icon:'warning', title:'Lỗi', text:'Vui lòng điền đầy đủ thông tin địa chỉ!' });
             return;
         }
 
-        document.getElementById("fullName").value = fullName;
-        document.getElementById("phone").value = phone;
-        document.getElementById("address").value = `${address}, ${ward}, ${district}, ${province}`;
-        document.getElementById("addressId").value = "";
+        document.getElementById('fullName').value = fullName;
+        document.getElementById('phone').value = phone;
+        document.getElementById('address').value = `${address}, ${ward}, ${district}, ${province}`;
+        document.getElementById('addressId').value = '';
 
-        document.getElementById("province").value = provinceSel.value;
-        document.getElementById("district").value = districtSel.value;
-        document.getElementById("ward").value = wardSel.value;
+        document.getElementById('province').value = pSel.value;
+        document.getElementById('district').value = dSel.value;
+        document.getElementById('ward').value = wSel.value;
 
-        await loadShippingServices(document.getElementById("district").value);
+        await loadShippingServices(document.getElementById('district').value);
         await calculateShipping();
 
-        bootstrap.Modal.getInstance(document.getElementById("addressModal")).hide();
+        bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
         hideAddAddressForm();
     };
 
     // ================== WALLET ==================
     async function loadWalletBalance() {
-        const el = document.getElementById("wallet-balance");
-        el.textContent = "(Đang tải...)";
-        el.classList.add("loading");
+        const el = document.getElementById('wallet-balance');
+        el.textContent = '(Đang tải...)';
+        el.classList.add('loading');
         try {
-            const response = await fetch("/api/wallet/balance", { credentials: "include" });
-            const data = await response.json();
-            if (response.ok && data.success) {
-                el.textContent = `(Số dư: ${formatVND(data.data || 0)})`;
-            } else {
-                el.textContent = "(Không có ví)";
-                Swal.fire({ icon: "warning", title: "Cảnh báo", text: data.message || "Không thể tải số dư ví." });
+            const res = await fetch('/api/wallet/balance', { credentials: 'include' });
+            const data = await res.json();
+            if (res.ok && data.success) el.textContent = `(Số dư: ${formatVND(data.data || 0)})`;
+            else {
+                el.textContent = '(Không có ví)';
+                Swal.fire({ icon:'warning', title:'Cảnh báo', text: data.message || 'Không thể tải số dư ví.' });
             }
             loadingState.walletBalance = true;
             checkLoadingComplete();
         } catch (err) {
-            console.error("Lỗi tải số dư ví:", err);
-            el.textContent = "(Lỗi tải số dư)";
-            Swal.fire({ icon: "error", title: "Lỗi", text: "Không thể tải số dư ví. Vui lòng kiểm tra kết nối!" });
+            console.error('Lỗi tải số dư ví:', err);
+            el.textContent = '(Lỗi tải số dư)';
+            Swal.fire({ icon:'error', title:'Lỗi', text:'Không thể tải số dư ví. Vui lòng kiểm tra kết nối!' });
             loadingState.walletBalance = true;
             checkLoadingComplete();
         } finally {
-            el.classList.remove("loading");
+            el.classList.remove('loading');
         }
     }
 
     // ================== ORDER ITEMS ==================
     async function loadOrderItems() {
-        const container = document.getElementById("order-items");
-        let subtotal = 0;
+        const container = document.getElementById('order-items');
+        const mode = getCheckoutMode();
         let items = [];
+        let subtotal = 0;
 
-        if (isFromCart()) {
+        if (mode === 'cart') {
             try {
-                const response = await fetch("/api/cart", { credentials: "include" });
-                if (response.ok) {
-                    const cartData = await response.json();
-                    items = (cartData.chiTietGioHang || []).map((item) => ({
-                        chiTietSanPhamId: item.chiTietSanPham.id,
-                        tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
-                        soLuong: item.soLuong,
-                        gia: item.gia,
-                        urlHinhAnh:
-                            item.chiTietSanPham.hinhAnhSanPhams && item.chiTietSanPham.hinhAnhSanPhams.length > 0
-                                ? item.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh
-                                : item.chiTietSanPham.sanPham.urlHinhAnh || "/images/default-product.jpg",
-                        sizeName: item.chiTietSanPham.kichCo?.ten || "N/A",
-                        colorName: item.chiTietSanPham.mauSac?.tenMau || "N/A"
-                    }));
-                    subtotal = items.reduce((sum, it) => sum + it.gia * it.soLuong, 0);
-                } else {
-                    Swal.fire({ icon: "error", title: "Lỗi", text: "Không thể tải giỏ hàng!" });
-                }
-            } catch (err) {
-                console.error("Lỗi khi tải giỏ hàng:", err);
-                Swal.fire({ icon: "error", title: "Lỗi", text: "Không thể tải giỏ hàng!" });
+                const response = await fetch('/api/cart', { credentials: 'include' });
+                if (!response.ok) throw new Error('Không thể tải giỏ hàng');
+                const cartData = await response.json();
+                items = (cartData.chiTietGioHang || []).map(item => ({
+                    chiTietSanPhamId: item.chiTietSanPham.id,
+                    tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
+                    soLuong: item.soLuong,
+                    gia: item.gia,
+                    urlHinhAnh: (item.chiTietSanPhams?.[0]?.urlHinhAnh)
+                        || (item.chiTietSanPham.hinhAnhSanPhams?.[0]?.urlHinhAnh)
+                        || item.chiTietSanPham.sanPham.urlHinhAnh
+                        || '/images/default-product.jpg',
+                    sizeName: item.chiTietSanPham.kichCo?.ten || 'N/A',
+                    colorName: item.chiTietSanPham.mauSac?.tenMau || 'N/A',
+                }));
+            } catch (e) {
+                Swal.fire({ icon:'error', title:'Lỗi', text: e.message || 'Không thể tải giỏ hàng!' });
+            }
+        } else if (mode === 'cart-selected') {
+            const ls = localStorage.getItem('cartSelectedItems');
+            items = ls ? JSON.parse(ls) : [];
+            if (!items.length) {
+                container.innerHTML = `<p class="text-gray-600">Không có sản phẩm nào được chọn để thanh toán.</p>`;
+                document.getElementById('submit-order').disabled = true;
             }
         } else {
-            const checkoutItem = JSON.parse(localStorage.getItem("checkoutItem"));
-            if (checkoutItem) {
-                items = [checkoutItem];
-                subtotal = checkoutItem.gia * checkoutItem.soLuong;
+            const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
+            items = checkoutItem ? [checkoutItem] : [];
+            if (!items.length) {
+                container.innerHTML = `<p class="text-gray-600">Không có sản phẩm trong đơn hàng.</p>`;
+                document.getElementById('submit-order').disabled = true;
             }
         }
 
-        if (!items.length) {
-            container.innerHTML = `<p class="text-gray-600">Không có sản phẩm trong ${isFromCart() ? "giỏ hàng" : "đơn hàng"}.</p>`;
-            document.getElementById("submit-order").disabled = true;
-        } else {
-            container.innerHTML = items
-                .map(
-                    (item) => `
-        <div class="order-item flex items-center space-x-4">
+        subtotal = items.reduce((sum, it) => sum + Number(it.gia || 0) * Number(it.soLuong || 0), 0);
+
+        if (items.length) {
+            container.innerHTML = items.map(item => `
+        <div class="order-item d-flex align-items-center gap-3">
           <img src="${item.urlHinhAnh}" alt="${item.tenSanPham}" class="order-item-img" onerror="this.src='/images/default-product.jpg'"/>
           <div class="flex-1">
-            <h6 class="font-semibold text-gray-800">${item.tenSanPham}</h6>
-            <p class="text-gray-600 text-sm">Kích cỡ: ${item.sizeName}</p>
-            <p class="text-gray-600 text-sm">Màu sắc: ${item.colorName}</p>
-            <p class="text-gray-600 text-sm">Số lượng: ${item.soLuong}</p>
-            <p class="text-gray-600 text-sm">Đơn giá: ${formatVND(item.gia)}</p>
-            <p class="text-[#153054] font-bold">Thành tiền: ${formatVND(item.gia * item.soLuong)}</p>
+            <h6 class="fw-semibold text-gray-800 mb-1">${item.tenSanPham}</h6>
+            <p class="text-gray-600 small mb-0">Kích cỡ: ${item.sizeName}</p>
+            <p class="text-gray-600 small mb-0">Màu sắc: ${item.colorName}</p>
+            <p class="text-gray-600 small mb-0">Số lượng: ${item.soLuong}</p>
+            <p class="text-gray-600 small mb-0">Đơn giá: ${formatVND(item.gia)}</p>
+            <p class="text-[#153054] fw-bold mb-0">Thành tiền: ${formatVND(Number(item.gia)*Number(item.soLuong))}</p>
           </div>
-        </div>`
-                )
-                .join("");
+        </div>
+      `).join('');
         }
 
-        // initialize numbers
-        document.getElementById("subtotal").textContent = formatVND(subtotal);
-        if (!document.getElementById("shipping-fee").textContent.trim()) {
-            document.getElementById("shipping-fee").textContent = formatVND(0);
+        document.getElementById('subtotal').textContent = formatVND(subtotal);
+        if (!document.getElementById('shipping-fee').textContent.trim()) {
+            document.getElementById('shipping-fee').textContent = formatVND(0);
         }
-        document.getElementById("discount-order").textContent = formatVND(0);
-        document.getElementById("discount-ship").textContent = formatVND(0);
+        document.getElementById('discount-order').textContent = formatVND(0);
+        document.getElementById('discount-ship').textContent = formatVND(0);
         updateTotal();
 
         loadingState.orderItems = true;
         checkLoadingComplete();
     }
 
+    // Build body for voucher APIs (for buy-now & cart-selected)
+    function buildVoucherBodyForCurrentMode() {
+        const mode = getCheckoutMode();
+        if (mode === 'cart') return []; // server dùng toàn bộ giỏ
+        if (mode === 'cart-selected') {
+            const items = JSON.parse(localStorage.getItem('cartSelectedItems') || '[]');
+            return items.map(i => ({
+                chiTietSanPhamId: i.chiTietSanPhamId,
+                gia: Number(i.gia || 0),
+                soLuong: Number(i.soLuong || 0),
+            }));
+        }
+        const it = JSON.parse(localStorage.getItem('checkoutItem') || 'null');
+        return it ? [{ chiTietSanPhamId: it.chiTietSanPhamId, gia: Number(it.gia||0), soLuong: Number(it.soLuong||0) }] : [];
+    }
+
     // ================== VOUCHERS ==================
     async function applyOrderVoucher() {
-        const voucherCode = document.getElementById("order-voucher").value.trim();
-        const discountEl = document.getElementById("discount-order");
+        const voucherCode = document.getElementById('order-voucher').value.trim();
+        const discountEl = document.getElementById('discount-order');
+        if (!voucherCode) { discountEl.textContent = formatVND(0); updateTotal(); return; }
 
-        if (!voucherCode) {
-            discountEl.textContent = formatVND(0);
-            updateTotal();
-            return;
-        }
-
-        // Nguồn áp dụng: cart | buy-now
-        const source = isFromCart() ? "cart" : "buy-now";
-        // LẤY SUBTOTAL TỪ UI để BE tính đúng (đặc biệt cho buy-now)
-        const subtotal = onlyDigits(document.getElementById("subtotal").textContent);
-
-        // Payload cho buy-now (server có thể bỏ qua nếu dùng cart)
-        let checkoutItems = [];
-        if (source === "buy-now") {
-            const checkoutItem = JSON.parse(localStorage.getItem("checkoutItem"));
-            if (checkoutItem) {
-                checkoutItems = [{
-                    chiTietSanPhamId: checkoutItem.chiTietSanPhamId,
-                    gia: checkoutItem.gia,
-                    soLuong: checkoutItem.soLuong
-                }];
-            }
-        }
+        const mode = getCheckoutMode();
+        const source = mode; // 'cart' | 'cart-selected' | 'buy-now'
+        const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
+        const checkoutItems = buildVoucherBodyForCurrentMode();
 
         try {
-            const url =
-                `/api/checkout/apply-voucher` +
-                `?voucher=${encodeURIComponent(voucherCode)}` +
-                `&source=${source}` +
-                `&type=ORDER` +                 // phân luồng ORDER
-                `&subtotal=${subtotal}`;        // ✅ THÊM SUBTOTAL
-
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
+            const url = `/api/checkout/apply-voucher?voucher=${encodeURIComponent(voucherCode)}&source=${source}&type=ORDER&subtotal=${subtotal}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(checkoutItems)
             });
+            const data = await res.json();
 
-            const data = await response.json();
-
-            if (response.ok && data.success) {
+            if (res.ok && (data.success || data.isSuccess)) {
                 const discount = Number(data.data || 0);
                 discountEl.textContent = formatVND(discount);
-                Swal.fire({ icon: "success", title: "Thành công", text: data.message, timer: 1200, showConfirmButton: false });
+                Swal.fire({ icon:'success', title:'Thành công', text: data.message || 'Áp dụng mã thành công', timer:1200, showConfirmButton:false });
             } else {
                 discountEl.textContent = formatVND(0);
-                Swal.fire({ icon: "error", title: "Lỗi", text: data.message || "Áp dụng mã thất bại" });
+                Swal.fire({ icon:'error', title:'Lỗi', text: data.message || 'Áp dụng mã thất bại' });
             }
         } catch (err) {
-            console.error("Lỗi áp dụng ORDER voucher:", err);
+            console.error('Lỗi áp dụng ORDER voucher:', err);
             discountEl.textContent = formatVND(0);
-            Swal.fire({ icon: "error", title: "Lỗi", text: "Đã xảy ra lỗi khi áp dụng mã ORDER!" });
+            Swal.fire({ icon:'error', title:'Lỗi', text:'Đã xảy ra lỗi khi áp dụng mã ORDER!' });
         } finally {
             updateTotal();
         }
     }
 
-
-    // Phần frontend: hàm applyShipVoucher trong script của trang thanh-toan.html
     async function applyShipVoucher() {
         const code = document.getElementById('ship-voucher').value.trim();
         const elDiscountShip = document.getElementById('discount-ship');
-        if (!code) {
-            elDiscountShip.textContent = formatVND(0);
-            updateTotal();
-            return;
-        }
+        if (!code) { elDiscountShip.textContent = formatVND(0); updateTotal(); return; }
 
         const shippingFee = onlyDigits(document.getElementById('shipping-fee').textContent);
         const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
-        const source = isFromCart() ? 'cart' : 'buy-now';
+        const mode = getCheckoutMode();
+        const source = mode;
+        const body = buildVoucherBodyForCurrentMode();
 
         if (shippingFee <= 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Chưa có phí vận chuyển',
-                text: 'Vui lòng chọn địa chỉ để tính phí ship trước.'
-            });
-            elDiscountShip.textContent = formatVND(0);
-            updateTotal();
-            return;
+            Swal.fire({ icon:'warning', title:'Chưa có phí vận chuyển', text:'Vui lòng chọn địa chỉ để tính phí ship trước.' });
+            elDiscountShip.textContent = formatVND(0); updateTotal(); return;
         }
 
-        // Chuẩn bị body cho trường hợp "mua ngay"
-        let body = [];
-        if (source === 'buy-now') {
-            const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem'));
-            if (checkoutItem) {
-                body = [{
-                    chiTietSanPhamId: checkoutItem.chiTietSanPhamId,
-                    gia: checkoutItem.gia,
-                    soLuong: checkoutItem.soLuong
-                }];
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: 'Không tìm thấy thông tin sản phẩm để áp dụng mã freeship.'
-                });
-                elDiscountShip.textContent = formatVND(0);
-                updateTotal();
-                return;
-            }
-        }
-
-        const url = `/api/checkout/apply-voucher` +
-            `?voucher=${encodeURIComponent(code)}` +
-            `&source=${source}` +
-            `&type=SHIPPING` +
-            `&shippingFee=${shippingFee}` +
-            `&subtotal=${subtotal}`;
+        const url = `/api/checkout/apply-voucher?voucher=${encodeURIComponent(code)}&source=${source}&type=SHIPPING&shippingFee=${shippingFee}&subtotal=${subtotal}`;
 
         try {
             const res = await fetch(url, {
@@ -1083,288 +908,205 @@
             });
             const data = await res.json();
 
-            if (res.ok && data.success) {
+            if (res.ok && (data.success || data.isSuccess)) {
                 const currentShip = onlyDigits(document.getElementById('shipping-fee').textContent);
-                const discount = Math.min(Number(data.data || 0), currentShip); // Đảm bảo không vượt phí ship
-                if (discount > 0) {
-                    elDiscountShip.textContent = formatVND(discount);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Áp dụng mã freeship thành công',
-                        text: `Giảm ${formatVND(discount)} phí vận chuyển`,
-                        timer: 1200,
-                        showConfirmButton: false
-                    });
-                } else {
-                    elDiscountShip.textContent = formatVND(0);
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Không áp dụng được',
-                        text: 'Mã freeship không có giá trị giảm hoặc không hợp lệ.'
-                    });
-                }
+                const discount = Math.min(Number(data.data || 0), currentShip);
+                elDiscountShip.textContent = formatVND(discount);
+                Swal.fire({ icon:'success', title:'Áp dụng mã freeship thành công', text:`Giảm ${formatVND(discount)} phí vận chuyển`, timer:1200, showConfirmButton:false });
             } else {
                 elDiscountShip.textContent = formatVND(0);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: data.message || 'Áp dụng mã freeship thất bại'
-                });
+                Swal.fire({ icon:'error', title:'Lỗi', text: data.message || 'Áp dụng mã freeship thất bại' });
             }
         } catch (e) {
             console.error('Lỗi áp dụng mã freeship:', e);
             elDiscountShip.textContent = formatVND(0);
-            Swal.fire({
-                icon: 'error',
-                title: 'Lỗi',
-                text: 'Đã xảy ra lỗi khi áp dụng mã freeship!'
-            });
+            Swal.fire({ icon:'error', title:'Lỗi', text:'Đã xảy ra lỗi khi áp dụng mã freeship!' });
         } finally {
-            updateTotal(); // Luôn cập nhật tổng tiền
+            updateTotal();
         }
     }
-
-    // Gắn sự kiện cho input ship-voucher
-    document.getElementById('ship-voucher').addEventListener('change', applyShipVoucher);
 
     // ================== SUBMIT ORDER ==================
     async function submitOrder(e) {
         e.preventDefault();
-        const btn = document.getElementById("submit-order");
-        btn.classList.add("loading");
+        const btn = document.getElementById('submit-order');
+        btn.classList.add('loading');
         btn.disabled = true;
 
-        const fullName = document.getElementById("fullName").value.trim();
-        const phone = document.getElementById("phone").value.trim();
-        const address = document.getElementById("address").value.trim();
-        const addressId = document.getElementById("addressId").value.trim();
+        const fullName = document.getElementById('fullName').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const address = document.getElementById('address').value.trim();
+        const addressId = document.getElementById('addressId').value.trim();
 
-        const province = document.getElementById("province").options[
-            document.getElementById("province").selectedIndex
-            ]?.text || "";
-        const district = document.getElementById("district").options[
-            document.getElementById("district").selectedIndex
-            ]?.text || "";
-        const ward = document.getElementById("ward").options[
-            document.getElementById("ward").selectedIndex
-            ]?.text || "";
+        const province = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text || '';
+        const district = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text || '';
+        const ward = document.getElementById('ward').options[document.getElementById('ward').selectedIndex]?.text || '';
 
         if (!fullName || !phone || !address) {
-            Swal.fire({ icon: "warning", title: "Lỗi", text: "Vui lòng chọn hoặc nhập đầy đủ thông tin giao hàng!" });
-            btn.classList.remove("loading");
-            btn.disabled = false;
-            return;
+            Swal.fire({ icon:'warning', title:'Lỗi', text:'Vui lòng chọn hoặc nhập đầy đủ thông tin giao hàng!' });
+            btn.classList.remove('loading'); btn.disabled = false; return;
         }
 
-        // Collect items
+        const mode = getCheckoutMode();
         let items = [];
-        let source = "";
-        if (isFromCart()) {
-            try {
-                const response = await fetch("/api/cart", { credentials: "include" });
-                if (response.ok) {
-                    const cartData = await response.json();
-                    items = (cartData.chiTietGioHang || []).map((item) => ({
-                        chiTietSanPhamId: item.chiTietSanPham.id,
-                        tenSanPham: item.chiTietSanPham.sanPham.tenSanPham,
-                        soLuong: item.soLuong,
-                        gia: item.gia
-                    }));
-                    source = "Giỏ hàng (API /cart)";
-                } else {
-                    Swal.fire({ icon: "error", title: "Lỗi", text: "Không thể tải giỏ hàng!" });
-                    btn.classList.remove("loading");
-                    btn.disabled = false;
-                    return;
+        let source = '';
+
+        try {
+            if (mode === 'cart') {
+                const response = await fetch('/api/cart', { credentials: 'include' });
+                if (!response.ok) throw new Error('Không thể tải giỏ hàng');
+                const cartData = await response.json();
+                items = (cartData.chiTietGioHang || []).map(i => ({
+                    chiTietSanPhamId: i.chiTietSanPham.id,
+                    soLuong: i.soLuong,
+                    tenSanPham: i.chiTietSanPham.sanPham.tenSanPham,
+                    gia: i.gia
+                }));
+                source = 'Giỏ hàng (API /cart)';
+            } else if (mode === 'cart-selected') {
+                items = JSON.parse(localStorage.getItem('cartSelectedItems') || '[]')
+                    .map(i => ({ chiTietSanPhamId: i.chiTietSanPhamId, soLuong: i.soLuong, tenSanPham: i.tenSanPham, gia: i.gia }));
+                source = 'Giỏ hàng (đã chọn)';
+            } else {
+                const checkoutItem = JSON.parse(localStorage.getItem('checkoutItem') || 'null');
+                if (checkoutItem) {
+                    items = [{ chiTietSanPhamId: checkoutItem.chiTietSanPhamId, soLuong: checkoutItem.soLuong, tenSanPham: checkoutItem.tenSanPham, gia: checkoutItem.gia }];
+                    source = 'Mua ngay (localStorage.checkoutItem)';
                 }
-            } catch (err) {
-                console.error("Lỗi khi tải giỏ hàng:", err);
-                Swal.fire({ icon: "error", title: "Lỗi", text: "Không thể tải giỏ hàng!" });
-                btn.classList.remove("loading");
-                btn.disabled = false;
-                return;
             }
-        } else {
-            const checkoutItem = JSON.parse(localStorage.getItem("checkoutItem"));
-            if (checkoutItem) {
-                items = [checkoutItem];
-                source = "Mua ngay (localStorage.checkoutItem)";
-            }
+        } catch (err) {
+            Swal.fire({ icon:'error', title:'Lỗi', text: err.message || 'Không thể tải giỏ hàng!' });
+            btn.classList.remove('loading'); btn.disabled = false; return;
         }
 
         if (!items.length) {
-            Swal.fire({
-                icon: "warning",
-                title: "Lỗi",
-                text: `Không có sản phẩm trong ${isFromCart() ? "giỏ hàng" : "đơn hàng"}!`
-            });
-            btn.classList.remove("loading");
-            btn.disabled = false;
-            return;
+            Swal.fire({ icon:'warning', title:'Lỗi', text:`Không có sản phẩm trong ${mode==='cart'?'giỏ hàng':(mode==='cart-selected'?'danh sách đã chọn':'đơn hàng')}!` });
+            btn.classList.remove('loading'); btn.disabled = false; return;
         }
 
         const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
-        const shippingFee = onlyDigits(document.getElementById("shipping-fee").textContent);
-        const subtotal = onlyDigits(document.getElementById("subtotal").textContent);
-        const discountOrder = onlyDigits(document.getElementById("discount-order").textContent);
-        const discountShip = onlyDigits(document.getElementById("discount-ship").textContent);
+        const shippingFee = onlyDigits(document.getElementById('shipping-fee').textContent);
+        const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
+        const discountOrder = onlyDigits(document.getElementById('discount-order').textContent);
+        const discountShip = onlyDigits(document.getElementById('discount-ship').textContent);
         const totalAmount = subtotal + shippingFee - discountOrder - discountShip;
 
-        const orderVoucher = document.getElementById("order-voucher").value.trim();
-        const shipVoucher = document.getElementById("ship-voucher").value.trim();
+        const orderVoucher = document.getElementById('order-voucher').value.trim();
+        const shipVoucher = document.getElementById('ship-voucher').value.trim();
 
         const orderData = {
             addressId: addressId,
             fullName: fullName,
             phone: phone,
-            address: addressId ? "" : `${address}, ${ward}, ${district}, ${province}`,
-            shippingMethod: document.getElementById("shippingMethod").value,
+            address: addressId ? '' : `${address}, ${ward}, ${district}, ${province}`,
+            shippingMethod: document.getElementById('shippingMethod').value,
             paymentMethodId: selectedMethod,
-            notes: document.getElementById("note").value,
-            voucherOrder: orderVoucher || "",
-            voucherShipping: shipVoucher || "",
+            notes: document.getElementById('note').value,
+            voucherOrder: orderVoucher || '',
+            voucherShipping: shipVoucher || '',
             shippingFee: shippingFee,
-            orderItems: items.map((i) => ({ chiTietSanPhamId: i.chiTietSanPhamId, soLuong: i.soLuong })),
+            orderItems: items.map(i => ({ chiTietSanPhamId: i.chiTietSanPhamId, soLuong: i.soLuong })),
             source: source
         };
 
         // Ví điện tử – kiểm tra số dư
-        if (selectedMethod === "550E8400-E29B-41D4-A716-446655440019") {
+        if (selectedMethod === '550E8400-E29B-41D4-A716-446655440019') {
             try {
-                const response = await fetch("/api/wallet/balance", { credentials: "include" });
-                const data = await response.json();
-                if (!response.ok || !data.success || (data.data || 0) < totalAmount) {
+                const res = await fetch('/api/wallet/balance', { credentials: 'include' });
+                const data = await res.json();
+                if (!res.ok || !data.success || (data.data || 0) < totalAmount) {
                     Swal.fire({
-                        icon: "warning",
-                        title: "Số dư không đủ",
-                        html: `
-              <p>Bạn cần <strong>${formatVND(totalAmount)}</strong> nhưng số dư hiện tại là <strong>${formatVND(
-                            data.data || 0
-                        )}</strong>.</p>
-              <p>Vui lòng nạp thêm tiền vào ví để tiếp tục.</p>
-            `,
-                        showCancelButton: true,
-                        confirmButtonText: "Nạp tiền ngay",
-                        cancelButtonText: "Quay lại",
-                        confirmButtonColor: "#153054",
-                        cancelButtonColor: "#d33"
-                    }).then((result) => {
-                        if (result.isConfirmed) window.location.href = "/vi?redirect=/thanh-toan";
-                    });
-                    btn.classList.remove("loading");
-                    btn.disabled = false;
-                    return;
+                        icon:'warning',
+                        title:'Số dư không đủ',
+                        html:`<p>Bạn cần <strong>${formatVND(totalAmount)}</strong> nhưng số dư hiện tại là <strong>${formatVND(data.data || 0)}</strong>.</p><p>Vui lòng nạp thêm tiền vào ví để tiếp tục.</p>`,
+                        showCancelButton:true,
+                        confirmButtonText:'Nạp tiền ngay',
+                        cancelButtonText:'Quay lại',
+                        confirmButtonColor:'#153054',
+                        cancelButtonColor:'#d33',
+                    }).then(r => { if (r.isConfirmed) location.href = '/vi?redirect=/thanh-toan'; });
+                    btn.classList.remove('loading'); btn.disabled = false; return;
                 }
             } catch (err) {
-                console.error("Lỗi kiểm tra số dư ví:", err);
-                Swal.fire({ icon: "error", title: "Lỗi", text: "Không thể kiểm tra số dư ví. Vui lòng thử lại!" });
-                btn.classList.remove("loading");
-                btn.disabled = false;
-                return;
+                console.error('Lỗi kiểm tra số dư ví:', err);
+                Swal.fire({ icon:'error', title:'Lỗi', text:'Không thể kiểm tra số dư ví. Vui lòng thử lại!' });
+                btn.classList.remove('loading'); btn.disabled = false; return;
             }
         }
 
         const confirmResult = await Swal.fire({
-            icon: "question",
-            title: "Xác nhận thanh toán",
+            icon:'question',
+            title:'Xác nhận thanh toán',
             html: `
         <p><strong>Tổng tiền:</strong> ${formatVND(totalAmount)}</p>
         <p><strong>Phương thức thanh toán:</strong> ${
-                selectedMethod === "550E8400-E29B-41D4-A716-446655440017"
-                    ? "Thanh toán khi nhận hàng (COD)"
-                    : selectedMethod === "550E8400-E29B-41D4-A716-446655440018"
-                        ? "Chuyển khoản ngân hàng"
-                        : "Ví điện tử"
+                selectedMethod === '550E8400-E29B-41D4-A716-446655440017' ? 'Thanh toán khi nhận hàng (COD)'
+                    : selectedMethod === '550E8400-E29B-41D4-A716-446655440018' ? 'Chuyển khoản ngân hàng' : 'Ví điện tử'
             }</p>
         <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
       `,
-            showCancelButton: true,
-            confirmButtonText: "Xác nhận",
-            cancelButtonText: "Hủy",
-            confirmButtonColor: "#153054",
-            cancelButtonColor: "#d33"
+            showCancelButton:true,
+            confirmButtonText:'Xác nhận',
+            cancelButtonText:'Hủy',
+            confirmButtonColor:'#153054',
+            cancelButtonColor:'#d33'
         });
 
-        if (!confirmResult.isConfirmed) {
-            btn.classList.remove("loading");
-            btn.disabled = false;
-            return;
-        }
+        if (!confirmResult.isConfirmed) { btn.classList.remove('loading'); btn.disabled = false; return; }
 
         try {
-            if (selectedMethod === "550E8400-E29B-41D4-A716-446655440018") {
+            if (selectedMethod === '550E8400-E29B-41D4-A716-446655440018') {
                 if (totalAmount <= 0) {
-                    Swal.fire({ icon: "warning", title: "Lỗi", text: "Tổng tiền phải lớn hơn 0." });
-                    btn.classList.remove("loading");
-                    btn.disabled = false;
-                    return;
+                    Swal.fire({ icon:'warning', title:'Lỗi', text:'Tổng tiền phải lớn hơn 0.' });
+                    btn.classList.remove('loading'); btn.disabled = false; return;
                 }
+                const form = document.createElement('form');
+                form.method = 'POST'; form.action = '/kh-payment/kh-create-payment-link'; form.style.display = 'none';
 
-                const form = document.createElement("form");
-                form.method = "POST";
-                form.action = "/kh-payment/kh-create-payment-link";
-                form.style.display = "none";
+                const productNameInput = document.createElement('input');
+                productNameInput.type = 'hidden'; productNameInput.name = 'productName';
+                productNameInput.value = items.map(i => i.tenSanPham).join(', '); form.appendChild(productNameInput);
 
-                const productNameInput = document.createElement("input");
-                productNameInput.type = "hidden";
-                productNameInput.name = "productName";
-                productNameInput.value = items.map((i) => i.tenSanPham).join(", ");
-                form.appendChild(productNameInput);
+                const priceInput = document.createElement('input');
+                priceInput.type = 'hidden'; priceInput.name = 'price';
+                priceInput.value = totalAmount.toString(); form.appendChild(priceInput);
 
-                const priceInput = document.createElement("input");
-                priceInput.type = "hidden";
-                priceInput.name = "price";
-                priceInput.value = totalAmount.toString();
-                form.appendChild(priceInput);
+                const descriptionInput = document.createElement('input');
+                descriptionInput.type = 'hidden'; descriptionInput.name = 'description';
+                descriptionInput.value = 'Thanh toán đơn hàng'; form.appendChild(descriptionInput);
 
-                const descriptionInput = document.createElement("input");
-                descriptionInput.type = "hidden";
-                descriptionInput.name = "description";
-                descriptionInput.value = `Thanh toán đơn hàng`;
-                form.appendChild(descriptionInput);
-
-                sessionStorage.setItem("pendingOrder", JSON.stringify({ orderData }));
-
-                document.body.appendChild(form);
-                form.submit();
+                sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData }));
+                document.body.appendChild(form); form.submit();
             } else {
-                const response = await fetch("/api/checkout/submit", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                const response = await fetch('/api/checkout/submit', {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json' },
                     body: JSON.stringify(orderData),
-                    credentials: "include"
+                    credentials:'include'
                 });
-
                 const data = await response.json();
                 if (response.ok) {
-                    if (source === "Mua ngay (localStorage.checkoutItem)") {
-                        localStorage.removeItem("checkoutItem");
-                    } else {
-                        localStorage.removeItem("cartItems");
-                    }
+                    if (mode === 'buy-now') localStorage.removeItem('checkoutItem');
+                    if (mode === 'cart-selected') localStorage.removeItem('cartSelectedItems');
                     Swal.fire({
-                        icon: "success",
-                        title: "Thành công",
-                        text: `Đặt hàng thành công! Mã đơn hàng: ${data.data}`,
-                        showCancelButton: true,
-                        confirmButtonText: "Trang chủ",
-                        cancelButtonText: "Đơn mua",
-                        confirmButtonColor: "#153054",
-                        cancelButtonColor: "#9fd5f7",
-                        customClass: { cancelButton: "swal-cancel-button" }
-                    }).then((result) => {
-                        if (result.isConfirmed) window.location.href = "/";
-                        else if (result.isDismissed) window.location.href = "/dsdon-mua";
+                        icon:'success', title:'Thành công',
+                        text:`Đặt hàng thành công! Mã đơn hàng: ${data.data}`,
+                        showCancelButton:true, confirmButtonText:'Trang chủ', cancelButtonText:'Đơn mua',
+                        confirmButtonColor:'#153054', cancelButtonColor:'#9fd5f7',
+                        customClass:{ cancelButton:'swal-cancel-button' }
+                    }).then(r => {
+                        if (r.isConfirmed) location.href = '/';
+                        else if (r.isDismissed) location.href = '/dsdon-mua';
                     });
                 } else {
-                    Swal.fire({ icon: "error", title: "Lỗi", text: data.message || "Không thể đặt hàng! Vui lòng thử lại." });
+                    Swal.fire({ icon:'error', title:'Lỗi', text: data.message || 'Không thể đặt hàng! Vui lòng thử lại.' });
                 }
             }
         } catch (err) {
-            console.error("Lỗi gửi đơn hàng:", err);
-            Swal.fire({ icon: "error", title: "Lỗi", text: "Đã xảy ra lỗi khi gửi đơn hàng. Vui lòng thử lại!" });
+            console.error('Lỗi gửi đơn hàng:', err);
+            Swal.fire({ icon:'error', title:'Lỗi', text:'Đã xảy ra lỗi khi gửi đơn hàng. Vui lòng thử lại!' });
         } finally {
-            btn.classList.remove("loading");
+            btn.classList.remove('loading');
             btn.disabled = false;
         }
     }
@@ -1372,74 +1114,57 @@
     // ================== CART COUNT ==================
     async function updateCartCount() {
         try {
-            const response = await fetch("/api/cart", { credentials: "include" });
-            if (response.ok) {
-                const data = await response.json();
+            const res = await fetch('/api/cart', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
                 const count = data.chiTietGioHang ? data.chiTietGioHang.length : 0;
-                document.getElementById("cart-count").textContent = count;
-            } else if (response.status === 401) {
-                document.getElementById("cart-count").textContent = 0;
+                document.getElementById('cart-count').textContent = count;
+            } else if (res.status === 401) {
+                document.getElementById('cart-count').textContent = 0;
             }
         } catch (err) {
-            console.error("Lỗi khi cập nhật số lượng giỏ hàng:", err);
+            console.error('Lỗi khi cập nhật số lượng giỏ hàng:', err);
         }
     }
 
     // ================== INIT ==================
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener('DOMContentLoaded', () => {
         loadProvinces();
         loadOrderItems();
         updateCartCount();
         loadSavedAddresses();
         loadWalletBalance();
 
-        document
-            .querySelector('.payment-method[data-value="550E8400-E29B-41D4-A716-446655440017"]')
-            .classList.add("active");
+        document.querySelector('.payment-method[data-value="550E8400-E29B-41D4-A716-446655440017"]').classList.add('active');
 
-        // Address selects
-        document.getElementById("province").addEventListener("change", (e) => {
-            const provinceId = parseInt(e.target.value);
-            if (provinceId) loadDistricts(provinceId);
+        document.getElementById('province').addEventListener('change', (e) => {
+            const provinceId = parseInt(e.target.value); if (provinceId) loadDistricts(provinceId);
         });
-
-        document.getElementById("district").addEventListener("change", async (e) => {
-            const districtId = parseInt(e.target.value);
-            if (districtId) await loadWards(districtId);
+        document.getElementById('district').addEventListener('change', async (e) => {
+            const districtId = parseInt(e.target.value); if (districtId) await loadWards(districtId);
             await loadShippingServices(districtId);
         });
+        document.getElementById('ward').addEventListener('change', calculateShipping);
 
-        document.getElementById("ward").addEventListener("change", calculateShipping);
-
-        // New address form selects
-        document.getElementById("new-province").addEventListener("change", (e) => {
-            const provinceId = parseInt(e.target.value);
-            if (provinceId) loadDistricts(provinceId, "new-district");
+        document.getElementById('new-province').addEventListener('change', (e) => {
+            const provinceId = parseInt(e.target.value); if (provinceId) loadDistricts(provinceId, 'new-district');
+        });
+        document.getElementById('new-district').addEventListener('change', async (e) => {
+            const districtId = parseInt(e.target.value); if (districtId) await loadWards(districtId, 'new-ward');
         });
 
-        document.getElementById("new-district").addEventListener("change", async (e) => {
-            const districtId = parseInt(e.target.value);
-            if (districtId) await loadWards(districtId, "new-ward");
-        });
-
-        // Payment method UI toggle
-        document.querySelectorAll(".payment-method").forEach((method) => {
-            method.addEventListener("click", () => {
-                document.querySelectorAll(".payment-method").forEach((m) => m.classList.remove("active"));
-                method.classList.add("active");
-                method.querySelector("input").checked = true;
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
+                method.classList.add('active'); method.querySelector('input').checked = true;
             });
         });
 
-        // Voucher listeners (NEW)
-        document.getElementById("order-voucher").addEventListener("change", applyOrderVoucher);
-        document.getElementById("ship-voucher").addEventListener("change", applyShipVoucher);
+        document.getElementById('order-voucher').addEventListener('change', applyOrderVoucher);
+        document.getElementById('ship-voucher').addEventListener('change', applyShipVoucher);
+        document.getElementById('shippingMethod').addEventListener('change', calculateShipping);
 
-        // Shipping method change
-        document.getElementById("shippingMethod").addEventListener("change", calculateShipping);
-
-        // Submit
-        document.getElementById("submit-order").addEventListener("click", submitOrder);
+        document.getElementById('submit-order').addEventListener('click', submitOrder);
     });
 </script>
 </body>
