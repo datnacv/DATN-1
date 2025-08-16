@@ -119,6 +119,15 @@ public class KHCheckoutController {
 
             NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
             logger.info("Submitting order for user: {}", nguoiDung.getTenDangNhap());
+// ngay trước dòng:
+// DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
+            logger.info("[/api/checkout/submit] user={}, addrId={}, vo={}, vs={}, shipFee={}, items={}",
+                    nguoiDung.getTenDangNhap(),
+                    request.getAddressId(),
+                    request.getVoucherOrder(),
+                    request.getVoucherShipping(),
+                    request.getShippingFee(),
+                    (request.getOrderItems() == null ? 0 : request.getOrderItems().size()));
 
             DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
             logger.info("Order submitted successfully: {}", donHang.getMaDonHang());
@@ -153,7 +162,6 @@ public class KHCheckoutController {
             return ResponseEntity.badRequest().body(new APIResponse("Lỗi không xác định: " + e.getMessage()));
         }
     }
-
     // =========================
     //  VOUCHER APPLY ENDPOINTS
     // =========================

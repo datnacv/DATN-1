@@ -66,14 +66,11 @@ public class DonHang {
     @JoinColumn(name = "id_dia_chi")
     private DiaChiNguoiDung diaChi;
 
-    @ManyToOne
-    @JoinColumn(name = "id_phieu_giam_gia")
-    private PhieuGiamGia phieuGiamGia;
-
-
     @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ChiTietDonHang> chiTietDonHangs = new ArrayList<>();
 
+    @OneToMany(mappedBy = "donHang", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DonHangPhieuGiamGia> dsPhieu = new ArrayList<>();
     public void addChiTietDonHang(ChiTietDonHang chiTiet) {
         chiTietDonHangs.add(chiTiet);
         chiTiet.setDonHang(this);
@@ -84,7 +81,4 @@ public class DonHang {
 
     @Transient
     private String formattedTienGiam;
-
-
-
 }

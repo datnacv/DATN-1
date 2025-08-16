@@ -1221,8 +1221,8 @@
             shippingMethod: document.getElementById("shippingMethod").value,
             paymentMethodId: selectedMethod,
             notes: document.getElementById("note").value,
-            orderVoucher: orderVoucher || "",
-            shipVoucher: shipVoucher || "",
+            voucherOrder: orderVoucher || "",
+            voucherShipping: shipVoucher || "",
             shippingFee: shippingFee,
             orderItems: items.map((i) => ({ chiTietSanPhamId: i.chiTietSanPhamId, soLuong: i.soLuong })),
             source: source

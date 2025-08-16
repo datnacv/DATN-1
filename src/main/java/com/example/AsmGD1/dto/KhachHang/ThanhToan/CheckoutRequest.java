@@ -15,10 +15,10 @@ public class CheckoutRequest {
     private String notes;
     private String shippingMethod;
     private UUID paymentMethodId;
-    private String voucher;
+    private String voucherOrder; // Mã giảm giá đơn hàng
+    private String voucherShipping; // Mã giảm giá phí vận chuyển
     private List<OrderItem> orderItems;
-    private BigDecimal shippingFee; // thêm dòng này
-
+    private BigDecimal shippingFee;
 
     @Data
     public static class OrderItem {
