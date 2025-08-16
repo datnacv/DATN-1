@@ -828,19 +828,15 @@
             <small id="shippingCalcStatus" class="text-muted d-none" hidden>Đang tính phí GHN…</small>
           </div>
 
-
-          <!-- GHN: Dịch vụ vận chuyển -->
           <div class="floating-label d-none" id="shippingMethodContainer" hidden>
             <label for="shippingMethod">Dịch vụ GHN</label>
             <select id="shippingMethod" class="form-select"></select>
           </div>
 
-
+          <!-- Trường hiển thị phiếu giảm giá, nhấn để mở modal -->
           <div class="floating-label">
-            <label for="voucherSelect">Phiếu giảm giá</label>
-            <select id="voucherSelect" onchange="applyVoucher()" class="form-select">
-              <option value="">🎫 Không sử dụng</option>
-            </select>
+            <label for="voucherDisplay">Phiếu giảm giá</label>
+            <input type="text" id="voucherDisplay" class="form-control" readonly placeholder="Chọn phiếu giảm giá" onclick="showVoucherModal()">
           </div>
 
           <div class="floating-label">
@@ -857,7 +853,45 @@
           </div>
         </div>
       </div>
-
+      <!-- Modal chọn phiếu giảm giá -->
+      <div class="modal fade" id="voucherModal" tabindex="-1" aria-labelledby="voucherModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header" style="background-color: var(--light-blue);">
+              <h5 class="modal-title" id="voucherModalLabel">Chọn phiếu giảm giá</h5>
+              <button type="button" class="btn-close" onclick="closeVoucherModal()" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <!-- Phần phiếu ORDER -->
+              <div class="mb-4">
+                <h6 class="fw-bold">Phiếu giảm giá đơn hàng</h6>
+                <div id="orderVoucherList" class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input type="checkbox" id="no-order-voucher" class="form-check-input" name="orderVoucher" value="" checked>
+                    <label for="no-order-voucher" class="form-check-label">🎫 Không sử dụng</label>
+                  </div>
+                  <!-- Phiếu ORDER sẽ được thêm vào đây -->
+                </div>
+              </div>
+              <!-- Phần phiếu SHIPPING -->
+              <div id="shippingVoucherSection" class="d-none">
+                <h6 class="fw-bold">Phiếu miễn phí vận chuyển</h6>
+                <div id="shippingVoucherList" class="d-flex flex-column gap-2">
+                  <div class="form-check">
+                    <input type="checkbox" id="no-shipping-voucher" class="form-check-input" name="shippingVoucher" value="" checked>
+                    <label for="no-shipping-voucher" class="form-check-label">🚚 Không sử dụng</label>
+                  </div>
+                  <!-- Phiếu SHIPPING sẽ được thêm vào đây -->
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" style="background-color: var(--primary-color);" onclick="applyVouchersFromModal()">Áp dụng</button>
+              <button type="button" class="btn btn-secondary" onclick="closeVoucherModal()">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="summary-card mb-4">
         <div class="section-header">
           <i class="fas fa-calculator section-icon"></i>

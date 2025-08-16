@@ -385,17 +385,141 @@ public class BanHangController {
 
     @GetMapping("/cart/apply-voucher")
     @ResponseBody
-    public ResponseEntity<?> applyVoucher(@RequestParam UUID voucherId, @RequestParam BigDecimal shippingFee, @RequestParam String tabId) {
-        System.out.println("Received voucherId: " + voucherId + ", shippingFee: " + shippingFee + ", tabId: " + tabId);
+    public ResponseEntity<?> applyVoucher(
+            @RequestParam UUID voucherId,
+            @RequestParam(required = false) BigDecimal shippingFee,
+            @RequestParam String tabId) {
         try {
-            GioHangDTO gioHangDTO = gioHangService.layGioHang(shippingFee != null ? shippingFee : BigDecimal.ZERO, tabId);
-            GioHangDTO updatedGioHang = gioHangService.apDungPhieuGiamGia(voucherId, shippingFee, gioHangDTO, tabId);
-            return ResponseEntity.ok(updatedGioHang);
+            PhieuGiamGia voucher = phieuGiamGiaRepository.findById(voucherId)
+                    .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
+            String scope = voucher.getPhamViApDung() == null ? "" : voucher.getPhamViApDung().trim().toUpperCase();
+
+            if ("ORDER".equals(scope)) {
+                return applyOrderVoucher(voucherId, tabId);
+            } else if ("SHIPPING".equals(scope)) {
+                if (shippingFee == null) shippingFee = BigDecimal.ZERO;
+                return applyFreeshipVoucher(voucherId, shippingFee, tabId);
+            } else {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không thuộc loại ORDER/SHIPPING."));
+            }
         } catch (Exception e) {
-            System.err.println("Error in applyVoucher: " + e.getMessage());
-            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi áp dụng phiếu giảm giá: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng phiếu: " + e.getMessage()));
         }
     }
+    @GetMapping("/cart/apply-order-voucher")
+    @ResponseBody
+    public ResponseEntity<?> applyOrderVoucher(
+            @RequestParam("voucherId") UUID voucherId,
+            @RequestParam("tabId") String tabId) {
+        try {
+            BigDecimal shipFeeInSession = (BigDecimal) Optional.ofNullable(session.getAttribute("SHIP_FEE_" + tabId))
+                    .orElse(BigDecimal.ZERO);
+
+            GioHangDTO gioHang = gioHangService.layGioHang(shipFeeInSession, tabId);
+            if (gioHang == null || gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Giỏ hàng trống."));
+            }
+
+            BigDecimal subtotal = gioHang.getDanhSachSanPham().stream()
+                    .map(GioHangItemDTO::getThanhTien)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            PhieuGiamGia voucher = phieuGiamGiaRepository.findById(voucherId)
+                    .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
+            if (!"ORDER".equalsIgnoreCase(voucher.getPhamViApDung())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không phải loại ORDER."));
+            }
+            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(voucher))) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phiếu giảm giá không còn hiệu lực."));
+            }
+            if (voucher.getGiaTriGiamToiThieu() != null
+                    && subtotal.compareTo(voucher.getGiaTriGiamToiThieu()) < 0) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Chưa đạt đơn tối thiểu của phiếu."));
+            }
+
+            BigDecimal orderDiscount = phieuGiamGiaService.tinhTienGiamGia(voucher, subtotal).min(subtotal);
+
+            // Lưu session để đồng thời tồn tại với freeship
+            session.setAttribute("ORDER_VOUCHER_ID_" + tabId, voucher.getId());
+            session.setAttribute("ORDER_DISCOUNT_" + tabId, orderDiscount);
+
+            BigDecimal shipDiscount = (BigDecimal) Optional.ofNullable(session.getAttribute("SHIP_DISCOUNT_" + tabId))
+                    .orElse(BigDecimal.ZERO);
+
+            BigDecimal finalShipFee = shipFeeInSession.subtract(shipDiscount).max(BigDecimal.ZERO);
+            BigDecimal total = subtotal.subtract(orderDiscount).add(finalShipFee);
+
+            // Đổ lại ra GioHangDTO (không cần trường mới cho freeship)
+            gioHang.setTongTienHang(subtotal);
+            gioHang.setGiamGia(orderDiscount);
+            gioHang.setPhiVanChuyen(finalShipFee);
+            gioHang.setTong(total);
+            gioHang.setIdPhieuGiamGia(voucher.getId());
+
+            return ResponseEntity.ok(gioHang);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng ORDER voucher: " + e.getMessage()));
+        }
+    }
+    @GetMapping("/cart/apply-freeship")
+    @ResponseBody
+    public ResponseEntity<?> applyFreeshipVoucher(
+            @RequestParam("voucherId") UUID voucherId,
+            @RequestParam("shippingFee") BigDecimal shippingFee,
+            @RequestParam("tabId") String tabId) {
+        try {
+            if (shippingFee == null) shippingFee = BigDecimal.ZERO;
+
+            // Ghi nhớ phí ship thô (chưa trừ giảm) cho tab
+            session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
+
+            GioHangDTO gioHang = gioHangService.layGioHang(shippingFee, tabId);
+            if (gioHang == null || gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Giỏ hàng trống."));
+            }
+
+            BigDecimal subtotal = gioHang.getDanhSachSanPham().stream()
+                    .map(GioHangItemDTO::getThanhTien)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            PhieuGiamGia voucher = phieuGiamGiaRepository.findById(voucherId)
+                    .orElseThrow(() -> new RuntimeException("Phiếu freeship không tồn tại."));
+            if (!"SHIPPING".equalsIgnoreCase(voucher.getPhamViApDung())) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không phải loại SHIPPING."));
+            }
+            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(voucher))) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Phiếu freeship không còn hiệu lực."));
+            }
+            if (shippingFee.compareTo(BigDecimal.ZERO) <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Không có phí vận chuyển để áp dụng freeship."));
+            }
+
+            BigDecimal shipDiscount = phieuGiamGiaService.tinhGiamPhiShip(voucher, shippingFee, subtotal);
+
+            // Lưu session để đồng thời tồn tại với ORDER voucher
+            session.setAttribute("SHIP_VOUCHER_ID_" + tabId, voucher.getId());
+            session.setAttribute("SHIP_DISCOUNT_" + tabId, shipDiscount);
+
+            BigDecimal orderDiscount = (BigDecimal) Optional.ofNullable(session.getAttribute("ORDER_DISCOUNT_" + tabId))
+                    .orElse(BigDecimal.ZERO);
+
+            BigDecimal finalShipFee = shippingFee.subtract(shipDiscount).max(BigDecimal.ZERO);
+            BigDecimal total = subtotal.subtract(orderDiscount).add(finalShipFee);
+
+            // Đổ lại ra GioHangDTO (ghi trực tiếp phí ship sau giảm)
+            gioHang.setTongTienHang(subtotal);
+            gioHang.setGiamGia(orderDiscount);
+            gioHang.setPhiVanChuyen(finalShipFee);
+            gioHang.setTong(total);
+            // Không chạm vào idPhieuGiamGia để tránh đè phiếu ORDER (nếu bạn muốn, có thể thêm field riêng cho freeship trong DTO)
+
+            return ResponseEntity.ok(gioHang);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng FREESHIP voucher: " + e.getMessage()));
+        }
+    }
+
+
 
     private String constructDetailedAddress(NguoiDung nguoiDung) {
         StringBuilder sb = new StringBuilder();

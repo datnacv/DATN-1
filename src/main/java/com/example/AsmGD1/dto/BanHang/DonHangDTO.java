@@ -24,4 +24,6 @@ public class DonHangDTO {
     private BigDecimal soTienKhachDua;
     private String tabId;
     private List<GioHangItemDTO> danhSachSanPham;
+    private UUID idPhieuFreeship; // để nhận voucher SHIPPING
+
 }
