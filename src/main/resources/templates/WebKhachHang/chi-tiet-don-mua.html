@@ -831,8 +831,8 @@
           <i class="fas fa-info-circle mr-2"></i>Trạng thái thanh toán
         </span>
         <span class="payment-value"
-              th:classappend="${hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví' ? 'text-green-600' : (hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản' or (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví' and (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành'))) ? 'text-green-600' : 'text-orange-600')}"
-              th:text="${hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví' ? 'Đã thanh toán' : (hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản' or (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví' and (currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành'))) ? 'Đã thanh toán' : 'Chưa thanh toán')}"></span>
+              th:classappend="${hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví' or hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản' or currentStatus == 'Hoàn thành') ? 'text-green-600' : 'text-orange-600'}"
+              th:text="${hoaDon.donHang.phuongThucThanhToan != null and (hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'ví' or hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() == 'chuyển khoản' or currentStatus == 'Hoàn thành') ? 'Đã thanh toán' : 'Chưa thanh toán'}"></span>
       </div>
 
       <div class="payment-info">
@@ -842,7 +842,7 @@
         <span class="payment-value" th:text="${hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc == 'Tiền mặt' ? 'Thanh toán khi nhận hàng (COD)' : hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc}"></span>
       </div>
 
-      <p th:if="${!hoaDon.donHang.trangThaiThanhToan and hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví'}" class="payment-note">
+      <p th:if="${!hoaDon.donHang.trangThaiThanhToan and hoaDon.donHang.phuongThucThanhToan != null and hoaDon.donHang.phuongThucThanhToan.tenPhuongThuc.trim().toLowerCase() != 'ví' and currentStatus != 'Hoàn thành'}" class="payment-note">
         <i class="fas fa-exclamation-triangle mr-1"></i>Vui lòng thanh toán để hoàn tất đơn hàng
       </p>
     </div>
@@ -1004,7 +1004,7 @@
   });
 
   // Logout
-  document.addEcventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', () => {
     const logoutButton = document.getElementById('logoutButton');
     if (logoutButton) {
       logoutButton.addEventListener('click', (e) => {
