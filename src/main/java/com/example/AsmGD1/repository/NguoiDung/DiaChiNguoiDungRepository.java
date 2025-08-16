@@ -21,4 +21,8 @@ public interface DiaChiNguoiDungRepository extends JpaRepository<DiaChiNguoiDung
 
     @Query("SELECT d FROM DiaChiNguoiDung d WHERE d.nguoiDung.id = :nguoiDungId AND d.macDinh = false")
     List<DiaChiNguoiDung> findByNguoiDung_IdAndMacDinhFalse(UUID nguoiDungId);
+
+    @Modifying
+    @Query("DELETE FROM DiaChiNguoiDung d WHERE d.nguoiDung.id = :nguoiDungId")
+    void deleteByNguoiDungId(UUID nguoiDungId);
 }

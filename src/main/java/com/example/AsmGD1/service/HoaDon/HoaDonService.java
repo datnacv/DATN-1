@@ -381,27 +381,8 @@ public class HoaDonService {
         HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hoaDon);
 
 
-        // Gửi email thông báo tạo hóa đơn
-        NguoiDung nguoiDung = hoaDon.getNguoiDung();
-        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
-            String emailSubject = "Tạo hóa đơn thành công - ACV Store";
-            String emailContent = "<html>" +
-                    "<body style='font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;'>" +
-                    "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #fff;'>" +
-                    "<h2 style='color: #0000FF; text-align: center;'>ACV Store Xin Chào</h2>" +
-                    "<h2 style='color: #153054; text-align: center;'>Hóa đơn mới được tạo</h2>" +
-                    "<p style='text-align: center;'>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
-                    "<p style='text-align: center;'>Hóa đơn của bạn với mã <strong>" + refreshedDonHang.getMaDonHang() + "</strong> đã được tạo thành công.</p>" +
-                    "<p style='text-align: center;'><strong>Trạng thái:</strong> " + trangThai + "</p>" +
-                    "<p style='text-align: center;'><strong>Chi tiết:</strong> " + ghiChu + "</p>" +
-                    "<p style='text-align: center; margin-top: 20px;'>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +
-                    "<p style='text-align: center; margin-top: 20px;'>Trân trọng,<br>Đội ngũ ACV Store</p>" +
-                    "<a href='http://localhost:8080/dsdon-mua/chi-tiet/" + savedHoaDon.getId() + "' style='display: block; padding: 10px 20px; background: #153054; color: white; text-decoration: none; text-align: center; border-radius: 5px; margin-top: 20px; margin-left: auto; margin-right: auto; width: fit-content;'>Xem chi tiết hóa đơn</a>" +
-                    "</div>" +
-                    "</body>" +
-                    "</html>";
-            emailService.sendEmail(nguoiDung.getEmail(), emailSubject, emailContent);
-        }
+
+
     }
 
     public Page<HoaDon> findAll(String search, String trangThai, String paymentMethod, String salesMethod, Pageable pageable) {
@@ -748,23 +729,23 @@ public class HoaDonService {
             switch (newStatus) {
                 case "Đã xác nhận":
                 case "Đã xác nhận Online":
-                    tieuDe = "Đơn hàng đã được xác nhận";
+                    tieuDe = "Đơn hàng của bạn đã được xác nhận";
                     noiDung = "Đơn " + ma + " của bạn đã được xác nhận. " + (ghiChu != null ? ghiChu : "");
                     break;
                 case "Đang xử lý Online":
-                    tieuDe = "Đơn hàng đang xử lý";
+                    tieuDe = "Đơn hàng của bạn đang xử lý";
                     noiDung = "Đơn " + ma + " đang được xử lý. " + (ghiChu != null ? ghiChu : "");
                     break;
                 case "Đang vận chuyển":
-                    tieuDe = "Đơn hàng đang vận chuyển";
+                    tieuDe = "Đơn hàng của bạn đang vận chuyển";
                     noiDung = "Đơn " + ma + " đang trên đường giao. " + (ghiChu != null ? ghiChu : "");
                     break;
                 case "Vận chuyển thành công":
-                    tieuDe = "Vận chuyển thành công";
+                    tieuDe = "Đơn hàng của bạn đã vận chuyển thành công";
                     noiDung = "Đơn " + ma + " đã giao thành công. " + (ghiChu != null ? ghiChu : "");
                     break;
                 case "Hoàn thành":
-                    tieuDe = "Hoàn thành đơn hàng";
+                    tieuDe = "Bạn đã hoàn thành đơn hàng";
                     noiDung = "Đơn " + ma + " đã hoàn thành. Cảm ơn bạn! " + (ghiChu != null ? ghiChu : "");
                     break;
                 case "Hủy đơn hàng":
@@ -779,9 +760,10 @@ public class HoaDonService {
             thongBaoService.thongBaoCapNhatTrangThai(dh.getId(), tieuDe, noiDung);
         } catch (Exception ignore) {}
 
-
+        // Chỉ gửi email cho các trạng thái khác ngoài "Chưa xác nhận"
         NguoiDung nguoiDung = hd.getNguoiDung();
-        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
+        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty() &&
+                !"Chưa xác nhận".equals(newStatus)) {
             String emailSubject = "Cập nhật trạng thái đơn hàng - ACV Store";
             String emailContent = "<html>" +
                     "<body style='font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;'>" +

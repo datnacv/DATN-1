@@ -12,8 +12,8 @@
   <script th:src="@{/js/sidebar.js}" defer></script>
   <style>
     :root {
-      --primary-color: #3b82f6;
-      --primary-hover: #2563eb;
+      --primary-color: #10b981; /* Thay đổi sang xanh lá */
+      --primary-hover: #00CC00;
       --success-color: #10b981;
       --warning-color: #f59e0b;
       --danger-color: #ef4444;
@@ -36,7 +36,7 @@
 
     body {
       background-color: #ffffff;
-      color: var(--gray-800);
+      color: var(--gray-900); /* Màu chữ toàn trang là #153054 */
       font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
       line-height: 1.6;
@@ -124,11 +124,12 @@
       font-size: 0.875rem;
       background: #ffffff;
       transition: all 0.2s ease;
+      color: var(--gray-900); /* Màu chữ input là #153054 */
     }
 
     .search-bar input:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.1);
       outline: none;
     }
 
@@ -141,11 +142,12 @@
       background: #ffffff;
       transition: all 0.2s ease;
       cursor: pointer;
+      color: var(--gray-900); /* Màu chữ select là #153054 */
     }
 
     .search-bar select:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.1);
       outline: none;
     }
 
@@ -230,12 +232,13 @@
       border-bottom: 1px solid var(--gray-200);
       vertical-align: middle;
       white-space: nowrap;
+      color: var(--gray-900); /* Màu chữ th và td là #153054 */
     }
 
     th {
       background: var(--gray-50);
       font-weight: 600;
-      color: var(--gray-700);
+      color: var(--gray-900); /* Màu chữ th là #153054 */
       position: sticky;
       top: 0;
       z-index: 10;
@@ -305,11 +308,16 @@
     .action-btn {
       padding: 0.5rem;
       background: #ffffff;
-      color: var(--gray-600);
+      color: var(--gray-900); /* Đổi màu icon thành #153054 */
       border: 1px solid var(--gray-300);
       border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
     }
 
     .action-btn:hover {
@@ -326,7 +334,7 @@
     }
 
     .dropdown-item {
-      color: var(--gray-700);
+      color: var(--gray-900); /* Màu chữ dropdown là #153054 */
       padding: 0.5rem 1rem;
       transition: all 0.2s ease;
       font-size: 0.875rem;
@@ -352,7 +360,7 @@
       border: 1px solid var(--gray-300);
       border-radius: 6px;
       text-decoration: none;
-      color: var(--gray-600);
+      color: var(--gray-900); /* Màu chữ pagination là #153054 */
       font-weight: 500;
       font-size: 0.875rem;
       transition: all 0.2s ease;
@@ -382,6 +390,15 @@
     td:nth-child(4) {
       font-weight: 600;
       color: var(--success-color);
+    }
+
+    #hoa-don-table-online td:nth-child(3) { /* Màu "Tổng tiền" trong tab Online là xanh lá */
+      color: var(--primary-color);
+    }
+
+    #hoa-don-table-online td:nth-child(4) { /* Màu "Ngày tạo" trong tab Online không in đậm */
+      color: #000000;
+      font-weight: normal;
     }
 
     .spinner {
@@ -459,7 +476,7 @@
     }
 
     td:nth-child(3) {
-      color: var(--gray-700);
+      color: var(--gray-900); /* Màu chữ cột Tên nhân viên là #153054 */
       font-weight: 500;
     }
 
@@ -562,7 +579,7 @@
     }
 
     .nav-tabs .nav-link {
-      color: var(--gray-600);
+      color: var(--gray-900); /* Màu chữ nav-tabs là #153054 */
       font-weight: 500;
       border: none;
       border-radius: 8px 8px 0 0;
@@ -868,7 +885,7 @@
         tbody.empty();
         if (hoaDonList.length === 0) {
           const colspan = tabId === 'online' ? 8 : 9;
-          tbody.append(`<tr><td colspan="${colspan}" class="text-center py-4" style="color: var(--gray-500);">Không có hóa đơn nào.</td></tr>`);
+          tbody.append(`<tr><td colspan="${colspan}" class="text-center py-4" style="color: var(--gray-900);">Không có hóa đơn nào.</td></tr>`);
         } else {
           hoaDonList.forEach(hoaDon => {
             let trangThaiText = hoaDon.trangThai;
@@ -881,9 +898,9 @@
               case 'Hoàn thành': statusClass = 'status-completed-bg'; break;
               case 'Đã trả hàng': statusClass = 'status-returned'; break;
               case 'Đã trả hàng một phần': statusClass = 'status-partial-returned'; break;
-              case 'Hủy đơn hàng': statusClass = 'status-cancelled'; break; // Thêm trạng thái Hủy đơn hàng
+              case 'Hủy đơn hàng': statusClass = 'status-cancelled'; break;
               case 'Đã xác nhận Online':
-              case 'Đang xử lý Online': statusClass = 'status-pending'; break; // Xử lý cho Online
+              case 'Đang xử lý Online': statusClass = 'status-pending'; break;
               default: statusClass = 'status-pending'; break;
             }
 
@@ -902,17 +919,9 @@
               <td>${hoaDon.phuongThucBanHang || "Không rõ"}</td>
               <td><span class="${statusClass}">${trangThaiText}</span></td>
               <td>
-                <div class="dropdown">
-                  <button class="action-btn" id="actionDropdown_${hoaDon.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-ellipsis-v"></i>
-                  </button>
-                  <ul class="dropdown-menu" aria-labelledby="actionDropdown_${hoaDon.id}">
-                    <li><a class="dropdown-item" href="/acvstore/hoa-don/detail/${hoaDon.id}">Xem</a></li>
-                    <li><button class="dropdown-item" onclick="confirmHoaDon('${hoaDon.id}', '${tabId}')" ${hoaDon.trangThai === 'Chưa xác nhận' ? '' : 'style="display:none;"'}>Xác nhận hóa đơn</button></li>
-                    <li><button class="dropdown-item" onclick="showReturnModal('${hoaDon.id}', '${tabId}')" ${['Hoàn thành', 'Vận chuyển thành công', 'Đã trả hàng một phần'].includes(hoaDon.trangThai) ? '' : 'style="display:none;"'}>Trả hàng</button></li>
-                    <li><button class="dropdown-item" onclick="cancelHoaDon('${hoaDon.id}', '${tabId}')" ${['Chưa xác nhận', 'Đã xác nhận', 'Đã xác nhận Online', 'Đang xử lý Online', 'Đang vận chuyển'].includes(hoaDon.trangThai) ? '' : 'style="display:none;"'}>Hủy đơn hàng</button></li>
-                  </ul>
-                </div>
+                  <a href="/acvstore/hoa-don/detail/${hoaDon.id}" class="action-btn">
+                      <i class="fas fa-eye"></i>
+                  </a>
               </td>
             </tr>
           `;

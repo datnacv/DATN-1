@@ -10,7 +10,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    .navbar { background: linear-gradient(to right, #153054, #1e4066); }
+    .navbar {  background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1); }
     .product-card { transition: transform 0.3s, box-shadow 0.3s; }
     .product-card:hover { transform: translateY(-10px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
     .badge-new { background-color: #153054; }
@@ -21,8 +23,23 @@
     .swiper-slide img { object-fit: cover; height: 500px; width: 100%; }
     .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
     .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
-    .dropdown-menu { display: none; position: absolute; background-color: white; min-width: 160px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); z-index: 1000; }
-    .dropdown:hover .dropdown-menu { display: block; }
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      min-width: 200px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      z-index: 1000;
+      padding: 8px;
+    }
+
+    .dropdown:hover .dropdown-menu {
+      display: block;
+      animation: fadeInUp 0.3s ease;
+    }
     body { padding-top: 118px; }
     .user-info { display: none; color: white; }
     .user-info.active { display: inline; }
