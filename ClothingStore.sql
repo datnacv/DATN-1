@@ -656,10 +656,12 @@ FOREIGN KEY (nhan_vien_id) REFERENCES nguoi_dung(id);
 
 ALTER TABLE dbo.phieu_giam_gia
     ADD pham_vi_ap_dung NVARCHAR(20) NULL;
+GO
 
 UPDATE dbo.phieu_giam_gia
 SET pham_vi_ap_dung = 'ORDER'
 WHERE pham_vi_ap_dung IS NULL;
+GO
 
 ALTER TABLE dbo.phieu_giam_gia
     ADD CONSTRAINT DF_phieu_giam_gia_pham_vi_ap_dung DEFAULT N'ORDER' FOR pham_vi_ap_dung;
