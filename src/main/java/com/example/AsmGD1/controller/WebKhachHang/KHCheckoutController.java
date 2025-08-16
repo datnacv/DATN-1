@@ -255,19 +255,31 @@ public class KHCheckoutController {
                                                 @RequestBody(required = false) Object body,
                                                 Authentication authentication) {
         try {
+            // ==== Auth check ====
+            if (authentication == null || !authentication.isAuthenticated()) {
+                logger.warn("Unauthenticated voucher apply attempt (SHIPPING)");
+                return ResponseEntity.status(401).body(new ApiResponse(false, "Vui lòng đăng nhập"));
+            }
             UUID userId = ((NguoiDung) authentication.getPrincipal()).getId();
-            if (userId == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            if (userId == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            }
 
+            // ==== Tìm voucher ====
             PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> p.getMa() != null && p.getMa().equalsIgnoreCase(voucherCode.trim()))
                     .findFirst().orElse(null);
-            if (phieu == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã freeship không tồn tại."));
-            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu)))
+            if (phieu == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã freeship không tồn tại."));
+            }
+            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã freeship không còn hiệu lực."));
-            if (!"SHIPPING".equalsIgnoreCase(phieu.getPhamViApDung()))
+            }
+            if (!"SHIPPING".equalsIgnoreCase(phieu.getPhamViApDung())) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã này không phải freeship."));
+            }
 
-            // Nếu buy-now gửi danh sách item, ưu tiên tự tính subtotal từ body
+            // ==== Nếu buy-now có gửi items thì tự tính lại subtotal ====
             if (body instanceof java.util.List<?> lst && !lst.isEmpty()) {
                 @SuppressWarnings("unchecked")
                 java.util.List<java.util.Map<String, Object>> items = (java.util.List<java.util.Map<String, Object>>) lst;
@@ -280,22 +292,31 @@ public class KHCheckoutController {
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
             }
 
-            if (shippingFee == null || shippingFee.compareTo(BigDecimal.ZERO) <= 0)
+            // ==== Validate input ====
+            if (shippingFee == null || shippingFee.compareTo(BigDecimal.ZERO) <= 0) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Phí vận chuyển hiện tại bằng 0 hoặc thiếu."));
-            if (subtotal == null || subtotal.compareTo(BigDecimal.ZERO) < 0)
+            }
+            if (subtotal == null || subtotal.compareTo(BigDecimal.ZERO) < 0) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Thiếu/không hợp lệ subtotal."));
+            }
 
+            // ==== Chỉ KIỂM TRA khả dụng (KHÔNG trừ lượt ở bước apply) ====
+            boolean canUse = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu())
+                    ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(userId, phieu.getId())
+                    : (phieu.getSoLuong() != null && phieu.getSoLuong() > 0);
+
+            if (!canUse) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Mã freeship không khả dụng hoặc đã hết lượt/số lượng."));
+            }
+
+            // ==== Tính giảm phí ship ====
             BigDecimal giamShip = phieuGiamGiaService.tinhGiamPhiShip(phieu, shippingFee, subtotal);
             if (giamShip == null) giamShip = BigDecimal.ZERO;
             if (giamShip.compareTo(shippingFee) > 0) giamShip = shippingFee;
 
-            // Trừ lượt nếu có giảm
-            if (giamShip.compareTo(BigDecimal.ZERO) > 0) {
-                boolean applied = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu())
-                        ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(userId, phieu.getId())
-                        : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
-                if (!applied) return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể áp dụng mã freeship."));
-            }
+            logger.info("FREESHIP applied preview: code={}, shippingFee={}, subtotal={}, discount={}",
+                    voucherCode, shippingFee, subtotal, giamShip);
 
             return ResponseEntity.ok(new ApiResponse(true, "Áp dụng mã FREESHIP thành công.", giamShip));
         } catch (Exception e) {
@@ -305,34 +326,49 @@ public class KHCheckoutController {
         }
     }
 
+
     /**
      * ORDER: bắt tất cả trường hợp còn lại (không có type=SHIPPING)
      * URL: POST /api/checkout/apply-voucher?voucher=...&source=...&subtotal=...
      */
     @PostMapping(value = "/apply-voucher", params = "type=ORDER")
     public ResponseEntity<?> applyOrderVoucherV2(@RequestParam("voucher") String voucherCode,
-                                                 @RequestParam("source") String source,
+                                                 @RequestParam("source") String source, // cart | buy-now
                                                  @RequestParam(value = "subtotal", required = false) BigDecimal subtotalParam,
                                                  @RequestBody(required = false) Object body,
                                                  Authentication authentication) {
         try {
+            // ==== Auth check ====
+            if (authentication == null || !authentication.isAuthenticated()) {
+                logger.warn("Unauthenticated voucher apply attempt (ORDER)");
+                return ResponseEntity.status(401).body(new ApiResponse(false, "Vui lòng đăng nhập"));
+            }
             UUID userId = ((NguoiDung) authentication.getPrincipal()).getId();
-            if (userId == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            if (userId == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            }
 
+            // ==== Tìm voucher ====
             PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> p.getMa() != null && p.getMa().equalsIgnoreCase(voucherCode.trim()))
                     .findFirst().orElse(null);
-            if (phieu == null) return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã giảm giá không tồn tại."));
-            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu)))
+            if (phieu == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã giảm giá không tồn tại."));
+            }
+            if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(phieu))) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Phiếu giảm giá không trong thời gian hiệu lực."));
-            if ("SHIPPING".equalsIgnoreCase(phieu.getPhamViApDung()))
+            }
+            if ("SHIPPING".equalsIgnoreCase(phieu.getPhamViApDung())) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã freeship, vui lòng dùng mục FREESHIP."));
+            }
 
+            // ==== Lấy / tính subtotal ====
             BigDecimal subtotal = subtotalParam;
             if (subtotal == null && body instanceof java.util.Map<?, ?> map && map.get("subtotal") != null) {
                 subtotal = toBigDecimal(map.get("subtotal"));
             }
             if (subtotal == null) {
+                // Fallback: lấy từ giỏ hàng
                 GioHang gh = khachHangGioHangService.getOrCreateGioHang(userId);
                 var chiTiet = chiTietGioHangService.getGioHangChiTietList(gh.getId());
                 subtotal = chiTiet.stream()
@@ -340,18 +376,26 @@ public class KHCheckoutController {
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
             }
 
-            if (phieu.getGiaTriGiamToiThieu() != null && subtotal.compareTo(phieu.getGiaTriGiamToiThieu()) < 0)
+            // ==== Ràng mức tối thiểu (nếu có) ====
+            if (phieu.getGiaTriGiamToiThieu() != null && subtotal.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Đơn hàng chưa đạt giá trị tối thiểu."));
+            }
 
+            // ==== Chỉ KIỂM TRA khả dụng (KHÔNG trừ lượt ở bước apply) ====
+            boolean canUse = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu())
+                    ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(userId, phieu.getId())
+                    : (phieu.getSoLuong() != null && phieu.getSoLuong() > 0);
+
+            if (!canUse) {
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Mã giảm giá không khả dụng hoặc đã hết lượt/số lượng."));
+            }
+
+            // ==== Tính giảm đơn ====
             BigDecimal giamDon = phieuGiamGiaService.tinhTienGiamGia(phieu, subtotal);
             if (giamDon == null) giamDon = BigDecimal.ZERO;
 
-            if (giamDon.compareTo(BigDecimal.ZERO) > 0) {
-                boolean applied = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu())
-                        ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(userId, phieu.getId())
-                        : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
-                if (!applied) return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể áp dụng mã giảm giá."));
-            }
+            logger.info("ORDER voucher applied preview: code={}, subtotal={}, discount={}", voucherCode, subtotal, giamDon);
 
             return ResponseEntity.ok(new ApiResponse(true, "Áp dụng mã giảm giá đơn thành công.", giamDon));
         } catch (Exception e) {
@@ -360,4 +404,5 @@ public class KHCheckoutController {
                     .body(new ApiResponse(false, "Lỗi khi áp dụng voucher: " + e.getMessage()));
         }
     }
+
 }

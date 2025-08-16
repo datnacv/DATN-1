@@ -828,15 +828,57 @@
             <small id="shippingCalcStatus" class="text-muted d-none" hidden>Đang tính phí GHN…</small>
           </div>
 
+
+          <!-- GHN: Dịch vụ vận chuyển -->
           <div class="floating-label d-none" id="shippingMethodContainer" hidden>
             <label for="shippingMethod">Dịch vụ GHN</label>
             <select id="shippingMethod" class="form-select"></select>
           </div>
 
-          <!-- Trường hiển thị phiếu giảm giá, nhấn để mở modal -->
+
           <div class="floating-label">
-            <label for="voucherDisplay">Phiếu giảm giá</label>
-            <input type="text" id="voucherDisplay" class="form-control" readonly placeholder="Chọn phiếu giảm giá" onclick="showVoucherModal()">
+            <label for="voucherSelect">Phiếu giảm giá</label>
+            <select id="voucherSelect" class="form-select">
+              <option value="">🎫 Không sử dụng</option>
+            </select>
+          </div>
+
+          <div id="voucherModal" class="modal">
+            <div class="modal-content" style="max-width: 720px;">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-3">
+                  <i class="fas fa-ticket-alt fs-3 text-primary"></i>
+                  <h3 class="fs-3 fw-bold">Chọn mã giảm giá</h3>
+                </div>
+                <button onclick="closeVoucherModal()" class="btn-close"></button>
+              </div>
+
+              <!-- Freeship -->
+              <div class="mb-4">
+                <h4 class="fs-5 fw-semibold mb-3 d-flex align-items-center gap-2">
+                  <i class="fas fa-truck text-success"></i> Freeship (SHIPPING)
+                </h4>
+                <div id="shipVoucherList" class="d-grid gap-2"></div>
+              </div>
+
+              <!-- Order -->
+              <div class="mb-4">
+                <h4 class="fs-5 fw-semibold mb-3 d-flex align-items-center gap-2">
+                  <i class="fas fa-receipt text-primary"></i> Mã giảm giá đơn hàng (ORDER)
+                </h4>
+                <div id="orderVoucherList" class="d-grid gap-2"></div>
+              </div>
+
+              <div class="d-flex justify-content-between gap-3">
+                <button class="btn btn-outline-secondary" onclick="clearVoucherSelections()">Bỏ chọn tất cả</button>
+                <div class="d-flex gap-3">
+                  <button class="btn btn-secondary" onclick="closeVoucherModal()">Hủy</button>
+                  <button class="btn btn-success" onclick="applySelectedVouchers()">
+                    <i class="fas fa-check-circle me-2"></i>Áp dụng
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="floating-label">
@@ -853,45 +895,7 @@
           </div>
         </div>
       </div>
-      <!-- Modal chọn phiếu giảm giá -->
-      <div class="modal fade" id="voucherModal" tabindex="-1" aria-labelledby="voucherModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-          <div class="modal-content">
-            <div class="modal-header" style="background-color: var(--light-blue);">
-              <h5 class="modal-title" id="voucherModalLabel">Chọn phiếu giảm giá</h5>
-              <button type="button" class="btn-close" onclick="closeVoucherModal()" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <!-- Phần phiếu ORDER -->
-              <div class="mb-4">
-                <h6 class="fw-bold">Phiếu giảm giá đơn hàng</h6>
-                <div id="orderVoucherList" class="d-flex flex-column gap-2">
-                  <div class="form-check">
-                    <input type="checkbox" id="no-order-voucher" class="form-check-input" name="orderVoucher" value="" checked>
-                    <label for="no-order-voucher" class="form-check-label">🎫 Không sử dụng</label>
-                  </div>
-                  <!-- Phiếu ORDER sẽ được thêm vào đây -->
-                </div>
-              </div>
-              <!-- Phần phiếu SHIPPING -->
-              <div id="shippingVoucherSection" class="d-none">
-                <h6 class="fw-bold">Phiếu miễn phí vận chuyển</h6>
-                <div id="shippingVoucherList" class="d-flex flex-column gap-2">
-                  <div class="form-check">
-                    <input type="checkbox" id="no-shipping-voucher" class="form-check-input" name="shippingVoucher" value="" checked>
-                    <label for="no-shipping-voucher" class="form-check-label">🚚 Không sử dụng</label>
-                  </div>
-                  <!-- Phiếu SHIPPING sẽ được thêm vào đây -->
-                </div>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-primary" style="background-color: var(--primary-color);" onclick="applyVouchersFromModal()">Áp dụng</button>
-              <button type="button" class="btn btn-secondary" onclick="closeVoucherModal()">Đóng</button>
-            </div>
-          </div>
-        </div>
-      </div>
+
       <div class="summary-card mb-4">
         <div class="section-header">
           <i class="fas fa-calculator section-icon"></i>
@@ -900,18 +904,31 @@
 
         <div class="row">
           <div class="col-md-6">
+
+            <!-- Tạm tính (subtotal) -->
             <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium">Tổng tiền hàng:</span>
+              <span class="fw-medium">Tạm tính:</span>
               <span id="subTotal" class="fw-bold fs-5">0 VNĐ</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium">Phí vận chuyển:</span>
-              <span id="shippingFeeDisplay" class="fw-bold fs-5">0 VNĐ</span>
+
+            <!-- Phí vận chuyển GỐC -->
+            <div id="shippingBaseRow" class="d-flex justify-content-between align-items-center py-2 border-bottom d-none">
+              <span class="fw-medium">Phí vận chuyển (gốc):</span>
+              <span id="shippingFeeBaseDisplay" class="fw-bold fs-5">0 VNĐ</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-              <span class="fw-medium">Giảm giá:</span>
-              <span id="discount" class="fw-bold fs-5">0 VNĐ</span>
+
+            <!-- Giảm phí vận chuyển (Freeship) -->
+            <div id="shippingDiscountRow" class="d-flex justify-content-between align-items-center py-2 border-bottom d-none">
+              <span class="fw-medium">Giảm phí vận chuyển:</span>
+              <span id="shippingDiscountDisplay" class="fw-bold fs-6 text-success">- 0 VNĐ</span>
             </div>
+
+            <!-- Giảm giá đơn (Order) -->
+            <div id="orderDiscountRow" class="d-flex justify-content-between align-items-center py-2 border-bottom d-none">
+              <span class="fw-medium">Giảm giá đơn:</span>
+              <span id="orderDiscountDisplay" class="fw-bold fs-6 text-success">- 0 VNĐ</span>
+            </div>
+
           </div>
 
           <div class="col-md-6">
@@ -926,6 +943,7 @@
           </div>
         </div>
       </div>
+
 
       <button onclick="createOrder()" class="btn btn-success w-100 py-3 fs-4 fw-bold d-flex align-items-center justify-content-center gap-3">
         <i class="fas fa-check-circle fs-3"></i>
@@ -1050,7 +1068,6 @@
             </div>
           </div>
         </div>
-
         <div id="variantSpinner" class="spinner mb-4"></div>
 
         <div class="d-flex gap-3">
@@ -1065,6 +1082,7 @@
       </div>
     </div>
   </div>
+
 </div>
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
@@ -1080,7 +1098,10 @@
   let currentTabId = null;
   const MAX_TABS = 5;
   let currentProductId = null;
-  let isUpdating = false; // Prevent concurrent updates
+  let isUpdating = false;
+  let isApplyingVoucher = false;       // đang áp voucher
+  let isRecalculatingShipping = false; // đang tính phí GHN
+  // Prevent concurrent updates
 
   // ===== GHN CONFIG (tái dùng như trang checkout) =====
   const SHOP_FROM_DISTRICT_ID = 1542; // Quận/Huyện lấy hàng của shop
@@ -1174,16 +1195,26 @@
     const shippingFeeInput = document.getElementById('shippingFee');
     const shippingMethodContainer = document.getElementById('shippingMethodContainer');
     const tab = tabs.find(t => t.id === currentTabId);
-    if (!tab || !shippingFeeInput) return;
+    if (!tab) return;
 
-    tab.shippingFee = 0;
-    shippingFeeInput.value = formatCurrency(0);
+    const prevBase = Number(tab.shippingFeeBase || 0);
+
+    // reset phí ship về 0 theo mô hình base/discount
+    tab.shippingFeeBase = 0;
+    tab.shippingDiscount = 0;
+
+    if (shippingFeeInput) shippingFeeInput.value = formatCurrency(0);
     updateSummary(tab);
-    // Nếu có voucher thì re-apply để tổng tiền chuẩn
-    if (tab.voucherId) applyVoucher(tab.voucherId);
-    // Ẩn chọn dịch vụ GHN vì chưa có địa chỉ
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+
+    if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) {
+      applyVoucher(tab.voucherId);
+    }
     shippingMethodContainer?.classList.add('d-none');
   }
+
+
+
 
 
   function setShippingUiLoading(isLoading) {
@@ -1258,11 +1289,13 @@
     // Không giao hàng -> ẩn chọn dịch vụ + phí = 0
     if (tab.saleMethod !== 'Giao hàng') {
       shippingMethodContainer?.classList.add('d-none');
-      if (tab.shippingFee !== 0) {
-        tab.shippingFee = 0;
+      const prevBase = Number(tab.shippingFeeBase || 0);
+      if (prevBase !== 0 || Number(tab.shippingDiscount || 0) !== 0) {
+        tab.shippingFeeBase = 0;
+        tab.shippingDiscount = 0;
         if (shippingFeeInput) shippingFeeInput.value = formatCurrency(0);
         updateSummary(tab);
-        if (tab.voucherId) await applyVoucher(tab.voucherId);
+        if (tab.voucherId && !isApplyingVoucher) await applyVoucher(tab.voucherId);
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
       }
       return;
@@ -1276,6 +1309,10 @@
       zeroShippingBecauseNoAddress();
       return;
     }
+
+    // Chặn re-entry
+    if (isRecalculatingShipping) return;
+    isRecalculatingShipping = true;
 
     try {
       setShippingUiLoading(true);
@@ -1312,14 +1349,21 @@
       }
 
       // 3) Tính phí GHN
+      const prevBase = Number(tab.shippingFeeBase || 0);
       const fee = await ghnCalculateShipping({ districtId, wardCode });
       const shippingFee = Number.isFinite(fee) ? fee : 0;
 
-      // 4) Cập nhật UI + state
+      // 4) Cập nhật UI + state (GHI PHÍ GỐC)
       if (shippingFeeInput) shippingFeeInput.value = formatCurrency(shippingFee);
-      tab.shippingFee = shippingFee;
+      tab.shippingFeeBase = shippingFee;
+
       updateSummary(tab);
-      if (tab.voucherId) await applyVoucher(tab.voucherId);
+
+      // Chỉ re-apply voucher khi phí gốc thực sự đổi và không đang apply
+      if (tab.voucherId && !isApplyingVoucher && prevBase !== shippingFee) {
+        await applyVoucher(tab.voucherId);
+      }
+
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
     } catch (err) {
       console.error('GHN setup/tính phí lỗi:', err);
@@ -1329,8 +1373,11 @@
       shippingFeeInput?.setAttribute('placeholder', 'Nhập phí ship thủ công');
     } finally {
       setShippingUiLoading(false);
+      isRecalculatingShipping = false;
     }
   }
+
+
 
   // Hiển thị thông báo toast với animation cải tiến
   function showToast(message, type = "info") {
@@ -1512,7 +1559,6 @@
       return;
     }
 
-    // Không chặn số lượng tối đa ở đây, để backend xử lý
     isUpdating = true;
     const quantityControls = document.querySelector(`.quantity-controls[data-index="${index}"]`);
     if (quantityControls) {
@@ -1523,7 +1569,7 @@
       const requestData = {
         productDetailId: String(productDetailId),
         quantity: parseInt(newQuantity),
-        shippingFee: parseFloat(tab.shippingFee || 0),
+        shippingFee: parseFloat(tab.shippingFeeBase || 0),
         tabId: String(currentTabId),
       };
 
@@ -1549,15 +1595,13 @@
 
       const data = await response.json();
       updateCartFromResponse(data);
-      await refreshCartFromServer(); // Cập nhật tồn kho theo thời gian thực
-      if (tab.voucherId) {
-        await applyVoucher(tab.voucherId);
-      }
+      await refreshCartFromServer();
+      if (tab.voucherId) await applyVoucher(tab.voucherId);
       showToast("Đã cập nhật số lượng!", "success");
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
       showToast("Lỗi khi cập nhật số lượng: " + error.message, "error");
-      await refreshCartFromServer(); // Đảm bảo đồng bộ giao diện khi có lỗi
+      await refreshCartFromServer();
     } finally {
       isUpdating = false;
       if (quantityControls) {
@@ -1565,6 +1609,7 @@
       }
     }
   }
+
 
   // Hàm mới để xử lý input trực tiếp từ ô nhập số lượng
   async function updateQuantityFromInput(index, inputValue, productDetailId, maxStock) {
@@ -1618,14 +1663,22 @@
     if (!tab) return;
 
     try {
-      const response = await fetch(`${BASE_URL}/cart/get?tabId=${currentTabId}&shippingFee=${tab.shippingFee}`);
+      const response = await fetch(`${BASE_URL}/cart/get?tabId=${currentTabId}&shippingFee=${tab.shippingFeeBase}`);
       if (response.ok) {
         const cartData = await response.json();
-        tab.cart = cartData.danhSachSanPham || [];
-        tab.subTotal = cartData.tongTienHang || 0;
-        tab.discount = cartData.giamGia || 0;
-        tab.total = cartData.tong || 0;
-        tab.shippingFee = cartData.phiVanChuyen || 0;
+        tab.cart     = cartData.danhSachSanPham || [];
+        tab.subTotal = cartData.tongTienHang    || 0;
+        tab.discount = cartData.giamGia         || 0;
+        tab.total    = cartData.tong            || 0;
+
+        // map fields mới nếu BE trả về
+        if (typeof cartData.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = cartData.phiVanChuyenGoc;
+        if (typeof cartData.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = cartData.giamGiaVanChuyen;
+        // fallback legacy
+        if (typeof cartData.phiVanChuyen !== 'undefined' && typeof cartData.phiVanChuyenGoc === 'undefined') {
+          tab.shippingFeeBase = cartData.phiVanChuyen || 0;
+        }
+
         renderCart(tab.cart);
         updateSummary(tab);
         localStorage.setItem("orderTabs", JSON.stringify(tabs));
@@ -1635,6 +1688,7 @@
       showToast("Không thể làm mới giỏ hàng. Vui lòng thử lại.", "error");
     }
   }
+
 
   // Cải thiện hàm thêm sản phẩm với kiểm tra tồn kho
   async function addVariantToCart() {
@@ -1665,12 +1719,10 @@
       if (existingIndex >= 0) {
         const currentQuantity = tab.cart[existingIndex].soLuong;
         const newTotalQuantity = currentQuantity + quantity;
-
         if (newTotalQuantity > maxStock) {
           showToast(`Tổng số lượng sẽ vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
           return;
         }
-
         await updateQuantity(existingIndex, quantity, productDetailId, maxStock);
         document.getElementById("variantModal").style.display = "none";
         return;
@@ -1679,7 +1731,7 @@
       const requestData = {
         productDetailId: String(productDetailId),
         quantity: parseInt(quantity),
-        shippingFee: parseFloat(tab.shippingFee || 0),
+        shippingFee: parseFloat(tab.shippingFeeBase || 0),
         tabId: String(currentTabId),
       };
 
@@ -1706,13 +1758,14 @@
       const data = await response.json();
       updateCartFromResponse(data);
       document.getElementById("variantModal").style.display = "none";
-      await refreshCartFromServer(); // Ensure stock is updated
+      await refreshCartFromServer();
       showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
     } catch (error) {
       console.error("Lỗi khi thêm biến thể:", error);
       showToast("Lỗi khi thêm sản phẩm: " + error.message, "error");
     }
   }
+
 
   // Cập nhật hàm renderTabs với styling mới
   function renderTabs() {
@@ -1772,7 +1825,7 @@
       const requestData = {
         productDetailId: String(productDetailId),
         quantity: 1,
-        shippingFee: parseFloat(tab.shippingFee || 0),
+        shippingFee: parseFloat(tab.shippingFeeBase || 0),
         tabId: String(currentTabId)
       };
 
@@ -1810,23 +1863,33 @@
     const tab = tabs.find((t) => t.id === currentTabId);
     if (!tab) return;
 
-    tab.cart = data.danhSachSanPham || [];
-    tab.subTotal = data.tongTienHang || 0;
-    tab.discount = data.giamGia || 0;
-    tab.total = data.tong || 0;
-    tab.shippingFee = (data.phiVanChuyen !== undefined && data.phiVanChuyen !== null)
-      ? data.phiVanChuyen
-      : tab.shippingFee;
+    tab.cart     = data.danhSachSanPham || [];
+    tab.subTotal = data.tongTienHang    || 0;
+    tab.discount = data.giamGia         || 0;
+    tab.total    = data.tong            || 0;
+
+    // map fields mới nếu BE trả về
+    if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
+    if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
+    // fallback legacy
+    if (typeof data.phiVanChuyen !== 'undefined' && typeof data.phiVanChuyenGoc === 'undefined') {
+      tab.shippingFeeBase = data.phiVanChuyen || 0;
+    }
 
     renderCart(tab.cart);
     updateSummary(tab);
-    // Nếu giao hàng: cân nặng thay đổi → tính lại GHN
-    if (tab.saleMethod === 'Giao hàng' && tab.selectedAddress) {
+
+    // ⛔ đừng recalc ship nếu đang apply voucher
+    if (tab.saleMethod === 'Giao hàng' && tab.selectedAddress && !isApplyingVoucher) {
       setupShippingForSelectedAddress({ recalcOnly: true });
     }
+
     localStorage.setItem("orderTabs", JSON.stringify(tabs));
     fetchVouchers();
   }
+
+
+
 
   // Khởi tạo tabs
   async function initTabs() {
@@ -1836,12 +1899,16 @@
 
       if (savedTabs && savedTabId) {
         tabs = JSON.parse(savedTabs);
-        // Đặt lại paymentMethod cho các tab không hợp lệ
+
+        // migrate từ dữ liệu cũ (shippingFee -> shippingFeeBase)
         tabs.forEach(tab => {
+          if (typeof tab.shippingFeeBase === 'undefined') tab.shippingFeeBase = Number(tab.shippingFee || 0);
+          if (typeof tab.shippingDiscount === 'undefined') tab.shippingDiscount = 0;
           if (!tab.paymentMethod || tab.paymentMethod !== '550E8400-E29B-41D4-A716-446655440018') {
             tab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
           }
         });
+
         currentTabId = parseInt(savedTabId);
         tabs.sort((a, b) => a.id - b.id);
         renderTabs();
@@ -1849,7 +1916,6 @@
         return;
       }
 
-      // Tạo tab mặc định
       await addNewTab();
     } catch (error) {
       console.error('Lỗi khi khởi tạo tabs:', error);
@@ -1857,6 +1923,7 @@
       await addNewTab();
     }
   }
+
 
   function getNextTabId() {
     for (let i = 1; i <= MAX_TABS; i++) {
@@ -1884,12 +1951,13 @@
         customerName: '',
         customerEmail: '',
         saleMethod: 'Tại quầy',
-        shippingFee: 0,
+        shippingFeeBase: 0,      // phí ship gốc
+        shippingDiscount: 0,     // giảm phí ship
         voucherId: null,
         paymentMethod: '550E8400-E29B-41D4-A716-446655440017',
         cashAmount: 0,
         subTotal: 0,
-        discount: 0,
+        discount: 0,             // giảm giá đơn (ORDER)
         total: 0,
         addresses: [],
         selectedAddress: ''
@@ -1913,11 +1981,11 @@
         shippingFeeContainer?.classList.add('d-none');
         shippingMethodContainer?.classList.add('d-none');
 
-        // Đồng bộ lại tổng tiền & lưu state
         const tab = tabs.find(t => t.id === currentTabId);
         if (tab) {
           tab.saleMethod = 'Tại quầy';
-          tab.shippingFee = 0;
+          tab.shippingFeeBase = 0;
+          tab.shippingDiscount = 0;
           updateSummary(tab);
           localStorage.setItem('orderTabs', JSON.stringify(tabs));
         }
@@ -1926,6 +1994,7 @@
       showToast('Lỗi khi tạo tab mới: ' + error.message, 'error');
     }
   }
+
 
   function switchTab(tabId) {
     currentTabId = tabId;
@@ -1970,7 +2039,6 @@
       tab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
     }
 
-    // Load thông tin từ tab
     const elements = {
       customerPhone: document.getElementById('customerPhone'),
       customerName: document.getElementById('customerName'),
@@ -1986,10 +2054,9 @@
     if (elements.customerPhone) elements.customerPhone.value = tab.customerPhone || '';
     if (elements.customerName)  elements.customerName.value  = tab.customerName  || '';
     if (elements.customerEmail) elements.customerEmail.value = tab.customerEmail || '';
-
     if (elements.saleMethod) elements.saleMethod.value = tab.saleMethod;
 
-// Nếu là Khách lẻ: không hiển thị SĐT & Email
+    // Khách lẻ
     if (tab.customerPhone === '0999999999') {
       if (elements.customerPhone) {
         elements.customerPhone.value = '';
@@ -1998,40 +2065,40 @@
       if (elements.customerName)  elements.customerName.value  = 'Khách lẻ';
       if (elements.customerEmail) elements.customerEmail.value = '';
 
-      // Khoá phần giao hàng + reset phí ship
       if (elements.saleMethod) {
         elements.saleMethod.value = 'Tại quầy';
         elements.saleMethod.setAttribute('disabled', 'true');
       }
       const addressSection = document.getElementById('addressSection');
       const shippingFeeContainer = document.getElementById('shippingFeeContainer');
-      if (addressSection) addressSection.classList.add('d-none');
-      if (shippingFeeContainer) shippingFeeContainer.classList.add('d-none');
+      addressSection?.classList.add('d-none');
+      shippingFeeContainer?.classList.add('d-none');
 
       tab.saleMethod = 'Tại quầy';
-      tab.shippingFee = 0;
+      tab.shippingFeeBase = 0;
+      tab.shippingDiscount = 0;
+
       updateSummary(tab);
       renderCart(tab.cart);
-      // Nếu tab đang ở "Giao hàng" và có địa chỉ thì tính GHN
+
       if (tab.saleMethod === 'Giao hàng' && tab.selectedAddress) {
         setupShippingForSelectedAddress();
       }
-
     } else {
       if (elements.saleMethod) elements.saleMethod.removeAttribute('disabled');
     }
 
-    if (elements.shippingFee) elements.shippingFee.value = formatCurrency(tab.shippingFee);
+    if (elements.shippingFee) elements.shippingFee.value = formatCurrency(tab.shippingFeeBase);
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
-    if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount || 0; // Default to 0
+    if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount || 0;
 
     toggleCashInput();
     renderCart(tab.cart);
     updateSummary(tab);
 
-    // Load giỏ hàng từ server
+    // Load giỏ hàng từ server (truyền phí ship gốc)
     try {
-      const response = await fetch(`${BASE_URL}/cart/get?tabId=${tabId}&shippingFee=${tab.shippingFee}`);
+      const response = await fetch(`${BASE_URL}/cart/get?tabId=${tabId}&shippingFee=${tab.shippingFeeBase}`);
       if (response.ok) {
         const cartData = await response.json();
         tab.cart = cartData.danhSachSanPham || [];
@@ -2039,6 +2106,10 @@
         tab.discount = cartData.giamGia || 0;
         tab.total = cartData.tong || 0;
         tab.cashAmount = cartData.cashAmount || 0;
+
+        if (typeof cartData.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = cartData.phiVanChuyenGoc;
+        if (typeof cartData.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = cartData.giamGiaVanChuyen;
+
         renderCart(tab.cart);
         updateSummary(tab);
       }
@@ -2053,6 +2124,7 @@
     await fetchVouchers();
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
   }
+
 
   async function fetchCustomerAddresses() {
     const phoneEl = document.getElementById('customerPhone');
@@ -2163,7 +2235,8 @@
       } else {
         addressSection?.classList.add('d-none');
         shippingFeeContainer?.classList.add('d-none');
-        tab.shippingFee = 0;
+        tab.shippingFeeBase = 0;
+        tab.shippingDiscount = 0;
         updateSummary(tab);
       }
 
@@ -2358,11 +2431,11 @@
   }
 
   function toggleAddressSection() {
-    const saleMethodSelect       = document.getElementById('saleMethod');
-    const phoneInput             = document.getElementById('customerPhone');
-    const addressSection         = document.getElementById('addressSection');
-    const shippingFeeContainer   = document.getElementById('shippingFeeContainer');
-    const shippingMethodContainer= document.getElementById('shippingMethodContainer'); // << cần có phần tử này ở HTML
+    const saleMethodSelect        = document.getElementById('saleMethod');
+    const phoneInput              = document.getElementById('customerPhone');
+    const addressSection          = document.getElementById('addressSection');
+    const shippingFeeContainer    = document.getElementById('shippingFeeContainer');
+    const shippingMethodContainer = document.getElementById('shippingMethodContainer');
 
     if (!saleMethodSelect || !phoneInput || !addressSection || !shippingFeeContainer) return;
 
@@ -2371,7 +2444,7 @@
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
-    // KHÁCH LẺ → luôn Tại quầy, ẩn giao hàng & GHN, ship = 0
+    // KHÁCH LẺ → luôn Tại quầy
     if (phone === '0999999999') {
       saleMethodSelect.value = 'Tại quầy';
       saleMethodSelect.setAttribute('disabled','true');
@@ -2380,10 +2453,14 @@
       shippingMethodContainer?.classList.add('d-none');
 
       tab.saleMethod = 'Tại quầy';
-      tab.shippingFee = 0;
+      const prevBase = Number(tab.shippingFeeBase || 0);
+      tab.shippingFeeBase = 0;
+      tab.shippingDiscount = 0;
+
       updateSummary(tab);
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
-      if (tab.voucherId) applyVoucher(tab.voucherId);
+
+      if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) applyVoucher(tab.voucherId);
       return;
     } else {
       saleMethodSelect.removeAttribute('disabled');
@@ -2396,31 +2473,31 @@
       shippingFeeContainer.classList.remove('d-none');
       shippingMethodContainer?.classList.remove('d-none');
 
-      // Load địa chỉ rồi quyết định tính GHN hay set ship=0
       fetchCustomerAddresses().then(() => {
         const addressSelect = document.getElementById('addressSelect');
         if (!addressSelect?.value) {
-          // ❗ Chưa có địa chỉ → phí ship = 0
           zeroShippingBecauseNoAddress();
         } else {
-          // Có địa chỉ → tính phí GHN
           setTimeout(() => setupShippingForSelectedAddress(), 0);
         }
       });
     } else {
-      // Tại quầy hoặc thiếu SĐT → ẩn giao hàng & GHN, ship = 0
       addressSection.classList.add('d-none');
       shippingFeeContainer.classList.add('d-none');
       shippingMethodContainer?.classList.add('d-none');
 
-      tab.shippingFee = 0;
+      const prevBase = Number(tab.shippingFeeBase || 0);
+      tab.shippingFeeBase = 0;
+      tab.shippingDiscount = 0;
       updateSummary(tab);
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
-      if (tab.voucherId) applyVoucher(tab.voucherId);
+      if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) applyVoucher(tab.voucherId);
     }
 
     fetchVouchers();
   }
+
+
 
   function toggleCashInput() {
     const paymentMethodSelect = document.getElementById('paymentMethod');
@@ -2502,7 +2579,7 @@
     try {
       const requestData = {
         productDetailId: String(productDetailId),
-        shippingFee: String(tab.shippingFee || 0),
+        shippingFee: parseFloat(tab.shippingFeeBase || 0),
         tabId: String(currentTabId)
       };
 
@@ -2528,12 +2605,13 @@
 
       const data = await response.json();
       updateCartFromResponse(data);
-      await refreshCartFromServer(); // Ensure stock is updated
+      await refreshCartFromServer();
       showToast("Đã xóa sản phẩm!", "success");
     } catch (error) {
       showToast("Lỗi khi xóa sản phẩm: " + error.message, "error");
     }
   }
+
 
   async function fetchVouchers() {
     const tab = tabs.find(t => t.id === currentTabId);
@@ -2598,7 +2676,7 @@
 
     const voucherSelect = document.getElementById('voucherSelect');
     const selectedVoucherId = voucherId || (voucherSelect ? voucherSelect.value : null);
-    const shippingFee = tab.shippingFee || 0;
+    const shippingFee = tab.shippingFeeBase || 0;
 
     if (!selectedVoucherId) {
       tab.voucherId = null;
@@ -2609,6 +2687,8 @@
       return;
     }
 
+    if (isApplyingVoucher) return;   // ⛔ chống re-entry
+    isApplyingVoucher = true;
     try {
       const response = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${selectedVoucherId}&shippingFee=${shippingFee}&tabId=${currentTabId}`);
       if (!response.ok) {
@@ -2621,46 +2701,91 @@
         }
         throw new Error(errorMessage);
       }
-
       const data = await response.json();
       tab.voucherId = selectedVoucherId;
-      updateCartFromResponse(data);
+      updateCartFromResponse(data);  // sẽ KHÔNG kích ship-recalc vì đã có cờ
       showToast('Đã áp dụng phiếu giảm giá!', 'success');
     } catch (error) {
       console.error('Lỗi khi áp dụng voucher:', error);
       showToast('Lỗi khi áp dụng voucher: ' + error.message, 'error');
+    } finally {
+      isApplyingVoucher = false;     // ✅ trả cờ
     }
   }
+
+
 
   function updateSummary(tab) {
-    const subTotal = parseFloat(tab.subTotal) || 0;
-    const discount = parseFloat(tab.discount) || 0;
-    const shippingFee = parseFloat(tab.shippingFee) || 0;
-    const total = subTotal - discount;
-    const totalWithShipping = total + (tab.saleMethod === 'Giao hàng' ? shippingFee : 0); // Chỉ cộng phí vận chuyển khi chọn Giao hàng
+    // Đảm bảo có biến base/discount cho ship (FE đang quản lý)
+    const subTotal        = Number(tab.subTotal || 0);
+    const orderDiscount   = Number(tab.discount || 0);                 // giảm giá đơn (ORDER)
+    const shippingBase    = tab.saleMethod === 'Giao hàng' ? Number(tab.shippingFeeBase || 0) : 0;
+    const shippingDiscount= tab.saleMethod === 'Giao hàng' ? Number(tab.shippingDiscount || 0) : 0;
 
+    // Phí ship phải trả sau giảm
+    const shippingPay = Math.max(0, shippingBase - shippingDiscount);
+
+    // Tổng thanh toán
+    const total = subTotal - orderDiscount + shippingPay;
+
+    // Tiền khách đưa (chỉ tính thối tiền nếu là Tiền mặt)
     const cashAmountInput = document.getElementById('cashAmount');
-    const cashAmount = parseFloat(cashAmountInput ? cashAmountInput.value.replace(/\./g, '') : 0) || 0;
+    const rawCash = cashAmountInput ? cashAmountInput.value.replace(/\./g, '') : '0';
+    const cashAmount = tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440017'
+            ? (Number(rawCash || 0))
+            : 0;
+
     tab.cashAmount = cashAmount;
 
-    const change = Math.max(0, cashAmount - totalWithShipping);
+    const change = Math.max(0, cashAmount - total);
 
-    const elements = {
-      subTotal: document.getElementById('subTotal'),
-      discount: document.getElementById('discount'),
-      shippingFeeDisplay: document.getElementById('shippingFeeDisplay'),
-      total: document.getElementById('total'),
-      changeAmount: document.getElementById('changeAmount')
-    };
+    // Cập nhật UI
+    const el = (id) => document.getElementById(id);
+    const fmt = (n) => (Number(n)||0).toLocaleString('vi-VN') + ' VNĐ';
 
-    if (elements.subTotal) elements.subTotal.innerText = subTotal.toLocaleString('vi-VN') + ' VNĐ';
-    if (elements.discount) elements.discount.innerText = discount.toLocaleString('vi-VN') + ' VNĐ';
-    if (elements.shippingFeeDisplay) {
-      elements.shippingFeeDisplay.innerText = (tab.saleMethod === 'Giao hàng' ? shippingFee : 0).toLocaleString('vi-VN') + ' VNĐ';
+    // Subtotal
+    if (el('subTotal')) el('subTotal').innerText = fmt(subTotal);
+
+    // Phí ship gốc (chỉ khi Giao hàng)
+    if (el('shippingBaseRow')) {
+      if (tab.saleMethod === 'Giao hàng') {
+        el('shippingBaseRow').classList.remove('d-none');
+        if (el('shippingFeeBaseDisplay')) el('shippingFeeBaseDisplay').innerText = fmt(shippingBase);
+      } else {
+        el('shippingBaseRow').classList.add('d-none');
+        if (el('shippingFeeBaseDisplay')) el('shippingFeeBaseDisplay').innerText = fmt(0);
+      }
     }
-    if (elements.total) elements.total.innerText = totalWithShipping.toLocaleString('vi-VN') + ' VNĐ';
-    if (elements.changeAmount) elements.changeAmount.innerText = change.toLocaleString('vi-VN') + ' VNĐ';
+
+    // Giảm phí ship (chỉ show khi > 0 và Giao hàng)
+    if (el('shippingDiscountRow')) {
+      if (tab.saleMethod === 'Giao hàng' && shippingDiscount > 0) {
+        el('shippingDiscountRow').classList.remove('d-none');
+        if (el('shippingDiscountDisplay')) el('shippingDiscountDisplay').innerText = '- ' + fmt(shippingDiscount);
+      } else {
+        el('shippingDiscountRow').classList.add('d-none');
+        if (el('shippingDiscountDisplay')) el('shippingDiscountDisplay').innerText = '- ' + fmt(0);
+      }
+    }
+
+    // Giảm giá đơn (chỉ show khi > 0)
+    if (el('orderDiscountRow')) {
+      if (orderDiscount > 0) {
+        el('orderDiscountRow').classList.remove('d-none');
+        if (el('orderDiscountDisplay')) el('orderDiscountDisplay').innerText = '- ' + fmt(orderDiscount);
+      } else {
+        el('orderDiscountRow').classList.add('d-none');
+        if (el('orderDiscountDisplay')) el('orderDiscountDisplay').innerText = '- ' + fmt(0);
+      }
+    }
+
+    // Tổng
+    if (el('total')) el('total').innerText = fmt(total);
+
+    // Tiền trả lại
+    if (el('changeAmount')) el('changeAmount').innerText = fmt(change);
   }
+
 
   async function createOrder() {
     const tab = tabs.find(t => t.id === currentTabId);
@@ -2670,47 +2795,59 @@
       showToast('Vui lòng nhập số điện thoại khách hàng.', 'warning');
       return;
     }
-
     if (tab.saleMethod === 'Giao hàng' && !tab.selectedAddress && tab.customerPhone !== '0999999999') {
       showToast('Vui lòng chọn địa chỉ giao hàng.', 'warning');
       return;
     }
-
     if (tab.cart.length === 0) {
       showToast('Giỏ hàng trống.', 'warning');
       return;
     }
 
+    // Tính phí ship sau giảm
+    const shippingBase     = tab.saleMethod === 'Giao hàng' ? Number(tab.shippingFeeBase || 0) : 0;
+    const shippingDiscount = tab.saleMethod === 'Giao hàng' ? Number(tab.shippingDiscount || 0) : 0;
+    const shippingPay      = tab.saleMethod === 'Giao hàng' ? Math.max(0, shippingBase - shippingDiscount) : 0;
+
+    const totalAmount = (Number(tab.subTotal) || 0) - (Number(tab.discount) || 0) + shippingPay;
+
     const cashAmountInput = document.getElementById('cashAmount');
+
+    // GỬI ĐỦ 3 TRƯỜNG: phiVanChuyen (sau giảm, để BE cũ đọc được), phiVanChuyenGoc, giamGiaVanChuyen
     const orderData = {
       soDienThoaiKhachHang: tab.customerPhone,
-      phiVanChuyen: tab.saleMethod === 'Giao hàng' ? tab.shippingFee : 0,
-      phuongThucThanhToan: tab.paymentMethod,
-      soTienKhachDua: tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018' ? 0 : (parseFloat(cashAmountInput?.value.replace(/\./g, '') || '0') || 0),
       phuongThucBanHang: tab.saleMethod,
-      idPhieuGiamGia: tab.voucherId || null,
+      phuongThucThanhToan: tab.paymentMethod,
+      soTienKhachDua: tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018'
+              ? 0
+              : (parseFloat(cashAmountInput?.value.replace(/\./g, '') || '0') || 0),
+
+      // —— PHÍ VẬN CHUYỂN —— //
+      phiVanChuyen: shippingPay,                 // <== phí phải trả sau giảm (tương thích BE cũ)
+      phiVanChuyenGoc: shippingBase,             // <== phí gốc (BE mới dùng)
+      giamGiaVanChuyen: shippingDiscount,        // <== giảm phí ship (BE mới dùng)
+
+      // —— VOUCHER —— //
+      idPhieuGiamGia: tab.voucherId || null,     // voucher ORDER (BE đang dùng)
+
+      // —— KHÁC —— //
       danhSachSanPham: tab.cart,
       diaChiGiaoHang: tab.selectedAddress,
       tabId: String(currentTabId)
     };
 
-    // Log để kiểm tra orderData
-    console.log('orderData before saving to sessionStorage:', JSON.stringify(orderData));
-
-    const totalAmount = (Number(tab.subTotal) || 0) - (Number(tab.discount) || 0) + (tab.saleMethod === 'Giao hàng' ? (Number(tab.shippingFee) || 0) : 0);
-
     const confirmResult = await Swal.fire({
       icon: 'question',
       title: 'Xác nhận thanh toán',
       html: `
-            <p><strong>Tổng tiền:</strong> ${totalAmount.toLocaleString('vi-VN')} VNĐ</p>
-            <p><strong>Phương thức thanh toán:</strong> ${
+      <p><strong>Tổng tiền:</strong> ${totalAmount.toLocaleString('vi-VN')} VNĐ</p>
+      <p><strong>Phương thức thanh toán:</strong> ${
               tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018'
                       ? 'Chuyển khoản ngân hàng'
                       : 'Thanh toán tiền mặt'
       }</p>
-            <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
-        `,
+      <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
+    `,
       showCancelButton: true,
       confirmButtonText: 'Xác nhận',
       cancelButtonText: 'Hủy',
@@ -2718,9 +2855,7 @@
       cancelButtonColor: '#d33',
     });
 
-    if (!confirmResult.isConfirmed) {
-      return;
-    }
+    if (!confirmResult.isConfirmed) return;
 
     try {
       if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
@@ -2728,7 +2863,6 @@
           showToast('Tổng tiền phải lớn hơn 0.', 'warning');
           return;
         }
-
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/create-payment-link';
@@ -2752,6 +2886,7 @@
         descriptionInput.value = `Thanh toán đơn hàng ${currentTabId}`;
         form.appendChild(descriptionInput);
 
+        // Lưu orderData đầy đủ (có 3 trường phí ship) để BE dùng sau khi redirect
         sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData, tabId: currentTabId }));
         document.body.appendChild(form);
         form.submit();
@@ -2783,9 +2918,7 @@
           try {
             const byteCharacters = atob(data.pdfData);
             const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
+            for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
             const byteArray = new Uint8Array(byteNumbers);
             const blob = new Blob([byteArray], { type: 'application/pdf' });
 
@@ -2803,15 +2936,14 @@
           }
         }
 
+        // Reset tab
         tabs = tabs.filter(t => t.id !== currentTabId);
         if (tabs.length === 0) {
           await addNewTab();
         } else {
           currentTabId = tabs[tabs.length - 1].id;
           const lastTab = tabs.find(t => t.id === currentTabId);
-          if (lastTab) {
-            lastTab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
-          }
+          if (lastTab) lastTab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
         }
 
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
@@ -2824,6 +2956,8 @@
       showToast('Lỗi khi tạo đơn hàng: ' + error.message, 'error');
     }
   }
+
+
 
   async function fetchCustomers(keyword = '') {
     try {
@@ -3210,9 +3344,9 @@
   // Event Listeners
   document.addEventListener('DOMContentLoaded', () => {
     // GHN: preload provinces
-    ghnLoadProvinces().catch(()=>{});
+    ghnLoadProvinces().catch(() => {});
 
-// Khi đổi dịch vụ → tính lại phí ngay
+    // Khi đổi dịch vụ → tính lại phí ngay
     const shippingMethodSelect = document.getElementById('shippingMethod');
     if (shippingMethodSelect) {
       shippingMethodSelect.addEventListener('change', () => {
@@ -3220,14 +3354,14 @@
       });
     }
 
-// Khi đổi địa chỉ → tính lại GHN
-    const addressSelectEl = document.getElementById('addressSelect');
-    if (addressSelectEl) {
-      addressSelectEl.addEventListener('change', () => {
+    // Khi đổi địa chỉ → tính lại GHN (gộp 1 listener duy nhất)
+    const addressSelect = document.getElementById('addressSelect');
+    if (addressSelect) {
+      addressSelect.addEventListener('change', () => {
         const tab = tabs.find(t => t.id === currentTabId);
         if (!tab) return;
 
-        tab.selectedAddress = addressSelectEl.value || '';
+        tab.selectedAddress = addressSelect.value || '';
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
 
         if (!tab.selectedAddress) {
@@ -3238,10 +3372,10 @@
       });
     }
 
+    // Nhập tiền mặt (định dạng & cập nhật tóm tắt)
     const cashInput = document.getElementById('cashAmount');
     if (cashInput) {
       cashInput.addEventListener('input', (e) => {
-        const cursorPosition = e.target.selectionStart;
         const rawValue = e.target.value.replace(/\./g, '');
         const formattedValue = formatCashInput(rawValue);
         e.target.value = formattedValue;
@@ -3254,6 +3388,7 @@
       });
     }
 
+    // Enter trên ô SĐT → tải địa chỉ
     const customerPhone = document.getElementById('customerPhone');
     if (customerPhone) {
       customerPhone.addEventListener('keypress', (event) => {
@@ -3263,17 +3398,7 @@
       });
     }
 
-    const addressSelect = document.getElementById('addressSelect');
-    if (addressSelect) {
-      addressSelect.addEventListener('change', () => {
-        const tab = tabs.find(t => t.id === currentTabId);
-        if (tab) {
-          tab.selectedAddress = addressSelect.value;
-          localStorage.setItem('orderTabs', JSON.stringify(tabs));
-        }
-      });
-    }
-
+    // Phí vận chuyển (FE cho phép nhập tay) → ghi vào phí gốc
     const shippingFee = document.getElementById('shippingFee');
     if (shippingFee) {
       shippingFee.value = formatCurrency(shippingFee.value);
@@ -3282,20 +3407,26 @@
         if (!tab) return;
         const raw = unformatCurrency(shippingFee.value);
         shippingFee.value = formatCurrency(raw);
-        tab.shippingFee = raw;
+
+        const prevBase = Number(tab.shippingFeeBase || 0);
+        tab.shippingFeeBase = raw;
         updateSummary(tab);
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
-        if (tab.voucherId) {
+
+        if (tab.voucherId && !isApplyingVoucher && prevBase !== raw) {
           applyVoucher(tab.voucherId);
         }
       });
     }
 
+
+    // Thêm tab đơn hàng
     const addTabBtn = document.getElementById('addTabBtn');
     if (addTabBtn) {
       addTabBtn.addEventListener('click', addNewTab);
     }
 
+    // Chọn voucher
     const voucherSelect = document.getElementById('voucherSelect');
     if (voucherSelect) {
       voucherSelect.addEventListener('change', (e) => {
@@ -3303,6 +3434,7 @@
       });
     }
 
+    // Tìm khách hàng trong modal
     const customerSearch = document.getElementById('customerSearch');
     if (customerSearch) {
       customerSearch.addEventListener('input', () => {
@@ -3311,6 +3443,7 @@
       });
     }
 
+    // Đổi phương thức thanh toán
     const paymentMethodSelect = document.getElementById('paymentMethod');
     if (paymentMethodSelect) {
       paymentMethodSelect.addEventListener('change', (e) => {
@@ -3326,6 +3459,7 @@
     // Khởi tạo khi trang load
     initTabs();
   });
+
 </script>
 <script th:src="@{/js/notification.js}"></script>
 
