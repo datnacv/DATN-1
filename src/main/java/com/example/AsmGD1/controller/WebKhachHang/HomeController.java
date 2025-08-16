@@ -215,6 +215,73 @@ public class HomeController {
         }
         return "redirect:/customers/login";
     }
+    // Quick View – trả JSON tóm tắt sản phẩm theo ID để modal hiển thị nhanh
+    @GetMapping("/api/product/{id}")
+    @ResponseBody
+    public ResponseEntity<?> getProductSummary(@PathVariable UUID id) {
+        try {
+            // Lấy thông tin sản phẩm theo ID (bạn đã dùng ở trang chi tiết)
+            ChiTietSanPhamDto detail = khachhangSanPhamService.getProductDetail(id);
+            if (detail == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Not found", "id", id.toString()));
+            }
+
+            // Lấy min price cho đẹp (nếu có range), fallback = detail.getGia()
+            Map<String, java.math.BigDecimal> range = khachhangSanPhamService.getPriceRangeBySanPhamId(id);
+            java.math.BigDecimal minPrice = range != null
+                    ? range.getOrDefault("minPrice", detail.getGia())
+                    : detail.getGia();
+
+            // Ảnh đại diện: ưu tiên ảnh list, không có thì dùng urlHinhAnh đơn
+            String img = (detail.getHinhAnhList() != null && !detail.getHinhAnhList().isEmpty())
+                    ? detail.getHinhAnhList().get(0)
+                    : detail.getUrlHinhAnh();
+
+            Map<String, Object> resp = new HashMap<>();
+            resp.put("id", id);
+            resp.put("tenSanPham", detail.getTenSanPham());
+            resp.put("urlHinhAnh", img);
+            resp.put("price", minPrice);
+            resp.put("tongSoLuong", detail.getSoLuongTonKho());
+            resp.put("moTa", detail.getMoTa());
+
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            logger.error("Lỗi lấy product {} cho Quick View", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Server error"));
+        }
+    }
+    @GetMapping("/api/product/{sanPhamId}/options")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getProductOptions(@PathVariable UUID sanPhamId) {
+        List<ChiTietSanPham> list =
+                khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(sanPhamId);
+
+        if (list == null || list.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("sizes", List.of(), "colors", List.of()));
+        }
+
+        // DISTINCT theo id & giữ thứ tự
+        Map<UUID, Map<String, Object>> sizeMap = new LinkedHashMap<>();
+        Map<UUID, Map<String, Object>> colorMap = new LinkedHashMap<>();
+
+        for (ChiTietSanPham ct : list) {
+            sizeMap.putIfAbsent(ct.getKichCo().getId(),
+                    Map.of("id", ct.getKichCo().getId(), "ten", ct.getKichCo().getTen()));
+
+            colorMap.putIfAbsent(ct.getMauSac().getId(),
+                    Map.of("id", ct.getMauSac().getId(),
+                            "tenMau", ct.getMauSac().getTenMau()));
+        }
+
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("sizes", new ArrayList<>(sizeMap.values()));
+        resp.put("colors", new ArrayList<>(colorMap.values()));
+        return ResponseEntity.ok(resp);
+    }
 
     @GetMapping("/cart")
     public String cart(Model model, Authentication authentication) {

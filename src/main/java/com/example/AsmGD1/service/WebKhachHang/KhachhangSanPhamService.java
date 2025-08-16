@@ -195,11 +195,7 @@ public class KhachhangSanPhamService {
 
 
     public ChiTietSanPhamDto convertToChiTietSanPhamDto(ChiTietSanPham chiTiet) {
-        if (chiTiet == null) return null;
-
         ChiTietSanPhamDto dto = new ChiTietSanPhamDto();
-
-        // ===== Thông tin cơ bản =====
         dto.setId(chiTiet.getId());
         dto.setSanPhamId(chiTiet.getSanPham().getId());
         dto.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
@@ -209,143 +205,107 @@ public class KhachhangSanPhamService {
         dto.setSoLuongTonKho(chiTiet.getSoLuongTonKho());
         dto.setGioiTinh(chiTiet.getGioiTinh());
         dto.setTrangThai(chiTiet.getTrangThai());
-        if (chiTiet.getSanPham().getDanhMuc() != null) {
-            dto.setDanhMucId(chiTiet.getSanPham().getDanhMuc().getId());
-            dto.setTenDanhMuc(chiTiet.getSanPham().getDanhMuc().getTenDanhMuc());
-        }
+        dto.setDanhMucId(chiTiet.getSanPham().getDanhMuc().getId());
+        dto.setTenDanhMuc(chiTiet.getSanPham().getDanhMuc().getTenDanhMuc());
 
-        // ===== Giá / Khuyến mãi =====
-        BigDecimal originalPrice = chiTiet.getGia() != null ? chiTiet.getGia() : BigDecimal.ZERO;
-        dto.setOldPrice(originalPrice); // giá gốc
-
-        // Ưu tiên % KM theo biến thể; nếu không có thì theo sản phẩm; nếu vẫn không có thì 0%
-        BigDecimal discountPercent = getEffectiveDiscountPercent(chiTiet.getSanPham().getId(), chiTiet);
-        if (discountPercent != null && discountPercent.compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal rate = discountPercent.movePointLeft(2); // 30 -> 0.30
-            BigDecimal discounted = originalPrice.subtract(originalPrice.multiply(rate))
-                    .setScale(0, RoundingMode.HALF_UP);
-            dto.setGia(discounted);
+        // Thiết lập giá gốc
+        BigDecimal originalPrice = chiTiet.getGia();
+        dto.setOldPrice(originalPrice); // Giá gốc
+        Optional<ChienDichGiamGia> chienDich = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTiet.getId());
+        if (chienDich.isPresent()) {
+            BigDecimal discountRate = chienDich.get().getPhanTramGiam().divide(BigDecimal.valueOf(100));
+            BigDecimal discountedPrice = originalPrice.subtract(originalPrice.multiply(discountRate));
+            dto.setGia(discountedPrice); // Giá sau giảm
+            dto.setDiscountCampaignName(chienDich.get().getTen());
         } else {
-            dto.setGia(originalPrice);
+            dto.setGia(originalPrice); // Không có chiến dịch, dùng giá gốc
+            dto.setDiscountCampaignName(null);
         }
 
-        // Tên chiến dịch (ưu tiên theo biến thể nếu có)
-        String campaignName = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTiet.getId())
-                .map(ChienDichGiamGia::getTen)
-                .orElseGet(() -> chienDichGiamGiaService.getActiveCampaignForProduct(chiTiet.getSanPham().getId())
-                        .map(ChienDichGiamGia::getTen)
-                        .orElse(null));
-        dto.setDiscountCampaignName(campaignName);
+        // Lấy danh sách màu sắc
+        List<MauSacDto> mauSacList = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId())
+                .stream()
+                .map(d -> {
+                    MauSacDto msDto = new MauSacDto();
+                    msDto.setId(d.getMauSac().getId());
+                    msDto.setTenMau(d.getMauSac().getTenMau());
+                    return msDto;
+                })
+                .distinct()
+                .collect(Collectors.toList());
+        dto.setMauSacList(mauSacList);
 
-        // ===== Gom dữ liệu từ mọi biến thể ACTIVE của sản phẩm =====
-        List<ChiTietSanPham> allDetails = khachHangSanPhamRepository
-                .findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId());
+        // Lấy danh sách kích cỡ
+        List<KichCoDto> kichCoList = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId())
+                .stream()
+                .map(d -> {
+                    KichCoDto kcDto = new KichCoDto();
+                    kcDto.setId(d.getKichCo().getId());
+                    kcDto.setTen(d.getKichCo().getTen());
+                    return kcDto;
+                })
+                .distinct()
+                .collect(Collectors.toList());
+        dto.setKichCoList(kichCoList);
 
-        // --- Danh sách màu (distinct theo id, giữ thứ tự xuất hiện)
-        Map<UUID, MauSacDto> colorMap = new LinkedHashMap<>();
-        for (ChiTietSanPham d : allDetails) {
-            if (d.getMauSac() != null) {
-                MauSacDto ms = new MauSacDto();
-                ms.setId(d.getMauSac().getId());
-                ms.setTenMau(d.getMauSac().getTenMau());
-                colorMap.putIfAbsent(ms.getId(), ms);
-            }
-        }
-        dto.setMauSacList(new ArrayList<>(colorMap.values()));
-
-        // --- Danh sách kích cỡ (distinct theo id, giữ thứ tự)
-        Map<UUID, KichCoDto> sizeMap = new LinkedHashMap<>();
-        for (ChiTietSanPham d : allDetails) {
-            if (d.getKichCo() != null) {
-                KichCoDto kc = new KichCoDto();
-                kc.setId(d.getKichCo().getId());
-                kc.setTen(d.getKichCo().getTen());
-                sizeMap.putIfAbsent(kc.getId(), kc);
-            }
-        }
-        dto.setKichCoList(new ArrayList<>(sizeMap.values()));
-
-        // --- Tổ hợp size-color hợp lệ (khử trùng lặp an toàn)
-        List<ChiTietSanPhamDto.SizeColorCombination> combinations = new ArrayList<>();
-        Set<String> comboKeys = new LinkedHashSet<>();
-        for (ChiTietSanPham d : allDetails) {
-            UUID sizeId = d.getKichCo() != null ? d.getKichCo().getId() : null;
-            UUID colorId = d.getMauSac() != null ? d.getMauSac().getId() : null;
-            String key = (sizeId != null ? sizeId.toString() : "null") + "|" + (colorId != null ? colorId.toString() : "null");
-            if (comboKeys.add(key)) {
-                ChiTietSanPhamDto.SizeColorCombination c = new ChiTietSanPhamDto.SizeColorCombination();
-                c.setSizeId(sizeId);
-                c.setColorId(colorId);
-                combinations.add(c);
-            }
-        }
+        // Tổ hợp kích cỡ - màu sắc hợp lệ
+        List<ChiTietSanPham> allDetails = khachHangSanPhamRepository.findActiveProductDetailsBySanPhamId(chiTiet.getSanPham().getId());
+        List<ChiTietSanPhamDto.SizeColorCombination> combinations = allDetails.stream()
+                .map(item -> {
+                    ChiTietSanPhamDto.SizeColorCombination combo = new ChiTietSanPhamDto.SizeColorCombination();
+                    combo.setSizeId(item.getKichCo().getId());
+                    combo.setColorId(item.getMauSac().getId());
+                    return combo;
+                })
+                .distinct()
+                .collect(Collectors.toList());
         dto.setValidCombinations(combinations);
 
-        // ===== Thuộc tính mô tả (theo biến thể hiện tại) =====
-        if (chiTiet.getChatLieu() != null) {
-            ChatLieuDto chatLieuDto = new ChatLieuDto();
-            chatLieuDto.setId(chiTiet.getChatLieu().getId());
-            chatLieuDto.setTenChatLieu(chiTiet.getChatLieu().getTenChatLieu());
-            dto.setChatLieu(chatLieuDto);
-        }
+        // Lấy thông tin chất liệu, xuất xứ, thương hiệu, kiểu dáng, tay áo, cổ áo
+        ChatLieuDto chatLieuDto = new ChatLieuDto();
+        chatLieuDto.setId(chiTiet.getChatLieu().getId());
+        chatLieuDto.setTenChatLieu(chiTiet.getChatLieu().getTenChatLieu());
+        dto.setChatLieu(chatLieuDto);
 
-        if (chiTiet.getXuatXu() != null) {
-            XuatXuDto xuatXuDto = new XuatXuDto();
-            xuatXuDto.setId(chiTiet.getXuatXu().getId());
-            xuatXuDto.setTenXuatXu(chiTiet.getXuatXu().getTenXuatXu());
-            dto.setXuatXu(xuatXuDto);
-        }
+        XuatXuDto xuatXuDto = new XuatXuDto();
+        xuatXuDto.setId(chiTiet.getXuatXu().getId());
+        xuatXuDto.setTenXuatXu(chiTiet.getXuatXu().getTenXuatXu());
+        dto.setXuatXu(xuatXuDto);
 
-        if (chiTiet.getThuongHieu() != null) {
-            ThuongHieuDto thuongHieuDto = new ThuongHieuDto();
-            thuongHieuDto.setId(chiTiet.getThuongHieu().getId());
-            thuongHieuDto.setTenThuongHieu(chiTiet.getThuongHieu().getTenThuongHieu());
-            dto.setThuongHieu(thuongHieuDto);
-        }
+        ThuongHieuDto thuongHieuDto = new ThuongHieuDto();
+        thuongHieuDto.setId(chiTiet.getThuongHieu().getId());
+        thuongHieuDto.setTenThuongHieu(chiTiet.getThuongHieu().getTenThuongHieu());
+        dto.setThuongHieu(thuongHieuDto);
 
-        if (chiTiet.getKieuDang() != null) {
-            KieuDangDto kieuDangDto = new KieuDangDto();
-            kieuDangDto.setId(chiTiet.getKieuDang().getId());
-            kieuDangDto.setTenKieuDang(chiTiet.getKieuDang().getTenKieuDang());
-            dto.setKieuDang(kieuDangDto);
-        }
+        KieuDangDto kieuDangDto = new KieuDangDto();
+        kieuDangDto.setId(chiTiet.getKieuDang().getId());
+        kieuDangDto.setTenKieuDang(chiTiet.getKieuDang().getTenKieuDang());
+        dto.setKieuDang(kieuDangDto);
 
-        if (chiTiet.getTayAo() != null) {
-            TayAoDto tayAoDto = new TayAoDto();
-            tayAoDto.setId(chiTiet.getTayAo().getId());
-            tayAoDto.setTenTayAo(chiTiet.getTayAo().getTenTayAo());
-            dto.setTayAo(tayAoDto);
-        }
+        TayAoDto tayAoDto = new TayAoDto();
+        tayAoDto.setId(chiTiet.getTayAo().getId());
+        tayAoDto.setTenTayAo(chiTiet.getTayAo().getTenTayAo());
+        dto.setTayAo(tayAoDto);
 
-        if (chiTiet.getCoAo() != null) {
-            CoAoDto coAoDto = new CoAoDto();
-            coAoDto.setId(chiTiet.getCoAo().getId());
-            coAoDto.setTenCoAo(chiTiet.getCoAo().getTenCoAo());
-            dto.setCoAo(coAoDto);
-        }
+        CoAoDto coAoDto = new CoAoDto();
+        coAoDto.setId(chiTiet.getCoAo().getId());
+        coAoDto.setTenCoAo(chiTiet.getCoAo().getTenCoAo());
+        dto.setCoAo(coAoDto);
 
-        // ===== Ảnh: ảnh đại diện + ảnh của TẤT CẢ biến thể =====
-        LinkedHashSet<String> images = new LinkedHashSet<>();
+        // Lấy ảnh của biến thể hiện tại
+        List<String> currentVariantImages =
+                khachHangSanPhamRepository.findProductImagesByChiTietSanPhamId(chiTiet.getId());
 
-        // 1) Ảnh đại diện sản phẩm (đứng đầu)
-        String mainImg = chiTiet.getSanPham().getUrlHinhAnh();
-        if (mainImg != null && !mainImg.isBlank()) {
-            images.add(mainImg.trim());
-        }
+        // Lấy tất cả ảnh của mọi biến thể trong cùng sản phẩm
+        List<String> allProductImages =
+                khachHangSanPhamRepository.findProductImagesBySanPhamId(chiTiet.getSanPham().getId());
 
-        // 2) Ảnh của mọi biến thể
-        for (ChiTietSanPham d : allDetails) {
-            List<String> imgs = khachHangSanPhamRepository.findProductImagesByChiTietSanPhamId(d.getId());
-            if (imgs != null) {
-                for (String url : imgs) {
-                    if (url != null) {
-                        String u = url.trim();
-                        if (!u.isEmpty()) images.add(u);
-                    }
-                }
-            }
-        }
-        dto.setHinhAnhList(new ArrayList<>(images));
+        // Gộp: ưu tiên ảnh của biến thể hiện tại trước, rồi đến các ảnh khác; khử trùng lặp & giữ thứ tự
+        LinkedHashSet<String> merged = new LinkedHashSet<>();
+        if (currentVariantImages != null) merged.addAll(currentVariantImages);
+        if (allProductImages != null) merged.addAll(allProductImages);
+
+        dto.setHinhAnhList(new ArrayList<>(merged));
 
         return dto;
     }

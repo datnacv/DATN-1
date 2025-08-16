@@ -9,6 +9,41 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Điều chỉnh giao diện cho phần thông tin ngắn gọn */
+        .rating-card dl {
+            margin: 0;
+            padding: 0;
+        }
+
+        .rating-card dl dt {
+            min-width: 100px; /* Đảm bảo nhãn có độ rộng cố định để căn chỉnh */
+            margin-right: 1rem;
+        }
+
+        .rating-card dl dd a {
+            text-decoration: underline;
+        }
+
+        /* Điều chỉnh mô tả chi tiết */
+        #moTa {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tùy chỉnh nút "Xem thêm" */
+        #toggleBtn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem; /* Tương đương text-sm */
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .rating-card dl dt {
+                min-width: 80px;
+            }
+            #moTa {
+                max-height: 3rem; /* Điều chỉnh chiều cao trên mobile */
+            }
+        }
         button[disabled] {
             pointer-events: none;
             opacity: 0.5;
@@ -371,7 +406,9 @@
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
 
 <section class="container mx-auto py-8">
+    <!-- ========== GRID: Trái = Ảnh, Phải = Thông tin ========== -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- LEFT: IMAGES -->
         <div>
             <img th:src="${productDetail.urlHinhAnh}" th:alt="${productDetail.tenSanPham}" class="product-img rounded-lg"/>
             <div class="flex space-x-2 mt-4">
@@ -381,56 +418,101 @@
                      th:alt="${productDetail.tenSanPham}" class="thumbnail-img rounded"/>
             </div>
         </div>
-        <div>
-            <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-4"></h1>
-            <!-- Hiển thị giá -->
-            <div class="mb-4">
-                <!-- Giá (khi chưa chọn: hiển thị min - max) -->
-                <span id="detail-price"
-                      class="price text-[#153054] font-bold text-2xl"
-                      th:attr="data-min=${minPrice},data-max=${maxPrice},data-old-min=${oldMinPrice},data-old-max=${oldMaxPrice}">
-    </span>
 
-                <!-- Giá cũ (ẩn mặc định) -->
+        <!-- RIGHT: NAME, CATEGORY, PRICE, SIZE, COLOR (+brand, stock, qty, buttons) -->
+        <div>
+            <!-- hidden for JS -->
+            <input type="hidden" id="sanPhamId" th:value="${productDetail.sanPhamId}"/>
+
+            <h1 th:text="${productDetail.tenSanPham}" class="text-3xl font-bold text-gray-800 mb-2"></h1>
+
+            <!-- Danh mục từ DTO: tenDanhMuc + danhMucId -->
+            <p class="text-gray-600 mb-2" th:if="${productDetail.tenDanhMuc != null}">
+                Loại:
+                <a class="text-[#153054] underline"
+                   th:href="@{'/category/' + ${productDetail.danhMucId}}"
+                   th:text="${productDetail.tenDanhMuc}"></a>
+            </p>
+
+            <!-- Thương hiệu (nếu có) -->
+            <p class="text-gray-600 mb-2" th:if="${productDetail.thuongHieu != null}">
+                Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span>
+            </p>
+
+            <!-- Giá -->
+            <div class="mb-4">
+        <span id="detail-price"
+              class="price text-[#153054] font-bold text-2xl"
+              th:attr="data-min=${minPrice},data-max=${maxPrice},data-old-min=${oldMinPrice},data-old-max=${oldMaxPrice}">
+        </span>
                 <div id="detail-old-price"
                      class="old-price text-sm text-red-600 line-through inline-block ml-2"
                      style="display:none"></div>
 
-                <!-- Discount Campaign -->
-                <div th:if="${productDetail.discountCampaignName != null}" class="text-sm text-green-600">
+                <div th:if="${productDetail.discountCampaignName != null}" class="text-sm text-green-600 mt-1">
                     <span th:text="'Giảm giá: ' + ${productDetail.discountCampaignName}"></span>
                 </div>
             </div>
-            <p class="text-gray-600 mb-4" th:text="${productDetail.moTa}"></p>
-            <p class="text-gray-600 mb-2">Thương hiệu: <span th:text="${productDetail.thuongHieu.tenThuongHieu}"></span></p>
-            <p class="text-gray-600 mb-2">Số lượng tồn kho: <span id="dynamic-stock">Chọn màu & size</span></p>
+
+            <!-- Tồn kho động -->
+            <p class="text-gray-600 mb-2">
+                Số lượng tồn kho: <span id="dynamic-stock">Chọn màu & size</span>
+            </p>
+
+            <!-- Size -->
             <div class="size-selection mb-4">
                 <h6 class="font-semibold">Kích cỡ:</h6>
-                <div class="size-options flex space-x-2 mt-2">
-                    <button th:each="size : ${productDetail.kichCoList}" th:text="${size.ten}" th:attr="data-size-id=${size.id}" class="size-option px-4 py-2 border rounded hover:bg-[#e0ebf5]"></button>
+                <div class="size-options flex flex-wrap gap-2 mt-2">
+                    <button th:each="size : ${productDetail.kichCoList}"
+                            th:text="${size.ten}"
+                            th:attr="data-size-id=${size.id}"
+                            class="size-option px-4 py-2 border rounded hover:bg-[#e0ebf5] disabled:opacity-40">
+                    </button>
                 </div>
             </div>
+
+            <!-- Color -->
             <div class="color-selection mb-4">
                 <h6 class="font-semibold">Màu sắc:</h6>
-                <div class="color-options flex space-x-2 mt-2">
-                    <button th:each="color : ${productDetail.mauSacList}" th:text="${color.tenMau}" th:attr="data-color-id=${color.id}" class="color-option px-4 py-2 border rounded hover:bg-[#e0ebf5]"></button>
+                <div class="color-options flex flex-wrap gap-2 mt-2">
+                    <button th:each="color : ${productDetail.mauSacList}"
+                            th:text="${color.tenMau}"
+                            th:attr="data-color-id=${color.id}"
+                            class="color-option px-4 py-2 border rounded hover:bg-[#e0ebf5] disabled:opacity-40">
+                    </button>
                 </div>
             </div>
+
+            <!-- Quantity -->
             <div class="quantity-selection mb-4">
                 <h6 class="font-semibold">Số lượng:</h6>
                 <div class="quantity-control flex items-center space-x-2 mt-2">
                     <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded" disabled>-</button>
-                    <input type="number" value="1" min="1" th:max="${productDetail.soLuongTonKho}" class="quantity-input border rounded" disabled/>
+                    <input id="qty" type="number" value="1" min="1"
+                           th:max="${productDetail.soLuongTonKho}"
+                           class="quantity-input border rounded w-20 text-center" disabled/>
                     <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded" disabled>+</button>
                 </div>
             </div>
+
+            <!-- CTA -->
             <div class="button-group mt-4">
-                <button class="btn bg-[#153054] text-white hover:bg-[#1e4066] px-6 py-2 rounded add-to-cart"
-                        th:attr="data-product-id=${productDetail.id},data-san-pham-id=${productDetail.sanPhamId},data-product-name=${productDetail.tenSanPham},data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},data-product-img=${productDetail.urlHinhAnh}">
+                <button id="btnAddToCart"
+                        class="btn bg-[#153054] text-white hover:bg-[#1e4066] px-6 py-2 rounded add-to-cart"
+                        th:attr="data-product-id=${productDetail.id},
+                         data-san-pham-id=${productDetail.sanPhamId},
+                         data-product-name=${productDetail.tenSanPham},
+                         data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},
+                         data-product-img=${productDetail.urlHinhAnh}">
                     <i class="fas fa-shopping-cart"></i> Thêm vào giỏ hàng
                 </button>
-                <button class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-2 rounded buy-now"
-                        th:attr="data-product-id=${productDetail.id},data-san-pham-id=${productDetail.sanPhamId},data-product-name=${productDetail.tenSanPham},data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},data-product-img=${productDetail.urlHinhAnh}">
+                <button id="btnBuyNow"
+                        class="btn bg-green-600 text-white hover:bg-green-700 px-6 py-2 rounded buy-now"
+                        th:attr="data-product-id=${productDetail.id},
+                         data-san-pham-id=${productDetail.sanPhamId},
+                         data-product-name=${productDetail.tenSanPham},
+                         data-product-price=${#numbers.formatDecimal(productDetail.gia, 0, 0, 'COMMA')},
+                         data-product-img=${productDetail.urlHinhAnh}">
                     <i class="fas fa-bolt"></i> Mua ngay
                 </button>
                 <a href="/" class="btn bg-gray-500 text-white hover:bg-gray-600 px-6 py-2 rounded">
@@ -439,46 +521,119 @@
             </div>
         </div>
     </div>
+
+    <!-- DESCRIPTION & PRODUCT INFO -->
+    <div class="bg-white rating-card mt-10 p-6">
+        <!-- Tiêu đề chung -->
+        <h2 class="text-2xl font-bold text-[#153054] mb-4">Mô tả sản phẩm</h2>
+
+        <!-- Thông tin ngắn gọn (trên cùng) -->
+        <div class="mb-6">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <!-- Mã sản phẩm -->
+                <div th:if="${productDetail.maSanPham != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Mã sản phẩm:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.maSanPham}"></dd>
+                </div>
+
+                <!-- Danh mục -->
+                <div th:if="${productDetail.tenDanhMuc != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Loại:</dt>
+                    <dd class="text-gray-900">
+                        <a class="text-[#153054] underline"
+                           th:href="@{'/category/' + ${productDetail.danhMucId}}"
+                           th:text="${productDetail.tenDanhMuc}"></a>
+                    </dd>
+                </div>
+
+                <!-- Thương hiệu -->
+                <div th:if="${productDetail.thuongHieu != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Thương hiệu:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.thuongHieu.tenThuongHieu}"></dd>
+                </div>
+
+                <!-- Chất liệu -->
+                <div th:if="${productDetail.chatLieu != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Chất liệu:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.chatLieu.tenChatLieu}"></dd>
+                </div>
+
+                <!-- Xuất xứ -->
+                <div th:if="${productDetail.xuatXu != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Xuất xứ:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.xuatXu.tenXuatXu}"></dd>
+                </div>
+
+                <!-- Kiểu dáng -->
+                <div th:if="${productDetail.kieuDang != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Kiểu dáng:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.kieuDang.tenKieuDang}"></dd>
+                </div>
+
+                <!-- Tay áo -->
+                <div th:if="${productDetail.tayAo != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Tay áo:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.tayAo.tenTayAo}"></dd>
+                </div>
+
+                <!-- Cổ áo -->
+                <div th:if="${productDetail.coAo != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Cổ áo:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.coAo.tenCoAo}"></dd>
+                </div>
+
+                <!-- Giới tính -->
+                <div th:if="${productDetail.gioiTinh != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Giới tính:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.gioiTinh}"></dd>
+                </div>
+
+                <!-- Khuyến mãi -->
+                <div th:if="${productDetail.discountCampaignName != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Khuyến mãi:</dt>
+                    <dd class="text-green-700" th:text="${productDetail.discountCampaignName}"></dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Mô tả chi tiết (dưới cùng) -->
+        <div class="relative">
+            <p id="moTa" class="text-gray-700 leading-relaxed max-h-24 overflow-hidden transition-all duration-300"
+               th:utext="${#strings.escapeXml(productDetail.moTa)?.replaceAll('\\n','<br/>')}">
+            </p>
+            <button id="toggleBtn" class="text-[#153054] mt-2 mx-auto block hover:underline" aria-label="Xem thêm mô tả">
+                Xem thêm
+            </button>
+        </div>
+    </div>
+
+    <!-- RATING CARD -->
     <div class="bg-white rating-card mt-10">
         <h2 class="text-2xl font-bold mb-4">Đánh giá sản phẩm</h2>
 
-        <!-- Summary + Histogram -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center mb-4">
             <div class="flex items-center gap-4">
-                <div class="star-big" aria-label="Điểm trung bình">
-                    ⭐
-                </div>
+                <div class="star-big" aria-label="Điểm trung bình">⭐</div>
                 <div>
                     <p class="text-3xl font-extrabold text-gray-800"><span id="avg-rating">0</span>/5</p>
                     <p class="text-gray-500 text-sm">Từ <span id="total-reviews">0</span> đánh giá</p>
                     <div class="star-row mt-1" aria-hidden="true" id="avg-stars"></div>
                 </div>
             </div>
-
-            <div class="md:col-span-2 space-y-1" id="histogram">
-                <!-- rows injected by JS -->
-                <!-- template:
-                <div class="hist-row">
-                  <span class="hist-label">5</span>
-                  <div class="hist-bar"><span style="width: 60%"></span></div>
-                  <span class="hist-count">12</span>
-                </div>
-                -->
-            </div>
+            <div class="md:col-span-2 space-y-1" id="histogram"></div>
         </div>
 
-        <!-- Actions -->
-        <div class="rating-actions mb-4">
-            <button class="filter-chip" data-star="all">Tất cả</button>
-            <button class="filter-chip" data-star="5">5 sao</button>
-            <button class="filter-chip" data-star="4">4 sao</button>
-            <button class="filter-chip" data-star="3">3 sao</button>
-            <button class="filter-chip" data-star="2">2 sao</button>
-            <button class="filter-chip" data-star="1">1 sao</button>
-            <button class="filter-chip" data-has-media="true">Có hình ảnh</button>
+        <div class="rating-actions mb-4 flex flex-wrap gap-2 items-center">
+            <button class="filter-chip px-3 py-1 border rounded" data-star="all">Tất cả</button>
+            <button class="filter-chip px-3 py-1 border rounded" data-star="5">5 sao</button>
+            <button class="filter-chip px-3 py-1 border rounded" data-star="4">4 sao</button>
+            <button class="filter-chip px-3 py-1 border rounded" data-star="3">3 sao</button>
+            <button class="filter-chip px-3 py-1 border rounded" data-star="2">2 sao</button>
+            <button class="filter-chip px-3 py-1 border rounded" data-star="1">1 sao</button>
+            <button class="filter-chip px-3 py-1 border rounded" data-has-media="true">Có hình ảnh</button>
 
             <div class="ml-auto">
-                <select id="sort-select" class="sort-select">
+                <select id="sort-select" class="sort-select border rounded px-2 py-1">
                     <option value="newest">Mới nhất</option>
                     <option value="oldest">Cũ nhất</option>
                     <option value="highest">Cao → Thấp</option>
@@ -487,16 +642,16 @@
             </div>
         </div>
 
-        <!-- List -->
         <div id="ratings-list" class="space-y-3">
-            <!-- skeletons -->
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
+            <div class="skeleton h-24 bg-gray-100 rounded"></div>
+            <div class="skeleton h-24 bg-gray-100 rounded"></div>
         </div>
     </div>
 
     <!-- Lightbox -->
-    <div id="lb" class="lb-backdrop"><img alt="preview"></div>
+    <div id="lb" class="lb-backdrop hidden fixed inset-0 bg-black/70 z-40 items-center justify-center">
+        <img class="max-h-[80vh] max-w-[90vw] rounded shadow-lg" alt="preview">
+    </div>
 </section>
 
 <section class="container mx-auto py-12">
@@ -1058,6 +1213,31 @@
 </script>
 
 <script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", () => {
+        const moTa = document.getElementById("moTa");
+        const toggleBtn = document.getElementById("toggleBtn");
+
+        if (moTa && toggleBtn) {
+            // Kiểm tra nếu nội dung vượt quá chiều cao giới hạn
+            if (moTa.scrollHeight > moTa.clientHeight) {
+                toggleBtn.classList.remove("hidden");
+            }
+
+            // Xử lý sự kiện click cho nút "Xem thêm" / "Thu gọn"
+            toggleBtn.addEventListener("click", () => {
+                if (moTa.classList.contains("max-h-24")) {
+                    moTa.classList.remove("max-h-24", "overflow-hidden");
+                    toggleBtn.textContent = "Thu gọn";
+                    toggleBtn.setAttribute("aria-label", "Thu gọn mô tả");
+                } else {
+                    moTa.classList.add("max-h-24", "overflow-hidden");
+                    toggleBtn.textContent = "Xem thêm";
+                    toggleBtn.setAttribute("aria-label", "Xem thêm mô tả");
+                }
+            });
+        }
+    });
+
     function renderStarsFA6Mini(avg) {
         const full = Math.floor(avg);
         const half = (avg % 1) >= 0.5;

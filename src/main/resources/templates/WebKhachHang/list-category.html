@@ -10,21 +10,37 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <!-- Styles giữ nguyên tone màu -->
+  <!-- Styles giữ nguyên tone màu + cải tiến -->
   <style>
     .navbar { background: linear-gradient(to right, #153054, #1e4066); position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
     .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; height: 40px; }
     body { padding-top: 118px; }
     .product-card { transition: transform .3s, box-shadow .3s; }
     .product-card:hover { transform: translateY(-10px); box-shadow: 0 8px 24px rgba(0,0,0,.15); }
-    .badge-new { background-color:#153054; }
-    .size-option,.color-option{ padding:8px 16px; border:2px solid #ccc; border-radius:8px; cursor:pointer; transition:all .3s; }
-    .size-option.active,.color-option.active{ background:#153054; color:#fff; border-color:#153054; }
-    .color-option{ width:30px;height:30px;border-radius:50%;border:2px solid transparent; }
-    .color-option.active{ border-color:#153054; }
 
-    /* Chatbot (y giữ từ index) */
+    /* Size chip */
+    .size-option{ padding:8px 16px; border:2px solid #ccc; border-radius:8px; cursor:pointer; transition:.3s; }
+    .size-option.active{ background:#153054; color:#fff; border-color:#153054; }
+
+    /* Swatch tròn khi có mã màu */
+    .color-option[data-swatch="true"]{ width:30px; height:30px; border-radius:50%; border:2px solid #ccc; padding:0; cursor:pointer; transition:.3s; }
+    .color-option[data-swatch="true"].active{ border-color:#153054; }
+
+    /* Màu dạng chữ nếu không có mã màu */
+    .color-option:not([data-swatch="true"]){ padding:8px 16px; border:2px solid #ccc; border-radius:8px; cursor:pointer; transition:.3s; }
+    .color-option:not([data-swatch="true"]).active{ background:#153054; color:#fff; border-color:#153054; }
+
+    /* Spinner cho nút thêm giỏ */
+    #confirmAddToCart.loading::after{
+      content:''; display:inline-block; width:16px; height:16px; margin-left:8px;
+      border:2px solid #fff; border-top-color:transparent; border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+
+    /* Chatbot */
     #chatbot-box{ position:fixed; bottom:100px; right:30px; width:420px; height: clamp(520px, 70vh, 640px);
       background:#fff; border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.18); overflow:hidden; z-index:10000;
       opacity:0; transform: translateY(12px) scale(.98); pointer-events:none; visibility:hidden; transform-origin:bottom right;
@@ -57,7 +73,7 @@
   </marquee>
 </div>
 
-<!-- Navbar (fragment giữ nguyên) -->
+<!-- Navbar -->
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
 
 <!-- Modal thêm giỏ -->
@@ -78,15 +94,15 @@
       </div>
       <div class="mt-4">
         <h6 class="font-semibold">Chọn size:</h6>
-        <div class="flex space-x-2 mt-2" id="modalSizeOptions"></div>
+        <div class="flex gap-2 mt-2" id="modalSizeOptions"></div>
       </div>
       <div class="mt-4">
         <h6 class="font-semibold">Chọn màu sắc:</h6>
-        <div class="flex space-x-2 mt-2" id="modalColorOptions"></div>
+        <div class="flex gap-2 mt-2 items-center" id="modalColorOptions"></div>
       </div>
       <div class="mt-4">
         <h6 class="font-semibold">Số lượng:</h6>
-        <div class="flex items-center space-x-2 mt-2">
+        <div class="flex items-center gap-2 mt-2">
           <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded">-</button>
           <input type="number" value="1" min="1" class="quantity-input w-16 text-center border rounded">
           <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
@@ -103,7 +119,7 @@
 
 <!-- CONTENT -->
 <div class="container mx-auto py-8">
-  <h1 class="text-3xl font-bold text-gray-800" th:text="${category != null ? category.tenDanhMuc : 'Danh mục'}">Danh mục</h1>
+  <h1 class="text-3xl font-bold text-gray-800 mb-2">Sản phẩm mới</h1>
   <p class="text-gray-600 mb-6" th:text="'Tổng số: ' + ${products != null ? products.size() : 0} + ' sản phẩm'">Tổng số: 0 sản phẩm</p>
 
   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -112,15 +128,27 @@
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
+        <span class="absolute top-2 left-2 bg-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded shadow">Mới</span>
+
+        <!-- Dữ liệu JSON an toàn -->
         <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="data-product-id=${product.id},data-product-name=${product.tenSanPham},data-product-price=${product.price},data-product-img=${product.urlHinhAnh},data-kich-co=${product.kichCoList},data-mau-sac=${product.mauSacList},data-stock=${product.tongSoLuong}">
+                th:attr="
+          data-product-id=${product.id},
+          data-product-name=${product.tenSanPham},
+          data-product-price=${product.price},
+          data-product-img=${product.urlHinhAnh},
+          data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
+          data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
+          data-stock=${product.tongSoLuong}">
           <i class="fas fa-shopping-cart text-blue-800"></i>
         </button>
+
         <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
                 th:attr="data-product-id=${product.id}">
           <i class="fas fa-eye text-blue-800"></i>
         </button>
       </div>
+
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
         <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
@@ -137,7 +165,6 @@
     </div>
   </div>
 </div>
-
 
 <!-- Floating Chatbot Icon -->
 <div id="chatbot-toggle" style="position:fixed;bottom:20px;right:20px;background:#9FD5F7;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);">
@@ -227,25 +254,29 @@
 <script src="/js/navbar.js"></script>
 
 <script>
-  // Quick reply combobox
+  // ===== Quick reply combobox
   const qrTrigger = document.getElementById('qr-trigger');
   const qrMenu    = document.getElementById('qr-menu');
   qrTrigger?.addEventListener('click', (e)=>{ e.stopPropagation(); const open=qrMenu.classList.toggle('show'); qrTrigger.setAttribute('aria-expanded', open?'true':'false'); qrMenu.setAttribute('aria-hidden', open?'false':'true'); });
   document.addEventListener('click',(e)=>{ if(!qrMenu) return; if(!qrMenu.contains(e.target)&&!qrTrigger.contains(e.target)){ qrMenu.classList.remove('show'); qrTrigger.setAttribute('aria-expanded','false'); qrMenu.setAttribute('aria-hidden','true'); }});
 
-  // Format giá
+  // ===== Format giá
   document.querySelectorAll('.price').forEach(el=>{
     const raw = el.getAttribute('data-price');
-    const n = Number(String(raw).replace(/[^\d.-]/g,'')); el.textContent = Number.isFinite(n)&&n>0 ? n.toLocaleString('vi-VN') + ' VNĐ' : 'Liên hệ';
+    if (!raw || isNaN(raw)) { el.textContent = 'Liên hệ'; return; }
+    el.textContent = 'Từ ' + Number(raw).toLocaleString('vi-VN') + ' VNĐ';
   });
   document.querySelectorAll('.formatted-old-price').forEach(el=>{
-    const raw = el.textContent.trim(); const n = Number(String(raw).replace(/[^\d.-]/g,'')); if(Number.isFinite(n)&&n>0) el.textContent = n.toLocaleString('vi-VN') + ' VNĐ';
+    const raw = el.textContent.trim(); if(!raw || isNaN(raw)) return;
+    el.textContent = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
   });
 
-  // Back to top
-  const backToTop=document.getElementById('back-to-top'); window.addEventListener('scroll',()=>{ backToTop.classList.toggle('hidden', window.scrollY<200); }); backToTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+  // ===== Back to top
+  const backToTop=document.getElementById('back-to-top');
+  window.addEventListener('scroll',()=>{ backToTop.classList.toggle('hidden', window.scrollY<200); });
+  backToTop.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
 
-  // Rating
+  // ===== Rating
   document.addEventListener("DOMContentLoaded", function() {
     document.querySelectorAll('.rating').forEach(container=>{
       const sanPhamId = container.dataset.productId; if(!sanPhamId) return;
@@ -254,74 +285,293 @@
               .then(data=>{
                 const starsContainer=container.querySelector('.stars');
                 const avgEl=container.querySelector('.avg-rating'); const totalEl=container.querySelector('.total-reviews');
-                const all=[...(data.myReviews||[]), ...(data.otherReviews||[])]; if(all.length===0){ starsContainer.innerHTML='Chưa có đánh giá'; avgEl.textContent='0'; totalEl.textContent='0'; return; }
+                const all=[...(data.myReviews||[]), ...(data.otherReviews||[])];
+                if(all.length===0){ starsContainer.innerHTML='Chưa có đánh giá'; avgEl.textContent='0'; totalEl.textContent='0'; return; }
                 const avg = all.reduce((s,r)=>s+r.rating,0)/all.length; const r = Math.round(avg*2)/2;
                 avgEl.textContent=r.toFixed(1); totalEl.textContent=all.length;
-                starsContainer.innerHTML = (()=>{
-                  const full=Math.floor(r); const half=r%1>=0.5; let html='';
-                  for(let i=0;i<full;i++) html+='<i class="fas fa-star text-yellow-400"></i>';
-                  if(half&&full<5) html+='<i class="fas fa-star-half-alt text-yellow-400"></i>';
-                  for(let i=0;i<5-full-(half?1:0);i++) html+='<i class="far fa-star text-yellow-400"></i>';
-                  return html;
-                })();
-              }).catch(()=>{ container.innerHTML='<span class="text-gray-600">Lỗi tải đánh giá</span>'; });
+                let html=''; const full=Math.floor(r); const half=r%1>=0.5;
+                for(let i=0;i<full;i++) html+='<i class="fas fa-star text-yellow-400"></i>';
+                if(half&&full<5) html+='<i class="fas fa-star-half-alt text-yellow-400"></i>';
+                for(let i=0;i<5-full-(half?1:0);i++) html+='<i class="far fa-star text-yellow-400"></i>';
+                starsContainer.innerHTML = html;
+              })
+              .catch(()=>{ container.innerHTML='<span class="text-gray-600">Lỗi tải đánh giá</span>'; });
     });
   });
 
-  // Cart + Quick view (giống index)
+  // ===== Helpers
+  function safeJSONParse(val, fallback = []) {
+    if (val == null || val === '' || val === 'undefined' || val === 'null') return fallback;
+    try { return JSON.parse(val); } catch {}
+    try { const t = document.createElement('textarea'); t.innerHTML = val; return JSON.parse(t.value); } catch { return fallback; }
+  }
+  const isCssColor = (str)=> /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(str) || /^rgb(a?)\(/i.test(str) || /^[a-z]+$/i.test(str);
+  const showSuccess = (text) => window.Swal ? Swal.fire({ icon:'success', title:'Thành công', text, timer:1500, showConfirmButton:false }) : alert(text);
+  const showError   = (text) => window.Swal ? Swal.fire({ icon:'error', title:'Lỗi', text }) : alert('Lỗi: ' + text);
+
+  // ===== Cart + biến thể (đồng bộ với các trang khác)
   document.querySelectorAll('.cart-icon').forEach(button=>{
     button.addEventListener('click', async ()=>{
-      const modal = new bootstrap.Modal(document.getElementById('addToCartModal'));
-      document.getElementById('modalProductImage').src = button.dataset.productImg;
-      document.getElementById('modalProductName').textContent = button.dataset.productName;
-      document.getElementById('modalProductPrice').textContent = Number(button.dataset.productPrice||0).toLocaleString('vi-VN') + ' VNĐ';
-      document.getElementById('modalProductStock').textContent = `Tồn kho: ${button.dataset.stock || 'N/A'}`;
+      const modalEl = document.getElementById('addToCartModal');
+      const modal   = new bootstrap.Modal(modalEl);
 
-      const sizeWrap = document.getElementById('modalSizeOptions'); sizeWrap.innerHTML='';
-      try { JSON.parse(button.dataset.kichCo||'[]').forEach(size=>{ const b=document.createElement('button'); b.className='size-option px-4 py-2 border rounded hover:bg-blue-100'; b.textContent=size.ten; b.dataset.sizeId=size.id; sizeWrap.appendChild(b); }); } catch(e){}
+      // Info cơ bản
+      modalEl.querySelector('#modalProductImage').src = button.dataset.productImg || '';
+      modalEl.querySelector('#modalProductName').textContent = button.dataset.productName || 'Sản phẩm';
+      modalEl.querySelector('#modalProductPrice').innerHTML =
+              'Từ ' + Number(button.dataset.productPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+      modalEl.querySelector('#modalProductStock').textContent =
+              `Tồn kho: ${button.dataset.stock ?? 'N/A'}`;
 
-      const colorWrap = document.getElementById('modalColorOptions'); colorWrap.innerHTML='';
-      try { JSON.parse(button.dataset.mauSac||'[]').forEach(color=>{ const b=document.createElement('button'); b.className='color-option'; b.style.backgroundColor = color.maMauHex || color.tenMau; b.dataset.colorId=color.id; colorWrap.appendChild(b); }); } catch(e){}
+      const productId = button.dataset.productId;
 
-      const minusBtn=document.querySelector('.quantity-btn.minus'); const plusBtn=document.querySelector('.quantity-btn.plus'); const input=document.querySelector('.quantity-input');
-      minusBtn.onclick=()=>{ if(input.value>1) input.value--; }; plusBtn.onclick=()=>{ input.value++; };
+      // Lấy options từ data-* hoặc API dự phòng
+      let sizes  = safeJSONParse(button.dataset.kichCo);
+      let colors = safeJSONParse(button.dataset.mauSac);
+      if (!Array.isArray(sizes) || !sizes.length || !Array.isArray(colors) || !colors.length) {
+        try {
+          const resp = await fetch(`/api/product/${encodeURIComponent(productId)}/options`, { headers:{Accept:'application/json'} });
+          if (resp.ok) {
+            const opts = await resp.json();
+            sizes  = Array.isArray(opts.sizes)  ? opts.sizes  : [];
+            colors = Array.isArray(opts.colors) ? opts.colors : [];
+          }
+        } catch(e){ console.error('Không tải được options:', e); }
+      }
 
-      const sizeOptions=document.querySelectorAll('.size-option'); const colorOptions=document.querySelectorAll('.color-option');
-      sizeOptions.forEach(o=>o.addEventListener('click',()=>{ sizeOptions.forEach(x=>x.classList.remove('active')); o.classList.add('active'); }));
-      colorOptions.forEach(o=>o.addEventListener('click',()=>{ colorOptions.forEach(x=>x.classList.remove('active')); o.classList.add('active'); }));
+      // Render options
+      const sizeWrap  = modalEl.querySelector('#modalSizeOptions');
+      const colorWrap = modalEl.querySelector('#modalColorOptions');
+      const stockEl   = modalEl.querySelector('#modalProductStock');
+      const priceEl   = modalEl.querySelector('#modalProductPrice');
+      const errEl     = modalEl.querySelector('#modalError');
 
-      const confirmBtn=document.getElementById('confirmAddToCart');
-      confirmBtn.onclick=async ()=>{
-        const selectedSize=document.querySelector('.size-option.active'); const selectedColor=document.querySelector('.color-option.active'); const modalError=document.getElementById('modalError');
-        if(!selectedSize||!selectedColor){ modalError.classList.remove('hidden'); return; } modalError.classList.add('hidden'); confirmBtn.classList.add('loading');
-        const res = await fetch(`/acvstore/chi-tiet-san-pham/api?sanPhamId=${button.dataset.productId}&sizeId=${selectedSize.dataset.sizeId}&colorId=${selectedColor.dataset.colorId}`);
-        const chiTiet = await res.json(); if(!chiTiet.id){ alert('Sản phẩm với kích cỡ và màu sắc này không tồn tại!'); confirmBtn.classList.remove('loading'); return; }
-        const authRes = await fetch('/api/cart/check-auth',{credentials:'include'}); const auth = await authRes.json(); if(!auth.isAuthenticated){ alert('Vui lòng đăng nhập để thêm vào giỏ hàng!'); confirmBtn.classList.remove('loading'); return; }
-        const payload={ id: chiTiet.id, quantity: parseInt(input.value) };
-        const addRes = await fetch('/api/cart/add',{ method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body: JSON.stringify(payload) });
-        if(addRes.ok){ alert('Đã thêm vào giỏ hàng!'); modal.hide(); updateCartCount && updateCartCount(); } else { alert('Có lỗi xảy ra khi thêm vào giỏ hàng!'); }
-        confirmBtn.classList.remove('loading');
+      sizeWrap.innerHTML=''; (sizes||[]).forEach(s=>{
+        const b=document.createElement('button');
+        b.className='size-option';
+        b.textContent=s.ten ?? s.name ?? 'Size';
+        b.dataset.sizeId=s.id; sizeWrap.appendChild(b);
+      });
+
+      colorWrap.innerHTML=''; (colors||[]).forEach(c=>{
+        const b=document.createElement('button'); b.className='color-option';
+        const css=(c.maMauHex||'').toString().trim();
+        if(css && isCssColor(css)){ b.dataset.swatch='true'; b.style.backgroundColor=css; b.title=c.tenMau||''; }
+        else{ b.textContent=c.tenMau || 'Màu'; }
+        b.dataset.colorId=c.id; colorWrap.appendChild(b);
+      });
+
+      // Qty
+      const minusBtn = modalEl.querySelector('.quantity-btn.minus');
+      const plusBtn  = modalEl.querySelector('.quantity-btn.plus');
+      const qtyInput = modalEl.querySelector('.quantity-input');
+      minusBtn.onclick=()=>{ qtyInput.value=Math.max(1,(parseInt(qtyInput.value)||1)-1); };
+      plusBtn.onclick =()=>{
+        const max = parseInt(qtyInput.max || '999999', 10);
+        qtyInput.value = Math.min((parseInt(qtyInput.value)||1)+1, max);
       };
+
+      // State
+      let selectedSizeId=null, selectedColorId=null, currentVariant=null;
+
+      // Valid combos + cache
+      let validCombos=null;
+      const variantCache=new Map(); // `${sid}-${cid}` -> {exists, stock, gia, oldPrice, id}
+      async function tryLoadValidCombos(){
+        const urls=[
+          `/api/product/${encodeURIComponent(productId)}/valid-combinations`,
+          `/api/product/${encodeURIComponent(productId)}/combinations`,
+          `/api/product/${encodeURIComponent(productId)}/variants`
+        ];
+        for(const url of urls){
+          try{ const r=await fetch(url,{headers:{Accept:'application/json'}}); if(r.ok){ validCombos=await r.json(); if(Array.isArray(validCombos)) return; } }catch{}
+        }
+        validCombos=null;
+      }
+      await tryLoadValidCombos();
+
+      const keyOf=(sid,cid)=>`${sid}-${cid}`;
+      async function probeVariant(sid,cid){
+        const key=keyOf(sid,cid);
+        if(variantCache.has(key)) return variantCache.get(key);
+        const urls=[
+          `/api/getChiTietSanPham?sanPhamId=${encodeURIComponent(productId)}&sizeId=${encodeURIComponent(sid)}&colorId=${encodeURIComponent(cid)}`,
+          `/acvstore/chi-tiet-san-pham/api?sanPhamId=${encodeURIComponent(productId)}&sizeId=${encodeURIComponent(sid)}&colorId=${encodeURIComponent(cid)}`
+        ];
+        let value={exists:false};
+        for(const url of urls){
+          try{
+            const res=await fetch(url,{credentials:'include'});
+            if(!res.ok) continue;
+            const data=await res.json();
+            if(data?.id){ value={exists:true, stock:data?.soLuongTonKho, gia:data?.gia, oldPrice:data?.oldPrice, id:data?.id}; break; }
+          }catch{}
+        }
+        variantCache.set(key,value); return value;
+      }
+
+      function setDisabled(btn, dis){
+        btn.disabled=dis;
+        btn.classList.toggle('opacity-50', dis);
+        btn.classList.toggle('cursor-not-allowed', dis);
+        if(dis) btn.classList.remove('active');
+      }
+      function enableAllSizes(){  sizeWrap.querySelectorAll('.size-option').forEach(b=>setDisabled(b,false)); }
+      function enableAllColors(){ colorWrap.querySelectorAll('.color-option').forEach(b=>setDisabled(b,false)); }
+
+      function applyEnableBySize(sid){
+        if(!sid){ enableAllColors(); return; }
+        const colorBtns=[...colorWrap.querySelectorAll('.color-option')];
+        if(validCombos){
+          const ok=new Set(validCombos.filter(v=>String(v.sizeId)===String(sid)).map(v=>String(v.colorId)));
+          colorBtns.forEach(b=>setDisabled(b,!ok.has(b.dataset.colorId)));
+        }else{
+          Promise.all(colorBtns.map(async b=>{ const r=await probeVariant(sid,b.dataset.colorId); setDisabled(b,!r.exists); }));
+        }
+      }
+      function applyEnableByColor(cid){
+        if(!cid){ enableAllSizes(); return; }
+        const sizeBtns=[...sizeWrap.querySelectorAll('.size-option')];
+        if(validCombos){
+          const ok=new Set(validCombos.filter(v=>String(v.colorId)===String(cid)).map(v=>String(v.sizeId)));
+          sizeBtns.forEach(b=>setDisabled(b,!ok.has(b.dataset.sizeId)));
+        }else{
+          Promise.all(sizeBtns.map(async b=>{ const r=await probeVariant(b.dataset.sizeId,cid); setDisabled(b,!r.exists); }));
+        }
+      }
+
+      async function fetchVariantAndRender(){
+        if(!selectedSizeId || !selectedColorId){
+          currentVariant=null; stockEl.textContent='Tồn kho: hãy chọn size & màu'; return;
+        }
+        let data=variantCache.get(keyOf(selectedSizeId,selectedColorId));
+        if(!data || data.id==null){ data=await probeVariant(selectedSizeId,selectedColorId); }
+        if(!data?.id){ currentVariant=null; stockEl.textContent='Biến thể không khả dụng'; return; }
+        currentVariant={ id:data.id, soLuongTonKho:data.stock, gia:data.gia, oldPrice:data.oldPrice };
+
+        // tồn kho
+        if(typeof data.stock==='number'){
+          stockEl.textContent=`Tồn kho: ${data.stock}`;
+          qtyInput.max=data.stock;
+          if(+qtyInput.value>data.stock) qtyInput.value=data.stock;
+        }else{
+          stockEl.textContent='Tồn kho: N/A';
+          qtyInput.removeAttribute('max');
+        }
+        // giá
+        const cur=Number(data.gia||0).toLocaleString('vi-VN')+' VNĐ';
+        if(data.oldPrice && data.oldPrice!==data.gia){
+          const old=Number(data.oldPrice).toLocaleString('vi-VN')+' VNĐ';
+          priceEl.innerHTML=`${cur} <span class="text-red-600 line-through ms-2">${old}</span>`;
+        }else{
+          priceEl.textContent=cur;
+        }
+      }
+
+      // Toggle chọn
+      sizeWrap.querySelectorAll('.size-option').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          const active=b.classList.contains('active');
+          if(active){
+            b.classList.remove('active'); selectedSizeId=null; applyEnableBySize(null);
+            if(selectedColorId) applyEnableByColor(selectedColorId);
+            currentVariant=null;
+            stockEl.textContent = selectedColorId ? 'Tồn kho: hãy chọn size' : `Tồn kho: ${button.dataset.stock ?? 'N/A'}`;
+            priceEl.innerHTML   = 'Từ ' + Number(button.dataset.productPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+            qtyInput.removeAttribute('max'); return;
+          }
+          sizeWrap.querySelectorAll('.size-option').forEach(x=>x.classList.remove('active'));
+          b.classList.add('active'); selectedSizeId=b.dataset.sizeId; applyEnableBySize(selectedSizeId);
+          await fetchVariantAndRender();
+        });
+      });
+      colorWrap.querySelectorAll('.color-option').forEach(b=>{
+        b.addEventListener('click', async ()=>{
+          const active=b.classList.contains('active');
+          if(active){
+            b.classList.remove('active'); selectedColorId=null; applyEnableByColor(null);
+            if(selectedSizeId) applyEnableBySize(selectedSizeId);
+            currentVariant=null;
+            stockEl.textContent = selectedSizeId ? 'Tồn kho: hãy chọn màu' : `Tồn kho: ${button.dataset.stock ?? 'N/A'}`;
+            priceEl.innerHTML   = 'Từ ' + Number(button.dataset.productPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+            qtyInput.removeAttribute('max'); return;
+          }
+          colorWrap.querySelectorAll('.color-option').forEach(x=>x.classList.remove('active'));
+          b.classList.add('active'); selectedColorId=b.dataset.colorId; applyEnableByColor(selectedColorId);
+          await fetchVariantAndRender();
+        });
+      });
+
+      // Mở modal
       modal.show();
+
+      // Thêm vào giỏ
+      const confirmBtn=modalEl.querySelector('#confirmAddToCart');
+      confirmBtn.onclick = async ()=>{
+        errEl.classList.add('hidden');
+        const sBtn=sizeWrap.querySelector('.size-option.active');
+        const cBtn=colorWrap.querySelector('.color-option.active');
+        if(!sBtn || !cBtn){
+          errEl.textContent='Vui lòng chọn kích thước và màu sắc!';
+          errEl.classList.remove('hidden'); return;
+        }
+        if(!currentVariant?.id){
+          await fetchVariantAndRender();
+          if(!currentVariant?.id) return showError('Không thể lấy thông tin biến thể!');
+        }
+        const quantity=Math.max(1, parseInt(qtyInput.value)||1);
+        if(typeof currentVariant.soLuongTonKho==='number' && quantity>currentVariant.soLuongTonKho){
+          return showError('Số lượng vượt quá tồn kho!');
+        }
+
+        confirmBtn.disabled=true; confirmBtn.classList.add('loading');
+        try{
+          const payload={ id: currentVariant.id, quantity };
+          const addRes=await fetch('/api/cart/add',{
+            method:'POST', headers:{'Content-Type':'application/json'}, credentials:'include', body:JSON.stringify(payload)
+          });
+          if(addRes.ok){
+            showSuccess('Đã thêm vào giỏ hàng!');
+            try{ window.updateCartCount?.(); }catch{}
+            modal.hide();
+          }else if(addRes.status===401){
+            window.location.href='/customers/login';
+          }else{
+            let msg=''; try{ const j=await addRes.json(); msg=j.error||JSON.stringify(j); }catch{ msg=await addRes.text(); }
+            showError(msg||'Có lỗi xảy ra khi thêm vào giỏ hàng!');
+          }
+        }catch(e){
+          showError(e?.message||'Lỗi mạng khi thêm vào giỏ hàng!');
+        }finally{
+          confirmBtn.disabled=false; confirmBtn.classList.remove('loading');
+        }
+      };
     });
   });
 
+  // ===== Quick View chắc chắn
   document.querySelectorAll('.quick-view-btn').forEach(button=>{
     button.addEventListener('click', async ()=>{
       const productId=button.dataset.productId;
-      const response=await fetch(`/api/product/${productId}`); const product=await response.json();
+      let product;
+      const res=await fetch(`/api/product/${encodeURIComponent(productId)}`,{headers:{Accept:'application/json'}});
+      if(res.ok){
+        const ct=res.headers.get('content-type')||'';
+        product = ct.includes('application/json') ? await res.json() : JSON.parse(await res.text());
+      }else{ alert('Không lấy được dữ liệu sản phẩm.'); return; }
+
       const modalEl=document.createElement('div');
       modalEl.className='modal fade'; modalEl.tabIndex=-1;
       modalEl.innerHTML=`
         <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
           <div class="modal-header" style="background:#153054;color:#fff">
-            <h5 class="modal-title">${product.tenSanPham}</h5>
+            <h5 class="modal-title">${product.tenSanPham ?? 'Sản phẩm'}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <img src="${product.urlHinhAnh}" alt="${product.tenSanPham}" class="w-100 h-64 object-cover rounded mb-4">
+            <img src="${product.urlHinhAnh ?? ''}" alt="${product.tenSanPham ?? ''}" class="w-100 h-64 object-cover rounded mb-4">
             <p class="text-blue-800 font-bold">${Number(product.price||0).toLocaleString('vi-VN')} VNĐ</p>
-            <p class="text-sm text-gray-600">Tồn kho: ${product.tongSoLuong || 'N/A'}</p>
+            <p class="text-sm text-gray-600">Tồn kho: ${product.tongSoLuong ?? 'N/A'}</p>
             <p class="text-sm">${product.moTa || 'Không có mô tả'}</p>
           </div>
           <div class="modal-footer">
@@ -330,12 +580,12 @@
           </div>
         </div></div>`;
       document.body.appendChild(modalEl);
-      const quickModal = new bootstrap.Modal(modalEl); quickModal.show();
-      modalEl.addEventListener('hidden.bs.modal',()=>modalEl.remove());
+      const quickModal=new bootstrap.Modal(modalEl); quickModal.show();
+      modalEl.addEventListener('hidden.bs.modal',()=>modalEl.remove(), { once:true });
     });
   });
 
-  // Chatbot toggle (same as index – compact)
+  // ===== Chatbot toggle
   const toggleBtn=document.getElementById('chatbot-toggle');
   const chatBox=document.getElementById('chatbot-box');
   const closeBtn=document.getElementById('chatbot-close');
