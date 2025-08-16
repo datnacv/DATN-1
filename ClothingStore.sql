@@ -626,6 +626,17 @@ CREATE TABLE danh_gia (
                           FOREIGN KEY (id_nguoi_dung) REFERENCES nguoi_dung(id)
 );
 
+CREATE TABLE don_hang_phieu_giam_gia (
+                                         id UNIQUEIDENTIFIER PRIMARY KEY,
+                                         id_don_hang UNIQUEIDENTIFIER NOT NULL,
+                                         id_phieu_giam_gia UNIQUEIDENTIFIER NOT NULL,
+                                         loai_giam_gia NVARCHAR(50) NOT NULL,
+                                         gia_tri_giam DECIMAL(10, 2) NOT NULL,
+                                         thoi_gian_ap_dung DATETIME NOT NULL,
+                                         FOREIGN KEY (id_don_hang) REFERENCES don_hang(id),
+                                         FOREIGN KEY (id_phieu_giam_gia) REFERENCES phieu_giam_gia(id)
+);
+
 
 ALTER TABLE dia_chi_nguoi_dung
     ADD nguoi_nhan NVARCHAR(100) NULL,
