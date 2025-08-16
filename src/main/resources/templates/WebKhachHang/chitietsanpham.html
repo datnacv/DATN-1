@@ -9,6 +9,41 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Điều chỉnh giao diện cho phần thông tin ngắn gọn */
+        .rating-card dl {
+            margin: 0;
+            padding: 0;
+        }
+
+        .rating-card dl dt {
+            min-width: 100px; /* Đảm bảo nhãn có độ rộng cố định để căn chỉnh */
+            margin-right: 1rem;
+        }
+
+        .rating-card dl dd a {
+            text-decoration: underline;
+        }
+
+        /* Điều chỉnh mô tả chi tiết */
+        #moTa {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Tùy chỉnh nút "Xem thêm" */
+        #toggleBtn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem; /* Tương đương text-sm */
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .rating-card dl dt {
+                min-width: 80px;
+            }
+            #moTa {
+                max-height: 3rem; /* Điều chỉnh chiều cao trên mobile */
+            }
+        }
         button[disabled] {
             pointer-events: none;
             opacity: 0.5;
@@ -393,7 +428,7 @@
 
             <!-- Danh mục từ DTO: tenDanhMuc + danhMucId -->
             <p class="text-gray-600 mb-2" th:if="${productDetail.tenDanhMuc != null}">
-                Danh mục:
+                Loại:
                 <a class="text-[#153054] underline"
                    th:href="@{'/category/' + ${productDetail.danhMucId}}"
                    th:text="${productDetail.tenDanhMuc}"></a>
@@ -487,81 +522,89 @@
         </div>
     </div>
 
-    <!-- DESCRIPTION: đặt xuống bên dưới -->
-    <div class="mt-10">
-        <h2 class="text-2xl font-bold mb-3">Mô tả sản phẩm</h2>
-        <!-- Giữ xuống dòng trong mô tả -->
-        <p class="text-gray-700 leading-relaxed"
-           th:utext="${#strings.escapeXml(productDetail.moTa)?.replaceAll('\\n','<br/>')}"></p>
+    <!-- DESCRIPTION & PRODUCT INFO -->
+    <div class="bg-white rating-card mt-10 p-6">
+        <!-- Tiêu đề chung -->
+        <h2 class="text-2xl font-bold text-[#153054] mb-4">Mô tả sản phẩm</h2>
 
-        <!-- THUỘC TÍNH / THÔNG SỐ -->
-        <h3 class="text-xl font-semibold mt-6 mb-3">Thuộc tính</h3>
+        <!-- Thông tin ngắn gọn (trên cùng) -->
+        <div class="mb-6">
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <!-- Mã sản phẩm -->
+                <div th:if="${productDetail.maSanPham != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Mã sản phẩm:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.maSanPham}"></dd>
+                </div>
 
-        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <!-- Mã SP -->
-            <div th:if="${productDetail.maSanPham != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Mã sản phẩm</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.maSanPham}"></dd>
-            </div>
+                <!-- Danh mục -->
+                <div th:if="${productDetail.tenDanhMuc != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Loại:</dt>
+                    <dd class="text-gray-900">
+                        <a class="text-[#153054] underline"
+                           th:href="@{'/category/' + ${productDetail.danhMucId}}"
+                           th:text="${productDetail.tenDanhMuc}"></a>
+                    </dd>
+                </div>
 
-            <!-- Danh mục -->
-            <div th:if="${productDetail.tenDanhMuc != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Danh mục</dt>
-                <dd class="font-medium">
-                    <a class="text-[#153054] underline"
-                       th:href="@{'/category/' + ${productDetail.danhMucId}}"
-                       th:text="${productDetail.tenDanhMuc}"></a>
-                </dd>
-            </div>
+                <!-- Thương hiệu -->
+                <div th:if="${productDetail.thuongHieu != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Thương hiệu:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.thuongHieu.tenThuongHieu}"></dd>
+                </div>
 
-            <!-- Thương hiệu -->
-            <div th:if="${productDetail.thuongHieu != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Thương hiệu</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.thuongHieu.tenThuongHieu}"></dd>
-            </div>
+                <!-- Chất liệu -->
+                <div th:if="${productDetail.chatLieu != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Chất liệu:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.chatLieu.tenChatLieu}"></dd>
+                </div>
 
-            <!-- Chất liệu -->
-            <div th:if="${productDetail.chatLieu != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Chất liệu</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.chatLieu.tenChatLieu}"></dd>
-            </div>
+                <!-- Xuất xứ -->
+                <div th:if="${productDetail.xuatXu != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Xuất xứ:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.xuatXu.tenXuatXu}"></dd>
+                </div>
 
-            <!-- Xuất xứ -->
-            <div th:if="${productDetail.xuatXu != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Xuất xứ</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.xuatXu.tenXuatXu}"></dd>
-            </div>
+                <!-- Kiểu dáng -->
+                <div th:if="${productDetail.kieuDang != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Kiểu dáng:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.kieuDang.tenKieuDang}"></dd>
+                </div>
 
-            <!-- Kiểu dáng -->
-            <div th:if="${productDetail.kieuDang != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Kiểu dáng</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.kieuDang.tenKieuDang}"></dd>
-            </div>
+                <!-- Tay áo -->
+                <div th:if="${productDetail.tayAo != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Tay áo:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.tayAo.tenTayAo}"></dd>
+                </div>
 
-            <!-- Tay áo -->
-            <div th:if="${productDetail.tayAo != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Tay áo</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.tayAo.tenTayAo}"></dd>
-            </div>
+                <!-- Cổ áo -->
+                <div th:if="${productDetail.coAo != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Cổ áo:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.coAo.tenCoAo}"></dd>
+                </div>
 
-            <!-- Cổ áo -->
-            <div th:if="${productDetail.coAo != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Cổ áo</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.coAo.tenCoAo}"></dd>
-            </div>
+                <!-- Giới tính -->
+                <div th:if="${productDetail.gioiTinh != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Giới tính:</dt>
+                    <dd class="text-gray-900" th:text="${productDetail.gioiTinh}"></dd>
+                </div>
 
-            <!-- Giới tính -->
-            <div th:if="${productDetail.gioiTinh != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Giới tính</dt>
-                <dd class="font-medium text-gray-900" th:text="${productDetail.gioiTinh}"></dd>
-            </div>
+                <!-- Khuyến mãi -->
+                <div th:if="${productDetail.discountCampaignName != null}" class="flex items-start">
+                    <dt class="text-gray-500 font-medium mr-2">Khuyến mãi:</dt>
+                    <dd class="text-green-700" th:text="${productDetail.discountCampaignName}"></dd>
+                </div>
+            </dl>
+        </div>
 
-            <!-- Chiến dịch giảm giá (nếu có) -->
-            <div th:if="${productDetail.discountCampaignName != null}" class="flex items-start justify-between">
-                <dt class="text-gray-500">Khuyến mãi</dt>
-                <dd class="font-medium text-green-700" th:text="${productDetail.discountCampaignName}"></dd>
-            </div>
-        </dl>
+        <!-- Mô tả chi tiết (dưới cùng) -->
+        <div class="relative">
+            <p id="moTa" class="text-gray-700 leading-relaxed max-h-24 overflow-hidden transition-all duration-300"
+               th:utext="${#strings.escapeXml(productDetail.moTa)?.replaceAll('\\n','<br/>')}">
+            </p>
+            <button id="toggleBtn" class="text-[#153054] mt-2 mx-auto block hover:underline" aria-label="Xem thêm mô tả">
+                Xem thêm
+            </button>
+        </div>
     </div>
 
     <!-- RATING CARD -->
@@ -1170,6 +1213,31 @@
 </script>
 
 <script th:inline="javascript">
+    document.addEventListener("DOMContentLoaded", () => {
+        const moTa = document.getElementById("moTa");
+        const toggleBtn = document.getElementById("toggleBtn");
+
+        if (moTa && toggleBtn) {
+            // Kiểm tra nếu nội dung vượt quá chiều cao giới hạn
+            if (moTa.scrollHeight > moTa.clientHeight) {
+                toggleBtn.classList.remove("hidden");
+            }
+
+            // Xử lý sự kiện click cho nút "Xem thêm" / "Thu gọn"
+            toggleBtn.addEventListener("click", () => {
+                if (moTa.classList.contains("max-h-24")) {
+                    moTa.classList.remove("max-h-24", "overflow-hidden");
+                    toggleBtn.textContent = "Thu gọn";
+                    toggleBtn.setAttribute("aria-label", "Thu gọn mô tả");
+                } else {
+                    moTa.classList.add("max-h-24", "overflow-hidden");
+                    toggleBtn.textContent = "Xem thêm";
+                    toggleBtn.setAttribute("aria-label", "Xem thêm mô tả");
+                }
+            });
+        }
+    });
+
     function renderStarsFA6Mini(avg) {
         const full = Math.floor(avg);
         const half = (avg % 1) >= 0.5;
