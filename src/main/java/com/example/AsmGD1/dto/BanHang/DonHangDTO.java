@@ -9,7 +9,6 @@ import java.util.UUID;
 @Data
 public class DonHangDTO {
     private UUID id;
-    private String maDonHang;
     private UUID khachHangId;
     private String soDienThoaiKhachHang;
     private String tenKhachHang;

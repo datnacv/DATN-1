@@ -658,6 +658,39 @@
       gap: 1rem;
       margin-bottom: 2rem;
     }
+       /* Overlay trung tâm cho .modal custom */
+     .modal {
+       position: fixed; inset: 0; display: none;
+       align-items: center; justify-content: center;
+       background: rgba(0,0,0,.35); z-index: 1050;
+       padding: 16px;
+     }
+    .modal .modal-content { background: #fff; padding: 16px; }
+
+    #voucherGroup > label{
+      position: static !important;
+      transform: none !important;
+      top: auto; left: auto;
+      margin-bottom: .375rem;
+      opacity: .85;
+      pointer-events: none;
+    }
+    /* Tinh chỉnh nhỏ cho nút-giả-select */
+    #voucherBtn.form-select{
+      cursor: pointer;
+      display: flex;
+      padding-right: 2.25rem; /* dư chút cho icon mũi tên */
+    }
+    #voucherBtn .fa-chevron-down{ pointer-events: none; }
+    .btn-primary {
+      background-color: #143C6A;  /* chỉnh theo màu bạn dùng */
+      border-color: #143C6A;
+    }
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: #0F3158;
+      border-color: #0F3158;
+    }
   </style>
 </head>
 <body>
@@ -836,12 +869,22 @@
           </div>
 
 
-          <div class="floating-label">
-            <label for="voucherSelect">Phiếu giảm giá</label>
-            <select id="voucherSelect" class="form-select">
-              <option value="">🎫 Không sử dụng</option>
-            </select>
+          <!-- Phiếu giảm giá (nút mở modal) -->
+          <!-- Nút mở modal chọn phiếu (kích thước như <select>) -->
+          <!-- Nút chọn phiếu (giống Chọn khách hàng) -->
+          <div class="mb-3" id="voucherGroup">
+            <button type="button"
+                    class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-3 rounded-3 shadow-sm"
+                    onclick="openVoucherModal()">
+              <i class="fas fa-ticket-alt fs-5"></i>
+              <span class="fw-semibold">Chọn phiếu</span>
+            </button>
           </div>
+
+
+
+
+
 
           <div id="voucherModal" class="modal">
             <div class="modal-content" style="max-width: 720px;">
@@ -1202,6 +1245,7 @@
     // reset phí ship về 0 theo mô hình base/discount
     tab.shippingFeeBase = 0;
     tab.shippingDiscount = 0;
+    tab.shipVoucherId = null; // <<< clear Freeship nếu không còn địa chỉ
 
     if (shippingFeeInput) shippingFeeInput.value = formatCurrency(0);
     updateSummary(tab);
@@ -1211,7 +1255,11 @@
       applyVoucher(tab.voucherId);
     }
     shippingMethodContainer?.classList.add('d-none');
+
+    // Ẩn khu Freeship trong modal
+    updateShipSectionVisibility();
   }
+
 
 
 
@@ -1293,11 +1341,13 @@
       if (prevBase !== 0 || Number(tab.shippingDiscount || 0) !== 0) {
         tab.shippingFeeBase = 0;
         tab.shippingDiscount = 0;
+        tab.shipVoucherId = null;
         if (shippingFeeInput) shippingFeeInput.value = formatCurrency(0);
         updateSummary(tab);
         if (tab.voucherId && !isApplyingVoucher) await applyVoucher(tab.voucherId);
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
       }
+      updateShipSectionVisibility();
       return;
     }
 
@@ -1374,6 +1424,9 @@
     } finally {
       setShippingUiLoading(false);
       isRecalculatingShipping = false;
+
+      // Sau mọi TH, cập nhật hiển/ẩn Freeship
+      updateShipSectionVisibility();
     }
   }
 
@@ -1951,14 +2004,25 @@
         customerName: '',
         customerEmail: '',
         saleMethod: 'Tại quầy',
-        shippingFeeBase: 0,      // phí ship gốc
-        shippingDiscount: 0,     // giảm phí ship
-        voucherId: null,
-        paymentMethod: '550E8400-E29B-41D4-A716-446655440017',
+
+        // ======= PHÍ VẬN CHUYỂN (mô hình gốc/giảm) =======
+        shippingFeeBase: 0,      // phí ship gốc (GHN trả về)
+        shippingDiscount: 0,     // giảm phí ship (voucher SHIPPING)
+
+        // ======= VOUCHER =======
+        voucherId: null,         // backward-compatible: id voucher ORDER đang áp qua applyVoucher()
+        orderVoucherId: null,    // tách riêng ORDER
+        shipVoucherId:  null,    // tách riêng SHIPPING (freeship)
+
+        paymentMethod: '550E8400-E29B-41D4-A716-446655440017', // mặc định tiền mặt
         cashAmount: 0,
+
+        // ======= TỔNG HỢP =======
         subTotal: 0,
         discount: 0,             // giảm giá đơn (ORDER)
         total: 0,
+
+        // ======= ĐỊA CHỈ =======
         addresses: [],
         selectedAddress: ''
       };
@@ -1986,14 +2050,17 @@
           tab.saleMethod = 'Tại quầy';
           tab.shippingFeeBase = 0;
           tab.shippingDiscount = 0;
+          tab.shipVoucherId = null;
           updateSummary(tab);
           localStorage.setItem('orderTabs', JSON.stringify(tabs));
         }
+        updateShipSectionVisibility();
       }, 0);
     } catch (error) {
       showToast('Lỗi khi tạo tab mới: ' + error.message, 'error');
     }
   }
+
 
 
   function switchTab(tabId) {
@@ -2456,11 +2523,14 @@
       const prevBase = Number(tab.shippingFeeBase || 0);
       tab.shippingFeeBase = 0;
       tab.shippingDiscount = 0;
+      tab.shipVoucherId = null; // clear freeship
 
       updateSummary(tab);
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
 
       if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) applyVoucher(tab.voucherId);
+
+      updateShipSectionVisibility();
       return;
     } else {
       saleMethodSelect.removeAttribute('disabled');
@@ -2480,6 +2550,7 @@
         } else {
           setTimeout(() => setupShippingForSelectedAddress(), 0);
         }
+        updateShipSectionVisibility(); // hiển/ẩn freeship sau khi có/không có địa chỉ
       });
     } else {
       addressSection.classList.add('d-none');
@@ -2489,13 +2560,18 @@
       const prevBase = Number(tab.shippingFeeBase || 0);
       tab.shippingFeeBase = 0;
       tab.shippingDiscount = 0;
+      tab.shipVoucherId = null; // bỏ freeship khi không giao hàng
+
       updateSummary(tab);
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
       if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) applyVoucher(tab.voucherId);
+
+      updateShipSectionVisibility();
     }
 
     fetchVouchers();
   }
+
 
 
 
@@ -2613,13 +2689,16 @@
   }
 
 
+  // Lấy & gộp danh sách voucher (ORDER/SHIPPING) — chống vỡ dữ liệu trả về từ API
   async function fetchVouchers() {
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
-    const subTotal = tab.subTotal || 0;
-    let url = `${BASE_URL}/vouchers?subTotal=${subTotal}&tabId=${currentTabId}`;
+    const subTotal = Number(tab.subTotal || 0);
+    let qsBase = `subTotal=${subTotal}&tabId=${currentTabId}`;
 
+    // ===== Voucher cá nhân (nếu có KH) =====
+    let personalVouchers = [];
     if (tab.customerPhone && tab.customerPhone !== '0999999999') {
       try {
         const customerRes = await fetch(`/acvstore/customers/by-phone/${tab.customerPhone}`);
@@ -2627,46 +2706,71 @@
           const customerData = await customerRes.json();
           if (customerData.id) {
             tab.customerId = customerData.id;
-            url += `&customerId=${tab.customerId}`; // cho API public voucher (nếu có)
-
-            // 👉 Gọi tiếp API lấy voucher cá nhân
-            const personalVoucherRes = await fetch(`/acvstore/customers/vouchers/${tab.customerPhone}`);
-            if (personalVoucherRes.ok) {
-              const personalVouchers = await personalVoucherRes.json();
-              tab.personalVouchers = personalVouchers;
-              console.log('📦 Phiếu cá nhân:', personalVouchers);
+            qsBase += `&customerId=${tab.customerId}`;
+            const pvRes = await fetch(`/acvstore/customers/vouchers/${tab.customerPhone}`);
+            if (pvRes.ok) {
+              const pv = await pvRes.json();
+              // Chịu được cả dạng mảng trực tiếp lẫn { vouchers: [...] }
+              personalVouchers = Array.isArray(pv) ? pv : (pv?.vouchers || []);
             }
           }
         }
       } catch (e) {
-        console.error("Lỗi khi lấy customerId hoặc phiếu cá nhân:", e);
+        console.error('Lỗi lấy KH/phiếu cá nhân:', e);
       }
     }
 
+    // ===== Voucher công khai =====
+    let publicAll = [];
     try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Lỗi khi lấy phiếu giảm giá công khai.");
-      const data = await response.json();
-
-      const voucherSelect = document.getElementById('voucherSelect');
-      if (voucherSelect) {
-        voucherSelect.innerHTML = '<option value="">🎫 Không sử dụng</option>';
-
-        // Gộp cả hai loại voucher: cá nhân + công khai
-        const allVouchers = [...(tab.personalVouchers || []), ...(data.vouchers || [])];
-        allVouchers.forEach(voucher => {
-          const option = document.createElement('option');
-          option.value = voucher.id;
-          option.text = `${voucher.ten} (Tối thiểu: ${voucher.giaTriGiamToiThieuFormatted || voucher.giaTriGiamToiThieu + ' VNĐ'})`;
-          voucherSelect.appendChild(option);
-        });
-
-        voucherSelect.value = tab.voucherId || '';
-      }
-    } catch (error) {
-      console.error('Lỗi khi xử lý phiếu giảm giá:', error);
+      const res = await fetch(`${BASE_URL}/vouchers?${qsBase}`);
+      if (!res.ok) throw new Error('Lỗi khi lấy phiếu giảm giá công khai.');
+      const data = await res.json();
+      // Chịu được cả dạng mảng trực tiếp lẫn { vouchers: [...] }
+      publicAll = Array.isArray(data) ? data : (data?.vouchers || []);
+    } catch (e) {
+      console.error('Lỗi get public vouchers:', e);
     }
+
+    // ===== Nếu BE hỗ trợ tách theo type, gọi kèm để gắn nhãn chính xác hơn =====
+    let typedOrder = [], typedShip = [];
+    try {
+      const [oRes, sRes] = await Promise.allSettled([
+        fetch(`${BASE_URL}/vouchers?${qsBase}&type=ORDER`),
+        fetch(`${BASE_URL}/vouchers?${qsBase}&type=SHIPPING`)
+      ]);
+      if (oRes.status === 'fulfilled' && oRes.value.ok) {
+        const j = await oRes.value.json();
+        const arr = Array.isArray(j) ? j : (j?.vouchers || []);
+        typedOrder = arr.map(v => ({ ...v, __type: 'ORDER' }));
+      }
+      if (sRes.status === 'fulfilled' && sRes.value.ok) {
+        const j = await sRes.value.json();
+        const arr = Array.isArray(j) ? j : (j?.vouchers || []);
+        typedShip = arr.map(v => ({ ...v, __type: 'SHIPPING' }));
+      }
+    } catch { /* ignore */ }
+
+    // Gắn nhãn type cho các danh sách chưa rõ loại
+    const tagType = (list, fallback) =>
+            (Array.isArray(list) ? list : []).map(v => {
+              const t = getVoucherType(v, fallback);
+              return t ? { ...v, __type: t } : { ...v, __type: 'ORDER' }; // default ORDER
+            });
+
+    // Gộp + khử trùng lặp theo id
+    const merged = dedupById([
+      ...typedOrder,
+      ...typedShip,
+      ...tagType(publicAll),
+      ...tagType(personalVouchers)
+    ]);
+
+    renderVoucherModalLists(merged);
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
   }
+
+
 
 
 
@@ -2711,6 +2815,62 @@
     } finally {
       isApplyingVoucher = false;     // ✅ trả cờ
     }
+  }
+  async function applySelectedVouchers() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return;
+
+    const pickedOrder = document.querySelector('#voucherModal input[name="orderVoucher"]:checked')?.value || null;
+    const pickedShip  = document.querySelector('#voucherModal input[name="shipVoucher"]:checked')?.value  || null;
+
+    // Lưu lựa chọn
+    tab.orderVoucherId = pickedOrder;
+    tab.shipVoucherId  = isShippingEnabled() ? pickedShip : null;
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+
+    // 1) ORDER: gọi hàm cũ để BE tính giảm đơn
+    if (pickedOrder) {
+      await applyVoucher(pickedOrder);
+    } else {
+      tab.voucherId = null;
+      tab.discount = 0;
+    }
+
+    // 2) SHIPPING: chỉ khi đang giao hàng + có địa chỉ
+    if (isShippingEnabled()) {
+      if (tab.shipVoucherId) {
+        try {
+          isApplyingVoucher = true;
+          const shippingFee = Number(tab.shippingFeeBase || 0);
+          const res = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${tab.shipVoucherId}&shippingFee=${shippingFee}&tabId=${currentTabId}`);
+          if (!res.ok) {
+            let msg = 'Không áp dụng được mã Freeship.';
+            try { const err = await res.json(); msg = err.error || err.message || msg; } catch {}
+            throw new Error(msg);
+          }
+          const data = await res.json();
+
+          // Cập nhật phần ship (không đè giảm đơn)
+          if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
+          if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
+
+          showToast('Đã áp dụng mã Freeship!', 'success');
+        } catch (e) {
+          showToast(e.message, 'error');
+        } finally {
+          isApplyingVoucher = false;
+        }
+      } else {
+        tab.shippingDiscount = 0; // bỏ freeship
+      }
+    } else {
+      tab.shipVoucherId = null;
+      tab.shippingDiscount = 0;
+    }
+
+    updateSummary(tab);
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    closeVoucherModal();
   }
 
 
@@ -3459,6 +3619,140 @@
     // Khởi tạo khi trang load
     initTabs();
   });
+  // === Helper kiểm tra điều kiện cho phép dùng Freeship ===
+  function isShippingEnabled() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    return !!(tab && tab.saleMethod === 'Giao hàng' && tab.selectedAddress);
+  }
+
+  // Ẩn/hiện section Freeship trong modal theo điều kiện giao hàng
+  function updateShipSectionVisibility() {
+    const shipList = document.getElementById('shipVoucherList');
+    const shipSection = shipList ? shipList.closest('.mb-4') : null; // bọc ngoài title "Freeship (SHIPPING)"
+    if (!shipSection) return;
+    shipSection.classList.toggle('d-none', !isShippingEnabled());
+  }
+  function dedupById(arr) {
+    const seen = new Set();
+    return (arr || []).filter(v => {
+      const id = String(v?.id ?? '');
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  }
+  // Chuẩn hoá type voucher
+  function getVoucherType(v, fallback = '') {
+    let raw =
+            v?.type ??
+            v?.loai ??
+            v?.loaiGiamGia ??
+            v?.voucherType ??
+            v?.category ??
+            v?.kind ??
+            v?.__type ??        // nhãn mình tự gắn
+            fallback;
+
+    raw = (raw == null ? '' : String(raw)).toUpperCase();
+
+    // map số -> loại (nếu BE dùng 0/1)
+    if (raw === '1') raw = 'SHIPPING';
+    if (raw === '0') raw = 'ORDER';
+
+    if (/SHIP|FREESHIP/.test(raw)) return 'SHIPPING';
+    if (/ORDER|ĐƠN|DON|TOTAL|HOA ?DON/.test(raw)) return 'ORDER';
+
+    // cố gắng đoán theo tên/mô tả
+    const text = `${v?.ten || ''} ${v?.title || ''} ${v?.moTa || ''} ${v?.description || ''}`.toLowerCase();
+    if (/ship|vận.?chuyển|van chuyen|freeship/.test(text)) return 'SHIPPING';
+
+    return ''; // unknown
+  }
+
+  // Render danh sách ORDER / SHIPPING vào modal
+  // Render danh sách voucher vào modal (ORDER / SHIPPING) + preselect đúng mã đang dùng
+  function renderVoucherModalLists(allVouchers = []) {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return;
+
+    const orderList = document.getElementById('orderVoucherList');
+    const shipList  = document.getElementById('shipVoucherList');
+    if (!orderList || !shipList) return;
+
+    const orders = [];
+    const ships  = [];
+
+    (Array.isArray(allVouchers) ? allVouchers : []).forEach(v => {
+      const t = getVoucherType(v);
+      if (t === 'ORDER') orders.push(v);
+      else if (t === 'SHIPPING') ships.push(v);
+    });
+
+    const makeItem = (v, groupName, checked) => `
+    <label class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+      <div class="me-3">
+        <div class="fw-semibold">${v.ten || v.title || ('Mã ' + (v.ma || v.code || v.id))}</div>
+        <div class="small text-muted">
+          ${v.moTa || v.description || ''}
+          ${v.giaTriGiamToiDaFormatted ? ' • Tối đa: ' + v.giaTriGiamToiDaFormatted : ''}
+        </div>
+      </div>
+      <input type="radio" name="${groupName}" value="${v.id}" ${checked ? 'checked' : ''}>
+    </label>`;
+
+    // ✅ Preselect theo orderVoucherId, nếu chưa có thì fallback về voucherId đang dùng
+    orderList.innerHTML = orders.length
+            ? orders.map(v => makeItem(
+                    v,
+                    'orderVoucher',
+                    String(tab.orderVoucherId || tab.voucherId) === String(v.id)
+            )).join('')
+            : '<div class="text-muted">Không có mã đơn hàng khả dụng</div>';
+
+    shipList.innerHTML = ships.length
+            ? ships.map(v => makeItem(
+                    v,
+                    'shipVoucher',
+                    String(tab.shipVoucherId) === String(v.id)
+            )).join('')
+            : '<div class="text-muted">Không có mã freeship khả dụng</div>';
+
+    // Ẩn/hiện nhóm Freeship theo điều kiện đang "Giao hàng"
+    updateShipSectionVisibility();
+
+    // (Giữ tương thích dropdown cũ: chỉ đổ mã ORDER)
+    const voucherSelect = document.getElementById('voucherSelect');
+    if (voucherSelect) {
+      voucherSelect.innerHTML = '<option value="">🎫 Không sử dụng</option>';
+      orders.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.text  = v.ten || v.title || v.id;
+        voucherSelect.appendChild(opt);
+      });
+      voucherSelect.value = tab.orderVoucherId || tab.voucherId || '';
+    }
+  }
+
+
+  // Mở/đóng modal voucher
+  function openVoucherModal() {
+    const m = document.getElementById('voucherModal');
+    if (!m) return;
+    // luôn nạp lại theo trạng thái hiện tại (subtotal, KH, địa chỉ…)
+    fetchVouchers().finally(() => {
+      m.style.display = 'flex';
+    });
+  }
+  function closeVoucherModal(){ const m = document.getElementById('voucherModal'); if (m) m.style.display='none'; }
+
+  // Bỏ chọn tất cả radio trong modal
+  function clearVoucherSelections() {
+    document
+            .querySelectorAll('#voucherModal input[type=radio][name="orderVoucher"], #voucherModal input[type=radio][name="shipVoucher"]')
+            .forEach(el => el.checked = false);
+  }
+
 
 </script>
 <script th:src="@{/js/notification.js}"></script>

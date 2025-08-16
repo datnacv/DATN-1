@@ -286,22 +286,20 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // Tạo đơn hàng
-            KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
+            // ===== LẤY VOUCHER TỪ SESSION THEO TAB & GHÁN VÀO DTO (nếu FE chưa gửi) =====
+            final String tabKey = donHangDTO.getTabId();
+            UUID orderVoucherIdInSession = (UUID) session.getAttribute("ORDER_VOUCHER_ID_" + tabKey);
+            UUID shipVoucherIdInSession  = (UUID) session.getAttribute("SHIP_VOUCHER_ID_" + tabKey);
 
-            // ✅ Trừ số lượng phiếu giảm giá nếu có
-            UUID phieuId = donHangDTO.getIdPhieuGiamGia();
-            UUID khachHangId = donHangDTO.getKhachHangId();
-//            if (phieuId != null) {
-//                PhieuGiamGia phieu = phieuGiamGiaService.layTheoId(phieuId);
-//                if (phieu != null) {
-//                    if ("ca_nhan".equalsIgnoreCase(phieu.getKieuPhieu()) && khachHangId != null) {
-//                        phieuGiamGiaCuaNguoiDungService.suDungPhieu(khachHangId, phieuId);
-//                    } else if ("cong_khai".equalsIgnoreCase(phieu.getKieuPhieu())) {
-//                        phieuGiamGiaService.apDungPhieuGiamGia(phieuId);
-//                    }
-//                }
-//            }
+            if (donHangDTO.getIdPhieuGiamGia() == null && orderVoucherIdInSession != null) {
+                donHangDTO.setIdPhieuGiamGia(orderVoucherIdInSession); // ORDER voucher
+            }
+            if (donHangDTO.getIdPhieuFreeship() == null && shipVoucherIdInSession != null) {
+                donHangDTO.setIdPhieuFreeship(shipVoucherIdInSession); // SHIPPING voucher
+            }
+
+            // ===== Tạo đơn hàng (service sẽ tính giảm + lưu bảng phụ) =====
+            KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
 
             // Cập nhật số lượng chiến dịch nếu có
             for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
@@ -320,17 +318,22 @@ public class BanHangController {
 
             // Kiểm tra số lượng tab còn lại
             List<DonHangTam> remainingTabs = donHangTamRepository.findAll();
-            String newTabId = null;
+            String newTabId;
             if (remainingTabs.isEmpty()) {
-                GioHangDTO newCart = gioHangService.xoaTatCaGioHang("1");
+                gioHangService.xoaTatCaGioHang("1");
                 newTabId = "1";
             } else {
                 newTabId = remainingTabs.get(remainingTabs.size() - 1).getTabId();
             }
 
-            // Dọn dẹp session
+            // Dọn dẹp session (kể cả voucher)
             session.removeAttribute("tempStockChanges");
             session.removeAttribute("pendingOrder_" + donHangDTO.getTabId());
+            session.removeAttribute("ORDER_VOUCHER_ID_" + tabKey);
+            session.removeAttribute("ORDER_DISCOUNT_" + tabKey);
+            session.removeAttribute("SHIP_VOUCHER_ID_" + tabKey);
+            session.removeAttribute("SHIP_DISCOUNT_" + tabKey);
+            session.removeAttribute("SHIP_FEE_" + tabKey);
 
             // Tạo hóa đơn PDF
             byte[] pdfData = hoaDonService.taoHoaDon(ketQua.getMaDonHang());
@@ -351,6 +354,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
 
 
 
@@ -471,9 +475,10 @@ public class BanHangController {
             @RequestParam("shippingFee") BigDecimal shippingFee,
             @RequestParam("tabId") String tabId) {
         try {
+            // Cho phép shippingFee = 0 (giảm sẽ = 0)
             if (shippingFee == null) shippingFee = BigDecimal.ZERO;
 
-            // Ghi nhớ phí ship GỐC cho tab
+            // Ghi nhớ phí ship GỐC cho tab (để ghép ORDER song song)
             session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
 
             GioHangDTO gioHang = gioHangService.layGioHang(shippingFee, tabId);
@@ -493,35 +498,37 @@ public class BanHangController {
             if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(voucher))) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Phiếu freeship không còn hiệu lực."));
             }
-            if (shippingFee.compareTo(BigDecimal.ZERO) <= 0) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Không có phí vận chuyển để áp dụng freeship."));
-            }
 
+            // TÍNH GIẢM SHIP (cho phép ship = 0 → giảm = 0), clamp không vượt quá phí ship
             BigDecimal shipDiscount = phieuGiamGiaService.tinhGiamPhiShip(voucher, shippingFee, subtotal);
+            if (shipDiscount == null) shipDiscount = BigDecimal.ZERO;
+            if (shipDiscount.compareTo(shippingFee) > 0) shipDiscount = shippingFee;
 
-            // Lưu session để hoạt động song song với ORDER voucher
+            // Lưu vào session để khi tạo đơn sẽ ghi DB (bảng phụ)
             session.setAttribute("SHIP_VOUCHER_ID_" + tabId, voucher.getId());
             session.setAttribute("SHIP_DISCOUNT_" + tabId, shipDiscount);
 
+            // Ghép với giảm ORDER (nếu có)
             BigDecimal orderDiscount = (BigDecimal) Optional.ofNullable(session.getAttribute("ORDER_DISCOUNT_" + tabId))
                     .orElse(BigDecimal.ZERO);
 
             BigDecimal finalShipFee = shippingFee.subtract(shipDiscount).max(BigDecimal.ZERO);
             BigDecimal total = subtotal.subtract(orderDiscount).add(finalShipFee);
 
-            // Gán về DTO: tách ship gốc và giảm ship
+            // Đổ lại DTO cho FE hiển thị
             gioHang.setTongTienHang(subtotal);
-            gioHang.setGiamGia(orderDiscount);               // giảm đơn (ORDER)
-            gioHang.setPhiVanChuyen(finalShipFee);           // phí ship SAU giảm
+            gioHang.setGiamGia(orderDiscount);          // giảm đơn (ORDER)
+            gioHang.setPhiVanChuyen(finalShipFee);      // phí ship SAU giảm
             gioHang.setTong(total);
-            gioHang.setPhiVanChuyenGoc(shippingFee);         // << phí ship GỐC
-            gioHang.setGiamGiaVanChuyen(shipDiscount);       // << số tiền giảm ship (freeship)
+            gioHang.setPhiVanChuyenGoc(shippingFee);    // phí ship GỐC
+            gioHang.setGiamGiaVanChuyen(shipDiscount);  // số tiền giảm ship (freeship)
 
             return ResponseEntity.ok(gioHang);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng FREESHIP voucher: " + e.getMessage()));
         }
     }
+
 
 
 

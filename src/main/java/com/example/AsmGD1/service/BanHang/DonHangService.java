@@ -2,10 +2,7 @@ package com.example.AsmGD1.service.BanHang;
 
 import com.example.AsmGD1.dto.BanHang.*;
 import com.example.AsmGD1.entity.*;
-import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
-import com.example.AsmGD1.repository.BanHang.DonHangRepository;
-import com.example.AsmGD1.repository.BanHang.DonHangTamRepository;
-import com.example.AsmGD1.repository.BanHang.PhuongThucThanhToanRepository;
+import com.example.AsmGD1.repository.BanHang.*;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaCuaNguoiDungRepository;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
@@ -82,6 +79,8 @@ public class DonHangService {
     @Autowired
     private PhieuGiamGiaService phieuGiamGiaService;
 
+    @Autowired
+    private DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
     @Transactional(isolation = Isolation.SERIALIZABLE)
     @Retryable(
             value = { org.springframework.orm.ObjectOptimisticLockingFailureException.class },
@@ -116,17 +115,18 @@ public class DonHangService {
         donHang.setDiaChiGiaoHang(donHangDTO.getDiaChiGiaoHang());
         donHang.setThoiGianTao(LocalDateTime.now());
 
-        BigDecimal tongTien = BigDecimal.ZERO; // subtotal (chưa gồm phí ship)
+        BigDecimal tongTien = BigDecimal.ZERO; // subtotal
         Map<UUID, Integer> soLuongTonKho = new HashMap<>();
 
         if (donHangDTO.getDanhSachSanPham() == null || donHangDTO.getDanhSachSanPham().isEmpty()) {
             throw new RuntimeException("Danh sách sản phẩm không được để trống.");
         }
 
-        // Khóa & kiểm kho
+        // ===== Khóa & kiểm kho
         List<ChiTietSanPham> chiTietSanPhams = new ArrayList<>();
         for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
-            ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(item.getIdChiTietSanPham(), LockModeType.PESSIMISTIC_WRITE)
+            ChiTietSanPham chiTiet = chiTietSanPhamRepository
+                    .findById(item.getIdChiTietSanPham(), LockModeType.PESSIMISTIC_WRITE)
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
 
             if (chiTiet.getSoLuongTonKho() < item.getSoLuong()) {
@@ -149,7 +149,7 @@ public class DonHangService {
 
             donHang.addChiTietDonHang(chiTietDonHang);
 
-            // Trừ kho & cập nhật trạng thái biến thể
+            // Trừ kho
             ChiTietSanPham updatedChiTiet = chiTietSanPhamService.updateStockAndStatus(chiTiet.getId(), -item.getSoLuong());
             tongTien = tongTien.add(item.getThanhTien());
             soLuongTonKho.put(chiTiet.getId(), updatedChiTiet.getSoLuongTonKho());
@@ -167,7 +167,6 @@ public class DonHangService {
             orderVoucher = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá (ORDER) không tồn tại."));
         }
-        // cần getter trong DonHangDTO: getIdPhieuFreeship()
         if (donHangDTO.getIdPhieuFreeship() != null) {
             shipVoucher = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuFreeship())
                     .orElseThrow(() -> new RuntimeException("Phiếu freeship (SHIPPING) không tồn tại."));
@@ -179,23 +178,18 @@ public class DonHangService {
         // validate helper
         java.util.function.Consumer<PhieuGiamGia> validate = (v) -> {
             if (v == null) return;
-
-            // thời gian hiệu lực
             if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v))) {
                 throw new RuntimeException("Phiếu " + v.getMa() + " không còn hiệu lực.");
             }
-            // ràng PTTT (nếu voucher có đặt)
             if (paymentMethodId != null && v.getPhuongThucThanhToans() != null && !v.getPhuongThucThanhToans().isEmpty()) {
                 boolean ok = v.getPhuongThucThanhToans().stream().anyMatch(pm -> paymentMethodId.equals(pm.getId()));
                 if (!ok) throw new RuntimeException("Phiếu " + v.getMa() + " không áp dụng cho phương thức thanh toán đã chọn.");
             }
-            // ràng đơn tối thiểu với ORDER
             if (!"SHIPPING".equalsIgnoreCase(v.getPhamViApDung())) {
                 if (v.getGiaTriGiamToiThieu() != null && subtotal.compareTo(v.getGiaTriGiamToiThieu()) < 0) {
                     throw new RuntimeException("Chưa đạt đơn tối thiểu để dùng phiếu " + v.getMa());
                 }
             } else {
-                // SHIPPING: chỉ khi giao hàng & có phí ship > 0
                 if (!isDelivery || donHang.getPhiVanChuyen().compareTo(BigDecimal.ZERO) <= 0) {
                     throw new RuntimeException("Freeship chỉ áp dụng cho đơn giao hàng có phí vận chuyển.");
                 }
@@ -205,7 +199,7 @@ public class DonHangService {
         validate.accept(orderVoucher);
         validate.accept(shipVoucher);
 
-        // tính giảm
+        // Tính giảm
         if (orderVoucher != null && !"SHIPPING".equalsIgnoreCase(orderVoucher.getPhamViApDung())) {
             giamDon = phieuGiamGiaService.tinhTienGiamGia(orderVoucher, subtotal);
         }
@@ -213,18 +207,41 @@ public class DonHangService {
             giamShip = phieuGiamGiaService.tinhGiamPhiShip(shipVoucher, donHang.getPhiVanChuyen(), subtotal);
         }
 
+        // Tổng sau giảm
         donHang.setTienGiam(giamDon);
-
-        // tổng sau giảm
         BigDecimal phiShipSauGiam = donHang.getPhiVanChuyen().subtract(giamShip).max(BigDecimal.ZERO);
         BigDecimal tongTienDonHang = subtotal.subtract(giamDon).add(phiShipSauGiam).max(BigDecimal.ZERO);
         donHang.setTongTien(tongTienDonHang);
 
-        // trừ lượt/số lượng cho 2 phiếu
+        // ===== LƯU ĐƠN HÀNG TRƯỚC KHI TẠO BẢNG PHỤ
+        donHangRepository.save(donHang);
+
+        // ===== LƯU BẢNG PHỤ (ORDER + SHIPPING) nếu có giảm
+        if (orderVoucher != null && giamDon.compareTo(BigDecimal.ZERO) > 0) {
+            DonHangPhieuGiamGia link = new DonHangPhieuGiamGia();
+            link.setId(UUID.randomUUID());
+            link.setDonHang(donHang);
+            link.setPhieuGiamGia(orderVoucher);
+            link.setLoaiGiamGia("ORDER");
+            link.setGiaTriGiam(giamDon);
+            link.setThoiGianApDung(LocalDateTime.now());
+            donHangPhieuGiamGiaRepository.save(link);
+        }
+        if (shipVoucher != null && giamShip.compareTo(BigDecimal.ZERO) > 0) {
+            DonHangPhieuGiamGia link = new DonHangPhieuGiamGia();
+            link.setId(UUID.randomUUID());
+            link.setDonHang(donHang);
+            link.setPhieuGiamGia(shipVoucher);
+            link.setLoaiGiamGia("SHIPPING");
+            link.setGiaTriGiam(giamShip);
+            link.setThoiGianApDung(LocalDateTime.now());
+            donHangPhieuGiamGiaRepository.save(link);
+        }
+
+        // ===== TRỪ LƯỢT/SỐ LƯỢNG (sau khi đã chắc chắn đơn hợp lệ)
         java.util.function.Consumer<PhieuGiamGia> deductUsage = (v) -> {
             if (v == null) return;
 
-            // cá nhân: trừ số lượt mapping
             if ("ca_nhan".equalsIgnoreCase(v.getKieuPhieu())) {
                 PhieuGiamGiaCuaNguoiDung phieuCaNhan = phieuGiamGiaCuaNguoiDungRepository
                         .findByPhieuGiamGia_IdAndNguoiDung_Id(v.getId(), khachHang.getId()).orElse(null);
@@ -236,7 +253,6 @@ public class DonHangService {
                 phieuGiamGiaCuaNguoiDungRepository.save(phieuCaNhan);
             }
 
-            // trừ số lượng tổng
             if (v.getSoLuong() == null || v.getSoLuong() <= 0) {
                 throw new RuntimeException("Phiếu " + v.getMa() + " đã hết số lượng.");
             }
@@ -251,7 +267,7 @@ public class DonHangService {
         BigDecimal tienKhachDua = Optional.ofNullable(donHangDTO.getSoTienKhachDua()).orElse(BigDecimal.ZERO);
         donHang.setSoTienKhachDua(tienKhachDua);
 
-        // Xử lý trạng thái thanh toán
+        // Trạng thái thanh toán
         if (donHang.getPhuongThucThanhToan() != null &&
                 "Tiền mặt".equals(donHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
             if (tienKhachDua.compareTo(tongTienDonHang) < 0) {
@@ -260,12 +276,10 @@ public class DonHangService {
             donHang.setTrangThaiThanhToan(true);
             donHang.setThoiGianThanhToan(LocalDateTime.now());
         } else {
-            // các phương thức khác: coi như đã thanh toán (theo logic cũ của bạn)
             donHang.setTrangThaiThanhToan(true);
             donHang.setThoiGianThanhToan(LocalDateTime.now());
         }
 
-        // Set trạng thái đơn hàng theo kênh
         if ("Tại quầy".equalsIgnoreCase(donHangDTO.getPhuongThucBanHang())) {
             if (donHang.getPhuongThucThanhToan() != null &&
                     tienKhachDua != null &&
@@ -282,10 +296,10 @@ public class DonHangService {
             donHang.setTrangThai("cho_xac_nhan");
         }
 
-        // Lưu đơn hàng
+        // Lưu lại đơn
         donHangRepository.save(donHang);
 
-        // Nếu đã thanh toán thì lưu thống kê + thông báo
+        // Thống kê + thông báo (giữ nguyên logic cũ nếu đã thanh toán...)
         if (donHang.getTrangThaiThanhToan()) {
             thongBaoService.taoThongBaoHeThong(
                     "admin",
@@ -326,6 +340,7 @@ public class DonHangService {
         log.info("Tạo đơn hàng thành công với mã: {}", donHang.getMaDonHang());
         return ketQua;
     }
+
 
     private String dinhDangTien(BigDecimal soTien) {
         return String.format("%,.0f", soTien).replace(",", ".") + " VND";
