@@ -1874,6 +1874,87 @@
             if (selected.length === totalCheckable && totalCheckable > 1) {
                 // FULL EDIT MODE: mở modal bulk
                 $('#bulkIds').val(selected.join(','));
+
+                // Lấy dữ liệu từ các biến thể được chọn
+                let commonAttributes = {
+                    originId: null,
+                    materialId: null,
+                    styleId: null,
+                    sleeveId: null,
+                    collarId: null,
+                    brandId: null,
+                    gender: null,
+                    price: null,
+                    stockQuantity: null,
+                    status: null
+                };
+
+                // Flag để kiểm tra giá trị có đồng nhất không
+                let isFirst = true;
+                let allSame = true;
+
+                // Duyệt qua các hàng được chọn
+                $('.row-check:checked').each(function() {
+                    const row = $(this).closest('tr');
+                    const id = $(this).val();
+
+                    // Lấy dữ liệu từ API hoặc trực tiếp từ DOM
+                    $.ajax({
+                        url: '/acvstore/chi-tiet-san-pham/edit/' + id,
+                        type: 'GET',
+                        dataType: 'json',
+                        async: false, // Đảm bảo đồng bộ để thu thập dữ liệu trước khi mở modal
+                        success: function(response) {
+                            if (isFirst) {
+                                // Lưu giá trị của biến thể đầu tiên
+                                commonAttributes.originId = response.originId;
+                                commonAttributes.materialId = response.materialId;
+                                commonAttributes.styleId = response.styleId;
+                                commonAttributes.sleeveId = response.sleeveId;
+                                commonAttributes.collarId = response.collarId;
+                                commonAttributes.brandId = response.brandId;
+                                commonAttributes.gender = response.gender;
+                                commonAttributes.price = response.price;
+                                commonAttributes.stockQuantity = response.stockQuantity;
+                                commonAttributes.status = response.status;
+                                isFirst = false;
+                            } else {
+                                // So sánh với các biến thể tiếp theo
+                                if (commonAttributes.originId !== response.originId) commonAttributes.originId = null;
+                                if (commonAttributes.materialId !== response.materialId) commonAttributes.materialId = null;
+                                if (commonAttributes.styleId !== response.styleId) commonAttributes.styleId = null;
+                                if (commonAttributes.sleeveId !== response.sleeveId) commonAttributes.sleeveId = null;
+                                if (commonAttributes.collarId !== response.collarId) commonAttributes.collarId = null;
+                                if (commonAttributes.brandId !== response.brandId) commonAttributes.brandId = null;
+                                if (commonAttributes.gender !== response.gender) commonAttributes.gender = null;
+                                if (commonAttributes.price !== response.price) commonAttributes.price = null;
+                                if (commonAttributes.stockQuantity !== response.stockQuantity) commonAttributes.stockQuantity = null;
+                                if (commonAttributes.status !== response.status) commonAttributes.status = null;
+                            }
+                        },
+                        error: function(xhr) {
+                            showToast("Lỗi khi tải dữ liệu biến thể: " + (xhr.responseText || xhr.statusText), 'error');
+                            allSame = false;
+                        }
+                    });
+                });
+
+                if (allSame) {
+                    // Điền dữ liệu vào modal
+                    $('#bulkFullEditForm select[name="originId"]').val(commonAttributes.originId || '').trigger('change');
+                    $('#bulkFullEditForm select[name="materialId"]').val(commonAttributes.materialId || '').trigger('change');
+                    $('#bulkFullEditForm select[name="styleId"]').val(commonAttributes.styleId || '').trigger('change');
+                    $('#bulkFullEditForm select[name="sleeveId"]').val(commonAttributes.sleeveId || '').trigger('change');
+                    $('#bulkFullEditForm select[name="collarId"]').val(commonAttributes.collarId || '').trigger('change');
+                    $('#bulkFullEditForm select[name="brandId"]').val(commonAttributes.brandId || '').trigger('change');
+                    $('#bulkFullEditForm select[name="gender"]').val(commonAttributes.gender || '').trigger('change');
+                    $('#bulkFullEditForm input[name="price"]').val(commonAttributes.price ? formatNumber(commonAttributes.price) : '');
+                    $('#bulkFullEditForm input[name="stockQuantity"]').val(commonAttributes.stockQuantity || '');
+                    $('#bulkFullEditForm input[name="status"]').prop('checked', commonAttributes.status === true);
+                    $('#bulkFullEditForm .form-check-label').text(commonAttributes.status ? 'Đang Bán' : 'Ngừng Bán');
+                }
+
+                // Mở modal
                 const modal = new bootstrap.Modal(document.getElementById('bulkFullEditModal'));
                 modal.show();
             } else {
