@@ -63,6 +63,13 @@
         #voucherModal .voucher-card{ padding:12px; }
         #voucherModal .voucher-card .fw-semibold{ font-size:14px; }
         #voucherModal .voucher-card .small{ font-size:12px; }
+        #voucherModal .voucher-search{
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #fff;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
     </style>
 </head>
 <body class="bg-gray-100">
@@ -384,6 +391,7 @@
 </footer>
 <!-- ========== MODAL CHỌN VOUCHER (compact, centered, scrollable) ========== -->
 <!-- ========== MODAL CHỌN VOUCHER (compact, centered, scrollable) ========== -->
+<!-- ========== MODAL CHỌN VOUCHER (compact, centered, scrollable) ========== -->
 <div class="modal fade" id="voucherModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -395,7 +403,21 @@
                 <button type="button" class="btn-close" aria-label="Close" onclick="closeVoucherModal()"></button>
             </div>
 
+            <!-- BODY cuộn dọc -->
             <div class="modal-body pt-0" style="max-height: 60vh; overflow-y: auto;">
+
+                <!-- Thanh tìm kiếm (STICKY) -->
+                <div class="voucher-search">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input id="voucher-search" type="text" class="form-control"
+                               placeholder="Tìm theo tên mã, code, mô tả...">
+                        <button id="voucher-search-clear" class="btn btn-outline-secondary" type="button" title="Xóa">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <!-- SHIPPING -->
                 <div class="mb-3">
                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -462,6 +484,11 @@
                         </th:block>
                     </th:block>
                 </div>
+
+                <!-- Không có kết quả -->
+                <div id="voucher-no-result" class="text-center text-muted py-3 d-none">
+                    Không tìm thấy mã phù hợp
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -476,9 +503,50 @@
 
 
 
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // ===== SEARCH HELPERS =====
+    function vnNormalize(str = '') {
+        return String(str)
+            .toLowerCase()
+            .normalize('NFD')                // tách dấu
+            .replace(/[\u0300-\u036f]/g, '') // bỏ dấu
+            .replace(/[.,]/g, '')            // loại dấu phân cách số để tìm 23000 ~ 23.000
+            .trim();
+    }
+
+    function filterVouchersInModal(termRaw = '') {
+        const modal = document.getElementById('voucherModal');
+        if (!modal) return;
+
+        const term = vnNormalize(termRaw);
+        const cards = modal.querySelectorAll('label.voucher-card');
+        let anyShown = false;
+
+        cards.forEach(card => {
+            const code = card.dataset.code || '';
+            const text = card.innerText || '';
+            const hay  = vnNormalize(code + ' ' + text);
+
+            const matched = term === '' || hay.includes(term);
+            card.classList.toggle('d-none', !matched);
+            if (matched) anyShown = true;
+        });
+
+        const noRes = document.getElementById('voucher-no-result');
+        if (noRes) noRes.classList.toggle('d-none', anyShown);
+    }
+
+    function debounce(fn, wait = 150) {
+        let t;
+        return (...args) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(null, args), wait);
+        };
+    }
+
     // ================== STATE & HELPERS ==================
     const loadingState = {
         provinces: false,
@@ -1350,7 +1418,8 @@
         loadSavedAddresses();
         loadWalletBalance();
 
-        document.querySelector('.payment-method[data-value="550E8400-E29B-41D4-A716-446655440017"]')
+        document
+            .querySelector('.payment-method[data-value="550E8400-E29B-41D4-A716-446655440017"]')
             ?.classList.add('active');
 
         // ===== ADDRESS / SHIPPING EVENTS =====
@@ -1358,17 +1427,20 @@
             const provinceId = parseInt(e.target.value);
             if (provinceId) loadDistricts(provinceId);
         });
+
         document.getElementById('district')?.addEventListener('change', async (e) => {
             const districtId = parseInt(e.target.value);
             if (districtId) await loadWards(districtId);
             await loadShippingServices(districtId);
         });
+
         document.getElementById('ward')?.addEventListener('change', calculateShipping);
 
         document.getElementById('new-province')?.addEventListener('change', (e) => {
             const provinceId = parseInt(e.target.value);
             if (provinceId) loadDistricts(provinceId, 'new-district');
         });
+
         document.getElementById('new-district')?.addEventListener('change', async (e) => {
             const districtId = parseInt(e.target.value);
             if (districtId) await loadWards(districtId, 'new-ward');
@@ -1388,6 +1460,7 @@
             await applyOrderVoucher();
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
         });
+
         document.getElementById('ship-voucher')?.addEventListener('change', async () => {
             await applyShipVoucher();
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
@@ -1397,14 +1470,22 @@
         document.getElementById('submit-order')?.addEventListener('click', submitOrder);
 
         // ===== VOUCHER MODAL HANDLERS =====
-        const modalEl  = document.getElementById('voucherModal');
-        const btnClear = document.getElementById('btn-clear-vouchers');
-        const btnApply = document.getElementById('btn-apply-vouchers');
+        const modalEl   = document.getElementById('voucherModal');
+        const btnClear  = document.getElementById('btn-clear-vouchers');
+        const btnApply  = document.getElementById('btn-apply-vouchers');
+        const searchInput = document.getElementById('voucher-search');
+        const searchClear = document.getElementById('voucher-search-clear');
 
         if (modalEl) {
-            // Khi mở modal -> đánh giá điều kiện để mờ/khóa các phiếu không đủ điều kiện
+            // Khi mở modal -> đánh giá điều kiện & focus ô tìm kiếm
             modalEl.addEventListener('shown.bs.modal', () => {
                 if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
+                if (searchInput) {
+                    searchInput.focus({ preventScroll: true });
+                    if (typeof filterVouchersInModal === 'function') {
+                        filterVouchersInModal(searchInput.value || '');
+                    }
+                }
             });
 
             // Cho phép click lần 2 để bỏ chọn radio (bỏ qua radio bị disabled)
@@ -1426,7 +1507,7 @@
                 lastShip = null; lastOrder = null;
             });
 
-            // Áp dụng: đổ vào 2 select ẩn, gọi lại logic áp mã, cập nhật summary, đóng modal
+            // Áp dụng: đổ vào 2 select ẩn, gọi logic áp mã, cập nhật summary, đóng modal
             btnApply?.addEventListener('click', async () => {
                 const ship  = modalEl.querySelector('input[name="rb-ship"]:checked')?.value || '';
                 const order = modalEl.querySelector('input[name="rb-order"]:checked')?.value || '';
@@ -1436,10 +1517,13 @@
                 selShip.value  = ship;
                 selOrder.value = order;
 
-                await applyOrderVoucher();
-                await applyShipVoucher();
+                // Gọi 2 hàm áp mã ở chế độ silent để KHÔNG bật Swal riêng lẻ
+                const orderResult = await applyOrderVoucher({ silent: true });
+                const shipResult  = await applyShipVoucher({ silent: true });
+
                 if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
 
+                // Cập nhật tóm tắt
                 const parts = [];
                 if (order) {
                     const t = selOrder.querySelector(`option[value="${CSS.escape(order)}"]`)?.textContent || order;
@@ -1449,10 +1533,64 @@
                     const t = selShip.querySelector(`option[value="${CSS.escape(ship)}"]`)?.textContent || ship;
                     parts.push('SHIP: ' + t);
                 }
-                document.getElementById('voucher-summary').textContent = parts.length ? parts.join(' | ') : 'Chưa chọn';
+                document.getElementById('voucher-summary').textContent =
+                    parts.length ? parts.join(' | ') : 'Chưa chọn';
 
+                // Tạo thông báo tổng hợp
+                const lines = [];
+                if (order) {
+                    lines.push(orderResult.ok
+                        ? `ORDER: giảm <b>${formatVND(orderResult.discount)}</b>`
+                        : `ORDER: <span style="color:#c00">${orderResult.message || 'Không áp dụng được'}</span>`);
+                }
+                if (ship) {
+                    lines.push(shipResult.ok
+                        ? `FREESHIP: giảm <b>${formatVND(shipResult.discount)}</b>`
+                        : `FREESHIP: <span style="color:#c00">${shipResult.message || 'Không áp dụng được'}</span>`);
+                }
+
+                // Chọn icon phù hợp
+                const overallOk =
+                    (order ? orderResult.ok : true) &&
+                    (ship ? shipResult.ok : true);
+
+                Swal.fire({
+                    icon: overallOk ? 'success' : (orderResult.ok || shipResult.ok ? 'info' : 'error'),
+                    title: 'Kết quả áp mã',
+                    html: lines.join('<br>'),
+                    timer: 1600,
+                    showConfirmButton: false
+                });
+
+                // Đóng modal
                 (bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)).hide();
             });
+
+
+            // ====== TÌM KIẾM TRONG MODAL =====
+            if (searchInput) {
+                const doFilter = debounce(() => {
+                    if (typeof filterVouchersInModal === 'function') {
+                        filterVouchersInModal(searchInput.value);
+                    }
+                }, 150);
+                searchInput.addEventListener('input', doFilter);
+
+                // (Tuỳ chọn) reset khi đóng modal
+                // modalEl.addEventListener('hidden.bs.modal', () => {
+                //   searchInput.value = '';
+                //   if (typeof filterVouchersInModal === 'function') filterVouchersInModal('');
+                // });
+            }
+
+            if (searchClear) {
+                searchClear.addEventListener('click', () => {
+                    if (!searchInput) return;
+                    searchInput.value = '';
+                    if (typeof filterVouchersInModal === 'function') filterVouchersInModal('');
+                    searchInput.focus({ preventScroll: true });
+                });
+            }
         }
     });
 
