@@ -1334,7 +1334,6 @@
 
     if (!tab) return;
 
-    // Không giao hàng -> ẩn chọn dịch vụ + phí = 0
     if (tab.saleMethod !== 'Giao hàng') {
       shippingMethodContainer?.classList.add('d-none');
       const prevBase = Number(tab.shippingFeeBase || 0);
@@ -1344,23 +1343,19 @@
         tab.shipVoucherId = null;
         if (shippingFeeInput) shippingFeeInput.value = formatCurrency(0);
         updateSummary(tab);
-        if (tab.voucherId && !isApplyingVoucher) await applyVoucher(tab.voucherId);
+        if (tab.orderVoucherId && !isApplyingVoucher && prevBase !== 0) await applyVoucher(tab.orderVoucherId);
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
       }
       updateShipSectionVisibility();
       return;
     }
 
-    // Lấy địa chỉ hiện tại (từ state hoặc dropdown)
     tab.selectedAddress = (tab.selectedAddress || addressSelect?.value || '').trim();
-
-    // Không có địa chỉ -> phí ship = 0 và thoát
     if (!tab.selectedAddress) {
       zeroShippingBecauseNoAddress();
       return;
     }
 
-    // Chặn re-entry
     if (isRecalculatingShipping) return;
     isRecalculatingShipping = true;
 
@@ -1368,10 +1363,8 @@
       setShippingUiLoading(true);
       shippingMethodContainer?.classList.remove('d-none');
 
-      // 1) Map địa chỉ text -> mã GHN
       const { districtId, wardCode } = await mapAddressTextToGhnCodes(tab.selectedAddress);
 
-      // 2) Nạp dịch vụ GHN (trừ khi chỉ tính lại)
       if (!recalcOnly) {
         const services = await ghnLoadServices(districtId);
         if (!services.length) {
@@ -1385,7 +1378,6 @@
         }
       }
 
-      // Nếu đang recalc nhưng select chưa có option, nạp dịch vụ luôn
       const select = document.getElementById('shippingMethod');
       if (select && !select.value) {
         const services = await ghnLoadServices(districtId);
@@ -1398,20 +1390,38 @@
         return;
       }
 
-      // 3) Tính phí GHN
       const prevBase = Number(tab.shippingFeeBase || 0);
       const fee = await ghnCalculateShipping({ districtId, wardCode });
       const shippingFee = Number.isFinite(fee) ? fee : 0;
 
-      // 4) Cập nhật UI + state (GHI PHÍ GỐC)
       if (shippingFeeInput) shippingFeeInput.value = formatCurrency(shippingFee);
       tab.shippingFeeBase = shippingFee;
 
       updateSummary(tab);
 
-      // Chỉ re-apply voucher khi phí gốc thực sự đổi và không đang apply
-      if (tab.voucherId && !isApplyingVoucher && prevBase !== shippingFee) {
-        await applyVoucher(tab.voucherId);
+      // --- RE-APPLY ORDER nếu base thay đổi ---
+      if (tab.orderVoucherId && !isApplyingVoucher && prevBase !== shippingFee) {
+        await applyVoucher(tab.orderVoucherId);
+      }
+
+      // --- RE-APPLY SHIPPING nếu base thay đổi ---
+      if (tab.shipVoucherId && !isApplyingVoucher && prevBase !== shippingFee) {
+        try {
+          isApplyingVoucher = true;
+          const res = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${tab.shipVoucherId}&shippingFee=${shippingFee}&tabId=${currentTabId}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
+            if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
+            updateSummary(tab);
+          } else {
+            let msg = 'Không áp dụng được mã Freeship sau khi đổi phí GHN.';
+            try { const err = await res.json(); msg = err.error || err.message || msg; } catch {}
+            showToast(msg, 'warning');
+          }
+        } finally {
+          isApplyingVoucher = false;
+        }
       }
 
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
@@ -1424,11 +1434,10 @@
     } finally {
       setShippingUiLoading(false);
       isRecalculatingShipping = false;
-
-      // Sau mọi TH, cập nhật hiển/ẩn Freeship
       updateShipSectionVisibility();
     }
   }
+
 
 
 
@@ -2823,21 +2832,25 @@
     const pickedOrder = document.querySelector('#voucherModal input[name="orderVoucher"]:checked')?.value || null;
     const pickedShip  = document.querySelector('#voucherModal input[name="shipVoucher"]:checked')?.value  || null;
 
-    // Lưu lựa chọn
+    // Lưu lựa chọn rõ ràng của user
     tab.orderVoucherId = pickedOrder;
     tab.shipVoucherId  = isShippingEnabled() ? pickedShip : null;
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
 
-    // 1) ORDER: gọi hàm cũ để BE tính giảm đơn
+    // 1) ORDER
     if (pickedOrder) {
       await applyVoucher(pickedOrder);
     } else {
-      tab.voucherId = null;
+      tab.voucherId = null; // giữ tương thích cũ nếu nơi khác còn dùng
       tab.discount = 0;
     }
 
-    // 2) SHIPPING: chỉ khi đang giao hàng + có địa chỉ
+    // 2) SHIPPING
     if (isShippingEnabled()) {
+      // Bảo đảm có phí gốc trước khi gọi freeship
+      if (!Number(tab.shippingFeeBase) || Number(tab.shippingFeeBase) <= 0) {
+        try { await setupShippingForSelectedAddress({ recalcOnly: false }); } catch {}
+      }
       if (tab.shipVoucherId) {
         try {
           isApplyingVoucher = true;
@@ -2849,19 +2862,15 @@
             throw new Error(msg);
           }
           const data = await res.json();
-
-          // Cập nhật phần ship (không đè giảm đơn)
           if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
           if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
-
-          showToast('Đã áp dụng mã Freeship!', 'success');
         } catch (e) {
           showToast(e.message, 'error');
         } finally {
           isApplyingVoucher = false;
         }
       } else {
-        tab.shippingDiscount = 0; // bỏ freeship
+        tab.shippingDiscount = 0;
       }
     } else {
       tab.shipVoucherId = null;
@@ -2875,76 +2884,62 @@
 
 
 
+
   function updateSummary(tab) {
-    // Đảm bảo có biến base/discount cho ship (FE đang quản lý)
-    const subTotal        = Number(tab.subTotal || 0);
-    const orderDiscount   = Number(tab.discount || 0);                 // giảm giá đơn (ORDER)
-    const shippingBase    = tab.saleMethod === 'Giao hàng' ? Number(tab.shippingFeeBase || 0) : 0;
-    const shippingDiscount= tab.saleMethod === 'Giao hàng' ? Number(tab.shippingDiscount || 0) : 0;
+    // Tính toán
+    const subTotal       = Number(tab.subTotal || 0);
+    const orderDiscount  = Number(tab.discount || 0); // giảm giá đơn (ORDER)
+    const isDelivery     = tab.saleMethod === 'Giao hàng';
+    const shippingBase   = isDelivery ? Number(tab.shippingFeeBase || 0) : 0;     // phí ship gốc
+    const shippingDisc   = isDelivery ? Number(tab.shippingDiscount || 0) : 0;    // giảm phí ship (freeship)
+    const shippingPay    = Math.max(0, shippingBase - shippingDisc);              // phí ship phải trả
+    const total          = subTotal - orderDiscount + shippingPay;
 
-    // Phí ship phải trả sau giảm
-    const shippingPay = Math.max(0, shippingBase - shippingDiscount);
-
-    // Tổng thanh toán
-    const total = subTotal - orderDiscount + shippingPay;
-
-    // Tiền khách đưa (chỉ tính thối tiền nếu là Tiền mặt)
-    const cashAmountInput = document.getElementById('cashAmount');
-    const rawCash = cashAmountInput ? cashAmountInput.value.replace(/\./g, '') : '0';
+    // Tiền khách đưa (chỉ khi tiền mặt)
+    const cashEl     = document.getElementById('cashAmount');
+    const rawCashStr = cashEl ? String(cashEl.value).replace(/\./g, '') : '0';
     const cashAmount = tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440017'
-            ? (Number(rawCash || 0))
+            ? Number(rawCashStr || 0)
             : 0;
+    tab.cashAmount   = cashAmount;
+    const change     = Math.max(0, cashAmount - total);
 
-    tab.cashAmount = cashAmount;
-
-    const change = Math.max(0, cashAmount - total);
-
-    // Cập nhật UI
-    const el = (id) => document.getElementById(id);
-    const fmt = (n) => (Number(n)||0).toLocaleString('vi-VN') + ' VNĐ';
+    // Helper
+    const el  = (id) => document.getElementById(id);
+    const fmt = (n)  => (Number(n) || 0).toLocaleString('vi-VN') + ' VNĐ';
 
     // Subtotal
     if (el('subTotal')) el('subTotal').innerText = fmt(subTotal);
 
-    // Phí ship gốc (chỉ khi Giao hàng)
+    // Phí vận chuyển (gốc): luôn HIỆN khi chọn "Giao hàng", ẩn khi "Tại quầy"
     if (el('shippingBaseRow')) {
-      if (tab.saleMethod === 'Giao hàng') {
-        el('shippingBaseRow').classList.remove('d-none');
-        if (el('shippingFeeBaseDisplay')) el('shippingFeeBaseDisplay').innerText = fmt(shippingBase);
-      } else {
-        el('shippingBaseRow').classList.add('d-none');
-        if (el('shippingFeeBaseDisplay')) el('shippingFeeBaseDisplay').innerText = fmt(0);
-      }
+      el('shippingBaseRow').classList.toggle('d-none', !isDelivery);
+    }
+    if (el('shippingFeeBaseDisplay')) {
+      el('shippingFeeBaseDisplay').innerText = fmt(shippingBase);
     }
 
-    // Giảm phí ship (chỉ show khi > 0 và Giao hàng)
+    // Giảm phí vận chuyển: luôn HIỆN khi "Giao hàng" (kể cả = 0 -> hiển thị "- 0 VNĐ")
     if (el('shippingDiscountRow')) {
-      if (tab.saleMethod === 'Giao hàng' && shippingDiscount > 0) {
-        el('shippingDiscountRow').classList.remove('d-none');
-        if (el('shippingDiscountDisplay')) el('shippingDiscountDisplay').innerText = '- ' + fmt(shippingDiscount);
-      } else {
-        el('shippingDiscountRow').classList.add('d-none');
-        if (el('shippingDiscountDisplay')) el('shippingDiscountDisplay').innerText = '- ' + fmt(0);
-      }
+      el('shippingDiscountRow').classList.toggle('d-none', !isDelivery);
+    }
+    if (el('shippingDiscountDisplay')) {
+      el('shippingDiscountDisplay').innerText = '- ' + fmt(shippingDisc);
     }
 
-    // Giảm giá đơn (chỉ show khi > 0)
+    // Giảm giá đơn: chỉ hiện khi > 0 (giữ nguyên hành vi cũ)
     if (el('orderDiscountRow')) {
-      if (orderDiscount > 0) {
-        el('orderDiscountRow').classList.remove('d-none');
-        if (el('orderDiscountDisplay')) el('orderDiscountDisplay').innerText = '- ' + fmt(orderDiscount);
-      } else {
-        el('orderDiscountRow').classList.add('d-none');
-        if (el('orderDiscountDisplay')) el('orderDiscountDisplay').innerText = '- ' + fmt(0);
-      }
+      el('orderDiscountRow').classList.toggle('d-none', !(orderDiscount > 0));
+    }
+    if (el('orderDiscountDisplay')) {
+      el('orderDiscountDisplay').innerText = '- ' + fmt(orderDiscount);
     }
 
-    // Tổng
-    if (el('total')) el('total').innerText = fmt(total);
-
-    // Tiền trả lại
+    // Tổng & tiền thối
+    if (el('total'))        el('total').innerText        = fmt(total);
     if (el('changeAmount')) el('changeAmount').innerText = fmt(change);
   }
+
 
 
   async function createOrder() {
@@ -3642,31 +3637,32 @@
     });
   }
   // Chuẩn hoá type voucher
+  // Chuẩn hoá type voucher
   function getVoucherType(v, fallback = '') {
-    let raw =
-            v?.type ??
-            v?.loai ??
-            v?.loaiGiamGia ??
-            v?.voucherType ??
-            v?.category ??
-            v?.kind ??
-            v?.__type ??        // nhãn mình tự gắn
-            fallback;
+    // 1) ƯU TIÊN scope từ backend
+    const scope = String(
+            v?.phamViApDung ?? v?.phamviapdung ?? v?.scope ?? ''
+    ).toUpperCase();
+    if (scope === 'ORDER' || scope === 'SHIPPING') return scope;
 
+    // 2) Nếu FE đã gắn __type (từ typedOrder/typedShip), dùng luôn
+    if (v?.__type === 'ORDER' || v?.__type === 'SHIPPING') return v.__type;
+
+    // 3) ĐỪNG dùng loaiGiamGia (PHAN_TRAM/TIEN) để đoán phạm vi
+    let raw = (
+            v?.type ?? v?.loai ?? v?.voucherType ?? v?.category ?? v?.kind ?? fallback
+    );
     raw = (raw == null ? '' : String(raw)).toUpperCase();
-
-    // map số -> loại (nếu BE dùng 0/1)
-    if (raw === '1') raw = 'SHIPPING';
-    if (raw === '0') raw = 'ORDER';
 
     if (/SHIP|FREESHIP/.test(raw)) return 'SHIPPING';
     if (/ORDER|ĐƠN|DON|TOTAL|HOA ?DON/.test(raw)) return 'ORDER';
 
-    // cố gắng đoán theo tên/mô tả
-    const text = `${v?.ten || ''} ${v?.title || ''} ${v?.moTa || ''} ${v?.description || ''}`.toLowerCase();
+    // 4) Đoán theo tên/mô tả (phụ)
+    const text = `${v?.ten ?? ''} ${v?.title ?? ''} ${v?.moTa ?? ''} ${v?.description ?? ''}`.toLowerCase();
     if (/ship|vận.?chuyển|van chuyen|freeship/.test(text)) return 'SHIPPING';
 
-    return ''; // unknown
+    // 5) MẶC ĐỊNH → ORDER (để không bị rơi mất phiếu)
+    return 'ORDER';
   }
 
   // Render danh sách ORDER / SHIPPING vào modal
@@ -3700,27 +3696,22 @@
       <input type="radio" name="${groupName}" value="${v.id}" ${checked ? 'checked' : ''}>
     </label>`;
 
-    // ✅ Preselect theo orderVoucherId, nếu chưa có thì fallback về voucherId đang dùng
+    // ❗ Chỉ preselect khi tab.orderVoucherId/tab.shipVoucherId đang có và còn phù hợp
+    const currentOrderId = tab.orderVoucherId || null;
+    const currentShipId  = (isShippingEnabled() ? tab.shipVoucherId : null) || null;
+
     orderList.innerHTML = orders.length
-            ? orders.map(v => makeItem(
-                    v,
-                    'orderVoucher',
-                    String(tab.orderVoucherId || tab.voucherId) === String(v.id)
-            )).join('')
+            ? orders.map(v => makeItem(v, 'orderVoucher', String(currentOrderId) === String(v.id))).join('')
             : '<div class="text-muted">Không có mã đơn hàng khả dụng</div>';
 
     shipList.innerHTML = ships.length
-            ? ships.map(v => makeItem(
-                    v,
-                    'shipVoucher',
-                    String(tab.shipVoucherId) === String(v.id)
-            )).join('')
+            ? ships.map(v => makeItem(v, 'shipVoucher', String(currentShipId) === String(v.id))).join('')
             : '<div class="text-muted">Không có mã freeship khả dụng</div>';
 
-    // Ẩn/hiện nhóm Freeship theo điều kiện đang "Giao hàng"
+    // Ẩn/hiện nhóm Freeship theo điều kiện đang “Giao hàng”
     updateShipSectionVisibility();
 
-    // (Giữ tương thích dropdown cũ: chỉ đổ mã ORDER)
+    // (Tương thích dropdown cũ: chỉ đổ mã ORDER)
     const voucherSelect = document.getElementById('voucherSelect');
     if (voucherSelect) {
       voucherSelect.innerHTML = '<option value="">🎫 Không sử dụng</option>';
@@ -3730,28 +3721,50 @@
         opt.text  = v.ten || v.title || v.id;
         voucherSelect.appendChild(opt);
       });
-      voucherSelect.value = tab.orderVoucherId || tab.voucherId || '';
+      // ❗ Không fallback về tab.voucherId để tránh “tự chọn”
+      voucherSelect.value = currentOrderId || '';
     }
   }
 
 
+
   // Mở/đóng modal voucher
-  function openVoucherModal() {
+  async function openVoucherModal() {
     const m = document.getElementById('voucherModal');
     if (!m) return;
-    // luôn nạp lại theo trạng thái hiện tại (subtotal, KH, địa chỉ…)
-    fetchVouchers().finally(() => {
-      m.style.display = 'flex';
-    });
+
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (tab && isShippingEnabled()) {
+      // Nếu chưa có phí gốc hoặc = 0 thì tính GHN trước
+      if (!Number(tab.shippingFeeBase) || Number(tab.shippingFeeBase) <= 0) {
+        try { await setupShippingForSelectedAddress({ recalcOnly: false }); } catch {}
+      }
+    }
+
+    // Luôn nạp danh sách dựa trên trạng thái hiện tại
+    await fetchVouchers();
+    m.style.display = 'flex';
   }
+
   function closeVoucherModal(){ const m = document.getElementById('voucherModal'); if (m) m.style.display='none'; }
 
   // Bỏ chọn tất cả radio trong modal
+
+
   function clearVoucherSelections() {
     document
             .querySelectorAll('#voucherModal input[type=radio][name="orderVoucher"], #voucherModal input[type=radio][name="shipVoucher"]')
             .forEach(el => el.checked = false);
+
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (tab) {
+      tab.orderVoucherId = null;
+      tab.shipVoucherId  = null;
+      // Không động vào tab.voucherId để tránh chỗ cũ còn dùng; discount/shipDiscount sẽ set lại khi bấm Áp dụng
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    }
   }
+
 
 
 </script>
