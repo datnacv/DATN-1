@@ -286,7 +286,7 @@ public class BanHangController {
                 return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
             }
 
-            // ===== LẤY VOUCHER TỪ SESSION THEO TAB & GHÁN VÀO DTO (nếu FE chưa gửi) =====
+            // ===== LẤY VOUCHER TỪ SESSION THEO TAB & GHÉP VÀO DTO =====
             final String tabKey = donHangDTO.getTabId();
             UUID orderVoucherIdInSession = (UUID) session.getAttribute("ORDER_VOUCHER_ID_" + tabKey);
             UUID shipVoucherIdInSession  = (UUID) session.getAttribute("SHIP_VOUCHER_ID_" + tabKey);
@@ -296,6 +296,21 @@ public class BanHangController {
             }
             if (donHangDTO.getIdPhieuFreeship() == null && shipVoucherIdInSession != null) {
                 donHangDTO.setIdPhieuFreeship(shipVoucherIdInSession); // SHIPPING voucher
+            }
+
+            // ===== BỔ SUNG: LẤY PHÍ SHIP GỐC TỪ SESSION NẾU FE KHÔNG GỬI =====
+            BigDecimal shipBaseInSession = (BigDecimal) Optional
+                    .ofNullable(session.getAttribute("SHIP_FEE_" + tabKey))
+                    .orElse(BigDecimal.ZERO);
+
+            if (donHangDTO.getPhiVanChuyen() == null || donHangDTO.getPhiVanChuyen().compareTo(BigDecimal.ZERO) <= 0) {
+                donHangDTO.setPhiVanChuyen(shipBaseInSession);
+            }
+
+            // Nếu có phí ship gốc mà thiếu phương thức bán hàng → mặc định "Giao hàng"
+            if ((donHangDTO.getPhuongThucBanHang() == null || donHangDTO.getPhuongThucBanHang().isBlank())
+                    && shipBaseInSession.compareTo(BigDecimal.ZERO) > 0) {
+                donHangDTO.setPhuongThucBanHang("Giao hàng");
             }
 
             // ===== Tạo đơn hàng (service sẽ tính giảm + lưu bảng phụ) =====
@@ -354,6 +369,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
         }
     }
+
 
 
 
