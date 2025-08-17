@@ -2887,13 +2887,17 @@
 
   function updateSummary(tab) {
     // Tính toán
-    const subTotal       = Number(tab.subTotal || 0);
-    const orderDiscount  = Number(tab.discount || 0); // giảm giá đơn (ORDER)
-    const isDelivery     = tab.saleMethod === 'Giao hàng';
-    const shippingBase   = isDelivery ? Number(tab.shippingFeeBase || 0) : 0;     // phí ship gốc
-    const shippingDisc   = isDelivery ? Number(tab.shippingDiscount || 0) : 0;    // giảm phí ship (freeship)
-    const shippingPay    = Math.max(0, shippingBase - shippingDisc);              // phí ship phải trả
-    const total          = subTotal - orderDiscount + shippingPay;
+    const subTotal      = Number(tab.subTotal || 0);
+    const orderDiscount = Number(tab.discount || 0);            // giảm giá đơn (ORDER)
+    const isDelivery    = tab.saleMethod === 'Giao hàng';
+
+    // Phí ship theo mô hình gốc/giảm
+    const shippingBase  = isDelivery ? Number(tab.shippingFeeBase || 0) : 0;     // phí ship gốc
+    const shippingDisc  = isDelivery ? Number(tab.shippingDiscount || 0) : 0;    // giảm phí ship (freeship)
+    const shippingPay   = Math.max(0, shippingBase - shippingDisc);              // phí ship phải trả
+
+    // Tổng thanh toán
+    const total = subTotal - orderDiscount + shippingPay;
 
     // Tiền khách đưa (chỉ khi tiền mặt)
     const cashEl     = document.getElementById('cashAmount');
@@ -2927,9 +2931,9 @@
       el('shippingDiscountDisplay').innerText = '- ' + fmt(shippingDisc);
     }
 
-    // Giảm giá đơn: chỉ hiện khi > 0 (giữ nguyên hành vi cũ)
+    // Giảm giá đơn: LUÔN HIỂN THỊ ở cả "Tại quầy" & "Giao hàng" (kể cả = 0)
     if (el('orderDiscountRow')) {
-      el('orderDiscountRow').classList.toggle('d-none', !(orderDiscount > 0));
+      el('orderDiscountRow').classList.remove('d-none');
     }
     if (el('orderDiscountDisplay')) {
       el('orderDiscountDisplay').innerText = '- ' + fmt(orderDiscount);
@@ -2942,10 +2946,12 @@
 
 
 
+
   async function createOrder() {
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
+    // ===== Validate cơ bản =====
     if (!tab.customerPhone) {
       showToast('Vui lòng nhập số điện thoại khách hàng.', 'warning');
       return;
@@ -2954,52 +2960,67 @@
       showToast('Vui lòng chọn địa chỉ giao hàng.', 'warning');
       return;
     }
-    if (tab.cart.length === 0) {
+    if (!tab.cart || tab.cart.length === 0) {
       showToast('Giỏ hàng trống.', 'warning');
       return;
     }
 
-    // Tính phí ship sau giảm
-    const shippingBase     = tab.saleMethod === 'Giao hàng' ? Number(tab.shippingFeeBase || 0) : 0;
-    const shippingDiscount = tab.saleMethod === 'Giao hàng' ? Number(tab.shippingDiscount || 0) : 0;
-    const shippingPay      = tab.saleMethod === 'Giao hàng' ? Math.max(0, shippingBase - shippingDiscount) : 0;
+    // ===== Tính phí ship & tổng =====
+    const isDelivery       = tab.saleMethod === 'Giao hàng';
+    const shippingBase     = isDelivery ? Number(tab.shippingFeeBase || 0) : 0;
+    const shippingDiscount = isDelivery ? Number(tab.shippingDiscount || 0) : 0;
+    const shippingPay      = isDelivery ? Math.max(0, shippingBase - shippingDiscount) : 0;
 
-    const totalAmount = (Number(tab.subTotal) || 0) - (Number(tab.discount) || 0) + shippingPay;
+    const subTotal      = Number(tab.subTotal || 0);
+    const orderDiscount = Number(tab.discount || 0);
+    const totalAmount   = subTotal - orderDiscount + shippingPay;
+
+    // ===== Validate theo phương thức thanh toán =====
+    const CASH_ID  = '550E8400-E29B-41D4-A716-446655440017'; // Tiền mặt
+    const BANK_ID  = '550E8400-E29B-41D4-A716-446655440018'; // Chuyển khoản
 
     const cashAmountInput = document.getElementById('cashAmount');
-
-    // GỬI ĐỦ 3 TRƯỜNG: phiVanChuyen (sau giảm, để BE cũ đọc được), phiVanChuyenGoc, giamGiaVanChuyen
-    const orderData = {
-      soDienThoaiKhachHang: tab.customerPhone,
-      phuongThucBanHang: tab.saleMethod,
-      phuongThucThanhToan: tab.paymentMethod,
-      soTienKhachDua: tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018'
-              ? 0
-              : (parseFloat(cashAmountInput?.value.replace(/\./g, '') || '0') || 0),
-
-      // —— PHÍ VẬN CHUYỂN —— //
-      phiVanChuyen: shippingPay,                 // <== phí phải trả sau giảm (tương thích BE cũ)
-      phiVanChuyenGoc: shippingBase,             // <== phí gốc (BE mới dùng)
-      giamGiaVanChuyen: shippingDiscount,        // <== giảm phí ship (BE mới dùng)
-
-      // —— VOUCHER —— //
-      idPhieuGiamGia: tab.voucherId || null,     // voucher ORDER (BE đang dùng)
-
-      // —— KHÁC —— //
-      danhSachSanPham: tab.cart,
-      diaChiGiaoHang: tab.selectedAddress,
-      tabId: String(currentTabId)
+    const getRawCash = () => {
+      const rawStr = (cashAmountInput?.value || '').replace(/\./g, '').trim();
+      return rawStr === '' ? NaN : Number(rawStr);
     };
 
+    if (tab.paymentMethod === CASH_ID) {
+      const cash = getRawCash();
+      // Bắt buộc nhập & phải là số dương
+      if (!Number.isFinite(cash) || cash <= 0) {
+        showToast('Vui lòng nhập "Tiền khách đưa" (lớn hơn 0).', 'warning');
+        if (cashAmountInput) {
+          cashAmountInput.classList.add('is-invalid');
+          cashAmountInput.focus();
+          // bỏ lớp lỗi khi người dùng gõ lại
+          const rmErr = () => { cashAmountInput.classList.remove('is-invalid'); cashAmountInput.removeEventListener('input', rmErr); };
+          cashAmountInput.addEventListener('input', rmErr);
+        }
+        return;
+      }
+      // Phải đủ để thanh toán
+      if (cash < totalAmount) {
+        const thieu = (totalAmount - cash).toLocaleString('vi-VN');
+        showToast(`Số tiền khách đưa chưa đủ. Thiếu ${thieu} VNĐ.`, 'warning');
+        cashAmountInput?.focus();
+        return;
+      }
+    } else if (tab.paymentMethod === BANK_ID) {
+      if (totalAmount <= 0) {
+        showToast('Tổng tiền phải lớn hơn 0 để tạo link thanh toán.', 'warning');
+        return;
+      }
+    }
+
+    // ===== Xác nhận =====
     const confirmResult = await Swal.fire({
       icon: 'question',
       title: 'Xác nhận thanh toán',
       html: `
       <p><strong>Tổng tiền:</strong> ${totalAmount.toLocaleString('vi-VN')} VNĐ</p>
       <p><strong>Phương thức thanh toán:</strong> ${
-              tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018'
-                      ? 'Chuyển khoản ngân hàng'
-                      : 'Thanh toán tiền mặt'
+              tab.paymentMethod === BANK_ID ? 'Chuyển khoản ngân hàng' : 'Thanh toán tiền mặt'
       }</p>
       <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
     `,
@@ -3013,11 +3034,35 @@
     if (!confirmResult.isConfirmed) return;
 
     try {
-      if (tab.paymentMethod === '550E8400-E29B-41D4-A716-446655440018') {
-        if (totalAmount <= 0) {
-          showToast('Tổng tiền phải lớn hơn 0.', 'warning');
-          return;
-        }
+      // ===== Chuẩn bị payload =====
+      const soTienKhachDua =
+              tab.paymentMethod === CASH_ID
+                      ? (Number(String(cashAmountInput?.value || '0').replace(/\./g, '')) || 0)
+                      : 0;
+
+      const orderData = {
+        soDienThoaiKhachHang: tab.customerPhone,
+        phuongThucBanHang: tab.saleMethod,
+        phuongThucThanhToan: tab.paymentMethod,
+        soTienKhachDua: soTienKhachDua,
+
+        // —— PHÍ VẬN CHUYỂN —— //
+        phiVanChuyen: shippingPay,          // phí sau giảm (tương thích BE cũ)
+        phiVanChuyenGoc: shippingBase,      // phí gốc
+        giamGiaVanChuyen: shippingDiscount, // giảm phí ship
+
+        // —— VOUCHER —— //
+        idPhieuGiamGia: tab.voucherId || null, // voucher ORDER (giữ tương thích)
+
+        // —— KHÁC —— //
+        danhSachSanPham: tab.cart,
+        diaChiGiaoHang: tab.selectedAddress,
+        tabId: String(currentTabId)
+      };
+
+      // ===== Nhánh thanh toán =====
+      if (tab.paymentMethod === BANK_ID) {
+        // Tạo link thanh toán
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/create-payment-link';
@@ -3032,7 +3077,7 @@
         const priceInput = document.createElement('input');
         priceInput.type = 'hidden';
         priceInput.name = 'price';
-        priceInput.value = totalAmount.toString();
+        priceInput.value = String(totalAmount);
         form.appendChild(priceInput);
 
         const descriptionInput = document.createElement('input');
@@ -3041,76 +3086,78 @@
         descriptionInput.value = `Thanh toán đơn hàng ${currentTabId}`;
         form.appendChild(descriptionInput);
 
-        // Lưu orderData đầy đủ (có 3 trường phí ship) để BE dùng sau khi redirect
+        // Lưu đầy đủ dữ liệu đơn để BE xử lý sau redirect
         sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData, tabId: currentTabId }));
         document.body.appendChild(form);
         form.submit();
-      } else {
-        const response = await fetch(`${BASE_URL}/create-order`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(orderData)
-        });
-
-        if (!response.ok) {
-          let errorMessage = "Lỗi khi tạo đơn hàng.";
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch (e) {
-            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-          }
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-        showToast(`Hóa đơn ${data.maDonHang} đã được tạo và in hóa đơn thành công!`, 'success');
-
-        if (data.pdfData) {
-          try {
-            const byteCharacters = atob(data.pdfData);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `HoaDon_${data.maDonHang}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-          } catch (error) {
-            console.error('Lỗi khi xử lý file PDF:', error);
-            showToast('Lỗi khi in hóa đơn PDF.', 'error');
-          }
-        }
-
-        // Reset tab
-        tabs = tabs.filter(t => t.id !== currentTabId);
-        if (tabs.length === 0) {
-          await addNewTab();
-        } else {
-          currentTabId = tabs[tabs.length - 1].id;
-          const lastTab = tabs.find(t => t.id === currentTabId);
-          if (lastTab) lastTab.paymentMethod = '550E8400-E29B-41D4-A716-446655440017';
-        }
-
-        localStorage.setItem('orderTabs', JSON.stringify(tabs));
-        localStorage.setItem('currentTabId', currentTabId);
-        renderTabs();
-        loadTabContent(currentTabId);
+        return;
       }
+
+      // ===== Thanh toán tiền mặt =====
+      const response = await fetch(`${BASE_URL}/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Lỗi khi tạo đơn hàng.";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (e) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      showToast(`Hóa đơn ${data.maDonHang} đã được tạo và in hóa đơn thành công!`, 'success');
+
+      // Tải & lưu file PDF nếu có
+      if (data.pdfData) {
+        try {
+          const byteCharacters = atob(data.pdfData);
+          const byteNumbers = new Array(byteCharacters.length);
+          for (let i = 0; i < byteCharacters.length; i++) byteNumbers[i] = byteCharacters.charCodeAt(i);
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `HoaDon_${data.maDonHang}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Lỗi khi xử lý file PDF:', error);
+          showToast('Lỗi khi in hóa đơn PDF.', 'error');
+        }
+      }
+
+      // ===== Reset tab sau khi tạo đơn =====
+      tabs = tabs.filter(t => t.id !== currentTabId);
+      if (tabs.length === 0) {
+        await addNewTab();
+      } else {
+        currentTabId = tabs[tabs.length - 1].id;
+        const lastTab = tabs.find(t => t.id === currentTabId);
+        if (lastTab) lastTab.paymentMethod = CASH_ID; // mặc định lại tiền mặt
+      }
+
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      localStorage.setItem('currentTabId', currentTabId);
+      renderTabs();
+      loadTabContent(currentTabId);
+
     } catch (error) {
       console.error('Lỗi khi tạo đơn hàng:', error);
       showToast('Lỗi khi tạo đơn hàng: ' + error.message, 'error');
     }
   }
+
 
 
 
@@ -3664,9 +3711,67 @@
     // 5) MẶC ĐỊNH → ORDER (để không bị rơi mất phiếu)
     return 'ORDER';
   }
+  function getVoucherCode(v) {
+    return String(v?.ma ?? v?.code ?? v?.voucherCode ?? v?.maPhieu ?? '')
+            .trim()
+            .toUpperCase();
+  }
+
+  // Giữ logic cũ cho SHIPPING, chỉ thêm rule đặc biệt cho FREESHIP_FULL
+  function labelShipVoucher(v, shipBase) {
+    const fmt  = n => (Number(n)||0).toLocaleString('vi-VN') + ' ₫';
+    const base = Math.max(0, Number(shipBase || 0));
+    const code = getVoucherCode(v);
+
+    // 💡 Rule đặc biệt
+    if (code === 'FREESHIP_FULL') return 'Miễn phí vận chuyển';
+
+    // ====== phần còn lại giữ nguyên như cũ ======
+    const percent = Number(v.phanTram ?? v.phanTramGiam ?? v.phanTramGiamGia ?? v.tyLe ?? v.percentage ?? 0);
+    const fixed   = Number(v.giaTriGiam ?? v.mucGiam ?? v.soTien ?? v.discountAmount ?? v.fixedDiscount ?? 0);
+    const capRaw  = (v.mucGiamToiDa ?? v.giamToiDa ?? v.maxDiscount ?? v.maxShipDiscount);
+    const cap     = capRaw == null ? Infinity : Number(capRaw) || Infinity;
+
+    let est = 0;
+    if (fixed > 0) est = Math.min(fixed, base);
+    else if (percent > 0) est = Math.min(Math.floor(base * percent / 100), cap);
+
+    // Nếu ước tính che hết phí gốc → cũng coi như freeship
+    if (base > 0 && est >= base) return 'Miễn phí vận chuyển';
+
+    if (fixed > 0) {
+      return `Giảm ${fmt(fixed)} phí vận chuyển`;
+    }
+    if (percent > 0) {
+      const tail = Number.isFinite(cap) ? ` (tối đa ${fmt(cap)})` : '';
+      return base > 0
+              ? `Giảm ~${fmt(est)} phí vận chuyển${tail}`
+              : `Giảm ${percent}% phí vận chuyển${tail}`;
+    }
+    return 'Giảm phí vận chuyển';
+  }
+  // Cho phép radio trong 1 nhóm bấm lần 2 để bỏ chọn
+  function enableRadioToggleOff(groupName, onChange) {
+    const radios = document.querySelectorAll(`#voucherModal input[name="${groupName}"]`);
+    radios.forEach(radio => {
+      // ghi nhớ trạng thái trước click
+      radio.addEventListener('mousedown', function () { this._wasChecked = this.checked; });
+      radio.addEventListener('click', function () {
+        // nếu trước đó đang checked -> click lần 2 để bỏ chọn
+        if (this._wasChecked) {
+          this.checked = false;
+          // phát sự kiện change cho các logic khác (nếu có)
+          this.dispatchEvent(new Event('change', { bubbles: true }));
+          if (typeof onChange === 'function') onChange(null);
+        } else {
+          if (typeof onChange === 'function') onChange(this.value);
+        }
+      });
+    });
+  }
+
 
   // Render danh sách ORDER / SHIPPING vào modal
-  // Render danh sách voucher vào modal (ORDER / SHIPPING) + preselect đúng mã đang dùng
   function renderVoucherModalLists(allVouchers = []) {
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
@@ -3675,56 +3780,260 @@
     const shipList  = document.getElementById('shipVoucherList');
     if (!orderList || !shipList) return;
 
+    // ===== Helpers =====
+    const fmtVND = (n) => (Number(n) || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+    const firstNonEmpty = (obj, keys = []) => {
+      for (const k of keys) {
+        const v = obj?.[k];
+        if (v === 0) return 0;
+        if (v !== undefined && v !== null) {
+          if (typeof v === 'string' && v.trim() === '') continue;
+          return v;
+        }
+      }
+      return null;
+    };
+
+    const toNumberSafe = (val) => {
+      if (val == null) return 0;
+      if (typeof val === 'number' && !isNaN(val)) return val;
+      const s = String(val).trim();
+      const kMatch = s.match(/^(\d+(?:[.,]\d+)?)\s*k$/i); // 20k -> 20000
+      if (kMatch) return Math.round(parseFloat(kMatch[1].replace(',', '.')) * 1000);
+      const m = s.match(/-?\d+(?:[.,]\d+)?/);
+      if (!m) return 0;
+      return Number(m[0].replace(',', '.'));
+    };
+
+    // Fallback lấy tiền từ DOM (#subtotal, #shipping-fee) khi tab chưa có
+    const domMoney = (id) => {
+      const t = document.getElementById(id)?.textContent || '';
+      const n = Number(t.replace(/[^\d]/g, ''));
+      return isNaN(n) ? 0 : n;
+    };
+
+    // Lấy "code" cực kỳ rộng
+    function getVoucherCode(v) {
+      let code = String(
+              v?.ma ?? v?.code ?? v?.voucherCode ?? v?.maPhieu ?? v?.couponCode ?? v?.maVoucher ?? v?.maKhuyenMai ?? ''
+      ).trim();
+      if (!code) {
+        for (const [k, val] of Object.entries(v || {})) {
+          if (typeof val === 'string' && /(^|_)(ma|code)(_|$)/i.test(k)) { code = val.trim(); break; }
+        }
+      }
+      return code.toUpperCase();
+    }
+
+    // Field mapping đa dạng
+    const getMinOrder = (v) => toNumberSafe(firstNonEmpty(v, [
+      'donToiThieu','giaTriGiamToiThieu','minOrder','donHangToiThieu','minTotal','minSubtotal'
+    ]));
+    const getPercent = (v) => toNumberSafe(firstNonEmpty(v, [
+      'phanTram','phanTramGiam','phanTramGiamGia','tyLe','percentage','phanTramVanChuyen'
+    ]));
+    const getMoneyDiscount = (v) => toNumberSafe(firstNonEmpty(v, [
+      'giaTriGiam','mucGiam','soTien','discountAmount','fixedDiscount',
+      'giaTriGiamVanChuyen','giamPhiVanChuyen','shipDiscountValue','shipFixed'
+    ]));
+    const getMaxDiscount = (v) => toNumberSafe(firstNonEmpty(v, [
+      'mucGiamToiDa','giamToiDa','maxDiscount','maxShipDiscount','tranGiamVanChuyen','cap','giaTriGiamToiDa'
+    ]));
+    const getExpiry = (v) => firstNonEmpty(v, [
+      'ngayKetThuc','thoiGianKetThuc','hanSuDung','expiredAt','endAt'
+    ]);
+
+    // Nhận diện theo v.loai (nếu có)
+    const getLoai = (v) => String(v?.loai || v?.type || v?.kind || '').toUpperCase();
+
+    // Quét "cap" lỏng tay cho FREESHIP_CAP
+    function scanShipCapLoose(v) {
+      let best = 0;
+      for (const [k, raw] of Object.entries(v || {})) {
+        const key = k.toLowerCase();
+        if (/min|toithieu|minorder|subtotal|don/.test(key)) continue;
+        if (!/(ship|vận|van.?chuyen|free|vc|delivery)/.test(key)) continue;
+        if (!/(cap|max|toi.?da|amount|value|giam|so.?tien)/.test(key)) continue;
+        const val = toNumberSafe(raw);
+        if (val > best) best = val;
+      }
+      return best;
+    }
+
+    // Bóc số từ CODE: FREESHIP_CAP_20K / FREESHIP_CAP-20000
+    function capFromCode(code) {
+      const m1 = code.match(/CAP[_\- ]?(\d+)\s*K/i); if (m1) return Number(m1[1]) * 1000;
+      const m2 = code.match(/CAP[_\- ]?(\d{4,9})/i); if (m2) return Number(m2[1]);
+      return 0;
+    }
+
+    // === FREESHIP label (đÃ CHỈNH) ===
+    function labelShipVoucher(v, shipBase) {
+      const base = Math.max(0, Number(shipBase || 0));
+      const code = getVoucherCode(v);
+      const loai = getLoai(v);
+
+      // 1) FREESHIP_FULL
+      const fullFlag = firstNonEmpty(v, ['isFreeshipFull','fullFreeship','isFullShip','kieuFreeship']);
+      if (loai === 'FREESHIP_FULL' || code === 'FREESHIP_FULL' || String(fullFlag).toUpperCase?.() === 'FULL' || fullFlag === true) {
+        return 'Miễn phí vận chuyển';
+      }
+
+      // 2) FREESHIP_CAP
+      const isCap = /FREESHIP[_\- ]?CAP/i.test(code) || loai === 'FREESHIP_CAP';
+      if (isCap) {
+        let capV = getMaxDiscount(v) || getMoneyDiscount(v) || capFromCode(code) || scanShipCapLoose(v);
+        if (capV > 0) {
+          if (base > 0 && capV >= base) return 'Miễn phí vận chuyển';
+          const shown = base > 0 ? Math.min(capV, base) : capV;
+          return `Giảm ${fmtVND(shown)}`;
+        }
+        // rơi về logic chung nếu không tìm được cap
+      }
+
+      // 3) Logic chung: tiền cố định / phần trăm
+      const pct = getPercent(v);
+      const fix = getMoneyDiscount(v);
+      const capMax = getMaxDiscount(v);
+
+      if (fix > 0) {
+        if (base > 0 && fix >= base) return 'Miễn phí vận chuyển';
+        const shown = base > 0 ? Math.min(fix, base) : fix;
+        return `Giảm ${fmtVND(shown)}`;
+      }
+
+      if (pct > 0) {
+        if (base > 0) {
+          const est = Math.floor(base * pct / 100);
+          const val = capMax > 0 ? Math.min(est, capMax) : est;
+          if (val >= base) return 'Miễn phí vận chuyển';
+          return `Giảm ${fmtVND(val)}`;
+        }
+        return capMax > 0 ? `Giảm ${pct}% (tối đa ${fmtVND(capMax)})` : `Giảm ${pct}%`;
+      }
+
+      return 'Giảm phí vận chuyển';
+    }
+
+    // === Info line (đÃ CHỈNH) ===
+    function buildInfoLine(v, type = 'ORDER', shipBase = 0, subTotal = 0) {
+      let main = '';
+      if (type === 'SHIPPING') {
+        main = labelShipVoucher(v, shipBase); // "Miễn phí vận chuyển" | "Giảm xx VNĐ"
+      } else {
+        const pct   = getPercent(v);
+        const money = getMoneyDiscount(v);
+        if (pct > 0)       main = `Giảm ${pct}%`;
+        else if (money>0)  main = `Giảm ${fmtVND(money)}`;
+        else               main = 'Giảm';
+      }
+
+      const parts = [main];
+
+      const minOrder = getMinOrder(v);
+      if (minOrder) parts.push(`ĐH tối thiểu: ${fmtVND(minOrder)}`);
+
+      const expiry = getExpiry(v);
+      if (expiry) {
+        const d = new Date(expiry);
+        if (!isNaN(d.getTime())) parts.push(`HSD: ${d.toLocaleDateString('vi-VN')}`);
+      }
+
+      if (type === 'SHIPPING' && minOrder && subTotal < minOrder) {
+        parts.push(`Mua thêm ${fmtVND(minOrder - subTotal)} để miễn phí vận chuyển`);
+      }
+      return parts.join(' • ');
+    }
+
+    // ===== Phân loại =====
     const orders = [];
     const ships  = [];
-
     (Array.isArray(allVouchers) ? allVouchers : []).forEach(v => {
-      const t = getVoucherType(v);
-      if (t === 'ORDER') orders.push(v);
-      else if (t === 'SHIPPING') ships.push(v);
+      const t = getVoucherType(v); // đã có sẵn bên ngoài
+      if (t === 'SHIPPING') ships.push(v);
+      else orders.push(v);
     });
 
-    const makeItem = (v, groupName, checked) => `
+    // Lấy base từ tab; nếu chưa có, fallback DOM
+    let shipBase = Number(tab.shippingFeeBase || 0);
+    if (!shipBase) shipBase = domMoney('shipping-fee');
+    let subTotal = Number(tab.subTotal || 0);
+    if (!subTotal) subTotal = domMoney('subtotal');
+
+    const makeOrderItem = (v, checked) => `
     <label class="d-flex align-items-center justify-content-between p-3 border rounded-3">
       <div class="me-3">
         <div class="fw-semibold">${v.ten || v.title || ('Mã ' + (v.ma || v.code || v.id))}</div>
-        <div class="small text-muted">
-          ${v.moTa || v.description || ''}
-          ${v.giaTriGiamToiDaFormatted ? ' • Tối đa: ' + v.giaTriGiamToiDaFormatted : ''}
-        </div>
+        <div class="small text-muted">${buildInfoLine(v, 'ORDER')}</div>
       </div>
-      <input type="radio" name="${groupName}" value="${v.id}" ${checked ? 'checked' : ''}>
+      <input type="radio" name="orderVoucher" value="${v.id}" ${checked ? 'checked' : ''}>
     </label>`;
 
-    // ❗ Chỉ preselect khi tab.orderVoucherId/tab.shipVoucherId đang có và còn phù hợp
-    const currentOrderId = tab.orderVoucherId || null;
-    const currentShipId  = (isShippingEnabled() ? tab.shipVoucherId : null) || null;
+    const makeShipItem = (v, checked) => `
+    <label class="d-flex align-items-center justify-content-between p-3 border rounded-3">
+      <div class="me-3">
+        <div class="fw-semibold">${v.ten || v.title || ('Mã ' + (v.ma || v.code || v.id))}</div>
+        <div class="small text-muted">${buildInfoLine(v, 'SHIPPING', shipBase, subTotal)}</div>
+      </div>
+      <input type="radio" name="shipVoucher" value="${v.id}" ${checked ? 'checked' : ''}>
+    </label>`;
 
+    // Render ORDER
     orderList.innerHTML = orders.length
-            ? orders.map(v => makeItem(v, 'orderVoucher', String(currentOrderId) === String(v.id))).join('')
+            ? orders.map(v =>
+                    makeOrderItem(v, String(tab.orderVoucherId || tab.voucherId) === String(v.id))
+            ).join('')
             : '<div class="text-muted">Không có mã đơn hàng khả dụng</div>';
 
+    // Render SHIPPING
     shipList.innerHTML = ships.length
-            ? ships.map(v => makeItem(v, 'shipVoucher', String(currentShipId) === String(v.id))).join('')
+            ? ships.map(v =>
+                    makeShipItem(v, String(tab.shipVoucherId) === String(v.id))
+            ).join('')
             : '<div class="text-muted">Không có mã freeship khả dụng</div>';
 
-    // Ẩn/hiện nhóm Freeship theo điều kiện đang “Giao hàng”
-    updateShipSectionVisibility();
+    updateShipSectionVisibility?.(); // nếu có hàm bên ngoài
 
-    // (Tương thích dropdown cũ: chỉ đổ mã ORDER)
+    // Dropdown cũ (ORDER) — giữ tương thích
     const voucherSelect = document.getElementById('voucherSelect');
     if (voucherSelect) {
       voucherSelect.innerHTML = '<option value="">🎫 Không sử dụng</option>';
       orders.forEach(v => {
         const opt = document.createElement('option');
         opt.value = v.id;
-        opt.text  = v.ten || v.title || v.id;
+        opt.text  = `${v.ten || v.title || v.id} — ${buildInfoLine(v, 'ORDER')}`;
         voucherSelect.appendChild(opt);
       });
-      // ❗ Không fallback về tab.voucherId để tránh “tự chọn”
-      voucherSelect.value = currentOrderId || '';
+      voucherSelect.value = tab.orderVoucherId || tab.voucherId || '';
     }
+
+    // ===== Radio bấm lần 2 để bỏ chọn =====
+    const attachToggleOff = (groupName, updater) => {
+      const radios = document.querySelectorAll(`#voucherModal input[name="${groupName}"]`);
+      radios.forEach(radio => {
+        radio.addEventListener('mousedown', function () { this._wasChecked = this.checked; });
+        radio.addEventListener('click', function () {
+          if (this._wasChecked) {
+            this.checked = false;
+            this.dispatchEvent(new Event('change', { bubbles: true }));
+            if (typeof updater === 'function') updater(null);
+          } else {
+            if (typeof updater === 'function') updater(this.value);
+          }
+        });
+      });
+    };
+    attachToggleOff('orderVoucher', (val) => {
+      const t = tabs.find(tt => tt.id === currentTabId); if (!t) return;
+      t.orderVoucherId = val; localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    });
+    attachToggleOff('shipVoucher', (val) => {
+      const t = tabs.find(tt => tt.id === currentTabId); if (!t) return;
+      t.shipVoucherId = val;  localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    });
   }
+
 
 
 
