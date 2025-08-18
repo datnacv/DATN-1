@@ -4,10 +4,7 @@ import com.example.AsmGD1.dto.ChatBot.ChiTietSanPhamDTO;
 import com.example.AsmGD1.dto.ChatBot.HoaDonSanPhamDTO;
 import com.example.AsmGD1.dto.ChatBot.SanPhamWithChiTietDTO;
 import com.example.AsmGD1.dto.SanPham.SanPhamDto;
-import com.example.AsmGD1.entity.ChiTietDonHang;
-import com.example.AsmGD1.entity.ChiTietSanPham;
-import com.example.AsmGD1.entity.HoaDon;
-import com.example.AsmGD1.entity.SanPham;
+import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
@@ -26,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -247,6 +245,15 @@ public class SanPhamService {
                 ctDto.setXuatXu(ct.getXuatXu().getTenXuatXu());
                 ctDto.setGia(ct.getGia());
                 ctDto.setSoLuongTonKho(ct.getSoLuongTonKho());
+                List<String> urls = (ct.getHinhAnhSanPhams() == null) ? List.of()
+                        : ct.getHinhAnhSanPhams().stream()
+                        .sorted(Comparator.comparing(
+                                ha -> ha.getThuTu() == null ? Integer.MAX_VALUE : ha.getThuTu()
+                        ))
+                        .map(HinhAnhSanPham::getUrlHinhAnh)
+                        .toList();
+
+                ctDto.setHinhAnhUrls(urls);
                 return ctDto;
             }).collect(Collectors.toList()));
 
