@@ -63,13 +63,14 @@
         #voucherModal .voucher-card{ padding:12px; }
         #voucherModal .voucher-card .fw-semibold{ font-size:14px; }
         #voucherModal .voucher-card .small{ font-size:12px; }
-        #voucherModal .voucher-search{
+        #voucherModal .voucher-search {
             position: sticky;
             top: 0;
             z-index: 3;
             background: #fff;
             padding-bottom: 12px;
             border-bottom: 1px solid #eee;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -944,35 +945,84 @@
 
     window.saveNewAddress = async function () {
         const fullName = document.getElementById('new-fullName').value.trim();
-        const phone = document.getElementById('new-phone').value.trim();
-        const address = document.getElementById('new-address').value.trim();
+        const phone    = document.getElementById('new-phone').value.trim();
+        const address  = document.getElementById('new-address').value.trim();
         const pSel = document.getElementById('new-province');
         const dSel = document.getElementById('new-district');
         const wSel = document.getElementById('new-ward');
 
+        const provinceId = pSel.value;
+        const districtId = dSel.value;
+        const wardCode   = wSel.value;
+
         const province = pSel.options[pSel.selectedIndex]?.text || '';
         const district = dSel.options[dSel.selectedIndex]?.text || '';
-        const ward = wSel.options[wSel.selectedIndex]?.text || '';
+        const ward     = wSel.options[wSel.selectedIndex]?.text || '';
 
-        if (!fullName || !phone || !address || !province || !district || !ward) {
-            Swal.fire({ icon:'warning', title:'Lỗi', text:'Vui lòng điền đầy đủ thông tin địa chỉ!' });
+        if (!fullName || !phone || !address || !provinceId || !districtId || !wardCode) {
+            Swal.fire({icon:'warning',title:'Lỗi',text:'Vui lòng điền đầy đủ thông tin!'});
             return;
         }
 
-        document.getElementById('fullName').value = fullName;
-        document.getElementById('phone').value = phone;
-        document.getElementById('address').value = `${address}, ${ward}, ${district}, ${province}`;
-        document.getElementById('addressId').value = '';
+        try {
+            // 1) Lưu địa chỉ vào server (đổi URL/field cho khớp backend của bạn)
+            const res = await fetch('/api/checkout/addresses', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({
+                    nguoiNhan: fullName,
+                    soDienThoaiNguoiNhan: phone,
+                    chiTietDiaChi: address,
+                    phuongXa: ward,
+                    quanHuyen: district,
+                    tinhThanhPho: province,
+                    wardCode: wardCode,             // nếu backend cần mã
+                    districtId: Number(districtId), // nếu backend cần id
+                    provinceId: Number(provinceId), // nếu backend cần id
+                    macDinh: false
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Không thể lưu địa chỉ.');
+            }
 
-        document.getElementById('province').value = pSel.value;
-        document.getElementById('district').value = dSel.value;
-        document.getElementById('ward').value = wSel.value;
+            // id địa chỉ mới (tùy backend trả gì)
+            const newId = data.data?.id || data.data;
 
-        await loadShippingServices(document.getElementById('district').value);
-        await calculateShipping();
+            // 2) Đổ thông tin vào form chính để dùng cho đơn hiện tại
+            document.getElementById('fullName').value = fullName;
+            document.getElementById('phone').value    = phone;
+            document.getElementById('address').value  = `${address}, ${ward}, ${district}, ${province}`;
+            document.getElementById('addressId').value = newId || ''; // có id thì gán để submit đơn hàng dùng id
 
-        bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
-        hideAddAddressForm();
+            // đồng bộ các select ẩn để tính ship
+            document.getElementById('province').value = provinceId;
+            document.getElementById('district').value = districtId;
+            document.getElementById('ward').value     = wardCode;
+
+            // 3) Refresh danh sách + auto highlight địa chỉ mới
+            await loadSavedAddresses();
+            if (newId) {
+                const newCard = document.querySelector(`.address-card[data-id="${CSS.escape(newId)}"]`);
+                if (newCard) {
+                    newCard.classList.add('active');
+                }
+            }
+
+            // 4) Tính lại ship
+            await loadShippingServices(districtId);
+            await calculateShipping();
+
+            // 5) Đóng modal + thông báo
+            bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
+            document.getElementById('add-address-form').classList.add('d-none');
+            Swal.fire({icon:'success',title:'Đã thêm địa chỉ',timer:1200,showConfirmButton:false});
+        } catch (err) {
+            console.error(err);
+            Swal.fire({icon:'error',title:'Lỗi',text: err.message || 'Không thể thêm địa chỉ.'});
+        }
     };
 
     // ================== WALLET ==================
