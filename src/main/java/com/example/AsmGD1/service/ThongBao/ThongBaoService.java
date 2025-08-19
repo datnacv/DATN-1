@@ -19,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,21 +39,48 @@ public class ThongBaoService {
     private NguoiDungRepository nguoiDungRepository;
     @Autowired
     private DonHangRepository donHangRepository;
+    private List<String> parseRoles(String input) {
+        if (input == null) return List.of();
+        return Arrays.stream(input.split("[,;]"))
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .filter(s -> !s.isEmpty())
+                .collect(java.util.stream.Collectors.toList());
+    }
+
+    private String pickHeaderRole(List<String> roles) {
+        if (roles.contains("admin")) return "admin";
+        if (roles.contains("employee")) return "employee";
+        return "admin"; // fallback an toàn
+    }
+
+    private java.util.Map<UUID, NguoiDung> loadRecipients(List<String> roles) {
+        java.util.Map<UUID, NguoiDung> map = new java.util.LinkedHashMap<>();
+        for (String r : roles) {
+            for (NguoiDung u : nguoiDungRepository.findByVaiTroAndTrangThai(r, true)) {
+                map.put(u.getId(), u);
+            }
+        }
+        return map;
+    }
 
     public void taoThongBaoHeThong(String vaiTroNhan, String tieuDe, String noiDung) {
+        List<String> roles = parseRoles(vaiTroNhan);
+        if (roles.isEmpty()) roles = List.of("admin");
+        String headerRole = pickHeaderRole(roles);
+
         ThongBaoNhom thongBao = new ThongBaoNhom();
         thongBao.setId(UUID.randomUUID());
-        thongBao.setVaiTroNhan(vaiTroNhan);
+        thongBao.setDonHang(null);
+        thongBao.setVaiTroNhan(headerRole); // ✅ chỉ 1 giá trị hợp lệ với CHECK
         thongBao.setTieuDe(tieuDe);
         thongBao.setNoiDung(noiDung);
         thongBao.setThoiGianTao(LocalDateTime.now());
         thongBao.setTrangThai("Mới");
-        thongBao.setDonHang(null);
-
         thongBaoNhomRepository.save(thongBao);
 
-        List<NguoiDung> nguoiNhans = nguoiDungRepository.findByVaiTroAndTrangThai(vaiTroNhan, true);
-        for (NguoiDung nd : nguoiNhans) {
+        var recipients = loadRecipients(roles); // admin + employee
+        for (NguoiDung nd : recipients.values()) {
             ChiTietThongBaoNhom ct = new ChiTietThongBaoNhom();
             ct.setId(UUID.randomUUID());
             ct.setThongBaoNhom(thongBao);
@@ -60,19 +88,23 @@ public class ThongBaoService {
             ct.setDaXem(false);
             chiTietThongBaoNhomRepository.save(ct);
 
-            // 🔔 Đẩy số chưa đọc mới cho từng người nhận
             long unread = chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(nd.getId());
             com.example.AsmGD1.controller.ThongBao.ThongBaoController.pushUnread(nd.getId(), unread);
         }
     }
 
+
     public void taoThongBaoHeThong(String vaiTroNhan, String tieuDe, String noiDung, DonHang donHang) {
         log.info("📌 [THÔNG BÁO] BẮT ĐẦU tạo thông báo hệ thống");
+
+        List<String> roles = parseRoles(vaiTroNhan);
+        if (roles.isEmpty()) roles = List.of("admin");
+        String headerRole = pickHeaderRole(roles);
 
         ThongBaoNhom thongBao = new ThongBaoNhom();
         thongBao.setId(UUID.randomUUID());
         thongBao.setDonHang(donHang);
-        thongBao.setVaiTroNhan(vaiTroNhan);
+        thongBao.setVaiTroNhan(headerRole); // ✅ chỉ 1 giá trị hợp lệ với CHECK
         thongBao.setTieuDe(tieuDe);
         thongBao.setNoiDung(noiDung);
         thongBao.setThoiGianTao(LocalDateTime.now());
@@ -81,36 +113,35 @@ public class ThongBaoService {
         try {
             thongBaoNhomRepository.save(thongBao);
             thongBaoNhomRepository.flush();
-            log.info("✅ [THÔNG BÁO] Lưu thong_bao_nhom thành công");
+            log.info("✅ [THÔNG BÁO] Lưu thong_bao_nhom thành công (vai_tro_nhan={})", headerRole);
         } catch (Exception e) {
             log.error("❌ [THÔNG BÁO] Lỗi khi lưu thong_bao_nhom: {}", e.getMessage(), e);
             return;
         }
 
-        List<NguoiDung> nguoiNhans = nguoiDungRepository.findByVaiTroAndTrangThai(vaiTroNhan.trim().toLowerCase(), true);
-        log.info(">>> [THÔNG BÁO] Gửi đến {} người có vai trò: {}", nguoiNhans.size(), vaiTroNhan);
+        var recipients = loadRecipients(roles); // admin + employee
+        log.info(">>> [THÔNG BÁO] Gửi đến {} người thuộc roles: {}", recipients.size(), roles);
 
-        for (NguoiDung nguoiNhan : nguoiNhans) {
+        for (NguoiDung nd : recipients.values()) {
             try {
                 ChiTietThongBaoNhom chiTiet = new ChiTietThongBaoNhom();
                 chiTiet.setId(UUID.randomUUID());
-                chiTiet.setNguoiDung(nguoiNhan);
+                chiTiet.setNguoiDung(nd);
                 chiTiet.setThongBaoNhom(thongBao);
                 chiTiet.setDaXem(false);
                 chiTietThongBaoNhomRepository.save(chiTiet);
 
-                // 🔔 Đẩy số chưa đọc mới cho người nhận
-                long unread = chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(nguoiNhan.getId());
-                com.example.AsmGD1.controller.ThongBao.ThongBaoController.pushUnread(nguoiNhan.getId(), unread);
-
-                log.info("✅ Gửi thông báo cho: {}", nguoiNhan.getEmail());
+                long unread = chiTietThongBaoNhomRepository.countByNguoiDungIdAndDaXemFalse(nd.getId());
+                com.example.AsmGD1.controller.ThongBao.ThongBaoController.pushUnread(nd.getId(), unread);
+                log.info("✅ Gửi thông báo cho: {}", nd.getEmail());
             } catch (Exception ex) {
-                log.error("❌ Lỗi khi gửi thông báo cho {}: {}", nguoiNhan.getEmail(), ex.getMessage(), ex);
+                log.error("❌ Lỗi khi gửi thông báo cho {}: {}", nd.getEmail(), ex.getMessage(), ex);
             }
         }
 
-        log.info("📨 Đã gọi xong tạo thông báo hệ thống cho đơn hàng: {}", donHang.getMaDonHang());
+        log.info("📨 Đã xong tạo thông báo hệ thống cho đơn hàng: {}", donHang.getMaDonHang());
     }
+
 
     public List<ChiTietThongBaoNhom> layThongBaoTheoNguoiDungVaTrangThai(UUID idNguoiDung, int page, int size, String status) {
         try {
