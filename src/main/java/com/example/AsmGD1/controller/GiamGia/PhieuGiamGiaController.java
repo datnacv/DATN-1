@@ -324,20 +324,25 @@ public class PhieuGiamGiaController {
         }
 
         LocalDateTime now = LocalDateTime.now();
+
         if (voucher.getNgayBatDau() == null) {
             errors.add("Ngày bắt đầu không được để trống.");
         } else if (voucher.getNgayBatDau().isBefore(now)) {
             errors.add("Ngày bắt đầu không được nằm trong quá khứ.");
         }
+
         if (voucher.getNgayKetThuc() == null) {
             errors.add("Ngày kết thúc không được để trống.");
         } else if (voucher.getNgayKetThuc().isBefore(now)) {
             errors.add("Ngày kết thúc không được nằm trong quá khứ.");
         }
-        if (voucher.getNgayBatDau() != null && voucher.getNgayKetThuc() != null &&
-                voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
+
+        if (voucher.getNgayBatDau() != null
+                && voucher.getNgayKetThuc() != null
+                && voucher.getNgayBatDau().isAfter(voucher.getNgayKetThuc())) {
             errors.add("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
         }
+
 
         // Phiếu cá nhân/công khai
         if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu())) {
@@ -787,9 +792,21 @@ public class PhieuGiamGiaController {
         }
     }
 
+    // ===== XÓA: chỉ cho phép khi "Sắp diễn ra" =====
+
     @PostMapping("/delete/{id}")
     @Transactional
-    public String delete(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    public String deleteByPath(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+        return doDelete(id, redirectAttributes);
+    }
+
+    @PostMapping({"/delete", "/delete/"})
+    @Transactional
+    public String deleteByParam(@RequestParam("id") UUID id, RedirectAttributes redirectAttributes) {
+        return doDelete(id, redirectAttributes);
+    }
+
+    private String doDelete(UUID id, RedirectAttributes redirectAttributes) {
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
             return "redirect:/acvstore/phieu-giam-gia";
@@ -797,9 +814,12 @@ public class PhieuGiamGiaController {
 
         PhieuGiamGia voucher = phieuGiamGiaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Phiếu giảm giá không tồn tại"));
+
         String status = getTrangThai(voucher);
-        if ("Đang diễn ra".equals(status) || "Không xác định".equals(status)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Chỉ có thể xóa phiếu giảm giá sắp diễn ra hoặc đã kết thúc.");
+        // CHỈ cho xoá khi Sắp diễn ra
+        if (!"Sắp diễn ra".equals(status)) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "Chỉ có thể xóa phiếu giảm giá ở trạng thái 'Sắp diễn ra'.");
             return "redirect:/acvstore/phieu-giam-gia";
         }
 

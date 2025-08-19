@@ -428,17 +428,26 @@
                 <div class="row mb-3">
                     <div class="col-md-4 col-lg-4">
                         <div class="floating-label">
-                            <label><i class="fas fa-credit-card me-2"></i>Phương thức thanh toán áp dụng:</label>
-                            <div class="payment-tags">
-                                <span th:each="pt : ${phuongThucList}"
-                                      class="payment-tag"
-                                      th:text="${pt.tenPhuongThuc}"></span>
+                            <!-- FIX: đưa label về position: static để không đè nội dung -->
+                            <label class="form-label position-static d-block mb-1">
+                                <i class="fas fa-credit-card me-2"></i>Phương thức thanh toán áp dụng:
+                            </label>
+
+                            <!-- FIX: cho tag hiển thị theo hàng, tự xuống dòng, có khoảng cách -->
+                            <div class="payment-tags d-flex flex-wrap gap-2 align-items-center mt-1">
+        <span th:each="pt : ${phuongThucList}"
+              class="payment-tag badge rounded-pill bg-light text-dark border"
+              th:text="${pt.tenPhuongThuc}">COD</span>
+
                                 <span th:if="${phuongThucList.isEmpty()}"
-                                      class="payment-tag empty">Không có phương thức thanh toán nào được chọn</span>
+                                      class="payment-tag badge rounded-pill bg-light text-muted border">
+          Không có phương thức thanh toán nào được chọn
+        </span>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <div class="row mb-3">
                     <div class="col-md-12">
