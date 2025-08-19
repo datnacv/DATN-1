@@ -91,7 +91,24 @@
 
 <!-- Navbar -->
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
-
+<div class="container mx-auto py-8">
+    <div class="swiper banner-slider">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner1.png" alt="Banner thời trang nam" class="w-full h-full object-cover"/>
+            </div>
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner2.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+            </div>
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner3.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+            </div>
+        </div>
+        <div class="swiper-button-next text-blue-800"></div>
+        <div class="swiper-button-prev text-blue-800"></div>
+        <div class="swiper-pagination"></div>
+    </div>
+</div>
 <!-- Modal thêm giỏ -->
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -136,11 +153,29 @@
 </div>
 
 <!-- CONTENT -->
+<!-- CONTENT -->
 <div class="container mx-auto py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">Sản phẩm mới</h1>
-    <p class="text-gray-600 mb-6">Những item vừa cập bến — bắt trend liền tay 😎</p>
+    <!-- Tiêu đề + dropdown sắp xếp -->
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Sản phẩm mới</h1>
+            <p class="text-gray-600">Những item vừa cập bến — bắt trend liền tay 😎</p>
+        </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div class="w-full lg:w-auto">
+            <label for="sortSelectNew" class="sr-only">Sắp xếp</label>
+            <select id="sortSelectNew" class="w-full lg:w-64 border rounded-lg px-3 py-2 bg-white">
+                <option value="">Sắp xếp</option>
+                <option value="price_asc">Giá: Tăng dần</option>
+                <option value="price_desc">Giá: Giảm dần</option>
+                <option value="name_asc">Tên: A–Z</option>
+                <option value="name_desc">Tên: Z–A</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Grid sản phẩm (thêm id để sort) -->
+    <div id="productGridNew" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <div class="product-card" th:each="product : ${products}">
             <!-- MEDIA -->
             <div class="product-media">
@@ -156,17 +191,17 @@
                           th:text="'-' + ${product.discount}">-10%</span>
                 </div>
 
-                <!-- Actions: tách 2 icon, xếp dọc + khoảng cách -->
+                <!-- Actions -->
                 <div class="action-group">
                     <button class="action-btn cart-icon"
                             th:attr="
-                data-product-id=${product.id},
-                data-product-name=${product.tenSanPham},
-                data-product-price=${product.price},
-                data-product-img=${product.urlHinhAnh},
-                data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
-                data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
-                data-stock=${product.tongSoLuong}">
+                    data-product-id=${product.id},
+                    data-product-name=${product.tenSanPham},
+                    data-product-price=${product.price},
+                    data-product-img=${product.urlHinhAnh},
+                    data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
+                    data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
+                    data-stock=${product.tongSoLuong}">
                         <i class="fas fa-shopping-cart text-blue-800"></i>
                     </button>
 
@@ -202,6 +237,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Floating Chatbot Icon -->
 <div id="chatbot-toggle" style="position:fixed;bottom:20px;right:20px;background:#9FD5F7;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);">
@@ -289,6 +325,48 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script src="/js/navbar.js"></script>
+<!-- Sort (Giá/Tên) cho trang Sản phẩm mới -->
+<script>
+    (() => {
+        const grid   = document.getElementById('productGridNew');
+        const select = document.getElementById('sortSelectNew');
+        if (!grid || !select) return;
+
+        // Lưu thứ tự ban đầu để khôi phục
+        const initialOrder = Array.from(grid.children);
+
+        const readPrice = (card) => {
+            const el  = card.querySelector('.price');
+            const raw = el?.getAttribute('data-price');
+            const n   = raw ? Number(raw) : Number((el?.textContent || '').replace(/[^\d.-]/g,''));
+            return isNaN(n) ? 0 : n;
+        };
+        const readName = (card) => (card.querySelector('.product-title')?.textContent || '').trim();
+        const viCmp    = (a,b) => a.localeCompare(b, 'vi', { sensitivity: 'base' });
+
+        function applySort(value){
+            if (!value) {
+                const frag = document.createDocumentFragment();
+                initialOrder.forEach(el => frag.appendChild(el));
+                grid.appendChild(frag);
+                return;
+            }
+            const items = Array.from(grid.querySelectorAll('.product-card'));
+            items.sort((a,b) => {
+                if (value === 'price_asc')  return readPrice(a) - readPrice(b);
+                if (value === 'price_desc') return readPrice(b) - readPrice(a);
+                if (value === 'name_asc')   return viCmp(readName(a), readName(b));
+                if (value === 'name_desc')  return viCmp(readName(b), readName(a));
+                return 0;
+            });
+            const frag = document.createDocumentFragment();
+            items.forEach(el => frag.appendChild(el));
+            grid.appendChild(frag);
+        }
+
+        select.addEventListener('change', e => applySort(e.target.value));
+    })();
+</script>
 
 <script>
     /* ------------ Quick reply combobox ------------ */

@@ -321,7 +321,7 @@ public class DonHangService {
         // Thống kê + thông báo (nếu đã thanh toán)
         if (donHang.getTrangThaiThanhToan()) {
             thongBaoService.taoThongBaoHeThong(
-                    "admin",
+                    "admin,employee", // hoặc "admin ; employee"
                     "Thanh toán tại quầy",
                     "Khách hàng " + khachHang.getHoTen()
                             + " đã thanh toán tại quầy. "
@@ -329,7 +329,9 @@ public class DonHangService {
                             + ". Tổng tiền: " + dinhDangTien(donHang.getTongTien())
             );
 
-            for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
+
+
+        for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
                 ChiTietSanPham chiTiet = chiTietDonHang.getChiTietSanPham();
                 ThongKe thongKe = new ThongKe();
                 thongKe.setId(UUID.randomUUID());

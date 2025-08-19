@@ -101,7 +101,24 @@
 
 <!-- Navbar (fragment) -->
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
-
+<div class="container mx-auto py-8">
+    <div class="swiper banner-slider">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner1.png" alt="Banner thời trang nam" class="w-full h-full object-cover"/>
+            </div>
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner2.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+            </div>
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner3.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+            </div>
+        </div>
+        <div class="swiper-button-next text-blue-800"></div>
+        <div class="swiper-button-prev text-blue-800"></div>
+        <div class="swiper-pagination"></div>
+    </div>
+</div>
 <!-- Modal thêm giỏ -->
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -151,10 +168,27 @@
 
 <!-- CONTENT -->
 <div class="container mx-auto py-8">
-    <h1 class="text-3xl font-bold text-gray-800 mb-2">Tất cả sản phẩm</h1>
-    <p class="text-gray-600 mb-6">Browse hết kho — chọn món bạn mê 😉</p>
+    <!-- Tiêu đề + Sort dropdown (mới) -->
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Tất cả sản phẩm</h1>
+            <p class="text-gray-600">Browse hết kho — chọn món bạn mê 😉</p>
+        </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <div class="w-full lg:w-auto">
+            <label for="sortSelect" class="sr-only">Sắp xếp</label>
+            <select id="sortSelect" class="w-full lg:w-64 border rounded-lg px-3 py-2 bg-white">
+                <option value="">Sắp xếp</option>
+                <option value="price_asc">Giá: Tăng dần</option>
+                <option value="price_desc">Giá: Giảm dần</option>
+                <option value="name_asc">Tên: A–Z</option>
+                <option value="name_desc">Tên: Z–A</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Grid sản phẩm (đã thêm id) -->
+    <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${products}">
             <div class="relative">
                 <a th:href="@{/chitietsanpham(id=${product.id})}">
@@ -164,13 +198,13 @@
                 <!-- data-* JSON an toàn -->
                 <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
                         th:attr="
-          data-product-id=${product.id},
-          data-product-name=${product.tenSanPham},
-          data-product-price=${product.price},
-          data-product-img=${product.urlHinhAnh},
-          data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
-          data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
-          data-stock=${product.tongSoLuong}">
+                  data-product-id=${product.id},
+                  data-product-name=${product.tenSanPham},
+                  data-product-price=${product.price},
+                  data-product-img=${product.urlHinhAnh},
+                  data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
+                  data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
+                  data-stock=${product.tongSoLuong}">
                     <i class="fas fa-shopping-cart text-blue-800"></i>
                 </button>
 
@@ -286,6 +320,47 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
 <script src="/js/navbar.js"></script>
+<script>
+    (() => {
+        const grid   = document.getElementById('productGrid');
+        const select = document.getElementById('sortSelect');
+        if (!grid || !select) return;
+
+        // Lưu thứ tự ban đầu để quay lại khi chọn "Sắp xếp"
+        const initialOrder = Array.from(grid.children);
+
+        const readPrice = (card) => {
+            const el  = card.querySelector('.price');
+            const raw = el?.getAttribute('data-price');
+            const n   = raw ? Number(raw) : Number((el?.textContent || '').replace(/[^\d.-]/g,''));
+            return isNaN(n) ? 0 : n;
+        };
+        const readName = (card) => (card.querySelector('h4')?.textContent || '').trim();
+        const viCmp    = (a,b) => a.localeCompare(b, 'vi', { sensitivity:'base' });
+
+        function applySort(value){
+            if (!value) {
+                const frag = document.createDocumentFragment();
+                initialOrder.forEach(el => frag.appendChild(el));
+                grid.appendChild(frag);
+                return;
+            }
+            const items = Array.from(grid.querySelectorAll('.product-card'));
+            items.sort((a,b) => {
+                if (value === 'price_asc')  return readPrice(a) - readPrice(b);
+                if (value === 'price_desc') return readPrice(b) - readPrice(a);
+                if (value === 'name_asc')   return viCmp(readName(a), readName(b));
+                if (value === 'name_desc')  return viCmp(readName(b), readName(a));
+                return 0;
+            });
+            const frag = document.createDocumentFragment();
+            items.forEach(el => frag.appendChild(el));
+            grid.appendChild(frag);
+        }
+
+        select.addEventListener('change', e => applySort(e.target.value));
+    })();
+</script>
 
 <script>
     // Quick reply combobox
