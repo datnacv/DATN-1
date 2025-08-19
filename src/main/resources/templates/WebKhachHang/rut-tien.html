@@ -7,54 +7,90 @@
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { background-color: #f3f4f6; }
+    .card-custom {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+    .card-custom:hover {
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+    .btn-primary-custom {
+      background: linear-gradient(to right, #153054, #1e4066);
+      color: white;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .btn-primary-custom:hover {
+      background: linear-gradient(to right, #1e4066, #153054);
+      transform: scale(1.05);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+    }
+    .btn-outline-custom {
+      border-color: #153054;
+      color: #153054;
+      transition: all 0.3s;
+    }
+    .btn-outline-custom:hover {
+      background-color: #153054;
+      color: white;
+    }
+    label { font-weight: 600; color: #153054; }
+  </style>
 </head>
-<body class="bg-gray-100">
-<div class="container mt-5">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="bg-white shadow rounded p-5">
-        <h2 class="text-2xl font-bold text-center mb-4 text-blue-900">Yêu cầu rút tiền</h2>
+<body>
+<div class="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-2xl mx-auto card-custom">
+    <h2 class="text-3xl font-extrabold text-[#153054] mb-6 flex items-center justify-center">
+      <i class="fas fa-money-bill-wave mr-2 text-[#9FD5F7]"></i> Yêu cầu rút tiền
+    </h2>
 
-        <div class="mb-4">
-          <p><strong>Số dư hiện tại:</strong> <span th:text="${#numbers.formatDecimal(vi.soDu, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
-          <p><strong>Đang chờ xử lý:</strong> <span th:text="${#numbers.formatDecimal(tongDangCho, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
-          <p><strong>Số dư khả dụng:</strong> <span th:text="${#numbers.formatDecimal(soDuKhaDung, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
-        </div>
-
-        <form th:action="@{/rut-tien}" method="post">
-          <div class="mb-3">
-            <label for="soTien" class="form-label">Số tiền cần rút:</label>
-            <input type="number" class="form-control" step="1000" min="1000" id="soTien" name="soTien" required>
-          </div>
-
-          <div class="mb-3">
-            <label for="soTaiKhoan" class="form-label">Số tài khoản:</label>
-            <input type="text" class="form-control" id="soTaiKhoan" name="soTaiKhoan" required>
-          </div>
-
-          <div class="mb-3">
-            <label for="nguoiThuHuong" class="form-label">Người thụ hưởng:</label>
-            <input type="text" class="form-control" id="nguoiThuHuong" name="nguoiThuHuong" required>
-          </div>
-
-          <div class="mb-4">
-            <label for="tenNganHang" class="form-label">Tên ngân hàng:</label>
-            <select class="form-select" id="tenNganHang" name="tenNganHang" required>
-              <option value="">-- Chọn ngân hàng --</option>
-            </select>
-          </div>
-
-          <div class="d-flex justify-content-between align-items-center">
-            <a href="/vi" class="btn btn-outline-secondary">
-              ⬅ Quay lại ví
-            </a>
-            <button type="submit" class="btn text-white" style="background-color: #153054;">
-              Gửi yêu cầu
-            </button>
-          </div>
-        </form>
-      </div>
+    <!-- Thông tin số dư -->
+    <div class="bg-[#f0f8ff] p-4 rounded-lg mb-6 border border-[#9FD5F7]/30">
+      <p><strong>Số dư hiện tại:</strong> <span th:text="${#numbers.formatDecimal(vi.soDu, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
+      <p><strong>Đang chờ xử lý:</strong> <span th:text="${#numbers.formatDecimal(tongDangCho, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
+      <p><strong>Số dư khả dụng:</strong> <span th:text="${#numbers.formatDecimal(soDuKhaDung, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
     </div>
+
+    <!-- Form yêu cầu rút -->
+    <form th:action="@{/rut-tien}" method="post" class="space-y-4">
+      <div>
+        <label for="soTien" class="form-label">Số tiền cần rút:</label>
+        <input type="number" class="form-control rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" step="1000" min="1000" id="soTien" name="soTien" required>
+      </div>
+
+      <div>
+        <label for="soTaiKhoan" class="form-label">Số tài khoản:</label>
+        <input type="text" class="form-control rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" id="soTaiKhoan" name="soTaiKhoan" required>
+      </div>
+
+      <div>
+        <label for="nguoiThuHuong" class="form-label">Người thụ hưởng:</label>
+        <input type="text" class="form-control rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" id="nguoiThuHuong" name="nguoiThuHuong" required>
+      </div>
+
+      <div>
+        <label for="tenNganHang" class="form-label">Tên ngân hàng:</label>
+        <select class="form-select rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" id="tenNganHang" name="tenNganHang" required>
+          <option value="">-- Chọn ngân hàng --</option>
+        </select>
+      </div>
+
+      <div class="flex justify-between items-center pt-4">
+        <a href="/vi" class="btn btn-outline-custom">
+          ⬅ Quay lại ví
+        </a>
+        <button type="submit" class="btn btn-primary-custom">
+          <i class="fas fa-paper-plane mr-2"></i> Gửi yêu cầu
+        </button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -86,6 +122,8 @@
   }
   /*]]>*/
 </script>
+
+<!-- Nạp danh sách ngân hàng -->
 <script>
   document.addEventListener("DOMContentLoaded", async () => {
     const selectBox = document.getElementById("tenNganHang");
@@ -96,7 +134,7 @@
       if (data && data.data) {
         data.data.forEach(bank => {
           const option = document.createElement("option");
-          option.value = bank.shortName; // hoặc bank.name tùy bạn lưu
+          option.value = bank.shortName;
           option.textContent = bank.name;
           selectBox.appendChild(option);
         });
@@ -110,5 +148,8 @@
     }
   });
 </script>
+
+<!-- Font Awesome -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
 </body>
 </html>
