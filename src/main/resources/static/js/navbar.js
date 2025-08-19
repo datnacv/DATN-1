@@ -1,110 +1,130 @@
-// ===== Helpers =====
 function toVND(value) {
     const n = Number(String(value).replace(/[^\d.-]/g, ''));
     return Number.isFinite(n) && n > 0 ? n.toLocaleString('vi-VN') + ' VNĐ' : 'Liên hệ';
 }
 
-// ===== DOM refs =====
+// DOM refs
 const form = document.querySelector('form[action="/search"]');
+const modalForm = document.getElementById('modalSearchForm');
 const searchInput = document.getElementById('searchInput');
+const modalSearchInput = document.getElementById('modalSearchInput');
 const searchSuggestions = document.getElementById('searchSuggestions');
+const modalSearchSuggestions = document.getElementById('modalSearchSuggestions');
 
-// === tránh bind trùng nếu script bị include 2 lần ===
+// Hàm xử lý tìm kiếm chung
+function attachSearchHandler(inputEl, suggestionsEl, formEl) {
+    if (!inputEl || !suggestionsEl) return;
+
+    let debounceTimer;
+    inputEl.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(async () => {
+            const keyword = inputEl.value.trim();
+            suggestionsEl.innerHTML = '';
+
+            if (keyword.length < 2) {
+                showSearchHistory(keyword, suggestionsEl, inputEl);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
+                const products = await response.json();
+
+                suggestionsEl.innerHTML = '';
+                if (!Array.isArray(products) || products.length === 0) {
+                    suggestionsEl.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
+                } else {
+                    products.forEach((product) => {
+                        const priceText = toVND(product.price);
+                        const suggestion = document.createElement('div');
+                        suggestion.className = 'suggestion-item';
+                        suggestion.innerHTML = `
+                            <img src="${product.urlHinhAnh || '/images/placeholder.png'}" alt="${product.tenSanPham}"/>
+                            <div>
+                                <div class="font-semibold">${product.tenSanPham}</div>
+                                <div class="text-blue-800">${priceText}</div>
+                            </div>`;
+                        suggestion.addEventListener('click', () => {
+                            window.location.href = `/chitietsanpham?id=${product.id}`;
+                        });
+                        suggestionsEl.appendChild(suggestion);
+                    });
+                }
+                suggestionsEl.classList.add('active');
+            } catch (error) {
+                console.error('Error fetching search suggestions:', error);
+                suggestionsEl.innerHTML = '<div class="suggestion-item">Lỗi khi tải gợi ý</div>';
+                suggestionsEl.classList.add('active');
+            }
+        }, 300);
+    });
+
+    inputEl.addEventListener('focus', () => {
+        showSearchHistory(inputEl.value.trim(), suggestionsEl, inputEl);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!inputEl.contains(e.target) && !suggestionsEl.contains(e.target)) {
+            suggestionsEl.classList.remove('active');
+        }
+    });
+}
+
+// Gắn sự kiện cho cả form desktop và modal
 if (form && !form.dataset.init) {
     form.dataset.init = '1';
+    attachSearchHandler(searchInput, searchSuggestions, form);
 
-    // --- Suggestions (giữ logic gốc) ---
-    let debounceTimer;
-    if (searchInput && searchSuggestions) {
-        searchInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(async () => {
-                const keyword = searchInput.value.trim();
-                searchSuggestions.innerHTML = '';
-
-                if (keyword.length < 2) {
-                    showSearchHistory(keyword);
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`/api/search?keyword=${encodeURIComponent(keyword)}`, { credentials: 'include' });
-                    const products = await response.json();
-
-                    searchSuggestions.innerHTML = '';
-                    if (!Array.isArray(products) || products.length === 0) {
-                        searchSuggestions.innerHTML = '<div class="suggestion-item">Không tìm thấy sản phẩm, xem các sản phẩm nổi bật</div>';
-                    } else {
-                        products.forEach((product) => {
-                            const priceText = toVND(product.price);
-                            const suggestion = document.createElement('div');
-                            suggestion.className = 'suggestion-item';
-                            suggestion.innerHTML = `
-                <img src="${product.urlHinhAnh || '/images/placeholder.png'}" alt="${product.tenSanPham}"/>
-                <div>
-                  <div class="font-semibold">${product.tenSanPham}</div>
-                  <div class="text-blue-800">${priceText}</div>
-                </div>`;
-                            suggestion.addEventListener('click', () => {
-                                window.location.href = `/chitietsanpham?id=${product.id}`;
-                            });
-                            searchSuggestions.appendChild(suggestion);
-                        });
-                    }
-                    searchSuggestions.classList.add('active');
-                } catch (error) {
-                    console.error('Error fetching search suggestions:', error);
-                    searchSuggestions.innerHTML = '<div class="suggestion-item">Lỗi khi tải gợi ý</div>';
-                    searchSuggestions.classList.add('active');
-                }
-            }, 300);
-        });
-
-        // ⚠️ bỏ keydown Enter cũ để không bắn POST 2 lần
-        // Thay bằng submit handler ở dưới.
-
-        // focus => show history
-        searchInput.addEventListener('focus', () => {
-            showSearchHistory(searchInput.value.trim());
-        });
-
-        // click outside => close
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !searchSuggestions.contains(e.target)) {
-                searchSuggestions.classList.remove('active');
-            }
-        });
-    }
-
-    // --- Submit form: save history 1 lần, rồi điều hướng ---
     form.addEventListener('submit', (e) => {
         const kw = (searchInput?.value || '').trim();
-        if (!kw) return; // cho submit tiếp, server sẽ xử lý
+        if (!kw) return;
 
-        // Anti-spam trong 2s nếu user bấm loạn
         const now = Date.now();
         if (window.__lastSaveKw === kw && now - (window.__lastSaveAt || 0) < 2000) {
-            return; // vẫn cho submit, chỉ không bắn POST nữa
+            return;
         }
         window.__lastSaveKw = kw;
         window.__lastSaveAt = now;
 
-        // Không chặn submit; dùng sendBeacon/fire-and-forget để không delay điều hướng
         const url = `/api/save-search-history?keyword=${encodeURIComponent(kw)}`;
         if (navigator.sendBeacon) {
             const blob = new Blob([], { type: 'application/json' });
             navigator.sendBeacon(url, blob);
         } else {
-            // keepalive để vẫn gửi khi đang chuyển trang
             fetch(url, { method: 'POST', keepalive: true, credentials: 'include' }).catch(() => {});
         }
-        // không preventDefault => form vẫn GET /search như bình thường
     });
 }
 
-// ===== History =====
-async function showSearchHistory(filterKeyword = '') {
-    if (!searchSuggestions) return;
+if (modalForm && !modalForm.dataset.init) {
+    modalForm.dataset.init = '1';
+    attachSearchHandler(modalSearchInput, modalSearchSuggestions, modalForm);
+
+    modalForm.addEventListener('submit', (e) => {
+        const kw = (modalSearchInput?.value || '').trim();
+        if (!kw) return;
+
+        const now = Date.now();
+        if (window.__lastSaveKw === kw && now - (window.__lastSaveAt || 0) < 2000) {
+            return;
+        }
+        window.__lastSaveKw = kw;
+        window.__lastSaveAt = now;
+
+        const url = `/api/save-search-history?keyword=${encodeURIComponent(kw)}`;
+        if (navigator.sendBeacon) {
+            const blob = new Blob([], { type: 'application/json' });
+            navigator.sendBeacon(url, blob);
+        } else {
+            fetch(url, { method: 'POST', keepalive: true, credentials: 'include' }).catch(() => {});
+        }
+    });
+}
+
+// Lịch sử tìm kiếm
+async function showSearchHistory(filterKeyword = '', suggestionsEl, inputEl) {
+    if (!suggestionsEl) return;
 
     try {
         const response = await fetch('/api/search-history', { credentials: 'include' });
@@ -113,29 +133,28 @@ async function showSearchHistory(filterKeyword = '') {
         }
 
         const history = await response.json();
-        searchSuggestions.innerHTML = '';
+        suggestionsEl.innerHTML = '';
 
         const filtered = filterKeyword
             ? history.filter((kw) => kw.toLowerCase().includes(filterKeyword.toLowerCase()))
             : history;
 
         if (!Array.isArray(filtered) || filtered.length === 0) {
-            searchSuggestions.innerHTML = '<div class="history-item">Không có lịch sử tìm kiếm</div>';
+            suggestionsEl.innerHTML = '<div class="history-item">Không có lịch sử tìm kiếm</div>';
         } else {
             const safe = filterKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
             filtered.forEach((keyword) => {
                 const row = document.createElement('div');
                 row.className = 'history-item';
                 row.innerHTML = `
-          <span class="keyword">${
+                    <span class="keyword">${
                     filterKeyword ? keyword.replace(new RegExp(safe, 'gi'), (m) => `<span class="highlight">${m}</span>`) : keyword
                 }</span>
-          <i class="fas fa-times delete-btn" title="Xóa mục này"></i>`;
+                    <i class="fas fa-times delete-btn" title="Xóa mục này"></i>`;
 
                 row.querySelector('.keyword').addEventListener('click', () => {
-                    searchInput.value = keyword;
-                    searchInput.dispatchEvent(new Event('input'));
+                    inputEl.value = keyword;
+                    inputEl.dispatchEvent(new Event('input'));
                 });
 
                 row.querySelector('.delete-btn').addEventListener('click', async () => {
@@ -145,26 +164,26 @@ async function showSearchHistory(filterKeyword = '') {
                             credentials: 'include',
                         });
                         if (del.ok) {
-                            showSearchHistory(filterKeyword);
+                            showSearchHistory(filterKeyword, suggestionsEl, inputEl);
                         }
                     } catch (err) {
                         console.error('Error deleting search history item:', err);
                     }
                 });
 
-                searchSuggestions.appendChild(row);
+                suggestionsEl.appendChild(row);
             });
         }
 
-        searchSuggestions.classList.add('active');
+        suggestionsEl.classList.add('active');
     } catch (error) {
         console.error('Error fetching search history:', error);
-        searchSuggestions.innerHTML = `<div class="history-item">${error.message}</div>`;
-        searchSuggestions.classList.add('active');
+        suggestionsEl.innerHTML = `<div class="history-item">${error.message}</div>`;
+        suggestionsEl.classList.add('active');
     }
 }
 
-// ===== Cart count =====
+// Cập nhật số lượng giỏ hàng
 async function updateCartCount() {
     const el = document.getElementById('cart-count');
     if (!el) return;
@@ -182,3 +201,9 @@ async function updateCartCount() {
     }
 }
 document.addEventListener('DOMContentLoaded', updateCartCount);
+
+// Tự động focus vào input trong modal khi mở
+document.getElementById('searchModal')?.addEventListener('shown.bs.modal', () => {
+    const modalSearchInput = document.getElementById('modalSearchInput');
+    modalSearchInput?.focus();
+});

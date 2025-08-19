@@ -25,7 +25,9 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -119,8 +121,9 @@ public class KHCheckoutController {
 
             NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
             logger.info("Submitting order for user: {}", nguoiDung.getTenDangNhap());
-// ngay trước dòng:
-// DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
+
+            // ngay trước dòng:
+            // DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
             logger.info("[/api/checkout/submit] user={}, addrId={}, vo={}, vs={}, shipFee={}, items={}",
                     nguoiDung.getTenDangNhap(),
                     request.getAddressId(),
@@ -132,25 +135,35 @@ public class KHCheckoutController {
             DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
             logger.info("Order submitted successfully: {}", donHang.getMaDonHang());
 
-            // Tạo thông báo cho admin
+            // ===== Tạo thông báo gốc (ghi 1 role hợp lệ để pass CHECK) =====
             ThongBaoNhom thongBao = new ThongBaoNhom();
             thongBao.setId(UUID.randomUUID());
             thongBao.setDonHang(donHang);
-            thongBao.setVaiTroNhan("admin");
+            thongBao.setVaiTroNhan("admin"); // ✅ KHÔNG ghi "admin,employee" để tránh vi phạm CHECK
             thongBao.setTieuDe("Khách hàng đặt đơn hàng");
             thongBao.setNoiDung("Mã đơn: " + donHang.getMaDonHang());
             thongBao.setThoiGianTao(LocalDateTime.now());
             thongBao.setTrangThai("Mới");
             thongBaoNhomRepository.save(thongBao);
 
-            List<NguoiDung> danhSachAdmin = nguoiDungRepository.findByVaiTro("admin");
-            for (NguoiDung admin : danhSachAdmin) {
+            // ===== Gom tất cả admin + employee, loại trùng theo ID =====
+            List<NguoiDung> danhSachAdmin    = nguoiDungRepository.findByVaiTro("admin");
+            List<NguoiDung> danhSachEmployee = nguoiDungRepository.findByVaiTro("employee");
+
+            Map<UUID, NguoiDung> recipients = new LinkedHashMap<>();
+            for (NguoiDung u : danhSachAdmin)    recipients.put(u.getId(), u);
+            for (NguoiDung u : danhSachEmployee) recipients.put(u.getId(), u);
+
+            // ===== Tạo chi tiết thông báo cho mọi người nhận =====
+            for (NguoiDung nd : recipients.values()) {
                 ChiTietThongBaoNhom chiTiet = new ChiTietThongBaoNhom();
                 chiTiet.setId(UUID.randomUUID());
-                chiTiet.setNguoiDung(admin);
+                chiTiet.setNguoiDung(nd);
                 chiTiet.setThongBaoNhom(thongBao);
                 chiTiet.setDaXem(false);
                 chiTietThongBaoNhomRepository.save(chiTiet);
+
+
             }
 
             return ResponseEntity.ok(new APIResponse("Đặt hàng thành công", donHang.getMaDonHang()));
@@ -162,14 +175,8 @@ public class KHCheckoutController {
             return ResponseEntity.badRequest().body(new APIResponse("Lỗi không xác định: " + e.getMessage()));
         }
     }
-    // =========================
-    //  VOUCHER APPLY ENDPOINTS
-    // =========================
 
-    /**
-     * LEGACY: chỉ bắt các request KHÔNG có param 'type'.
-     * Dùng cho client cũ gửi /api/checkout/apply-voucher mà không phân biệt ORDER/SHIPPING.
-     */
+
     @PostMapping(value = "/apply-voucher", params = "!type")
     public ResponseEntity<?> applyVoucherLegacy(@RequestParam String voucher,
                                                 @RequestParam(required = false) String source,
@@ -243,10 +250,7 @@ public class KHCheckoutController {
         }
     }
 
-    /**
-     * FREESHIP: chỉ bắt khi query có ?type=SHIPPING
-     * URL: POST /api/checkout/apply-voucher?voucher=...&source=...&type=SHIPPING&shippingFee=...&subtotal=...
-     */
+
     @PostMapping(value = "/apply-voucher", params = "type=SHIPPING")
     public ResponseEntity<?> applyShipVoucherV2(@RequestParam("voucher") String voucherCode,
                                                 @RequestParam("source") String source,                // cart | buy-now
@@ -327,10 +331,7 @@ public class KHCheckoutController {
     }
 
 
-    /**
-     * ORDER: bắt tất cả trường hợp còn lại (không có type=SHIPPING)
-     * URL: POST /api/checkout/apply-voucher?voucher=...&source=...&subtotal=...
-     */
+
     @PostMapping(value = "/apply-voucher", params = "type=ORDER")
     public ResponseEntity<?> applyOrderVoucherV2(@RequestParam("voucher") String voucherCode,
                                                  @RequestParam("source") String source, // cart | buy-now

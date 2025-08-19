@@ -73,14 +73,29 @@
 
         @Transactional
         public NguoiDung updateCustomerAndAppendAddress(NguoiDung customer) {
-            // (tuỳ chọn) Nếu mật khẩu trong form KHÔNG rỗng và có vẻ là plaintext -> encode lại
+            // Lấy thông tin khách hàng hiện tại từ cơ sở dữ liệu để giữ nguyên các trường không thay đổi
+            NguoiDung existingCustomer = nguoiDungRepository.findById(customer.getId())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng với ID: " + customer.getId()));
+
+            // Cập nhật các trường không phải địa chỉ từ đối tượng customer vào existingCustomer
+            existingCustomer.setHoTen(customer.getHoTen());
+            existingCustomer.setTenDangNhap(customer.getTenDangNhap());
+            existingCustomer.setEmail(customer.getEmail());
+            existingCustomer.setSoDienThoai(customer.getSoDienThoai());
+            existingCustomer.setMatKhau(customer.getMatKhau()); // Encode lại nếu cần
+            existingCustomer.setNgaySinh(customer.getNgaySinh());
+            existingCustomer.setGioiTinh(customer.getGioiTinh());
+            // Luôn đặt vai_tro là "CUSTOMER" và bỏ qua giá trị từ form
+            existingCustomer.setVaiTro("customer");
+            existingCustomer.setTrangThai(customer.getTrangThai());
+
+            // (Tùy chọn) Nếu mật khẩu trong form không rỗng và có vẻ là plaintext -> encode lại
             if (customer.getMatKhau() != null && !customer.getMatKhau().isBlank()) {
-                // Bạn có thể thêm điều kiện nếu muốn tránh encode lại chuỗi đã encode
-                customer.setMatKhau(passwordEncoder.encode(customer.getMatKhau()));
+                existingCustomer.setMatKhau(passwordEncoder.encode(customer.getMatKhau()));
             }
 
-            // Lưu cập nhật cơ bản của user trước
-            NguoiDung updated = nguoiDungRepository.save(customer);
+            // Lưu cập nhật cơ bản của user
+            NguoiDung updated = nguoiDungRepository.save(existingCustomer);
 
             // Nếu form kèm địa chỉ -> thêm địa chỉ mặc định mới
             if (hasAddress(customer)) {
@@ -97,12 +112,7 @@
                 dc.setMacDinh(true);
                 diaChiRepo.save(dc);
 
-                // Xoá địa chỉ khỏi bảng nguoi_dung
-                updated.setChiTietDiaChi(null);
-                updated.setPhuongXa(null);
-                updated.setQuanHuyen(null);
-                updated.setTinhThanhPho(null);
-                updated = nguoiDungRepository.save(updated);
+                // Không xóa địa chỉ khỏi bảng nguoi_dung vì nó đã được chuyển sang dia_chi_nguoi_dung
             }
 
             return updated;

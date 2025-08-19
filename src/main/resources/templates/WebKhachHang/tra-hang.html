@@ -262,6 +262,17 @@
             table { font-size: 14px; }
             th, td { padding: 12px 8px; }
         }
+
+        /* Checkbox vô hiệu hóa */
+        input[type="checkbox"]:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Tăng khoảng cách cho cột trạng thái */
+        table th:last-child, table td:last-child {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -321,6 +332,7 @@
                         <th><i class="fas fa-sort-numeric-up mr-2"></i>Số lượng</th>
                         <th><i class="fas fa-tag mr-2"></i>Giá</th>
                         <th><i class="fas fa-calculator mr-2"></i>Thành tiền</th>
+                        <th><i class="fas fa-undo mr-2"></i>Trạng thái</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -329,6 +341,7 @@
                             <input type="checkbox" name="selectedProducts"
                                    th:value="${chiTiet.id}"
                                    th:attr="data-price=${chiTiet.gia},data-quantity=${chiTiet.soLuong}"
+                                   th:disabled="${chiTiet.trangThaiHoanTra}"
                                    onchange="calculateTotal()">
                         </td>
                         <td>
@@ -354,6 +367,14 @@
                         </td>
                         <td>
                             <span class="price font-semibold text-[#153054]" th:attr="data-value=${chiTiet.gia * chiTiet.soLuong}"></span>
+                        </td>
+                        <td>
+            <span th:if="${chiTiet.trangThaiHoanTra}" class="text-amber-600 font-semibold">
+                <i class="fas fa-undo mr-1"></i>Đã trả hàng
+            </span>
+                            <span th:unless="${chiTiet.trangThaiHoanTra}" class="text-gray-600">
+                <i class="fas fa-check mr-1"></i>Có thể trả
+            </span>
                         </td>
                     </tr>
                     </tbody>

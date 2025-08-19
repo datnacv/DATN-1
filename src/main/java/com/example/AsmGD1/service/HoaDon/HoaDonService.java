@@ -11,6 +11,7 @@ import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
+import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
 import com.google.zxing.BarcodeFormat;
@@ -83,6 +84,9 @@ public class HoaDonService {
 
     @Autowired
     private ThongBaoService thongBaoService;
+
+    @Autowired
+    private PhieuGiamGiaService phieuGiamGiaService;
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -200,13 +204,34 @@ public class HoaDonService {
                     .map(ChiTietDonHang::getThanhTien)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal discountAmount;
+            BigDecimal totalDiscountAmount = BigDecimal.ZERO;
+            String maPhieuGiamGia = "Không sử dụng";
+            List<String> maPhieuList = new ArrayList<>();
             BigDecimal tienGiam = hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO;
-            if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
-                discountAmount = tienGiam;
-            } else {
-                discountAmount = tongTienHang.multiply(tienGiam)
-                        .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            if (!donHang.getDsPhieu().isEmpty()) {
+                for (DonHangPhieuGiamGia donHangPhieu : donHang.getDsPhieu()) {
+                    PhieuGiamGia phieuGiamGia = donHangPhieu.getPhieuGiamGia();
+                    maPhieuList.add(phieuGiamGia.getMa());
+                    BigDecimal discountAmount;
+                    if ("SHIPPING".equalsIgnoreCase(phieuGiamGia.getPhamViApDung())) {
+                        discountAmount = phieuGiamGiaService.tinhGiamPhiShip(
+                                phieuGiamGia,
+                                donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO,
+                                tongTienHang);
+                    } else {
+                        discountAmount = phieuGiamGiaService.tinhTienGiamGia(phieuGiamGia, tongTienHang);
+                    }
+                    totalDiscountAmount = totalDiscountAmount.add(discountAmount);
+                }
+                maPhieuGiamGia = String.join(", ", maPhieuList);
+            } else if (tienGiam.compareTo(BigDecimal.ZERO) > 0) {
+                if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
+                    totalDiscountAmount = tienGiam;
+                } else {
+                    totalDiscountAmount = tongTienHang.multiply(tienGiam)
+                            .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+                }
             }
 
             PdfPTable summaryTable = new PdfPTable(2);
@@ -216,11 +241,8 @@ public class HoaDonService {
 
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền hàng:", formatCurrency(tongTienHang));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Phí vận chuyển:", formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO));
-            if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
-                addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(discountAmount));
-            } else {
-                addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá (" + tienGiam + "%):", formatCurrency(discountAmount));
-            }
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Mã phiếu giảm giá:", maPhieuGiamGia);
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(totalDiscountAmount));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền:", formatCurrency(hoaDon.getTongTien()));
 
             BigDecimal soTienKhachDua = donHang.getSoTienKhachDua() != null ? donHang.getSoTienKhachDua() : BigDecimal.ZERO;
@@ -379,10 +401,6 @@ public class HoaDonService {
         hoaDon.getLichSuHoaDons().add(lichSu);
 
         HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hoaDon);
-
-
-
-
     }
 
     public Page<HoaDon> findAll(String search, String trangThai, String paymentMethod, String salesMethod, Pageable pageable) {
@@ -562,7 +580,6 @@ public class HoaDonService {
             lichSuRepo.save(lichSu);
         }
 
-        // Gọi updateStatus để cập nhật trạng thái và gửi email
         updateStatus(hoaDonId, "Hủy đơn hàng", ghiChu, true);
 
         for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
@@ -584,50 +601,54 @@ public class HoaDonService {
         }
 
         BigDecimal tongTienHoan = BigDecimal.ZERO;
-        for (UUID chiTietId : chiTietDonHangIds) {
-            ChiTietDonHang chiTiet = chiTietDonHangRepository.findById(chiTietId)
-                    .orElseThrow(() -> new RuntimeException("Chi tiết đơn hàng không tồn tại với ID: " + chiTietId));
+        try {
+            for (UUID chiTietId : chiTietDonHangIds) {
+                ChiTietDonHang chiTiet = chiTietDonHangRepository.findById(chiTietId)
+                        .orElseThrow(() -> new RuntimeException("Chi tiết đơn hàng không tồn tại với ID: " + chiTietId));
 
-            if (Boolean.TRUE.equals(chiTiet.getTrangThaiHoanTra())) {
-                throw new RuntimeException("Sản phẩm đã được trả trước đó: " + chiTiet.getTenSanPham());
+                if (Boolean.TRUE.equals(chiTiet.getTrangThaiHoanTra())) {
+                    throw new RuntimeException("Sản phẩm đã được trả trước đó: " + chiTiet.getTenSanPham());
+                }
+
+                chiTiet.setTrangThaiHoanTra(true);
+                chiTiet.setLyDoTraHang(lyDoTraHang);
+                chiTietDonHangRepository.save(chiTiet);
+
+                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
+                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
+                int soLuongTra = chiTiet.getSoLuong();
+                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + soLuongTra);
+                chiTietSanPhamRepository.save(chiTietSanPham);
+
+                LichSuTraHang lichSu = new LichSuTraHang();
+                lichSu.setHoaDon(hoaDon);
+                lichSu.setChiTietDonHang(chiTiet);
+                lichSu.setSoLuong(chiTiet.getSoLuong());
+                lichSu.setTongTienHoan(chiTiet.getThanhTien());
+                lichSu.setLyDoTraHang(lyDoTraHang);
+                lichSu.setThoiGianTra(LocalDateTime.now());
+                lichSu.setTrangThai("Đã trả");
+                lichSuTraHangRepository.save(lichSu);
+
+                tongTienHoan = tongTienHoan.add(chiTiet.getThanhTien());
             }
 
-            chiTiet.setTrangThaiHoanTra(true);
-            chiTiet.setLyDoTraHang(lyDoTraHang);
-            chiTietDonHangRepository.save(chiTiet);
+            List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
+            long totalItems = chiTietDonHangs.size();
+            long returnedItems = chiTietDonHangs.stream()
+                    .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
+                    .count();
 
-            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
-                    .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
-            int soLuongTra = chiTiet.getSoLuong();
-            chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + soLuongTra);
-            chiTietSanPhamRepository.save(chiTietSanPham);
+            hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
 
-            LichSuTraHang lichSu = new LichSuTraHang();
-            lichSu.setHoaDon(hoaDon);
-            lichSu.setChiTietDonHang(chiTiet);
-            lichSu.setSoLuong(chiTiet.getSoLuong());
-            lichSu.setTongTienHoan(chiTiet.getThanhTien());
-            lichSu.setLyDoTraHang(lyDoTraHang);
-            lichSu.setThoiGianTra(LocalDateTime.now());
-            lichSu.setTrangThai("Đã trả");
-            lichSuTraHangRepository.save(lichSu);
+            String trangThaiTraHang = returnedItems == totalItems ? "Đã trả hàng" : "Đã trả hàng một phần";
+            String ghiChu = "Lý do trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn trả: " + formatCurrency(tongTienHoan);
 
-            tongTienHoan = tongTienHoan.add(chiTiet.getThanhTien());
+            updateStatus(hoaDonId, trangThaiTraHang, ghiChu, true);
+        } catch (Exception e) {
+            System.err.println("Lỗi trong processReturn: " + e.getMessage());
+            throw e; // Ném lại ngoại lệ để rollback giao dịch
         }
-
-        List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
-        long totalItems = chiTietDonHangs.size();
-        long returnedItems = chiTietDonHangs.stream()
-                .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
-                .count();
-
-        hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
-
-        String trangThaiTraHang = returnedItems == totalItems ? "Đã trả hàng" : "Đã trả hàng một phần";
-        String ghiChu = "Lý do trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn trả: " + formatCurrency(tongTienHoan);
-
-        // Gọi updateStatus để cập nhật trạng thái và gửi email
-        updateStatus(hoaDonId, trangThaiTraHang, ghiChu, true);
     }
 
     public List<ChiTietDonHang> getReturnableItems(UUID hoaDonId) {
@@ -720,7 +741,6 @@ public class HoaDonService {
         }
 
         HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hd);
-        // 🔔 THÔNG BÁO CÁ NHÂN CHO CHỦ ĐƠN
         try {
             DonHang dh = savedHoaDon.getDonHang();
             String ma = dh.getMaDonHang();
@@ -760,7 +780,6 @@ public class HoaDonService {
             thongBaoService.thongBaoCapNhatTrangThai(dh.getId(), tieuDe, noiDung);
         } catch (Exception ignore) {}
 
-        // Chỉ gửi email cho các trạng thái khác ngoài "Chưa xác nhận"
         NguoiDung nguoiDung = hd.getNguoiDung();
         if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty() &&
                 !"Chưa xác nhận".equals(newStatus)) {

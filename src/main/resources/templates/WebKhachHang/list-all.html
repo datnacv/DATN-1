@@ -722,7 +722,7 @@
         const typing=document.getElementById('typing-indicator'); typing?.classList.remove('hidden'); chatMessages.scrollTop=chatMessages.scrollHeight;
 
         try{
-            const res = await fetch('https://lucnguyenthanhoai.app.n8n.cloud/webhook/website-chatbot',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body:{ from:'user_123', message }})});
+            const res = await fetch('https://longpdth01286.app.n8n.cloud/webhook/website-chatbot',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ body:{ from:'user_123', message }})});
             const data = await res.json();
             let raw = (typeof data.message==='string') ? data.message : (data.message?.message ?? 'Xin lỗi, bot không phản hồi đúng định dạng.');
             raw = raw.replace(/```json\n|\n```/g,'').trim();

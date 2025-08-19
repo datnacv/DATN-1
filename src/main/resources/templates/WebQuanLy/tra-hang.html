@@ -623,6 +623,10 @@
 
         const checkboxes = document.querySelectorAll('.select-item:checked');
         const lyDoTraHang = document.getElementById('lyDoTraHang').value.trim();
+        console.log('HoaDonId:', hoaDonId);
+        console.log('Selected Items:', Array.from(checkboxes).map(cb => cb.value));
+        console.log('Reason:', lyDoTraHang);
+
         if (checkboxes.length === 0) {
             alert('Vui lòng chọn ít nhất một sản phẩm để trả.');
             return;
@@ -651,7 +655,7 @@
                 }
             },
             error: function(xhr) {
-                console.error('Error:', xhr.responseJSON);
+                console.error('Error:', xhr.responseText);
                 alert(xhr.responseJSON?.error || 'Lỗi kết nối server.');
             }
         });

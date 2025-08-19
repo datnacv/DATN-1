@@ -60,6 +60,8 @@ public class HoaDon {
     @JsonIgnore
     private List<LichSuHoaDon> lichSuHoaDons = new ArrayList<>();
 
+
+
     // Trường mới để lưu tổng tiền đã định dạng
     @Transient
     private String formattedTongTien;

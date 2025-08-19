@@ -69,6 +69,8 @@ public class TraHangController {
     @Transactional
     public ResponseEntity<Map<String, Object>> confirmReturn(@PathVariable String hoaDonId,
                                                              @RequestBody Map<String, Object> request) {
+        System.out.println("Received request for hoaDonId: " + hoaDonId);
+        System.out.println("Request data: " + request);
         try {
             UUID uuid = UUID.fromString(hoaDonId);
             HoaDon hoaDon = hoaDonService.findById(uuid)
