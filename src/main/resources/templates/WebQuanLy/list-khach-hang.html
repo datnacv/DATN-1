@@ -594,10 +594,10 @@
                         <a th:href="'tel:' + ${customer.soDienThoai}" class="text-decoration-none" th:text="${customer.soDienThoai}"></a>
                     </td>
                     <td class="address-cell">
-                        <span th:if="${defaultAddresses[customerStat.index] != null}"
-                              th:text="${defaultAddresses[customerStat.index].tinhThanhPho} + ', ' + ${defaultAddresses[customerStat.index].quanHuyen} + ', ' + ${defaultAddresses[customerStat.index].phuongXa} + ', ' + ${defaultAddresses[customerStat.index].chiTietDiaChi}"
-                              th:title="${defaultAddresses[customerStat.index].tinhThanhPho} + ', ' + ${defaultAddresses[customerStat.index].quanHuyen} + ', ' + ${defaultAddresses[customerStat.index].phuongXa} + ', ' + ${defaultAddresses[customerStat.index].chiTietDiaChi}">
-                        </span>
+    <span th:if="${defaultAddresses[customerStat.index] != null}"
+          th:text="${defaultAddresses[customerStat.index].tinhThanhPho} + ', ' + ${defaultAddresses[customerStat.index].quanHuyen} + ', ' + ${defaultAddresses[customerStat.index].phuongXa} + ', ' + ${defaultAddresses[customerStat.index].chiTietDiaChi}"
+          th:title="${defaultAddresses[customerStat.index].tinhThanhPho} + ', ' + ${defaultAddresses[customerStat.index].quanHuyen} + ', ' + ${defaultAddresses[customerStat.index].phuongXa} + ', ' + ${defaultAddresses[customerStat.index].chiTietDiaChi}">
+    </span>
                         <span th:unless="${defaultAddresses[customerStat.index] != null}" class="text-muted">Chưa có địa chỉ</span>
                     </td>
                     <td>
@@ -614,12 +614,6 @@
                                     th:data-bs-target="'#editCustomerModal' + ${customer.id}"
                                     title="Chỉnh sửa">
                                 <i class="fa-solid fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm btn-action"
-                                    data-bs-toggle="modal"
-                                    th:data-bs-target="'#deleteCustomerModal' + ${customer.id}"
-                                    title="Xóa">
-                                <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </td>
@@ -916,46 +910,7 @@
             </div>
         </th:block>
 
-        <th:block th:each="customer : ${customers}">
-            <div class="modal fade" th:id="'deleteCustomerModal' + ${customer.id}" tabindex="-1"
-                 th:aria-labelledby="'deleteCustomerModalLabel' + ${customer.id}" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title" th:id="'deleteCustomerModalLabel' + ${customer.id}">
-                                <i class="fa-solid fa-exclamation-triangle me-2"></i> Xác nhận xóa
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="text-center py-4">
-                                <div class="mb-4">
-                                    <i class="fa-solid fa-exclamation-triangle text-warning" style="font-size: 64px;"></i>
-                                </div>
-                                <h4 class="mb-3 text-dark">Bạn có chắc chắn muốn xóa?</h4>
-                                <div class="bg-light p-3 rounded mb-4">
-                                    <p class="mb-2"><strong>Khách hàng:</strong> <span th:text="${customer.hoTen}" class="text-primary"></span></p>
-                                    <p class="mb-0"><strong>Email:</strong> <span th:text="${customer.email}" class="text-primary"></span></p>
-                                </div>
-                                <div class="alert alert-warning">
-                                    <i class="fa-solid fa-warning me-2"></i>
-                                    <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác!
-                                </div>
-                            </div>
 
-                            <form th:action="@{/acvstore/customers/delete/{id}(id=${customer.id})}" method="post" class="text-center">
-                                <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
-                                    <i class="fa-solid fa-times me-2"></i> Hủy bỏ
-                                </button>
-                                <button type="submit" class="btn btn-danger">
-                                    <i class="fa-solid fa-trash me-2"></i> Xác nhận xóa
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </th:block>
     </div>
 </div>
 

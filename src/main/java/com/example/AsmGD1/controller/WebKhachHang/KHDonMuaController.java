@@ -164,7 +164,7 @@ public class KHDonMuaController {
                 case "van-chuyen-thanh-cong" -> "Vận chuyển thành công";
                 case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
-                case "hoan-tra" -> "Hoàn trả";
+                case "da-tra-hang" -> "Hoàn trả";
                 default -> "";
             };
             hoaDonPage = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb, pageable);
@@ -254,12 +254,10 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
-        // Lọc ra các sản phẩm chưa được đánh giá
         List<ChiTietDonHang> productsToRate = hoaDon.getDonHang().getChiTietDonHangs().stream()
                 .filter(chiTiet -> !danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()))
                 .collect(Collectors.toList());
 
-        // Kiểm tra nếu không còn sản phẩm nào để đánh giá
         if (productsToRate.isEmpty()) {
             model.addAttribute("message", "Bạn đã đánh giá tất cả sản phẩm trong hóa đơn này.");
         }
@@ -307,7 +305,6 @@ public class KHDonMuaController {
                     hoaDon.getDonHang()
             );
 
-            // Gửi email thông báo hủy đơn hàng
             String emailContent = "<h2>Thông báo hủy đơn hàng</h2>" +
                     "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
                     "<p>Đơn hàng của bạn với mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được hủy thành công.</p>" +
@@ -372,7 +369,6 @@ public class KHDonMuaController {
                     hoaDon.getDonHang()
             );
 
-            // Gửi email thông báo hoàn thành đơn hàng
             String emailContent = "<h2>Thông báo hoàn thành đơn hàng</h2>" +
                     "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
                     "<p>Đơn hàng của bạn với mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận hoàn thành.</p>" +
@@ -470,7 +466,6 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        // Tiến hành lưu đánh giá
         DanhGia danhGia = new DanhGia();
         danhGia.setHoaDon(hoaDon);
         danhGia.setChiTietSanPham(hoaDon.getDonHang().getChiTietDonHangs().stream()
@@ -487,18 +482,17 @@ public class KHDonMuaController {
             for (MultipartFile f : media) {
                 if (f == null || f.isEmpty()) continue;
                 String ct = f.getContentType();
-                if (ct == null || !ct.startsWith("image/")) continue; // hoặc throw nếu muốn chặn
-                String url = uploadFile(f); // 👈 giờ method này mới được gọi
+                if (ct == null || !ct.startsWith("image/")) continue;
+                String url = uploadFile(f);
                 urls.add(url);
             }
             if (!urls.isEmpty()) {
-                danhGia.setUrlHinhAnh(String.join(",", urls)); // backend đã trả "media" = chuỗi, FE split(",")
+                danhGia.setUrlHinhAnh(String.join(",", urls));
             }
         }
 
         danhGiaRepository.save(danhGia);
 
-        // Kiểm tra xem người dùng đã đánh giá hết tất cả các sản phẩm trong đơn hàng hay chưa
         boolean allRated = hoaDon.getDonHang().getChiTietDonHangs().stream()
                 .allMatch(chiTiet -> danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(hoaDonId, chiTiet.getChiTietSanPham().getId(), userId));
 
@@ -551,7 +545,12 @@ public class KHDonMuaController {
         }
 
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId()) || !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId())) {
+            return "redirect:/dsdon-mua";
+        }
+
+        // Chỉ cho phép trả hàng khi trạng thái là "Vận chuyển thành công"
+        if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
             return "redirect:/dsdon-mua";
         }
 
@@ -592,15 +591,29 @@ public class KHDonMuaController {
         }
 
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId()) || !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId())) {
             response.put("success", false);
-            response.put("message", "Hóa đơn không hợp lệ hoặc không ở trạng thái cho phép trả hàng.");
+            response.put("message", "Hóa đơn không hợp lệ hoặc không thuộc về bạn.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        // Chỉ cho phép trả hàng khi trạng thái là "Vận chuyển thành công"
+        if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+            response.put("success", false);
+            response.put("message", "Chỉ có thể gửi yêu cầu trả hàng khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
         if (selectedProductIds == null || selectedProductIds.isEmpty()) {
             response.put("success", false);
             response.put("message", "Vui lòng chọn ít nhất một sản phẩm để trả hàng.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        // Kiểm tra nếu không trả toàn bộ sản phẩm
+        if (selectedProductIds.size() != hoaDon.getDonHang().getChiTietDonHangs().size()) {
+            response.put("success", false);
+            response.put("message", "Phải trả toàn bộ sản phẩm trong đơn hàng.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
@@ -644,14 +657,10 @@ public class KHDonMuaController {
                 chiTietSanPhamRepository.save(sanPham);
             }
 
-            // Cập nhật trạng thái hóa đơn nếu tất cả sản phẩm đều được trả
-            boolean allReturned = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                    .allMatch(ChiTietDonHang::getTrangThaiHoanTra);
-            if (allReturned) {
-                hoaDon.setTrangThai("Hoàn trả");
-                hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn trả", "Khách hàng yêu cầu trả hàng: " + reason);
-                hoaDonService.save(hoaDon);
-            }
+            // Cập nhật trạng thái hóa đơn thành "Hoàn trả"
+            hoaDon.setTrangThai("Hoàn trả");
+            hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn trả", "Khách hàng yêu cầu trả hàng: " + reason);
+            hoaDonService.save(hoaDon);
 
             // Gửi thông báo hệ thống
             thongBaoService.taoThongBaoHeThong(
@@ -665,6 +674,7 @@ public class KHDonMuaController {
             String emailContent = "<h2>Thông báo yêu cầu trả hàng</h2>" +
                     "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
                     "<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
+                    "<p><strong>Trạng thái:</strong> Hoàn trả</p>" +
                     "<p><strong>Lý do:</strong> " + reason + "</p>" +
                     "<p><strong>Mô tả:</strong> " + (description != null ? description : "Không có") + "</p>" +
                     "<p><strong>Tổng tiền hoàn:</strong> " + formatVND(totalReturnAmount) + "</p>" +

@@ -87,6 +87,7 @@ public class DonHangService {
             maxAttempts = 3,
             backoff = @Backoff(delay = 100)
     )
+
     public KetQuaDonHangDTO taoDonHang(DonHangDTO donHangDTO) {
         log.info("Bắt đầu tạo đơn hàng với SĐT: {}", donHangDTO.getSoDienThoaiKhachHang());
 
@@ -177,7 +178,7 @@ public class DonHangService {
         BigDecimal giamShip = BigDecimal.ZERO;
 
         PhieuGiamGia orderVoucher = null;
-        PhieuGiamGia shipVoucher  = null;
+        PhieuGiamGia shipVoucher = null;
 
         if (donHangDTO.getIdPhieuGiamGia() != null) {
             orderVoucher = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
@@ -270,28 +271,29 @@ public class DonHangService {
             donHang.setTrangThai("cho_xac_nhan");
         }
 
-        // ===== LƯU ĐƠN HÀNG LẦN ĐẦU (đÃ có trang_thai_thanh_toan != NULL) =====
-        donHangRepository.save(donHang);
-
-        // ===== LƯU BẢNG PHỤ (ORDER + SHIPPING) nếu có giảm =====
+        // ===== KHỞI TẠO VÀ GẮN THÔNG TIN PHIẾU VÀO dsPhieu CỦA DonHang =====
+        donHang.setDsPhieu(new ArrayList<>());
         if (orderVoucher != null && giamDon.compareTo(BigDecimal.ZERO) > 0) {
-            DonHangPhieuGiamGia link = new DonHangPhieuGiamGia();
-            link.setDonHang(donHang);
-            link.setPhieuGiamGia(orderVoucher);
-            link.setLoaiGiamGia("ORDER");
-            link.setGiaTriGiam(giamDon);
-            link.setThoiGianApDung(LocalDateTime.now());
-            donHangPhieuGiamGiaRepository.save(link);
+            DonHangPhieuGiamGia donHangPhieu = new DonHangPhieuGiamGia();
+            donHangPhieu.setDonHang(donHang);
+            donHangPhieu.setPhieuGiamGia(orderVoucher);
+            donHangPhieu.setLoaiGiamGia("ORDER");
+            donHangPhieu.setGiaTriGiam(giamDon);
+            donHangPhieu.setThoiGianApDung(LocalDateTime.now());
+            donHang.getDsPhieu().add(donHangPhieu);
         }
         if (shipVoucher != null && giamShip.compareTo(BigDecimal.ZERO) > 0) {
-            DonHangPhieuGiamGia link = new DonHangPhieuGiamGia();
-            link.setDonHang(donHang);
-            link.setPhieuGiamGia(shipVoucher);
-            link.setLoaiGiamGia("SHIPPING");
-            link.setGiaTriGiam(giamShip);
-            link.setThoiGianApDung(LocalDateTime.now());
-            donHangPhieuGiamGiaRepository.save(link);
+            DonHangPhieuGiamGia donHangPhieu = new DonHangPhieuGiamGia();
+            donHangPhieu.setDonHang(donHang);
+            donHangPhieu.setPhieuGiamGia(shipVoucher);
+            donHangPhieu.setLoaiGiamGia("SHIPPING");
+            donHangPhieu.setGiaTriGiam(giamShip);
+            donHangPhieu.setThoiGianApDung(LocalDateTime.now());
+            donHang.getDsPhieu().add(donHangPhieu);
         }
+
+        // ===== LƯU ĐƠN HÀNG LẦN ĐẦU (đÃ có trang_thai_thanh_toan != NULL) =====
+        donHang = donHangRepository.save(donHang);
 
         // ===== TRỪ LƯỢT/SỐ LƯỢNG =====
         java.util.function.Consumer<PhieuGiamGia> deductUsage = (v) -> {

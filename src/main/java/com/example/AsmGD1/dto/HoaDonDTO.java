@@ -29,6 +29,9 @@
         private BigDecimal phiVanChuyen; // Thêm trường này
         private String phuongThucBanHang; // Thêm trường này
         private List<LichSuDTO> lichSuHoaDons = new ArrayList<>();
+        private BigDecimal giamPhiVanChuyen; // Thêm trường này
+        private String phieuGiamGia; // Thêm trường này
+
 
         @Data
         public static class LichSuDTO {

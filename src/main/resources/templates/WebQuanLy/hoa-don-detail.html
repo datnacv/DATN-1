@@ -460,6 +460,11 @@
             color: #fff;
         }
 
+        .status-partial-returned {
+            background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+            color: #fff;
+        }
+
         .status-online-confirmed {
             background: linear-gradient(135deg, #28a745 0%, #218838 100%);
             color: #fff;
@@ -485,7 +490,8 @@
         .table-order-info th:nth-child(2), .table-order-info td:nth-child(2) { width: 20%; } /* Phương thức */
         .table-order-info th:nth-child(3), .table-order-info td:nth-child(3) { width: 15%; min-width: 120px; text-align: right; } /* Phí vận chuyển */
         .table-order-info th:nth-child(4), .table-order-info td:nth-child(4) { width: 15%; min-width: 120px; text-align: right; } /* Giảm giá */
-        .table-order-info th:nth-child(5), .table-order-info td:nth-child(5) { width: 25%; } /* Thời gian */
+        .table-order-info th:nth-child(5), .table-order-info td:nth-child(5) { width: 20%; text-align: left; } /* Phiếu giảm giá */
+        .table-order-info th:nth-child(6), .table-order-info td:nth-child(6) { width: 25%; } /* Thời gian */
 
         @media (max-width: 1200px) {
             .action-group {
@@ -898,19 +904,41 @@
                         <table class="table table-order-info" style="width: 100%; border-collapse: separate; border-spacing: 0; margin: 0;">
                             <thead>
                             <tr>
-                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-hashtag"></i> Mã đơn hàng</th>
-                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-store"></i> Phương thức bán hàng</th>
-                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-truck"></i> Phí vận chuyển</th>
-                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-tag"></i> Giảm giá</th> <!-- Thêm cột Giảm giá -->
-                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;"><i class="fas fa-calendar"></i> Thời gian tạo</th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">
+                                    <i class="fas fa-hashtag"></i> Mã đơn hàng
+                                </th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">
+                                    <i class="fas fa-store"></i> Phương thức bán hàng
+                                </th>
+                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">
+                                    <i class="fas fa-truck"></i> Phí vận chuyển
+                                </th>
+                                <th style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">
+                                    <i class="fas fa-tag"></i> Giảm giá
+                                </th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">
+                                    <i class="fas fa-ticket-alt"></i> Mã FreeShip
+                                </th>
+                                <th style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; background: var(--table-header-bg); font-weight: 700; color: var(--text-primary); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; z-index: 10;">
+                                    <i class="fas fa-calendar"></i> Thời gian tạo
+                                </th>
                             </tr>
                             </thead>
                             <tbody>
                             <tr style="transition: all 0.3s;">
-                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong th:text="${hoaDon.donHang.maDonHang}"></strong></td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
+                                    <strong th:text="${hoaDon.donHang.maDonHang}"></strong>
+                                </td>
                                 <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${hoaDon.donHang.phuongThucBanHang ?: 'Không rõ'}"></td>
-                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong id="phiVanChuyen" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0}"></strong></td>
-                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);"><strong id="tienGiam" th:attr="data-value=${hoaDon.tienGiam != null ? hoaDon.tienGiam : 0}"></strong></td> <!-- Thêm cột hiển thị tienGiam -->
+                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
+                                    <strong id="phiVanChuyen" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0}"></strong>
+                                </td>
+                                <td style="padding: 1rem 1.25rem; text-align: right; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
+                                    <strong id="tienGiam" th:attr="data-value=${hoaDon.tienGiam != null ? hoaDon.tienGiam : 0}"></strong>
+                                </td>
+                                <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);">
+                                    <span id="maPhieuGiamGia" th:attr="data-value=${hoaDon.donHang.dsPhieu != null and not #lists.isEmpty(hoaDon.donHang.dsPhieu) ? #strings.listJoin(hoaDon.donHang.dsPhieu.![phieuGiamGia.ma], ', ') : 'Không sử dụng'}"></span>
+                                </td>
                                 <td style="padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border-light); vertical-align: middle; font-weight: 500; color: var(--text-primary);" th:text="${#temporals.format(hoaDon.ngayTao, 'dd/MM/yyyy HH:mm:ss')}"></td>
                             </tr>
                             </tbody>
@@ -1054,6 +1082,13 @@
                 element.textContent = formatCurrency(value);
             }
         });
+
+        // Format maPhieuGiamGia
+        const maPhieuGiamGiaElement = document.getElementById('maPhieuGiamGia');
+        if (maPhieuGiamGiaElement) {
+            const maPhieuValue = maPhieuGiamGiaElement.getAttribute('data-value') || 'Không sử dụng';
+            maPhieuGiamGiaElement.textContent = maPhieuValue;
+        }
 
         // Update status badge
         const statusElement = document.getElementById("statusBadge");

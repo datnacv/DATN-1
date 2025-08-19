@@ -166,27 +166,7 @@ public class CustomerController {
 
 
 
-    @PostMapping("/delete/{id}")
-    public String deleteCustomer(@PathVariable UUID id,
-                                 RedirectAttributes redirectAttributes,
-                                 Authentication authentication) {
-        // Kiểm tra quyền admin hoặc employee
-        if (!isCurrentUserAdminOrEmployee()) {
-            redirectAttributes.addFlashAttribute("message", "Bạn không có quyền xóa khách hàng!");
-            redirectAttributes.addFlashAttribute("messageType", "danger");
-            return "redirect:/acvstore/customers";
-        }
 
-        try {
-            nguoiDungService.deleteById(id);
-            redirectAttributes.addFlashAttribute("message", "Xóa khách hàng thành công!");
-            redirectAttributes.addFlashAttribute("messageType", "success");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("message", "Xóa thất bại: " + e.getMessage());
-            redirectAttributes.addFlashAttribute("messageType", "danger");
-        }
-        return "redirect:/acvstore/customers";
-    }
 
     @GetMapping("/dashboard")
     public String showDashboard(Model model, Authentication authentication) {
