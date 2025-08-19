@@ -63,29 +63,13 @@
         #voucherModal .voucher-card{ padding:12px; }
         #voucherModal .voucher-card .fw-semibold{ font-size:14px; }
         #voucherModal .voucher-card .small{ font-size:12px; }
-        #voucherModal .voucher-search{
+        #voucherModal .voucher-search {
             position: sticky;
             top: 0;
             z-index: 3;
             background: #fff;
             padding-bottom: 12px;
-            border-bottom: 1px solid #eee;}
-
-        .navbar {  background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            min-width: 200px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            z-index: 1000;
-            padding: 8px;
+            border-bottom: 1px solid #eee;
         }
     </style>
 </head>
@@ -104,7 +88,48 @@
     </marquee>
 </div>
 
-<div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
+<nav class="navbar fixed-top shadow-lg mt-10 z-40">
+    <div class="container mx-auto flex items-center justify-between py-2 px-4">
+        <a href="/" class="text-2xl font-bold text-white">ACV Store</a>
+        <div class="relative dropdown">
+            <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none">
+                Danh mục <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                <a href="/category/nam" class="block px-4 py-2 hover:bg-[#e0ebf5]">Thời trang Nam</a>
+                <a href="/category/nu" class="block px-4 py-2 hover:bg-[#e0ebf5]">Thời trang Nữ</a>
+                <a href="/category/phu-kien" class="block px-4 py-2 hover:bg-[#e0ebf5]">Phụ kiện</a>
+                <a href="/category/gia-dung" class="block px-4 py-2 hover:bg-[#e0ebf5]">Gia dụng</a>
+            </div>
+        </div>
+        <div class="flex-1 mx-4 max-w-2xl">
+            <div class="relative">
+                <input type="text" placeholder="Tìm kiếm sản phẩm..." class="w-full py-2 px-4 rounded-full border-none focus:outline-none"/>
+                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-white bg-[#153054] px-3 py-1 rounded-full">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="/cart" class="text-white text-xl relative">
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+            </a>
+            <div th:if="${user != null}" class="dropdown">
+                <button class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-user-circle me-1"></i> <span th:text="${user.hoTen}">Tên người dùng</span>
+                </button>
+                <div class="dropdown-menu bg-white text-gray-800 rounded-md p-2 mt-2">
+                    <a href="/account/profile" class="block px-4 py-2 hover:bg-[#e0ebf5]">Tài khoản của tôi</a>
+                    <a href="/dsdon-mua" class="block px-4 py-2 hover:bg-[#e0ebf5]">Đơn mua</a>
+                    <a href="/vi" class="block px-4 py-2 hover:bg-[#e0ebf5]">Ví thanh toán</a>
+                    <a href="/customers/logout" class="block px-4 py-2 hover:bg-[#e0ebf5] text-danger">Đăng xuất</a>
+                </div>
+            </div>
+            <a th:if="${user == null}" href="/customers/login" class="text-white font-semibold hover:text-[#9FD5F7] focus:outline-none">Đăng nhập</a>
+        </div>
+    </div>
+</nav>
 
 <section class="container mx-auto py-8">
     <h1 class="text-3xl font-bold text-gray-800 mb-6">Thanh toán</h1>
@@ -920,35 +945,84 @@
 
     window.saveNewAddress = async function () {
         const fullName = document.getElementById('new-fullName').value.trim();
-        const phone = document.getElementById('new-phone').value.trim();
-        const address = document.getElementById('new-address').value.trim();
+        const phone    = document.getElementById('new-phone').value.trim();
+        const address  = document.getElementById('new-address').value.trim();
         const pSel = document.getElementById('new-province');
         const dSel = document.getElementById('new-district');
         const wSel = document.getElementById('new-ward');
 
+        const provinceId = pSel.value;
+        const districtId = dSel.value;
+        const wardCode   = wSel.value;
+
         const province = pSel.options[pSel.selectedIndex]?.text || '';
         const district = dSel.options[dSel.selectedIndex]?.text || '';
-        const ward = wSel.options[wSel.selectedIndex]?.text || '';
+        const ward     = wSel.options[wSel.selectedIndex]?.text || '';
 
-        if (!fullName || !phone || !address || !province || !district || !ward) {
-            Swal.fire({ icon:'warning', title:'Lỗi', text:'Vui lòng điền đầy đủ thông tin địa chỉ!' });
+        if (!fullName || !phone || !address || !provinceId || !districtId || !wardCode) {
+            Swal.fire({icon:'warning',title:'Lỗi',text:'Vui lòng điền đầy đủ thông tin!'});
             return;
         }
 
-        document.getElementById('fullName').value = fullName;
-        document.getElementById('phone').value = phone;
-        document.getElementById('address').value = `${address}, ${ward}, ${district}, ${province}`;
-        document.getElementById('addressId').value = '';
+        try {
+            // 1) Lưu địa chỉ vào server (đổi URL/field cho khớp backend của bạn)
+            const res = await fetch('/api/checkout/addresses', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({
+                    nguoiNhan: fullName,
+                    soDienThoaiNguoiNhan: phone,
+                    chiTietDiaChi: address,
+                    phuongXa: ward,
+                    quanHuyen: district,
+                    tinhThanhPho: province,
+                    wardCode: wardCode,             // nếu backend cần mã
+                    districtId: Number(districtId), // nếu backend cần id
+                    provinceId: Number(provinceId), // nếu backend cần id
+                    macDinh: false
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Không thể lưu địa chỉ.');
+            }
 
-        document.getElementById('province').value = pSel.value;
-        document.getElementById('district').value = dSel.value;
-        document.getElementById('ward').value = wSel.value;
+            // id địa chỉ mới (tùy backend trả gì)
+            const newId = data.data?.id || data.data;
 
-        await loadShippingServices(document.getElementById('district').value);
-        await calculateShipping();
+            // 2) Đổ thông tin vào form chính để dùng cho đơn hiện tại
+            document.getElementById('fullName').value = fullName;
+            document.getElementById('phone').value    = phone;
+            document.getElementById('address').value  = `${address}, ${ward}, ${district}, ${province}`;
+            document.getElementById('addressId').value = newId || ''; // có id thì gán để submit đơn hàng dùng id
 
-        bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
-        hideAddAddressForm();
+            // đồng bộ các select ẩn để tính ship
+            document.getElementById('province').value = provinceId;
+            document.getElementById('district').value = districtId;
+            document.getElementById('ward').value     = wardCode;
+
+            // 3) Refresh danh sách + auto highlight địa chỉ mới
+            await loadSavedAddresses();
+            if (newId) {
+                const newCard = document.querySelector(`.address-card[data-id="${CSS.escape(newId)}"]`);
+                if (newCard) {
+                    newCard.classList.add('active');
+                }
+            }
+
+            // 4) Tính lại ship
+            await loadShippingServices(districtId);
+            await calculateShipping();
+
+            // 5) Đóng modal + thông báo
+            bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
+            document.getElementById('add-address-form').classList.add('d-none');
+            Swal.fire({icon:'success',title:'Đã thêm địa chỉ',timer:1200,showConfirmButton:false});
+        } catch (err) {
+            console.error(err);
+            Swal.fire({icon:'error',title:'Lỗi',text: err.message || 'Không thể thêm địa chỉ.'});
+        }
     };
 
     // ================== WALLET ==================
