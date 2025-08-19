@@ -12,6 +12,8 @@
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
+    <!-- Add html5-qrcode library for QR code scanning -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             /* Màu chính */
@@ -333,7 +335,7 @@
         .table td {
             padding: 1.5rem 1rem;
             border-bottom: 1px solid var(--border-color);
-            vertical-align: middle; /* Đây là key fix - đảm bảo tất cả nội dung trong ô được căn giữa theo chiều dọc */
+            vertical-align: middle;
             text-align: center;
             color: var(--text-content);
         }
@@ -362,7 +364,6 @@
             box-shadow: 0 8px 25px rgba(21, 48, 84, 0.2);
         }
 
-        /* Action buttons - đã sửa để căn giữa hoàn hảo */
         .action-buttons {
             display: flex;
             justify-content: center;
@@ -370,12 +371,10 @@
             gap: 8px;
             height: 100%;
             width: 100%;
-            /* Loại bỏ min-height và flex-wrap để tránh conflict */
         }
 
-        /* Đảm bảo các nút trong action-buttons được căn giữa */
         .action-buttons .btn {
-            margin: 0; /* Loại bỏ margin mặc định */
+            margin: 0;
         }
 
         .form-switch {
@@ -704,6 +703,18 @@
             color: var(--error-text);
         }
 
+        /* QR Scanner Modal */
+        #qrScannerModal .modal-dialog {
+            max-width: 600px;
+        }
+
+        #qr-reader {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -763,6 +774,14 @@
                 left: 20px;
                 top: 80px;
             }
+
+            #qrScannerModal .modal-dialog {
+                max-width: 90%;
+            }
+
+            #qr-reader {
+                max-height: 300px;
+            }
         }
 
         .spinner {
@@ -807,7 +826,7 @@
                     <i class="fas fa-search section-icon"></i>
                     <h3 class="fs-4 fw-bold text-dark mb-0">Tìm kiếm & Lọc</h3>
                 </div>
-                <form th:action="@{/acvstore/san-pham}" method="get">
+                <form th:action="@{/acvstore/san-pham}" method="get" id="searchForm">
                     <div class="search-form-row">
                         <div class="col-md-4">
                             <div class="floating-label">
@@ -828,11 +847,17 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4" th:if="${isAdmin}">
-                            <a th:href="@{/acvstore/chi-tiet-san-pham/add}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2" style="height: 58px; margin-bottom: 6px;">
-                                <i class="fas fa-plus"></i>
-                                <span class="">Thêm sản phẩm mới</span>
-                            </a>
+                        <div class="col-md-4">
+                            <div class="d-flex gap-2" style="height: 58px; margin-bottom: 6px;">
+                                <a th:href="@{/acvstore/chi-tiet-san-pham/add}" th:if="${isAdmin}" class="btn btn-primary flex-fill d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Thêm sản phẩm mới</span>
+                                </a>
+                                <button type="button" class="btn btn-secondary flex-fill d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
+                                    <i class="fas fa-qrcode"></i>
+                                    <span>Quét QR</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -905,10 +930,8 @@
                             <td>
                                 <span class="fw-bold" th:text="${sp.thoiGianTao != null ? #temporals.format(sp.thoiGianTao, 'dd/MM/yyyy') : 'N/A'}"></span>
                             </td>
-                            <!-- Cột Thao tác với nút đã được sửa lỗi căn giữa -->
                             <td>
                                 <div class="action-buttons">
-                                    <!-- Nút cho Admin: Edit + View nằm ngang -->
                                     <div th:if="${isAdmin}" class="d-flex gap-2">
                                         <button class="btn btn-warning btn-sm"
                                                 data-bs-toggle="modal"
@@ -923,7 +946,6 @@
                                             <i class="fas fa-eye"></i>
                                         </a>
                                     </div>
-                                    <!-- Nút cho Employee: Chỉ View -->
                                     <div th:unless="${isAdmin}">
                                         <a th:href="@{'/acvstore/chi-tiet-san-pham?productId=' + ${sp.id}}"
                                            class="btn btn-success btn-sm"
@@ -959,7 +981,7 @@
                 </nav>
             </div>
 
-            <!-- Modal chỉ hiển thị cho Admin -->
+            <!-- Modal for Editing Product (Admin Only) -->
             <div class="modal fade" id="editSanPhamModal" tabindex="-1" aria-labelledby="editSanPhamModalLabel" aria-hidden="true" th:if="${isAdmin}">
                 <div class="modal-dialog modal-dialog-centered modal-xl">
                     <div class="modal-content">
@@ -1044,6 +1066,106 @@
                     </div>
                 </div>
             </div>
+
+            <!-- QR Scanner Modal -->
+            <div class="modal fade" id="qrScannerModal" tabindex="-1" aria-labelledby="qrScannerModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="qrScannerModalLabel">
+                                <i class="fas fa-qrcode"></i>
+                                Quét mã QR sản phẩm
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="qr-reader" style="width: 100%; max-height: 400px;"></div>
+                            <div id="qrResult" class="text-center mt-3">
+                                <p class="text-muted">Vui lòng hướng camera vào mã QR</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeQrScanner">
+                                <i class="fas fa-times me-2"></i>Đóng
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Variant Details Modal -->
+            <div class="modal fade" id="sanPhamListFormModal" tabindex="-1" aria-labelledby="sanPhamListFormModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="sanPhamListFormModalLabel">
+                                <i class="fas fa-info-circle"></i>
+                                Chi tiết sản phẩm
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-4">
+                                <div class="col-md-6 d-flex align-items-center justify-content-center" style="padding-left: 60px;">
+                                    <img id="variantImage" class="product-image"
+                                         style="max-width: 200px; max-height: 200px;"
+                                         alt="Product Variant Image">
+                                    <div id="noVariantImage"
+                                         class="d-flex align-items-center justify-content-center rounded"
+                                         style="width: 200px; height: 200px; display: none;">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Mã sản phẩm</label>
+                                        <p id="variantMaSanPham" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Tên sản phẩm</label>
+                                        <p id="variantTenSanPham" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Danh mục</label>
+                                        <p id="variantDanhMuc" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Màu sắc</label>
+                                        <p id="variantMauSac" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Kích cỡ</label>
+                                        <p id="variantKichCo" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Số lượng</label>
+                                        <p id="variantSoLuong" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Giá</label>
+                                        <p id="variantGia" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Trạng thái</label>
+                                        <p id="variantTrangThai" class="fw-medium text-content"></p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="fw-semibold text-dark">Ngày tạo</label>
+                                        <p id="variantThoiGianTao" class="fw-medium text-content"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>Đóng
+                            </button>
+                            <a id="viewDetailsLink" class="btn btn-success">
+                                <i class="fas fa-eye me-2"></i>Xem chi tiết
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1069,7 +1191,6 @@
             info:    "fas fa-info-circle"
         };
 
-        // warning dùng chữ tối, các loại khác chữ trắng
         const textClass = type === "warning" ? "text-dark" : "text-white";
         const closeBtnClass = type === "warning" ? "btn-close" : "btn-close btn-close-white";
 
@@ -1079,14 +1200,14 @@
         toast.setAttribute('aria-atomic', 'true');
 
         toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body d-flex align-items-center gap-2">
-        <i class="${icon[type] || icon.info}"></i>
-        <span class="fw-medium">${message}</span>
-      </div>
-      <button type="button" class="${closeBtnClass} me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  `;
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center gap-2">
+                    <i class="${icon[type] || icon.info}"></i>
+                    <span class="fw-medium">${message}</span>
+                </div>
+                <button type="button" class="${closeBtnClass} me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
 
         container.appendChild(toast);
         setTimeout(() => { if (toast.parentNode) toast.remove(); }, 4000);
@@ -1095,10 +1216,9 @@
     async function fetchJson(url, options) {
         const res = await fetch(url, options);
         let data = null;
-        try { data = await res.json(); } catch (_) {} // phòng khi body rỗng / không phải JSON
-
+        try { data = await res.json(); } catch (_) {}
         if (!res.ok) {
-            const err = new Error((data && data.message) ? data.message : `HTTP ${res.status}`);
+            const err = new Error((data && data.error) ? data.error : `HTTP ${res.status}`);
             err.status = res.status;
             err.payload = data;
             throw err;
@@ -1106,14 +1226,140 @@
         return data || {};
     }
 
+    let html5QrCode = null;
+
+    async function showQrScanner() {
+        const qrReader = document.getElementById('qr-reader');
+        const qrResult = document.getElementById('qrResult');
+        if (!qrReader) {
+            console.error('QR reader element not found');
+            showToast('Không tìm thấy phần tử quét QR.', 'error');
+            return;
+        }
+
+        try {
+            // Initialize html5-qrcode scanner
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            // Start scanning with back camera
+            await html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10, // Frames per second for scanning
+                    qrbox: { width: 250, height: 250 } // Scanning box size
+                },
+                (decodedText) => {
+                    // Success callback when QR code is decoded
+                    addProductByQr(decodedText);
+                    stopQrScanner();
+                },
+                (error) => {
+                    // Optional error callback (can be used for debugging)
+                    console.warn('QR scan error:', error);
+                }
+            );
+            qrResult.innerHTML = '<p class="text-muted">Vui lòng hướng camera vào mã QR</p>';
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            qrResult.innerHTML = '<p class="text-danger">Không thể truy cập camera. Vui lòng kiểm tra quyền truy cập.</p>';
+            showToast('Lỗi khi mở camera. Vui lòng kiểm tra quyền truy cập.', 'error');
+        }
+    }
+
+    function stopQrScanner() {
+        if (html5QrCode) {
+            html5QrCode
+                .stop()
+                .then(() => {
+                    html5QrCode.clear();
+                    html5QrCode = null;
+                })
+                .catch((error) => {
+                    console.error('Lỗi khi dừng quét QR:', error);
+                    showToast('Lỗi khi dừng quét QR.', 'error');
+                });
+        }
+        const qrScannerModal = bootstrap.Modal.getInstance(document.getElementById('qrScannerModal'));
+        if (qrScannerModal) {
+            qrScannerModal.hide();
+        }
+    }
+
+    function addProductByQr(decodedText) {
+        console.log('QR Code detected:', decodedText);
+        const qrResult = document.getElementById('qrResult');
+        // Validate UUID format
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(decodedText)) {
+            qrResult.innerHTML = '<p class="text-danger">Mã QR không hợp lệ.</p>';
+            showToast('Mã QR không hợp lệ.', 'error');
+            return;
+        }
+
+        fetchJson(`/acvstore/chi-tiet-san-pham/edit/${decodedText}`)
+            .then(data => {
+                if (data.error) {
+                    qrResult.innerHTML = `<p class="text-danger">${data.error}</p>`;
+                    showToast(data.error, 'error');
+                } else {
+                    // Populate the product variant details modal
+                    const modal = new bootstrap.Modal(document.getElementById('sanPhamListFormModal'));
+                    const variantImage = document.getElementById('variantImage');
+                    const noVariantImage = document.getElementById('noVariantImage');
+                    const variantMaSanPham = document.getElementById('variantMaSanPham');
+                    const variantTenSanPham = document.getElementById('variantTenSanPham');
+                    const variantDanhMuc = document.getElementById('variantDanhMuc');
+                    const variantMauSac = document.getElementById('variantMauSac');
+                    const variantKichCo = document.getElementById('variantKichCo');
+                    const variantSoLuong = document.getElementById('variantSoLuong');
+                    const variantGia = document.getElementById('variantGia');
+                    const variantTrangThai = document.getElementById('variantTrangThai');
+                    const variantThoiGianTao = document.getElementById('variantThoiGianTao');
+                    const viewDetailsLink = document.getElementById('viewDetailsLink');
+
+                    // Set image (prioritize variant-specific images)
+                    if (data.images && data.images.length > 0) {
+                        const firstImage = data.images[0].imageUrl;
+                        const absoluteUrl = firstImage.startsWith('/') ? `${window.location.origin}${firstImage}` : firstImage;
+                        variantImage.src = absoluteUrl;
+                        variantImage.style.display = 'block';
+                        noVariantImage.style.display = 'none';
+                        variantImage.onerror = () => {
+                            variantImage.style.display = 'none';
+                            noVariantImage.style.display = 'flex';
+                        };
+                    } else {
+                        variantImage.style.display = 'none';
+                        noVariantImage.style.display = 'flex';
+                    }
+
+                    // Set product details
+                    variantMaSanPham.textContent = data.maSanPham || 'N/A';
+                    variantTenSanPham.textContent = data.tenSanPham || 'N/A';
+                    variantDanhMuc.textContent = data.tenDanhMuc || 'N/A';
+                    variantMauSac.textContent = data.tenMauSac || 'N/A';
+                    variantKichCo.textContent = data.tenKichCo || 'N/A';
+                    variantSoLuong.textContent = data.stockQuantity != null ? data.stockQuantity : '0';
+                    variantGia.textContent = data.price != null ? data.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : 'N/A';
+                    variantTrangThai.textContent = data.status ? 'Đang Bán' : 'Ngừng Bán';
+                    variantThoiGianTao.textContent = data.thoiGianTao ? new Date(data.thoiGianTao).toLocaleDateString('vi-VN') : 'N/A';
+                    viewDetailsLink.href = `/acvstore/chi-tiet-san-pham?productId=${data.productId || ''}`;
+
+                    modal.show();
+                    showToast('Tìm thấy sản phẩm từ mã QR!', 'success');
+                }
+            })
+            .catch(err => {
+                qrResult.innerHTML = `<p class="text-danger">${err.message || 'Lỗi khi tìm sản phẩm.'}</p>`;
+                showToast(err.message || 'Lỗi khi tìm sản phẩm.', 'error');
+            });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Chỉ khởi tạo các event listener cho Admin
         const isAdmin = document.querySelector('.role-admin') !== null;
-
         if (!isAdmin) {
             console.log('Employee user - Management functions disabled');
-            return;
+            // QR scanning is allowed for both admin and employee
         }
 
         const editSanPhamModal = document.getElementById('editSanPhamModal');
@@ -1125,6 +1371,9 @@
         const trangThaiLabel = document.getElementById('trangThaiLabel');
         const noImagePlaceholder = document.getElementById('noImagePlaceholder');
 
+        // QR Scanner elements
+        const qrScannerModal = document.getElementById('qrScannerModal');
+
         function updateTrangThaiLabel() {
             if (trangThaiLabel && trangThaiInput) {
                 trangThaiLabel.textContent = trangThaiInput.checked ? 'Đang Bán' : 'Ngừng Bán';
@@ -1133,9 +1382,7 @@
 
         function updateImagePreview(imageUrl = null, file = null) {
             if (!imagePreview || !noImagePlaceholder || !imageNameDisplay) return;
-
             console.log('updateImagePreview called with imageUrl:', imageUrl, 'file:', file);
-
             if (file) {
                 console.log('Previewing uploaded file:', file.name);
                 const reader = new FileReader();
@@ -1189,7 +1436,6 @@
 
                 modalTitle.innerHTML = `<i class="fas fa-edit"></i> Chỉnh sửa sản phẩm #${sanPhamId}`;
                 sanPhamIdInput.value = sanPhamId;
-
                 maSanPhamInput.value = '';
                 tenSanPhamInput.value = '';
                 moTaInput.value = '';
@@ -1200,7 +1446,6 @@
                 updateImagePreview();
 
                 console.log('Fetching product data for ID:', sanPhamId);
-
                 fetch(`/acvstore/san-pham/get/${sanPhamId}`)
                     .then(response => {
                         if (!response.ok) {
@@ -1232,7 +1477,6 @@
         if (editSanPhamForm) {
             editSanPhamForm.addEventListener('submit', function(event) {
                 event.preventDefault();
-
                 const id = editSanPhamForm.querySelector('input[name="id"]').value;
                 const maSanPham = editSanPhamForm.querySelector('input[name="maSanPham"]').value.trim();
                 const tenSanPham = editSanPhamForm.querySelector('input[name="tenSanPham"]').value.trim();
@@ -1256,7 +1500,6 @@
                 if (imageFile) formData.append('imageFile', imageFile);
 
                 console.log('Sending FormData:', { id, maSanPham, tenSanPham, moTa, trangThai, danhMucId, imageFile });
-
                 fetchJson('/acvstore/san-pham/save', {
                     method: 'POST',
                     body: formData
@@ -1265,7 +1508,6 @@
                         if (data.success) {
                             const modal = bootstrap.Modal.getInstance(editSanPhamModal);
                             modal.hide();
-
                             const sanPham = data.sanPham;
                             let row = document.querySelector(`#sanPhamTable tbody tr[data-id="${sanPham.id}"]`);
                             if (row) {
@@ -1276,31 +1518,27 @@
                                 row.cells[3].innerHTML = `<div class="fw-semibold text-dark">${sanPham.tenSanPham || ''}</div>`;
                                 row.cells[4].innerHTML = `<span class="badge badge-success">${sanPham.tenDanhMuc || 'N/A'}</span>`;
                                 row.cells[5].innerHTML = `<span class="fw-bold fs-8">${sanPham.tongSoLuong || 0}</span>`;
-
                                 const statusCell = row.cells[6];
                                 if (statusCell) {
                                     statusCell.innerHTML = `
-          <div class="form-check form-switch d-flex justify-content-center align-items-center">
-            <input class="form-check-input status-toggle" type="checkbox" ${sanPham.trangThai ? 'checked' : ''} data-id="${sanPham.id}" role="switch">
-            <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
-          </div>`;
+                                        <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                            <input class="form-check-input status-toggle" type="checkbox" ${sanPham.trangThai ? 'checked' : ''} data-id="${sanPham.id}" role="switch">
+                                            <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
+                                        </div>`;
                                 }
                             }
                             showToast("Cập nhật sản phẩm thành công!", "success");
                         } else {
-                            // Trường hợp BE trả 200 nhưng success=false (hiếm) -> warning
                             showToast(data.message || "Không thể lưu sản phẩm.", "warning");
                         }
                     })
                     .catch(err => {
-                        // 400 validate từ BE -> warning vàng + message chuẩn
                         const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
                         showToast((tone === "warning" ? "" : "Lỗi khi lưu sản phẩm: ") + (err.message || "Có lỗi xảy ra."), tone);
                     });
             });
         }
 
-        // Status toggle functionality - chỉ cho admin
         document.querySelectorAll('.status-toggle').forEach(toggle => {
             toggle.addEventListener('change', function() {
                 const sanPhamId = this.getAttribute('data-id');
@@ -1313,7 +1551,6 @@
                 }
 
                 label.textContent = newTrangThai ? 'Đang Bán' : 'Ngừng Bán';
-
                 fetchJson('/acvstore/san-pham/update-status', {
                     method: 'POST',
                     headers: {
@@ -1327,7 +1564,6 @@
                             showToast('Cập nhật trạng thái thành công!', 'success');
                         } else {
                             showToast(data.message || 'Không thể cập nhật trạng thái.', 'warning');
-                            // revert UI
                             toggle.checked = !newTrangThai;
                             label.textContent = newTrangThai ? 'Ngừng Bán' : 'Đang Bán';
                         }
@@ -1335,12 +1571,22 @@
                     .catch(err => {
                         const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
                         showToast(err.message || 'Không thể cập nhật trạng thái.', tone);
-                        // revert UI
                         toggle.checked = !newTrangThai;
                         label.textContent = newTrangThai ? 'Ngừng Bán' : 'Đang Bán';
                     });
             });
         });
+
+        // QR Scanner Functionality
+        if (qrScannerModal) {
+            qrScannerModal.addEventListener('show.bs.modal', function() {
+                showQrScanner();
+            });
+
+            qrScannerModal.addEventListener('hidden.bs.modal', function() {
+                stopQrScanner();
+            });
+        }
     });
 </script>
 <script th:src="@{/js/notification.js}"></script>
