@@ -31,7 +31,8 @@ public class TayAoService {
 
     // Tìm kiếm tay áo với phân trang
     public Page<TayAo> searchTayAo(String tenTayAo, Pageable pageable) {
-        return tayAoRepository.findByTenTayAoContainingIgnoreCase(tenTayAo, pageable);
+        String keyword = (tenTayAo == null) ? "" : tenTayAo.trim();
+        return tayAoRepository.findByTenTayAoContainingIgnoreCase(keyword, pageable);
     }
 
     public TayAo getTayAoById(UUID id) {

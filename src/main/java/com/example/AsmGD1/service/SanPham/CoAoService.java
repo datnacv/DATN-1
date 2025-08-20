@@ -31,7 +31,8 @@ public class CoAoService {
 
     // Tìm kiếm cổ áo với phân trang
     public Page<CoAo> searchCoAo(String tenCoAo, Pageable pageable) {
-        return coAoRepository.findByTenCoAoContainingIgnoreCase(tenCoAo, pageable);
+        String keyword = (tenCoAo == null) ? "" : tenCoAo.trim();
+        return coAoRepository.findByTenCoAoContainingIgnoreCase(keyword, pageable);
     }
 
     public CoAo getCoAoById(UUID id) {

@@ -31,7 +31,8 @@ public class ThuongHieuService {
 
     // Tìm kiếm thương hiệu với phân trang
     public Page<ThuongHieu> searchThuongHieu(String tenThuongHieu, Pageable pageable) {
-        return thuongHieuRepository.findByTenThuongHieuContainingIgnoreCase(tenThuongHieu, pageable);
+        String keyword = (tenThuongHieu == null) ? "" : tenThuongHieu.trim();
+        return thuongHieuRepository.findByTenThuongHieuContainingIgnoreCase(keyword, pageable);
     }
 
     public ThuongHieu getThuongHieuById(UUID id) {

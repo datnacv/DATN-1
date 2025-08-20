@@ -31,7 +31,8 @@ public class DanhMucService {
 
     // Tìm kiếm danh mục với phân trang
     public Page<DanhMuc> searchDanhMuc(String tenDanhMuc, Pageable pageable) {
-        return danhMucRepository.findByTenDanhMucContainingIgnoreCase(tenDanhMuc, pageable);
+        String keyword = (tenDanhMuc == null) ? "" : tenDanhMuc.trim();
+        return danhMucRepository.findByTenDanhMucContainingIgnoreCase(keyword, pageable);
     }
 
     public DanhMuc getDanhMucById(UUID id) {

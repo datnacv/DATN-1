@@ -1,6 +1,7 @@
 package com.example.AsmGD1.service.SanPham;
 
 import com.example.AsmGD1.entity.ChatLieu;
+import com.example.AsmGD1.entity.KichCo;
 import com.example.AsmGD1.repository.SanPham.ChatLieuRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,8 @@ public class ChatLieuService {
 
     // Tìm kiếm chất liệu với phân trang
     public Page<ChatLieu> searchChatLieu(String tenChatLieu, Pageable pageable) {
-        return chatLieuRepository.findByTenChatLieuContainingIgnoreCase(tenChatLieu, pageable);
+        String keyword = (tenChatLieu == null) ? "" : tenChatLieu.trim();
+        return chatLieuRepository.findByTenChatLieuContainingIgnoreCase(keyword, pageable);
     }
 
     public ChatLieu getChatLieuById(UUID id) {

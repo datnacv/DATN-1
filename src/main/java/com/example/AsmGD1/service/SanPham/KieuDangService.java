@@ -1,5 +1,6 @@
 package com.example.AsmGD1.service.SanPham;
 
+import com.example.AsmGD1.entity.ChatLieu;
 import com.example.AsmGD1.entity.KieuDang;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.KieuDangRepository;
@@ -31,7 +32,8 @@ public class KieuDangService {
 
     // Tìm kiếm kiểu dáng với phân trang
     public Page<KieuDang> searchKieuDang(String tenKieuDang, Pageable pageable) {
-        return kieuDangRepository.findByTenKieuDangContainingIgnoreCase(tenKieuDang, pageable);
+        String keyword = (tenKieuDang == null) ? "" : tenKieuDang.trim();
+        return kieuDangRepository.findByTenKieuDangContainingIgnoreCase(keyword, pageable);
     }
 
     public KieuDang getKieuDangById(UUID id) {

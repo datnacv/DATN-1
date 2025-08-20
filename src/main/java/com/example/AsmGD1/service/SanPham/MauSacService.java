@@ -1,6 +1,7 @@
 package com.example.AsmGD1.service.SanPham;
 
 import com.example.AsmGD1.entity.MauSac;
+import com.example.AsmGD1.entity.XuatXu;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.MauSacRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,8 @@ public class MauSacService {
 
     // Tìm kiếm màu sắc với phân trang
     public Page<MauSac> searchMauSac(String tenMau, Pageable pageable) {
-        return mauSacRepository.findByTenMauContainingIgnoreCase(tenMau, pageable);
+        String keyword = (tenMau == null) ? "" : tenMau.trim();
+        return mauSacRepository.findByTenMauContainingIgnoreCase(keyword, pageable);
     }
 
     public MauSac getMauSacById(UUID id) {
