@@ -351,6 +351,7 @@ public class HoaDonService {
         hoaDonRepository.delete(hoaDon);
     }
 
+    @Transactional
     public void createHoaDonFromDonHang(DonHang donHang) {
         DonHang refreshedDonHang = donHangRepository.findById(donHang.getId())
                 .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại với ID: " + donHang.getId()));
@@ -378,18 +379,37 @@ public class HoaDonService {
             donHangRepository.save(refreshedDonHang);
             trangThai = "Đã xác nhận Online";
             ghiChu = "Thanh toán bằng ví điện tử thành công";
+            // Trừ tồn kho ngay khi thanh toán ví thành công
+            for (ChiTietDonHang chiTiet : refreshedDonHang.getChiTietDonHangs()) {
+                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
+                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
+                int soLuong = chiTiet.getSoLuong();
+                if (chiTietSanPham.getSoLuongTonKho() < soLuong) {
+                    throw new RuntimeException("Sản phẩm " + chiTietSanPham.getSanPham().getTenSanPham() + " không đủ tồn kho.");
+                }
+                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - soLuong);
+                chiTietSanPhamRepository.save(chiTietSanPham);
+            }
         } else if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Hoàn thành";
             ghiChu = "Hoàn thành (Tại quầy)";
             refreshedDonHang.setTrangThaiThanhToan(true);
             refreshedDonHang.setThoiGianThanhToan(LocalDateTime.now());
             donHangRepository.save(refreshedDonHang);
-        } else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
-            trangThai = "Chưa xác nhận";
-            ghiChu = "Hóa đơn Online được tạo";
+            // Trừ tồn kho ngay khi mua tại quầy
+            for (ChiTietDonHang chiTiet : refreshedDonHang.getChiTietDonHangs()) {
+                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
+                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
+                int soLuong = chiTiet.getSoLuong();
+                if (chiTietSanPham.getSoLuongTonKho() < soLuong) {
+                    throw new RuntimeException("Sản phẩm " + chiTietSanPham.getSanPham().getTenSanPham() + " không đủ tồn kho.");
+                }
+                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - soLuong);
+                chiTietSanPhamRepository.save(chiTietSanPham);
+            }
         } else {
-            trangThai = "Đã xác nhận";
-            ghiChu = "Đã xác nhận đơn hàng Giao hàng";
+            trangThai = "Chưa xác nhận";
+            ghiChu = "Hóa đơn Online được tạo, chờ admin xác nhận";
         }
 
         hoaDon.setTrangThai(trangThai);
@@ -871,6 +891,21 @@ public class HoaDonService {
         HoaDon hd = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
         validateTransition(hd.getTrangThai(), newStatus, hd.getDonHang().getPhuongThucBanHang());
+
+        // Trừ tồn kho khi chuyển sang trạng thái "Đã xác nhận" hoặc "Đã xác nhận Online"
+        if (List.of("Đã xác nhận", "Đã xác nhận Online").contains(newStatus) && "Chưa xác nhận".equals(hd.getTrangThai())) {
+            DonHang donHang = hd.getDonHang();
+            for (ChiTietDonHang chiTiet : donHang.getChiTietDonHangs()) {
+                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
+                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
+                int soLuong = chiTiet.getSoLuong();
+                if (chiTietSanPham.getSoLuongTonKho() < soLuong) {
+                    throw new RuntimeException("Sản phẩm " + chiTietSanPham.getSanPham().getTenSanPham() + " không đủ tồn kho.");
+                }
+                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - soLuong);
+                chiTietSanPhamRepository.save(chiTietSanPham);
+            }
+        }
 
         hd.setTrangThai(newStatus);
         hd.setGhiChu(ghiChu);
