@@ -4,16 +4,19 @@ import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
+import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
 import com.example.AsmGD1.repository.NguoiDung.NguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ThongBao.ChiTietThongBaoNhomRepository;
 import com.example.AsmGD1.repository.ThongBao.ThongBaoNhomRepository;
 import com.example.AsmGD1.repository.WebKhachHang.DanhGiaRepository;
+import com.example.AsmGD1.repository.WebKhachHang.LichSuDoiSanPhamRepository;
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -84,6 +88,12 @@ public class KHDonMuaController {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
+
+    @Autowired
+    private LichSuDoiSanPhamRepository lichSuDoiSanPhamRepository;
+
+    @Autowired
+    private LichSuHoaDonRepository lichSuHoaDonRepository;
 
     private final String UPLOAD_DIR;
 
@@ -150,7 +160,9 @@ public class KHDonMuaController {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-        Pageable pageable = PageRequest.of(page, 5); // 5 đơn hàng mỗi trang
+        // Sắp xếp theo ngày tạo giảm dần (mới nhất lên đầu)
+        Sort sort = Sort.by(Sort.Direction.DESC, "ngayTao");
+        Pageable pageable = PageRequest.of(page, 5, sort); // 5 đơn hàng mỗi trang, sắp xếp theo ngayTao DESC
         Page<HoaDon> hoaDonPage;
 
         if ("tat-ca".equalsIgnoreCase(status)) {
@@ -165,6 +177,7 @@ public class KHDonMuaController {
                 case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
                 case "da-tra-hang" -> "Hoàn trả";
+                case "da-doi-hang" -> "Đã đổi hàng";
                 default -> "";
             };
             hoaDonPage = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb, pageable);
@@ -697,5 +710,268 @@ public class KHDonMuaController {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
         return formatter.format(value) + " VNĐ";
+    }
+
+    @GetMapping("/tra-doi-san-pham/{id}")
+    public String showExchangeForm(@PathVariable UUID id, Model model, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return "redirect:/dang-nhap";
+        }
+
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return "redirect:/dang-nhap";
+        }
+
+        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId()) || !"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+            model.addAttribute("hoaDon", null);
+            return "WebKhachHang/tra-doi-san-pham";
+        }
+
+        List<ChiTietDonHang> chiTietDonHangs = chiTietDonHangRepository.findByDonHangId(hoaDon.getDonHang().getId());
+        BigDecimal minPrice = chiTietDonHangs.stream()
+                .map(ChiTietDonHang::getGia)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
+
+        List<ChiTietSanPham> replacementProducts = chiTietSanPhamRepository
+                .findByGiaGreaterThanEqualAndSoLuongTonKhoGreaterThan(minPrice, 0);
+
+        model.addAttribute("hoaDon", hoaDon);
+        model.addAttribute("replacementProducts", replacementProducts);
+        model.addAttribute("user", nguoiDung); // Sử dụng thông tin người dùng thực tế
+        model.addAttribute("keyword", "");
+        model.addAttribute("cartCount", 0);
+        return "WebKhachHang/tra-doi-san-pham";
+    }
+
+    @PostMapping("/api/orders/exchange/{id}")
+    @Transactional(rollbackOn = Exception.class)
+    public ResponseEntity<Map<String, Object>> processExchange(
+            @PathVariable UUID id,
+            @RequestParam List<UUID> selectedProducts,
+            @RequestParam List<UUID> replacementProducts,
+            @RequestParam int soLuong,
+            @RequestParam String reason,
+            @RequestParam(required = false) String description,
+            @RequestParam String email,
+            HttpSession session,
+            Authentication authentication) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Vui lòng đăng nhập để tiếp tục.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                response.put("success", false);
+                response.put("message", "Không thể xác định người dùng.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            NguoiDung user = nguoiDungService.findById(nguoiDungId);
+            if (user == null) {
+                response.put("success", false);
+                response.put("message", "Người dùng không tồn tại.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            // Kiểm tra hóa đơn
+            Optional<HoaDon> hoaDonOpt = hoaDonRepo.findById(id);
+            if (hoaDonOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Hóa đơn không tồn tại.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            HoaDon hoaDon = hoaDonOpt.get();
+
+            // Kiểm tra quyền sở hữu
+            if (!hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDungId)) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền đổi đơn hàng này.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
+            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+                response.put("success", false);
+                response.put("message", "Chỉ có thể đổi sản phẩm khi hóa đơn ở trạng thái 'Vận chuyển thành công'.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Validate input
+            if (selectedProducts == null || selectedProducts.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Vui lòng chọn ít nhất một sản phẩm để đổi.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (replacementProducts == null || replacementProducts.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Vui lòng chọn ít nhất một sản phẩm thay thế.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (selectedProducts.size() != replacementProducts.size()) {
+                response.put("success", false);
+                response.put("message", "Số lượng sản phẩm đổi và sản phẩm thay thế phải bằng nhau.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            if (soLuong <= 0) {
+                response.put("success", false);
+                response.put("message", "Số lượng phải lớn hơn 0.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Xử lý từng cặp sản phẩm
+            for (int i = 0; i < selectedProducts.size(); i++) {
+                UUID selectedProductId = selectedProducts.get(i);
+                UUID replacementProductId = replacementProducts.get(i);
+
+                // Tìm chi tiết đơn hàng
+                Optional<ChiTietDonHang> chiTietOpt = chiTietDonHangRepository.findById(selectedProductId);
+                if (chiTietOpt.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "Không tìm thấy sản phẩm trong đơn hàng.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                ChiTietDonHang chiTietDonHang = chiTietOpt.get();
+
+                // Kiểm tra sản phẩm thuộc đơn hàng này
+                if (!chiTietDonHang.getDonHang().getId().equals(hoaDon.getDonHang().getId())) {
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm không thuộc hóa đơn này.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                // Kiểm tra trạng thái đã đổi/trả
+                if (Boolean.TRUE.equals(chiTietDonHang.getTrangThaiHoanTra()) ||
+                        Boolean.TRUE.equals(chiTietDonHang.getTrangThaiDoiSanPham())) {
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm đã được trả hoặc đổi trước đó.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                // Kiểm tra số lượng đổi
+                if (soLuong > chiTietDonHang.getSoLuong()) {
+                    response.put("success", false);
+                    response.put("message", "Số lượng đổi không được vượt quá số lượng đã mua.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                // Tìm sản phẩm thay thế
+                Optional<ChiTietSanPham> sanPhamThayTheOpt = chiTietSanPhamRepository.findById(replacementProductId);
+                if (sanPhamThayTheOpt.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm thay thế không tồn tại.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                ChiTietSanPham chiTietSanPhamThayThe = sanPhamThayTheOpt.get();
+
+                // Kiểm tra tồn kho
+                if (chiTietSanPhamThayThe.getSoLuongTonKho() < soLuong) {
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm thay thế không đủ tồn kho.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                // Kiểm tra giá (sản phẩm thay thế phải có giá >= giá gốc)
+                if (chiTietSanPhamThayThe.getGia().compareTo(chiTietDonHang.getGia()) < 0) {
+                    response.put("success", false);
+                    response.put("message", "Giá sản phẩm thay thế phải lớn hơn hoặc bằng giá sản phẩm được đổi.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+
+                // Tạo lịch sử đổi sản phẩm
+                BigDecimal tongTienHoan = chiTietDonHang.getGia().multiply(BigDecimal.valueOf(soLuong));
+                String lyDoDay = reason + (description != null && !description.trim().isEmpty() ? ": " + description : "");
+
+                LichSuDoiSanPham lichSuDoiSanPham = new LichSuDoiSanPham();
+                lichSuDoiSanPham.setChiTietDonHang(chiTietDonHang);
+                lichSuDoiSanPham.setHoaDon(hoaDon);
+                lichSuDoiSanPham.setChiTietSanPhamThayThe(chiTietSanPhamThayThe);
+                lichSuDoiSanPham.setSoLuong(soLuong);
+                lichSuDoiSanPham.setTongTienHoan(tongTienHoan);
+                lichSuDoiSanPham.setLyDoDoiHang(lyDoDay);
+                lichSuDoiSanPham.setThoiGianDoi(LocalDateTime.now());
+                lichSuDoiSanPham.setTrangThai("Chờ xử lý");
+                lichSuDoiSanPhamRepository.save(lichSuDoiSanPham);
+
+                // Cập nhật trạng thái chi tiết đơn hàng
+                chiTietDonHang.setTrangThaiDoiSanPham(true);
+                chiTietDonHang.setLyDoDoiHang(lyDoDay);
+                chiTietDonHangRepository.save(chiTietDonHang);
+
+                // Cập nhật tồn kho
+                ChiTietSanPham originalProduct = chiTietDonHang.getChiTietSanPham();
+                originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + soLuong);
+                chiTietSanPhamThayThe.setSoLuongTonKho(chiTietSanPhamThayThe.getSoLuongTonKho() - soLuong);
+
+                chiTietSanPhamRepository.save(originalProduct);
+                chiTietSanPhamRepository.save(chiTietSanPhamThayThe);
+            }
+
+            // Cập nhật trạng thái hóa đơn
+            hoaDon.setTrangThai("Đã đổi hàng");
+            logger.info("Cập nhật trạng thái hóa đơn {} thành 'Đã đổi hàng'", hoaDon.getId());
+            HoaDon savedHoaDon = hoaDonRepo.save(hoaDon);
+            logger.info("Trạng thái hóa đơn sau khi lưu: {}", savedHoaDon.getTrangThai());
+
+            // Thêm lịch sử hóa đơn
+            String lyDoDay = reason + (description != null && !description.trim().isEmpty() ? ": " + description : "");
+            LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+            lichSuHoaDon.setHoaDon(hoaDon);
+            lichSuHoaDon.setTrangThai("Đã đổi hàng");
+            lichSuHoaDon.setThoiGian(LocalDateTime.now());
+            lichSuHoaDon.setGhiChu("Khách hàng yêu cầu đổi sản phẩm: " + lyDoDay);
+            lichSuHoaDonRepository.save(lichSuHoaDon);
+
+            // Tạo thông báo cho admin
+            try {
+                thongBaoService.taoThongBaoHeThong(
+                        "admin",
+                        "Yêu cầu đổi sản phẩm mới",
+                        "Khách hàng " + user.getHoTen() + " yêu cầu đổi sản phẩm cho đơn hàng " + hoaDon.getDonHang().getMaDonHang(),
+                        hoaDon.getDonHang()
+                );
+            } catch (Exception e) {
+                logger.warn("Không thể tạo thông báo: {}", e.getMessage());
+            }
+
+            // Gửi email xác nhận
+            try {
+                String emailContent = "Yêu cầu đổi sản phẩm của bạn đã được gửi thành công.\n" +
+                        "Mã đơn hàng: " + hoaDon.getDonHang().getMaDonHang() + "\n" +
+                        "Lý do: " + lyDoDay + "\n" +
+                        "Chúng tôi sẽ xử lý yêu cầu trong thời gian sớm nhất.";
+                emailService.sendEmail(email, "Xác nhận yêu cầu đổi sản phẩm", emailContent);
+            } catch (Exception e) {
+                logger.warn("Không thể gửi email: {}", e.getMessage());
+            }
+
+            response.put("success", true);
+            response.put("message", "Yêu cầu đổi sản phẩm đã được gửi thành công.");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Lỗi khi xử lý yêu cầu đổi sản phẩm: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi xử lý yêu cầu. Vui lòng thử lại sau.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
     }
 }

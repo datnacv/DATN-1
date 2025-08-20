@@ -43,6 +43,12 @@ public class ChiTietDonHang {
     @Column(name = "ly_do_tra_hang")
     private String lyDoTraHang;
 
+    @Column(name = "trang_thai_doi_san_pham", nullable = false)
+    private Boolean trangThaiDoiSanPham = false;
+
+    @Column(name = "ly_do_doi_hang")
+    private String lyDoDoiHang;
+
     // Trường mới để lưu giá đã định dạng
     @Transient
     private String formattedGia;

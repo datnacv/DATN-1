@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,9 @@ import java.util.Map;
 
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, UUID> {
+
+    List<ChiTietSanPham> findByGiaGreaterThanEqualAndSoLuongTonKhoGreaterThan(BigDecimal gia, int soLuongTonKho);
+
 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.trangThai = true AND (c.sanPham.tenSanPham LIKE %:keyword% OR c.mauSac.tenMau LIKE %:keyword% OR c.kichCo.ten LIKE %:keyword%)")
     List<ChiTietSanPham> findAllByTrangThaiAndKeyword(@Param("keyword") String keyword);
