@@ -57,6 +57,29 @@ public class ChiTietSanPhamController {
         return false;
     }
 
+    // Helper method to check if current user can edit
+    private boolean canCurrentUserEdit() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            String role = user.getVaiTro();
+            // Only admin can edit, employees can only view
+            return "admin".equalsIgnoreCase(role);
+        }
+        return false;
+    }
+
+    // Helper method to check if user can view (both admin and employee)
+    private boolean canCurrentUserView() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            String role = user.getVaiTro();
+            return "admin".equalsIgnoreCase(role) || "employee".equalsIgnoreCase(role);
+        }
+        return false;
+    }
+
     // Helper method to add user info to model
     private void addUserInfoToModel(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -64,11 +87,15 @@ public class ChiTietSanPhamController {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             model.addAttribute("user", user);
             model.addAttribute("isAdmin", "admin".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("canEdit", "admin".equalsIgnoreCase(user.getVaiTro()));
+            model.addAttribute("isEmployee", "employee".equalsIgnoreCase(user.getVaiTro()));
         } else {
             // Fallback for testing
             List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
             model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             model.addAttribute("isAdmin", false);
+            model.addAttribute("canEdit", false);
+            model.addAttribute("isEmployee", false);
         }
     }
 
@@ -86,6 +113,10 @@ public class ChiTietSanPhamController {
                            @RequestParam(value = "gender", required = false) String gender,
                            @RequestParam(value = "status", required = false) Boolean status) {
         try {
+            if (!canCurrentUserView()) {
+                return "redirect:/acvstore/login?error=Bạn không có quyền truy cập trang này";
+            }
+
             addUserInfoToModel(model);
 
             model.addAttribute("sanPham", new SanPham());
@@ -153,8 +184,8 @@ public class ChiTietSanPhamController {
     @GetMapping("/add")
     public String hienThiFormThem(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
         try {
-            // Check admin permission
-            if (!isCurrentUserAdmin()) {
+            // Check admin or employee permission
+            if (!canCurrentUserEdit()) {
                 return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền truy cập chức năng này";
             }
 
@@ -221,7 +252,7 @@ public class ChiTietSanPhamController {
     public ResponseEntity<Map<String, Object>> updateStatus(@RequestBody Map<String, Object> payload) {
         Map<String, Object> response = new HashMap<>();
         try {
-            if (!isCurrentUserAdmin()) {
+            if (!canCurrentUserEdit()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
                 return ResponseEntity.badRequest().body(response);
@@ -262,8 +293,8 @@ public class ChiTietSanPhamController {
                                        @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
                                        Model model) {
         try {
-            // Check admin permission
-            if (!isCurrentUserAdmin()) {
+            // Check admin or employee permission
+            if (!canCurrentUserEdit()) {
                 return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
             }
 
@@ -279,8 +310,8 @@ public class ChiTietSanPhamController {
     @PostMapping("/save-batch")
     public String luuChiTietSanPhamBatch(@ModelAttribute ChiTietSanPhamBatchDto batchDto, Model model) {
         try {
-            // Check admin permission
-            if (!isCurrentUserAdmin()) {
+            // Check admin or employee permission
+            if (!canCurrentUserEdit()) {
                 return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
             }
 
@@ -297,7 +328,7 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layChiTietSanPham(@PathVariable UUID id) {
         try {
-            if (!isCurrentUserAdmin()) {
+            if (!canCurrentUserView()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
             }
 
@@ -321,6 +352,9 @@ public class ChiTietSanPhamController {
             response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("gender", chiTiet.getGioiTinh());
             response.put("status", chiTiet.getTrangThai());
+
+            response.put("canEdit", canCurrentUserEdit());
+            response.put("isReadOnly", !canCurrentUserEdit());
 
             // Xử lý danh sách ảnh, kiểm tra null và sắp xếp
             List<Map<String, Object>> images = new ArrayList<>();
@@ -357,27 +391,27 @@ public class ChiTietSanPhamController {
 
         Map<String, Object> body = new HashMap<>();
         try {
-            // 1) Quyền
-            if (!isCurrentUserAdmin()) {
+            // Check admin or employee permission
+            if (!canCurrentUserEdit()) {
                 body.put("error", "Bạn không có quyền thực hiện chức năng này");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
             }
 
-            // 2) Lấy entity hiện có để:
-            //    - Lấy chắc productId trả về cho FE
-            //    - Fallback set productId vào DTO nếu chế độ restricted không gửi productId
+            // Lấy entity hiện có để:
+            // - Lấy chắc productId trả về cho FE
+            // - Fallback set productId vào DTO nếu chế độ restricted không gửi productId
             ChiTietSanPham existing = chiTietSanPhamRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm"));
 
             UUID productIdFromDb = (existing.getSanPham() != null) ? existing.getSanPham().getId() : null;
 
-            // 3) Set id vào DTO + fallback productId
+            // Set id vào DTO + fallback productId
             updateDto.setId(id);
             if (updateDto.getProductId() == null && productIdFromDb != null) {
                 updateDto.setProductId(productIdFromDb);
             }
 
-            // 4) Parse danh sách ảnh xóa (an toàn)
+            // Parse danh sách ảnh xóa (an toàn)
             List<UUID> deletedIds = new ArrayList<>();
             if (deletedImageIdsStr != null && !deletedImageIdsStr.isBlank()) {
                 for (String s : deletedImageIdsStr.split(",")) {
@@ -393,7 +427,7 @@ public class ChiTietSanPhamController {
                 }
             }
 
-            // 5) Lọc bỏ file ảnh rỗng
+            // Lọc bỏ file ảnh rỗng
             MultipartFile[] safeImages = imageFiles;
             if (safeImages != null && safeImages.length > 0) {
                 List<MultipartFile> nonEmpty = Arrays.stream(safeImages)
@@ -402,14 +436,14 @@ public class ChiTietSanPhamController {
                 safeImages = nonEmpty.toArray(new MultipartFile[0]);
             }
 
-            // 6) Gọi service (vẫn là void)
+            // Gọi service (vẫn là void)
             if (restricted) {
                 chiTietSanPhamService.updateChiTietSanPhamRestricted(updateDto, safeImages, deletedIds);
             } else {
                 chiTietSanPhamService.updateChiTietSanPham(updateDto, safeImages, deletedIds);
             }
 
-            // 7) Build response an toàn (tránh null rơi vào Map.of)
+            // Build response an toàn (tránh null rơi vào Map.of)
             body.put("message", "Cập nhật chi tiết sản phẩm thành công");
             // ưu tiên id từ DB; fallback DTO
             UUID productId = productIdFromDb != null ? productIdFromDb : updateDto.getProductId();
@@ -425,14 +459,12 @@ public class ChiTietSanPhamController {
         }
     }
 
-
-
     @PostMapping("/delete-image/{imageId}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> xoaAnh(@PathVariable UUID imageId) {
         try {
-            // Check admin permission
-            if (!isCurrentUserAdmin()) {
+            // Check admin or employee permission
+            if (!canCurrentUserEdit()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
             }
 
@@ -450,7 +482,7 @@ public class ChiTietSanPhamController {
             @RequestParam("ids") String idsCsv,
             @ModelAttribute ChiTietSanPhamUpdateDto updateDto) {
         try {
-            if (!isCurrentUserAdmin()) {
+            if (!canCurrentUserEdit()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
             }
 
@@ -473,7 +505,6 @@ public class ChiTietSanPhamController {
         }
     }
 
-
     @PostMapping("/save-auto-product")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> saveQuickAddProduct(
@@ -482,8 +513,8 @@ public class ChiTietSanPhamController {
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Check admin permission
-            if (!isCurrentUserAdmin()) {
+            // Check admin or employee permission
+            if (!canCurrentUserEdit()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
                 return ResponseEntity.badRequest().body(response);
