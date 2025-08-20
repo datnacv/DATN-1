@@ -906,7 +906,8 @@
             </ol>
         </nav>
 
-        <div th:unless="${isAdmin}" class="employee-notice">
+        <!-- Cập nhật thông báo để chỉ hiển thị cho user không có quyền chỉnh sửa -->
+        <div th:unless="${canEdit}" class="employee-notice">
             <i class="fas fa-info-circle me-2"></i>
             <strong>Chế độ xem:</strong> Bạn đang ở chế độ chỉ xem. Không thể chỉnh sửa thông tin sản phẩm.
         </div>
@@ -1040,7 +1041,8 @@
                     <i class="fas fa-pen fs-5 text-muted"></i>
                     <span class="text-muted">Chọn biến thể để sửa nhanh</span>
                 </div>
-                <button id="bulkEditBtn" class="btn btn-primary" disabled>
+                <!-- Cập nhật để hiển thị nút sửa cho cả admin và employee -->
+                <button id="bulkEditBtn" class="btn btn-primary" disabled th:if="${canEdit}">
                     <i class="fas fa-edit me-2"></i>Sửa mục đã chọn
                 </button>
             </div>
@@ -1065,13 +1067,15 @@
                         <th>Giá</th>
                         <th>Số lượng tồn</th>
                         <th>Giới tính</th>
+                        <!-- Cập nhật header để hiển thị cột thao tác cho user có quyền chỉnh sửa -->
                         <th style="min-width: 150px;">Trạng thái</th>
-                        <th th:if="${isAdmin}">Thao tác</th>
+                        <th th:if="${canEdit}">Thao tác</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:if="${chiTietSanPhamList == null or chiTietSanPhamList.isEmpty()}">
-                        <td th:colspan="${isAdmin} ? 16 : 15" class="text-center text-muted py-5">Chưa có chi tiết sản phẩm nào được thêm.</td>
+                        <!-- Cập nhật colspan để phù hợp với quyền chỉnh sửa -->
+                        <td th:colspan="${canEdit} ? 16 : 15" class="text-center text-muted py-5">Chưa có chi tiết sản phẩm nào được thêm.</td>
                     </tr>
                     <tr th:each="pd, stats : ${chiTietSanPhamList}" th:data-id="${pd.id}">
                         <td>
@@ -1106,7 +1110,8 @@
                         <td class="fw-bold" th:text="${pd.soLuongTonKho}"></td>
                         <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
                         <td style="min-width: 150px;">
-                            <th:block th:if="${isAdmin}">
+                            <!-- Cập nhật để hiển thị switch cho user có quyền chỉnh sửa -->
+                            <th:block th:if="${canEdit}">
                                 <div class="form-check form-switch d-flex justify-content-center align-items-center">
                                     <input class="form-check-input status-toggle"
                                            type="checkbox"
@@ -1117,14 +1122,22 @@
                                            th:text="${pd.trangThai != null and pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></label>
                                 </div>
                             </th:block>
-                            <th:block th:unless="${isAdmin}">
+                            <!-- Hiển thị status badge cho user không có quyền chỉnh sửa -->
+                            <th:block th:unless="${canEdit}">
                                 <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
                                       th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
                             </th:block>
                         </td>
-                        <td class="text-center action-buttons" th:if="${isAdmin}">
-                            <button class="btn btn-warning btn-sm edit-btn" th:data-id="${pd.id}" data-bs-toggle="modal" data-bs-target="#editChiTietSanPhamModal" title="Sửa">
-                                <i class="fas fa-edit"></i>
+                        <!-- Updated to show view button for employees and edit button for admins -->
+                        <td class="text-center action-buttons">
+                            <!-- Show for both admin and employee, but different functionality -->
+                            <button class="btn btn-sm edit-btn"
+                                    th:class="'btn btn-sm edit-btn ' + (${isAdmin} ? 'btn-warning' : 'btn-info')"
+                                    th:data-id="${pd.id}"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editChiTietSanPhamModal"
+                                    th:title="${isAdmin} ? 'Sửa' : 'Xem'">
+                                <i th:class="${isAdmin} ? 'fas fa-edit' : 'fas fa-eye'"></i>
                             </button>
                         </td>
                     </tr>
@@ -1133,11 +1146,16 @@
             </div>
         </div>
 
-        <div class="modal fade" id="editChiTietSanPhamModal" tabindex="-1" aria-labelledby="editChiTietSanPhamModalLabel" aria-hidden="true" th:if="${isAdmin}">
+        <!-- Updated modal to show for both admin and employee -->
+        <div class="modal fade" id="editChiTietSanPhamModal" tabindex="-1" aria-labelledby="editChiTietSanPhamModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="editChiTietSanPhamModalLabel"><i class="fas fa-edit me-2"></i>Sửa Chi Tiết Sản Phẩm</h5>
+                        <!-- Dynamic title based on user role -->
+                        <h5 class="modal-title" id="editChiTietSanPhamModalLabel">
+                            <i th:class="${isAdmin} ? 'fas fa-edit me-2' : 'fas fa-eye me-2'"></i>
+                            <span th:text="${isAdmin} ? 'Sửa Chi Tiết Sản Phẩm' : 'Xem Chi Tiết Sản Phẩm'">Chi Tiết Sản Phẩm</span>
+                        </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <form id="editChiTietSanPhamForm" enctype="multipart/form-data">
@@ -1309,7 +1327,7 @@
                                         <i class="fas fa-qrcode me-2"></i>Mã QR
                                     </label>
                                     <div class="qr-container" id="qrCodeContainer">
-                                        <img id="qrCodeImage" src="" alt="Mã QR" class="qr-image" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Không có mã QR';">
+                                        <img id="qrCodeImage" src="/placeholder.svg" alt="Mã QR" class="qr-image" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Không có mã QR';">
                                         <a id="downloadQrLink" href="" download="qr_code.png" class="btn btn-primary btn-sm">
                                             <i class="fas fa-download me-2"></i>Tải mã QR
                                         </a>
@@ -1319,10 +1337,11 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <i class="fas fa-times me-2"></i> Đóng
+                                <span th:text="${isAdmin} ? 'Hủy' : 'Đóng'">Đóng</span>
                             </button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i> Lưu thay đổi
+                            <!-- Only show save button for admin -->
+                            <button type="submit" class="btn btn-primary" th:if="${isAdmin}">
+                                <i class="fas fa-save me-2"></i>Lưu thay đổi
                             </button>
                         </div>
                     </form>
@@ -1526,59 +1545,97 @@
     }
 
     $(document).ready(function () {
-        const isAdmin = document.querySelector('.role-admin') !== null;
+        const permissions = checkUserPermissions();
 
-        if (!isAdmin) {
-            console.log('Employee user - Management functions disabled');
+        $('#editChiTietSanPhamModal').on('show.bs.modal', function() {
+            if (permissions.isEmployee) {
+                setTimeout(makeFormReadOnly, 100);
+            }
+        });
+
+        if (!permissions.canEdit && permissions.isEmployee) {
+            console.log('Employee user - Read-only mode enabled');
+            $('#bulkEditBtn').text('Xem mục đã chọn').removeClass('btn-primary').addClass('btn-info');
+            $('#bulkEditBtn i').removeClass('fa-edit').addClass('fa-eye');
             return;
         }
 
-        $('.status-toggle').on('change', function () {
-            const productDetailId = $(this).data('id');
-            const newStatus = $(this).is(':checked');
-            const statusLabel = $(this).next('.form-check-label');
+        function checkUserPermissions() {
+            const isAdmin = document.querySelector('[th\\:class*="role-admin"]') !== null;
+            const isEmployee = document.querySelector('[th\\:class*="role-employee"]') !== null;
+            const canEdit = document.querySelector('[th\\:if="${canEdit}"]') !== null ||
+                document.querySelector('.status-toggle') !== null;
 
-            const row = $(this).closest('tr');
-            const stockQuantity = parseInt(row.find('td').eq(13).text()) || 0;
+            return {
+                isAdmin: isAdmin,
+                isEmployee: isEmployee,
+                canEdit: canEdit
+            };
+        }
 
-            if (newStatus && stockQuantity === 0) {
-                showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
-                $(this).prop('checked', false);
-                statusLabel.text('Ngừng Bán');
-                return;
-            }
+        function makeFormReadOnly() {
+            // Disable all form inputs and make them visually read-only
+            $('#editChiTietSanPhamForm :input').prop('readonly', true).prop('disabled', true);
+            $('#editChiTietSanPhamForm select').prop('disabled', true);
+            $('#editChiTietSanPhamForm textarea').prop('readonly', true).prop('disabled', true);
 
-            if (!confirm(`Bạn có chắc muốn thay đổi trạng thái thành "${newStatus ? 'Đang Bán' : 'Ngừng Bán'}"?`)) {
-                $(this).prop('checked', !newStatus);
-                return;
-            }
+            // Hide all action buttons completely
+            $('#editChiTietSanPhamForm .btn').hide();
+            $('#editChiTietSanPhamForm .modal-footer .btn-primary').hide();
+            $('#editChiTietSanPhamForm .modal-footer .btn-secondary').text('Đóng');
 
-            statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
-
-            $.ajax({
-                url: '/acvstore/chi-tiet-san-pham/update-status',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    id: productDetailId,
-                    trangThai: newStatus
-                }),
-                success: function (response) {
-                    if (response.success) {
-                        showToast(response.message, 'success');
-                    } else {
-                        showToast(response.message, 'error');
-                        $(this).prop('checked', !newStatus);
-                        statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
-                    }
-                },
-                error: function (xhr) {
-                    showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseText || xhr.statusText), 'error');
-                    $(this).prop('checked', !newStatus);
-                    statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
-                }
+            // Completely remove image delete buttons and disable image interactions
+            $('#editChiTietSanPhamForm .remove-image').remove();
+            $('#editChiTietSanPhamForm .image-preview').css({
+                'pointer-events': 'none',
+                'cursor': 'default'
             });
-        });
+
+            // Hide entire file upload section
+            $('#editChiTietSanPhamForm #editImages').prop('disabled', true).hide();
+            $('#editChiTietSanPhamForm label[for="editImages"]').hide();
+            $('#editChiTietSanPhamForm #newImagesPreview').hide();
+
+            // Completely disable and hide form switches
+            $('#editChiTietSanPhamForm .form-check-input').prop('disabled', true).hide();
+            $('#editChiTietSanPhamForm .form-check-label').hide();
+            $('#editChiTietSanPhamForm .form-check.form-switch').parent().html(
+                '<div class="mb-3">' +
+                '<label class="form-label fw-semibold text-dark mb-2">Trạng thái</label>' +
+                '<div class="form-control bg-light text-muted" style="border: none; cursor: default;">' +
+                ($('#editStatus').is(':checked') ? 'Đang Bán' : 'Ngừng Bán') +
+                '</div>' +
+                '</div>'
+            );
+
+            // Remove all event handlers completely
+            $('#editChiTietSanPhamForm').off();
+            $('#editChiTietSanPhamForm *').off();
+
+            // Add comprehensive visual styling for read-only state
+            $('#editChiTietSanPhamForm :input:not(.form-check-input)').addClass('bg-light text-muted').css({
+                'cursor': 'default',
+                'pointer-events': 'none'
+            });
+
+            // Disable all hover effects and interactions
+            $('#editChiTietSanPhamForm').css('pointer-events', 'auto');
+            $('#editChiTietSanPhamForm *').css('user-select', 'text');
+            $('#editChiTietSanPhamForm input, #editChiTietSanPhamForm select, #editChiTietSanPhamForm textarea').css({
+                'cursor': 'default',
+                'pointer-events': 'none'
+            });
+
+            // Add read-only notice at the top
+            if (!$('#readOnlyNotice').length) {
+                $('#editChiTietSanPhamForm .modal-body').prepend(
+                    '<div id="readOnlyNotice" class="alert alert-info mb-3">' +
+                    '<i class="fas fa-eye me-2"></i>' +
+                    'Bạn đang ở chế độ chỉ xem. Không thể chỉnh sửa thông tin.' +
+                    '</div>'
+                );
+            }
+        }
 
         function setRestrictedMode(enabled) {
             if (enabled) {
@@ -1619,26 +1676,29 @@
                     $('#downloadQrLink').attr('href', qrUrl);
 
                     // ảnh cũ
-                    const existingImagesContainer = $('#existingImages');
-                    existingImagesContainer.empty();
-                    $('#deletedImageIds').val('');
-                    deletedImageIds = [];
-                    if (response.images && response.images.length > 0) {
-                        response.images.sort((a, b) => a.thuTu - b.thuTu);
-                        response.images.forEach(image => {
-                            if (image.imageUrl && image.imageUrl.trim() !== "") {
-                                existingImagesContainer.append(`
-              <div class="image-preview">
-                <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
-                <button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>
-              </div>
-            `);
-                            }
-                        });
-                        $('#noExistingImagePlaceholder').hide();
-                    } else {
-                        $('#noExistingImagePlaceholder').show();
+                    function loadExistingImages(images) {
+                        const existingImagesContainer = $('#existingImages');
+                        existingImagesContainer.empty();
+
+                        if (images && images.length > 0) {
+                            images.forEach(image => {
+                                if (image.imageUrl && image.imageUrl.trim() !== "") {
+                                    const deleteButton = window.isEmployee ? '' : `<button type="button" class="remove-image" data-image-id="${image.id}" onclick="deleteImage(this)">×</button>`;
+
+                                    existingImagesContainer.append(`
+                                        <div class="image-preview">
+                                            <img src="${image.imageUrl}" alt="Ảnh sản phẩm" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
+                                            ${deleteButton}
+                                        </div>
+                                    `);
+                                }
+                            });
+                            $('#noExistingImagePlaceholder').hide();
+                        } else {
+                            $('#noExistingImagePlaceholder').show();
+                        }
                     }
+                    loadExistingImages(response.images);
 
                     // bật chế độ RESTRICTED
                     setRestrictedMode(true);
@@ -1739,6 +1799,7 @@
                     $('#downloadQrLink').attr('href', qrUrl);
                     updateStatusLabel();
 
+                    // ảnh cũ
                     const existingImagesContainer = $('#existingImages');
                     existingImagesContainer.empty();
                     $('#deletedImageIds').val('');
@@ -1774,6 +1835,11 @@
         let deletedImageIds = [];
 
         window.deleteImage = function(button) {
+            // Completely prevent deletion if user is employee - no action at all
+            if (window.isEmployee) {
+                return false;
+            }
+
             const imageId = $(button).data('image-id');
             if (confirm('Bạn có chắc muốn xóa ảnh này?')) {
                 deletedImageIds.push(imageId);
@@ -1986,6 +2052,59 @@
         $('#bulkPrice').on('input', function(){
             let v = $(this).val().replace(/\./g, '');
             if (v) $(this).val(formatNumber(v));
+        });
+
+        $('.status-toggle').on('change', function () {
+            // Completely prevent status change if user is employee
+            if (window.isEmployee) {
+                $(this).prop('checked', !$(this).is(':checked'));
+                return false;
+            }
+
+            const productDetailId = $(this).data('id');
+            const newStatus = $(this).is(':checked');
+            const statusLabel = $(this).next('.form-check-label');
+
+            const row = $(this).closest('tr');
+            const stockQuantity = parseInt(row.find('td').eq(13).text()) || 0;
+
+            if (newStatus && stockQuantity === 0) {
+                showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
+                $(this).prop('checked', false);
+                statusLabel.text('Ngừng Bán');
+                return;
+            }
+
+            if (!confirm(`Bạn có chắc muốn thay đổi trạng thái thành "${newStatus ? 'Đang Bán' : 'Ngừng Bán'}"?`)) {
+                $(this).prop('checked', !newStatus);
+                return;
+            }
+
+            statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
+
+            $.ajax({
+                url: '/acvstore/chi-tiet-san-pham/update-status',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    id: productDetailId,
+                    trangThai: newStatus
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        showToast(response.message, 'success');
+                    } else {
+                        showToast(response.message, 'error');
+                        $(this).prop('checked', !newStatus);
+                        statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
+                    }
+                },
+                error: function (xhr) {
+                    showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseText || xhr.statusText), 'error');
+                    $(this).prop('checked', !newStatus);
+                    statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
+                }
+            });
         });
     });
 
