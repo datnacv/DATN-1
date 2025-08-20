@@ -1637,6 +1637,29 @@
             }
         }
 
+        $('#editChiTietSanPhamModal').on('hidden.bs.modal', function () {
+            // Làm sạch trạng thái modal
+            $(this).find('form')[0].reset(); // Reset form
+            $('#existingImages').empty(); // Xóa ảnh hiện có
+            $('#newImagesPreview').empty(); // Xóa ảnh mới
+            $('#noExistingImagePlaceholder').show(); // Hiển thị placeholder ảnh hiện có
+            $('#noNewImagePlaceholder').show(); // Hiển thị placeholder ảnh mới
+            $('#deletedImageIds').val(''); // Xóa danh sách ID ảnh bị xóa
+            deletedImageIds = []; // Reset mảng ảnh bị xóa
+            $('#editMode').val('false'); // Reset chế độ chỉnh sửa
+            setRestrictedMode(false); // Mở khóa các trường lockable
+
+            // Xóa backdrop thủ công nếu vẫn còn
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+            $('body').css('padding-right', ''); // Xóa padding do modal thêm vào
+        });
+
+        $('#editChiTietSanPhamModal .btn-secondary').on('click', function () {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editChiTietSanPhamModal'));
+            modal.hide(); // Đóng modal
+        });
+
         function setRestrictedMode(enabled) {
             if (enabled) {
                 // khóa tất cả field lockable

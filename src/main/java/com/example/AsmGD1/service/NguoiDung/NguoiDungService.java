@@ -30,12 +30,14 @@ public class NguoiDungService {
 
     public Page<NguoiDung> findUsersByVaiTroNotCustomer(String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return nguoiDungRepository.findByVaiTroNotCustomer(keyword != null ? keyword : "", pageable);
+        String search = (keyword != null) ? keyword.trim() : "";
+        return nguoiDungRepository.findByVaiTroNotCustomer(search, pageable);
     }
 
     public Page<NguoiDung> findUsersByVaiTro(String vaiTro, String keyword, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        return nguoiDungRepository.findByVaiTroAndKeyword(vaiTro, keyword != null ? keyword : "", pageable);
+        String search = (keyword != null) ? keyword.trim() : "";
+        return nguoiDungRepository.findByVaiTroAndKeyword(vaiTro, search, pageable);
     }
 
     public NguoiDung findById(UUID id) {

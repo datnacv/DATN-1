@@ -1,5 +1,6 @@
 package com.example.AsmGD1.service.SanPham;
 
+import com.example.AsmGD1.entity.KichCo;
 import com.example.AsmGD1.entity.XuatXu;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.SanPham.XuatXuRepository;
@@ -29,7 +30,8 @@ public class XuatXuService {
     }
 
     public Page<XuatXu> searchXuatXu(String tenXuatXu, Pageable pageable) {
-        return xuatXuRepository.findByTenXuatXuContainingIgnoreCase(tenXuatXu, pageable);
+        String keyword = (tenXuatXu == null) ? "" : tenXuatXu.trim();
+        return xuatXuRepository.findByTenXuatXuContainingIgnoreCase(keyword, pageable);
     }
 
     public XuatXu getXuatXuById(UUID id) {

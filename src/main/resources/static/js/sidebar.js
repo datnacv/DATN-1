@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     parentToggle.classList.add("active-parent");
 
                     const icon = parentToggle.querySelector('.toggle-icon');
-                    if (icon) {
+                    if (icon && !document.getElementById('sidebar').classList.contains('collapsed')) {
                         icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
                     }
                 }
@@ -39,7 +39,9 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         targetEl.addEventListener('show.bs.collapse', () => {
-            icon?.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            if (!document.getElementById('sidebar').classList.contains('collapsed')) {
+                icon?.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            }
             toggle.classList.add('active-parent');
         });
 
@@ -66,6 +68,9 @@ document.addEventListener("DOMContentLoaded", function () {
         toggleBtn.classList.add('collapsed');
         toggleIcon.classList.remove('fa-bars');
         toggleIcon.classList.add('fa-arrow-right');
+        document.querySelectorAll('.toggle-icon').forEach(icon => {
+            icon.style.display = 'none';
+        });
     } else {
         sidebar.classList.remove('collapsed');
         content.classList.remove('collapsed');
@@ -73,6 +78,9 @@ document.addEventListener("DOMContentLoaded", function () {
         toggleBtn.classList.remove('collapsed');
         toggleIcon.classList.remove('fa-arrow-right');
         toggleIcon.classList.add('fa-bars');
+        document.querySelectorAll('.toggle-icon').forEach(icon => {
+            icon.style.display = 'inline-block';
+        });
     }
 
     // Xử lý sự kiện toggle
@@ -88,9 +96,15 @@ document.addEventListener("DOMContentLoaded", function () {
         if (isNowCollapsed) {
             toggleIcon.classList.remove('fa-bars');
             toggleIcon.classList.add('fa-arrow-right');
+            document.querySelectorAll('.toggle-icon').forEach(icon => {
+                icon.style.display = 'none';
+            });
         } else {
             toggleIcon.classList.remove('fa-arrow-right');
             toggleIcon.classList.add('fa-bars');
+            document.querySelectorAll('.toggle-icon').forEach(icon => {
+                icon.style.display = 'inline-block';
+            });
         }
     });
 
@@ -105,6 +119,9 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.setItem('sidebarCollapsed', 'true');
             toggleIcon.classList.remove('fa-bars');
             toggleIcon.classList.add('fa-arrow-right');
+            document.querySelectorAll('.toggle-icon').forEach(icon => {
+                icon.style.display = 'none';
+            });
         } else {
             const storedState = localStorage.getItem('sidebarCollapsed') === 'true';
             if (storedState) {
@@ -114,6 +131,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 toggleBtn.classList.add('collapsed');
                 toggleIcon.classList.remove('fa-bars');
                 toggleIcon.classList.add('fa-arrow-right');
+                document.querySelectorAll('.toggle-icon').forEach(icon => {
+                    icon.style.display = 'none';
+                });
             } else {
                 sidebar.classList.remove('collapsed');
                 content.classList.remove('collapsed');
@@ -121,6 +141,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 toggleBtn.classList.remove('collapsed');
                 toggleIcon.classList.remove('fa-arrow-right');
                 toggleIcon.classList.add('fa-bars');
+                document.querySelectorAll('.toggle-icon').forEach(icon => {
+                    icon.style.display = 'inline-block';
+                });
             }
             toggleBtn.style.left = '65px';
         }
@@ -137,6 +160,9 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.setItem('sidebarCollapsed', 'true');
             toggleIcon.classList.remove('fa-bars');
             toggleIcon.classList.add('fa-arrow-right');
+            document.querySelectorAll('.toggle-icon').forEach(icon => {
+                icon.style.display = 'none';
+            });
         }
     });
 });

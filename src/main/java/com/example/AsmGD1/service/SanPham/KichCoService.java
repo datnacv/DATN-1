@@ -29,9 +29,10 @@ public class KichCoService {
         return kichCoRepository.findAll();
     }
 
-    // Tìm kiếm kích cỡ với phân trang
+    // Tìm kiếm kích cỡ với phân trang (trim input để tránh khoảng trắng)
     public Page<KichCo> searchKichCo(String ten, Pageable pageable) {
-        return kichCoRepository.findByTenContainingIgnoreCase(ten, pageable);
+        String keyword = (ten == null) ? "" : ten.trim();
+        return kichCoRepository.findByTenContainingIgnoreCase(keyword, pageable);
     }
 
     public KichCo getKichCoById(UUID id) {
@@ -43,11 +44,28 @@ public class KichCoService {
         if (kichCo.getTen() == null || kichCo.getTen().trim().isEmpty()) {
             throw new IllegalArgumentException("Tên kích cỡ không được để trống");
         }
-        if (kichCoRepository.findByTenContainingIgnoreCase(kichCo.getTen())
+
+        // Chuẩn hóa tên trước khi validate
+        String tenNormalized = kichCo.getTen().trim().toUpperCase();
+
+        // Validation: chỉ cho phép XS, S, M, L, XL, XXL, XXXL
+        if (!tenNormalized.matches("^(XS|S|M|L|XL|XXL|XXXL)$")) {
+            throw new IllegalArgumentException(
+                    "Tên kích cỡ không hợp lệ. Chỉ cho phép XS, S, M, L, XL, XXL, XXXL (không phân biệt chữ hoa/thường)."
+            );
+        }
+
+        // Check trùng lặp (so sánh sau khi chuẩn hóa)
+        if (kichCoRepository.findByTenContainingIgnoreCase(tenNormalized)
                 .stream()
-                .anyMatch(k -> !k.getId().equals(kichCo.getId()) && k.getTen().equalsIgnoreCase(kichCo.getTen()))) {
+                .anyMatch(k -> !k.getId().equals(kichCo.getId())
+                        && k.getTen().equalsIgnoreCase(tenNormalized))) {
             throw new IllegalArgumentException("Tên kích cỡ đã tồn tại");
         }
+
+        // Lưu tên đã chuẩn hóa (không để khoảng trắng thừa)
+        kichCo.setTen(tenNormalized);
+
         return kichCoRepository.save(kichCo);
     }
 

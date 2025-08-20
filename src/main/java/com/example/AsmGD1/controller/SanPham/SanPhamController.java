@@ -74,8 +74,15 @@ public class SanPhamController {
         Pageable pageable = PageRequest.of(page, 5);
         Page<SanPham> sanPhamPage;
 
-        if (searchName != null && !searchName.isEmpty()) {
-            sanPhamPage = sanPhamService.findByTenSanPhamContaining(searchName, trangThai, pageable);
+        if (searchName != null && !searchName.trim().isEmpty()) {
+            // Trim searchName to remove leading/trailing spaces
+            searchName = searchName.trim();
+            // Use searchByTenOrMa to search by both tenSanPham and maSanPham
+            sanPhamPage = sanPhamService.searchByTenOrMa(searchName, pageable);
+            if (trangThai != null) {
+                // If trangThai is specified, filter further
+                sanPhamPage = sanPhamService.findByTenSanPhamContaining(searchName, trangThai, pageable);
+            }
         } else if (trangThai != null) {
             sanPhamPage = sanPhamService.findByTrangThai(trangThai, pageable);
         } else {
@@ -233,10 +240,9 @@ public class SanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra nếu bật trạng thái mà không có chi tiết sản phẩm hoạt động
             if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(id)) {
                 response.put("success", false);
-                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào hoạt động!");
+                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào đang hoạt động!");
                 return ResponseEntity.badRequest().body(response);
             }
 
