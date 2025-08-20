@@ -761,6 +761,7 @@ public class KHDonMuaController {
             @RequestParam String reason,
             @RequestParam(required = false) String description,
             @RequestParam String email,
+            @RequestParam BigDecimal priceDifference,
             HttpSession session,
             Authentication authentication) {
 
@@ -835,6 +836,10 @@ public class KHDonMuaController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Tính toán chênh lệch giá
+            BigDecimal totalOriginalPrice = BigDecimal.ZERO;
+            BigDecimal totalReplacementPrice = BigDecimal.ZERO;
+
             // Xử lý từng cặp sản phẩm
             for (int i = 0; i < selectedProducts.size(); i++) {
                 UUID selectedProductId = selectedProducts.get(i);
@@ -889,12 +894,9 @@ public class KHDonMuaController {
                     return ResponseEntity.badRequest().body(response);
                 }
 
-                // Kiểm tra giá (sản phẩm thay thế phải có giá >= giá gốc)
-                if (chiTietSanPhamThayThe.getGia().compareTo(chiTietDonHang.getGia()) < 0) {
-                    response.put("success", false);
-                    response.put("message", "Giá sản phẩm thay thế phải lớn hơn hoặc bằng giá sản phẩm được đổi.");
-                    return ResponseEntity.badRequest().body(response);
-                }
+                // Tính giá trị
+                totalOriginalPrice = totalOriginalPrice.add(chiTietDonHang.getGia().multiply(BigDecimal.valueOf(soLuong)));
+                totalReplacementPrice = totalReplacementPrice.add(chiTietSanPhamThayThe.getGia().multiply(BigDecimal.valueOf(soLuong)));
 
                 // Tạo lịch sử đổi sản phẩm
                 BigDecimal tongTienHoan = chiTietDonHang.getGia().multiply(BigDecimal.valueOf(soLuong));
@@ -909,6 +911,9 @@ public class KHDonMuaController {
                 lichSuDoiSanPham.setLyDoDoiHang(lyDoDay);
                 lichSuDoiSanPham.setThoiGianDoi(LocalDateTime.now());
                 lichSuDoiSanPham.setTrangThai("Chờ xử lý");
+                if (priceDifference.compareTo(BigDecimal.ZERO) > 0) {
+                    lichSuDoiSanPham.setChenhLechGia(priceDifference);
+                }
                 lichSuDoiSanPhamRepository.save(lichSuDoiSanPham);
 
                 // Cập nhật trạng thái chi tiết đơn hàng
@@ -937,15 +942,18 @@ public class KHDonMuaController {
             lichSuHoaDon.setHoaDon(hoaDon);
             lichSuHoaDon.setTrangThai("Đã đổi hàng");
             lichSuHoaDon.setThoiGian(LocalDateTime.now());
-            lichSuHoaDon.setGhiChu("Khách hàng yêu cầu đổi sản phẩm: " + lyDoDay);
+            lichSuHoaDon.setGhiChu("Khách hàng yêu cầu đổi sản phẩm: " + lyDoDay +
+                    (priceDifference.compareTo(BigDecimal.ZERO) > 0 ? ", Chênh lệch: " + formatVND(priceDifference.doubleValue()) : ""));
             lichSuHoaDonRepository.save(lichSuHoaDon);
 
             // Tạo thông báo cho admin
             try {
+                String thongBaoContent = "Khách hàng " + user.getHoTen() + " yêu cầu đổi sản phẩm cho đơn hàng " + hoaDon.getDonHang().getMaDonHang() +
+                        (priceDifference.compareTo(BigDecimal.ZERO) > 0 ? ". Chênh lệch giá: " + formatVND(priceDifference.doubleValue()) : "");
                 thongBaoService.taoThongBaoHeThong(
                         "admin",
                         "Yêu cầu đổi sản phẩm mới",
-                        "Khách hàng " + user.getHoTen() + " yêu cầu đổi sản phẩm cho đơn hàng " + hoaDon.getDonHang().getMaDonHang(),
+                        thongBaoContent,
                         hoaDon.getDonHang()
                 );
             } catch (Exception e) {
@@ -954,11 +962,16 @@ public class KHDonMuaController {
 
             // Gửi email xác nhận
             try {
-                String emailContent = "Yêu cầu đổi sản phẩm của bạn đã được gửi thành công.\n" +
-                        "Mã đơn hàng: " + hoaDon.getDonHang().getMaDonHang() + "\n" +
-                        "Lý do: " + lyDoDay + "\n" +
-                        "Chúng tôi sẽ xử lý yêu cầu trong thời gian sớm nhất.";
-                emailService.sendEmail(email, "Xác nhận yêu cầu đổi sản phẩm", emailContent);
+                String emailContent = "<h2>Xác nhận yêu cầu đổi sản phẩm</h2>" +
+                        "<p>Xin chào " + user.getHoTen() + ",</p>" +
+                        "<p>Yêu cầu đổi sản phẩm của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
+                        "<p><strong>Lý do:</strong> " + lyDoDay + "</p>" +
+                        (priceDifference.compareTo(BigDecimal.ZERO) > 0 ?
+                                "<p><strong>Chênh lệch giá cần thanh toán:</strong> " + formatVND(priceDifference.doubleValue()) + "</p>" +
+                                        "<p>Vui lòng liên hệ đội ngũ hỗ trợ để hoàn tất thanh toán chênh lệch.</p>" : "") +
+                        "<p>Chúng tôi sẽ xử lý yêu cầu trong thời gian sớm nhất.</p>" +
+                        "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
+                emailService.sendEmail(email, "Xác nhận yêu cầu đổi sản phẩm - ACV Store", emailContent);
             } catch (Exception e) {
                 logger.warn("Không thể gửi email: {}", e.getMessage());
             }
