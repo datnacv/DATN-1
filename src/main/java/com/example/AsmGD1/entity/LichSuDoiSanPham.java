@@ -34,4 +34,6 @@ public class LichSuDoiSanPham {
     private String lyDoDoiHang;
     private LocalDateTime thoiGianDoi;
     private String trangThai;
+    @Column(name = "chenh_lech_gia")
+    private BigDecimal chenhLechGia; // Thêm trường này
 }
