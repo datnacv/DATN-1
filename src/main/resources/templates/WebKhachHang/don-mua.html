@@ -550,7 +550,7 @@
     <h1 class="page-title text-4xl mb-8 text-center">
         <i class="fas fa-shopping-bag mr-3"></i>Đơn mua của bạn
     </h1>
-
+    <p class="text-center text-gray-600 mb-4">Danh sách được sắp xếp theo thời gian mới nhất</p>
     <ul class="nav nav-tabs mb-6" id="orderTabs">
         <li class="nav-item">
             <a class="nav-link" th:classappend="${status == 'tat-ca'} ? ' active'" th:href="@{/dsdon-mua(status='tat-ca')}">
@@ -590,6 +590,11 @@
         <li class="nav-item">
             <a class="nav-link" th:classappend="${status == 'da-tra-hang'} ? ' active'" th:href="@{/dsdon-mua(status='da-tra-hang')}">
                 <i class="fas fa-undo mr-2"></i>Đã trả hàng
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" th:classappend="${status == 'da-doi-hang'} ? ' active'" th:href="@{/dsdon-mua(status='da-doi-hang')}">
+                <i class="fas fa-undo mr-2"></i>Đã đổi hàng
             </a>
         </li>
         <li class="nav-item">
