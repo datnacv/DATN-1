@@ -106,7 +106,7 @@ public class SecurityConfig implements ApplicationContextAware {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/search", "/api/product/*/ratings", "/api/getChiTietSanPham", "/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet", "/api/san-pham/ban-chay", "/api/san-pham/moi-nhat", "/api/product/*/ratings", "/api/getChiTietSanPham").permitAll()
+                        .requestMatchers("/api/search", "/api/product/**", "/api/cart/**", "/api/product/*/ratings", "/api/getChiTietSanPham", "/api/cart/check-auth", "/api/cart/get-user", "/api/san-pham/with-chi-tiet", "/api/san-pham/ban-chay", "/api/san-pham/moi-nhat", "/api/product/*/ratings", "/api/getChiTietSanPham").permitAll()
                         .requestMatchers("/api/orders/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -295,7 +295,7 @@ public class SecurityConfig implements ApplicationContextAware {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/chitietsanpham", "/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user", "/css/**", "/js/**", "/image/**", "/images/**", "/vi/**", "/uploads/**").permitAll()
+                        .requestMatchers("/", "/chitietsanpham", "/new", "/all", "/bestsellers", "/category/**", "/search/**", "/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user", "/css/**", "/js/**", "/image/**", "/images/**", "/vi/**", "/uploads/**").permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )

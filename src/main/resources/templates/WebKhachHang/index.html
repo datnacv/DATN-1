@@ -4,6 +4,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>ACV Store - Trang chủ</title>
+  <link rel="icon" href="/image/acv-logo3.png" type="image/png" sizes="32x32"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
@@ -14,8 +15,6 @@
     .navbar {  background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .product-card { transition: transform 0.3s, box-shadow 0.3s; }
-    .product-card:hover { transform: translateY(-10px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
     .badge-new { background-color: #153054; }
     /* Size chip */
     .size-option{
@@ -341,6 +340,108 @@
 
     /* vì có thêm 2 thanh sticky (mini-tabs + categories), tăng offset khi scroll tới section */
     #section-new, #section-all, #section-best{ scroll-margin-top: 170px; }
+
+    /* Product Card Styling */
+    :root {
+      --acv-blue: #153054;
+      --card-r: 14px;
+    }
+    .product-card {
+      position: relative;
+      border: 1px solid #e5edf6;
+      border-radius: var(--card-r);
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(21,48,84,.06);
+      transition: transform .25s, box-shadow .25s;
+    }
+    .product-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 16px 32px rgba(21,48,84,.15);
+    }
+    .product-media {
+      position: relative;
+      aspect-ratio: 1/1;
+      background: #f6f7fb;
+      overflow: hidden;
+    }
+    .product-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.02);
+      transition: transform .6s ease;
+    }
+    .product-card:hover .product-media img {
+      transform: scale(1.08);
+    }
+    .media-gradient {
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 44%;
+      background: linear-gradient(to top, rgba(0,0,0,.45), rgba(0,0,0,0));
+    }
+    .badge-new {
+      background: #10b981;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 700;
+      box-shadow: 0 8px 16px rgba(0,0,0,.2);
+    }
+    .badge-hot {
+      background: #ef4444;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: .7rem;
+      font-weight: 700;
+      box-shadow: 0 8px 16px rgba(0,0,0,.2);
+    }
+    .action-group {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 3;
+      opacity: 0;
+      transform: translateX(6px);
+      transition: all .25s ease;
+    }
+    .product-card:hover .action-group {
+      opacity: 1;
+      transform: none;
+    }
+    .action-btn {
+      background: #fff;
+      border: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(21,48,84,.25);
+    }
+    .action-btn:hover {
+      background: #e8f1fb;
+    }
+    .product-body {
+      padding: 12px 14px;
+    }
+    .product-title {
+      font-weight: 600;
+      color: #1f2937;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 42px;
+    }
   </style>
 </head>
 <body class="bg-gray-100">
@@ -351,7 +452,7 @@
 </div>
 
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
-<!-- Mini Tabs -->
+
 <nav id="mini-tabs" class="bg-white/90 backdrop-blur sticky top-[118px] z-[1039] border-b border-gray-200">
   <div class="container mx-auto">
     <ul class="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar px-3 sm:px-0 relative">
@@ -374,13 +475,13 @@
         </a>
       </li>
 
-      <!-- Indicator (gạch chân trượt) -->
+
       <span id="tab-indicator" class="absolute bottom-0 h-[3px] bg-[#153054] rounded transition-all duration-300 ease-out"></span>
     </ul>
   </div>
 </nav>
 
-<!-- Thanh danh mục (đặt dưới mini-tabs) -->
+
 <nav class="bg-white/95 backdrop-blur sticky top-[158px] z-[1038] border-b border-gray-200">
   <div class="container mx-auto">
     <div class="flex items-center gap-2 overflow-x-auto no-scrollbar px-3 py-2">
@@ -459,7 +560,7 @@
 </div>
 
 <section id="section-new" class="container mx-auto py-10 bg-white rounded-lg">
-  <!-- Header -->
+
   <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
     <div>
       <h2 class="text-2xl font-bold text-gray-800">Sản phẩm mới</h2>
@@ -470,37 +571,40 @@
     </a>
   </div>
 
-  <!-- Grid -->
+
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${newProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <!-- Badge New -->
+
         <span class="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">New</span>
 
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="
-          data-product-id=${product.id},
-          data-product-name=${product.tenSanPham},
-          data-product-price=${product.price},
-          data-product-img=${product.urlHinhAnh},
-          data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
-          data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
-          data-stock=${product.tongSoLuong}">
-          <i class="fas fa-shopping-cart text-blue-800"></i>
-        </button>
-        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
-          <i class="fas fa-eye text-blue-800"></i>
-        </button>
+        <div class="action-group">
+          <button class="action-btn cart-icon"
+                  th:attr="
+                  data-product-id=${product.id},
+                  data-product-name=${product.tenSanPham},
+                  data-product-price=${product.price},
+                  data-product-img=${product.urlHinhAnh},
+                  data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
+                  data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
+                  data-stock=${product.tongSoLuong}">
+            <i class="fas fa-shopping-cart text-blue-800"></i>
+          </button>
+          <button class="action-btn quick-view-btn"
+                  th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+            <i class="fas fa-eye text-blue-800"></i>
+          </button>
+        </div>
+        <div class="media-gradient"></div>
       </div>
 
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
-        <!-- Giá (giữ nguyên logic data-price để script format) -->
+
         <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
           <span th:text="${product.price}"></span> VNĐ
         </div>
@@ -519,7 +623,7 @@
 </section>
 
 <section id="section-all" class="container mx-auto py-10 bg-white rounded-lg mt-8">
-  <!-- Header -->
+
   <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
     <div>
       <h2 class="text-2xl font-bold text-gray-800">Tất cả sản phẩm</h2>
@@ -530,7 +634,7 @@
     </a>
   </div>
 
-  <!-- Grid -->
+
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${allProducts}">
       <div class="relative">
@@ -538,21 +642,24 @@
           <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
 
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="
-          data-product-id=${product.id},
-          data-product-name=${product.tenSanPham},
-          data-product-price=${product.price},
-          data-product-img=${product.urlHinhAnh},
-          data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
-          data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
-          data-stock=${product.tongSoLuong}">
-          <i class="fas fa-shopping-cart text-blue-800"></i>
-        </button>
-        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
-          <i class="fas fa-eye text-blue-800"></i>
-        </button>
+        <div class="action-group">
+          <button class="action-btn cart-icon"
+                  th:attr="
+                  data-product-id=${product.id},
+                  data-product-name=${product.tenSanPham},
+                  data-product-price=${product.price},
+                  data-product-img=${product.urlHinhAnh},
+                  data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
+                  data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
+                  data-stock=${product.tongSoLuong}">
+            <i class="fas fa-shopping-cart text-blue-800"></i>
+          </button>
+          <button class="action-btn quick-view-btn"
+                  th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+            <i class="fas fa-eye text-blue-800"></i>
+          </button>
+        </div>
+        <div class="media-gradient"></div>
       </div>
 
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
@@ -576,7 +683,7 @@
 </section>
 
 <section id="section-best" class="container mx-auto py-10 bg-white rounded-lg mt-8">
-  <!-- Header -->
+
   <div class="flex items-end justify-between mb-4 border-b border-gray-200 pb-3">
     <div>
       <h2 class="text-2xl font-bold text-gray-800">Sản phẩm bán chạy</h2>
@@ -587,31 +694,34 @@
     </a>
   </div>
 
-  <!-- Grid -->
+
   <div class="product-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
           <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
         </a>
-        <!-- Badge Hot -->
+
         <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">Hot</span>
 
-        <button class="cart-icon absolute top-2 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="
-          data-product-id=${product.id},
-          data-product-name=${product.tenSanPham},
-          data-product-price=${product.price},
-          data-product-img=${product.urlHinhAnh},
-          data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
-          data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
-          data-stock=${product.tongSoLuong}">
-          <i class="fas fa-shopping-cart text-blue-800"></i>
-        </button>
-        <button class="quick-view-btn absolute top-10 right-2 bg-white p-2 rounded-full shadow hover:bg-blue-100"
-                th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
-          <i class="fas fa-eye text-blue-800"></i>
-        </button>
+        <div class="action-group">
+          <button class="action-btn cart-icon"
+                  th:attr="
+                  data-product-id=${product.id},
+                  data-product-name=${product.tenSanPham},
+                  data-product-price=${product.price},
+                  data-product-img=${product.urlHinhAnh},
+                  data-kich-co=${@jacksonObjectMapper.writeValueAsString(product.kichCoList)},
+                  data-mau-sac=${@jacksonObjectMapper.writeValueAsString(product.mauSacList)},
+                  data-stock=${product.tongSoLuong}">
+            <i class="fas fa-shopping-cart text-blue-800"></i>
+          </button>
+          <button class="action-btn quick-view-btn"
+                  th:attr="data-product-id=${product.id}" aria-label="Xem nhanh sản phẩm">
+            <i class="fas fa-eye text-blue-800"></i>
+          </button>
+        </div>
+        <div class="media-gradient"></div>
       </div>
 
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
@@ -634,7 +744,7 @@
   </div>
 </section>
 
-<!-- Floating Chatbot Icon -->
+
 <div id="chatbot-toggle"
      style="position: fixed; bottom: 20px; right: 20px; background-color: #9FD5F7;
             width: 60px; height: 60px; border-radius: 50%; display: flex;
@@ -644,9 +754,9 @@
        style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
 </div>
 
-<!-- Chatbot Box -->
+
 <div id="chatbot-box">
-  <!-- Header -->
+
   <div class="cb-header">
   <span class="brand">
     <img th:src="@{/image/ACV.jpg}" alt="ACV" class="brand-logo" />
@@ -663,19 +773,19 @@
   </div>
 
 
-  <!-- Messages -->
+
   <div id="chat-messages"></div>
 
-  <!-- Quick row (chỉ hiện trước khi có tin nhắn đầu tiên) -->
+
   <div id="quick-row" class="cb-quick" style="display:none">
     <button class="cb-pill quick-reply">Sản phẩm mới nhất</button>
     <button class="cb-pill quick-reply">Thông tin liên hệ</button>
     <button class="cb-pill quick-reply">Địa chỉ cửa hàng</button>
   </div>
 
-  <!-- Input + Send Button -->
+
   <div class="cb-inputbar">
-    <!-- Quick-reply combobox icon -->
+
     <div class="qr-wrap">
       <button id="qr-trigger" class="qr-btn" aria-haspopup="true" aria-expanded="false" title="Quick reply">
         <i class="fas fa-bars"></i>
@@ -694,7 +804,7 @@
   </div>
 
 
-  <!-- Note -->
+
   <div class="cb-note">
     Thông tin chỉ mang tính tham khảo, được tư vấn bởi Trợ lý Trí tuệ Nhân Tạo.
   </div>
@@ -733,7 +843,7 @@
     <p class="text-center text-sm mt-2 text-gray-300">* Bản đồ hiển thị vị trí chi nhánh chính tại Chung Cư Le Capitole, Hà Nội. Vui lòng liên hệ để xác nhận giờ mở cửa.</p>
   </div>
   <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
-  <!-- Hiệu ứng nền -->
+
   <div class="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%),linear-gradient(-45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%)] bg-[length:60px_60px] animate-[patternMove_20s_linear_infinite] -z-10"></div>
 </footer>
 
@@ -756,7 +866,7 @@
     qrMenu.setAttribute('aria-hidden', open ? 'false' : 'true');
   });
 
-  // click ngoài để đóng menu
+
   document.addEventListener('click', (e) => {
     if (!qrMenu) return;
     if (!qrMenu.contains(e.target) && !qrTrigger.contains(e.target)) {
@@ -776,51 +886,51 @@
     if (el) el.style.display = 'none';
   }
 
-  // Đóng combobox khi chọn quick-reply trong menu
+
   qrMenu?.addEventListener('click', (e) => {
     const item = e.target.closest('.quick-reply');
     if (!item) return;
-    // tắt menu ngay
+
     qrMenu.classList.remove('show');
     qrTrigger.setAttribute('aria-expanded', 'false');
     qrMenu.setAttribute('aria-hidden', 'true');
   });
 
 
-  // ====== DOM refs mới ======
+
   const reloadBtn  = document.getElementById('chat-reload');
   const quickCombo = document.getElementById('quick-combobox');
   const sendBtn    = document.getElementById('chat-send');
 
-  // ====== Reload lịch sử ======
+
   reloadBtn?.addEventListener('click', () => {
-    // Xoá toàn bộ lịch sử chat trong sessionStorage
+
     sessionStorage.removeItem('chat_history');
 
-    // Xoá tin nhắn trên giao diện
+
     chatMessages.innerHTML = '';
     showQuickRow();
 
 
-    // Gọi lời chào mặc định như mới mở
+
     ensureGreeting();
   });
 
-  // ====== Quick-reply combobox ======
+
   quickCombo?.addEventListener('change', () => {
     const v = quickCombo.value.trim();
     if (!v) return;
     chatInput.value = v;
     chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    quickCombo.selectedIndex = 0; // reset lại option đầu
+    quickCombo.selectedIndex = 0;
   });
 
-  // ====== Nút gửi click = nhấn Enter ======
+
   sendBtn?.addEventListener('click', () => {
     chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
   });
 
-  // ====== Auto chào khi mở lần đầu ======
+
   function ensureGreeting() {
     const items = JSON.parse(sessionStorage.getItem('chat_history') || '[]');
     if (items.length > 0) return;
@@ -843,7 +953,7 @@
     saveToHistory('bot', greet2);
 
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    showQuickRow(); // hiện quick-reply khi lần đầu mở
+    showQuickRow();
   }
 
   document.querySelectorAll('.price').forEach(el => {
@@ -855,7 +965,7 @@
     const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
     el.textContent = 'Từ ' + formatted;
   });
-  // Format the old price in the same way as the regular price
+
   document.querySelectorAll('.formatted-old-price').forEach(el => {
     const raw = el.textContent.trim();
     if (!raw || isNaN(raw)) {
@@ -877,14 +987,14 @@
       {k:/\bphu kien|phụ kiện\b/i,    icon:'fa-ring'},
       {k:/\bdam|đầm|vay|váy\b/i,      icon:'fa-person-dress'},
       {k:/\btre em|trẻ em|kid\b/i,    icon:'fa-child'},
-      {k:/\bouter|khoac|khoác\b/i,    icon:'fa-jacket' }, // fallback nếu có FA Pro; nếu ko, thay = fa-user
+      {k:/\bouter|khoac|khoác\b/i,    icon:'fa-jacket' },
     ];
     document.querySelectorAll('.cat-chip').forEach(chip=>{
       const name = (chip.dataset.name || '').toLowerCase();
       const i = chip.querySelector('i'); if(!i) return;
       let found = 'fa-tags';
       for(const m of ICONS){ if(m.k.test(name)){ found = m.icon; break; } }
-      i.className = 'fa-solid ' + found; // set icon
+      i.className = 'fa-solid ' + found;
     });
   })();
   (function(){
@@ -895,7 +1005,7 @@
     const sections = ['#section-new', '#section-all', '#section-best']
             .map(id => document.querySelector(id)).filter(Boolean);
 
-    let isProgrammatic = false;   // 🔒 khoá highlight khi cuộn do click
+    let isProgrammatic = false;
     let io = null;
 
     function moveIndicatorTo(el){
@@ -910,7 +1020,7 @@
       moveIndicatorTo(activeEl);
     }
 
-    // Smooth scroll khi click tab (khóa IO tạm thời)
+
     tabs.forEach(tab => {
       tab.addEventListener('click', (e) => {
         const href = tab.getAttribute('href');
@@ -920,20 +1030,20 @@
         const target = document.querySelector(href);
         if (!target) return;
 
-        isProgrammatic = true;        // 🔒 khoá
-        setActiveTab(tab);            // highlight & indicator nhảy ngay
+        isProgrammatic = true;
+        setActiveTab(tab);
 
         const y = target.getBoundingClientRect().top + window.pageYOffset - OFFSET;
         window.scrollTo({ top: y, behavior: 'smooth' });
 
-        // mở khoá sau khi cuộn xong
-        // Chrome hỗ trợ 'scrollend'; fallback = timeout ~600ms
+
+
         const unlock = () => { isProgrammatic = false; };
         if ('onscrollend' in window) {
           const once = () => { window.removeEventListener('scrollend', once); unlock(); };
           window.addEventListener('scrollend', once, { once:true });
         } else {
-          // thời gian phụ thuộc quãng đường (tối đa 800ms)
+
           const dist = Math.abs(window.scrollY - y);
           const dur  = Math.min(800, Math.max(350, dist * 0.4));
           setTimeout(unlock, dur);
@@ -941,11 +1051,11 @@
       });
     });
 
-    // IO highlight theo scroll – bỏ qua khi đang cuộn do click
+
     function attachObserver(){
       if (!('IntersectionObserver' in window)) return;
       io = new IntersectionObserver((entries) => {
-        if (isProgrammatic) return;  // 🚫 đừng đổi tab giữa đường
+        if (isProgrammatic) return;
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const id = '#' + entry.target.id;
@@ -955,7 +1065,7 @@
         });
       }, {
         root: null,
-        // ép chỉ active khi section chiếm phần lớn viewport → giảm nháy
+
         rootMargin: `-${OFFSET + 1}px 0px -55% 0px`,
         threshold: 0
       });
@@ -963,7 +1073,7 @@
     }
     attachObserver();
 
-    // Giữ indicator đúng khi kéo ngang thanh tabs (mobile) & resize
+
     ul?.addEventListener('scroll', () => {
       const active = document.querySelector('#mini-tabs .tab-link.is-active') || tabs[0];
       moveIndicatorTo(active);
@@ -973,7 +1083,7 @@
       moveIndicatorTo(active);
     });
 
-    // Active mặc định
+
     const defaultTab = document.querySelector('#mini-tabs .tab-link[href="#section-new"]') || tabs[0];
     setActiveTab(defaultTab);
   })();
@@ -983,14 +1093,14 @@
   function safeJSONParse(val, fallback = []) {
     if (val == null || val === '' || val === 'undefined' || val === 'null') return fallback;
 
-    // 1) thử parse thẳng
+
     try { return JSON.parse(val); } catch {}
 
-    // 2) nếu bị &quot;...&quot; thì giải mã HTML rồi parse
+
     try {
       const t = document.createElement('textarea');
       t.innerHTML = val;
-      const decoded = t.value;     // chuỗi đã bỏ &quot; -> "
+      const decoded = t.value;
       return JSON.parse(decoded);
     } catch {
       return fallback;
@@ -1004,7 +1114,7 @@
     sendBtn.style.cursor  = hasText ? 'pointer' : 'not-allowed';
   }
 
-  // Toggle chatbot
+
   const toggleBtn = document.getElementById('chatbot-toggle');
   const chatBox = document.getElementById('chatbot-box');
   const closeBtn = document.getElementById('chatbot-close');
@@ -1041,7 +1151,7 @@
 
   /* click ra ngoài để đóng */
   document.addEventListener('click', (e) => {
-    if (!chatBox.contains(e.target) && !toggleBtn.contains(e.target)) closeChat(); // ✅
+    if (!chatBox.contains(e.target) && !toggleBtn.contains(e.target)) closeChat();
   });
 
 
@@ -1061,7 +1171,7 @@
     chatMessages.innerHTML = '';
     const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
 
-    // render lại lịch sử
+
     for (const item of items) {
       const div = document.createElement('div');
       div.className = item.role === 'user' ? 'chatbot-msg-user' : 'chatbot-msg-bot';
@@ -1069,7 +1179,7 @@
       chatMessages.appendChild(div);
     }
 
-    // hiện quick-reply nếu CHƯA có tin nhắn user nào
+
     const hasUserMsg = items.some(i => i.role === 'user');
     if (hasUserMsg) hideQuickRow(); else showQuickRow();
 
@@ -1173,7 +1283,7 @@
       return parsedData.message || cleanedMessage;
     } catch (parseErr) {
       console.log('❌ Lỗi parse JSON:', parseErr);
-      // Trích xuất thủ công nếu parse thất bại
+
       const messageMatch = cleanedMessage.match(/"message":\s*"([^"]*)"/);
       if (messageMatch && messageMatch[1]) {
         console.log('✅ Trích xuất thủ công thành công:', messageMatch[1]);
@@ -1185,17 +1295,17 @@
   }
 
   function isImageUrl(url) {
-    // Nhận diện link ảnh phổ biến, cho phép có query string
+
     return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
   }
 
   function formatMessage(message) {
-    // Nếu bot đã gửi sẵn thẻ <img>, giữ nguyên (tránh replace URL bên trong thẻ)
+
     if (/<\s*img\b[^>]*src=/i.test(message)) {
-      return message; // hoặc: return message.replace(/\n/g, '<br>'); nếu muốn ép xuống dòng
+      return message;
     }
 
-    // Xử lý tất cả URLs: link ảnh -> <img>, link khác -> <a>
+
     return message
             .replace(
                     /(https?:\/\/[^\s<]+|acvstore\.site\/[^\s<]+)/g,
@@ -1218,13 +1328,13 @@
   });
 
 
-  // === REPLACE toàn bộ block .cart-icon hiện tại bằng block này ===
+
   document.querySelectorAll('.cart-icon').forEach(button => {
     button.addEventListener('click', async () => {
       const modalEl = document.getElementById('addToCartModal');
       const modal   = new bootstrap.Modal(modalEl);
 
-      // Info cơ bản
+
       modalEl.querySelector('#modalProductImage').src = button.dataset.productImg || '';
       modalEl.querySelector('#modalProductName').textContent = button.dataset.productName || 'Sản phẩm';
       modalEl.querySelector('#modalProductPrice').innerHTML =
@@ -1232,9 +1342,9 @@
       modalEl.querySelector('#modalProductStock').textContent =
               `Tồn kho: ${button.dataset.stock ?? 'N/A'}`;
 
-      const productId = button.dataset.productId; // dùng làm sanPhamId
+      const productId = button.dataset.productId;
 
-      // Helpers
+
       const safeJSONParse = (val, fallback = []) => {
         if (val == null || val === '' || val === 'undefined' || val === 'null') return fallback;
         try { return JSON.parse(val); } catch {}
@@ -1253,7 +1363,7 @@
               ? Swal.fire({ icon:'error', title:'Lỗi', text })
               : alert('Lỗi: ' + text);
 
-      // Lấy options từ data-attr (nếu có) hoặc API
+
       let sizes  = safeJSONParse(button.dataset.kichCo);
       let colors = safeJSONParse(button.dataset.mauSac);
       if (!Array.isArray(sizes) || !sizes.length || !Array.isArray(colors) || !colors.length) {
@@ -1267,7 +1377,7 @@
         } catch(e){ console.error('Không tải được options:', e); }
       }
 
-      // Render options
+
       const sizeWrap  = modalEl.querySelector('#modalSizeOptions');
       const colorWrap = modalEl.querySelector('#modalColorOptions');
       const stockEl   = modalEl.querySelector('#modalProductStock');
@@ -1304,21 +1414,21 @@
 
         const css = (c.maMauHex || '').toString().trim();
         if (css && isCssColor(css)) {
-          // Swatch tròn
-          btn.dataset.swatch = 'true';             // <-- QUAN TRỌNG: để CSS nhận biết là swatch
+
+          btn.dataset.swatch = 'true';
           btn.style.backgroundColor = css;
           btn.title = c.tenMau || '';
         } else {
-          // Pill chữ (hành vi như size)
+
           btn.textContent = c.tenMau || 'Màu';
-          // Không đặt width/height; CSS sẽ xử lý như size-option
+
         }
 
         btn.dataset.colorId = c.id;
         colorWrap.appendChild(btn);
       });
 
-      // Qty
+
       const minusBtn = modalEl.querySelector('.quantity-btn.minus');
       const plusBtn  = modalEl.querySelector('.quantity-btn.plus');
       const qtyInput = modalEl.querySelector('.quantity-input');
@@ -1328,15 +1438,15 @@
         qtyInput.value = Math.min((parseInt(qtyInput.value) || 1) + 1, max);
       };
 
-      // Trạng thái chọn + biến thể
+
       let selectedSizeId  = null;
       let selectedColorId = null;
       let currentVariant  = null;
 
-      // ====== VALID COMBINATIONS ======
+
       /** validCombos: [{sizeId, colorId, soLuongTonKho?}] nếu có API; nếu không — lazy probe + cache */
       let validCombos = null;
-      const variantCache = new Map(); // key = `${sid}-${cid}` -> { exists:boolean, stock:number, gia:number, oldPrice:number }
+      const variantCache = new Map();
 
       async function tryLoadValidCombos() {
         const tryUrls = [
@@ -1350,7 +1460,7 @@
             if (r.ok) { validCombos = await r.json(); if (Array.isArray(validCombos)) return; }
           } catch {}
         }
-        validCombos = null; // không có endpoint -> dùng lazy probe
+        validCombos = null;
       }
       await tryLoadValidCombos();
 
@@ -1410,7 +1520,7 @@
           stockEl.textContent = 'Tồn kho: hãy chọn size & màu';
           return;
         }
-        // nếu đã có trong cache thì dùng luôn
+
         let data = variantCache.get(keyOf(selectedSizeId, selectedColorId));
         if (!data || data.id == null) {
           const res = await fetch(
@@ -1428,7 +1538,7 @@
         }
         currentVariant = { id:data.id, soLuongTonKho:data.stock, gia:data.gia, oldPrice:data.oldPrice };
 
-        // tồn kho
+
         if (typeof data.stock === 'number') {
           stockEl.textContent = `Tồn kho: ${data.stock}`;
           qtyInput.max = data.stock;
@@ -1438,7 +1548,7 @@
           qtyInput.removeAttribute('max');
         }
 
-        // giá
+
         const cur = Number(data.gia || 0).toLocaleString('vi-VN') + ' VNĐ';
         if (data.oldPrice && data.oldPrice !== data.gia) {
           const old = Number(data.oldPrice).toLocaleString('vi-VN') + ' VNĐ';
@@ -1448,18 +1558,18 @@
         }
       }
 
-      // Bắt sự kiện chọn + ràng buộc enable/disable
-      // SIZE: toggle chọn / bỏ chọn
+
+
       sizeWrap.querySelectorAll('.size-option').forEach(btn => {
         btn.addEventListener('click', async () => {
           const isActive = btn.classList.contains('active');
 
-          // Nếu đang active -> bỏ tick
+
           if (isActive) {
             btn.classList.remove('active');
             selectedSizeId = null;
-            applyEnableBySize(null);               // bật lại toàn bộ màu
-            if (selectedColorId) applyEnableByColor(selectedColorId); // nếu còn màu, lọc size theo màu
+            applyEnableBySize(null);
+            if (selectedColorId) applyEnableByColor(selectedColorId);
             currentVariant = null;
             stockEl.textContent = selectedColorId ? 'Tồn kho: hãy chọn size' : `Tồn kho: ${button.dataset.stock ?? 'N/A'}`;
             priceEl.innerHTML   = 'Từ ' + Number(button.dataset.productPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
@@ -1467,7 +1577,7 @@
             return;
           }
 
-          // Chọn size mới
+
           sizeWrap.querySelectorAll('.size-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           selectedSizeId = btn.dataset.sizeId;
@@ -1476,17 +1586,17 @@
         });
       });
 
-// COLOR: toggle chọn / bỏ chọn
+
       colorWrap.querySelectorAll('.color-option').forEach(btn => {
         btn.addEventListener('click', async () => {
           const isActive = btn.classList.contains('active');
 
-          // Nếu đang active -> bỏ tick
+
           if (isActive) {
             btn.classList.remove('active');
             selectedColorId = null;
-            applyEnableByColor(null);               // bật lại toàn bộ size
-            if (selectedSizeId) applyEnableBySize(selectedSizeId); // nếu còn size, lọc màu theo size
+            applyEnableByColor(null);
+            if (selectedSizeId) applyEnableBySize(selectedSizeId);
             currentVariant = null;
             stockEl.textContent = selectedSizeId ? 'Tồn kho: hãy chọn màu' : `Tồn kho: ${button.dataset.stock ?? 'N/A'}`;
             priceEl.innerHTML   = 'Từ ' + Number(button.dataset.productPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
@@ -1494,7 +1604,7 @@
             return;
           }
 
-          // Chọn màu mới
+
           colorWrap.querySelectorAll('.color-option').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
           selectedColorId = btn.dataset.colorId;
@@ -1503,14 +1613,14 @@
         });
       });
 
-      // Mở modal
+
       errEl.classList.add('hidden');
-      // Ban đầu: enable tất cả
+
       sizeWrap.querySelectorAll('.size-option').forEach(b => setDisabled(b, false));
       colorWrap.querySelectorAll('.color-option').forEach(b => setDisabled(b, false));
       modal.show();
 
-      // Thêm vào giỏ (giữ đúng flow trang chi tiết)
+
       const confirmButton = modalEl.querySelector('#confirmAddToCart');
       confirmButton.onclick = async () => {
         errEl.classList.add('hidden');
@@ -1626,7 +1736,7 @@
 
   document.addEventListener('DOMContentLoaded', updateCartCount);
 
-  // Dynamic rating display
+
   document.addEventListener("DOMContentLoaded", function() {
     const ratingContainers = document.querySelectorAll('.rating');
 
@@ -1655,7 +1765,7 @@
                 }
 
                 const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length || 0;
-                const roundedAvg = Math.round(avg * 2) / 2; // Làm tròn đến 0.5
+                const roundedAvg = Math.round(avg * 2) / 2;
                 avgRatingElement.textContent = roundedAvg.toFixed(1);
                 totalReviewsElement.textContent = allReviews.length;
 
