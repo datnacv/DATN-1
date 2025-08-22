@@ -7,11 +7,21 @@ import com.example.AsmGD1.service.NguoiDung.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +39,9 @@ public class ProfileController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserDetailsService userDetailsService; // load theo email (username)
 
     @GetMapping
     public String viewProfile(Model model, Authentication authentication) {
@@ -55,10 +68,10 @@ public class ProfileController {
                                                              @RequestParam String email,
                                                              @RequestParam String soDienThoai,
                                                              @RequestParam(required = false) String matKhau,
-                                                             Authentication authentication) {
+                                                             Authentication authentication,
+                                                             HttpServletRequest request) {
         Map<String, Object> response = new HashMap<>();
         try {
-            String username = authentication.getName();
             NguoiDung existingUser = profileService.getCurrentUser();
             if (existingUser == null || !existingUser.getTrangThai()) {
                 response.put("status", "error");
@@ -66,15 +79,13 @@ public class ProfileController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra email trùng lặp
+            // Validate email/phone trùng
             NguoiDung userByEmail = nguoiDungService.findByEmail(email);
             if (userByEmail != null && !userByEmail.getId().equals(existingUser.getId())) {
                 response.put("status", "error");
                 response.put("message", "Email đã tồn tại");
                 return ResponseEntity.badRequest().body(response);
             }
-
-            // Kiểm tra số điện thoại trùng lặp
             NguoiDung userByPhone = nguoiDungService.findBySoDienThoai(soDienThoai);
             if (userByPhone != null && !userByPhone.getId().equals(existingUser.getId())) {
                 response.put("status", "error");
@@ -82,6 +93,7 @@ public class ProfileController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Cập nhật DB
             existingUser.setHoTen(hoTen);
             existingUser.setEmail(email);
             existingUser.setSoDienThoai(soDienThoai);
@@ -90,9 +102,18 @@ public class ProfileController {
             }
             profileService.updateUser(existingUser);
 
+            // === ĐĂNG XUẤT NGAY SAU KHI CẬP NHẬT ===
+            var session = request.getSession(false);
+            if (session != null) session.invalidate();
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+
+            // Báo cho FE để chuyển hướng
             response.put("status", "success");
-            response.put("message", "Cập nhật hồ sơ thành công");
+            response.put("message", "Cập nhật thành công. Vui lòng đăng nhập lại.");
+            response.put("logout", true);
+            response.put("redirect", "/login"); // đổi thành URL đăng nhập thực tế của bạn nếu khác
             return ResponseEntity.ok(response);
+
         } catch (Exception e) {
             response.put("status", "error");
             response.put("message", "Lỗi khi cập nhật hồ sơ: " + e.getMessage());
