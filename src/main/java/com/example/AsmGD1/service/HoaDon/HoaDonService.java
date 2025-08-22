@@ -836,6 +836,8 @@ public class HoaDonService {
 
         if ("Tại quầy".equalsIgnoreCase(salesMethod)) {
             if (("Chưa xác nhận".equals(o) && "Hoàn thành".equals(newStatus)) || "Hoàn thành".equals(newStatus)) return;
+            // Mới: Cho phép trả hàng từ trạng thái "Hoàn thành" cho bán hàng tại quầy
+            if ("Hoàn thành".equals(o) && List.of("Đã trả hàng", "Đã trả hàng một phần").contains(newStatus)) return;
             throw new IllegalStateException("Luồng Tại quầy không hỗ trợ chuyển từ " + o + " -> " + newStatus);
         }
 
@@ -869,7 +871,10 @@ public class HoaDonService {
             case "Hoàn thành" -> "hoan_thanh";
             case "Hủy đơn hàng" -> "huy";
             case "Đã đổi hàng" -> "da_doi_hang";
-            default -> null;
+            // Thêm mới: Mapping cho trạng thái trả hàng
+            case "Đã trả hàng" -> "da_tra_hang";  // Giả sử giá trị trạng thái trong don_hang là "da_tra_hang"
+            case "Đã trả hàng một phần" -> "da_tra_hang_mot_phan";  // Giả sử giá trị trạng thái trong don_hang là "da_tra_hang_mot_phan"
+            default -> throw new IllegalArgumentException("Trạng thái hóa đơn không hợp lệ: " + invoiceStatus);  // Thay vì return null để tránh lỗi NULL
         };
     }
 
