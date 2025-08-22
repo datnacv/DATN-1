@@ -1,5 +1,6 @@
 package com.example.AsmGD1.entity;
 
+import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -76,4 +77,7 @@ public class ChiTietSanPham {
     @OneToMany(mappedBy = "chiTietSanPham", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private List<HinhAnhSanPham> hinhAnhSanPhams;
+
+    @Transient
+    private ChiTietSanPhamDto chiTietSanPhamDto;
 }
