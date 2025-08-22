@@ -9,4 +9,6 @@ import java.util.UUID;
 @Repository
 public interface LichSuDoiSanPhamRepository extends JpaRepository<LichSuDoiSanPham, UUID> {
     boolean existsByHoaDonId(UUID hoaDonId);
+    boolean existsByHoaDonIdAndTrangThai(UUID hoaDonId, String trangThai);
+
 }

@@ -57,7 +57,6 @@ public class CheckoutService {
         DonHang donHang = new DonHang();
         donHang.setNguoiDung(nguoiDung);
         donHang.setMaDonHang("DH" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        donHang.setTrangThai("cho_xac_nhan");
         donHang.setThoiGianTao(LocalDateTime.now());
         donHang.setTrangThaiThanhToan(false);
         donHang.setPhuongThucBanHang("Online");
@@ -106,7 +105,6 @@ public class CheckoutService {
             ChiTietSanPham ctsp = chiTietSanPhamRepository.findById(item.getChiTietSanPhamId())
                     .orElseThrow(() -> new RuntimeException("Chi tiết SP không tồn tại: " + item.getChiTietSanPhamId()));
 
-            // Chỉ kiểm tra tồn kho, không trừ ngay
             if (ctsp.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Sản phẩm " + ctsp.getSanPham().getTenSanPham()
                         + " không đủ số lượng. Còn lại: " + ctsp.getSoLuongTonKho());
@@ -141,6 +139,10 @@ public class CheckoutService {
 
             chiTietList.add(ctdh);
             tongTien = tongTien.add(thanhTien);
+
+            // Trừ kho
+            chiTietSanPhamService.updateStockAndStatus(ctsp.getId(), -soLuong);
+            logger.info("Update tồn kho {} -> còn {}", ctsp.getSanPham().getTenSanPham(), ctsp.getSoLuongTonKho());
         }
 
         // ===== Xử lý voucher (luôn ghi mapping; chỉ consume khi đủ điều kiện) =====
@@ -166,7 +168,7 @@ public class CheckoutService {
 
             BigDecimal giamOrder = BigDecimal.ZERO;
             if (datMin) {
-                // Chỉ consume khi đủ điều kiện
+                // chỉ consume khi đủ điều kiện
                 boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(pgOrder.getKieuPhieu());
                 boolean used = isCaNhan
                         ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), pgOrder.getId())
@@ -269,12 +271,12 @@ public class CheckoutService {
                     donHang.getTongTien()
             );
             if (!ok) throw new RuntimeException("Số dư ví không đủ để thanh toán.");
-            // Đánh dấu đã thanh toán & thời gian
-            donHang.setTrangThaiThanhToan(true);
-            donHang.setThoiGianThanhToan(LocalDateTime.now());
-            donHang.setTrangThai("da_xac_nhan"); // Chuyển trạng thái sang đã xác nhận khi thanh toán ví thành công
-            donHangRepository.save(donHang);
         }
+
+        // Đánh dấu đã thanh toán & thời gian
+        donHang.setTrangThaiThanhToan(true);
+        donHang.setThoiGianThanhToan(LocalDateTime.now());
+        donHangRepository.save(donHang);
 
         // Xoá item khỏi giỏ hàng
         GioHang gioHang = gioHangRepository.findByNguoiDungId(nguoiDung.getId());
@@ -332,4 +334,5 @@ public class CheckoutService {
 
         return donHang;
     }
+
 }

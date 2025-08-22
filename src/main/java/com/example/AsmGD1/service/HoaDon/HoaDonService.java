@@ -351,7 +351,6 @@ public class HoaDonService {
         hoaDonRepository.delete(hoaDon);
     }
 
-    @Transactional
     public void createHoaDonFromDonHang(DonHang donHang) {
         DonHang refreshedDonHang = donHangRepository.findById(donHang.getId())
                 .orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại với ID: " + donHang.getId()));
@@ -379,37 +378,18 @@ public class HoaDonService {
             donHangRepository.save(refreshedDonHang);
             trangThai = "Đã xác nhận Online";
             ghiChu = "Thanh toán bằng ví điện tử thành công";
-            // Trừ tồn kho ngay khi thanh toán ví thành công
-            for (ChiTietDonHang chiTiet : refreshedDonHang.getChiTietDonHangs()) {
-                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
-                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
-                int soLuong = chiTiet.getSoLuong();
-                if (chiTietSanPham.getSoLuongTonKho() < soLuong) {
-                    throw new RuntimeException("Sản phẩm " + chiTietSanPham.getSanPham().getTenSanPham() + " không đủ tồn kho.");
-                }
-                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - soLuong);
-                chiTietSanPhamRepository.save(chiTietSanPham);
-            }
         } else if ("Tại quầy".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Hoàn thành";
             ghiChu = "Hoàn thành (Tại quầy)";
             refreshedDonHang.setTrangThaiThanhToan(true);
             refreshedDonHang.setThoiGianThanhToan(LocalDateTime.now());
             donHangRepository.save(refreshedDonHang);
-            // Trừ tồn kho ngay khi mua tại quầy
-            for (ChiTietDonHang chiTiet : refreshedDonHang.getChiTietDonHangs()) {
-                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
-                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
-                int soLuong = chiTiet.getSoLuong();
-                if (chiTietSanPham.getSoLuongTonKho() < soLuong) {
-                    throw new RuntimeException("Sản phẩm " + chiTietSanPham.getSanPham().getTenSanPham() + " không đủ tồn kho.");
-                }
-                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - soLuong);
-                chiTietSanPhamRepository.save(chiTietSanPham);
-            }
-        } else {
+        } else if ("Online".equalsIgnoreCase(refreshedDonHang.getPhuongThucBanHang())) {
             trangThai = "Chưa xác nhận";
-            ghiChu = "Hóa đơn Online được tạo, chờ admin xác nhận";
+            ghiChu = "Hóa đơn Online được tạo";
+        } else {
+            trangThai = "Đã xác nhận";
+            ghiChu = "Đã xác nhận đơn hàng Giao hàng";
         }
 
         hoaDon.setTrangThai(trangThai);
@@ -537,8 +517,15 @@ public class HoaDonService {
         // Kiểm tra trạng thái đổi hàng dựa trên trạng thái hóa đơn hoặc lịch sử đổi hàng
         if ("Đã đổi hàng".equals(hoaDon.getTrangThai()) ||
                 hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã đổi hàng".equals(ls.getTrangThai())) ||
-                lichSuDoiSanPhamRepository.existsByHoaDonId(hoaDon.getId())) {
+                lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận")) {
             return "Đã đổi hàng";
+        }
+
+        // Kiểm tra trạng thái chờ xử lý đổi hàng
+        if ("Chờ xử lý đổi hàng".equals(hoaDon.getTrangThai()) ||
+                hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Chờ xử lý đổi hàng".equals(ls.getTrangThai())) ||
+                lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Chờ xử lý")) {
+            return "Chờ xử lý đổi hàng";
         }
 
         // Kiểm tra trạng thái hoàn thành
@@ -892,21 +879,6 @@ public class HoaDonService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn"));
         validateTransition(hd.getTrangThai(), newStatus, hd.getDonHang().getPhuongThucBanHang());
 
-        // Trừ tồn kho khi chuyển sang trạng thái "Đã xác nhận" hoặc "Đã xác nhận Online"
-        if (List.of("Đã xác nhận", "Đã xác nhận Online").contains(newStatus) && "Chưa xác nhận".equals(hd.getTrangThai())) {
-            DonHang donHang = hd.getDonHang();
-            for (ChiTietDonHang chiTiet : donHang.getChiTietDonHangs()) {
-                ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(chiTiet.getChiTietSanPham().getId())
-                        .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm không tồn tại."));
-                int soLuong = chiTiet.getSoLuong();
-                if (chiTietSanPham.getSoLuongTonKho() < soLuong) {
-                    throw new RuntimeException("Sản phẩm " + chiTietSanPham.getSanPham().getTenSanPham() + " không đủ tồn kho.");
-                }
-                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() - soLuong);
-                chiTietSanPhamRepository.save(chiTietSanPham);
-            }
-        }
-
         hd.setTrangThai(newStatus);
         hd.setGhiChu(ghiChu);
         if (List.of("Hoàn thành", "Hủy đơn hàng", "Vận chuyển thành công", "Đã đổi hàng").contains(newStatus)) {
@@ -970,6 +942,10 @@ public class HoaDonService {
                     tieuDe = "Đơn hàng của bạn đã được đổi hàng";
                     noiDung = "Đơn " + ma + " đã được đổi hàng thành công. " + (ghiChu != null ? ghiChu : "");
                     break;
+                case "Chờ xử lý đổi hàng":
+                    tieuDe = "Yêu cầu đổi hàng của bạn đang chờ xử lý";
+                    noiDung = "Đơn " + ma + " đã gửi yêu cầu đổi hàng. " + (ghiChu != null ? ghiChu : "");
+                    break;
                 default:
                     tieuDe = "Cập nhật đơn hàng";
                     noiDung = "Đơn " + ma + " cập nhật: " + newStatus + ". " + (ghiChu != null ? ghiChu : "");
@@ -979,8 +955,7 @@ public class HoaDonService {
         } catch (Exception ignore) {}
 
         NguoiDung nguoiDung = hd.getNguoiDung();
-        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty() &&
-                !"Chưa xác nhận".equals(newStatus)) {
+        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
             String emailSubject = "Cập nhật trạng thái đơn hàng - ACV Store";
             String emailContent = "<html>" +
                     "<body style='font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;'>" +
