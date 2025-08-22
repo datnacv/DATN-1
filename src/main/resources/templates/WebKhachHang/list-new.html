@@ -184,7 +184,7 @@
                 <div class="product-body">
                     <h4 class="product-title" th:text="${product.tenSanPham}">Tên sản phẩm</h4>
 
-                    <div class="price" th:attr="data-price=${product.price}">
+                    <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
                         <span th:text="${product.price}"></span> VNĐ
                     </div>
                     <div th:if="${product.oldPrice != null and product.discount != '0%'}"

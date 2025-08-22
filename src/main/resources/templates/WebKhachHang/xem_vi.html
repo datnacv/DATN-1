@@ -18,32 +18,6 @@
     body { padding-top: 118px; }
     .user-info { display: none; color: white; }
     .user-info.active { display: inline; }
-    .chatbot-msg-user {
-      background-color: #153054;
-      color: white;
-      padding: 10px 14px;
-      border-radius: 20px;
-      max-width: 80%;
-      margin-left: auto;
-      margin-bottom: 10px;
-      text-align: right;
-      font-size: 15px;
-      line-height: 1.5;
-      word-wrap: break-word;
-    }
-    .chatbot-msg-bot {
-      background-color: #9FD5F7;
-      color: #153054;
-      padding: 10px 14px;
-      border-radius: 20px;
-      max-width: 80%;
-      margin-right: auto;
-      margin-bottom: 10px;
-      text-align: left;
-      font-size: 15px;
-      line-height: 1.5;
-      word-wrap: break-word;
-    }
     #confirmAddToCart.loading::after {
       content: '';
       display: inline-block;
@@ -252,52 +226,6 @@
   </div>
 </section>
 
-<!-- Chatbot Toggle -->
-<div id="chatbot-toggle" style="position: fixed; bottom: 20px; right: 20px; background-color: #153054; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
-  <i class="fas fa-robot fa-lg text-white"></i>
-</div>
-
-<!-- Chatbot Box -->
-<div id="chatbot-box" style="
-      position: fixed;
-      bottom: 100px;
-      right: 30px;
-      width: 420px;
-      max-height: 620px;
-      background: #fff;
-      border-radius: 7px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-      z-index: 10000;
-      font-family: 'Segoe UI', sans-serif;
-    ">
-  <div style="background-color: #153054; color: white; padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
-    <img src="https://img.icons8.com/emoji/48/robot-emoji.png" style="width: 32px; height: 32px;">
-    <div style="font-weight: bold;">ACV Bot</div>
-    <span id="chatbot-close" style="margin-left: auto; cursor: pointer;">×</span>
-  </div>
-  <div id="chat-messages" style="padding: 12px; height: 300px; overflow-y: auto; font-size: 14px; line-height: 1.4; background: #f9fafb;">
-    <div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>
-  </div>
-  <div id="quick-replies" class="flex flex-wrap gap-2 p-4">
-    <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Sản phẩm mới nhất</button>
-    <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Kiểm tra đơn hàng</button>
-    <button class="quick-reply px-3 py-1 bg-blue-100 rounded-full text-sm">Chính sách đổi trả</button>
-  </div>
-  <div style="padding: 10px; border-top: 1px solid #eee;">
-    <input id="chat-input" type="text" placeholder="Nhập câu hỏi..." style="
-          width: 100%;
-          padding: 12px 16px;
-          border: 1px solid #ccc;
-          border-radius: 24px;
-          font-size: 15px;
-          outline: none;
-          transition: border 0.2s ease-in-out;
-        ">
-  </div>
-</div>
 
 <!-- Footer -->
 <footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px; position: relative; z-index: 1;">
@@ -386,92 +314,6 @@
     });
   });
 
-  // Chatbot functionality
-  const toggleBtn = document.getElementById('chatbot-toggle');
-  const chatBox = document.getElementById('chatbot-box');
-  const closeBtn = document.getElementById('chatbot-close');
-  const chatInput = document.getElementById('chat-input');
-  const chatMessages = document.getElementById('chat-messages');
-
-  toggleBtn.onclick = () => {
-    chatBox.style.display = "flex";
-    chatInput.focus();
-    restoreHistory();
-  };
-  closeBtn.onclick = () => {
-    chatBox.style.display = "none";
-  };
-
-  function saveToHistory(role, msg) {
-    const current = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
-    current.push({ role, msg });
-    sessionStorage.setItem("chat_history", JSON.stringify(current));
-  }
-
-  function restoreHistory() {
-    chatMessages.innerHTML = '<div id="typing-indicator" class="chatbot-msg-bot hidden">Đang gõ...</div>';
-    const items = JSON.parse(sessionStorage.getItem("chat_history") || "[]");
-    for (const item of items) {
-      const div = document.createElement('div');
-      div.className = item.role === 'user' ? 'chatbot-msg-user' : 'chatbot-msg-bot';
-      div.innerHTML = item.msg;
-      chatMessages.appendChild(div);
-    }
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  document.querySelectorAll('.quick-reply').forEach(btn => {
-    btn.addEventListener('click', () => {
-      chatInput.value = btn.textContent;
-      chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
-    });
-  });
-
-  chatInput.addEventListener('keydown', async (event) => {
-    if (event.key === 'Enter' && !event.repeat) {
-      event.preventDefault();
-      const message = chatInput.value.trim();
-      if (!message) return;
-
-      const userDiv = document.createElement('div');
-      userDiv.className = 'chatbot-msg-user';
-      userDiv.textContent = message;
-      chatMessages.appendChild(userDiv);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-      saveToHistory('user', message);
-      chatInput.value = '';
-
-      document.getElementById('typing-indicator').classList.remove('hidden');
-      try {
-        const res = await fetch("https://duclong0910.app.n8n.cloud/webhook/website-chatbot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body: { from: "user_123", message } })
-        });
-
-        const contentType = res.headers.get("content-type");
-        const data = contentType && contentType.includes("json") ? await res.json() : { message: "Bot không phản hồi." };
-
-        let formattedMsg = data.message || "Không có phản hồi.";
-
-        const botDiv = document.createElement('div');
-        botDiv.className = 'chatbot-msg-bot';
-        botDiv.innerHTML = formattedMsg;
-        chatMessages.appendChild(botDiv);
-        saveToHistory('bot', botDiv.innerHTML);
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      } catch (e) {
-        const botErr = document.createElement('div');
-        botErr.className = 'chatbot-msg-bot';
-        botErr.textContent = "Lỗi kết nối. Vui lòng thử lại.";
-        chatMessages.appendChild(botErr);
-        saveToHistory('bot', botErr.textContent);
-      } finally {
-        document.getElementById('typing-indicator').classList.add('hidden');
-      }
-    }
-  });
 
   // Wallet form submission
   document.addEventListener("DOMContentLoaded", function () {
