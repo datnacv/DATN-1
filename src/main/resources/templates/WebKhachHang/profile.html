@@ -8,6 +8,7 @@
   <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
   <style>
     /* Enhanced navbar */
     .navbar {
@@ -407,6 +408,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/navbar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
   // Hàm hiển thị toast notification
   function showToast(message, type = 'success') {
@@ -672,12 +675,17 @@
             })
             .then(data => {
               if (data.status === 'success') {
-                location.reload();
                 showToast(data.message);
+                if (data.logout) {
+                  // Backend đã xóa session, chuyển về trang đăng nhập
+                  setTimeout(() => {
+                    window.location.href = data.redirect || '/login'; // sửa URL nếu khác
+                  }, 600);
+                } else {
+                  setTimeout(() => location.reload(), 1000);
+                }
               } else {
                 showToast(data.message, 'danger');
-                button.disabled = false;
-                button.innerHTML = 'Đặt mặc định';
               }
             })
             .catch(err => {
@@ -769,38 +777,115 @@
             .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'));
   });
 
-  // Cập nhật hồ sơ qua AJAX
-  document.getElementById('profileForm')?.addEventListener('submit', function (e) {
+  // ===== SweetAlert2 toast giống trang thanh toán =====
+  function swToast(message, type = 'success') {
+    return Swal.fire({
+      toast: true,
+      position: 'top-end',
+      icon: type,                 // 'success' | 'error' | 'info' | 'warning' | 'question'
+      title: message,
+      showConfirmButton: false,
+      timer: 1800,
+      timerProgressBar: true
+    });
+  }
+
+  // ===== Xác nhận trước khi cập nhật hồ sơ (AJAX) =====
+  let initialProfile = {};
+  document.addEventListener('DOMContentLoaded', function () {
+    initialProfile = {
+      hoTen: document.querySelector('input[name="hoTen"]')?.value || '',
+      email: document.querySelector('input[name="email"]')?.value || '',
+      soDienThoai: document.querySelector('input[name="soDienThoai"]')?.value || ''
+    };
+  });
+
+  // Danh sách thay đổi (giữ nguyên hoặc nâng cấp format)
+  function buildChangesList(current) {
+    const changes = [];
+    if (current.hoTen !== initialProfile.hoTen)
+      changes.push(`Họ tên: "<b>${initialProfile.hoTen}</b>" → "<b>${current.hoTen}</b>"`);
+    if (current.email !== initialProfile.email)
+      changes.push(`Email: "<b>${initialProfile.email}</b>" → "<b>${current.email}</b>"`);
+    if (current.soDienThoai !== initialProfile.soDienThoai)
+      changes.push(`SĐT: "<b>${initialProfile.soDienThoai}</b>" → "<b>${current.soDienThoai}</b>"`);
+    if (current.matKhau)
+      changes.push('Mật khẩu: <i>(sẽ thay đổi)</i>');
+    return changes;
+  }
+
+  // Handler submit: confirm bằng SweetAlert2 (KHÔNG dùng modal Bootstrap)
+  document.getElementById('profileForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
-    const formData = new FormData(this);
+    const form = this;
+
+    const current = {
+      hoTen: form.querySelector('input[name="hoTen"]').value.trim(),
+      email: form.querySelector('input[name="email"]').value.trim(),
+      soDienThoai: form.querySelector('input[name="soDienThoai"]').value.trim(),
+      matKhau: form.querySelector('input[name="matKhau"]').value
+    };
+
+    const changes = buildChangesList(current);
+
+    if (!changes.length) {
+      return swToast('Bạn chưa thay đổi thông tin nào', 'info');
+    }
+
+    const htmlList = `
+    <div class="text-start">
+      <p>Bạn sắp thay đổi các thông tin sau:</p>
+      <ul style="margin-left:1rem">${changes.map(c => `<li>${c}</li>`).join('')}</ul>
+      <div class="alert alert-info mt-3 mb-0">
+        Sau khi cập nhật, hệ thống sẽ đăng xuất bạn để bảo mật.
+      </div>
+    </div>`;
+
+    const { isConfirmed } = await Swal.fire({
+      icon: 'question',
+      title: 'Xác nhận cập nhật',
+      html: htmlList,
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy',
+      confirmButtonColor: '#153054',  // đồng bộ màu với checkout
+      cancelButtonColor: '#d33',
+      reverseButtons: true
+    });
+
+    if (isConfirmed) performUpdateProfile(form);
+  });
+
+  function performUpdateProfile(formEl) {
+    const formData = new FormData(formEl);
     const button = document.getElementById('updateProfileBtn');
+
     button.disabled = true;
     button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Đang cập nhật...';
+
     const headers = { 'X-Requested-With': 'XMLHttpRequest' };
     if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
-    fetch('/profile', {
-      method: 'POST',
-      headers,
-      body: formData
-    })
+
+    fetch('/profile', { method: 'POST', headers, body: formData })
             .then(res => {
               if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
               return res.json();
             })
-            .then(data => {
+            .then(async data => {
               if (data.status === 'success') {
-                showToast(data.message);
-                setTimeout(() => location.reload(), 1000);
+                await swToast(data.message || 'Cập nhật thành công', 'success');
+                // Đăng xuất / chuyển hướng sau khi cập nhật
+                window.location.href = data.redirect || '/logout';
               } else {
-                showToast(data.message, 'danger');
+                swToast(data.message || 'Không thể cập nhật', 'error');
               }
             })
-            .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'))
+            .catch(err => swToast('Có lỗi xảy ra: ' + err.message, 'error'))
             .finally(() => {
               button.disabled = false;
               button.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';
             });
-  });
+  }
 
   // Khởi tạo tải dữ liệu tỉnh/thành phố
   document.addEventListener('DOMContentLoaded', function () {
