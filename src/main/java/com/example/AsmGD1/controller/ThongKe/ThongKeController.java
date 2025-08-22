@@ -6,12 +6,16 @@ import com.example.AsmGD1.dto.ThongKe.ThongKeDoanhThuDTO;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.service.BanHang.DonHangService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
+import com.example.AsmGD1.service.ThongKe.ThongKeExcelExporter;
 import com.example.AsmGD1.service.ThongKe.ThongKeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -38,6 +42,8 @@ public class ThongKeController {
 
     @Autowired
     private NguoiDungService nguoiDungService;
+     @Autowired
+     private ThongKeExcelExporter thongKeExcelExporter;
 
     @GetMapping
     public String layThongKe(
@@ -128,4 +134,60 @@ public class ThongKeController {
 
         return "WebQuanLy/thong-ke";
     }
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportExcel(
+            @RequestParam(defaultValue = "month") String boLoc,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayBatDau,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayKetThuc
+    ) {
+        // Đồng bộ logic khoảng ngày với trang thống kê
+        LocalDate today = LocalDate.now();
+        switch (boLoc) {
+            case "day" -> { ngayBatDau = today; ngayKetThuc = today; }
+            case "7days" -> { ngayBatDau = today.minusDays(6); ngayKetThuc = today; }
+            case "month" -> { ngayBatDau = today.withDayOfMonth(1); ngayKetThuc = today; }
+            case "year" -> { ngayBatDau = today.withDayOfYear(1); ngayKetThuc = today; }
+            case "custom_range" -> {
+                if (ngayBatDau == null || ngayKetThuc == null)
+                    throw new IllegalArgumentException("Vui lòng chọn ngày bắt đầu và kết thúc.");
+                if (ngayBatDau.isAfter(ngayKetThuc))
+                    throw new IllegalArgumentException("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
+            }
+            default -> { /* giữ nguyên */ }
+        }
+
+        // Lấy dữ liệu như trang thống kê
+        ThongKeDoanhThuDTO stats = thongKeDichVu.layThongKeDoanhThu(boLoc, ngayBatDau, ngayKetThuc);
+        List<String>  chartLabels   = thongKeDichVu.layNhanBieuDoLienTuc(ngayBatDau, ngayKetThuc);
+        List<Integer> chartOrders   = thongKeDichVu.layDonHangBieuDoLienTuc(ngayBatDau, ngayKetThuc);
+        List<Long>    chartRevenue  = thongKeDichVu.layDoanhThuBieuDoLienTuc(ngayBatDau, ngayKetThuc);
+        Map<String, Double> trangThaiPercentMap = thongKeDichVu.layPhanTramTatCaTrangThaiDonHang(ngayBatDau, ngayKetThuc);
+
+        // Lấy danh sách cho Excel (lấy tối đa 100 dòng mỗi mục)
+        Pageable topSellingPageable = PageRequest.of(0, 100);
+        Pageable lowStockPageable   = PageRequest.of(0, 100);
+        List<SanPhamBanChayDTO>    topSelling = thongKeDichVu
+                .laySanPhamBanChay(boLoc, ngayBatDau, ngayKetThuc, topSellingPageable)
+                .getContent();
+        List<SanPhamTonKhoThapDTO> lowStock   = thongKeDichVu
+                .laySanPhamTonKhoThap(lowStockPageable)
+                .getContent();
+
+        // Tạo file Excel
+        byte[] bytes = thongKeExcelExporter.exportThongKe(
+                boLoc, ngayBatDau, ngayKetThuc,
+                stats, chartLabels, chartOrders, chartRevenue,
+                trangThaiPercentMap, topSelling, lowStock
+        );
+
+        String fileName = String.format("thong-ke_%s_%s.xlsx", ngayBatDau, ngayKetThuc);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
+        headers.setContentLength(bytes.length);
+
+        return ResponseEntity.ok().headers(headers).body(bytes);
+    }
+
 }
