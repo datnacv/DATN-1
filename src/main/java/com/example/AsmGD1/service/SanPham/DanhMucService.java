@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class DanhMucService {
@@ -18,6 +19,10 @@ public class DanhMucService {
 
     @Autowired
     private SanPhamRepository sanPhamRepository;
+
+    // Regex: cho phép chữ cái (kể cả tiếng Việt) và khoảng trắng giữa các từ,
+    // không cho phép khoảng trắng đầu/cuối, số hoặc ký tự đặc biệt
+    private static final Pattern NAME_PATTERN = Pattern.compile("^(\\p{L}{2,})(\\s\\p{L}{2,})*$");
 
     // Lấy danh sách danh mục với phân trang
     public Page<DanhMuc> getAllDanhMuc(Pageable pageable) {
@@ -41,14 +46,42 @@ public class DanhMucService {
     }
 
     public DanhMuc saveDanhMuc(DanhMuc danhMuc) throws IllegalArgumentException {
-        if (danhMuc.getTenDanhMuc() == null || danhMuc.getTenDanhMuc().trim().isEmpty()) {
+        // Kiểm tra tên danh mục null hoặc rỗng
+        if (danhMuc.getTenDanhMuc() == null || danhMuc.getTenDanhMuc().isEmpty()) {
             throw new IllegalArgumentException("Tên danh mục không được để trống");
         }
-        if (danhMucRepository.findByTenDanhMucContainingIgnoreCase(danhMuc.getTenDanhMuc())
+
+        // Kiểm tra khoảng trắng đầu
+        if (danhMuc.getTenDanhMuc().startsWith(" ")) {
+            throw new IllegalArgumentException("Tên danh mục không được bắt đầu bằng khoảng trắng");
+        }
+
+        // Trim tên danh mục
+        String trimmedTenDanhMuc = danhMuc.getTenDanhMuc().trim();
+
+        // Kiểm tra sau khi trim còn rỗng không
+        if (trimmedTenDanhMuc.isEmpty()) {
+            throw new IllegalArgumentException("Tên danh mục không được để trống");
+        }
+
+        // Kiểm tra định dạng tên danh mục
+        if (!NAME_PATTERN.matcher(trimmedTenDanhMuc).matches()) {
+            throw new IllegalArgumentException(
+                    "Tên danh mục chỉ được chứa chữ cái và khoảng trắng giữa các từ, " +
+                            "không được chứa số, ký tự đặc biệt hoặc khoảng trắng ở cuối"
+            );
+        }
+
+        // Kiểm tra trùng lặp tên danh mục
+        if (danhMucRepository.findByTenDanhMucContainingIgnoreCase(trimmedTenDanhMuc)
                 .stream()
-                .anyMatch(d -> !d.getId().equals(danhMuc.getId()) && d.getTenDanhMuc().equalsIgnoreCase(danhMuc.getTenDanhMuc()))) {
+                .anyMatch(d -> !d.getId().equals(danhMuc.getId()) &&
+                        d.getTenDanhMuc().equalsIgnoreCase(trimmedTenDanhMuc))) {
             throw new IllegalArgumentException("Tên danh mục đã tồn tại");
         }
+
+        // Set lại tên đã trim
+        danhMuc.setTenDanhMuc(trimmedTenDanhMuc);
         return danhMucRepository.save(danhMuc);
     }
 
