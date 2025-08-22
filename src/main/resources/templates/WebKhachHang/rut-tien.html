@@ -7,94 +7,445 @@
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
-    body { background-color: #f3f4f6; }
+    :root {
+      --primary-color: #153054;
+      --secondary-color: #9FD5F7;
+      --primary-light: #1e4066;
+      --secondary-light: #b8e0f8;
+      --success-color: #10b981;
+      --warning-color: #f59e0b;
+      --error-color: #ef4444;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-900: #111827;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --border-radius: 12px;
+      --border-radius-lg: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--gray-50) 0%, #e0f2fe 100%);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      color: var(--gray-700);
+      min-height: 100vh;
+    }
+
+    .main-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
     .card-custom {
       background: white;
-      border-radius: 1rem;
-      padding: 2rem;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-      transition: all 0.3s ease;
+      border-radius: var(--border-radius-lg);
+      padding: 2.5rem;
+      box-shadow: var(--shadow-xl);
+      transition: var(--transition);
+      border: 1px solid var(--gray-200);
+      position: relative;
+      overflow: hidden;
+      max-width: 1200px;
+      width: 100%;
     }
+
+    .card-custom::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    }
+
     .card-custom:hover {
-      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
-      transform: translateY(-2px);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+      transform: translateY(-4px);
     }
+
+    .page-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 2rem;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      grid-column: 1 / -1;
+    }
+
+    .page-title i {
+      color: var(--secondary-color);
+      font-size: 1.75rem;
+    }
+
+    .split-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+
+    .left-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .right-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .balance-info {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      padding: 1.5rem;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--secondary-color);
+      position: relative;
+    }
+
+    .balance-info::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--secondary-color);
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+
+    .balance-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--secondary-light);
+    }
+
+    .balance-item:last-child {
+      border-bottom: none;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .balance-label {
+      font-weight: 500;
+      color: var(--gray-600);
+    }
+
+    .balance-value {
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 1.1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+      display: block;
+      font-size: 0.95rem;
+    }
+
+    .form-control, .form-select {
+      border: 2px solid var(--gray-200);
+      border-radius: var(--border-radius);
+      padding: 0.875rem 1rem;
+      font-size: 1rem;
+      transition: var(--transition);
+      background-color: white;
+      width: 100%;
+    }
+
+    .form-control:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 0 3px rgb(159 213 247 / 0.1);
+      background-color: #fafbff;
+    }
+
+    .form-control:hover, .form-select:hover {
+      border-color: var(--secondary-color);
+    }
+
+    .input-group {
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gray-400);
+      z-index: 2;
+    }
+
+    .input-with-icon {
+      padding-left: 2.75rem;
+    }
+
     .btn-primary-custom {
-      background: linear-gradient(to right, #153054, #1e4066);
+      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
       color: white;
-      font-weight: bold;
-      transition: all 0.3s;
+      font-weight: 600;
+      padding: 0.875rem 2rem;
+      border: none;
+      border-radius: var(--border-radius);
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
     }
+
     .btn-primary-custom:hover {
-      background: linear-gradient(to right, #1e4066, #153054);
-      transform: scale(1.05);
-      box-shadow: 0 6px 14px rgba(0,0,0,0.25);
-    }
-    .btn-outline-custom {
-      border-color: #153054;
-      color: #153054;
-      transition: all 0.3s;
-    }
-    .btn-outline-custom:hover {
-      background-color: #153054;
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
       color: white;
     }
-    label { font-weight: 600; color: #153054; }
+
+    .btn-primary-custom:active {
+      transform: translateY(0);
+    }
+
+    .btn-outline-custom {
+      border: 2px solid var(--primary-color);
+      color: var(--primary-color);
+      background: transparent;
+      font-weight: 600;
+      padding: 0.875rem 2rem;
+      border-radius: var(--border-radius);
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .btn-outline-custom:hover {
+      background-color: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--gray-200);
+      margin-top: 2rem;
+    }
+
+    .loading-spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .form-help-text {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+      margin-top: 0.25rem;
+    }
+
+    .amount-suggestions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .amount-suggestion {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      color: var(--gray-700);
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .amount-suggestion:hover {
+      background: var(--secondary-color);
+      color: var(--primary-color);
+      border-color: var(--secondary-color);
+    }
+
+    @media (max-width: 768px) {
+      .split-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .main-container {
+        padding: 1rem;
+      }
+
+      .card-custom {
+        padding: 1.5rem;
+      }
+
+      .page-title {
+        font-size: 1.5rem;
+      }
+
+      .form-actions {
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .btn-primary-custom,
+      .btn-outline-custom {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
+
 <body>
-<div class="container mx-auto py-10 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-2xl mx-auto card-custom">
-    <h2 class="text-3xl font-extrabold text-[#153054] mb-6 flex items-center justify-center">
-      <i class="fas fa-money-bill-wave mr-2 text-[#9FD5F7]"></i> Yêu cầu rút tiền
+<div class="main-container">
+  <div class="card-custom">
+    <h2 class="page-title">
+      <i class="fas fa-money-bill-wave"></i>
+      Yêu cầu rút tiền
     </h2>
 
-    <!-- Thông tin số dư -->
-    <div class="bg-[#f0f8ff] p-4 rounded-lg mb-6 border border-[#9FD5F7]/30">
-      <p><strong>Số dư hiện tại:</strong> <span th:text="${#numbers.formatDecimal(vi.soDu, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
-      <p><strong>Đang chờ xử lý:</strong> <span th:text="${#numbers.formatDecimal(tongDangCho, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
-      <p><strong>Số dư khả dụng:</strong> <span th:text="${#numbers.formatDecimal(soDuKhaDung, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span></p>
+    <div class="split-container">
+      <form th:action="@{/rut-tien}" method="post" id="withdrawalForm">
+        <div class="left-column">
+          <div class="balance-info">
+            <div class="balance-item">
+              <span class="balance-label">
+                <i class="fas fa-wallet mr-2"></i>Số dư hiện tại:
+              </span>
+              <span class="balance-value" th:text="${#numbers.formatDecimal(vi.soDu, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'">0 VNĐ</span>
+            </div>
+            <div class="balance-item">
+              <span class="balance-label">
+                <i class="fas fa-clock mr-2"></i>Đang chờ xử lý:
+              </span>
+              <span class="balance-value" th:text="${#numbers.formatDecimal(tongDangCho, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'">0 VNĐ</span>
+            </div>
+            <div class="balance-item">
+              <span class="balance-label">
+                <i class="fas fa-check-circle mr-2"></i>Số dư khả dụng:
+              </span>
+              <span class="balance-value" th:text="${#numbers.formatDecimal(soDuKhaDung, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'">0 VNĐ</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="soTien" class="form-label">
+              <i class="fas fa-coins mr-2"></i>Số tiền cần rút:
+            </label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="soTien" name="soTien" required placeholder="Nhập số tiền cần rút">
+            </div>
+            <div class="amount-suggestions">
+              <button type="button" class="amount-suggestion" onclick="setSuggestedAmount(100000)">100.000 VNĐ</button>
+              <button type="button" class="amount-suggestion" onclick="setSuggestedAmount(500000)">500.000 VNĐ</button>
+              <button type="button" class="amount-suggestion" onclick="setSuggestedAmount(1000000)">1.000.000 VNĐ</button>
+              <button type="button" class="amount-suggestion" onclick="setSuggestedAmount(2000000)">2.000.000 VNĐ</button>
+            </div>
+            <div class="form-help-text">Số tiền tối thiểu: 1.000 VNĐ</div>
+          </div>
+
+          <div class="form-group">
+            <label for="soTaiKhoan" class="form-label">
+              <i class="fas fa-credit-card mr-2"></i>Số tài khoản:
+            </label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="soTaiKhoan" name="soTaiKhoan" required placeholder="Nhập số tài khoản ngân hàng">
+            </div>
+          </div>
+        </div>
+
+        <div class="right-column">
+          <div class="form-group">
+            <label for="nguoiThuHuong" class="form-label">
+              <i class="fas fa-user mr-2"></i>Người thụ hưởng:
+            </label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="nguoiThuHuong" name="nguoiThuHuong" required placeholder="Nhập tên người thụ hưởng">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="tenNganHang" class="form-label">
+              <i class="fas fa-university mr-2"></i>Tên ngân hàng:
+            </label>
+            <div class="input-group">
+              <select class="form-select" id="tenNganHang" name="tenNganHang" required>
+                <option value="">-- Chọn ngân hàng --</option>
+              </select>
+            </div>
+            <div class="form-help-text">Danh sách ngân hàng được cập nhật tự động</div>
+          </div>
+
+          <div class="form-actions">
+            <a href="/vi" class="btn-outline-custom">
+              <i class="fas fa-arrow-left"></i>
+              Quay lại ví
+            </a>
+            <button type="submit" class="btn-primary-custom" id="submitBtn">
+              <i class="fas fa-paper-plane"></i>
+              <span class="loading-spinner"></span>
+              <span class="btn-text">Gửi yêu cầu</span>
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
-
-    <!-- Form yêu cầu rút -->
-    <form th:action="@{/rut-tien}" method="post" class="space-y-4">
-      <div>
-        <label for="soTien" class="form-label">Số tiền cần rút:</label>
-        <input type="number" class="form-control rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" step="1000" min="1000" id="soTien" name="soTien" required>
-      </div>
-
-      <div>
-        <label for="soTaiKhoan" class="form-label">Số tài khoản:</label>
-        <input type="text" class="form-control rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" id="soTaiKhoan" name="soTaiKhoan" required>
-      </div>
-
-      <div>
-        <label for="nguoiThuHuong" class="form-label">Người thụ hưởng:</label>
-        <input type="text" class="form-control rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" id="nguoiThuHuong" name="nguoiThuHuong" required>
-      </div>
-
-      <div>
-        <label for="tenNganHang" class="form-label">Tên ngân hàng:</label>
-        <select class="form-select rounded-lg border-2 border-[#153054] focus:ring-2 focus:ring-[#9FD5F7]" id="tenNganHang" name="tenNganHang" required>
-          <option value="">-- Chọn ngân hàng --</option>
-        </select>
-      </div>
-
-      <div class="flex justify-between items-center pt-4">
-        <a href="/vi" class="btn btn-outline-custom">
-          ⬅ Quay lại ví
-        </a>
-        <button type="submit" class="btn btn-primary-custom">
-          <i class="fas fa-paper-plane mr-2"></i> Gửi yêu cầu
-        </button>
-      </div>
-    </form>
   </div>
 </div>
 
-<!-- SweetAlert xử lý thông báo -->
 <script th:inline="javascript">
   /*<![CDATA[*/
   let success = /*[[${success}]]*/ null;
@@ -123,33 +474,88 @@
   /*]]>*/
 </script>
 
-<!-- Nạp danh sách ngân hàng -->
 <script>
+  function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  function setSuggestedAmount(amount) {
+    document.getElementById('soTien').value = formatNumber(amount);
+    document.getElementById('soTien').focus();
+  }
+
+  document.getElementById('soTien').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/[^\d]/g, '');
+    if (value) {
+      e.target.value = formatNumber(value);
+    }
+  });
+
+  document.getElementById('withdrawalForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevent default form submission for validation
+    const submitBtn = document.getElementById('submitBtn');
+    const spinner = submitBtn.querySelector('.loading-spinner');
+    const btnText = submitBtn.querySelector('.btn-text');
+
+    let soTienInput = document.getElementById('soTien');
+    let cleanValue = soTienInput.value.replace(/\./g, ''); // Use . for thousand separator
+    soTienInput.value = cleanValue;
+
+    // Validate min 1000 and step 1000
+    let numValue = parseInt(cleanValue);
+    if (isNaN(numValue) || numValue < 1000 || numValue % 1000 !== 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Lỗi',
+        text: 'Số tiền phải lớn hơn hoặc bằng 1.000 VNĐ và là bội số của 1.000.',
+      });
+      submitBtn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = 'Gửi yêu cầu';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    spinner.style.display = 'inline-block';
+    btnText.textContent = 'Đang xử lý...';
+
+    // Submit the form programmatically
+    document.getElementById('withdrawalForm').submit();
+  });
+
   document.addEventListener("DOMContentLoaded", async () => {
     const selectBox = document.getElementById("tenNganHang");
+    const loadingOption = document.createElement("option");
+    loadingOption.value = "";
+    loadingOption.textContent = "Đang tải danh sách ngân hàng...";
+    selectBox.appendChild(loadingOption);
+
     try {
       const res = await fetch("https://api.vietqr.io/v2/banks");
       const data = await res.json();
+
+      selectBox.innerHTML = '<option value="">-- Chọn ngân hàng --</option>';
 
       if (data && data.data) {
         data.data.forEach(bank => {
           const option = document.createElement("option");
           option.value = bank.shortName;
-          option.textContent = bank.name;
+          option.textContent = `${bank.name} (${bank.shortName})`;
           selectBox.appendChild(option);
         });
       }
     } catch (e) {
       console.error("Không thể tải danh sách ngân hàng:", e);
-      const fallback = document.createElement("option");
-      fallback.value = "";
-      fallback.textContent = "Không tải được danh sách ngân hàng";
-      selectBox.appendChild(fallback);
+      selectBox.innerHTML = '<option value="">Không thể tải danh sách ngân hàng</option>';
+
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'alert alert-warning mt-2';
+      errorDiv.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>Không thể tải danh sách ngân hàng. Vui lòng thử lại sau.';
+      selectBox.parentNode.appendChild(errorDiv);
     }
   });
 </script>
 
-<!-- Font Awesome -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
 </body>
 </html>

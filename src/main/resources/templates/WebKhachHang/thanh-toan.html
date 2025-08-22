@@ -9,67 +9,887 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        button[disabled]{pointer-events:none;opacity:.5;cursor:not-allowed}
-        .navbar{background:linear-gradient(to right,#153054,#1e4066)}
-        .ticker{background-color:#9FD5F7;color:#153054;font-weight:700;position:fixed;top:0;left:0;width:100%;z-index:1050}
-        .dropdown-menu{display:none;position:absolute;background-color:#fff;min-width:160px;box-shadow:0 8px 16px rgba(0,0,0,.2);z-index:1000}
-        .dropdown:hover .dropdown-menu{display:block}
-        body{padding-top:100px}
-        @media (max-width:640px){
-            .dropdown-menu{width:100%;left:0}
-            body{padding-top:80px}
-            .order-item-img{width:60px;height:60px}
-            .section-box{padding:16px}
-            .container{padding:0 16px}
-        }
-        .section-box{background:#fff;border-radius:12px;padding:24px;margin-bottom:24px;box-shadow:0 4px 20px rgba(0,0,0,.05);transition:transform .3s ease,box-shadow .3s ease}
-        .section-box:hover{transform:translateY(-4px);box-shadow:0 6px 24px rgba(0,0,0,.1)}
-        .section-title{font-size:20px;font-weight:700;color:#153054;display:flex;align-items:center}
-        .order-item-img{width:80px;height:80px;object-fit:cover;border-radius:8px}
-        .form-control{border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;transition:border-color .3s ease,box-shadow .3s ease}
-        .form-control:focus{border-color:#153054;box-shadow:0 0 0 3px rgba(21,48,84,.1);outline:none}
-        .btn-primary{background:#153054;border:none;border-radius:8px;padding:12px;font-weight:600;color:#fff;transition:background .3s ease,transform .2s ease}
-        .btn-primary:hover{background:#1e4066;transform:translateY(-2px)}
-        .payment-method{padding:12px;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;cursor:pointer;transition:all .3s ease}
-        .payment-method:hover{border-color:#153054;background:#e0ebf5}
-        .payment-method.active{border-color:#153054;background:#e0ebf5}
-        .order-item{border-bottom:1px solid #e5e7eb;padding-bottom:16px}
-        .submit-btn{position:sticky;bottom:20px}
-        .loading{opacity:.6;pointer-events:none}
-        .address-card{cursor:pointer;transition:all .3s ease}
-        .address-card:hover{background:#e0ebf5}
-        .address-card.active{border-color:#153054;background:#e0ebf5}
-        .swal-cancel-button{color:#153054!important}
-        .loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:flex;justify-content:center;align-items:center;z-index:9999;opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s ease}
-        .loading-overlay.active{opacity:1;visibility:visible}
-        .loading-spinner{border:8px solid #f3f3f3;border-top:8px solid #153054;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite}
-        @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-        .loading-text{color:#fff;font-size:18px;margin-top:16px;font-weight:700;text-align:center}
-        .loading-content{display:flex;flex-direction:column;align-items:center;justify-content:center}
-        /* Voucher không đủ điều kiện (disabled) */
-        .voucher-disabled { opacity: .55; }
-        .voucher-disabled .form-check-input { pointer-events: none; }
-        #voucherModal .modal-dialog{ max-width: 620px; }
-        #voucherModal .modal-content{ border-radius: 14px; }
-        #voucherModal .modal-body{ max-height: 70vh; overflow-y: auto; }
-        #voucherModal .modal-header{
-            position: sticky; top: 0; background:#fff; z-index: 2; border-bottom: 1px solid #eee;
-        }
-        #voucherModal .modal-footer{
-            position: sticky; bottom: 0; background:#fff; z-index: 2; border-top: 1px solid #eee;
+        :root {
+            --primary-color: #153054;
+            --secondary-color: #9FD5F7;
+            --primary-hover: #1e4066;
+            --secondary-hover: #7bc3f0;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --border-radius: 12px;
+            --border-radius-lg: 16px;
+            --border-radius-xl: 20px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+            --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-hover) 100%);
+            --gradient-surface: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
         }
 
-        /* Card phiếu gọn */
-        #voucherModal .voucher-card{ padding:12px; }
-        #voucherModal .voucher-card .fw-semibold{ font-size:14px; }
-        #voucherModal .voucher-card .small{ font-size:12px; }
-        #voucherModal .voucher-search {
-            position: sticky;
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 50%, var(--gray-50) 100%);
+            padding-top: 100px;
+            scroll-behavior: smooth;
+        }
+
+        /* Enhanced button system with micro-interactions */
+        .btn-primary {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 14px 28px;
+            font-weight: 600;
+            color: white;
+            font-size: 15px;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
             top: 0;
-            z-index: 3;
-            background: #fff;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition-slow);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--primary-hover) 0%, #2a5a8a 100%);
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: var(--shadow);
+            transition: var(--transition-fast);
+        }
+
+        .btn-primary:focus {
+            outline: 3px solid rgba(21, 48, 84, 0.3);
+            outline-offset: 2px;
+        }
+
+        /* Enhanced form controls with better states */
+        .form-control {
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+            font-size: 15px;
+            transition: var(--transition);
+            background: white;
+            font-family: var(--font-family);
+            position: relative;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(21, 48, 84, 0.1);
+            outline: none;
+            background: var(--gray-50);
+            transform: translateY(-1px);
+        }
+
+        .form-control:hover:not(:focus):not(:disabled) {
+            border-color: var(--gray-300);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-control:disabled {
+            background: var(--gray-50);
+            border-color: var(--gray-200);
+            color: var(--gray-600);
+            cursor: not-allowed;
+        }
+
+        /* Enhanced section boxes with better animations */
+        .section-box {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-100);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+        }
+
+        .section-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            opacity: 0;
+            transition: var(--transition);
+            transform: scaleX(0);
+            transform-origin: left;
+        }
+
+        .section-box::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(21, 48, 84, 0.03) 0%, transparent 70%);
+            opacity: 0;
+            transition: var(--transition-slow);
+            pointer-events: none;
+        }
+
+        .section-box:hover {
+            transform: translateY(-6px) scale(1.01);
+            box-shadow: var(--shadow-2xl);
+            border-color: var(--secondary-color);
+        }
+
+        .section-box:hover::before {
+            opacity: 1;
+            transform: scaleX(1);
+        }
+
+        .section-box:hover::after {
+            opacity: 1;
+        }
+
+        /* Enhanced payment methods with better interactions */
+        .payment-method {
+            padding: 24px;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            background: white;
+            position: relative;
+            overflow: hidden;
+            transform: translateZ(0);
+        }
+
+        .payment-method::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(21, 48, 84, 0.05), transparent);
+            transition: var(--transition-slow);
+        }
+
+        .payment-method::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(21, 48, 84, 0.1) 0%, transparent 70%);
+            transition: var(--transition);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+
+        .payment-method:hover {
+            border-color: var(--primary-color);
+            background: var(--gradient-surface);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .payment-method:hover::before {
+            left: 100%;
+        }
+
+        .payment-method:hover::after {
+            width: 100px;
+            height: 100px;
+        }
+
+        .payment-method.active {
+            border-color: var(--primary-color);
+            background: var(--gradient-secondary);
+            box-shadow: var(--shadow-md);
+            transform: scale(1.02);
+        }
+
+        .payment-method.active::after {
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(21, 48, 84, 0.05) 0%, transparent 70%);
+        }
+
+        /* Enhanced address cards */
+        .address-card {
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            margin-bottom: 16px;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .address-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-primary);
+            transform: scaleY(0);
+            transition: var(--transition);
+            transform-origin: bottom;
+        }
+
+        .address-card:hover {
+            background: var(--gradient-surface);
+            border-color: var(--primary-color);
+            transform: translateY(-2px) translateX(4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .address-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .address-card.active {
+            border-color: var(--primary-color);
+            background: var(--gradient-secondary);
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
+        }
+
+        .address-card.active::before {
+            transform: scaleY(1);
+        }
+
+        /* Enhanced modal system */
+        .modal-content {
+            border-radius: var(--border-radius-xl);
+            border: none;
+            box-shadow: var(--shadow-2xl);
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-header {
+            background: var(--gradient-primary);
+            color: white;
+            border-bottom: none;
+            padding: 28px 36px;
+            position: relative;
+        }
+
+        .modal-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        }
+
+        .modal-body {
+            padding: 36px;
+            background: var(--gradient-surface);
+        }
+
+        .modal-footer {
+            background: linear-gradient(135deg, white 0%, var(--gray-50) 100%);
+            border-top: 1px solid var(--gray-200);
+            padding: 24px 36px;
+        }
+
+        /* Enhanced voucher modal */
+        #voucherModal .modal-dialog {
+            max-width: 800px;
+        }
+
+        #voucherModal .voucher-card {
+            padding: 24px;
+            border: 2px solid var(--gray-200) !important;
+            border-radius: var(--border-radius) !important;
+            transition: var(--transition);
+            background: white;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        #voucherModal .voucher-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(21, 48, 84, 0.05), transparent);
+            transition: var(--transition-slow);
+        }
+
+        #voucherModal .voucher-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: var(--transition);
+        }
+
+        #voucherModal .voucher-card:hover {
+            border-color: var(--primary-color) !important;
+            background: var(--gradient-surface);
+            transform: translateY(-2px) translateX(4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        #voucherModal .voucher-card:hover::before {
+            left: 100%;
+        }
+
+        #voucherModal .voucher-card:hover::after {
+            width: 4px;
+        }
+
+        /* Enhanced loading states */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(21, 48, 84, 0.95) 0%, rgba(30, 64, 102, 0.95) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            backdrop-filter: blur(20px);
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            border: 6px solid rgba(255, 255, 255, 0.2);
+            border-top: 6px solid var(--secondary-color);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            margin-top: 24px;
+            font-weight: 600;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Enhanced animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Enhanced form labels with icons */
+        .form-label {
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            letter-spacing: 0.025em;
+        }
+
+        .form-label i {
+            margin-right: 8px;
+            color: var(--primary-color);
+            font-size: 14px;
+        }
+
+        /* Enhanced order items */
+        .order-item {
+            border-bottom: 1px solid var(--gray-200);
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+            transition: var(--transition);
+            border-radius: var(--border-radius);
+        }
+
+        .order-item:hover {
+            background: var(--gradient-surface);
+            padding: 20px;
+            margin: -4px -20px 20px -20px;
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .order-item-img {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 2px solid var(--gray-100);
+        }
+
+        .order-item:hover .order-item-img {
+            transform: scale(1.05) rotate(1deg);
+            box-shadow: var(--shadow-md);
+            border-color: var(--secondary-color);
+        }
+
+        /* Enhanced responsive design */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 80px;
+            }
+
+            .section-box {
+                padding: 24px 20px;
+                margin-bottom: 16px;
+            }
+
+            .modal-body {
+                padding: 24px 20px;
+            }
+
+            .modal-header {
+                padding: 20px;
+            }
+
+            .modal-footer {
+                padding: 16px 20px;
+            }
+
+            .payment-method {
+                padding: 20px;
+            }
+
+            .address-card {
+                padding: 20px;
+            }
+
+            .order-item-img {
+                width: 70px;
+                height: 70px;
+            }
+        }
+
+        /* Enhanced focus states for accessibility */
+        .btn:focus,
+        .form-control:focus,
+        .payment-method:focus,
+        .address-card:focus,
+        .voucher-card:focus {
+            outline: 3px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        /* Enhanced scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+            transition: var(--transition);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Enhanced utility classes */
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        .text-secondary {
+            color: var(--gray-600) !important;
+        }
+
+        .text-muted {
+            color: var(--gray-500) !important;
+        }
+
+        .fw-bold {
+            font-weight: 700 !important;
+        }
+
+        .fw-semibold {
+            font-weight: 600 !important;
+        }
+
+        /* Enhanced grid system */
+        .grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        @media (min-width: 1024px) {
+            .lg\:grid-cols-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
+            .lg\:col-span-2 {
+                grid-column: span 2 / span 2;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .md\:grid-cols-2 {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .md\:grid-cols-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        /* Enhanced section animations */
+        .section-box {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+
+        .section-box:nth-child(1) { animation-delay: 0.1s; }
+        .section-box:nth-child(2) { animation-delay: 0.2s; }
+        .section-box:nth-child(3) { animation-delay: 0.3s; }
+        .section-box:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Enhanced button loading state */
+        .btn.loading {
+            position: relative;
+            color: transparent !important;
+            pointer-events: none;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        button[disabled] {
+            pointer-events: none;
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-outline-primary {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: var(--border-radius);
+            padding: 12px 24px;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--gray-100);
+            border: 1px solid var(--gray-300);
+            color: var(--gray-700);
+            border-radius: var(--border-radius);
+            padding: 12px 24px;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-200);
+            border-color: var(--gray-400);
+            transform: translateY(-1px);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 50%, #2a5a8a 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            box-shadow: var(--shadow-lg);
+            position: fixed;
+            top: 40px;
+            left: 0;
+            width: 100%;
+            z-index: 1040;
+        }
+
+        .ticker {
+            background: linear-gradient(90deg, var(--secondary-color) 0%, #b8e0f8 50%, var(--secondary-color) 100%);
+            color: var(--primary-color);
+            font-weight: 700;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1050;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+            position: relative;
             padding-bottom: 12px;
-            border-bottom: 1px solid #eee;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            border-radius: 2px;
+        }
+
+        .section-title i {
+            margin-right: 12px;
+            font-size: 20px;
+            color: var(--secondary-color);
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .payment-method input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary-color);
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .voucher-disabled {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .voucher-disabled .form-check-input {
+            pointer-events: none;
+        }
+
+        .submit-btn {
+            position: sticky;
+            bottom: 20px;
+            z-index: 10;
+        }
+
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+
+        .text-secondary {
+            color: var(--gray-600) !important;
+        }
+
+        .text-muted {
+            color: var(--gray-500) !important;
+        }
+
+        .fw-bold {
+            font-weight: 700 !important;
+        }
+
+        .fw-semibold {
+            font-weight: 600 !important;
+        }
+
+        /* Enhanced form control focus states */
+        #add-address-form .form-control:focus {
+            border-color: var(--primary-color) !important;
+            box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1) !important;
+            outline: none;
+        }
+
+        /* Enhanced button hover effects */
+        #add-address-form button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md) !important;
+        }
+
+        #add-address-form button[onclick="hideAddAddressForm()"]:hover {
+            background: var(--gray-200) !important;
+            border-color: var(--gray-300) !important;
+        }
+
+        /* Enhanced add new address button hover */
+        button[onclick="showAddAddressForm()"]:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg) !important;
+            background: linear-gradient(135deg, #8dd3f7 0%, #6bb8e8 100%) !important;
+        }
+
+        /* Enhanced scrollbar for address list */
+        #address-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #address-list::-webkit-scrollbar-track {
+            background: var(--gray-100);
+            border-radius: 3px;
+        }
+
+        #address-list::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+
+        #address-list::-webkit-scrollbar-thumb:hover {
+            background: #1a3a5f;
         }
     </style>
 </head>
@@ -109,16 +929,25 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label for="fullName" class="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                            <label for="fullName" class="form-label">
+                                <i class="fas fa-user"></i>
+                                Họ và tên
+                            </label>
                             <input type="text" id="fullName" name="fullName" class="form-control w-full" th:value="${nguoiNhan}" required disabled/>
                         </div>
                         <div>
-                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                            <label for="phone" class="form-label">
+                                <i class="fas fa-phone"></i>
+                                Số điện thoại
+                            </label>
                             <input type="tel" id="phone" name="phone" class="form-control w-full" th:value="${soDienThoaiNguoiNhan}" required disabled/>
                         </div>
                     </div>
                     <div>
-                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Địa chỉ nhận hàng</label>
+                        <label for="address" class="form-label">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Địa chỉ nhận hàng
+                        </label>
                         <input type="text" id="address" name="address" class="form-control w-full" th:value="${loggedInUser?.chiTietDiaChi}" required disabled/>
                     </div>
 
@@ -235,61 +1064,148 @@
 
 <!-- Address Modal -->
 <div class="modal fade" id="addressModal" tabindex="-1" aria-labelledby="addressModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg"><div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="addressModalLabel">Chọn địa chỉ giao hàng</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            <div id="address-list" class="mb-4"></div>
-            <button type="button" class="btn btn-outline-primary w-100 mb-3" onclick="showAddAddressForm()">Thêm địa chỉ mới</button>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: var(--border-radius-lg); border: none; box-shadow: var(--shadow-xl);">
+            <!-- Enhanced modal header with better styling and icon -->
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, #1a3a5f 100%); color: white; border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0; padding: 24px; border-bottom: none;">
+                <h5 class="modal-title d-flex align-items-center" id="addressModalLabel" style="font-weight: 600; font-size: 1.25rem;">
+                    <i class="fas fa-map-marker-alt me-3" style="color: var(--secondary-color);"></i>
+                    Chọn địa chỉ giao hàng
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1);"></button>
+            </div>
 
-            <div id="add-address-form" class="d-none">
-                <h6 class="mb-3">Thêm địa chỉ mới</h6>
-                <form id="new-address-form">
-                    <div class="mb-3">
-                        <label for="new-fullName" class="form-label">Họ và tên</label>
-                        <input type="text" id="new-fullName" class="form-control" required/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new-phone" class="form-label">Số điện thoại</label>
-                        <input type="tel" id="new-phone" class="form-control" required/>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new-address" class="form-label">Địa chỉ</label>
-                        <input type="text" id="new-address" class="form-control" required/>
-                    </div>
+            <!-- Enhanced modal body with better spacing and visual hierarchy -->
+            <div class="modal-body" style="padding: 32px; background: linear-gradient(135deg, #f8fafc 0%, white 100%);">
+                <!-- Enhanced address list section -->
+                <div class="mb-4">
+                    <h6 class="text-gray-700 mb-3 d-flex align-items-center" style="font-weight: 600; font-size: 1rem;">
+                        <i class="fas fa-list me-2 text-primary"></i>
+                        Địa chỉ đã lưu
+                    </h6>
+                    <div id="address-list" class="mb-4" style="max-height: 300px; overflow-y: auto; padding-right: 8px;"></div>
+                </div>
 
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label for="new-province" class="form-label">Tỉnh/Thành phố</label>
-                            <select id="new-province" class="form-control" required>
-                                <option value="">-- Chọn tỉnh/thành --</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="new-district" class="form-label">Quận/Huyện</label>
-                            <select id="new-district" class="form-control" required>
-                                <option value="">-- Chọn quận/huyện --</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="new-ward" class="form-label">Phường/Xã</label>
-                            <select id="new-ward" class="form-control" required>
-                                <option value="">-- Chọn phường/xã --</option>
-                            </select>
-                        </div>
-                    </div>
+                <!-- Enhanced add new address button -->
+                <button type="button" class="btn w-100 mb-4 d-flex align-items-center justify-content-center" onclick="showAddAddressForm()"
+                        style="background: linear-gradient(135deg, var(--secondary-color) 0%, #7cc7f0 100%);
+                               border: none; color: var(--primary-color); font-weight: 600;
+                               padding: 16px; border-radius: var(--border-radius);
+                               transition: var(--transition); box-shadow: var(--shadow-sm);">
+                    <i class="fas fa-plus me-2"></i>
+                    Thêm địa chỉ mới
+                </button>
 
-                    <button type="button" class="btn btn-primary" onclick="saveNewAddress()">Lưu địa chỉ</button>
-                    <button type="button" class="btn btn-secondary" onclick="hideAddAddressForm()">Hủy</button>
-                </form>
+                <!-- Enhanced add address form with better styling -->
+                <div id="add-address-form" class="d-none" style="background: white; border-radius: var(--border-radius); padding: 24px; box-shadow: var(--shadow-md); border: 1px solid var(--gray-200);">
+                    <h6 class="mb-4 d-flex align-items-center" style="color: var(--primary-color); font-weight: 600; font-size: 1.1rem;">
+                        <i class="fas fa-plus-circle me-2"></i>
+                        Thêm địa chỉ mới
+                    </h6>
+                    <form id="new-address-form">
+                        <!-- Enhanced form fields with better styling -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="new-fullName" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
+                                    <i class="fas fa-user me-1 text-primary"></i>
+                                    Họ và tên
+                                </label>
+                                <input type="text" id="new-fullName" class="form-control" required
+                                       style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
+                                              padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;"
+                                       placeholder="Nhập họ và tên"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="new-phone" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
+                                    <i class="fas fa-phone me-1 text-primary"></i>
+                                    Số điện thoại
+                                </label>
+                                <input type="tel" id="new-phone" class="form-control" required
+                                       style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
+                                              padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;"
+                                       placeholder="Nhập số điện thoại"/>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="new-address" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
+                                <i class="fas fa-home me-1 text-primary"></i>
+                                Địa chỉ chi tiết
+                            </label>
+                            <input type="text" id="new-address" class="form-control" required
+                                   style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
+                                          padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;"
+                                   placeholder="Số nhà, tên đường..."/>
+                        </div>
+
+                        <!-- Enhanced location selects with better styling -->
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                <label for="new-province" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
+                                    <i class="fas fa-map me-1 text-primary"></i>
+                                    Tỉnh/Thành phố
+                                </label>
+                                <select id="new-province" class="form-control" required
+                                        style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
+                                               padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;">
+                                    <option value="">-- Chọn tỉnh/thành --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="new-district" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
+                                    <i class="fas fa-building me-1 text-primary"></i>
+                                    Quận/Huyện
+                                </label>
+                                <select id="new-district" class="form-control" required
+                                        style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
+                                               padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;">
+                                    <option value="">-- Chọn quận/huyện --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="new-ward" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
+                                    <i class="fas fa-location-dot me-1 text-primary"></i>
+                                    Phường/Xã
+                                </label>
+                                <select id="new-ward" class="form-control" required
+                                        style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
+                                               padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;">
+                                    <option value="">-- Chọn phường/xã --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced action buttons with better styling -->
+                        <div class="d-flex gap-3 justify-content-end">
+                            <button type="button" class="btn px-4 py-2" onclick="hideAddAddressForm()"
+                                    style="background: var(--gray-100); color: var(--gray-600); border: 2px solid var(--gray-200);
+                                           border-radius: var(--border-radius); font-weight: 500; transition: var(--transition);">
+                                <i class="fas fa-times me-1"></i>
+                                Hủy
+                            </button>
+                            <button type="button" class="btn px-4 py-2" onclick="saveNewAddress()"
+                                    style="background: linear-gradient(135deg, var(--primary-color) 0%, #1a3a5f 100%);
+                                           color: white; border: none; border-radius: var(--border-radius);
+                                           font-weight: 600; transition: var(--transition); box-shadow: var(--shadow-sm);">
+                                <i class="fas fa-save me-1"></i>
+                                Lưu địa chỉ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Enhanced modal footer -->
+            <div class="modal-footer" style="background: var(--gray-50); border-top: 1px solid var(--gray-200); padding: 20px 32px; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);">
+                <button type="button" class="btn px-4 py-2" data-bs-dismiss="modal"
+                        style="background: var(--gray-100); color: var(--gray-600); border: 2px solid var(--gray-200);
+                               border-radius: var(--border-radius); font-weight: 500; transition: var(--transition);">
+                    <i class="fas fa-times me-1"></i>
+                    Đóng
+                </button>
             </div>
         </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-        </div>
-    </div></div>
+    </div>
 </div>
 
 <footer style="background:linear-gradient(to right,#153054,#1e4066);color:#fff;padding-top:30px;padding-bottom:20px">
