@@ -328,8 +328,10 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layChiTietSanPham(@PathVariable UUID id) {
         try {
-            if (!isCurrentUserAdmin()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
+            // CHỈNH: cho phép cả admin và employee xem chi tiết để quét
+            if (!canCurrentUserScan()) { // <— dùng helper mới cho phép scan (admin || employee)
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
             }
 
             ChiTietSanPham chiTiet = chiTietSanPhamService.findById(id);
@@ -340,13 +342,13 @@ public class ChiTietSanPhamController {
             Map<String, Object> response = new HashMap<>();
             // Thông tin từ ChiTietSanPham
             response.put("id", chiTiet.getId());
-            response.put("stockQuantity", chiTiet.getSoLuongTonKho()); // Changed from "soLuong"
+            response.put("stockQuantity", chiTiet.getSoLuongTonKho());
             response.put("status", chiTiet.getTrangThai());
             response.put("thoiGianTao", chiTiet.getThoiGianTao() != null ? chiTiet.getThoiGianTao().toString() : null);
             response.put("gender", chiTiet.getGioiTinh());
-            response.put("price", chiTiet.getGia()); // Changed from "gia"
+            response.put("price", chiTiet.getGia());
 
-            // Thông tin từ SanPham
+            // Thông tin sản phẩm
             SanPham sanPham = chiTiet.getSanPham();
             if (sanPham != null) {
                 response.put("productId", sanPham.getId());
@@ -356,13 +358,13 @@ public class ChiTietSanPhamController {
                 response.put("urlHinhAnh", sanPham.getUrlHinhAnh());
             }
 
-            // Thông tin màu sắc và kích cỡ
+            // Màu & size
             response.put("colorId", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getId() : null);
             response.put("tenMauSac", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTenMau() : null);
             response.put("sizeId", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getId() : null);
             response.put("tenKichCo", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getTen() : null);
 
-            // Thông tin ảnh
+            // Ảnh (giữ nguyên logic sắp xếp)
             List<Map<String, Object>> images = chiTiet.getHinhAnhSanPhams() != null
                     ? chiTiet.getHinhAnhSanPhams().stream()
                     .filter(Objects::nonNull)
@@ -384,6 +386,7 @@ public class ChiTietSanPhamController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi tải chi tiết sản phẩm: " + e.getMessage()));
         }
     }
+
 
     @PostMapping("/update/{id}")
     @ResponseBody
@@ -611,4 +614,116 @@ public class ChiTietSanPhamController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy chi tiết sản phẩm: " + e.getMessage()));
         }
     }
+
+    // Helper method: admin hoặc employee đều được quét QR
+    private boolean canCurrentUserScan() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            String role = user.getVaiTro();
+            return "admin".equalsIgnoreCase(role) || "employee".equalsIgnoreCase(role);
+        }
+        return false;
+    }
+
+    @PostMapping("/scan-qr/add-stock")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> scanQrAddStock(
+            @RequestParam("qr") String qrContent,
+            @RequestParam(value = "qty", defaultValue = "1") int qty
+    ) {
+        Map<String, Object> res = new HashMap<>();
+        try {
+            // Quyền cho phép: admin hoặc employee
+            if (!canCurrentUserScan()) {
+                res.put("success", false);
+                res.put("message", "Bạn không có quyền quét QR cho chức năng này!");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(res);
+            }
+
+            if (qty <= 0) {
+                res.put("success", false);
+                res.put("message", "Số lượng cộng phải > 0");
+                return ResponseEntity.badRequest().body(res);
+            }
+
+            // Tìm biến thể mục tiêu theo nội dung QR
+            ChiTietSanPham target = null;
+
+            // Trường hợp 1: QR là UUID của ChiTietSanPham
+            try {
+                UUID ctspId = UUID.fromString(qrContent.trim());
+                target = chiTietSanPhamService.findById(ctspId);
+            } catch (IllegalArgumentException ignore) {
+                // Không phải UUID -> thử parse định dạng sanPhamId|sizeId|colorId
+            }
+
+            // Trường hợp 2: QR chứa sanPhamId | sizeId | colorId (cách nhau bởi | hoặc :)
+            if (target == null) {
+                String normalized = qrContent.trim().replace(":", "|");
+                String[] parts = normalized.split("\\|");
+                if (parts.length == 3) {
+                    try {
+                        UUID sanPhamId = UUID.fromString(parts[0].trim());
+                        UUID sizeId    = UUID.fromString(parts[1].trim());
+                        UUID colorId   = UUID.fromString(parts[2].trim());
+
+                        // Dùng repo khách hàng để tìm đúng biến thể (đã có sẵn trong controller)
+                        ChiTietSanPham byTriple = khachHangSanPhamRepository
+                                .findBySanPhamIdAndSizeIdAndColorId(sanPhamId, sizeId, colorId);
+                        if (byTriple != null) {
+                            target = byTriple;
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // Sai định dạng UUID -> sẽ báo lỗi phía dưới
+                    }
+                }
+            }
+
+            if (target == null) {
+                res.put("success", false);
+                res.put("message", "QR không hợp lệ hoặc không tìm thấy biến thể sản phẩm.");
+                return ResponseEntity.badRequest().body(res);
+            }
+
+            // Cộng tồn kho
+            int oldStock = target.getSoLuongTonKho() != null ? target.getSoLuongTonKho() : 0;
+            int newStock = oldStock + qty;
+            target.setSoLuongTonKho(newStock);
+
+            // Nếu muốn tự động bật trạng thái bán khi >0 tồn kho (tùy chính sách):
+            if (Boolean.FALSE.equals(target.getTrangThai()) && newStock > 0) {
+                target.setTrangThai(true);
+            }
+
+            chiTietSanPhamService.save(target);
+
+            res.put("success", true);
+            res.put("message", "Đã cộng " + qty + " vào tồn kho.");
+            res.put("chiTietSanPhamId", target.getId());
+            res.put("soLuongTonKhoCu", oldStock);
+            res.put("soLuongTonKhoMoi", newStock);
+            res.put("status", target.getTrangThai());
+            if (target.getSanPham() != null) {
+                res.put("productId", target.getSanPham().getId());
+                res.put("tenSanPham", target.getSanPham().getTenSanPham());
+            }
+            if (target.getKichCo() != null) {
+                res.put("sizeId", target.getKichCo().getId());
+                res.put("tenKichCo", target.getKichCo().getTen());
+            }
+            if (target.getMauSac() != null) {
+                res.put("colorId", target.getMauSac().getId());
+                res.put("tenMauSac", target.getMauSac().getTenMau());
+            }
+
+            return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            logger.error("Lỗi khi quét QR add-stock: ", e);
+            res.put("success", false);
+            res.put("message", "Lỗi khi quét QR: " + (e.getMessage() == null ? "Không xác định" : e.getMessage()));
+            return ResponseEntity.badRequest().body(res);
+        }
+    }
+
 }
