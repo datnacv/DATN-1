@@ -233,6 +233,13 @@
                 </div>
             </li>
 
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                <a th:href="@{/acvstore/exchange-requests}" class="nav-link d-flex align-items-center">
+                    <i class="fa-solid fa-user-tie"></i>
+                    <span class="nav-text">Quản lý đổi hàng</span>
+                </a>
+            </li>
+
         </ul>
     </div>
 </div>

@@ -517,8 +517,15 @@ public class HoaDonService {
         // Kiểm tra trạng thái đổi hàng dựa trên trạng thái hóa đơn hoặc lịch sử đổi hàng
         if ("Đã đổi hàng".equals(hoaDon.getTrangThai()) ||
                 hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã đổi hàng".equals(ls.getTrangThai())) ||
-                lichSuDoiSanPhamRepository.existsByHoaDonId(hoaDon.getId())) {
+                lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận")) {
             return "Đã đổi hàng";
+        }
+
+        // Kiểm tra trạng thái chờ xử lý đổi hàng
+        if ("Chờ xử lý đổi hàng".equals(hoaDon.getTrangThai()) ||
+                hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Chờ xử lý đổi hàng".equals(ls.getTrangThai())) ||
+                lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Chờ xử lý")) {
+            return "Chờ xử lý đổi hàng";
         }
 
         // Kiểm tra trạng thái hoàn thành
@@ -935,6 +942,10 @@ public class HoaDonService {
                     tieuDe = "Đơn hàng của bạn đã được đổi hàng";
                     noiDung = "Đơn " + ma + " đã được đổi hàng thành công. " + (ghiChu != null ? ghiChu : "");
                     break;
+                case "Chờ xử lý đổi hàng":
+                    tieuDe = "Yêu cầu đổi hàng của bạn đang chờ xử lý";
+                    noiDung = "Đơn " + ma + " đã gửi yêu cầu đổi hàng. " + (ghiChu != null ? ghiChu : "");
+                    break;
                 default:
                     tieuDe = "Cập nhật đơn hàng";
                     noiDung = "Đơn " + ma + " cập nhật: " + newStatus + ". " + (ghiChu != null ? ghiChu : "");
@@ -944,8 +955,7 @@ public class HoaDonService {
         } catch (Exception ignore) {}
 
         NguoiDung nguoiDung = hd.getNguoiDung();
-        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty() &&
-                !"Chưa xác nhận".equals(newStatus)) {
+        if (nguoiDung != null && nguoiDung.getEmail() != null && !nguoiDung.getEmail().isEmpty()) {
             String emailSubject = "Cập nhật trạng thái đơn hàng - ACV Store";
             String emailContent = "<html>" +
                     "<body style='font-family: Arial, sans-serif; color: #333; background-color: #f4f4f4; margin: 0; padding: 0;'>" +
