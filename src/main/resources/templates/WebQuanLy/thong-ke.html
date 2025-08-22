@@ -13,94 +13,96 @@
   <script th:src="@{/js/sidebar.js}" defer></script>
 
   <style>
+    :root{
+      --primary:#153054;
+      --primary-600:#132a49;
+      --primary-700:#10243e;
+      --accent:#9FD5F7;
+      --ink:#1b2430;
+      --muted:#5b6777;
+      --surface:#f5f8fc;
+      --line:#dbe7f3;
+    }
+
+    /* ====== TITLE ====== */
+    .page-title-wrap{
+      display:flex;justify-content:center;align-items:center;margin:18px 0 28px 0;
+    }
+    .page-title{
+      font-family: "Inter","Segoe UI", Roboto, Arial, sans-serif;
+      font-weight: 800;
+      letter-spacing:.3px;
+      color: var(--primary);
+      display:inline-flex;align-items:center;gap:10px;
+      position:relative;padding-bottom:8px;text-transform:uppercase;
+    }
+    .page-title::after{
+      content:""; position:absolute; left:50%; transform:translateX(-50%);
+      bottom:-6px; height:4px; width:140px; background:var(--primary); border-radius:4px;
+    }
+    .page-title i{ color: var(--primary); }
+
+    /* ====== CARDS ====== */
     .card-box {
-      background: #eaf4fb;
+      background: var(--surface);
       padding: 15px;
-      border-radius: 10px;
+      border-radius: 12px;
       margin-bottom: 20px;
-      border: 1px solid #d0e6f7;
+      border: 1px solid var(--line);
+      box-shadow: 0 6px 18px rgba(21,48,84,.06);
     }
-
     .stat-card {
-      background-color: #ffffff;
-      border-radius: 10px;
-      padding: 10px 20px;
-      margin: 10px 0;
-      text-align: center;
-      font-weight: bold;
-      border: 1px solid #d0e6f7;
+      background-color:#fff;border-radius:12px;padding:12px 20px;margin:10px 0;
+      text-align:center;font-weight:700;border:1px solid var(--line); color: var(--ink);
     }
 
+    /* ====== GROWTH BOX ====== */
     .growth-box {
-      background: #2c3e50;
-      color: white;
-      border-radius: 10px;
+      background: var(--primary);
+      color: #fff;
+      border-radius: 12px;
       padding: 10px 15px;
       margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-
-    .growth-box i {
-      color: #ffffff;
-    }
-
-    .growth-percent {
-      color: #2ecc71; /* Green color for growth */
-      font-weight: bold;
-    }
+    .growth-box i { color:#fff; }
+    .growth-percent { color:#2ecc71; font-weight:800; }
 
     .chart-title {
-      font-weight: bold;
-      font-size: 18px;
-      margin: 10px 0;
-      color: #2c3e50;
+      font-weight:800; font-size:18px; margin:10px 0; color:var(--primary);
     }
 
-    .btn-warning {
-      background-color: #3498db;
-      border-color: #3498db;
-      color: white;
+    /* ====== BUTTONS ====== */
+    .btn-primary, .btn-warning{ /* dùng .btn-warning cho nút filter active */
+      background-color: var(--primary)!important;
+      border-color: var(--primary)!important;
+      color:#fff!important;
     }
-
-    .btn-warning:hover {
-      background-color: #2980b9;
-      border-color: #2980b9;
+    .btn-primary:hover, .btn-warning:hover{
+      background-color: var(--primary-600)!important;
+      border-color: var(--primary-600)!important;
     }
-
-    .btn-outline-secondary:hover {
-      background-color: #ecf6fd;
-      border-color: #3498db;
-      color: #2980b9;
+    .btn-outline-secondary{
+      border-color: var(--primary);
+      color: var(--primary);
     }
-
-    .filter-btn {
-      transition: all 0.3s ease;
+    .btn-outline-secondary:hover{
+      background-color:#ecf6fd;
+      border-color: var(--primary);
+      color: var(--primary-700);
     }
+    .filter-btn{ transition: all .25s ease; }
 
-    .status-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .status-list li {
-      margin-bottom: 5px;
-    }
-
+    /* ====== LIST & PAGINATION ====== */
+    .status-list{ list-style:none; padding:0; }
+    .status-list li{ margin-bottom:6px; }
     .pagination .page-item.active .page-link {
-      background-color: #3498db;
-      border-color: #3498db;
-      color: white;
+      background-color: var(--primary); border-color: var(--primary); color: #fff;
     }
-
-    .pagination .page-item .page-link {
-      color: #3498db;
-    }
-
-    .pagination .page-item.disabled .page-link {
-      color: #6c757d;
-    }
+    .pagination .page-item .page-link { color: var(--primary); }
+    .pagination .page-item.disabled .page-link { color: #6c757d; }
   </style>
 </head>
 <body>
@@ -112,7 +114,13 @@
   </nav>
 
   <div class="content" id="content">
-    <h1 style="text-align: center">THỐNG KÊ</h1>
+    <div class="page-title-wrap">
+      <h1 class="page-title">
+        <i class="fa-solid fa-chart-line"></i>
+        Thống kê
+      </h1>
+    </div>
+
     <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>
     <div id="filterStatus" class="alert alert-info" th:text="${filterStatus}" th:if="${filterStatus != null}"></div>
 
@@ -130,18 +138,18 @@
     <div class="row">
       <div class="col-md-6">
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Tốc độ tăng trưởng ✨</h5>
+          <h5 class="fw-bold mb-3" style="color:var(--primary)">Tốc độ tăng trưởng ✨</h5>
           <div class="growth-box"><span>📅</span> Doanh thu ngày: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNgay, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
           <div class="growth-box"><span>📅</span> Doanh thu tháng: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuThang, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
           <div class="growth-box"><span>📅</span> Doanh thu năm: <span th:with="locale='vi_VN'" th:text="${#numbers.formatInteger(stats.doanhThuNam, 0, 'POINT')} + ' VND'"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNam % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNam, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNam, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
           <div class="growth-box"><span>📦</span> Sản phẩm tháng: <span th:text="${stats.soSanPhamThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongSanPhamThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongSanPhamThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongSanPhamThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
           <div class="growth-box"><span>🧾</span> Hóa đơn ngày: <span th:text="${stats.soDonHangNgay}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongNgay % 1 == 0 ? #numbers.formatInteger(stats.tangTruongNgay, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongNgay, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
-          <div class="growth-box"><span>🧾</span> Hóa đơn tháng: <span th:text="${stats.soDonHangThang}"></span> <span class="growth-percent"><i class="fa fa-arrowibou-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
+          <div class="growth-box"><span>🧾</span> Hóa đơn tháng: <span th:text="${stats.soDonHangThang}"></span> <span class="growth-percent"><i class="fa fa-arrow-up"></i> <span th:with="locale='vi_VN'" th:text="${stats.tangTruongThang % 1 == 0 ? #numbers.formatInteger(stats.tangTruongThang, 0, 'POINT') + '%' : #numbers.formatDecimal(stats.tangTruongThang, 1, 'POINT', 1, 'COMMA') + '%'}"></span></span></div>
         </div>
       </div>
       <div class="col-md-6">
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Trạng thái đơn hàng</h5>
+          <h5 class="fw-bold mb-3" style="color:var(--primary)">Trạng thái đơn hàng</h5>
           <div class="row">
             <div class="col-md-6">
               <ul class="status-list">
@@ -158,6 +166,7 @@
         </div>
       </div>
     </div>
+
     <div class="card-box">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
@@ -172,6 +181,7 @@
           <button class="btn btn-outline-secondary filter-btn" data-filter="custom_range" onclick="showCustomRange()">Tuỳ chỉnh</button>
         </div>
       </div>
+
       <div id="customRange" style="display: none;">
         <div class="row">
           <div class="col-md-6">
@@ -184,18 +194,20 @@
           </div>
         </div>
         <button class="btn btn-primary mt-3" onclick="applyCustomRange()">Áp dụng</button>
-        <button class="btn btn-secondary mt-3" onclick="document.getElementById('customRange').style.display='none'">Hủy</button>
+        <button class="btn btn-outline-secondary mt-3" onclick="document.getElementById('customRange').style.display='none'">Hủy</button>
       </div>
+
       <div class="chart-title">Biểu đồ Doanh thu & Số hóa đơn</div>
       <canvas id="chart" height="150"></canvas>
     </div>
+
     <div class="row">
       <div class="col-md-6">
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Sản Phẩm Sắp Hết Hàng</h5>
+          <h5 class="fw-bold mb-3" style="color:var(--primary)">Sản Phẩm Sắp Hết Hàng</h5>
           <div class="table-responsive">
             <table class="table table-bordered table-hover text-center">
-              <thead style="background-color: #ffe0e0;">
+              <thead style="background-color:#ffe9e9;">
               <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Tồn Kho</th></tr>
               </thead>
               <tbody>
@@ -239,12 +251,13 @@
           </nav>
         </div>
       </div>
+
       <div class="col-md-6">
         <div class="card-box">
-          <h5 class="fw-bold mb-3">Top Sản Phẩm Bán Chạy</h5>
+          <h5 class="fw-bold mb-3" style="color:var(--primary)">Top Sản Phẩm Bán Chạy</h5>
           <div class="table-responsive">
             <table class="table table-bordered table-hover text-center">
-              <thead style="background-color: #fef4d7;">
+              <thead style="background-color:#fef6dd;">
               <tr><th>STT</th><th>Ảnh</th><th>Tên Sản Phẩm</th><th>Giá Bán</th><th>Số lượng đã bán</th></tr>
               </thead>
               <tbody>
@@ -310,8 +323,8 @@
           data: chartRevenue,
           yAxisID: 'yRevenue',
           tension: 0.35,
-          borderColor: '#2ecc71',
-          backgroundColor: 'rgba(46, 204, 113, 0.15)',
+          borderColor: '#153054',
+          backgroundColor: 'rgba(21,48,84,0.15)',
           fill: true,
           pointRadius: 3
         },
@@ -320,8 +333,8 @@
           data: chartOrders,
           yAxisID: 'yCount',
           tension: 0.35,
-          borderColor: '#e74c3c',
-          backgroundColor: 'rgba(231, 76, 60, 0.12)',
+          borderColor: '#9FD5F7',
+          backgroundColor: 'rgba(159,213,247,0.15)',
           fill: false,
           pointRadius: 3
         }
@@ -331,10 +344,7 @@
       responsive: true,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { boxWidth: 14, font: { size: 12 } }
-        },
+        legend: { position: 'bottom', labels: { boxWidth: 14, font: { size: 12 } } },
         tooltip: {
           callbacks: {
             label: function(ctx) {
@@ -347,29 +357,18 @@
         }
       },
       scales: {
-        x: {
-          title: { display: true, text: 'Thời gian' }
-        },
-        yCount: {
-          type: 'linear',
-          position: 'left',
-          beginAtZero: true,
-          title: { display: true, text: 'Số hóa đơn' }
-        },
+        x: { title: { display: true, text: 'Thời gian' } },
+        yCount: { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Số hóa đơn' } },
         yRevenue: {
-          type: 'linear',
-          position: 'right',
-          beginAtZero: true,
-          grid: { drawOnChartArea: false },
+          type: 'linear', position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
           title: { display: true, text: 'Doanh thu (VND)' },
-          ticks: {
-            callback: (value) => fmtVND(value)
-          }
+          ticks: { callback: (value) => fmtVND(value) }
         }
       }
     }
   });
 </script>
+
 <script th:inline="javascript">
   const pieCtx = document.getElementById('pieChart').getContext('2d');
 
@@ -377,9 +376,9 @@
   const pieValues = [[${trangThaiPercentMap.values()}]];
 
   const backgroundColors = [
-    '#3498db', '#f39c12', '#9b59b6', '#2ecc71',
-    '#e74c3c', '#95a5a6', '#1abc9c', '#34495e',
-    '#d35400', '#c0392b'
+    '#153054','#1b426d','#225387','#2b66a4',
+    '#377cc9','#4695e9','#6ab0f0','#8bc2f4',
+    '#a9d4f8','#cbe6fb'
   ];
 
   new Chart(pieCtx, {
@@ -395,20 +394,15 @@
     options: {
       responsive: true,
       plugins: {
-        title: {
-          display: true,
-          text: 'Tỷ lệ trạng thái đơn hàng',
-          font: { size: 16 }
-        },
+        title: { display: true, text: 'Tỷ lệ trạng thái đơn hàng', font: { size: 16 } },
         legend: {
           position: 'bottom',
           labels: {
-            boxWidth: 12,
-            padding: 10,
+            boxWidth: 12, padding: 10,
             generateLabels: function(chart) {
               const data = chart.data;
               return data.labels.map((label, i) => ({
-                text: label + ': ' + data.datasets[0].data[i].toFixed(1) + '%',
+                text: label + ': ' + (data.datasets[0].data[i] ?? 0).toFixed(1) + '%',
                 fillStyle: data.datasets[0].backgroundColor[i],
                 hidden: isNaN(data.datasets[0].data[i]) || data.datasets[0].data[i] === null,
                 index: i
@@ -438,7 +432,7 @@
     buttons.forEach(button => {
       if (button.getAttribute('data-filter') === selectedFilter) {
         button.classList.remove('btn-outline-secondary');
-        button.classList.add('btn-warning');
+        button.classList.add('btn-warning'); // dùng màu chủ đạo
       } else {
         button.classList.remove('btn-warning');
         button.classList.add('btn-outline-secondary');
@@ -449,9 +443,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const currentFilter = urlParams.get('boLoc');
-    if (currentFilter) {
-      highlightFilterButton(currentFilter);
-    }
+    if (currentFilter) highlightFilterButton(currentFilter);
   });
 
   function showCustomRange() {
@@ -461,14 +453,8 @@
   function applyCustomRange() {
     const startDate = document.getElementById('startDatePicker').value;
     const endDate = document.getElementById('endDatePicker').value;
-    if (!startDate || !endDate) {
-      alert("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc.");
-      return;
-    }
-    if (startDate > endDate) {
-      alert("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.");
-      return;
-    }
+    if (!startDate || !endDate) { alert("Vui lòng chọn cả ngày bắt đầu và ngày kết thúc."); return; }
+    if (startDate > endDate) { alert("Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc."); return; }
     document.getElementById('startDateInput').value = startDate;
     document.getElementById('endDateInput').value = endDate;
     document.getElementById('filterInput').value = 'custom_range';
@@ -488,24 +474,23 @@
     document.getElementById('endDateInput').value = '';
 
     if (type === 'day') {
-      const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      const dateStr = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
       document.getElementById('startDateInput').value = dateStr;
       document.getElementById('endDateInput').value = dateStr;
     } else if (type === '7days') {
-      const startDate = new Date(today);
-      startDate.setDate(today.getDate() - 6);
-      const startDateStr = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
-      const endDateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      const startDate = new Date(today); startDate.setDate(today.getDate() - 6);
+      const startDateStr = `${startDate.getFullYear()}-${(startDate.getMonth()+1).toString().padStart(2,'0')}-${startDate.getDate().toString().padStart(2,'0')}`;
+      const endDateStr = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
       document.getElementById('startDateInput').value = startDateStr;
       document.getElementById('endDateInput').value = endDateStr;
     } else if (type === 'month') {
-      const startDateStr = `${year}-${month.toString().padStart(2, '0')}-01`;
-      const endDateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      const startDateStr = `${year}-${month.toString().padStart(2,'0')}-01`;
+      const endDateStr = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
       document.getElementById('startDateInput').value = startDateStr;
       document.getElementById('endDateInput').value = endDateStr;
     } else if (type === 'year') {
       const startDateStr = `${year}-01-01`;
-      const endDateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+      const endDateStr = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`;
       document.getElementById('startDateInput').value = startDateStr;
       document.getElementById('endDateInput').value = endDateStr;
     }
@@ -518,6 +503,7 @@
     window.location.href = '/acvstore/thong-ke/export?' + new URLSearchParams(new FormData(document.getElementById('filterForm'))).toString();
   }
 </script>
+
 <script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

@@ -7,24 +7,84 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <style>
-        body { background-color: #f5f5f5; color: #333; }
+        :root{
+            --primary:#153054;
+            --secondary:#9FD5F7;
+            --text:#263238;
+            --line:#e5e7eb;
+        }
+
+        body { background-color: #f5f5f5; color: var(--text); }
         .form-label { font-weight: 500; color: #333; }
-        .form-control, .form-select { border-radius: .375rem; border: 1px solid #d1d3e2; background-color: #fff; transition: border-color .2s, box-shadow .2s; }
-        .form-control:focus, .form-select:focus { border-color: #6b7280; box-shadow: 0 0 0 .25rem rgba(107,114,128,.25); }
+
+        .form-control, .form-select {
+            border-radius: .375rem;
+            border: 1px solid #d1d3e2;
+            background-color: #fff;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 .25rem rgba(159,213,247,.4);
+        }
         .form-control:disabled, .form-select:disabled { background-color: #e9ecef; opacity: 1; }
-        .btn-primary, .btn-secondary, .btn-warning { padding: .75rem 1.5rem; font-size: 1rem; border-radius: .375rem; background-color: #1f2937; border-color: #1f2937; color: #fff; transition: background-color .2s, transform .2s, box-shadow .2s; min-width: 120px; }
-        .btn-primary:hover, .btn-secondary:hover, .btn-warning:hover { background-color: #374151; border-color: #374151; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+
+        .btn-primary, .btn-secondary {
+            padding: .75rem 1.5rem; font-size: 1rem; border-radius: .375rem;
+            background-color: var(--primary); border-color: var(--primary); color: #fff;
+            transition: background-color .2s, transform .2s, box-shadow .2s; min-width: 120px;
+        }
+        .btn-primary:hover, .btn-secondary:hover {
+            background-color: #1e4066; border-color: #1e4066;
+            transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        .btn-outline-secondary{
+            border-color: var(--primary); color: var(--primary);
+        }
+        .btn-outline-secondary:hover{
+            background-color: var(--primary); color:#fff;
+        }
         .btn:disabled { cursor: not-allowed; opacity: .5; background-color: #6b7280; border-color: #6b7280; }
+
         .content { padding: 2rem; margin-left: 256px; margin-top: 70px; }
-        .sticky-header { position: sticky; top: 60px; z-index: 1000; background-color: #fff; padding: .75rem 2rem; margin: -2rem -2rem 1rem -2rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+
+        .sticky-header {
+            position: sticky; top: 60px; z-index: 1000; background-color: #fff;
+            padding: .75rem 2rem; margin: -2rem -2rem 1rem -2rem; border-bottom: 1px solid var(--line);
+            display: flex; justify-content: space-between; align-items: center;
+        }
         .sticky-header h2 { font-weight: 700; color: #1f2937; margin: 0; }
-        .card-header { background-color: #f9fafb; color: #1f2937; }
-        .table th, .table td { vertical-align: middle; border-color: #e5e7eb; }
+
+        .card-header {
+            background: linear-gradient(90deg, var(--primary), #1e4066);
+            color: #fff;
+        }
+
+        .table th, .table td { vertical-align: middle; border-color: var(--line); }
+
         .alert-container { position: fixed; bottom: 1rem; right: 1rem; z-index: 9999; }
         .alert { border-radius: .375rem; }
-        .role-badge { background: linear-gradient(135deg,#6f42c1,#8b5cf6); color: #fff; padding:.5rem 1rem; border-radius: 20px; font-size:.875rem; font-weight:600; text-transform: uppercase; letter-spacing:.5px; box-shadow: 0 4px 15px rgba(111,66,193,.3); }
-        .role-badge.employee { background: linear-gradient(135deg,#28a745,#34ce57); }
-        .employee-notice { background-color:#cff4fc;border:1px solid #b6effb;color:#055160;padding:.75rem 1rem;border-radius:.375rem;margin-bottom:1rem; }
+
+        .role-badge {
+            background: linear-gradient(135deg, var(--primary), #1e4066);
+            color: #fff; padding:.5rem 1rem; border-radius: 20px;
+            font-size:.875rem; font-weight:600; text-transform: uppercase; letter-spacing:.5px;
+            box-shadow: 0 4px 15px rgba(21,48,84,.25);
+        }
+        .role-badge.employee {
+            background: linear-gradient(135deg, #1f7a8c, var(--secondary));
+            color:#0b2239;
+        }
+
+        .employee-notice {
+            background-color: #eaf6ff; border: 1px solid #d7eeff; color: #0b2239;
+            padding:.75rem 1rem; border-radius:.375rem; margin-bottom:1rem;
+        }
+
+        .form-check-input:checked{ background-color: var(--primary); border-color: var(--primary); }
+        .page-link{ color: var(--primary); }
+        .page-item.active .page-link{ background-color: var(--primary); border-color: var(--primary); color:#fff; }
+        .page-link:hover{ color:#0f223f; }
     </style>
     <script th:src="@{/js/sidebar.js}" defer></script>
 </head>
@@ -45,14 +105,13 @@
                     <span th:text="${viewMode != null && viewMode} ? 'Xem chi tiết đợt giảm giá' : 'Chỉnh sửa đợt giảm giá'">Chỉnh sửa đợt giảm giá</span>
                 </h2>
             </div>
-            <div class="role-badge" th:classappend="${isAdmin != null && isAdmin} ? '' : 'employee'">
+            <div class="role-badge" th:classappend="${isAdmin != null && isAdmin} ? '' : ' employee'">
                 <i class="fas fa-user-shield me-1" th:if="${isAdmin != null && isAdmin}"></i>
                 <i class="fas fa-user me-1" th:unless="${isAdmin != null && isAdmin}"></i>
                 <span th:text="${isAdmin != null && isAdmin} ? 'ADMIN' : 'EMPLOYEE'"></span>
             </div>
         </div>
 
-        <!-- Employee Notice -->
         <div th:unless="${isAdmin}" class="employee-notice">
             <i class="fas fa-info-circle me-2"></i>
             <strong>Chế độ xem:</strong> Bạn đang ở chế độ chỉ xem. Không thể chỉnh sửa thông tin chiến dịch.
@@ -71,7 +130,7 @@
             </div>
         </div>
 
-        <!-- Form EDIT -->
+        <!-- FORM EDIT -->
         <form th:action="@{/acvstore/chien-dich-giam-gia/update}"
               th:object="${chienDich}"
               method="post"
@@ -106,13 +165,9 @@
                                        oninvalid="this.setCustomValidity('Nhập phần trăm giảm từ 0.1 đến 100%.')"
                                        oninput="this.setCustomValidity('')">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Số lượng</label>
-                                <input type="number" class="form-control" th:field="*{soLuong}" required min="1"
-                                       th:readonly="${isReadOnly or !isAdmin}"
-                                       oninvalid="this.setCustomValidity('Vui lòng nhập số lượng lớn hơn 0.')"
-                                       oninput="this.setCustomValidity('')">
-                            </div>
+
+                            <!-- ĐÃ BỎ Ô SỐ LƯỢNG -->
+
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
                                 <input type="datetime-local" class="form-control" th:field="*{ngayBatDau}"
@@ -130,7 +185,7 @@
 
                             <div class="col-md-12 d-flex justify-content-end" th:if="${isAdmin and !isReadOnly}">
                                 <button type="reset" class="btn btn-secondary me-2">Làm mới</button>
-                                <button type="submit" class="btn btn-warning">Cập nhật đợt giảm giá</button>
+                                <button type="submit" class="btn btn-primary">Cập nhật đợt giảm giá</button>
                             </div>
                         </div>
                     </div>
@@ -193,6 +248,7 @@
                                     <td colspan="6" class="text-center text-muted">Chưa có chi tiết sản phẩm nào được chọn</td>
                                 </tr>
                                 <tr th:each="detail : ${selectedDetails}">
+                                    <!-- Tick sẵn khi vừa mở form chỉnh sửa -->
                                     <td><input type="checkbox" class="detail-checkbox" th:value="${detail.id}"
                                                checked th:disabled="${!isAdmin}"></td>
                                     <td th:text="${detail.sanPham?.tenSanPham ?: 'Không có tên sản phẩm'}"></td>
@@ -203,6 +259,7 @@
                                 </tr>
                                 </tbody>
                             </table>
+                            <!-- Hidden khởi tạo bằng danh sách đã chọn từ server -->
                             <input type="hidden" id="selectedProductDetailIdsInput" name="selectedProductDetailIds"
                                    th:value="${#strings.listJoin(selectedDetails.![id], ',')}">
                         </div>
@@ -215,15 +272,19 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script th:inline="javascript">
+    /* ==== State khởi tạo từ server ==== */
     const pageSize = 5;
     const selectedProductIds = new Set([[${selectedProductIds}]].map(String));
-    const selectedDetailIds = new Set([[${#strings.listJoin(selectedDetails.![id], ',')}]].split(",").filter(id => id));
 
-    const isAdmin = /*[[${isAdmin}]]*/ false;
-    const isReadOnly = /*[[${isReadOnly}]]*/ false;
-    const viewMode = /*[[${viewMode}]]*/ false;
+    // Giữ tick cũ khi mở form
+    const initialSelectedDetailIds = new Set([[${#strings.listJoin(selectedDetails.![id], ',')}]].split(",").filter(Boolean));
+    const selectedDetailIds = new Set(initialSelectedDetailIds);
 
-    // ======= DATE HELPERS & VALIDATION (mới thêm) =======
+    const isAdmin   = /*[[${isAdmin}]]*/ false;
+    const isReadOnly= /*[[${isReadOnly}]]*/ false;
+    const viewMode  = /*[[${viewMode}]]*/ false;
+
+    /* ==== Date helpers & validation ==== */
     function toLocalDatetimeValue(d){
         const pad=n=>String(n).padStart(2,'0');
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -238,171 +299,171 @@
         const now = new Date(); now.setSeconds(0,0);
         const nowStr = toLocalDatetimeValue(now);
 
-        // min cho start = hiện tại
-        if(!start.readOnly){
-            start.min = nowStr;
-        }
-        // min cho end = start.value nếu có, ngược lại hiện tại
-        if(!end.readOnly){
-            end.min = start.value || nowStr;
-        }
+        if(!start.readOnly){ start.min = nowStr; }
+        if(!end.readOnly){ end.min = start.value || nowStr; }
 
-        // thông điệp lỗi cho start
         start.addEventListener('invalid', function(){
             if(this.validity.valueMissing){
                 this.setCustomValidity('Vui lòng chọn ngày bắt đầu.');
             }else if(this.validity.rangeUnderflow){
                 this.setCustomValidity('Ngày bắt đầu không được nằm trong quá khứ.');
-            }else{
-                this.setCustomValidity('');
-            }
+            }else{ this.setCustomValidity(''); }
         });
         start.addEventListener('input', function(){
             this.setCustomValidity('');
-            // khi đổi start → cập nhật min của end
             if(!end.readOnly){
                 end.min = this.value || nowStr;
-                // nếu end đang nhỏ hơn min mới → báo lỗi ngay khi submit
                 if(end.value && end.value < end.min){
                     end.setCustomValidity('Ngày kết thúc không được trước ngày bắt đầu.');
-                }else{
-                    end.setCustomValidity('');
-                }
+                }else{ end.setCustomValidity(''); }
             }
         });
 
-        // thông điệp lỗi cho end
         end.addEventListener('invalid', function(){
             if(this.validity.valueMissing){
                 this.setCustomValidity('Vui lòng chọn ngày kết thúc.');
             }else if(this.validity.rangeUnderflow){
                 this.setCustomValidity('Ngày kết thúc không được trước ngày bắt đầu.');
-            }else{
-                this.setCustomValidity('');
-            }
+            }else{ this.setCustomValidity(''); }
         });
-        end.addEventListener('input', function(){
-            this.setCustomValidity('');
-        });
+        end.addEventListener('input', function(){ this.setCustomValidity(''); });
 
-        // Chặn submit nếu form chưa hợp lệ
         form.addEventListener('submit', function(e){
-            if(!form.reportValidity()){
-                e.preventDefault();
-            }
+            if(!form.reportValidity()){ e.preventDefault(); }
         });
     }
-    // ======= END DATE VALIDATION =======
 
-    function formatPrice(price){ if(price==null) return 'Không có giá'; return new Intl.NumberFormat('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:0}).format(price)+' VNĐ'; }
-    function updateSelectAll(selector, masterId){ const all=document.querySelectorAll(selector); const master=document.getElementById(masterId); if(master&&all.length>0){ master.checked=[...all].every(cb=>cb.checked);} }
-    function attachCheckboxHandler(selector, selectedSet, inputId, masterId){
+    /* ==== UI helpers ==== */
+    function formatPrice(price){
+        if(price==null) return 'Không có giá';
+        return new Intl.NumberFormat('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:0}).format(price)+' VNĐ';
+    }
+    function updateSelectAll(selector, masterId){
+        const all=[...document.querySelectorAll(selector)];
+        const master=document.getElementById(masterId);
+        if(master && all.length>0){ master.checked=all.every(cb=>cb.checked); }
+    }
+
+    /* Checkbox handler:
+       - Với checkbox SẢN PHẨM: đổi → loadProductDetails()
+       - Với checkbox CHI TIẾT: đổi → syncHiddenFromVisible() */
+    function attachCheckboxHandler(selector, selectedSet, masterId){
         document.querySelectorAll(selector).forEach(cb=>{
             cb.addEventListener("change", ()=>{
                 if(!isAdmin) return;
-                cb.checked?selectedSet.add(cb.value):selectedSet.delete(cb.value);
-                if(inputId) document.getElementById(inputId).value=[...selectedSet].join(',');
+                cb.checked ? selectedSet.add(cb.value) : selectedSet.delete(cb.value);
                 if(masterId) updateSelectAll(selector, masterId);
-                if(selector === '.product-checkbox'){ loadProductDetails(); }
+                if(selector === '.product-checkbox'){
+                    loadProductDetails();     // sẽ tự sync hidden sau render
+                }else{
+                    syncHiddenFromVisible();  // chi tiết đổi → cập nhật hidden ngay
+                }
             });
         });
     }
 
-    function loadProductDetails(){
-        const container=document.getElementById("productDetailTableBody");
-        const existingDetails=/*[[${selectedDetails}]]*/[];
-        if(viewMode || (isReadOnly && !isAdmin)){
-            if(existingDetails && existingDetails.length>0){
-                container.innerHTML='';
-                existingDetails.forEach(detail=>{
-                    const row=document.createElement('tr');
-                    row.innerHTML=`
-                        <td><input type="checkbox" class="detail-checkbox" value="${detail.id}" checked disabled></td>
-                        <td>${detail.sanPham?.tenSanPham || 'Không có tên sản phẩm'}</td>
-                        <td>${detail.mauSac?.tenMau || 'Không có màu'}</td>
-                        <td>${detail.kichCo?.ten || 'Không có kích cỡ'}</td>
-                        <td>${formatPrice(detail.gia)}</td>
-                        <td>${detail.soLuongTonKho != null ? detail.soLuongTonKho : 0}</td>`;
-                    container.appendChild(row);
-                });
-                return;
+    /* Lấy tập ID chi tiết ĐANG HIỂN THỊ */
+    function getVisibleDetailIdsSet(){
+        return new Set([...document.querySelectorAll(".detail-checkbox")].map(cb => cb.value));
+    }
+
+    /* Hidden = GIAO giữa (selectedDetailIds) và (đang hiển thị) */
+    function syncHiddenFromVisible(){
+        const visible = getVisibleDetailIdsSet();
+        const effective = [...selectedDetailIds].filter(id => visible.has(id));
+        document.getElementById("selectedProductDetailIdsInput").value = effective.join(',');
+    }
+
+    /* Render 1 dòng chi tiết */
+    function rowHtml(detail, disabled, checked){
+        return `
+    <tr>
+      <td><input type="checkbox" class="detail-checkbox" value="${detail.id}"
+                 ${checked?'checked':''} ${disabled?'disabled':''}></td>
+      <td>${detail.sanPham?.tenSanPham || 'Không có tên sản phẩm'}</td>
+      <td>${detail.mauSac?.tenMau || 'Không có màu'}</td>
+      <td>${detail.kichCo?.ten || 'Không có kích cỡ'}</td>
+      <td>${formatPrice(detail.gia)}</td>
+      <td>${detail.soLuongTonKho ?? 0}</td>
+    </tr>`;
+    }
+
+    /* ==== Load chi tiết: UNION(existingDetails, API theo SP đang chọn) ==== */
+    function loadProductDetails() {
+        const container = document.getElementById("productDetailTableBody");
+        const existingDetails = /*[[${selectedDetails}]]*/[];
+
+        // 1) View/readOnly: hiển thị dữ liệu sẵn có, khóa checkbox
+        if (viewMode || (isReadOnly && !isAdmin)) {
+            if (existingDetails && existingDetails.length) {
+                container.innerHTML = existingDetails.map(d => rowHtml(d, true, true)).join('');
             } else {
-                container.innerHTML=`<tr><td colspan="6" class="text-center text-muted">Chưa có chi tiết sản phẩm nào được chọn</td></tr>`;
-                return;
+                container.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Chưa có chi tiết sản phẩm nào được chọn</td></tr>`;
             }
+            return;
         }
-        if(existingDetails && existingDetails.length>0){
-            container.innerHTML='';
-            existingDetails.forEach(detail=>{
-                selectedDetailIds.add(String(detail.id));
-                const disabled=!isAdmin?'disabled':'';
-                const row=document.createElement('tr');
-                row.innerHTML=`
-                    <td><input type="checkbox" class="detail-checkbox" value="${detail.id}" checked ${disabled}></td>
-                    <td>${detail.sanPham?.tenSanPham || 'Không có tên sản phẩm'}</td>
-                    <td>${detail.mauSac?.tenMau || 'Không có màu'}</td>
-                    <td>${detail.kichCo?.ten || 'Không có kích cỡ'}</td>
-                    <td>${formatPrice(detail.gia)}</td>
-                    <td>${detail.soLuongTonKho != null ? detail.soLuongTonKho : 0}</td>`;
-                container.appendChild(row);
-            });
-            if(isAdmin){
-                attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectedProductDetailIdsInput", "selectAllDetails");
-                updateSelectAll(".detail-checkbox", "selectAllDetails");
+
+        // Helper: render danh sách (mảng detail), giữ trạng thái tick theo selectedDetailIds
+        function renderList(list){
+            // De-duplicate theo id
+            const map = new Map();
+            list.forEach(d => { const k=String(d.id); if(!map.has(k)) map.set(k, d); });
+            const finalList = [...map.values()];
+
+            container.innerHTML = finalList
+                .map(d => rowHtml(d, false, selectedDetailIds.has(String(d.id))))
+                .join('');
+
+            attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectAllDetails");
+            updateSelectAll(".detail-checkbox", "selectAllDetails");
+            syncHiddenFromVisible(); // hidden = intersection
+        }
+
+        // 2) Không chọn SP nào → chỉ hiển thị chi tiết đã lưu (existing)
+        if (selectedProductIds.size === 0) {
+            if (existingDetails && existingDetails.length) {
+                renderList(existingDetails);
+            } else {
+                container.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Chưa chọn sản phẩm nào</td></tr>`;
+                syncHiddenFromVisible();
             }
-            document.getElementById("selectedProductDetailIdsInput").value=[...selectedDetailIds].join(',');
             return;
         }
-        if(!isAdmin){
-            container.innerHTML=`<tr><td colspan="6" class="text-center text-muted">Chưa có chi tiết sản phẩm nào được chọn</td></tr>`;
-            return;
-        }
-        if(selectedProductIds.size===0){
-            container.innerHTML=`<tr><td colspan="6" class="text-center text-muted">Chưa chọn sản phẩm nào</td></tr>`;
-            selectedDetailIds.clear();
-            document.getElementById("selectedProductDetailIdsInput").value='';
-            return;
-        }
+
+        // 3) Có SP → gọi API, sau đó UNION với existingDetails
         fetch(`/acvstore/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
-            .then(res=>res.json())
-            .then(data=>{
-                container.innerHTML="";
-                if(data.length===0){
-                    container.innerHTML=`<tr><td colspan="6" class="text-center text-muted">Không tìm thấy chi tiết sản phẩm</td></tr>`;
+            .then(res => res.json())
+            .then(data => {
+                const apiList = Array.isArray(data) ? data : [];
+                const unionList = [...(existingDetails || []), ...apiList]; // HỢP NHẤT
+                if (unionList.length === 0) {
+                    container.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Không tìm thấy chi tiết sản phẩm</td></tr>`;
+                    syncHiddenFromVisible();
                     return;
                 }
-                const validDetailIds=new Set(data.map(d=>String(d.id)));
-                const validExistingIds=[...selectedDetailIds].filter(id=>validDetailIds.has(id));
-                selectedDetailIds.clear(); validExistingIds.forEach(id=>selectedDetailIds.add(id));
-                data.forEach(detail=>{
-                    const checked=selectedDetailIds.has(String(detail.id))?'checked':'';
-                    const row=document.createElement('tr');
-                    row.innerHTML=`
-                        <td><input type="checkbox" class="detail-checkbox" value="${detail.id}" ${checked}></td>
-                        <td>${detail.sanPham?.tenSanPham || 'Không có tên sản phẩm'}</td>
-                        <td>${detail.mauSac?.tenMau || 'Không có màu'}</td>
-                        <td>${detail.kichCo?.ten || 'Không có kích cỡ'}</td>
-                        <td>${formatPrice(detail.gia)}</td>
-                        <td>${detail.soLuongTonKho != null ? detail.soLuongTonKho : 0}</td>`;
-                    container.appendChild(row);
-                });
-                attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectedProductDetailIdsInput", "selectAllDetails");
-                updateSelectAll(".detail-checkbox", "selectAllDetails");
+                renderList(unionList);
             })
-            .catch(error=>{
-                console.error('Error fetching product details:', error);
-                container.innerHTML=`<tr><td colspan="6" class="text-center text-danger">Lỗi khi tải chi tiết sản phẩm</td></tr>`;
+            .catch(err => {
+                console.error('Error fetching product details:', err);
+                // Lỗi API: vẫn hiển thị existingDetails để không "trống trơn"
+                if (existingDetails && existingDetails.length) {
+                    renderList(existingDetails);
+                } else {
+                    container.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Lỗi khi tải chi tiết sản phẩm</td></tr>`;
+                    syncHiddenFromVisible();
+                }
             });
     }
 
+    /* ==== Tìm kiếm & phân trang sản phẩm ==== */
     function renderPagination(totalPages, currentPage, keyword){
         const pagination=document.getElementById("productPagination");
         if(!pagination || !isAdmin) return;
         let html=`<ul class="pagination justify-content-center">`;
         for(let i=0;i<totalPages;i++){
             html+=`<li class="page-item ${i===currentPage?'active':''}">
-                     <a class="page-link" href="#" data-page="${i}" data-keyword="${keyword}">${i+1}</a>
-                   </li>`;
+             <a class="page-link" href="#" data-page="${i}" data-keyword="${keyword}">${i+1}</a>
+           </li>`;
         }
         html+=`</ul>`;
         pagination.innerHTML=html;
@@ -417,7 +478,6 @@
             });
         });
     }
-
     function searchProducts(keyword="", page=0){
         if(!isAdmin) return;
         fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}`)
@@ -428,67 +488,66 @@
             })
             .catch(error=>console.error('Error searching products:', error));
     }
-
     function renderProductList(products){
         const tbody=document.getElementById("productTableBody");
         tbody.innerHTML=products.length===0
             ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
             : products.map(p=>`
-                <tr class="product-row" data-id="${p.id}">
-                    <td><input type="checkbox" class="product-checkbox" value="${p.id}"
-                               ${selectedProductIds.has(p.id)?'checked':''}
-                               ${!isAdmin?'disabled':''}></td>
-                    <td>${p.maSanPham}</td>
-                    <td>${p.tenSanPham}</td>
-                </tr>`).join('');
-        attachCheckboxHandler(".product-checkbox", selectedProductIds, null, "selectAllProducts");
+        <tr class="product-row" data-id="${p.id}">
+          <td><input type="checkbox" class="product-checkbox" value="${p.id}"
+                     ${selectedProductIds.has(p.id)?'checked':''}
+                     ${!isAdmin?'disabled':''}></td>
+          <td>${p.maSanPham}</td>
+          <td>${p.tenSanPham}</td>
+        </tr>`).join('');
+        attachCheckboxHandler(".product-checkbox", selectedProductIds, "selectAllProducts");
         updateSelectAll(".product-checkbox", "selectAllProducts");
     }
 
+    /* ==== Boot ==== */
     document.addEventListener("DOMContentLoaded", ()=>{
-        // Kích hoạt validate ngày (mới)
         wireDateValidation();
 
-        attachCheckboxHandler(".product-checkbox", selectedProductIds, null, "selectAllProducts");
+        // Hidden theo tick ban đầu (sau khi trang render lần đầu)
+        syncHiddenFromVisible();
+
+        // Gắn handler ban đầu
+        attachCheckboxHandler(".product-checkbox", selectedProductIds, "selectAllProducts");
         updateSelectAll(".product-checkbox", "selectAllProducts");
-        attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectedProductDetailIdsInput", "selectAllDetails");
+        attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectAllDetails");
         updateSelectAll(".detail-checkbox", "selectAllDetails");
+
+        // Render chi tiết lần đầu (UNION ngay lập tức nếu đã có SP được tick)
         loadProductDetails();
 
-        if(isReadOnly){
-            const warningToast=document.getElementById('readOnlyWarningToast');
-            if(warningToast){
-                warningToast.style.display='block';
-                warningToast.classList.add('show');
-                setTimeout(()=>{ warningToast.classList.remove('show'); setTimeout(()=>{ warningToast.style.display='none'; },150); },3000);
-            }
-        }
-
+        // “Chọn tất cả” Sản phẩm
         document.getElementById("selectAllProducts")?.addEventListener("change", function(){
             if(!isAdmin) return;
             document.querySelectorAll(".product-checkbox").forEach(cb=>{
                 cb.checked=this.checked;
                 this.checked?selectedProductIds.add(cb.value):selectedProductIds.delete(cb.value);
             });
-            loadProductDetails();
+            loadProductDetails(); // sẽ tự sync hidden sau render
         });
 
+        // “Chọn tất cả” Chi tiết
         document.getElementById("selectAllDetails")?.addEventListener("change", function(){
             if(!isAdmin) return;
             document.querySelectorAll(".detail-checkbox").forEach(cb=>{
                 cb.checked=this.checked;
                 this.checked?selectedDetailIds.add(cb.value):selectedDetailIds.delete(cb.value);
             });
-            document.getElementById("selectedProductDetailIdsInput").value=[...selectedDetailIds].join(',');
+            syncHiddenFromVisible();
         });
 
+        // Submit: đảm bảo hidden khớp phần hiển thị
         document.getElementById("updateCampaignForm")?.addEventListener("submit", function(e){
             if(!isAdmin){ e.preventDefault(); alert('Bạn không có quyền thực hiện thao tác này!'); return; }
-            // Đảm bảo hiển thị thông báo nếu form invalid (phòng trường hợp submit bằng Enter)
             if(!this.reportValidity()){ e.preventDefault(); return; }
-            document.getElementById("selectedProductDetailIdsInput").value=[...selectedDetailIds].join(',');
+            syncHiddenFromVisible();
         });
 
+        // Tìm kiếm sản phẩm
         document.getElementById("productSearchInput")?.addEventListener("input", function(){
             if(!isAdmin) return;
             clearTimeout(this._searchTimer);
@@ -496,10 +555,13 @@
             this._searchTimer=setTimeout(()=>searchProducts(query,0),300);
         });
 
+        // Nạp danh sách sản phẩm lần đầu (nếu cần)
         if(isAdmin && !isReadOnly && !viewMode){
             searchProducts("", /*[[${currentProductPage}]]*/ 0);
         }
     });
+
+
 </script>
 <script th:src="@{/js/notification.js}"></script>
 
