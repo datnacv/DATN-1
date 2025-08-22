@@ -489,6 +489,7 @@
         </div>
 
         <form id="exchangeForm" th:action="@{/dsdon-mua/api/orders/exchange/{id}(id=${hoaDon.id})}" method="post">
+            <!-- Phần danh sách sản phẩm để đổi -->
             <div class="info-section">
                 <h4><i class="fas fa-box mr-2"></i>Chọn sản phẩm để đổi</h4>
                 <table>
@@ -498,6 +499,9 @@
                         <th><i class="fas fa-image mr-2"></i>Sản phẩm</th>
                         <th><i class="fas fa-sort-numeric-up mr-2"></i>Số lượng</th>
                         <th><i class="fas fa-tag mr-2"></i>Giá</th>
+                        <th><i class="fas fa-tags mr-2"></i>Giá gốc</th>
+                        <th><i class="fas fa-fire mr-2"></i>Giảm giá</th>
+                        <th><i class="fas fa-bullhorn mr-2"></i>Chiến dịch</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -521,12 +525,39 @@
                             </div>
                         </td>
                         <td th:text="${chiTiet.soLuong}"></td>
-                        <td><span class="price" th:attr="data-value=${chiTiet.gia}"></span></td>
+                        <td>
+                            <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
+                        </td>
+                        <td>
+                <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
+                    <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
+                </span>
+                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
+                    -
+                </span>
+                        </td>
+                        <td>
+                <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
+                    <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
+                </span>
+                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">
+                    -
+                </span>
+                        </td>
+                        <td>
+                <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
+                    <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
+                </span>
+                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}">
+                    -
+                </span>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
 
+            <!-- Phần danh sách sản phẩm thay thế -->
             <div class="info-section">
                 <h4><i class="fas fa-box-open mr-2"></i>Chọn sản phẩm thay thế</h4>
                 <div th:each="chiTiet : ${replacementProducts}" class="replacement-product">
@@ -536,7 +567,16 @@
                     <div class="flex-1">
                         <span th:text="${chiTiet.sanPham.tenSanPham} + ' (' + ${chiTiet.mauSac != null ? chiTiet.mauSac.tenMau : 'N/A'} + ', ' + ${chiTiet.kichCo != null ? chiTiet.kichCo.ten : 'N/A'} + ')'"></span>
                         <div class="flex items-center gap-4 mt-1">
-                            <span class="price" th:attr="data-value=${chiTiet.gia}"></span>
+                            <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
+                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
+                    <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
+                </span>
+                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
+                    <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
+                </span>
+                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
+                    <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
+                </span>
                             <span class="text-sm text-gray-600">Tồn kho: <span th:text="${chiTiet.soLuongTonKho}"></span></span>
                         </div>
                     </div>
@@ -600,6 +640,7 @@
         });
 
         // Tính toán chênh lệch giá
+        // Tính toán chênh lệch giá
         function calculatePriceDifference() {
             const selectedProducts = document.querySelectorAll('input[name="selectedProducts"]:checked');
             const replacementProducts = document.querySelectorAll('input[name="replacementProducts"]:checked');
@@ -609,13 +650,15 @@
 
             selectedProducts.forEach(product => {
                 const row = product.closest('tr');
-                const price = parseFloat(row.querySelector('.price').getAttribute('data-value'));
+                const priceElement = row.querySelector('.price');
+                const price = parseFloat(priceElement.getAttribute('data-value'));
                 totalOriginalPrice += price * soLuong;
             });
 
             replacementProducts.forEach(product => {
                 const container = product.closest('.replacement-product');
-                const price = parseFloat(container.querySelector('.price').getAttribute('data-value'));
+                const priceElement = container.querySelector('.price');
+                const price = parseFloat(priceElement.getAttribute('data-value'));
                 totalReplacementPrice += price * soLuong;
             });
 

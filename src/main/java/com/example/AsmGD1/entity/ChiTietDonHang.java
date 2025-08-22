@@ -1,5 +1,6 @@
 package com.example.AsmGD1.entity;
 
+import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -48,6 +49,9 @@ public class ChiTietDonHang {
 
     @Column(name = "ly_do_doi_hang")
     private String lyDoDoiHang;
+
+    @Transient
+    private ChiTietSanPhamDto chiTietSanPhamDto;
 
     // Trường mới để lưu giá đã định dạng
     @Transient
