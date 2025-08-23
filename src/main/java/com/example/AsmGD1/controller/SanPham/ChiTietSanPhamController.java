@@ -521,34 +521,59 @@ public class ChiTietSanPhamController {
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Check admin or employee permission
+            // Kiểm tra quyền admin hoặc nhân viên
             if (!canCurrentUserEdit()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra trùng lặp Mã Sản Phẩm
-            if (sanPhamService.existsByMaSanPham(sanPham.getMaSanPham())) {
+            // Xác thực Mã Sản Phẩm
+            String maSanPham = sanPham.getMaSanPham();
+            if (maSanPham == null || maSanPham.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Mã sản phẩm không được để trống!");
+                return ResponseEntity.badRequest().body(response);
+            }
+            if (!maSanPham.matches("^[a-zA-Z0-9_-]+$")) {
+                response.put("success", false);
+                response.put("message", "Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới hoặc gạch ngang!");
+                return ResponseEntity.badRequest().body(response);
+            }
+            if (sanPhamService.existsByMaSanPham(maSanPham)) {
                 response.put("success", false);
                 response.put("message", "Mã sản phẩm đã tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra trùng lặp Tên Sản Phẩm
-            if (sanPhamService.existsByTenSanPham(sanPham.getTenSanPham())) {
+            // Xác thực Tên Sản Phẩm
+            String tenSanPham = sanPham.getTenSanPham();
+            if (tenSanPham == null || tenSanPham.trim().isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Tên sản phẩm không được để trống!");
+                return ResponseEntity.badRequest().body(response);
+            }
+// Cho phép chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ
+            if (!tenSanPham.matches("^[a-zA-Z0-9_-]+(\\s[a-zA-Z0-9_-]+)*$")) {
+                response.put("success", false);
+                response.put("message", "Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!");
+                return ResponseEntity.badRequest().body(response);
+            }
+            if (sanPhamService.existsByTenSanPham(tenSanPham)) {
                 response.put("success", false);
                 response.put("message", "Tên sản phẩm đã tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Tạo sản phẩm mới
             SanPham newSanPham = new SanPham();
-            newSanPham.setMaSanPham(sanPham.getMaSanPham());
-            newSanPham.setTenSanPham(sanPham.getTenSanPham());
+            newSanPham.setMaSanPham(maSanPham);
+            newSanPham.setTenSanPham(tenSanPham);
             newSanPham.setMoTa(sanPham.getMoTa());
             newSanPham.setTrangThai(true);
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
+            // Xác thực Danh Mục
             if (danhMucId != null) {
                 DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
                 if (danhMuc != null) {

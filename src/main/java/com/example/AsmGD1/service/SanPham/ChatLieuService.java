@@ -1,7 +1,6 @@
 package com.example.AsmGD1.service.SanPham;
 
 import com.example.AsmGD1.entity.ChatLieu;
-import com.example.AsmGD1.entity.KichCo;
 import com.example.AsmGD1.repository.SanPham.ChatLieuRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class ChatLieuService {
@@ -19,6 +19,10 @@ public class ChatLieuService {
 
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
+
+    // Regex: cho phép chữ cái (kể cả tiếng Việt) và khoảng trắng giữa các từ
+    // Không cho phép khoảng trắng đầu/cuối, số hoặc ký tự đặc biệt
+    private static final Pattern NAME_PATTERN = Pattern.compile("^(\\p{L}{2,})(\\s\\p{L}{2,})*$");
 
     // Lấy danh sách chất liệu với phân trang
     public Page<ChatLieu> getAllChatLieu(Pageable pageable) {
@@ -42,14 +46,42 @@ public class ChatLieuService {
     }
 
     public ChatLieu saveChatLieu(ChatLieu chatLieu) throws IllegalArgumentException {
-        if (chatLieu.getTenChatLieu() == null || chatLieu.getTenChatLieu().trim().isEmpty()) {
+        // Kiểm tra null hoặc rỗng
+        if (chatLieu.getTenChatLieu() == null || chatLieu.getTenChatLieu().isEmpty()) {
             throw new IllegalArgumentException("Tên chất liệu không được để trống");
         }
-        if (chatLieuRepository.findByTenChatLieuContainingIgnoreCase(chatLieu.getTenChatLieu())
+
+        // Kiểm tra khoảng trắng đầu
+        if (chatLieu.getTenChatLieu().startsWith(" ")) {
+            throw new IllegalArgumentException("Tên chất liệu không được bắt đầu bằng khoảng trắng");
+        }
+
+        // Trim tên chất liệu
+        String trimmedTenChatLieu = chatLieu.getTenChatLieu().trim();
+
+        // Kiểm tra sau khi trim còn rỗng hay không
+        if (trimmedTenChatLieu.isEmpty()) {
+            throw new IllegalArgumentException("Tên chất liệu không được để trống");
+        }
+
+        // Kiểm tra định dạng tên chất liệu
+        if (!NAME_PATTERN.matcher(trimmedTenChatLieu).matches()) {
+            throw new IllegalArgumentException(
+                    "Tên chất liệu chỉ được chứa chữ cái và khoảng trắng giữa các từ, " +
+                            "không được chứa số, ký tự đặc biệt hoặc khoảng trắng ở cuối"
+            );
+        }
+
+        // Kiểm tra trùng lặp
+        if (chatLieuRepository.findByTenChatLieuContainingIgnoreCase(trimmedTenChatLieu)
                 .stream()
-                .anyMatch(c -> !c.getId().equals(chatLieu.getId()) && c.getTenChatLieu().equalsIgnoreCase(chatLieu.getTenChatLieu()))) {
+                .anyMatch(c -> !c.getId().equals(chatLieu.getId()) &&
+                        c.getTenChatLieu().equalsIgnoreCase(trimmedTenChatLieu))) {
             throw new IllegalArgumentException("Tên chất liệu đã tồn tại");
         }
+
+        // Set tên sau khi trim để lưu
+        chatLieu.setTenChatLieu(trimmedTenChatLieu);
         return chatLieuRepository.save(chatLieu);
     }
 

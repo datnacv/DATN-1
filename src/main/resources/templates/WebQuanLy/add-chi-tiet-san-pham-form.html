@@ -914,7 +914,6 @@
             </div>
 
             <!-- Modal Thêm Nhanh Sản Phẩm -->
-            <!-- Modal Thêm Nhanh Sản Phẩm -->
             <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -928,10 +927,12 @@
                                 <div class="mb-3">
                                     <label for="quickAddMaSanPham" class="form-label">Mã sản phẩm</label>
                                     <input type="text" class="form-control" id="quickAddMaSanPham" name="maSanPham" required>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="quickAddTenSanPham" class="form-label">Tên sản phẩm</label>
                                     <input type="text" class="form-control" id="quickAddTenSanPham" name="tenSanPham" required>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="quickAddMoTa" class="form-label">Mô tả</label>
@@ -943,6 +944,7 @@
                                         <option value="">-- Chọn danh mục --</option>
                                         <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
                                     </select>
+                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Ảnh sản phẩm</label>
@@ -1209,6 +1211,50 @@
 
         $('#quickAddProductForm').on('submit', function(event) {
             event.preventDefault();
+
+            // Xác thực phía client
+            const maSanPham = $('#quickAddMaSanPham').val().trim();
+            let tenSanPham = $('#quickAddTenSanPham').val().trim();
+            const danhMuc = $('#quickAddDanhMuc').val();
+            const regexMaSanPham = /^[a-zA-Z0-9_-]+$/; // Regex cho mã sản phẩm
+            const regexTenSanPham = /^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*$/; // Regex cho tên sản phẩm
+
+            // Xóa các thông báo lỗi cũ
+            $('.alert').remove();
+            $('.is-invalid').removeClass('is-invalid');
+            $('.invalid-feedback').remove();
+
+            // Kiểm tra Mã Sản Phẩm
+            if (!maSanPham) {
+                showError('quickAddMaSanPham', 'Mã sản phẩm không được để trống!');
+                return;
+            }
+            if (!regexMaSanPham.test(maSanPham)) {
+                showError('quickAddMaSanPham', 'Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới hoặc gạch ngang!');
+                return;
+            }
+
+            // Kiểm tra Tên Sản Phẩm
+            if (!tenSanPham) {
+                showError('quickAddTenSanPham', 'Tên sản phẩm không được để trống!');
+                return;
+            }
+            // Loại bỏ khoảng trắng dư thừa
+            tenSanPham = tenSanPham.replace(/\s+/g, ' ').trim();
+            if (!regexTenSanPham.test(tenSanPham)) {
+                showError('quickAddTenSanPham', 'Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!');
+                return;
+            }
+
+            // Kiểm tra Danh Mục
+            if (!danhMuc) {
+                showError('quickAddDanhMuc', 'Vui lòng chọn danh mục!');
+                return;
+            }
+
+            // Cập nhật giá trị tên sản phẩm đã được chuẩn hóa
+            $('#quickAddTenSanPham').val(tenSanPham);
+
             const formData = new FormData(this);
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/save-auto-product',
@@ -1238,16 +1284,31 @@
                     // Hiển thị thông báo lỗi trong modal
                     $('#quickAddProductModal .modal-body').prepend(
                         `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            ${errorMessage}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>`
+                    ${errorMessage}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`
                     );
                     setTimeout(() => {
                         $('.alert').alert('close');
-                    }, 8000); // Tự động đóng thông báo sau 8 giây
+                    }, 8000);
                 }
             });
         });
+
+        // Hàm hiển thị thông báo lỗi
+        function showError(inputId, message) {
+            const $input = $('#' + inputId);
+            $input.addClass('is-invalid');
+            $input.after(
+                `<div class="invalid-feedback">${message}</div>`
+            );
+            $input.focus();
+            // Xóa lỗi khi người dùng nhập lại
+            $input.one('input', function() {
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
+            });
+        }
 
         $('#batchForm').on('submit', function(event) {
             event.preventDefault();
