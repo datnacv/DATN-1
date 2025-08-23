@@ -11,12 +11,14 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Inter font như ảnh -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" th:href="@{/css/admin.css}">
 
   <style>
     :root{
       --primary:#153054;
+      --primary-600:#1e4066;
       --secondary:#9FD5F7;
       --ink:#0f213d;
       --muted:#6b7280;
@@ -29,32 +31,49 @@
     }
 
     html,body{height:100%}
-    body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,#f6f9fb,#eaf3fb);color:var(--ink);min-height:100vh}
-    .content{padding:2rem;margin-left:256px;margin-top:70px;max-width:1400px}
+    body{
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background:linear-gradient(135deg,#f6f9fb,#eaf3fb);
+      color:var(--ink);
+      min-height:100vh;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
 
-    /* ===== Page Title ===== */
+    /* sát navbar hơn (navbar fixed ~56-64px) */
+    .content{
+      padding:1.25rem 2rem 2rem;
+      margin-left:256px;
+      margin-top:64px; /* giảm từ 70px -> 64px */
+      max-width:1400px;
+    }
+
+    /* ===== Page Title (h2 sát navbar) ===== */
     .page-title{
       background:var(--glass);backdrop-filter:blur(16px);
       border:1px solid rgba(21,48,84,.08);border-radius:20px;box-shadow:var(--shadow);
-      padding:1rem 1.25rem;margin:-.25rem 0 1.25rem;
+      padding:.75rem 1rem;                 /* gọn hơn */
+      margin:4px 0 16px;                   /* sát navbar */
       display:flex;align-items:center;justify-content:center;gap:.85rem;
     }
     .page-title .title-icon{
-      width:56px;height:56px;border-radius:14px;background:var(--primary);color:#fff;
-      display:inline-flex;align-items:center;justify-content:center;font-size:1.35rem;
+      width:52px;height:52px;border-radius:14px;background:var(--primary);color:#fff;
+      display:inline-flex;align-items:center;justify-content:center;font-size:1.25rem;
       box-shadow:0 6px 18px rgba(21,48,84,.18);
     }
     .page-title .title-text{
-      position:relative;font-weight:800;font-size:1.85rem;line-height:1.2;letter-spacing:.2px;color:var(--ink);
+      position:relative;margin:0;
+      font-weight:800;font-size:1.75rem;line-height:1.2;letter-spacing:.1px;color:var(--ink);
     }
     .page-title .title-text::after{
       content:"";position:absolute;left:0;right:0;margin:auto;bottom:-8px;
-      width:160px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--secondary));
+      width:170px;height:3px;border-radius:999px;background:linear-gradient(90deg,var(--primary),var(--secondary));
     }
     @media (max-width:576px){
       .page-title{justify-content:flex-start}
-      .page-title .title-text{font-size:1.5rem}
+      .page-title .title-text{font-size:1.45rem}
       .page-title .title-text::after{width:120px}
+      .content{margin-left:0}
     }
 
     /* ===== Cards ===== */
@@ -64,30 +83,24 @@
     /* ===== Filter ===== */
     .filter-box .form-label{font-weight:600;text-transform:uppercase;font-size:.72rem;letter-spacing:.4px;color:var(--ink);margin-bottom:.35rem}
     .filter-box .form-control,.filter-box .form-select{border-radius:12px;border:2px solid var(--line);padding:.7rem .9rem;font-weight:500;background:#fff;transition:border-color .15s, box-shadow .15s}
-    .filter-box .form-control:focus,.filter-box .form-select:focus{border-color:var(--primary);box-shadow:0 0 0 .25rem rgba(21,48,84,.1)}
-
-    @media (max-width:992px){ .filter-grid{row-gap:.75rem} .content{margin-left:0} }
+    .filter-box .form-control:focus,.filter-box .form-select:focus{border-color:var(--primary);box-shadow:0 0 0 .25rem rgba(21,48,84,.12)}
 
     /* ===== Buttons ===== */
-    .btn-primary{background:linear-gradient(135deg,var(--primary),#0d223d);border:none;border-radius:12px;font-weight:700}
+    .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-600));border:none;border-radius:12px;font-weight:700}
     .btn-primary:hover{filter:brightness(1.06);transform:translateY(-1px)}
     .btn-warning{background:linear-gradient(135deg,#ffd76a,#ffc107);border:none;color:#111}
     .btn-danger{background:linear-gradient(135deg,#e35b6b,#dc3545);border:none}
     .btn-success{background:linear-gradient(135deg,#2bb673,#28a745);border:none}
 
-    .employee-notice{background:#e6f4ff;border:1px solid #cfe8ff;color:#0b3b6f;padding:.75rem 1rem;border-radius:.75rem;margin-bottom:1rem}
+    .employee-notice{background:#e6f0ff;border:1px solid #cfe0ff;color:#0b2a55;padding:.75rem 1rem;border-radius:.75rem;margin-bottom:1rem}
 
     /* ===== Table & Horizontal Scroll ===== */
     .table-wrap{border-top:1px solid var(--line)}
-    .table-scroll-x{
-      overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;
-    }
-    /* ép bảng rộng hơn để xuất hiện thanh kéo ngang khi màn hình hẹp */
-    .table-x-min{ min-width: 1400px; } /* chỉnh 1200-1800 tùy nhu cầu */
+    .table-scroll-x{overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch;}
+    .table-x-min{ min-width: 1400px; }
     .table{--bs-table-bg:transparent;margin-bottom:0}
-    .table thead th{background:#f5f9ff;color:var(--ink);font-weight:700;border-bottom:1px solid var(--line)}
-    .table th,.table td{vertical-align:middle;padding:.9rem 1rem;white-space:nowrap;} /* giữ 1 dòng để kéo ngang */
-
+    .table thead th{background:#f3f7ff;color:var(--ink);font-weight:700;border-bottom:1px solid var(--line)}
+    .table th,.table td{vertical-align:middle;padding:.9rem 1rem;white-space:nowrap;}
     .table tbody tr{transition:background .12s ease}
     .table tbody tr:hover{background:#f8fbff}
     .table .badge{padding:.5rem .65rem;border-radius:999px;font-weight:700;letter-spacing:.2px}
@@ -104,6 +117,13 @@
 
     .text-muted-ink{color:var(--muted)}
     .table-responsive{border-top:1px solid var(--line)}
+
+    /* ===== Toast (giữ success màu xanh) ===== */
+    .toast-acv{color:#fff;border:0;border-radius:14px;box-shadow:var(--shadow)}
+    .toast-acv.bg-success{background:linear-gradient(135deg,#2bb673,#28a745)}
+    .toast-acv.bg-danger{background:linear-gradient(135deg,#e35b6b,#dc3545)}
+    .toast-acv .toast-body{display:flex;align-items:center;gap:.6rem}
+    .toast-acv .toast-icon{display:inline-flex;width:28px;height:28px;border-radius:999px;align-items:center;justify-content:center;background:rgba(255,255,255,.18)}
   </style>
 </head>
 <body>
@@ -118,7 +138,7 @@
     <!-- Title -->
     <header class="page-title">
       <span class="title-icon"><i class="fa-solid fa-percent"></i></span>
-      <span class="title-text">Đợt Giảm Giá</span>
+      <h2 class="title-text">Đợt Giảm Giá</h2>
     </header>
 
     <!-- Notice -->
@@ -182,7 +202,6 @@
         </a>
       </div>
 
-      <!-- thêm table-scroll-x và table-x-min -->
       <div class="table-wrap table-scroll-x">
         <table class="table table-bordered table-hover table-x-min">
           <thead class="table-light">
@@ -268,11 +287,14 @@
   </div>
 </div>
 
-<!-- Toast -->
+<!-- Toast (góc phải) -->
 <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999">
-  <div id="toastMessage" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+  <div id="toastMessage" class="toast toast-acv align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="d-flex">
-      <div class="toast-body fw-semibold"></div>
+      <div class="toast-body fw-semibold">
+        <span class="toast-icon"><i class="fa-solid fa-circle-check"></i></span>
+        <span class="toast-text"></span>
+      </div>
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>
   </div>
@@ -320,15 +342,18 @@
       const deleteButtons = document.querySelectorAll('.delete-btn');
       const deleteForm = document.getElementById('deleteForm');
       const toastEl = document.getElementById('toastMessage');
-      const toastBody = toastEl.querySelector('.toast-body');
+      const toastInst = new bootstrap.Toast(toastEl);
+      const toastText = toastEl.querySelector('.toast-text');
 
       deleteButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           const status = btn.getAttribute('data-status');
           if (status !== 'UPCOMING') {
-            toastEl.classList.remove('bg-success');toastEl.classList.add('bg-danger');
-            toastBody.textContent = 'Chỉ được xóa khi chiến dịch ở trạng thái "Sắp diễn ra".';
-            new bootstrap.Toast(toastEl).show();return;
+            toastEl.classList.remove('bg-success','bg-danger');
+            toastEl.classList.add('bg-danger'); // lỗi -> đỏ
+            toastText.textContent = 'Chỉ được xóa khi chiến dịch ở trạng thái "Sắp diễn ra".';
+            toastInst.show();
+            return;
           }
           document.getElementById('campaignNameToDelete').textContent = btn.getAttribute('data-name');
           deleteForm.action = '/acvstore/chien-dich-giam-gia/delete/' + btn.getAttribute('data-id');
@@ -337,15 +362,25 @@
       });
     }
 
+    // Toast hiển thị theo flash message (thành công xanh)
     const success = /*[[${successMessage}]]*/ null;
-    const error = /*[[${errorMessage}]]*/ null;
-    if (success || error) {
-      const toastEl = document.getElementById('toastMessage');
-      const toastBody = toastEl.querySelector('.toast-body');
-      if (success){ toastEl.classList.remove('bg-danger'); toastEl.classList.add('bg-success'); toastBody.textContent = success; }
-      if (error){ toastEl.classList.remove('bg-success'); toastEl.classList.add('bg-danger'); toastBody.textContent = error; }
-      new bootstrap.Toast(toastEl).show();
-    }
+    const error   = /*[[${errorMessage}]]*/ null;
+    (function handleToast(){
+      const toastEl  = document.getElementById('toastMessage');
+      const toastText= toastEl.querySelector('.toast-text');
+      const toastInst= new bootstrap.Toast(toastEl);
+      toastEl.classList.remove('bg-success','bg-danger'); // reset
+
+      if (success){
+        toastEl.classList.add('bg-success');      // thành công -> xanh
+        toastText.textContent = success;
+        toastInst.show();
+      } else if (error){
+        toastEl.classList.add('bg-danger');       // lỗi -> đỏ
+        toastText.textContent = error;
+        toastInst.show();
+      }
+    })();
   });
 </script>
 </body>
