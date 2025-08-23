@@ -83,7 +83,12 @@ public class ChienDichGiamGiaController {
             return "redirect:/login";
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayBatDau").descending());
+        // Sắp xếp: mới tạo lên đầu, tie-break theo id
+        Pageable pageable = PageRequest.of(
+                page, size,
+                Sort.by(Sort.Direction.DESC, "thoiGianTao", "id")
+        );
+
         Page<ChienDichGiamGia> pageResult =
                 chienDichService.locChienDich(keyword, startDate, endDate, status, discountLevel, pageable);
 
@@ -101,6 +106,7 @@ public class ChienDichGiamGiaController {
         addUserInfoToModel(model);
         return "WebQuanLy/discount-campaign-list";
     }
+
 
     // ===== Create form =====
     @GetMapping("/create")
@@ -330,6 +336,9 @@ public class ChienDichGiamGiaController {
                 return "WebQuanLy/discount-campaign-edit";
             }
 
+            // Giữ nguyên thời gian tạo ban đầu, tránh bị ghi đè khi update
+            chienDich.setThoiGianTao(chienDichCu.getThoiGianTao());
+
             chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chiến dịch thành công!");
         } catch (RuntimeException e) {
@@ -337,6 +346,7 @@ public class ChienDichGiamGiaController {
         }
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
+
 
     // ===== APIs phụ trợ =====
     @GetMapping("/chi-tiet-san-pham")
