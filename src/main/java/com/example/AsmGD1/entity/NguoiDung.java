@@ -31,18 +31,15 @@ public class NguoiDung implements UserDetails { // Thêm "implements UserDetails
     @Column(name = "ten_dang_nhap", nullable = false, length = 50, unique = true)
     private String tenDangNhap;
 
-
     @NotBlank(message = "Mật khẩu không được để trống")
     @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
     @Column(name = "mat_khau", nullable = false, length = 100)
     private String matKhau;
 
-
     @NotBlank(message = "Họ tên không được để trống")
     @Pattern(regexp = "[A-Za-zÀ-ỹ\\s]+", message = "Họ tên chỉ được chứa chữ cái và khoảng trắng")
     @Column(name = "ho_ten", nullable = false, length = 100)
     private String hoTen;
-
 
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không hợp lệ")
@@ -50,11 +47,11 @@ public class NguoiDung implements UserDetails { // Thêm "implements UserDetails
     @Column(name = "email", nullable = false, length = 100, unique = true)
     private String email;
 
-
     @NotBlank(message = "Số điện thoại không được để trống")
     @Pattern(regexp = "[0-9]{10}", message = "Số điện thoại phải chứa đúng 10 chữ số")
     @Column(name = "so_dien_thoai", nullable = false, length = 20, unique = true)
     private String soDienThoai;
+
 
 
     @Column(name = "vai_tro", length = 50)
