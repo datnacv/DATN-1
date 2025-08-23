@@ -640,16 +640,22 @@
         toggleUsageCount();
 
         // Submit xác nhận
+        // Submit xác nhận
         $('#confirmSubmit').on('click', function(){
+            // 👉 THÊM DÒNG NÀY Ở ĐÂU: ngay đầu handler, trước khi parseNumber
+            try { sessionStorage.removeItem(STORAGE_KEY); } catch(e){}
+
             ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
                 .forEach(sel => $(sel).val(parseNumber($(sel).val())));
             const selected = $('#paymentMethodSelect').val();
             if (selected && selected.includes('all')){
-                const allOptions = $('#paymentMethodSelect option').map(function(){return $(this).val();}).get().filter(v=>'all'!==v);
+                const allOptions = $('#paymentMethodSelect option')
+                    .map(function(){return $(this).val();}).get().filter(v=>'all'!==v);
                 $('#paymentMethodSelect').val(allOptions).trigger('change');
             }
             $('#createVoucherForm').submit();
         });
+
     });
 </script>
 </body>
