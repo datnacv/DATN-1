@@ -63,7 +63,6 @@ public class ChiTietSanPhamController {
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
             String role = user.getVaiTro();
-            // Only admin can edit, employees can only view
             return "admin".equalsIgnoreCase(role);
         }
         return false;
@@ -71,6 +70,17 @@ public class ChiTietSanPhamController {
 
     // Helper method to check if user can view (both admin and employee)
     private boolean canCurrentUserView() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            String role = user.getVaiTro();
+            return "admin".equalsIgnoreCase(role) || "employee".equalsIgnoreCase(role);
+        }
+        return false;
+    }
+
+    // Helper method to check if user can scan QR (admin or employee)
+    private boolean canCurrentUserScan() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
             NguoiDung user = (NguoiDung) auth.getPrincipal();
@@ -90,7 +100,6 @@ public class ChiTietSanPhamController {
             model.addAttribute("canEdit", "admin".equalsIgnoreCase(user.getVaiTro()));
             model.addAttribute("isEmployee", "employee".equalsIgnoreCase(user.getVaiTro()));
         } else {
-            // Fallback for testing
             List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
             model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
             model.addAttribute("isAdmin", false);
@@ -184,12 +193,10 @@ public class ChiTietSanPhamController {
     @GetMapping("/add")
     public String hienThiFormThem(Model model, @RequestParam(value = "productId", required = false) UUID productId) {
         try {
-            // Check admin or employee permission
             if (!canCurrentUserEdit()) {
                 return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền truy cập chức năng này";
             }
 
-            // Add user info and role check
             addUserInfoToModel(model);
 
             model.addAttribute("sanPham", new SanPham());
@@ -268,7 +275,6 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra số lượng tồn kho
             if (trangThai != null && trangThai && chiTietSanPham.getSoLuongTonKho() == 0) {
                 response.put("success", false);
                 response.put("message", "Không thể bật trạng thái 'Đang Bán' khi số lượng tồn kho bằng 0!");
@@ -293,7 +299,6 @@ public class ChiTietSanPhamController {
                                        @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles,
                                        Model model) {
         try {
-            // Check admin or employee permission
             if (!canCurrentUserEdit()) {
                 return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
             }
@@ -310,7 +315,6 @@ public class ChiTietSanPhamController {
     @PostMapping("/save-batch")
     public String luuChiTietSanPhamBatch(@ModelAttribute ChiTietSanPhamBatchDto batchDto, Model model) {
         try {
-            // Check admin or employee permission
             if (!canCurrentUserEdit()) {
                 return "redirect:/acvstore/chi-tiet-san-pham?error=Bạn không có quyền thực hiện chức năng này";
             }
@@ -328,8 +332,7 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> layChiTietSanPham(@PathVariable UUID id) {
         try {
-            // CHỈNH: cho phép cả admin và employee xem chi tiết để quét
-            if (!canCurrentUserScan()) { // <— dùng helper mới cho phép scan (admin || employee)
+            if (!canCurrentUserScan()) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "Bạn không có quyền truy cập chức năng này"));
             }
@@ -358,13 +361,21 @@ public class ChiTietSanPhamController {
                 response.put("urlHinhAnh", sanPham.getUrlHinhAnh());
             }
 
-            // Màu & size
+            // Màu & kích cỡ
             response.put("colorId", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getId() : null);
             response.put("tenMauSac", chiTiet.getMauSac() != null ? chiTiet.getMauSac().getTenMau() : null);
             response.put("sizeId", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getId() : null);
             response.put("tenKichCo", chiTiet.getKichCo() != null ? chiTiet.getKichCo().getTen() : null);
 
-            // Ảnh (giữ nguyên logic sắp xếp)
+            // Các thuộc tính bổ sung
+            response.put("originId", chiTiet.getXuatXu() != null ? chiTiet.getXuatXu().getId() : null);
+            response.put("materialId", chiTiet.getChatLieu() != null ? chiTiet.getChatLieu().getId() : null);
+            response.put("styleId", chiTiet.getKieuDang() != null ? chiTiet.getKieuDang().getId() : null);
+            response.put("sleeveId", chiTiet.getTayAo() != null ? chiTiet.getTayAo().getId() : null);
+            response.put("collarId", chiTiet.getCoAo() != null ? chiTiet.getCoAo().getId() : null);
+            response.put("brandId", chiTiet.getThuongHieu() != null ? chiTiet.getThuongHieu().getId() : null);
+
+            // Ảnh
             List<Map<String, Object>> images = chiTiet.getHinhAnhSanPhams() != null
                     ? chiTiet.getHinhAnhSanPhams().stream()
                     .filter(Objects::nonNull)
@@ -387,7 +398,6 @@ public class ChiTietSanPhamController {
         }
     }
 
-
     @PostMapping("/update/{id}")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> capNhatChiTietSanPham(
@@ -399,27 +409,21 @@ public class ChiTietSanPhamController {
 
         Map<String, Object> body = new HashMap<>();
         try {
-            // Check admin or employee permission
             if (!canCurrentUserEdit()) {
                 body.put("error", "Bạn không có quyền thực hiện chức năng này");
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
             }
 
-            // Lấy entity hiện có để:
-            // - Lấy chắc productId trả về cho FE
-            // - Fallback set productId vào DTO nếu chế độ restricted không gửi productId
             ChiTietSanPham existing = chiTietSanPhamRepository.findById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chi tiết sản phẩm"));
 
             UUID productIdFromDb = (existing.getSanPham() != null) ? existing.getSanPham().getId() : null;
 
-            // Set id vào DTO + fallback productId
             updateDto.setId(id);
             if (updateDto.getProductId() == null && productIdFromDb != null) {
                 updateDto.setProductId(productIdFromDb);
             }
 
-            // Parse danh sách ảnh xóa (an toàn)
             List<UUID> deletedIds = new ArrayList<>();
             if (deletedImageIdsStr != null && !deletedImageIdsStr.isBlank()) {
                 for (String s : deletedImageIdsStr.split(",")) {
@@ -428,14 +432,12 @@ public class ChiTietSanPhamController {
                         try {
                             deletedIds.add(UUID.fromString(trimmed));
                         } catch (IllegalArgumentException ex) {
-                            // Bỏ qua UUID lỗi, hoặc return 400 nếu muốn
                             logger.warn("deletedImageIds chứa UUID không hợp lệ: {}", trimmed);
                         }
                     }
                 }
             }
 
-            // Lọc bỏ file ảnh rỗng
             MultipartFile[] safeImages = imageFiles;
             if (safeImages != null && safeImages.length > 0) {
                 List<MultipartFile> nonEmpty = Arrays.stream(safeImages)
@@ -444,16 +446,13 @@ public class ChiTietSanPhamController {
                 safeImages = nonEmpty.toArray(new MultipartFile[0]);
             }
 
-            // Gọi service (vẫn là void)
             if (restricted) {
                 chiTietSanPhamService.updateChiTietSanPhamRestricted(updateDto, safeImages, deletedIds);
             } else {
                 chiTietSanPhamService.updateChiTietSanPham(updateDto, safeImages, deletedIds);
             }
 
-            // Build response an toàn (tránh null rơi vào Map.of)
             body.put("message", "Cập nhật chi tiết sản phẩm thành công");
-            // ưu tiên id từ DB; fallback DTO
             UUID productId = productIdFromDb != null ? productIdFromDb : updateDto.getProductId();
             if (productId != null) body.put("productId", productId.toString());
 
@@ -471,7 +470,6 @@ public class ChiTietSanPhamController {
     @ResponseBody
     public ResponseEntity<Map<String, Object>> xoaAnh(@PathVariable UUID imageId) {
         try {
-            // Check admin or employee permission
             if (!canCurrentUserEdit()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Bạn không có quyền thực hiện chức năng này"));
             }
@@ -498,7 +496,6 @@ public class ChiTietSanPhamController {
                     .map(String::trim).filter(s -> !s.isEmpty())
                     .map(UUID::fromString).collect(Collectors.toList());
 
-            // Validate bật trạng thái khi tồn kho = 0
             boolean newStatus = updateDto.getStatus() != null ? updateDto.getStatus() :
                     (updateDto.getStockQuantity() != null && updateDto.getStockQuantity() > 0);
             if (newStatus && (updateDto.getStockQuantity() == null || updateDto.getStockQuantity() == 0)) {
@@ -521,14 +518,12 @@ public class ChiTietSanPhamController {
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Kiểm tra quyền admin hoặc nhân viên
             if (!canCurrentUserEdit()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Xác thực Mã Sản Phẩm
             String maSanPham = sanPham.getMaSanPham();
             if (maSanPham == null || maSanPham.trim().isEmpty()) {
                 response.put("success", false);
@@ -546,14 +541,12 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Xác thực Tên Sản Phẩm
             String tenSanPham = sanPham.getTenSanPham();
             if (tenSanPham == null || tenSanPham.trim().isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Tên sản phẩm không được để trống!");
                 return ResponseEntity.badRequest().body(response);
             }
-// Cho phép chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ
             if (!tenSanPham.matches("^[a-zA-Z0-9_-]+(\\s[a-zA-Z0-9_-]+)*$")) {
                 response.put("success", false);
                 response.put("message", "Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!");
@@ -565,7 +558,6 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Tạo sản phẩm mới
             SanPham newSanPham = new SanPham();
             newSanPham.setMaSanPham(maSanPham);
             newSanPham.setTenSanPham(tenSanPham);
@@ -573,7 +565,6 @@ public class ChiTietSanPhamController {
             newSanPham.setTrangThai(true);
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
-            // Xác thực Danh Mục
             if (danhMucId != null) {
                 DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
                 if (danhMuc != null) {
@@ -589,7 +580,6 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Lưu trữ ảnh cục bộ
             String UPLOAD_DIR = System.getProperty("os.name").toLowerCase().contains("win")
                     ? "C:/DATN/uploads/san_pham/"
                     : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
@@ -616,7 +606,6 @@ public class ChiTietSanPhamController {
         }
     }
 
-    // API endpoint for client-side (no admin check needed for viewing)
     @GetMapping("/api")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> getChiTietSanPhamId(
@@ -640,17 +629,6 @@ public class ChiTietSanPhamController {
         }
     }
 
-    // Helper method: admin hoặc employee đều được quét QR
-    private boolean canCurrentUserScan() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
-            NguoiDung user = (NguoiDung) auth.getPrincipal();
-            String role = user.getVaiTro();
-            return "admin".equalsIgnoreCase(role) || "employee".equalsIgnoreCase(role);
-        }
-        return false;
-    }
-
     @PostMapping("/scan-qr/add-stock")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> scanQrAddStock(
@@ -659,7 +637,6 @@ public class ChiTietSanPhamController {
     ) {
         Map<String, Object> res = new HashMap<>();
         try {
-            // Quyền cho phép: admin hoặc employee
             if (!canCurrentUserScan()) {
                 res.put("success", false);
                 res.put("message", "Bạn không có quyền quét QR cho chức năng này!");
@@ -672,35 +649,29 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(res);
             }
 
-            // Tìm biến thể mục tiêu theo nội dung QR
             ChiTietSanPham target = null;
 
-            // Trường hợp 1: QR là UUID của ChiTietSanPham
             try {
                 UUID ctspId = UUID.fromString(qrContent.trim());
                 target = chiTietSanPhamService.findById(ctspId);
             } catch (IllegalArgumentException ignore) {
-                // Không phải UUID -> thử parse định dạng sanPhamId|sizeId|colorId
             }
 
-            // Trường hợp 2: QR chứa sanPhamId | sizeId | colorId (cách nhau bởi | hoặc :)
             if (target == null) {
                 String normalized = qrContent.trim().replace(":", "|");
                 String[] parts = normalized.split("\\|");
                 if (parts.length == 3) {
                     try {
                         UUID sanPhamId = UUID.fromString(parts[0].trim());
-                        UUID sizeId    = UUID.fromString(parts[1].trim());
-                        UUID colorId   = UUID.fromString(parts[2].trim());
+                        UUID sizeId = UUID.fromString(parts[1].trim());
+                        UUID colorId = UUID.fromString(parts[2].trim());
 
-                        // Dùng repo khách hàng để tìm đúng biến thể (đã có sẵn trong controller)
                         ChiTietSanPham byTriple = khachHangSanPhamRepository
                                 .findBySanPhamIdAndSizeIdAndColorId(sanPhamId, sizeId, colorId);
                         if (byTriple != null) {
                             target = byTriple;
                         }
                     } catch (IllegalArgumentException ignored) {
-                        // Sai định dạng UUID -> sẽ báo lỗi phía dưới
                     }
                 }
             }
@@ -711,12 +682,10 @@ public class ChiTietSanPhamController {
                 return ResponseEntity.badRequest().body(res);
             }
 
-            // Cộng tồn kho
             int oldStock = target.getSoLuongTonKho() != null ? target.getSoLuongTonKho() : 0;
             int newStock = oldStock + qty;
             target.setSoLuongTonKho(newStock);
 
-            // Nếu muốn tự động bật trạng thái bán khi >0 tồn kho (tùy chính sách):
             if (Boolean.FALSE.equals(target.getTrangThai()) && newStock > 0) {
                 target.setTrangThai(true);
             }
@@ -750,5 +719,4 @@ public class ChiTietSanPhamController {
             return ResponseEntity.badRequest().body(res);
         }
     }
-
 }
