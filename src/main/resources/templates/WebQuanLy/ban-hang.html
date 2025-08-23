@@ -114,24 +114,25 @@
       margin-top: 16px;
     }
 
-    .toast {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background: var(--primary-color);
-      color: var(--light-blue);
-      padding: 1rem 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    /* Stack toasts (newest on top) */
+    #toastContainer{
+      position: fixed; top: 1rem; right: 1rem;
+      display: flex; flex-direction: column; /* xếp dọc */
+      align-items: stretch; gap: .5rem;
       z-index: 9999;
-      opacity: 0;
-      transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
+      width: min(360px, calc(100vw - 2rem));
     }
 
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
+    .toast{
+      position: relative; /* không còn fixed từng cái */
+      top: auto; right: auto; margin: 0;
+      width: 100%;
+      opacity: 0; transform: translateY(-6px);
+      transition: all .3s ease;
+    }
+
+    .toast.show{
+      opacity: 1; transform: translateY(0);
     }
 
     .glass-card {
@@ -1141,6 +1142,48 @@
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+  // === Helper: re-apply / validate ORDER voucher hiện tại ===
+  async function reapplyCurrentOrderVoucher() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return;
+    const id = tab.orderVoucherId || tab.voucherId;
+    if (!id || isApplyingVoucher) return;
+
+    await applyVoucher(id); // applyVoucher đã xử lý auto-clear nếu fail
+  }
+
+  // === Helper: re-apply / validate SHIPPING voucher hiện tại ===
+  async function reapplyCurrentShipVoucher() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab || !tab.shipVoucherId || !isShippingEnabled() || isApplyingVoucher) return;
+    try {
+      isApplyingVoucher = true;
+      const shippingFee = Number(tab.shippingFeeBase || 0);
+      const res = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${tab.shipVoucherId}&shippingFee=${shippingFee}&tabId=${currentTabId}`);
+      if (!res.ok) {
+        const removedId = tab.shipVoucherId;
+        let msg = 'Phiếu Freeship không còn đủ điều kiện, đã gỡ mã.';
+        try { const err = await res.json(); msg = err.error || err.message || msg; } catch {}
+        tab.shipVoucherId = null;
+        tab.shippingDiscount = 0;
+        updateSummary(tab);
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        // bỏ chọn radio nếu đang mở modal
+        document.querySelectorAll('#voucherModal input[name="shipVoucher"]').forEach(r => {
+          if (r.value === String(removedId)) r.checked = false;
+        });
+        showToast(msg, 'warning');
+        return;
+      }
+      const data = await res.json();
+      if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
+      if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
+      updateSummary(tab);
+    } finally {
+      isApplyingVoucher = false;
+    }
+  }
+
   // đặt gần đầu script
   const getAvailableStock = (item) =>
           Number(item?.availableStock ?? item?.stockQuantity ?? item?.soLuongTonKho ?? 0);
@@ -1265,8 +1308,9 @@
     updateSummary(tab);
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
 
-    if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) {
-      applyVoucher(tab.voucherId);
+    if (!isApplyingVoucher && prevBase !== 0) {
+      reapplyCurrentOrderVoucher();
+      // (ship đã được clear ở đây nên không cần re-apply ship)
     }
     shippingMethodContainer?.classList.add('d-none');
 
@@ -1429,8 +1473,16 @@
             if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
             updateSummary(tab);
           } else {
-            let msg = 'Không áp dụng được mã Freeship sau khi đổi phí GHN.';
+            const removedId = tab.shipVoucherId;
+            let msg = 'Không còn đủ điều kiện Freeship, đã gỡ mã.';
             try { const err = await res.json(); msg = err.error || err.message || msg; } catch {}
+            tab.shipVoucherId = null;
+            tab.shippingDiscount = 0;
+            updateSummary(tab);
+            localStorage.setItem('orderTabs', JSON.stringify(tabs));
+            document.querySelectorAll('#voucherModal input[name="shipVoucher"]').forEach(r => {
+              if (r.value === String(removedId)) r.checked = false;
+            });
             showToast(msg, 'warning');
           }
         } finally {
@@ -1455,49 +1507,93 @@
 
 
 
-  // Hiển thị thông báo toast với animation cải tiến
-  function showToast(message, type = "info") {
-    const container = document.getElementById("toastContainer");
-    if (!container) return;
+  function showToast(message, type = "info", opts = {}) {
+    const {
+      duration = 3000,      // thời gian tự ẩn (ms)
+      dismissible = true,   // có nút đóng hay không
+      maxToasts = 5         // giới hạn số toast hiển thị đồng thời
+    } = opts;
 
-    const toast = document.createElement("div");
-    const colors = {
+    // 1) Lấy/khởi tạo container
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toastContainer";
+      container.className = "position-fixed top-0 end-0 p-3";
+      container.style.zIndex = 9999;
+      document.body.appendChild(container);
+    }
+
+    // 2) Map màu & icon
+    const bg = {
       success: "bg-success",
-      error: "bg-danger",
+      error:   "bg-danger",
       warning: "bg-warning",
-      info: "bg-primary"
+      info:    "bg-primary"
     };
-
-    toast.className = `toast show align-items-center text-white ${colors[type] || colors.info} border-0`;
-    toast.setAttribute('role', 'alert');
-    toast.setAttribute('aria-live', 'assertive');
-    toast.setAttribute('aria-atomic', 'true');
-
     const icon = {
       success: "fas fa-check-circle",
-      error: "fas fa-exclamation-circle",
+      error:   "fas fa-exclamation-circle",
       warning: "fas fa-exclamation-triangle",
-      info: "fas fa-info-circle"
+      info:    "fas fa-info-circle"
     };
 
+    // 3) Escape text để an toàn
+    const escapeHtml = (str) =>
+            String(str)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+    // 4) Tạo toast
+    const toast = document.createElement("div");
+    toast.className = `toast show align-items-center text-white ${bg[type] || bg.info} border-0 shadow`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
+
     toast.innerHTML = `
-      <div class="d-flex">
-        <div class="toast-body d-flex align-items-center gap-2">
-          <i class="${icon[type] || icon.info}"></i>
-          <span class="fw-medium">${message}</span>
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="${icon[type] || icon.info}"></i>
+        <span class="fw-medium">${escapeHtml(message)}</span>
       </div>
-    `;
+      ${dismissible
+            ? `<button type="button" class="btn-close btn-close-white me-2 m-auto" aria-label="Close"></button>`
+            : ""
+    }
+    </div>
+  `;
 
-    container.appendChild(toast);
+    // 5) Thêm lên ĐẦU để toast mới nằm trên
+    container.prepend(toast);
 
-    // Remove toast after 3 seconds
-    setTimeout(() => {
-      if (toast.parentNode) {
-        toast.remove();
-      }
-    }, 3000);
+    // 6) Tự ẩn + cho phép đóng tay
+    const removeToast = () => {
+      toast.classList.remove("show");
+      // chờ transition .3s rồi remove
+      setTimeout(() => toast.remove(), 300);
+    };
+
+    let timerId = null;
+    if (duration > 0) {
+      timerId = setTimeout(removeToast, duration);
+    }
+
+    if (dismissible) {
+      toast.querySelector(".btn-close")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (timerId) clearTimeout(timerId);
+        removeToast();
+      });
+    }
+
+    // 7) Giới hạn số lượng toast
+    while (container.children.length > maxToasts) {
+      container.lastElementChild?.remove();
+    }
   }
 
   // Cải thiện hàm renderCart với kiểm tra tồn kho chính xác
@@ -1680,12 +1776,16 @@
       const data = await response.json();
       updateCartFromResponse(data);
       await refreshCartFromServer();
-      if (tab.voucherId) await applyVoucher(tab.voucherId);
+      await reapplyCurrentOrderVoucher();
+      await reapplyCurrentShipVoucher();
+
       showToast("Đã cập nhật số lượng!", "success");
     } catch (error) {
       console.error("Lỗi khi cập nhật số lượng:", error);
       showToast("Lỗi khi cập nhật số lượng: " + error.message, "error");
       await refreshCartFromServer();
+      await reapplyCurrentOrderVoucher();
+      await reapplyCurrentShipVoucher();
     } finally {
       isUpdating = false;
       if (quantityControls) {
@@ -1844,6 +1944,8 @@
       updateCartFromResponse(data);
       document.getElementById("variantModal").style.display = "none";
       await refreshCartFromServer();
+      await reapplyCurrentOrderVoucher();
+      await reapplyCurrentShipVoucher();
       showToast("Đã thêm sản phẩm vào giỏ hàng!", "success");
     } catch (error) {
       console.error("Lỗi khi thêm biến thể:", error);
@@ -1938,6 +2040,8 @@
       const data = await response.json();
       updateCartFromResponse(data);
       await refreshCartFromServer();
+      await reapplyCurrentOrderVoucher();
+      await reapplyCurrentShipVoucher();
       showToast('Đã thêm sản phẩm vào giỏ hàng!', 'success');
     } catch (error) {
       console.error('Lỗi khi thêm sản phẩm:', error);
@@ -2124,7 +2228,7 @@
       if (currentTabId) {
         loadTabContent(currentTabId);
       }
-      showToast("Đã xóa tab và giải phóng tồn kho!", "success");
+      showToast("Đã xóa tab!", "success");
     } catch (error) {
       console.error("Lỗi khi xóa tab:", error);
       showToast("Lỗi khi xóa tab: " + error.message, "error");
@@ -2562,7 +2666,9 @@
       updateSummary(tab);
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
 
-      if (tab.voucherId && !isApplyingVoucher && prevBase !== 0) applyVoucher(tab.voucherId);
+      if (!isApplyingVoucher && prevBase !== 0) {
+        reapplyCurrentOrderVoucher();
+      }
 
       updateShipSectionVisibility();
       return;
@@ -2716,6 +2822,8 @@
       const data = await response.json();
       updateCartFromResponse(data);
       await refreshCartFromServer();
+      await reapplyCurrentOrderVoucher();
+      await reapplyCurrentShipVoucher();
       showToast("Đã xóa sản phẩm!", "success");
     } catch (error) {
       showToast("Lỗi khi xóa sản phẩm: " + error.message, "error");
@@ -2818,14 +2926,14 @@
 
     if (!selectedVoucherId) {
       tab.voucherId = null;
+      tab.orderVoucherId = null;
       tab.discount = 0;
-      tab.total = tab.subTotal;
       updateSummary(tab);
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
       return;
     }
 
-    if (isApplyingVoucher) return;   // ⛔ chống re-entry
+    if (isApplyingVoucher) return;
     isApplyingVoucher = true;
     try {
       const response = await fetch(`${BASE_URL}/cart/apply-voucher?voucherId=${selectedVoucherId}&shippingFee=${shippingFee}&tabId=${currentTabId}`);
@@ -2837,17 +2945,42 @@
         } catch (e) {
           errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
-        throw new Error(errorMessage);
+
+        // 🔥 Nếu voucher đang áp mà re-apply fail → gỡ luôn
+        const wasApplied =
+                String(tab.voucherId) === String(selectedVoucherId) ||
+                String(tab.orderVoucherId) === String(selectedVoucherId);
+
+        if (wasApplied) {
+          tab.voucherId = null;
+          tab.orderVoucherId = null;
+          tab.discount = 0;
+          updateSummary(tab);
+          localStorage.setItem('orderTabs', JSON.stringify(tabs));
+
+          // Bỏ chọn UI
+          document.querySelectorAll('#voucherModal input[name="orderVoucher"]').forEach(r => {
+            if (r.value === String(selectedVoucherId)) r.checked = false;
+          });
+          if (voucherSelect && voucherSelect.value === String(selectedVoucherId)) voucherSelect.value = '';
+          showToast('Mã giảm giá không còn đủ điều kiện, đã gỡ mã.', 'warning');
+        } else {
+          showToast(errorMessage, 'error');
+        }
+        return;
       }
+
+      // ✅ Thành công
       const data = await response.json();
-      tab.voucherId = selectedVoucherId;
-      updateCartFromResponse(data);  // sẽ KHÔNG kích ship-recalc vì đã có cờ
+      tab.voucherId = selectedVoucherId;      // giữ tương thích cũ
+      tab.orderVoucherId = selectedVoucherId; // canonical
+      updateCartFromResponse(data);
       showToast('Đã áp dụng phiếu giảm giá!', 'success');
     } catch (error) {
       console.error('Lỗi khi áp dụng voucher:', error);
       showToast('Lỗi khi áp dụng voucher: ' + error.message, 'error');
     } finally {
-      isApplyingVoucher = false;     // ✅ trả cờ
+      isApplyingVoucher = false;
     }
   }
   async function applySelectedVouchers() {
@@ -2890,7 +3023,11 @@
           if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
           if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
         } catch (e) {
-          showToast(e.message, 'error');
+          tab.shipVoucherId = null;
+          tab.shippingDiscount = 0;
+          updateSummary(tab);
+          localStorage.setItem('orderTabs', JSON.stringify(tabs));
+          showToast(e.message || 'Không đủ điều kiện Freeship, đã gỡ mã.', 'warning');
         } finally {
           isApplyingVoucher = false;
         }
@@ -3639,6 +3776,8 @@
         tab.shippingFeeBase = raw;
         updateSummary(tab);
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        reapplyCurrentOrderVoucher();
+        reapplyCurrentShipVoucher();
 
         if (tab.voucherId && !isApplyingVoucher && prevBase !== raw) {
           applyVoucher(tab.voucherId);
