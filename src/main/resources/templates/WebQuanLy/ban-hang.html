@@ -1177,6 +1177,25 @@
     // cố định 11 số: 0 + 2 + 9 số
     return /^0(?:[35789]\d{8}|2\d{9})$/.test(n);
   }
+  function finalizePhoneInput() {
+    const el = document.getElementById('customerPhone');
+    if (!el) return '';
+
+    const n = normalizeVNPhone(el.value);        // đổi +84 → 0, bỏ ký tự lạ…
+    if (n && !isValidVNPhone(n) && n !== '0999999999') {
+      showToast('SĐT VN không hợp lệ: di động 10 số (03/05/07/08/09) hoặc cố định 11 số (02...)', 'warning');
+      return '';
+    }
+    el.value = n;                                // đẩy lại giá trị đã chuẩn hoá
+
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (tab) {
+      tab.customerPhone = n || '';
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    }
+    return n;
+  }
+
 
   function clearAddressUI() {
     const addressSection          = document.getElementById('addressSection');
@@ -3914,9 +3933,14 @@
     // Enter trên ô SĐT → tải địa chỉ
     const customerPhone = document.getElementById('customerPhone');
     if (customerPhone) {
-      customerPhone.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-          fetchCustomerAddresses();
+      customerPhone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();                // không submit form
+          const n = finalizePhoneInput();    // chuẩn hoá + lưu vào tab + validate
+          if (!n) return;                    // sai -> giữ focus, KHÔNG blur (tránh toast lặp)
+          setDeliveryVisibilityForPhone(n);  // cập nhật cho phép/khóa "Giao hàng"
+          fetchCustomerAddresses();          // nạp địa chỉ nếu có
+          customerPhone.blur();
         }
       });
     }
