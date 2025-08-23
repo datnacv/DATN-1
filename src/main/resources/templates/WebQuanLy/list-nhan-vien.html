@@ -13,9 +13,9 @@
         /* ===== MODERN DESIGN SYSTEM ===== */
         :root {
             --primary-black: #153054;
-            --soft-black: #153054; /* Changed from #1a1a1a */
-            --medium-black: #153054; /* Changed from #333333 */
-            --light-black: #153054; /* Changed from #666666 */
+            --soft-black: #153054;
+            --medium-black: #153054;
+            --light-black: #153054;
             --pure-white: #ffffff;
             --soft-white: #fafafa;
             --light-gray: #f5f5f5;
@@ -130,7 +130,7 @@
             left: 50%;
             transform: translateX(-50%);
             width: 10%;
-            height: 4px; /* Tăng độ dày lên 4px để đậm hơn */
+            height: 4px;
             background-color: #1e90ff;
         }
 
@@ -383,7 +383,7 @@
         .table {
             margin-bottom: 0;
             font-size: 14px;
-            min-width: 1500px; /* Tăng min-width để kéo dài cột */
+            min-width: 1500px;
         }
 
         .table thead th {
@@ -400,10 +400,10 @@
             top: 0;
             z-index: 10;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            white-space: nowrap; /* Ngăn tên cột xuống dòng */
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            min-width: 120px; /* Đảm bảo độ rộng tối thiểu cho cột */
+            min-width: 120px;
         }
 
         .table thead th i {
@@ -432,11 +432,11 @@
             border: none;
             color: var(--medium-black);
             font-weight: 400;
-            white-space: nowrap; /* Ngăn nội dung xuống dòng */
+            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 300px; /* Tăng max-width để hiển thị đầy đủ dữ liệu */
-            min-width: 120px; /* Đảm bảo độ rộng tối thiểu cho cột */
+            max-width: 300px;
+            min-width: 120px;
         }
 
         .table td[title] {
@@ -538,8 +538,8 @@
         }
 
         .status-inactive {
-            background-color: var(--danger-red); /* Changed to red */
-            color: var(--pure-white); /* Changed to white for contrast */
+            background-color: var(--danger-red);
+            color: var(--pure-white);
             border: 1px solid var(--danger-red);
         }
 
@@ -551,7 +551,7 @@
         .status-inactive::before {
             content: '●';
             font-size: 8px;
-            color: var(--pure-white); /* Changed to white for contrast */
+            color: var(--pure-white);
         }
 
         /* ===== PAGINATION ===== */
@@ -648,7 +648,7 @@
 
             .table {
                 font-size: 12px;
-                min-width: 900px; /* Điều chỉnh min-width cho màn hình nhỏ */
+                min-width: 900px;
             }
 
             .table td, .table th {
@@ -759,6 +759,14 @@
             z-index: 1000;
             box-shadow: var(--shadow-lg);
         }
+
+        /* ===== CUSTOM VALIDATION STYLES ===== */
+        .error-message {
+            color: var(--danger-red);
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -849,7 +857,7 @@
                         <td th:text="${employeeStat.index + 1}"></td>
                         <td class="long-text" th:text="${employee.hoTen}" th:data-full-text="${employee.hoTen}"></td>
                         <td class="long-text" th:text="${employee.tenDangNhap}" th:data-full-text="${employee.tenDangNhap}"></td>
-                        <td class="long-text" th:text="${employee.matKhau}" th:data-full-text="${employee.matKhau}"></td>
+                        <td class="long-text">******</td>
                         <td class="long-text" th:text="${employee.email}" th:data-full-text="${employee.email}"></td>
                         <td th:text="${employee.soDienThoai}"></td>
                         <td>
@@ -866,12 +874,6 @@
                                     th:data-bs-target="'#editEmployeeModal' + ${employee.id}"
                                     th:disabled="${!isAdmin}">
                                 <i class="fa-solid fa-edit"></i>
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm btn-action"
-                                    data-bs-toggle="modal"
-                                    th:data-bs-target="'#deleteEmployeeModal' + ${employee.id}"
-                                    th:disabled="${!isAdmin}">
-                                <i class="fa-solid fa-trash"></i>
                             </button>
                         </td>
                     </tr>
@@ -911,19 +913,20 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form th:action="@{/acvstore/employees/add}" th:object="${employee}" method="post">
+                        <form th:action="@{/acvstore/employees/add}" th:object="${employee}" method="post" onsubmit="return validateForm(event)" novalidate>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addHoTen" class="form-label">Họ tên <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="addHoTen" th:field="*{hoTen}" required>
+                                        <div id="hoTenError" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addTenDangNhap" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="addTenDangNhap" th:field="*{tenDangNhap}" required>
-                                        <div th:if="${#fields.hasErrors('tenDangNhap')}" th:errors="*{tenDangNhap}" class="text-danger small"></div>
+                                        <div id="tenDangNhapError" class="error-message"></div>
                                     </div>
                                 </div>
                             </div>
@@ -932,15 +935,14 @@
                                     <div class="mb-3">
                                         <label for="addEmail" class="form-label">Email <span class="text-danger">*</span></label>
                                         <input type="email" class="form-control" id="addEmail" th:field="*{email}" required>
-                                        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger small"></div>
+                                        <div id="emailError" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addSoDienThoai" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="addSoDienThoai" th:field="*{soDienThoai}"
-                                               required pattern="[0-9]{10}" title="Số điện thoại phải là 10 chữ số">
-                                        <div th:if="${#fields.hasErrors('soDienThoai')}" th:errors="*{soDienThoai}" class="text-danger small"></div>
+                                        <input type="text" class="form-control" id="addSoDienThoai" th:field="*{soDienThoai}" required>
+                                        <div id="soDienThoaiError" class="error-message"></div>
                                     </div>
                                 </div>
                             </div>
@@ -948,44 +950,50 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addMatKhau" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
-                                        <input type="password" class="form-control" id="addMatKhau" th:field="*{matKhau}"
-                                               required minlength="6">
-                                        <div th:if="${#fields.hasErrors('matKhau')}" th:errors="*{matKhau}" class="text-danger small"></div>
+                                        <input type="password" class="form-control" id="addMatKhau" th:field="*{matKhau}" required>
+                                        <div id="matKhauError" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addNgaySinh" class="form-label">Ngày sinh</label>
                                         <input type="date" class="form-control" id="addNgaySinh" th:field="*{ngaySinh}">
+                                        <div id="ngaySinhError" class="error-message"></div>
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="addGioiTinh" class="form-label">Giới tính</label>
-                                        <select class="form-select" id="addGioiTinh" th:field="*{gioiTinh}">
+                                        <label for="addGioiTinh" class="form-label">Giới tính <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="addGioiTinh" th:field="*{gioiTinh}" required>
+                                            <option value="">Chọn giới tính</option>
                                             <option value="true">Nam</option>
                                             <option value="false">Nữ</option>
                                         </select>
+                                        <div id="gioiTinhError" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label for="addVaiTro" class="form-label">Vai trò <span class="text-danger">*</span></label>
                                         <select class="form-select" id="addVaiTro" th:field="*{vaiTro}" required>
+                                            <option value="">Chọn vai trò</option>
                                             <option value="employee">Nhân viên</option>
                                             <option value="admin">Admin</option>
                                         </select>
+                                        <div id="vaiTroError" class="error-message"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="mb-3">
-                                        <label for="addTrangThai" class="form-label">Trạng thái</label>
-                                        <select class="form-select" id="addTrangThai" th:field="*{trangThai}">
+                                        <label for="addTrangThai" class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="addTrangThai" th:field="*{trangThai}" required>
+                                            <option value="">Chọn trạng thái</option>
                                             <option value="true">Hoạt động</option>
                                             <option value="false">Ngưng hoạt động</option>
                                         </select>
+                                        <div id="trangThaiError" class="error-message"></div>
                                     </div>
                                 </div>
                             </div>
@@ -994,6 +1002,7 @@
                                     <div class="mb-3">
                                         <label for="addChiTietDiaChi" class="form-label">Địa chỉ</label>
                                         <input type="text" class="form-control" id="addChiTietDiaChi" th:field="*{chiTietDiaChi}">
+                                        <div id="chiTietDiaChiError" class="error-message"></div>
                                     </div>
                                 </div>
                             </div>
@@ -1024,7 +1033,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <form th:action="@{/acvstore/employees/edit}" method="post">
+                            <form th:action="@{/acvstore/employees/edit}" method="post" novalidate>
                                 <input type="hidden" name="id" th:value="${employee.id}">
                                 <div class="row">
                                     <div class="col-md-6">
@@ -1126,44 +1135,6 @@
                 </div>
             </div>
         </th:block>
-
-        <!-- Modal Xóa nhân viên -->
-        <th:block th:each="employee : ${employees}">
-            <div class="modal fade" th:id="'deleteEmployeeModal' + ${employee.id}" tabindex="-1"
-                 th:aria-labelledby="'deleteEmployeeModalLabel' + ${employee.id}" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title" th:id="'deleteEmployeeModalLabel' + ${employee.id}">
-                                <i class="fa-solid fa-trash me-2"></i>Xác nhận xóa
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="text-center">
-                                <i class="fa-solid fa-exclamation-triangle text-warning" style="font-size: 48px;"></i>
-                                <h5 class="mt-3">Bạn có chắc chắn muốn xóa?</h5>
-                                <p class="text-muted">
-                                    Nhân viên: <strong th:text="${employee.hoTen}"></strong><br>
-                                    Email: <strong th:text="${employee.email}"></strong>
-                                </p>
-                                <p class="text-danger small">
-                                    <i class="fa-solid fa-warning me-1"></i>Hành động này không thể hoàn tác!
-                                </p>
-                            </div>
-                            <form th:action="@{/acvstore/employees/delete/{id}(id=${employee.id})}" method="post" class="text-center">
-                                <button type="button" class="btn btn-secondary me-3" data-bs-dismiss="modal">
-                                    <i class="fa-solid fa-times me-2"></i>Hủy
-                                </button>
-                                <button type="submit" class="btn btn-danger" th:disabled="${!isAdmin}">
-                                    <i class="fa-solid fa-trash me-2"></i>Xóa
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </th:block>
     </div>
 
     <!-- Scroll to top button -->
@@ -1199,6 +1170,132 @@
             }
         });
     });
+
+    // Form validation function
+    function validateForm(event) {
+        event.preventDefault();
+        let isValid = true;
+
+        // Reset error messages
+        document.querySelectorAll('.error-message').forEach(error => {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
+
+        // Current date for validation
+        const currentDate = new Date('2025-08-23');
+
+        // Validate Họ tên
+        const hoTen = document.getElementById('addHoTen').value;
+        const hoTenPattern = /^[a-zA-ZÀ-ỹ\s]+$/;
+        if (!hoTen.trim()) {
+            document.getElementById('hoTenError').textContent = 'Họ tên không được để trống';
+            document.getElementById('hoTenError').style.display = 'block';
+            isValid = false;
+        } else if (!hoTenPattern.test(hoTen) || hoTen.length > 100) {
+            document.getElementById('hoTenError').textContent = 'Họ tên chỉ được chứa chữ cái và khoảng trắng, tối đa 100 ký tự';
+            document.getElementById('hoTenError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Tên đăng nhập
+        const tenDangNhap = document.getElementById('addTenDangNhap').value;
+        const tenDangNhapPattern = /^[a-zA-Z0-9_]+$/;
+        if (!tenDangNhap.trim()) {
+            document.getElementById('tenDangNhapError').textContent = 'Tên đăng nhập không được để trống';
+            document.getElementById('tenDangNhapError').style.display = 'block';
+            isValid = false;
+        } else if (!tenDangNhapPattern.test(tenDangNhap) || tenDangNhap.length < 4 || tenDangNhap.length > 50) {
+            document.getElementById('tenDangNhapError').textContent = 'Tên đăng nhập chỉ chứa chữ cái, số, dấu gạch dưới, từ 4 đến 50 ký tự';
+            document.getElementById('tenDangNhapError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Email
+        const email = document.getElementById('addEmail').value;
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email.trim()) {
+            document.getElementById('emailError').textContent = 'Email không được để trống';
+            document.getElementById('emailError').style.display = 'block';
+            isValid = false;
+        } else if (!emailPattern.test(email)) {
+            document.getElementById('emailError').textContent = 'Email không hợp lệ';
+            document.getElementById('emailError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Số điện thoại
+        const soDienThoai = document.getElementById('addSoDienThoai').value;
+        if (!soDienThoai.trim()) {
+            document.getElementById('soDienThoaiError').textContent = 'Số điện thoại không được để trống';
+            document.getElementById('soDienThoaiError').style.display = 'block';
+            isValid = false;
+        } else if (!/^[0-9]{10}$/.test(soDienThoai)) {
+            document.getElementById('soDienThoaiError').textContent = 'Số điện thoại phải là 10 chữ số';
+            document.getElementById('soDienThoaiError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Mật khẩu
+        const matKhau = document.getElementById('addMatKhau').value;
+        if (!matKhau.trim()) {
+            document.getElementById('matKhauError').textContent = 'Mật khẩu không được để trống';
+            document.getElementById('matKhauError').style.display = 'block';
+            isValid = false;
+        } else if (matKhau.length < 6 || matKhau.length > 20) {
+            document.getElementById('matKhauError').textContent = 'Mật khẩu phải từ 6 đến 20 ký tự';
+            document.getElementById('matKhauError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Ngày sinh
+        const ngaySinh = document.getElementById('addNgaySinh').value;
+        if (ngaySinh) {
+            const birthDate = new Date(ngaySinh);
+            if (birthDate >= currentDate) {
+                document.getElementById('ngaySinhError').textContent = 'Ngày sinh phải là ngày trong quá khứ';
+                document.getElementById('ngaySinhError').style.display = 'block';
+                isValid = false;
+            }
+        }
+
+        // Validate Giới tính
+        const gioiTinh = document.getElementById('addGioiTinh').value;
+        if (!gioiTinh) {
+            document.getElementById('gioiTinhError').textContent = 'Vui lòng chọn giới tính';
+            document.getElementById('gioiTinhError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Vai trò
+        const vaiTro = document.getElementById('addVaiTro').value;
+        if (!vaiTro || !['employee', 'admin'].includes(vaiTro)) {
+            document.getElementById('vaiTroError').textContent = 'Vui lòng chọn vai trò hợp lệ (Nhân viên hoặc Admin)';
+            document.getElementById('vaiTroError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Trạng thái
+        const trangThai = document.getElementById('addTrangThai').value;
+        if (!trangThai || !['true', 'false'].includes(trangThai)) {
+            document.getElementById('trangThaiError').textContent = 'Vui lòng chọn trạng thái hợp lệ (Hoạt động hoặc Ngưng hoạt động)';
+            document.getElementById('trangThaiError').style.display = 'block';
+            isValid = false;
+        }
+
+        // Validate Địa chỉ
+        const chiTietDiaChi = document.getElementById('addChiTietDiaChi').value;
+        if (chiTietDiaChi && chiTietDiaChi.length > 200) {
+            document.getElementById('chiTietDiaChiError').textContent = 'Địa chỉ tối đa 200 ký tự';
+            document.getElementById('chiTietDiaChiError').style.display = 'block';
+            isValid = false;
+        }
+
+        if (isValid) {
+            event.target.submit();
+        }
+        return isValid;
+    }
 </script>
 <script th:src="@{/js/notification.js}"></script>
 </body>
