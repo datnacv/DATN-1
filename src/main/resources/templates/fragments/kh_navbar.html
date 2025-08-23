@@ -13,6 +13,13 @@
     font-size: 1.5rem; /* Kích thước logo */
   }
 
+  /* Added styles for logo image */
+  .navbar-logo img {
+    height: 32px;
+    width: auto;
+    object-fit: contain;
+  }
+
   /* Nút tìm kiếm trên mobile */
   .navbar-search-btn {
     flex: 0 0 auto;
@@ -71,6 +78,11 @@
       font-size: 1.25rem; /* Logo nhỏ hơn */
     }
 
+    /* Smaller logo on mobile */
+    .navbar-logo img {
+      height: 28px;
+    }
+
     .navbar-search-btn .fs-5 {
       font-size: 1.25rem !important; /* Icon tìm kiếm */
     }
@@ -96,6 +108,11 @@
       font-size: 1rem;
     }
 
+    /* Even smaller logo on very small screens */
+    .navbar-logo img {
+      height: 24px;
+    }
+
     #searchModal .form-control {
       font-size: 0.875rem;
     }
@@ -111,7 +128,11 @@
   <nav class="navbar navbar-expand-lg sticky-top shadow-sm" style="background: linear-gradient(135deg, #153054 0%, #1e4066 100%);">
     <div class="container d-flex align-items-center py-2">
       <!-- Logo -->
-      <a class="navbar-brand text-white fw-bold fs-4 navbar-logo" href="/">ACV Store</a>
+      <!-- Added logo image with ACV.png -->
+      <a class="navbar-brand text-white fw-bold fs-4 navbar-logo d-flex align-items-center" href="/">
+        <img src="/image/ACV.png" alt="ACV Store" class="me-2" style="height: 32px; width: auto;">
+        <span class="d-none d-sm-inline">ACV Store</span>
+      </a>
 
       <!-- Tìm kiếm (hiển thị trên desktop) -->
       <form class="navbar-search mx-8 position-relative d-none d-lg-flex" style="max-width: 900px;" action="/search" method="get">

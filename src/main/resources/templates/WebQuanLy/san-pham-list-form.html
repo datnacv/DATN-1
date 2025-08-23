@@ -1485,29 +1485,8 @@
                 const danhMucId = editSanPhamForm.querySelector('select[name="danhMucId"]').value;
                 const imageFile = editSanPhamForm.querySelector('input[name="imageFile"]').files[0];
 
-                // Client-side validation
-                if (!id) {
-                    showToast('ID sản phẩm không hợp lệ!', 'warning');
-                    return;
-                }
-                if (!maSanPham) {
-                    showToast('Mã sản phẩm không được để trống!', 'warning');
-                    return;
-                }
-                if (!maSanPham.match(/^[a-zA-Z0-9_-]+$/)) {
-                    showToast('Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới hoặc gạch ngang!', 'warning');
-                    return;
-                }
-                if (!tenSanPham) {
-                    showToast('Tên sản phẩm không được để trống!', 'warning');
-                    return;
-                }
-                if (!tenSanPham.match(/^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*$/)) {
-                    showToast('Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!', 'warning');
-                    return;
-                }
-                if (!danhMucId) {
-                    showToast('Vui lòng chọn danh mục!', 'warning');
+                if (!id || !maSanPham || !tenSanPham) {
+                    showToast('Vui lòng điền đầy đủ thông tin bắt buộc!', 'warning');
                     return;
                 }
 
@@ -1517,12 +1496,11 @@
                 formData.append('tenSanPham', tenSanPham);
                 formData.append('moTa', moTa || '');
                 formData.append('trangThai', trangThai);
-                formData.append('danhMucId', danhMucId);
+                if (danhMucId) formData.append('danhMucId', danhMucId);
                 if (imageFile) formData.append('imageFile', imageFile);
 
                 console.log('Sending FormData:', { id, maSanPham, tenSanPham, moTa, trangThai, danhMucId, imageFile });
-
-                fetchJson('/acvstore/san-pham/update', {
+                fetchJson('/acvstore/san-pham/save', {
                     method: 'POST',
                     body: formData
                 })
@@ -1543,22 +1521,20 @@
                                 const statusCell = row.cells[6];
                                 if (statusCell) {
                                     statusCell.innerHTML = `
-                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
-                                    <input class="form-check-input status-toggle" type="checkbox" ${sanPham.trangThai ? 'checked' : ''} data-id="${sanPham.id}" role="switch">
-                                    <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
-                                </div>`;
+                                        <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                            <input class="form-check-input status-toggle" type="checkbox" ${sanPham.trangThai ? 'checked' : ''} data-id="${sanPham.id}" role="switch">
+                                            <label class="form-check-label ms-2">${sanPham.trangThai ? 'Đang Bán' : 'Ngừng Bán'}</label>
+                                        </div>`;
                                 }
-                                row.cells[7].innerHTML = `<span class="fw-bold">${sanPham.thoiGianTao ? new Date(sanPham.thoiGianTao).toLocaleDateString('vi-VN') : 'N/A'}</span>`;
                             }
-                            showToast(data.message || 'Cập nhật sản phẩm thành công!', 'success');
+                            showToast("Cập nhật sản phẩm thành công!", "success");
                         } else {
-                            showToast(data.message || 'Không thể cập nhật sản phẩm.', 'warning');
+                            showToast(data.message || "Không thể lưu sản phẩm.", "warning");
                         }
                     })
                     .catch(err => {
-                        const tone = (err.status && err.status >= 400 && err.status < 500) ? 'warning' : 'error';
-                        const message = err.payload && err.payload.message ? err.payload.message : (err.message || 'Lỗi khi cập nhật sản phẩm.');
-                        showToast(message, tone);
+                        const tone = (err.status && err.status >= 400 && err.status < 500) ? "warning" : "error";
+                        showToast((tone === "warning" ? "" : "Lỗi khi lưu sản phẩm: ") + (err.message || "Có lỗi xảy ra."), tone);
                     });
             });
         }

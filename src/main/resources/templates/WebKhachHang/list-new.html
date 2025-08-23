@@ -29,6 +29,137 @@
         #confirmAddToCart.loading::after{content:'';display:inline-block;width:16px;height:16px;margin-left:8px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite}
         @keyframes spin{to{transform:rotate(360deg)}}
 
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
+        }.search-suggestions {
+             position: absolute;
+             top: 100%;
+             left: 0;
+             right: 0;
+             background: white;
+             border: 1px solid #ccc;
+             border-radius: 8px;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+             z-index: 1000;
+             max-height: 300px;
+             overflow-y: auto;
+             opacity: 0;
+             visibility: hidden;
+             transition: opacity 0.3s ease, visibility 0.3s ease;
+         }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
+        }
         /* Chatbot */
         #chatbot-box{position:fixed;bottom:100px;right:30px;width:420px;height:clamp(520px,70vh,640px);background:#fff;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);overflow:hidden;z-index:10000;opacity:0;transform:translateY(12px) scale(.98);pointer-events:none;visibility:hidden;transform-origin:bottom right;transition:opacity .25s ease,transform .25s ease,visibility .25s;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
         #chatbot-box.is-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;visibility:visible}
