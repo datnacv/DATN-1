@@ -52,7 +52,11 @@ public class AdminExchangeController {
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
     @GetMapping
-    public String listExchangeRequests(@RequestParam(defaultValue = "0") int page, Model model) {
+    public String listExchangeRequests(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String searchMaDonHang,
+            @RequestParam(required = false) String searchHoTen,
+            Model model) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         NguoiDung currentUser = auth != null && auth.getPrincipal() instanceof NguoiDung ? (NguoiDung) auth.getPrincipal() : null;
@@ -60,11 +64,22 @@ public class AdminExchangeController {
 
         Sort sort = Sort.by(Sort.Direction.DESC, "thoiGianDoi");
         Pageable pageable = PageRequest.of(page, 10, sort);
-        Page<LichSuDoiSanPham> exchangeRequests = lichSuDoiSanPhamRepository.findAll(pageable);
+
+        Page<LichSuDoiSanPham> exchangeRequests;
+        if ((searchMaDonHang != null && !searchMaDonHang.isEmpty()) || (searchHoTen != null && !searchHoTen.isEmpty())) {
+            exchangeRequests = lichSuDoiSanPhamRepository.findByMaDonHangOrHoTen(
+                    searchMaDonHang != null ? searchMaDonHang.trim() : "",
+                    searchHoTen != null ? searchHoTen.trim() : "",
+                    pageable);
+        } else {
+            exchangeRequests = lichSuDoiSanPhamRepository.findAll(pageable);
+        }
 
         model.addAttribute("exchangeRequests", exchangeRequests.getContent());
         model.addAttribute("currentPage", exchangeRequests.getNumber());
         model.addAttribute("totalPages", exchangeRequests.getTotalPages());
+        model.addAttribute("searchMaDonHang", searchMaDonHang);
+        model.addAttribute("searchHoTen", searchHoTen);
         return "WebQuanLy/exchange-requests";
     }
 

@@ -37,7 +37,7 @@
         @Transactional
         public NguoiDung saveCustomerWithDefaultAddress(NguoiDung customer) {
             // Set role & status chuẩn
-            customer.setVaiTro("CUSTOMER");
+            customer.setVaiTro("customer");
             customer.setTrangThai(true);
 
             // 1) Lưu user (service này đã validate + encode + set thoiGianTao)

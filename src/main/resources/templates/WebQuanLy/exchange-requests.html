@@ -561,6 +561,32 @@
     <div class="content" id="content">
         <h1 class="page-title">Quản lý yêu cầu đổi sản phẩm</h1>
 
+        <!-- Form tìm kiếm -->
+        <div class="info-section mb-4">
+            <div class="p-4">
+                <form th:action="@{/acvstore/exchange-requests}" method="get" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="searchMaDonHang" class="form-label">Mã hóa đơn</label>
+                        <input type="text" class="form-control" id="searchMaDonHang" name="searchMaDonHang"
+                               th:value="${searchMaDonHang}"
+                               placeholder="Nhập mã đơn hàng...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="searchHoTen" class="form-label">Tên khách hàng</label>
+                        <input type="text" class="form-control" id="searchHoTen" name="searchHoTen"
+                               th:value="${searchHoTen}"
+                               placeholder="Nhập tên khách hàng...">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Tìm kiếm
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+
         <div class="info-section">
             <div class="table-container">
                 <table>
