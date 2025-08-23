@@ -700,3 +700,11 @@ ALTER TABLE dbo.phieu_giam_gia
 
 ALTER TABLE dbo.phieu_giam_gia
 ALTER COLUMN pham_vi_ap_dung NVARCHAR(20) NOT NULL;
+
+ALTER TABLE don_hang ALTER COLUMN phi_van_chuyen     DECIMAL(18,2) NULL;
+ALTER TABLE don_hang ALTER COLUMN so_tien_khach_dua  DECIMAL(18,2) NULL;
+ALTER TABLE don_hang ALTER COLUMN tien_giam          DECIMAL(18,2) NULL;
+ALTER TABLE don_hang ALTER COLUMN tong_tien          DECIMAL(18,2) NOT NULL;
+
+ALTER TABLE chi_tiet_don_hang ALTER COLUMN gia        DECIMAL(18,2) NOT NULL;
+ALTER TABLE chi_tiet_don_hang ALTER COLUMN thanh_tien DECIMAL(18,2) NOT NULL;
