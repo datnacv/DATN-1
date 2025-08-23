@@ -112,9 +112,28 @@ public class CustomerController {
             return "redirect:/acvstore/customers";
         }
 
-
-
         try {
+
+            // Validate server-side
+            if (!customer.getHoTen().matches("^[A-Za-zÀ-ỹ\\s]+$")) {
+                throw new IllegalArgumentException("Họ tên chỉ được chứa chữ cái và khoảng trắng");
+            }
+            if (!customer.getTenDangNhap().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$")) {
+                throw new IllegalArgumentException("Tên đăng nhập phải chứa cả chữ cái và số");
+            }
+            if (!customer.getEmail().matches("^[a-zA-Z0-9._%+-]+@gmail\\.com$")) {
+                throw new IllegalArgumentException("Email phải có định dạng @gmail.com");
+            }
+            if (!customer.getSoDienThoai().matches("^[0-9]{10}$")) {
+                throw new IllegalArgumentException("Số điện thoại phải là 10 chữ số");
+            }
+            if (customer.getMatKhau().length() < 6) {
+                throw new IllegalArgumentException("Mật khẩu phải có ít nhất 6 ký tự");
+            }
+            if (tinhThanhPho == null || quanHuyen == null || phuongXa == null) {
+                throw new IllegalArgumentException("Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện, phường/xã");
+            }
+
             // Đặt các trường địa chỉ từ form vào customer để DiaChiKhachHangService xử lý
             customer.setTinhThanhPho(tinhThanhPho);
             customer.setQuanHuyen(quanHuyen);
@@ -126,8 +145,11 @@ public class CustomerController {
 
             redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thành công!");
             redirectAttributes.addFlashAttribute("messageType", "success");
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thất bại: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("messageType", "danger");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("message", "Thêm khách hàng thất bại: Lỗi hệ thống");
             redirectAttributes.addFlashAttribute("messageType", "danger");
         }
         return "redirect:/acvstore/customers";
@@ -147,6 +169,26 @@ public class CustomerController {
         }
 
         try {
+
+            // Validate server-side (giữ nguyên logic validate từ trước)
+            if (!customer.getHoTen().matches("^[A-Za-zÀ-ỹ\\s]+$")) {
+                throw new IllegalArgumentException("Họ tên chỉ được chứa chữ cái và khoảng trắng");
+            }
+            if (!customer.getTenDangNhap().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$")) {
+                throw new IllegalArgumentException("Tên đăng nhập phải chứa cả chữ cái và số");
+            }
+            if (!customer.getEmail().matches("^[a-zA-Z0-9._%+-]+@gmail\\.com$")) {
+                throw new IllegalArgumentException("Email phải có định dạng @gmail.com");
+            }
+            if (!customer.getSoDienThoai().matches("^[0-9]{10}$")) {
+                throw new IllegalArgumentException("Số điện thoại phải là 10 chữ số");
+            }
+            if (customer.getMatKhau().length() < 6) {
+                throw new IllegalArgumentException("Mật khẩu phải có ít nhất 6 ký tự");
+            }
+            if (tinhThanhPho == null || quanHuyen == null || phuongXa == null) {
+                throw new IllegalArgumentException("Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện, phường/xã");
+            }
             // Đặt các trường địa chỉ từ form vào customer để DiaChiKhachHangService xử lý
             customer.setTinhThanhPho(tinhThanhPho);
             customer.setQuanHuyen(quanHuyen);

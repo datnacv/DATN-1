@@ -601,7 +601,7 @@
                         <span th:unless="${defaultAddresses[customerStat.index] != null}" class="text-muted">Chưa có địa chỉ</span>
                     </td>
                     <td>
-                        <span class="badge bg-primary" th:text="${customer.vaiTro == 'customer' ? 'Khách Hàng' : customer.vaiTro}"></span>
+                        <span class="badge bg-primary" th:text="${customer.vaiTro}"></span>
                     </td>
                     <td>
                         <span class="badge" th:classappend="${customer.trangThai} ? 'bg-success' : 'bg-danger'"
@@ -651,26 +651,20 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form th:action="@{/acvstore/customers/add}" th:object="${customer}" method="post">
+                        <form id="addCustomerForm" th:action="@{/acvstore/customers/add}" th:object="${customer}" method="post" novalidate>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addHoTen" class="form-label">Họ tên <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="addHoTen" th:field="*{hoTen}"
-                                               required
-                                               pattern="[A-Za-zÀ-ỹ\s]+"
-                                               title="Họ tên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt">
-                                        <div th:if="${#fields.hasErrors('hoTen')}" th:errors="*{hoTen}" class="text-danger small"></div>
+                                        <input type="text" class="form-control" id="addHoTen" th:field="*{hoTen}" required>
+                                        <div class="text-danger small error-message" id="addHoTenError"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addTenDangNhap" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="addTenDangNhap" th:field="*{tenDangNhap}"
-                                               required
-                                               pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$"
-                                               title="Tên đăng nhập phải chứa cả chữ cái và số">
-                                        <div th:if="${#fields.hasErrors('tenDangNhap')}" th:errors="*{tenDangNhap}" class="text-danger small"></div>
+                                        <input type="text" class="form-control" id="addTenDangNhap" th:field="*{tenDangNhap}" required>
+                                        <div class="text-danger small error-message" id="addTenDangNhapError"></div>
                                     </div>
                                 </div>
                             </div>
@@ -679,19 +673,15 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" id="addEmail" th:field="*{email}"
-                                               required
-                                               pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$"
-                                               title="Email phải có định dạng @gmail.com">
-                                        <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger small"></div>
+                                        <input type="email" class="form-control" id="addEmail" th:field="*{email}" required>
+                                        <div class="text-danger small error-message" id="addEmailError"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addSoDienThoai" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="addSoDienThoai" th:field="*{soDienThoai}"
-                                               required pattern="[0-9]{10}" title="Số điện thoại phải là 10 chữ số">
-                                        <div th:if="${#fields.hasErrors('soDienThoai')}" th:errors="*{soDienThoai}" class="text-danger small"></div>
+                                        <input type="text" class="form-control" id="addSoDienThoai" th:field="*{soDienThoai}" required>
+                                        <div class="text-danger small error-message" id="addSoDienThoaiError"></div>
                                     </div>
                                 </div>
                             </div>
@@ -700,15 +690,15 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addMatKhau" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
-                                        <input type="password" class="form-control" id="addMatKhau" th:field="*{matKhau}"
-                                               required minlength="6">
-                                        <div th:if="${#fields.hasErrors('matKhau')}" th:errors="*{matKhau}" class="text-danger small"></div>
+                                        <input type="password" class="form-control" id="addMatKhau" th:field="*{matKhau}" required>
+                                        <div class="text-danger small error-message" id="addMatKhauError"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addNgaySinh" class="form-label">Ngày sinh</label>
                                         <input type="date" class="form-control" id="addNgaySinh" th:field="*{ngaySinh}">
+                                        <div class="text-danger small error-message" id="addNgaySinhError"></div>
                                     </div>
                                 </div>
                             </div>
@@ -721,6 +711,7 @@
                                             <option value="true">Nam</option>
                                             <option value="false">Nữ</option>
                                         </select>
+                                        <div class="text-danger small error-message" id="addGioiTinhError"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -729,6 +720,7 @@
                                         <select class="form-select" id="addTinhThanhPho" name="tinhThanhPho" required>
                                             <option value="">Chọn tỉnh/thành phố</option>
                                         </select>
+                                        <div class="text-danger small error-message" id="addTinhThanhPhoError"></div>
                                     </div>
                                 </div>
                             </div>
@@ -740,6 +732,7 @@
                                         <select class="form-select" id="addQuanHuyen" name="quanHuyen" required>
                                             <option value="">Chọn quận/huyện</option>
                                         </select>
+                                        <div class="text-danger small error-message" id="addQuanHuyenError"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -748,6 +741,7 @@
                                         <select class="form-select" id="addPhuongXa" name="phuongXa" required>
                                             <option value="">Chọn phường/xã</option>
                                         </select>
+                                        <div class="text-danger small error-message" id="addPhuongXaError"></div>
                                     </div>
                                 </div>
                             </div>
@@ -757,6 +751,7 @@
                                     <div class="mb-3">
                                         <label for="addChiTietDiaChi" class="form-label">Địa chỉ chi tiết</label>
                                         <input type="text" class="form-control" id="addChiTietDiaChi" name="chiTietDiaChi">
+                                        <div class="text-danger small error-message" id="addChiTietDiaChiError"></div>
                                     </div>
                                 </div>
                             </div>
@@ -787,7 +782,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <form th:action="@{/acvstore/customers/edit}" method="post">
+                            <form th:action="@{/acvstore/customers/edit}" method="post" novalidate>
                                 <input type="hidden" name="id" th:value="${customer.id}">
 
                                 <div class="row">
@@ -795,20 +790,16 @@
                                         <div class="mb-3">
                                             <label class="form-label">Họ tên <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" name="hoTen"
-                                                   th:value="${customer.hoTen}"
-                                                   required
-                                                   pattern="[A-Za-zÀ-ỹ\s]+"
-                                                   title="Họ tên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt">
+                                                   th:value="${customer.hoTen}" required>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" name="tenDangNhap"
-                                                   th:value="${customer.tenDangNhap}"
-                                                   required
-                                                   pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$"
-                                                   title="Tên đăng nhập phải chứa cả chữ cái và số">
+                                                   th:value="${customer.tenDangNhap}" required>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -818,17 +809,16 @@
                                         <div class="mb-3">
                                             <label class="form-label">Email <span class="text-danger">*</span></label>
                                             <input type="email" class="form-control" name="email"
-                                                   th:value="${customer.email}"
-                                                   required
-                                                   pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$"
-                                                   title="Email phải có định dạng @gmail.com">
+                                                   th:value="${customer.email}" required>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" name="soDienThoai"
-                                                   th:value="${customer.soDienThoai}" required pattern="[0-9]{10}">
+                                                   th:value="${customer.soDienThoai}" required>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -838,7 +828,8 @@
                                         <div class="mb-3">
                                             <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
                                             <input type="password" class="form-control" name="matKhau"
-                                                   th:value="${customer.matKhau}" required minlength="6">
+                                                   th:value="${customer.matKhau}" required>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -846,6 +837,7 @@
                                             <label class="form-label">Ngày sinh</label>
                                             <input type="date" class="form-control" name="ngaySinh"
                                                    th:value="${customer.ngaySinh != null ? #temporals.format(customer.ngaySinh, 'yyyy-MM-dd') : ''}">
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -858,6 +850,7 @@
                                                 <option value="true" th:selected="${customer.gioiTinh == true}">Nam</option>
                                                 <option value="false" th:selected="${customer.gioiTinh == false}">Nữ</option>
                                             </select>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -867,6 +860,7 @@
                                                 <option value="true" th:selected="${customer.trangThai == true}">Kích hoạt</option>
                                                 <option value="false" th:selected="${customer.trangThai == false}">Vô hiệu hóa</option>
                                             </select>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -880,6 +874,7 @@
                                                     th:data-current-value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].tinhThanhPho : ''}">
                                                 <option value="">Chọn tỉnh/thành phố</option>
                                             </select>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -890,6 +885,7 @@
                                                     th:data-current-value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].quanHuyen : ''}">
                                                 <option value="">Chọn quận/huyện</option>
                                             </select>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -903,6 +899,7 @@
                                                     th:data-current-value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].phuongXa : ''}">
                                                 <option value="">Chọn phường/xã</option>
                                             </select>
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -910,6 +907,7 @@
                                             <label class="form-label">Địa chỉ chi tiết</label>
                                             <input type="text" class="form-control" name="chiTietDiaChi"
                                                    th:value="${defaultAddresses[customerStat.index] != null ? defaultAddresses[customerStat.index].chiTietDiaChi : ''}">
+                                            <div class="text-danger small error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -935,6 +933,220 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+        // Hàm validate cho form thêm khách hàng
+        function validateAddCustomerForm() {
+            let isValid = true;
+            const hoTen = document.getElementById('addHoTen');
+            const tenDangNhap = document.getElementById('addTenDangNhap');
+            const email = document.getElementById('addEmail');
+            const soDienThoai = document.getElementById('addSoDienThoai');
+            const matKhau = document.getElementById('addMatKhau');
+            const ngaySinh = document.getElementById('addNgaySinh');
+            const tinhThanhPho = document.getElementById('addTinhThanhPho');
+            const quanHuyen = document.getElementById('addQuanHuyen');
+            const phuongXa = document.getElementById('addPhuongXa');
+
+            // Xóa thông báo lỗi cũ
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+            // Validate Họ tên
+            const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/;
+            if (!hoTen.value.trim()) {
+                document.getElementById('addHoTenError').textContent = 'Họ tên không được để trống';
+                isValid = false;
+            } else if (!hoTenRegex.test(hoTen.value.trim())) {
+                document.getElementById('addHoTenError').textContent = 'Họ tên chỉ được chứa chữ cái và khoảng trắng';
+                isValid = false;
+            }
+
+            // Validate Tên đăng nhập
+            const tenDangNhapRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/;
+            if (!tenDangNhap.value.trim()) {
+                document.getElementById('addTenDangNhapError').textContent = 'Tên đăng nhập không được để trống';
+                isValid = false;
+            } else if (!tenDangNhapRegex.test(tenDangNhap.value.trim())) {
+                document.getElementById('addTenDangNhapError').textContent = 'Tên đăng nhập phải chứa cả chữ cái và số';
+                isValid = false;
+            }
+
+            // Validate Email
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+            if (!email.value.trim()) {
+                document.getElementById('addEmailError').textContent = 'Email không được để trống';
+                isValid = false;
+            } else if (!emailRegex.test(email.value.trim())) {
+                document.getElementById('addEmailError').textContent = 'Email phải có định dạng @gmail.com';
+                isValid = false;
+            }
+
+            // Validate Số điện thoại
+            const soDienThoaiRegex = /^[0-9]{10}$/;
+            if (!soDienThoai.value.trim()) {
+                document.getElementById('addSoDienThoaiError').textContent = 'Số điện thoại không được để trống';
+                isValid = false;
+            } else if (!soDienThoaiRegex.test(soDienThoai.value.trim())) {
+                document.getElementById('addSoDienThoaiError').textContent = 'Số điện thoại phải là 10 chữ số';
+                isValid = false;
+            }
+
+            // Validate Mật khẩu
+            if (!matKhau.value.trim()) {
+                document.getElementById('addMatKhauError').textContent = 'Mật khẩu không được để trống';
+                isValid = false;
+            } else if (matKhau.value.length < 6) {
+                document.getElementById('addMatKhauError').textContent = 'Mật khẩu phải có ít nhất 6 ký tự';
+                isValid = false;
+            }
+
+            // Validate Ngày sinh (tùy chọn, chỉ kiểm tra định dạng nếu có giá trị)
+            if (ngaySinh.value) {
+                const today = new Date();
+                const birthDate = new Date(ngaySinh.value);
+                if (birthDate > today) {
+                    document.getElementById('addNgaySinhError').textContent = 'Ngày sinh không được lớn hơn ngày hiện tại';
+                    isValid = false;
+                }
+            }
+
+            // Validate Tỉnh/Thành phố
+            if (!tinhThanhPho.value) {
+                document.getElementById('addTinhThanhPhoError').textContent = 'Vui lòng chọn tỉnh/thành phố';
+                isValid = false;
+            }
+
+            // Validate Quận/Huyện
+            if (!quanHuyen.value) {
+                document.getElementById('addQuanHuyenError').textContent = 'Vui lòng chọn quận/huyện';
+                isValid = false;
+            }
+
+            // Validate Phường/Xã
+            if (!phuongXa.value) {
+                document.getElementById('addPhuongXaError').textContent = 'Vui lòng chọn phường/xã';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Gắn sự kiện submit cho form thêm khách hàng
+        const addCustomerForm = document.getElementById('addCustomerForm');
+        if (addCustomerForm) {
+            addCustomerForm.addEventListener('submit', function (event) {
+                if (!validateAddCustomerForm()) {
+                    event.preventDefault(); // Ngăn form submit nếu validate thất bại
+                }
+            });
+        }
+
+        // Hàm validate cho form chỉnh sửa khách hàng
+        function validateEditCustomerForm(form) {
+            let isValid = true;
+            const hoTen = form.querySelector('input[name="hoTen"]');
+            const tenDangNhap = form.querySelector('input[name="tenDangNhap"]');
+            const email = form.querySelector('input[name="email"]');
+            const soDienThoai = form.querySelector('input[name="soDienThoai"]');
+            const matKhau = form.querySelector('input[name="matKhau"]');
+            const ngaySinh = form.querySelector('input[name="ngaySinh"]');
+            const tinhThanhPho = form.querySelector('select[name="tinhThanhPho"]');
+            const quanHuyen = form.querySelector('select[name="quanHuyen"]');
+            const phuongXa = form.querySelector('select[name="phuongXa"]');
+
+            // Xóa thông báo lỗi cũ
+            form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+            // Validate Họ tên
+            const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/;
+            if (!hoTen.value.trim()) {
+                hoTen.nextElementSibling.textContent = 'Họ tên không được để trống';
+                isValid = false;
+            } else if (!hoTenRegex.test(hoTen.value.trim())) {
+                hoTen.nextElementSibling.textContent = 'Họ tên chỉ được chứa chữ cái và khoảng trắng';
+                isValid = false;
+            }
+
+            // Validate Tên đăng nhập
+            const tenDangNhapRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$/;
+            if (!tenDangNhap.value.trim()) {
+                tenDangNhap.nextElementSibling.textContent = 'Tên đăng nhập không được để trống';
+                isValid = false;
+            } else if (!tenDangNhapRegex.test(tenDangNhap.value.trim())) {
+                tenDangNhap.nextElementSibling.textContent = 'Tên đăng nhập phải chứa cả chữ cái và số';
+                isValid = false;
+            }
+
+            // Validate Email
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+            if (!email.value.trim()) {
+                email.nextElementSibling.textContent = 'Email không được để trống';
+                isValid = false;
+            } else if (!emailRegex.test(email.value.trim())) {
+                email.nextElementSibling.textContent = 'Email phải có định dạng @gmail.com';
+                isValid = false;
+            }
+
+            // Validate Số điện thoại
+            const soDienThoaiRegex = /^[0-9]{10}$/;
+            if (!soDienThoai.value.trim()) {
+                soDienThoai.nextElementSibling.textContent = 'Số điện thoại không được để trống';
+                isValid = false;
+            } else if (!soDienThoaiRegex.test(soDienThoai.value.trim())) {
+                soDienThoai.nextElementSibling.textContent = 'Số điện thoại phải là 10 chữ số';
+                isValid = false;
+            }
+
+            // Validate Mật khẩu
+            if (!matKhau.value.trim()) {
+                matKhau.nextElementSibling.textContent = 'Mật khẩu không được để trống';
+                isValid = false;
+            } else if (matKhau.value.length < 6) {
+                matKhau.nextElementSibling.textContent = 'Mật khẩu phải có ít nhất 6 ký tự';
+                isValid = false;
+            }
+
+            // Validate Ngày sinh (tùy chọn)
+            if (ngaySinh.value) {
+                const today = new Date();
+                const birthDate = new Date(ngaySinh.value);
+                if (birthDate > today) {
+                    ngaySinh.nextElementSibling.textContent = 'Ngày sinh không được lớn hơn ngày hiện tại';
+                    isValid = false;
+                }
+            }
+
+            // Validate Tỉnh/Thành phố
+            if (!tinhThanhPho.value) {
+                tinhThanhPho.nextElementSibling.textContent = 'Vui lòng chọn tỉnh/thành phố';
+                isValid = false;
+            }
+
+            // Validate Quận/Huyện
+            if (!quanHuyen.value) {
+                quanHuyen.nextElementSibling.textContent = 'Vui lòng chọn quận/huyện';
+                isValid = false;
+            }
+
+            // Validate Phường/Xã
+            if (!phuongXa.value) {
+                phuongXa.nextElementSibling.textContent = 'Vui lòng chọn phường/xã';
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Gắn sự kiện submit cho các form chỉnh sửa
+        const editCustomerForms = document.querySelectorAll('form[action="/acvstore/customers/edit"]');
+        editCustomerForms.forEach(form => {
+            form.addEventListener('submit', function (event) {
+                if (!validateEditCustomerForm(form)) {
+                    event.preventDefault(); // Ngăn form submit nếu validate thất bại
+                }
+            });
+        });
+
+
         let provincesData = [];
 
         async function fetchProvinces() {
