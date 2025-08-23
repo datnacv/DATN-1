@@ -1141,6 +1141,10 @@
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+  // đặt gần đầu script
+  const getAvailableStock = (item) =>
+          Number(item?.availableStock ?? item?.stockQuantity ?? item?.soLuongTonKho ?? 0);
+
   // Chuyển "12.345 VNĐ" -> 12345
   const unformatCurrency = (v) => parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0;
   // Chuyển 12345 -> "12.345"
@@ -1521,15 +1525,17 @@
     cart.forEach((item, index) => {
       const row = document.createElement("tr");
 
-      const actualStock = parseInt(item.availableStock || 0);
+      const actualStock = getAvailableStock(item);
       const currentQuantity = parseInt(item.soLuong || 0);
+      const maxAllowed = currentQuantity + Math.max(0, actualStock);
+
       const price = parseFloat(item.gia || 0);
       const totalPrice = parseFloat(item.thanhTien || 0);
       const originalPrice = parseFloat(item.originalPrice || item.gia);
       const phanTramGiam = parseFloat(item.phanTramGiam || 0);
 
       const isMinQuantity = currentQuantity <= 1;
-      const isMaxQuantity = actualStock === 0; // Chỉ vô hiệu hóa khi tồn kho khả dụng bằng 0
+      const isMaxQuantity = maxAllowed <= currentQuantity;
       const isOverStock = actualStock < 0;
 
       const stockWarning = isOverStock
@@ -1573,20 +1579,21 @@
         <div class="quantity-controls" data-index="${index}">
           <button class="quantity-btn btn btn-danger btn-sm ${isMinQuantity ? "disabled" : ""}"
                   ${isMinQuantity ? "disabled" : ""}
-                  onclick="updateQuantity(${index}, -1, '${item.idChiTietSanPham}', ${actualStock})"
+                  onclick="updateQuantity(${index}, -1, '${item.idChiTietSanPham}', ${maxAllowed})"
                   title="${isMinQuantity ? "Không thể giảm thêm" : "Giảm số lượng"}">
             <i class="fas fa-minus"></i>
           </button>
           <input type="number"
                  min="1"
                  value="${currentQuantity}"
+                 max="${maxAllowed}"
                  class="form-control form-control-sm text-center fw-bold ${isOverStock ? "text-danger" : ""}"
                  style="width: 70px;"
-                 onchange="updateQuantityFromInput(${index}, this.value, '${item.idChiTietSanPham}', ${actualStock})"
-                 onblur="validateQuantityInput(this, ${actualStock}, ${index})">
+                 onchange="updateQuantityFromInput(${index}, this.value, '${item.idChiTietSanPham}', ${maxAllowed})"
+                 onblur="validateQuantityInput(this, ${maxAllowed}, ${index})">
           <button class="quantity-btn btn btn-success btn-sm ${isMaxQuantity ? "disabled" : ""}"
                   ${isMaxQuantity ? "disabled" : ""}
-                  onclick="updateQuantity(${index}, 1, '${item.idChiTietSanPham}', ${actualStock})"
+                  onclick="updateQuantity(${index}, 1, '${item.idChiTietSanPham}', ${maxAllowed})"
                   title="${isMaxQuantity ? "Hết tồn kho khả dụng" : "Tăng số lượng"}">
             <i class="fas fa-plus"></i>
           </button>
@@ -1609,7 +1616,7 @@
   }
 
   // Cải thiện hàm updateQuantity với kiểm tra tồn kho chặt chẽ
-  async function updateQuantity(index, delta, productDetailId, maxStock) {
+  async function updateQuantity(index, delta, productDetailId, maxAllowed) {
     if (isUpdating) {
       showToast("Đang xử lý, vui lòng đợi...", "warning");
       return;
@@ -1624,6 +1631,11 @@
     const currentItem = tab.cart[index];
     const currentQuantity = parseInt(currentItem.soLuong || 0);
     let newQuantity = currentQuantity + delta;
+
+    if (Number.isFinite(maxAllowed) && newQuantity > maxAllowed) {
+      showToast(`Số lượng tối đa là ${maxAllowed}.`, "warning");
+      return;
+    }
 
     if (newQuantity < 1) {
       newQuantity = 1;
@@ -1684,7 +1696,7 @@
 
 
   // Hàm mới để xử lý input trực tiếp từ ô nhập số lượng
-  async function updateQuantityFromInput(index, inputValue, productDetailId, maxStock) {
+  async function updateQuantityFromInput(index, inputValue, productDetailId, maxAllowed) {
     const quantity = parseInt(inputValue);
     const tab = tabs.find((t) => t.id === currentTabId);
     if (!tab || !tab.cart[index]) return;
@@ -1698,21 +1710,19 @@
       return;
     }
 
-    if (quantity > maxStock) {
-      showToast(`Số lượng không được vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
+    if (Number.isFinite(maxAllowed) && quantity > maxAllowed) {
+      showToast(`Số lượng không được vượt quá ${maxAllowed}.`, "warning");
       const input = document.querySelector(`.quantity-controls[data-index="${index}"] input`);
-      if (input) input.value = Math.min(currentQuantity, maxStock);
+      if (input) input.value = Math.min(currentQuantity, maxAllowed);
       return;
     }
 
     const delta = quantity - currentQuantity;
-    if (delta !== 0) {
-      await updateQuantity(index, delta, productDetailId, maxStock);
-    }
+    if (delta !== 0) await updateQuantity(index, delta, productDetailId, maxAllowed);
   }
 
   // Hàm validate input khi người dùng rời khỏi ô nhập
-  function validateQuantityInput(inputElement, maxStock, index) {
+  function validateQuantityInput(inputElement, maxAllowed, index) {
     const value = parseInt(inputElement.value);
     const tab = tabs.find((t) => t.id === currentTabId);
 
@@ -1723,9 +1733,9 @@
     if (isNaN(value) || value < 1) {
       inputElement.value = currentQuantity;
       showToast("Số lượng tối thiểu là 1.", "warning");
-    } else if (value > maxStock) {
-      inputElement.value = Math.min(currentQuantity, maxStock);
-      showToast(`Số lượng tối đa là ${maxStock} (tồn kho khả dụng).`, "warning");
+    } else if (Number.isFinite(maxAllowed) && value > maxAllowed) {
+      inputElement.value = Math.min(currentQuantity, maxAllowed);
+      showToast(`Số lượng tối đa là ${maxAllowed}.`, "warning");
     }
   }
 
@@ -1790,12 +1800,15 @@
       const existingIndex = tab.cart.findIndex((item) => item.idChiTietSanPham === productDetailId);
       if (existingIndex >= 0) {
         const currentQuantity = tab.cart[existingIndex].soLuong;
+        const available   = Number(maxStock);
+        const maxAllowed  = currentQuantity + Math.max(0, available);
         const newTotalQuantity = currentQuantity + quantity;
-        if (newTotalQuantity > maxStock) {
-          showToast(`Tổng số lượng sẽ vượt quá ${maxStock} (tồn kho khả dụng).`, "warning");
+
+        if (newTotalQuantity > maxAllowed) {
+          showToast(`Tổng số lượng tối đa là ${maxAllowed}.`, "warning");
           return;
         }
-        await updateQuantity(existingIndex, quantity, productDetailId, maxStock);
+        await updateQuantity(existingIndex, quantity, productDetailId, maxAllowed);
         document.getElementById("variantModal").style.display = "none";
         return;
       }
@@ -1888,9 +1901,10 @@
       // Kiểm tra sản phẩm đã tồn tại
       const existingIndex = tab.cart.findIndex(item => item.idChiTietSanPham === productDetailId);
       if (existingIndex >= 0) {
-        const currentQuantity = tab.cart[existingIndex].soLuong;
-        const maxStock = tab.cart[existingIndex].soLuongTonKho || tab.cart[existingIndex].stockQuantity || 0;
-        await updateQuantity(existingIndex, 1, productDetailId, maxStock);
+        const currentQuantity = Number(tab.cart[existingIndex].soLuong || 0);
+        const available       = getAvailableStock(tab.cart[existingIndex]);
+        const maxAllowed      = currentQuantity + Math.max(0, available);
+        await updateQuantity(existingIndex, 1, productDetailId, maxAllowed);
         return;
       }
 
@@ -1923,6 +1937,7 @@
 
       const data = await response.json();
       updateCartFromResponse(data);
+      await refreshCartFromServer();
       showToast('Đã thêm sản phẩm vào giỏ hàng!', 'success');
     } catch (error) {
       console.error('Lỗi khi thêm sản phẩm:', error);
