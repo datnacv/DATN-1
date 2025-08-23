@@ -510,6 +510,10 @@
         }
     });
 </script>
+<script th:if="${successMessage}">
+    try { sessionStorage.removeItem('voucherCreateFormState'); } catch(e){}
+</script>
+
 <script th:src="@{/js/notification.js}"></script>
 </body>
 </html>

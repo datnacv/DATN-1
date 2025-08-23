@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Service
 public class CoAoService {
@@ -18,6 +19,10 @@ public class CoAoService {
 
     @Autowired
     private ChiTietSanPhamRepository sanPhamChiTietRepository;
+
+    // Regex: cho phép chữ cái (kể cả tiếng Việt) và khoảng trắng giữa các từ,
+    // không cho phép khoảng trắng đầu/cuối, số hoặc ký tự đặc biệt
+    private static final Pattern NAME_PATTERN = Pattern.compile("^(\\p{L}{2,})(\\s\\p{L}{2,})*$");
 
     // Lấy danh sách cổ áo với phân trang
     public Page<CoAo> getAllCoAo(Pageable pageable) {
@@ -41,14 +46,42 @@ public class CoAoService {
     }
 
     public CoAo saveCoAo(CoAo coAo) throws IllegalArgumentException {
-        if (coAo.getTenCoAo() == null || coAo.getTenCoAo().trim().isEmpty()) {
+        // Kiểm tra tên cổ áo null hoặc rỗng
+        if (coAo.getTenCoAo() == null || coAo.getTenCoAo().isEmpty()) {
             throw new IllegalArgumentException("Tên cổ áo không được để trống");
         }
-        if (coAoRepository.findByTenCoAoContainingIgnoreCase(coAo.getTenCoAo())
+
+        // Kiểm tra khoảng trắng đầu
+        if (coAo.getTenCoAo().startsWith(" ")) {
+            throw new IllegalArgumentException("Tên cổ áo không được bắt đầu bằng khoảng trắng");
+        }
+
+        // Trim tên cổ áo
+        String trimmedTenCoAo = coAo.getTenCoAo().trim();
+
+        // Kiểm tra sau khi trim còn rỗng không
+        if (trimmedTenCoAo.isEmpty()) {
+            throw new IllegalArgumentException("Tên cổ áo không được để trống");
+        }
+
+        // Kiểm tra định dạng tên cổ áo
+        if (!NAME_PATTERN.matcher(trimmedTenCoAo).matches()) {
+            throw new IllegalArgumentException(
+                    "Tên cổ áo chỉ được chứa chữ cái và khoảng trắng giữa các từ, " +
+                            "không được chứa số, ký tự đặc biệt hoặc khoảng trắng ở cuối"
+            );
+        }
+
+        // Kiểm tra trùng lặp tên cổ áo
+        if (coAoRepository.findByTenCoAoContainingIgnoreCase(trimmedTenCoAo)
                 .stream()
-                .anyMatch(c -> !c.getId().equals(coAo.getId()) && c.getTenCoAo().equalsIgnoreCase(coAo.getTenCoAo()))) {
+                .anyMatch(c -> !c.getId().equals(coAo.getId()) &&
+                        c.getTenCoAo().equalsIgnoreCase(trimmedTenCoAo))) {
             throw new IllegalArgumentException("Tên cổ áo đã tồn tại");
         }
+
+        // Set lại tên đã trim
+        coAo.setTenCoAo(trimmedTenCoAo);
         return coAoRepository.save(coAo);
     }
 

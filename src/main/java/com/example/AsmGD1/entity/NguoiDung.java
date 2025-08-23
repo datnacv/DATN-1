@@ -1,6 +1,10 @@
 package com.example.AsmGD1.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority; // Import này
 import org.springframework.security.core.authority.SimpleGrantedAuthority; // Import này
@@ -22,18 +26,33 @@ public class NguoiDung implements UserDetails { // Thêm "implements UserDetails
     @Column(columnDefinition = "UNIQUEIDENTIFIER")
     private UUID id;
 
+    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$", message = "Tên đăng nhập phải chứa cả chữ cái và số")
     @Column(name = "ten_dang_nhap", nullable = false, length = 50, unique = true)
     private String tenDangNhap;
 
+
+    @NotBlank(message = "Mật khẩu không được để trống")
+    @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
     @Column(name = "mat_khau", nullable = false, length = 100)
     private String matKhau;
 
+
+    @NotBlank(message = "Họ tên không được để trống")
+    @Pattern(regexp = "[A-Za-zÀ-ỹ\\s]+", message = "Họ tên chỉ được chứa chữ cái và khoảng trắng")
     @Column(name = "ho_ten", nullable = false, length = 100)
     private String hoTen;
 
+
+    @NotBlank(message = "Email không được để trống")
+    @Email(message = "Email không hợp lệ")
+    @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@gmail\\.com$", message = "Email phải có định dạng @gmail.com")
     @Column(name = "email", nullable = false, length = 100, unique = true)
     private String email;
 
+
+    @NotBlank(message = "Số điện thoại không được để trống")
+    @Pattern(regexp = "[0-9]{10}", message = "Số điện thoại phải chứa đúng 10 chữ số")
     @Column(name = "so_dien_thoai", nullable = false, length = 20, unique = true)
     private String soDienThoai;
 

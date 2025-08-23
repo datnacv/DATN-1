@@ -29,7 +29,7 @@ public class KichCoService {
         return kichCoRepository.findAll();
     }
 
-    // Tìm kiếm kích cỡ với phân trang (trim input để tránh khoảng trắng)
+    // Tìm kiếm kích cỡ với phân trang
     public Page<KichCo> searchKichCo(String ten, Pageable pageable) {
         String keyword = (ten == null) ? "" : ten.trim();
         return kichCoRepository.findByTenContainingIgnoreCase(keyword, pageable);
@@ -37,25 +37,31 @@ public class KichCoService {
 
     public KichCo getKichCoById(UUID id) {
         return kichCoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("KichCo not found with id: " + id));
+                .orElseThrow(() -> new RuntimeException("Kích cỡ không tồn tại với ID: " + id));
     }
 
     public KichCo saveKichCo(KichCo kichCo) throws IllegalArgumentException {
-        if (kichCo.getTen() == null || kichCo.getTen().trim().isEmpty()) {
+        // Kiểm tra null hoặc rỗng
+        if (kichCo.getTen() == null || kichCo.getTen().isEmpty()) {
             throw new IllegalArgumentException("Tên kích cỡ không được để trống");
+        }
+
+        // Kiểm tra khoảng trắng đầu
+        if (kichCo.getTen().startsWith(" ")) {
+            throw new IllegalArgumentException("Tên kích cỡ không được bắt đầu bằng khoảng trắng");
         }
 
         // Chuẩn hóa tên trước khi validate
         String tenNormalized = kichCo.getTen().trim().toUpperCase();
 
-        // Validation: chỉ cho phép XS, S, M, L, XL, XXL, XXXL
+        // Kiểm tra tên hợp lệ (chỉ cho phép XS, S, M, L, XL, XXL, XXXL)
         if (!tenNormalized.matches("^(XS|S|M|L|XL|XXL|XXXL)$")) {
             throw new IllegalArgumentException(
-                    "Tên kích cỡ không hợp lệ. Chỉ cho phép XS, S, M, L, XL, XXL, XXXL (không phân biệt chữ hoa/thường)."
+                    "Tên kích cỡ không hợp lệ. Chỉ cho phép XS, S, M, L, XL, XXL, XXXL (không phân biệt hoa/thường)."
             );
         }
 
-        // Check trùng lặp (so sánh sau khi chuẩn hóa)
+        // Kiểm tra trùng lặp (so sánh sau khi chuẩn hóa)
         if (kichCoRepository.findByTenContainingIgnoreCase(tenNormalized)
                 .stream()
                 .anyMatch(k -> !k.getId().equals(kichCo.getId())
@@ -63,7 +69,7 @@ public class KichCoService {
             throw new IllegalArgumentException("Tên kích cỡ đã tồn tại");
         }
 
-        // Lưu tên đã chuẩn hóa (không để khoảng trắng thừa)
+        // Set lại tên đã chuẩn hóa
         kichCo.setTen(tenNormalized);
 
         return kichCoRepository.save(kichCo);

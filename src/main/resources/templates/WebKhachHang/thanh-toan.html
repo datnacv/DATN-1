@@ -1689,7 +1689,7 @@
             checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải danh sách địa chỉ:', err);
-            Swal.fire({ icon: 'error', title: 'Lỗi tải địa chỉ', text: err.message });
+
             loadingState.addresses = true;
             loadingState.shippingServices = true; // tránh kẹt overlay
             checkLoadingComplete();

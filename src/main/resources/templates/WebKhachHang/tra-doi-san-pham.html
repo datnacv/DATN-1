@@ -568,12 +568,15 @@
                         <span th:text="${chiTiet.sanPham.tenSanPham} + ' (' + ${chiTiet.mauSac != null ? chiTiet.mauSac.tenMau : 'N/A'} + ', ' + ${chiTiet.kichCo != null ? chiTiet.kichCo.ten : 'N/A'} + ')'"></span>
                         <div class="flex items-center gap-4 mt-1">
                             <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
+                            -
                             <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
                     <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
                 </span>
+                            -
                             <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
                     <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
                 </span>
+                            -
                             <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
                     <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
                 </span>
