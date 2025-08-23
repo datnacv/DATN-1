@@ -128,132 +128,77 @@ public class SanPhamController {
         return "WebQuanLy/edit-san-pham-form";
     }
 
-    @PostMapping("/update")
+    @PostMapping("/save")
     @ResponseBody
-    public ResponseEntity<Map<String, Object>> updateSanPham(
-            @ModelAttribute SanPhamDto dto,
-            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
+    public ResponseEntity<Map<String, Object>> saveSanPham(
+            @RequestParam("id") UUID id,
+            @RequestParam("maSanPham") String maSanPham,
+            @RequestParam("tenSanPham") String tenSanPham,
+            @RequestParam(value = "moTa", required = false) String moTa,
+            @RequestParam(value = "imageFile", required = false) MultipartFile imageFile,
+            @RequestParam(value = "trangThai", defaultValue = "false") Boolean trangThai,
+            @RequestParam(value = "danhMucId", required = false) UUID danhMucId) {
         Map<String, Object> response = new HashMap<>();
         try {
             if (!isCurrentUserAdmin()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
-            }
-
-            // Validation
-            String maSanPham = dto.getMaSanPham();
-            String tenSanPham = dto.getTenSanPham();
-            UUID danhMucId = dto.getDanhMucId();
-            Boolean trangThai = dto.getTrangThai();
-
-            if (maSanPham == null || maSanPham.trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Mã sản phẩm không được để trống!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            if (!maSanPham.matches("^[a-zA-Z0-9_-]+$")) {
-                response.put("success", false);
-                response.put("message", "Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới hoặc gạch ngang!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            // Kiểm tra trùng lặp mã sản phẩm (thay vì findByMaSanPham)
-            List<SanPham> existingProducts = sanPhamService.findAll();
-            for (SanPham sp : existingProducts) {
-                if (sp.getMaSanPham().equals(maSanPham) && !sp.getId().equals(dto.getId())) {
-                    response.put("success", false);
-                    response.put("message", "Mã sản phẩm đã tồn tại!");
-                    return ResponseEntity.badRequest().body(response);
-                }
-            }
-
-            if (tenSanPham == null || tenSanPham.trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Tên sản phẩm không được để trống!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            tenSanPham = tenSanPham.replaceAll("\\s+", " ").trim();
-            if (!tenSanPham.matches("^[a-zA-Z0-9_-]+(\\s[a-zA-Z0-9_-]+)*$")) {
-                response.put("success", false);
-                response.put("message", "Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            // Kiểm tra trùng lặp tên sản phẩm
-            for (SanPham sp : existingProducts) {
-                if (sp.getTenSanPham().equals(tenSanPham) && !sp.getId().equals(dto.getId())) {
-                    response.put("success", false);
-                    response.put("message", "Tên sản phẩm đã tồn tại!");
-                    return ResponseEntity.badRequest().body(response);
-                }
-            }
-
-            if (danhMucId == null) {
-                response.put("success", false);
-                response.put("message", "Vui lòng chọn danh mục!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
-            if (danhMuc == null) {
-                response.put("success", false);
-                response.put("message", "Danh mục không tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(dto.getId())) {
-                response.put("success", false);
-                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào đang hoạt động!");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // Update product
-            SanPham sanPham = sanPhamService.findById(dto.getId());
+            SanPham sanPham = sanPhamService.findById(id);
             if (sanPham == null) {
                 response.put("success", false);
                 response.put("message", "Sản phẩm không tồn tại!");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            sanPham.setMaSanPham(maSanPham);
-            sanPham.setTenSanPham(tenSanPham);
-            sanPham.setMoTa(dto.getMoTa());
-            sanPham.setTrangThai(trangThai != null ? trangThai : false);
-            sanPham.setDanhMuc(danhMuc);
-
-            // Handle image upload
-            if (imageFile != null && !imageFile.isEmpty()) {
-                String UPLOAD_DIR = System.getProperty("os.name").toLowerCase().contains("win")
-                        ? "C:/DATN/uploads/san_pham/"
-                        : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
-                String fileName = System.currentTimeMillis() + "_" + imageFile.getOriginalFilename().replaceAll("[^a-zA-Z0-9._-]", "_");
-                Path filePath = Paths.get(UPLOAD_DIR, fileName);
-                Files.createDirectories(filePath.getParent());
-                Files.write(filePath, imageFile.getBytes());
-                sanPham.setUrlHinhAnh("/images/" + fileName);
+            if (trangThai != null && trangThai && !sanPhamService.hasActiveChiTietSanPham(id)) {
+                response.put("success", false);
+                response.put("message", "Không thể bật trạng thái sản phẩm vì không có chi tiết sản phẩm nào đang hoạt động!");
+                return ResponseEntity.badRequest().body(response);
             }
 
-            sanPhamService.save(sanPham);
+            sanPham.setMaSanPham(maSanPham);
+            sanPham.setTenSanPham(tenSanPham);
+            sanPham.setMoTa(moTa);
+            sanPham.setTrangThai(trangThai != null ? trangThai : false);
 
-            // Prepare response DTO
-            SanPhamDto responseDto = new SanPhamDto();
-            responseDto.setId(sanPham.getId());
-            responseDto.setMaSanPham(sanPham.getMaSanPham());
-            responseDto.setTenSanPham(sanPham.getTenSanPham());
-            responseDto.setMoTa(sanPham.getMoTa());
-            responseDto.setUrlHinhAnh(sanPham.getUrlHinhAnh());
-            responseDto.setTrangThai(sanPham.getTrangThai());
-            responseDto.setThoiGianTao(sanPham.getThoiGianTao());
-            responseDto.setTongSoLuong(sanPham.getTongSoLuong());
-            responseDto.setDanhMucId(danhMuc.getId());
-            responseDto.setTenDanhMuc(danhMuc.getTenDanhMuc());
+            if (danhMucId != null) {
+                DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
+                if (danhMuc != null) {
+                    sanPham.setDanhMuc(danhMuc);
+                } else {
+                    response.put("success", false);
+                    response.put("message", "Danh mục không tồn tại!");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            sanPhamService.saveSanPhamWithImage(sanPham, imageFile);
+
+            SanPhamDto dto = new SanPhamDto();
+            dto.setId(sanPham.getId());
+            dto.setMaSanPham(sanPham.getMaSanPham());
+            dto.setTenSanPham(sanPham.getTenSanPham());
+            dto.setMoTa(sanPham.getMoTa());
+            dto.setUrlHinhAnh(sanPham.getUrlHinhAnh());
+            dto.setTrangThai(sanPham.getTrangThai());
+            dto.setThoiGianTao(sanPham.getThoiGianTao());
+            dto.setTongSoLuong(sanPham.getTongSoLuong());
+
+            if (sanPham.getDanhMuc() != null) {
+                dto.setDanhMucId(sanPham.getDanhMuc().getId());
+                dto.setTenDanhMuc(sanPham.getDanhMuc().getTenDanhMuc());
+            }
 
             response.put("success", true);
-            response.put("message", "Cập nhật sản phẩm thành công!");
-            response.put("sanPham", responseDto);
+            response.put("message", "Lưu sản phẩm thành công!");
+            response.put("sanPham", dto);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Lỗi khi cập nhật sản phẩm: ", e);
             response.put("success", false);
-            response.put("message", "Lỗi khi cập nhật sản phẩm: " + e.getMessage());
+            response.put("message", "Lỗi khi lưu sản phẩm: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }
