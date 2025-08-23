@@ -250,8 +250,8 @@
         }
 
         .payment-method.active {
-            border-color: var(--primary-color);
-            background: var(--gradient-secondary);
+            border-color: #9FD5F7;
+            background: #9FD5F7;
             box-shadow: var(--shadow-md);
             transform: scale(1.02);
         }
@@ -399,57 +399,6 @@
 
         #voucherModal .voucher-card:hover::after {
             width: 4px;
-        }
-
-        /* Enhanced loading states */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(21, 48, 84, 0.95) 0%, rgba(30, 64, 102, 0.95) 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: var(--transition);
-            backdrop-filter: blur(20px);
-        }
-
-        .loading-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .loading-spinner {
-            border: 6px solid rgba(255, 255, 255, 0.2);
-            border-top: 6px solid var(--secondary-color);
-            border-radius: 50%;
-            width: 80px;
-            height: 80px;
-            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-            box-shadow: var(--shadow-xl);
-        }
-
-        .loading-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            animation: fadeInUp 0.6s ease-out;
-        }
-
-        .loading-text {
-            color: white;
-            font-size: 18px;
-            margin-top: 24px;
-            font-weight: 600;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            animation: pulse 2s ease-in-out infinite;
         }
 
         /* Enhanced animations */
@@ -894,13 +843,6 @@
     </style>
 </head>
 <body class="bg-gray-100">
-<!-- Loading Overlay -->
-<div class="loading-overlay active" id="loading-overlay">
-    <div class="loading-content">
-        <div class="loading-spinner"></div>
-        <p class="loading-text">Đang tải trang thanh toán...</p>
-    </div>
-</div>
 
 <div class="ticker py-1 overflow-hidden fixed top-0 w-full z-50">
     <marquee behavior="scroll" direction="left" scrollamount="5">
@@ -1055,9 +997,10 @@
             </div>
 
 
-            <button id="submit-order" class="btn btn-primary w-100 mt-4 submit-btn">
+            <button id="submit-order" class="btn btn-primary w-100 mt-4 submit-btn" disabled>
                 <i class="fas fa-check-circle me-2"></i> Đặt hàng
             </button>
+
         </div>
     </div>
 </section>
@@ -1208,18 +1151,11 @@
     </div>
 </div>
 
-<footer style="background:linear-gradient(to right,#153054,#1e4066);color:#fff;padding-top:30px;padding-bottom:20px">
+<footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px; position: relative; z-index: 1;">
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         <div>
             <h3 class="text-lg font-bold mb-4">ACV Store</h3>
             <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
-            <div class="mt-4">
-                <h4 class="text-sm font-semibold">Đăng ký nhận tin</h4>
-                <form class="flex gap-2 mt-2">
-                    <input type="email" class="w-full p-2 rounded border" placeholder="Nhập email của bạn" aria-label="Email đăng ký nhận tin">
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Đăng ký</button>
-                </form>
-            </div>
         </div>
         <div>
             <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
@@ -1231,19 +1167,27 @@
         </div>
         <div>
             <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+            <p class="text-sm">Địa chỉ: 330 Phố Nam Dư, Trần Phú, Hai Bà Trưng, Hà Nội, Việt Nam</p>
             <p class="text-sm">Email: datn.acv@gmail.com</p>
             <p class="text-sm">Hotline: 0911 006 045</p>
             <div class="flex space-x-4 mt-4">
-                <a href="#" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.facebook.com" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://www.instagram.com" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://twitter.com" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
             </div>
         </div>
     </div>
+    <div class="container mx-auto mt-8">
+        <div class="map-container relative overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.7142835949912!2d105.85287637508011!3d21.004087180639065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ad002fc50fd1%3A0x9a7962d208d20498!2sACV%20Store!5e0!3m2!1sen!2s!4v1755701406991!5m2!1sen!2s" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <p class="text-center text-sm mt-2 text-gray-300">* Bản đồ hiển thị vị trí chi nhánh chính tại ACV Store tại 330 Phố Nam Dư, Trần Phú, Hai Bà Trưng, Hà Nội. Vui lòng liên hệ để xác nhận giờ mở cửa.</p>
+    </div>
     <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+
+    <div class="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%),linear-gradient(-45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%)] bg-[length:60px_60px] animate-[patternMove_20s_linear_infinite] -z-10"></div>
 </footer>
-<!-- ========== MODAL CHỌN VOUCHER (compact, centered, scrollable) ========== -->
-<!-- ========== MODAL CHỌN VOUCHER (compact, centered, scrollable) ========== -->
+
 <!-- ========== MODAL CHỌN VOUCHER (compact, centered, scrollable) ========== -->
 <div class="modal fade" id="voucherModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
@@ -1361,6 +1305,14 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
+    // Chỉ bật đặt hàng khi đã nhận được phản hồi tính phí ship (kể cả 0đ vẫn OK)
+    let shippingFeeReady = false;
+
+    function updateSubmitEnabled() {
+        const btn = document.getElementById('submit-order');
+        if (btn) btn.disabled = !shippingFeeReady;
+    }
+
     // ===== SEARCH HELPERS =====
     function vnNormalize(str = '') {
         return String(str)
@@ -1596,16 +1548,27 @@
     }
 
     async function calculateShipping() {
+        // khóa nút trong lúc đang tính lại phí
+        shippingFeeReady = false;
+        updateSubmitEnabled();
+
         const toDistrictId = document.getElementById('district').value;
-        const toWardCode = document.getElementById('ward').value;
-        const serviceId = document.getElementById('shippingMethod').value;
+        const toWardCode   = document.getElementById('ward').value;
+        const serviceId    = document.getElementById('shippingMethod').value;
         const fromDistrictId = 1542;
-        if (!toDistrictId || !toWardCode || !serviceId) return;
+
+        // Chưa đủ dữ liệu để gọi API -> coi như chưa sẵn sàng
+        if (!toDistrictId || !toWardCode || !serviceId) {
+            document.getElementById('shipping-fee').textContent = formatVND(0);
+            shippingFeeReady = false;
+            updateSubmitEnabled();
+            return;
+        }
 
         try {
             const res = await fetch(`/api/ghn/shipping-fee?fromDistrictId=${fromDistrictId}&toDistrictId=${toDistrictId}&toWardCode=${toWardCode}&weight=500&length=20&width=15&height=10&serviceId=${serviceId}&insuranceValue=100000`);
             const json = await res.json();
-            const fee = JSON.parse(json.data).data.total || 0;
+            const fee  = JSON.parse(json.data).data.total || 0;
 
             document.getElementById('shipping-fee').textContent = formatVND(fee);
 
@@ -1615,12 +1578,16 @@
                 document.getElementById('discount-ship').textContent = formatVND(0);
             }
             updateTotal();
+            if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
 
-            // >>> thêm dòng này
-            markVoucherEligibility();
+            // >>> ĐÃ NHẬN PHẢN HỒI (kể cả 0đ) -> cho phép đặt hàng
+            shippingFeeReady = true;
+            updateSubmitEnabled();
         } catch (err) {
             console.error('Lỗi tính phí vận chuyển:', err);
-            Swal.fire({ icon: 'error', title: 'Lỗi tính phí vận chuyển', text: err.message });
+            Swal.fire({ icon:'error', title:'Lỗi tính phí vận chuyển', text: err.message });
+            shippingFeeReady = false;
+            updateSubmitEnabled();
         }
     }
 
@@ -1732,20 +1699,24 @@
     window.selectAddress = function (button) {
         const card = button.closest('.address-card');
         const fullNameInput = document.getElementById('fullName');
-        const phoneInput = document.getElementById('phone');
-        const addressInput = document.getElementById('address');
-        const addressIdInput = document.getElementById('addressId');
-        const provinceSelect = document.getElementById('province');
-        const districtSelect = document.getElementById('district');
-        const wardSelect = document.getElementById('ward');
+        const phoneInput    = document.getElementById('phone');
+        const addressInput  = document.getElementById('address');
+        const addressIdInput= document.getElementById('addressId');
+        const provinceSelect= document.getElementById('province');
+        const districtSelect= document.getElementById('district');
+        const wardSelect    = document.getElementById('ward');
 
         addressIdInput.value = card.dataset.id;
-        fullNameInput.value = card.dataset.nguoiNhan || fullNameInput.value;
-        phoneInput.value = card.dataset.sdt || phoneInput.value;
-        addressInput.value = `${card.dataset.chiTiet}, ${card.dataset.phuongXa}, ${card.dataset.quanHuyen}, ${card.dataset.tinhThanhPho}`;
+        fullNameInput.value  = card.dataset.nguoiNhan || fullNameInput.value;
+        phoneInput.value     = card.dataset.sdt || phoneInput.value;
+        addressInput.value   = `${card.dataset.chiTiet}, ${card.dataset.phuongXa}, ${card.dataset.quanHuyen}, ${card.dataset.tinhThanhPho}`;
 
         const normalize = (str)=>str?.toLowerCase().replace(/(tỉnh|thành phố)/gi,'').replace(/[\s.\-]/g,'')
             .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+
+        // >>> Khóa nút trước khi tính lại ship cho địa chỉ mới
+        shippingFeeReady = false;
+        updateSubmitEnabled();
 
         (async function updateAddressDetails() {
             try {
@@ -1761,12 +1732,12 @@
                         await loadWards(district.DistrictID);
 
                         const wardRes = await fetch(`/api/ghn/wards?districtId=${district.DistrictID}`);
-                        const wardJson = await wardRes.json();
-                        const wards = JSON.parse(wardJson.data).data || [];
-                        const ward = wards.find(w => normalize(w.WardName).includes(normalize(card.dataset.phuongXa)));
+                        const wardJson= await wardRes.json();
+                        const wards   = JSON.parse(wardJson.data).data || [];
+                        const ward    = wards.find(w => normalize(w.WardName).includes(normalize(card.dataset.phuongXa)));
                         if (ward) {
                             wardSelect.value = ward.WardCode;
-                            await loadShippingServices(district.DistrictID);
+                            await loadShippingServices(district.DistrictID); // sẽ tự gọi calculateShipping()
                         }
                     }
                 }
@@ -1818,7 +1789,6 @@
         }
 
         try {
-            // 1) Lưu địa chỉ vào server (đổi URL/field cho khớp backend của bạn)
             const res = await fetch('/api/checkout/addresses', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
@@ -1830,45 +1800,44 @@
                     phuongXa: ward,
                     quanHuyen: district,
                     tinhThanhPho: province,
-                    wardCode: wardCode,             // nếu backend cần mã
-                    districtId: Number(districtId), // nếu backend cần id
-                    provinceId: Number(provinceId), // nếu backend cần id
+                    wardCode: wardCode,
+                    districtId: Number(districtId),
+                    provinceId: Number(provinceId),
                     macDinh: false
                 })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) {
-                throw new Error(data.message || 'Không thể lưu địa chỉ.');
-            }
+            if (!res.ok || !data.success) throw new Error(data.message || 'Không thể lưu địa chỉ.');
 
-            // id địa chỉ mới (tùy backend trả gì)
             const newId = data.data?.id || data.data;
 
-            // 2) Đổ thông tin vào form chính để dùng cho đơn hiện tại
+            // Đổ vào form chính
             document.getElementById('fullName').value = fullName;
             document.getElementById('phone').value    = phone;
             document.getElementById('address').value  = `${address}, ${ward}, ${district}, ${province}`;
-            document.getElementById('addressId').value = newId || ''; // có id thì gán để submit đơn hàng dùng id
+            document.getElementById('addressId').value= newId || '';
 
-            // đồng bộ các select ẩn để tính ship
+            // Đồng bộ select ẩn
             document.getElementById('province').value = provinceId;
             document.getElementById('district').value = districtId;
             document.getElementById('ward').value     = wardCode;
 
-            // 3) Refresh danh sách + auto highlight địa chỉ mới
+            // >>> Khóa nút trước khi tính lại ship
+            shippingFeeReady = false;
+            updateSubmitEnabled();
+
+            // Refresh danh sách + highlight
             await loadSavedAddresses();
             if (newId) {
                 const newCard = document.querySelector(`.address-card[data-id="${CSS.escape(newId)}"]`);
-                if (newCard) {
-                    newCard.classList.add('active');
-                }
+                if (newCard) newCard.classList.add('active');
             }
 
-            // 4) Tính lại ship
+            // Tính ship theo địa chỉ mới
             await loadShippingServices(districtId);
             await calculateShipping();
 
-            // 5) Đóng modal + thông báo
+            // Đóng modal + thông báo
             bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
             document.getElementById('add-address-form').classList.add('d-none');
             Swal.fire({icon:'success',title:'Đã thêm địa chỉ',timer:1200,showConfirmButton:false});
@@ -2115,18 +2084,25 @@
     // ================== SUBMIT ORDER ==================
     async function submitOrder(e) {
         e.preventDefault();
+
+        // >>> Chặn nếu phí ship chưa sẵn sàng (phòng người dùng gỡ disabled bằng DevTools)
+        if (!shippingFeeReady) {
+            Swal.fire({ icon:'warning', title:'Chưa có phí vận chuyển', text:'Vui lòng chọn địa chỉ/đợi tính phí ship xong.' });
+            return;
+        }
+
         const btn = document.getElementById('submit-order');
         btn.classList.add('loading');
         btn.disabled = true;
 
         const fullName = document.getElementById('fullName').value.trim();
-        const phone = document.getElementById('phone').value.trim();
-        const address = document.getElementById('address').value.trim();
-        const addressId = document.getElementById('addressId').value.trim();
+        const phone    = document.getElementById('phone').value.trim();
+        const address  = document.getElementById('address').value.trim();
+        const addressId= document.getElementById('addressId').value.trim();
 
         const province = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text || '';
         const district = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text || '';
-        const ward = document.getElementById('ward').options[document.getElementById('ward').selectedIndex]?.text || '';
+        const ward     = document.getElementById('ward').options[document.getElementById('ward').selectedIndex]?.text || '';
 
         if (!fullName || !phone || !address) {
             Swal.fire({ icon:'warning', title:'Lỗi', text:'Vui lòng chọn hoặc nhập đầy đủ thông tin giao hàng!' });
@@ -2171,14 +2147,14 @@
         }
 
         const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
-        const shippingFee = onlyDigits(document.getElementById('shipping-fee').textContent);
-        const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
-        const discountOrder = onlyDigits(document.getElementById('discount-order').textContent);
-        const discountShip = onlyDigits(document.getElementById('discount-ship').textContent);
-        const totalAmount = subtotal + shippingFee - discountOrder - discountShip;
+        const shippingFee    = onlyDigits(document.getElementById('shipping-fee').textContent);
+        const subtotal       = onlyDigits(document.getElementById('subtotal').textContent);
+        const discountOrder  = onlyDigits(document.getElementById('discount-order').textContent);
+        const discountShip   = onlyDigits(document.getElementById('discount-ship').textContent);
+        const totalAmount    = subtotal + shippingFee - discountOrder - discountShip;
 
         const orderVoucher = document.getElementById('order-voucher').value.trim();
-        const shipVoucher = document.getElementById('ship-voucher').value.trim();
+        const shipVoucher  = document.getElementById('ship-voucher').value.trim();
 
         const orderData = {
             addressId: addressId,
@@ -2227,10 +2203,11 @@
             <p><strong>Tổng tiền:</strong> ${formatVND(totalAmount)}</p>
             <p><strong>Phương thức thanh toán:</strong> ${
                 selectedMethod === '550E8400-E29B-41D4-A716-446655440017' ? 'Thanh toán khi nhận hàng (COD)'
-                    : selectedMethod === '550E8400-E29B-41D4-A716-446655440018' ? 'Chuyển khoản ngân hàng' : 'Ví điện tử'
+                    : selectedMethod === '550E8400-E29B-41D4-A716-446655440018' ? 'Chuyển khoản ngân hàng'
+                        : 'Ví điện tử'
             }</p>
             <p>Bạn có chắc chắn muốn tiếp tục thanh toán?</p>
-          `,
+        `,
             showCancelButton:true,
             confirmButtonText:'Xác nhận',
             cancelButtonText:'Hủy',
@@ -2272,6 +2249,7 @@
                 });
                 const data = await response.json();
                 if (response.ok) {
+                    const mode = getCheckoutMode();
                     if (mode === 'buy-now') localStorage.removeItem('checkoutItem');
                     if (mode === 'cart-selected') localStorage.removeItem('cartSelectedItems');
                     Swal.fire({
@@ -2315,6 +2293,8 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         // ===== INIT =====
+        shippingFeeReady = false;
+        updateSubmitEnabled();
         loadProvinces();
         loadOrderItems();
         updateCartCount();
@@ -2333,11 +2313,15 @@
 
         document.getElementById('district')?.addEventListener('change', async (e) => {
             const districtId = parseInt(e.target.value);
+            shippingFeeReady = false; updateSubmitEnabled();
             if (districtId) await loadWards(districtId);
-            await loadShippingServices(districtId);
+            await loadShippingServices(districtId); // sẽ tự gọi calculateShipping()
         });
 
-        document.getElementById('ward')?.addEventListener('change', calculateShipping);
+        document.getElementById('ward')?.addEventListener('change', () => {
+            shippingFeeReady = false; updateSubmitEnabled();
+            calculateShipping();
+        });
 
         document.getElementById('new-province')?.addEventListener('change', (e) => {
             const provinceId = parseInt(e.target.value);
@@ -2369,7 +2353,11 @@
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
         });
 
-        document.getElementById('shippingMethod')?.addEventListener('change', calculateShipping);
+        document.getElementById('shippingMethod')?.addEventListener('change', () => {
+            shippingFeeReady = false; updateSubmitEnabled();
+            calculateShipping();
+        });
+
         document.getElementById('submit-order')?.addEventListener('click', submitOrder);
 
         // ===== VOUCHER MODAL HANDLERS =====
