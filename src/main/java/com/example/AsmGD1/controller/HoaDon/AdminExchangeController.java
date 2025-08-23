@@ -2,6 +2,7 @@ package com.example.AsmGD1.controller.HoaDon;
 
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
+import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuDoiSanPhamRepository;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
@@ -47,6 +48,8 @@ public class AdminExchangeController {
 
     @Autowired
     private EmailService emailService;
+    @Autowired
+    private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
     @GetMapping
     public String listExchangeRequests(@RequestParam(defaultValue = "0") int page, Model model) {
@@ -88,7 +91,7 @@ public class AdminExchangeController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra tồn kho trước khi cập nhật
+            // Kiểm tra tồn kho
             ChiTietSanPham replacementProduct = lichSu.getChiTietSanPhamThayThe();
             if (replacementProduct.getSoLuongTonKho() < lichSu.getSoLuong()) {
                 response.put("success", false);
@@ -109,6 +112,8 @@ public class AdminExchangeController {
             ChiTietSanPham originalProduct = chiTietDonHang.getChiTietSanPham();
             originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + lichSu.getSoLuong());
             replacementProduct.setSoLuongTonKho(replacementProduct.getSoLuongTonKho() - lichSu.getSoLuong());
+            chiTietSanPhamRepository.save(originalProduct);
+            chiTietSanPhamRepository.save(replacementProduct);
 
             // Cập nhật trạng thái hóa đơn
             HoaDon hoaDon = lichSu.getHoaDon();
@@ -124,8 +129,16 @@ public class AdminExchangeController {
             hoaDon.getLichSuHoaDons().add(lichSuHoaDon);
             hoaDonRepository.save(hoaDon);
 
-            // Gửi thông báo cho khách hàng
+            // Gửi thông báo hệ thống cho khách hàng
             NguoiDung user = hoaDon.getDonHang().getNguoiDung();
+            thongBaoService.taoThongBaoHeThong(
+                    user.getTenDangNhap(),
+                    "Yêu cầu đổi sản phẩm đã được xác nhận",
+                    "Yêu cầu đổi sản phẩm cho đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã được xác nhận.",
+                    hoaDon.getDonHang()
+            );
+
+            // Gửi email thông báo cho khách hàng
             String emailContent = "<h2>Xác nhận yêu cầu đổi sản phẩm</h2>" +
                     "<p>Xin chào " + user.getHoTen() + ",</p>" +
                     "<p>Yêu cầu đổi sản phẩm của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận.</p>" +

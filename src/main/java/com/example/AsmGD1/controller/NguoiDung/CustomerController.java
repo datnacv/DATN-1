@@ -112,6 +112,8 @@ public class CustomerController {
             return "redirect:/acvstore/customers";
         }
 
+
+
         try {
             // Đặt các trường địa chỉ từ form vào customer để DiaChiKhachHangService xử lý
             customer.setTinhThanhPho(tinhThanhPho);

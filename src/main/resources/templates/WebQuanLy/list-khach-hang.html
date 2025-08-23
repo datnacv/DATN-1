@@ -656,13 +656,20 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addHoTen" class="form-label">Họ tên <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="addHoTen" th:field="*{hoTen}" required>
+                                        <input type="text" class="form-control" id="addHoTen" th:field="*{hoTen}"
+                                               required
+                                               pattern="[A-Za-zÀ-ỹ\s]+"
+                                               title="Họ tên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt">
+                                        <div th:if="${#fields.hasErrors('hoTen')}" th:errors="*{hoTen}" class="text-danger small"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addTenDangNhap" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="addTenDangNhap" th:field="*{tenDangNhap}" required>
+                                        <input type="text" class="form-control" id="addTenDangNhap" th:field="*{tenDangNhap}"
+                                               required
+                                               pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$"
+                                               title="Tên đăng nhập phải chứa cả chữ cái và số">
                                         <div th:if="${#fields.hasErrors('tenDangNhap')}" th:errors="*{tenDangNhap}" class="text-danger small"></div>
                                     </div>
                                 </div>
@@ -672,7 +679,10 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="addEmail" class="form-label">Email <span class="text-danger">*</span></label>
-                                        <input type="email" class="form-control" id="addEmail" th:field="*{email}" required>
+                                        <input type="email" class="form-control" id="addEmail" th:field="*{email}"
+                                               required
+                                               pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$"
+                                               title="Email phải có định dạng @gmail.com">
                                         <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="text-danger small"></div>
                                     </div>
                                 </div>
@@ -785,14 +795,20 @@
                                         <div class="mb-3">
                                             <label class="form-label">Họ tên <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" name="hoTen"
-                                                   th:value="${customer.hoTen}" required>
+                                                   th:value="${customer.hoTen}"
+                                                   required
+                                                   pattern="[A-Za-zÀ-ỹ\s]+"
+                                                   title="Họ tên chỉ được chứa chữ cái và khoảng trắng, không chứa số hoặc ký tự đặc biệt">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" name="tenDangNhap"
-                                                   th:value="${customer.tenDangNhap}" required>
+                                                   th:value="${customer.tenDangNhap}"
+                                                   required
+                                                   pattern="^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]+$"
+                                                   title="Tên đăng nhập phải chứa cả chữ cái và số">
                                         </div>
                                     </div>
                                 </div>
@@ -802,7 +818,10 @@
                                         <div class="mb-3">
                                             <label class="form-label">Email <span class="text-danger">*</span></label>
                                             <input type="email" class="form-control" name="email"
-                                                   th:value="${customer.email}" required>
+                                                   th:value="${customer.email}"
+                                                   required
+                                                   pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$"
+                                                   title="Email phải có định dạng @gmail.com">
                                         </div>
                                     </div>
                                     <div class="col-md-6">

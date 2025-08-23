@@ -184,6 +184,7 @@ public class KHDonMuaController {
                 case "da-huy" -> "Hủy đơn hàng";
                 case "da-tra-hang" -> "Hoàn trả";
                 case "da-doi-hang" -> "Đã đổi hàng";
+                case "cho-doi-hang" -> "Chờ xử lý đổi hàng";
                 default -> "";
             };
             hoaDonPage = hoaDonRepo.findByDonHang_NguoiDungIdAndTrangThai(nguoiDung.getId(), statusDb, pageable);
@@ -232,6 +233,41 @@ public class KHDonMuaController {
         model.addAttribute("totalPages", hoaDonPage.getTotalPages());
         model.addAttribute("status", status);
         return "WebKhachHang/don-mua";
+    }
+
+    @GetMapping("/api/orders/search")
+    public ResponseEntity<List<Map<String, Object>>> searchOrders(
+            @RequestParam("maDonHang") String maDonHang,
+            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        List<HoaDon> hoaDons = hoaDonRepo.findByDonHang_NguoiDungIdAndDonHang_MaDonHangContainingIgnoreCase(
+                nguoiDung.getId(), maDonHang);
+
+        List<Map<String, Object>> results = hoaDons.stream()
+                .map(hoaDon -> {
+                    Map<String, Object> order = new HashMap<>();
+                    order.put("id", hoaDon.getId());
+                    order.put("maDonHang", hoaDon.getDonHang().getMaDonHang());
+                    order.put("trangThai", hoaDon.getTrangThai());
+                    order.put("ngayTao", hoaDon.getNgayTao().toString());
+                    return order;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(results);
     }
 
     @GetMapping("/chi-tiet/{id}")
@@ -824,14 +860,20 @@ public class KHDonMuaController {
         }
 
         // Xử lý danh sách sản phẩm thay thế
-        BigDecimal minPrice = chiTietDonHangs.stream()
-                .map(ChiTietDonHang::getGia)
+        // Lấy giá tối thiểu sau giảm từ các sản phẩm trong đơn hàng
+        BigDecimal minPriceAfterDiscount = chiTietDonHangs.stream()
+                .map(chiTiet -> chiTiet.getChiTietSanPhamDto() != null ? chiTiet.getChiTietSanPhamDto().getGia() : chiTiet.getGia())
                 .min(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
-        List<ChiTietSanPham> replacementProducts = chiTietSanPhamRepository
-                .findByGiaGreaterThanEqualAndSoLuongTonKhoGreaterThan(minPrice, 0);
-        for (ChiTietSanPham chiTietSanPham : replacementProducts) {
+
+        // Lấy tất cả sản phẩm từ kho để tính giá sau giảm
+        List<ChiTietSanPham> allProducts = chiTietSanPhamRepository.findAll();
+        List<ChiTietSanPham> replacementProducts = new ArrayList<>();
+
+        for (ChiTietSanPham chiTietSanPham : allProducts) {
             Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
+            BigDecimal replacementPriceAfterDiscount = chiTietSanPham.getGia(); // Giá mặc định là giá gốc
+
             if (activeCampaign.isPresent()) {
                 ChienDichGiamGia campaign = activeCampaign.get();
                 ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
@@ -845,11 +887,24 @@ public class KHDonMuaController {
                 BigDecimal discount = chiTietSanPham.getGia()
                         .multiply(campaign.getPhanTramGiam())
                         .divide(BigDecimal.valueOf(100));
-                chiTietSanPhamDto.setGia(chiTietSanPham.getGia().subtract(discount));
+                replacementPriceAfterDiscount = chiTietSanPham.getGia().subtract(discount);
+                chiTietSanPhamDto.setGia(replacementPriceAfterDiscount);
                 chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
 
-                // Gán DTO vào chiTietSanPham để sử dụng trong view
+                // Gán DTO vào chiTietSanPham
                 chiTietSanPham.setChiTietSanPhamDto(chiTietSanPhamDto);
+            } else {
+                // Nếu không có giảm giá, giữ nguyên giá gốc
+                ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
+                chiTietSanPhamDto.setId(chiTietSanPham.getId());
+                chiTietSanPhamDto.setGia(chiTietSanPham.getGia());
+                chiTietSanPhamDto.setOldPrice(chiTietSanPham.getGia());
+                chiTietSanPham.setChiTietSanPhamDto(chiTietSanPhamDto);
+            }
+
+            // Chỉ thêm sản phẩm thay thế có giá sau giảm lớn hơn hoặc bằng minPriceAfterDiscount và tồn kho > 0
+            if (chiTietSanPham.getChiTietSanPhamDto().getGia().compareTo(minPriceAfterDiscount) >= 0 && chiTietSanPham.getSoLuongTonKho() > 0) {
+                replacementProducts.add(chiTietSanPham);
             }
         }
 
@@ -1024,19 +1079,11 @@ public class KHDonMuaController {
                 chiTietDonHang.setTrangThaiDoiSanPham(true);
                 chiTietDonHang.setLyDoDoiHang(lyDoDay);
                 chiTietDonHangRepository.save(chiTietDonHang);
-
-                // Cập nhật tồn kho
-                ChiTietSanPham originalProduct = chiTietDonHang.getChiTietSanPham();
-                originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + soLuong);
-                chiTietSanPhamThayThe.setSoLuongTonKho(chiTietSanPhamThayThe.getSoLuongTonKho() - soLuong);
-
-                chiTietSanPhamRepository.save(originalProduct);
-                chiTietSanPhamRepository.save(chiTietSanPhamThayThe);
             }
 
             // Cập nhật trạng thái hóa đơn
-            hoaDon.setTrangThai("Đã đổi hàng");
-            logger.info("Cập nhật trạng thái hóa đơn {} thành 'Đã đổi hàng'", hoaDon.getId());
+            hoaDon.setTrangThai("Chờ xử lý đổi hàng");
+            logger.info("Cập nhật trạng thái hóa đơn {} thành 'Chờ xử lý đổi hàng'", hoaDon.getId());
             HoaDon savedHoaDon = hoaDonRepo.save(hoaDon);
             logger.info("Trạng thái hóa đơn sau khi lưu: {}", savedHoaDon.getTrangThai());
 
@@ -1044,7 +1091,7 @@ public class KHDonMuaController {
             String lyDoDay = reason + (description != null && !description.trim().isEmpty() ? ": " + description : "");
             LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
             lichSuHoaDon.setHoaDon(hoaDon);
-            lichSuHoaDon.setTrangThai("Đã đổi hàng");
+            lichSuHoaDon.setTrangThai("Chờ xử lý đổi hàng");
             lichSuHoaDon.setThoiGian(LocalDateTime.now());
             lichSuHoaDon.setGhiChu("Khách hàng yêu cầu đổi sản phẩm: " + lyDoDay +
                     (priceDifference.compareTo(BigDecimal.ZERO) > 0 ? ", Chênh lệch: " + formatVND(priceDifference.doubleValue()) : ""));
@@ -1068,7 +1115,7 @@ public class KHDonMuaController {
             try {
                 String emailContent = "<h2>Xác nhận yêu cầu đổi sản phẩm</h2>" +
                         "<p>Xin chào " + user.getHoTen() + ",</p>" +
-                        "<p>Yêu cầu đổi sản phẩm của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
+                        "<p>Yêu cầu đổi sản phẩm của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công và đang chờ xử lý.</p>" +
                         "<p><strong>Lý do:</strong> " + lyDoDay + "</p>" +
                         (priceDifference.compareTo(BigDecimal.ZERO) > 0 ?
                                 "<p><strong>Chênh lệch giá cần thanh toán:</strong> " + formatVND(priceDifference.doubleValue()) + "</p>" +
@@ -1081,7 +1128,7 @@ public class KHDonMuaController {
             }
 
             response.put("success", true);
-            response.put("message", "Yêu cầu đổi sản phẩm đã được gửi thành công.");
+            response.put("message", "Yêu cầu đổi sản phẩm đã được gửi thành công và đang chờ xử lý.");
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
