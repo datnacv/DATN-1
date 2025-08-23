@@ -1142,6 +1142,87 @@
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+  const DEFAULT_PHONE_PLACEHOLDER = 'Nhập số điện thoại khách hàng';
+
+  function clearAddressUI() {
+    const addressSection          = document.getElementById('addressSection');
+    const shippingFeeContainer    = document.getElementById('shippingFeeContainer');
+    const shippingMethodContainer = document.getElementById('shippingMethodContainer');
+    const addressSelect           = document.getElementById('addressSelect');
+
+    addressSection?.classList.add('d-none');
+    shippingFeeContainer?.classList.add('d-none');
+    shippingMethodContainer?.classList.add('d-none');
+
+    if (addressSelect) addressSelect.innerHTML = '<option value="">Chọn địa chỉ</option>';
+
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (tab) {
+      tab.selectedAddress   = '';
+      tab.shippingFeeBase   = 0;
+      tab.shippingDiscount  = 0;
+      tab.shipVoucherId     = null;
+      updateSummary(tab);
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      updateShipSectionVisibility?.();
+    }
+  }
+    function resetCash() {
+      const tab = tabs.find(t => t.id === currentTabId);
+      const cashEl = document.getElementById('cashAmount');
+      if (cashEl) cashEl.value = '0';
+      if (tab) {
+        tab.cashAmount = 0;
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        updateSummary(tab);
+      }
+    }
+
+    // === NEW: Ẩn/hiện option "Giao hàng" theo SĐT khách ===
+  function setDeliveryVisibilityForPhone(phone) {
+    const select = document.getElementById('saleMethod');
+    if (!select) return;
+    const deliveryValue = 'Giao hàng';
+
+    const ensureDeliveryOption = () => {
+      if (![...select.options].some(o => o.value === deliveryValue)) {
+        const opt = document.createElement('option');
+        opt.value = deliveryValue;
+        opt.textContent = '🚚 Giao hàng';
+        select.add(opt);
+      }
+    };
+
+    const removeDeliveryOption = () => {
+      [...select.options].forEach(o => { if (o.value === deliveryValue) o.remove(); });
+      select.value = 'Tại quầy';
+    };
+
+    const isRetail = phone === '0999999999';
+    if (isRetail) {
+      removeDeliveryOption();
+
+      // Ẩn khu giao hàng + reset ship
+      document.getElementById('addressSection')?.classList.add('d-none');
+      document.getElementById('shippingFeeContainer')?.classList.add('d-none');
+      document.getElementById('shippingMethodContainer')?.classList.add('d-none');
+
+      const tab = tabs.find(t => t.id === currentTabId);
+      if (tab) {
+        const prevBase = Number(tab.shippingFeeBase || 0);
+        tab.saleMethod = 'Tại quầy';
+        tab.shippingFeeBase = 0;
+        tab.shippingDiscount = 0;
+        tab.shipVoucherId = null;
+        updateSummary(tab);
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        if (!isApplyingVoucher && prevBase !== 0) reapplyCurrentOrderVoucher?.();
+        updateShipSectionVisibility?.();
+      }
+    } else {
+      ensureDeliveryOption();
+    }
+  }
   // === Helper: re-apply / validate ORDER voucher hiện tại ===
   async function reapplyCurrentOrderVoucher() {
     const tab = tabs.find(t => t.id === currentTabId);
@@ -2192,7 +2273,13 @@
           updateSummary(tab);
           localStorage.setItem('orderTabs', JSON.stringify(tabs));
         }
+        const phoneEl = document.getElementById('customerPhone');
+        if (phoneEl) {
+          phoneEl.value = '';
+          phoneEl.placeholder = DEFAULT_PHONE_PLACEHOLDER;
+        }
         updateShipSectionVisibility();
+        resetCash();
       }, 0);
     } catch (error) {
       showToast('Lỗi khi tạo tab mới: ' + error.message, 'error');
@@ -2236,6 +2323,7 @@
   }
 
   async function loadTabContent(tabId) {
+    clearAddressUI();
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;
 
@@ -2255,6 +2343,10 @@
       shippingFeeContainer: document.getElementById('shippingFeeContainer'),
       addressSection: document.getElementById('addressSection')
     };
+
+    if (elements.customerPhone) {
+      elements.customerPhone.placeholder = DEFAULT_PHONE_PLACEHOLDER;
+    }
 
     if (elements.customerPhone) elements.customerPhone.value = tab.customerPhone || '';
     if (elements.customerName)  elements.customerName.value  = tab.customerName  || '';
@@ -2291,7 +2383,9 @@
       }
     } else {
       if (elements.saleMethod) elements.saleMethod.removeAttribute('disabled');
+      if (elements.customerPhone) elements.customerPhone.placeholder = DEFAULT_PHONE_PLACEHOLDER;
     }
+    setDeliveryVisibilityForPhone(tab.customerPhone || '');
 
     if (elements.shippingFee) elements.shippingFee.value = formatCurrency(tab.shippingFeeBase);
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
@@ -2325,7 +2419,7 @@
     if (tab.customerPhone && tab.customerPhone !== '0999999999') {
       await fetchCustomerAddresses();
     }
-
+    toggleAddressSection();
     await fetchVouchers();
     localStorage.setItem('orderTabs', JSON.stringify(tabs));
   }
@@ -2342,13 +2436,12 @@
     if (!phoneEl) return;
 
     const phone = (phoneEl.value || '').trim();
+    setDeliveryVisibilityForPhone(phone);
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
-    // ==== Validate SĐT (điều kiện showToast mới) ====
-    // Không nhập gì -> ẩn khu vực địa chỉ, không toast
     if (!phone) {
-      addressSection?.classList.add('d-none');
+      clearAddressUI();
       return;
     }
 
@@ -2358,7 +2451,7 @@
     // Nhập nhưng sai định dạng 10 số -> toast (vì KHÔNG phải 0999999999)
     if (!/^\d{10}$/.test(phone)) {
       showToast('Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số.', 'warning');
-      addressSection?.classList.add('d-none');
+      clearAddressUI();
       return;
     }
     // ==== END validate ====
@@ -2646,6 +2739,7 @@
 
     const saleMethod = saleMethodSelect.value;
     const phone = (phoneInput.value || '').trim();
+    setDeliveryVisibilityForPhone(phone);
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
@@ -3313,7 +3407,7 @@
       localStorage.setItem('currentTabId', currentTabId);
       renderTabs();
       loadTabContent(currentTabId);
-
+      setTimeout(resetCash, 0);
     } catch (error) {
       console.error('Lỗi khi tạo đơn hàng:', error);
       showToast('Lỗi khi tạo đơn hàng: ' + error.message, 'error');
@@ -3379,6 +3473,7 @@
     if (!tab) return;
 
     tab.customerPhone = phone;
+    setDeliveryVisibilityForPhone(phone);
     tab.customerName  = name;
     tab.customerEmail = email;
 
@@ -3393,7 +3488,7 @@
         phoneEl.placeholder = 'Khách lẻ (không thu thập SĐT)';
       } else {
         phoneEl.value = phone;
-        phoneEl.placeholder = 'Nhập số điện thoại khách hàng';
+        phoneEl.placeholder = DEFAULT_PHONE_PLACEHOLDER;
       }
     }
 
@@ -3819,6 +3914,11 @@
           toggleCashInput();
           localStorage.setItem('orderTabs', JSON.stringify(tabs));
         }
+      });
+    }
+    if (customerPhone) {
+      customerPhone.addEventListener('change', () => {
+        setDeliveryVisibilityForPhone((customerPhone.value || '').trim());
       });
     }
 
