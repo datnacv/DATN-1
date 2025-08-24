@@ -1033,91 +1033,104 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <form th:action="@{/acvstore/employees/edit}" method="post" novalidate>
+                            <form th:action="@{/acvstore/employees/edit}" method="post" onsubmit="return validateEditForm(event, this)" novalidate>
                                 <input type="hidden" name="id" th:value="${employee.id}">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Họ tên <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" name="hoTen"
+                                            <label for="editHoTen" class="form-label">Họ tên <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="editHoTen" name="hoTen"
                                                    th:value="${employee.hoTen}" required>
+                                            <div id="editHoTenError" class="error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" name="tenDangNhap"
+                                            <label for="editTenDangNhap" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="editTenDangNhap" name="tenDangNhap"
                                                    th:value="${employee.tenDangNhap}" required>
+                                            <div id="editTenDangNhapError" class="error-message"></div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                                            <input type="email" class="form-control" name="email"
+                                            <label for="editEmail" class="form-label">Email <span class="text-danger">*</span></label>
+                                            <input type="email" class="form-control" id="editEmail" name="email"
                                                    th:value="${employee.email}" required>
+                                            <div id="editEmailError" class="error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Số điện thoại <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" name="soDienThoai"
+                                            <label for="editSoDienThoai" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="editSoDienThoai" name="soDienThoai"
                                                    th:value="${employee.soDienThoai}" required pattern="[0-9]{10}">
+                                            <div id="editSoDienThoaiError" class="error-message"></div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Mật khẩu <span class="text-danger">*</span></label>
-                                            <input type="password" class="form-control" name="matKhau"
+                                            <label for="editMatKhau" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                            <input type="password" class="form-control" id="editMatKhau" name="matKhau"
                                                    th:value="${employee.matKhau}" required minlength="6">
+                                            <div id="editMatKhauError" class="error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="mb-3">
-                                            <label class="form-label">Ngày sinh</label>
-                                            <input type="date" class="form-control" name="ngaySinh"
+                                            <label for="editNgaySinh" class="form-label">Ngày sinh</label>
+                                            <input type="date" class="form-control" id="editNgaySinh" name="ngaySinh"
                                                    th:value="${employee.ngaySinh != null ? #temporals.format(employee.ngaySinh, 'yyyy-MM-dd') : ''}">
+                                            <div id="editNgaySinhError" class="error-message"></div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label class="form-label">Giới tính</label>
-                                            <select class="form-select" name="gioiTinh">
+                                            <label for="editGioiTinh" class="form-label">Giới tính</label>
+                                            <select class="form-select" id="editGioiTinh" name="gioiTinh">
+                                                <option value="">Chọn giới tính</option>
                                                 <option value="true" th:selected="${employee.gioiTinh == true}">Nam</option>
                                                 <option value="false" th:selected="${employee.gioiTinh == false}">Nữ</option>
                                             </select>
+                                            <div id="editGioiTinhError" class="error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label class="form-label">Vai trò <span class="text-danger">*</span></label>
-                                            <select class="form-select" name="vaiTro" required>
+                                            <label for="editVaiTro" class="form-label">Vai trò <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="editVaiTro" name="vaiTro" required>
+                                                <option value="">Chọn vai trò</option>
                                                 <option value="employee" th:selected="${employee.vaiTro == 'employee'}">Nhân viên</option>
                                                 <option value="admin" th:selected="${employee.vaiTro == 'admin'}">Admin</option>
                                             </select>
+                                            <div id="editVaiTroError" class="error-message"></div>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label class="form-label">Trạng thái</label>
-                                            <select class="form-select" name="trangThai">
+                                            <label for="editTrangThai" class="form-label">Trạng thái</label>
+                                            <select class="form-select" id="editTrangThai" name="trangThai">
+                                                <option value="">Chọn trạng thái</option>
                                                 <option value="true" th:selected="${employee.trangThai == true}">Hoạt động</option>
                                                 <option value="false" th:selected="${employee.trangThai == false}">Ngưng hoạt động</option>
                                             </select>
+                                            <div id="editTrangThaiError" class="error-message"></div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12">
                                         <div class="mb-3">
-                                            <label class="form-label">Địa chỉ</label>
-                                            <input type="text" class="form-control" name="chiTietDiaChi"
+                                            <label for="editChiTietDiaChi" class="form-label">Địa chỉ</label>
+                                            <input type="text" class="form-control" id="editChiTietDiaChi" name="chiTietDiaChi"
                                                    th:value="${employee.chiTietDiaChi}">
+                                            <div id="editChiTietDiaChiError" class="error-message"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -1171,7 +1184,7 @@
         });
     });
 
-    // Form validation function
+    // Form validation function for Add Employee
     function validateForm(event) {
         event.preventDefault();
         let isValid = true;
@@ -1228,7 +1241,7 @@
             showError('matKhauError', 'Mật khẩu 6–20 ký tự, gồm hoa, thường, số và ký tự đặc biệt');
         }
 
-        // Validate Ngày sinh
+        // Ngày sinh
         const ngaySinh = document.getElementById('addNgaySinh').value.trim();
         if (!ngaySinh) {
             showError('ngaySinhError', 'Ngày sinh không được để trống');
@@ -1240,12 +1253,11 @@
             }
         }
 
-        // Validate Giới tính
+        // Giới tính
         const gioiTinh = document.getElementById('addGioiTinh').value;
-        if (!gioiTinh) { document.getElementById('gioiTinhError').textContent = 'Vui lòng chọn giới tính';
-            document.getElementById('gioiTinhError').style.display = 'block';
-            isValid = false; }
-
+        if (!gioiTinh) {
+            showError('gioiTinhError', 'Vui lòng chọn giới tính');
+        }
 
         // Vai trò
         const vaiTro = document.getElementById('addVaiTro').value;
@@ -1259,7 +1271,7 @@
             showError('trangThaiError', 'Vui lòng chọn trạng thái hợp lệ (Hoạt động hoặc Ngưng hoạt động)');
         }
 
-        // Validate Địa chỉ
+        // Địa chỉ
         const chiTietDiaChi = document.getElementById('addChiTietDiaChi').value.trim();
         if (!chiTietDiaChi) {
             showError('chiTietDiaChiError', 'Địa chỉ không được để trống');
@@ -1275,6 +1287,117 @@
             document.getElementById(id).textContent = message;
             document.getElementById(id).style.display = 'block';
             isValid = false;
+        }
+
+        return isValid;
+    }
+
+    // Form validation function for Edit Employee
+    function validateEditForm(event, form) {
+        event.preventDefault();
+        let isValid = true;
+
+        // Reset error messages
+        form.querySelectorAll('.error-message').forEach(error => {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
+
+        const currentDate = new Date();
+
+        // Họ tên
+        const hoTen = form.querySelector('#editHoTen').value.trim();
+        const hoTenPattern = /^[a-zA-ZÀ-ỹ]+(?:[ '\-][a-zA-ZÀ-ỹ]+)*$/;
+        if (!hoTen) {
+            showError(form, 'editHoTenError', 'Họ tên không được để trống');
+        } else if (!hoTenPattern.test(hoTen) || hoTen.length > 100) {
+            showError(form, 'editHoTenError', 'Họ tên chỉ chứa chữ cái, tối đa 100 ký tự, phải đúng định dạng tên');
+        }
+
+        // Tên đăng nhập
+        const tenDangNhap = form.querySelector('#editTenDangNhap').value.trim();
+        const tenDangNhapPattern = /^(?!_)(?!.*__)[a-zA-Z][a-zA-Z0-9_]{3,49}$/;
+        if (!tenDangNhap) {
+            showError(form, 'editTenDangNhapError', 'Tên đăng nhập không được để trống');
+        } else if (!tenDangNhapPattern.test(tenDangNhap)) {
+            showError(form, 'editTenDangNhapError', 'Tên đăng nhập phải bắt đầu bằng chữ, không chứa "__", dài 4–50 ký tự');
+        }
+
+        // Email
+        const email = form.querySelector('#editEmail').value.trim();
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+        if (!email) {
+            showError(form, 'editEmailError', 'Email không được để trống');
+        } else if (!emailPattern.test(email)) {
+            showError(form, 'editEmailError', 'Email phải hợp lệ và dùng @gmail.com');
+        }
+
+        // Số điện thoại
+        const soDienThoai = form.querySelector('#editSoDienThoai').value.trim();
+        if (!soDienThoai) {
+            showError(form, 'editSoDienThoaiError', 'Số điện thoại không được để trống');
+        } else if (!/^0[0-9]{9}$/.test(soDienThoai) || /^(\d)\1{9}$/.test(soDienThoai)) {
+            showError(form, 'editSoDienThoaiError', 'Số điện thoại phải 10 số, bắt đầu bằng 0, không toàn giống nhau');
+        }
+
+        // Mật khẩu
+        const matKhau = form.querySelector('#editMatKhau').value;
+        const matKhauPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,20}$/;
+        if (!matKhau) {
+            showError(form, 'editMatKhauError', 'Mật khẩu không được để trống');
+        } else if (!matKhauPattern.test(matKhau)) {
+            showError(form, 'editMatKhauError', 'Mật khẩu 6–20 ký tự, gồm hoa, thường, số và ký tự đặc biệt');
+        }
+
+        // Ngày sinh
+        const ngaySinh = form.querySelector('#editNgaySinh').value.trim();
+        if (!ngaySinh) {
+            showError(form, 'editNgaySinhError', 'Ngày sinh không được để trống');
+        } else {
+            const birthDate = new Date(ngaySinh);
+            const age = currentDate.getFullYear() - birthDate.getFullYear();
+            if (birthDate >= currentDate || birthDate < new Date('1900-01-01') || age < 16) {
+                showError(form, 'editNgaySinhError', 'Ngày sinh phải trong quá khứ, sau 1900 và trên 16 tuổi');
+            }
+        }
+
+        // Giới tính
+        const gioiTinh = form.querySelector('#editGioiTinh').value;
+        if (!gioiTinh) {
+            showError(form, 'editGioiTinhError', 'Vui lòng chọn giới tính');
+        }
+
+        // Vai trò
+        const vaiTro = form.querySelector('#editVaiTro').value;
+        if (!['employee', 'admin'].includes(vaiTro)) {
+            showError(form, 'editVaiTroError', 'Vui lòng chọn vai trò hợp lệ (Nhân viên hoặc Admin)');
+        }
+
+        // Trạng thái
+        const trangThai = form.querySelector('#editTrangThai').value;
+        if (!['true', 'false'].includes(trangThai)) {
+            showError(form, 'editTrangThaiError', 'Vui lòng chọn trạng thái hợp lệ (Hoạt động hoặc Ngưng hoạt động)');
+        }
+
+        // Địa chỉ
+        const chiTietDiaChi = form.querySelector('#editChiTietDiaChi').value.trim();
+        if (!chiTietDiaChi) {
+            showError(form, 'editChiTietDiaChiError', 'Địa chỉ không được để trống');
+        } else if (chiTietDiaChi.length > 200 || /^[^a-zA-ZÀ-ỹ]+$/.test(chiTietDiaChi)) {
+            showError(form, 'editChiTietDiaChiError', 'Địa chỉ tối đa 200 ký tự, phải chứa chữ và không toàn số/ký tự đặc biệt');
+        }
+
+        if (isValid) {
+            form.submit();
+        }
+
+        function showError(form, id, message) {
+            const errorElement = form.querySelector(`#${id}`);
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.style.display = 'block';
+                isValid = false;
+            }
         }
 
         return isValid;
