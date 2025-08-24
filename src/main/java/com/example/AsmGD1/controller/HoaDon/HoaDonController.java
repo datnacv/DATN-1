@@ -178,20 +178,6 @@ public class HoaDonController {
                 throw new IllegalArgumentException("Thông tin khách hàng không được để trống.");
             }
 
-            // Trim và validate họ tên
-            hoTen = hoTen.trim();
-            if (!hoTen.matches("^[A-Za-zÀ-ỹ\\s]+$")) {
-                throw new IllegalArgumentException("Họ tên chỉ được chứa chữ cái và khoảng trắng");
-            }
-            if (hoTen.contains("  ")) {
-                throw new IllegalArgumentException("Họ tên chỉ được chứa 1 khoảng trắng giữa các từ");
-            }
-
-            // Validate số điện thoại
-            if (!soDienThoai.matches("^[0-9]{10}$")) {
-                throw new IllegalArgumentException("Số điện thoại phải là 10 chữ số");
-            }
-
             hoaDon.getNguoiDung().setHoTen(hoTen);
             hoaDon.getNguoiDung().setSoDienThoai(soDienThoai);
             hoaDon.getNguoiDung().setTinhThanhPho(tinhThanhPho);

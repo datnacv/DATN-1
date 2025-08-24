@@ -105,7 +105,17 @@ public class KHDonMuaController {
     @Autowired
     private ChienDichGiamGiaService chienDichGiamGiaService;
 
-
+    @GetMapping("/api/orders/status")
+    public ResponseEntity<Map<String, String>> getOrderStatusByMa(@RequestParam("maDonHang") String maDonHang, Authentication authentication) {
+        // Kiểm tra authentication tương tự các method khác...
+        HoaDon hoaDon = hoaDonRepo.findByDonHang_MaDonHang(maDonHang);
+        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(getNguoiDungIdFromAuthentication(authentication))) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+        Map<String, String> response = new HashMap<>();
+        response.put("trangThai", hoaDon.getTrangThai());
+        return ResponseEntity.ok(response);
+    }
 
     public KHDonMuaController() {
         String os = System.getProperty("os.name").toLowerCase();
