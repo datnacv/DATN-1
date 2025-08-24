@@ -1166,6 +1166,7 @@
   // === NEW: Giới hạn theo DECIMAL(18,2) ===
   const DECIMAL_TOTAL_DIGITS = 18;
   const DECIMAL_SCALE = 2;
+  const MAX_CENTS_BIG = BigInt('9'.repeat(DECIMAL_TOTAL_DIGITS));          // 999... (18 số 9)
   const MAX_VND_BIG = 1000000000000000n;
 
   function clampCashToDbLimit(raw) {
