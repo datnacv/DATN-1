@@ -166,8 +166,6 @@
                                        oninput="this.setCustomValidity('')">
                             </div>
 
-                            <!-- ĐÃ BỎ Ô SỐ LƯỢNG -->
-
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
                                 <input type="datetime-local" class="form-control" th:field="*{ngayBatDau}"
@@ -245,10 +243,8 @@
                                 </thead>
                                 <tbody id="productDetailTableBody">
                                 <tr th:if="${#lists.isEmpty(selectedDetails)}">
-                                    <td colspan="6" class="text-center text-muted">Chưa có chi tiết sản phẩm nào được chọn</td>
-                                </tr>
+                                    <td colspan="6" class="text-center text-muted">Chưa có chi tiết sản phẩm nào được chọn</td></tr>
                                 <tr th:each="detail : ${selectedDetails}">
-                                    <!-- Tick sẵn khi vừa mở form chỉnh sửa -->
                                     <td><input type="checkbox" class="detail-checkbox" th:value="${detail.id}"
                                                checked th:disabled="${!isAdmin}"></td>
                                     <td th:text="${detail.sanPham?.tenSanPham ?: 'Không có tên sản phẩm'}"></td>
@@ -259,7 +255,6 @@
                                 </tr>
                                 </tbody>
                             </table>
-                            <!-- Hidden khởi tạo bằng danh sách đã chọn từ server -->
                             <input type="hidden" id="selectedProductDetailIdsInput" name="selectedProductDetailIds"
                                    th:value="${#strings.listJoin(selectedDetails.![id], ',')}">
                         </div>
@@ -267,11 +262,42 @@
                 </div>
             </div>
         </form>
+
+        <!-- ===================== MODAL XÁC NHẬN CẬP NHẬT (ĐƠN GIẢN) ===================== -->
+        <div class="modal fade" id="confirmUpdateModal" tabindex="-1" aria-hidden="true"
+             th:if="${isAdmin and !isReadOnly}">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title">
+                            <i class="fas fa-circle-question me-2"></i>Xác nhận cập nhật
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">Bạn có chắc muốn cập nhật đợt giảm giá này?</p>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Hủy
+                        </button>
+                        <button type="button" id="confirmUpdateBtn" class="btn btn-primary">
+                            Xác nhận cập nhật
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- =================================================================== -->
+
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script th:inline="javascript">
+    const currentCampaignId = /*[[${chienDich.id}]]*/ null;
+
     /* ==== State khởi tạo từ server ==== */
     const pageSize = 5;
     const selectedProductIds = new Set([[${selectedProductIds}]].map(String));
@@ -344,9 +370,7 @@
         if(master && all.length>0){ master.checked=all.every(cb=>cb.checked); }
     }
 
-    /* Checkbox handler:
-       - Với checkbox SẢN PHẨM: đổi → loadProductDetails()
-       - Với checkbox CHI TIẾT: đổi → syncHiddenFromVisible() */
+    /* Checkbox handler */
     function attachCheckboxHandler(selector, selectedSet, masterId){
         document.querySelectorAll(selector).forEach(cb=>{
             cb.addEventListener("change", ()=>{
@@ -354,27 +378,24 @@
                 cb.checked ? selectedSet.add(cb.value) : selectedSet.delete(cb.value);
                 if(masterId) updateSelectAll(selector, masterId);
                 if(selector === '.product-checkbox'){
-                    loadProductDetails();     // sẽ tự sync hidden sau render
+                    loadProductDetails();
                 }else{
-                    syncHiddenFromVisible();  // chi tiết đổi → cập nhật hidden ngay
+                    syncHiddenFromVisible();
                 }
             });
         });
     }
 
-    /* Lấy tập ID chi tiết ĐANG HIỂN THỊ */
     function getVisibleDetailIdsSet(){
         return new Set([...document.querySelectorAll(".detail-checkbox")].map(cb => cb.value));
     }
 
-    /* Hidden = GIAO giữa (selectedDetailIds) và (đang hiển thị) */
     function syncHiddenFromVisible(){
         const visible = getVisibleDetailIdsSet();
         const effective = [...selectedDetailIds].filter(id => visible.has(id));
         document.getElementById("selectedProductDetailIdsInput").value = effective.join(',');
     }
 
-    /* Render 1 dòng chi tiết */
     function rowHtml(detail, disabled, checked){
         return `
     <tr>
@@ -388,12 +409,10 @@
     </tr>`;
     }
 
-    /* ==== Load chi tiết: UNION(existingDetails, API theo SP đang chọn) ==== */
     function loadProductDetails() {
         const container = document.getElementById("productDetailTableBody");
         const existingDetails = /*[[${selectedDetails}]]*/[];
 
-        // 1) View/readOnly: hiển thị dữ liệu sẵn có, khóa checkbox
         if (viewMode || (isReadOnly && !isAdmin)) {
             if (existingDetails && existingDetails.length) {
                 container.innerHTML = existingDetails.map(d => rowHtml(d, true, true)).join('');
@@ -403,23 +422,19 @@
             return;
         }
 
-        // Helper: render danh sách (mảng detail), giữ trạng thái tick theo selectedDetailIds
-        function renderList(list){
-            // De-duplicate theo id
+        function renderList(list) {
             const map = new Map();
-            list.forEach(d => { const k=String(d.id); if(!map.has(k)) map.set(k, d); });
+            (list || []).forEach(d => { const k = String(d.id); if (!map.has(k)) map.set(k, d); });
             const finalList = [...map.values()];
-
             container.innerHTML = finalList
                 .map(d => rowHtml(d, false, selectedDetailIds.has(String(d.id))))
                 .join('');
 
             attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectAllDetails");
             updateSelectAll(".detail-checkbox", "selectAllDetails");
-            syncHiddenFromVisible(); // hidden = intersection
+            syncHiddenFromVisible();
         }
 
-        // 2) Không chọn SP nào → chỉ hiển thị chi tiết đã lưu (existing)
         if (selectedProductIds.size === 0) {
             if (existingDetails && existingDetails.length) {
                 renderList(existingDetails);
@@ -430,12 +445,14 @@
             return;
         }
 
-        // 3) Có SP → gọi API, sau đó UNION với existingDetails
-        fetch(`/acvstore/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
+        const idsParam = [...selectedProductIds].join(',');
+        const url = `/acvstore/chien-dich-giam-gia/multiple-product-details?productIds=${idsParam}&currentCampaignId=${currentCampaignId}`;
+
+        fetch(url)
             .then(res => res.json())
             .then(data => {
                 const apiList = Array.isArray(data) ? data : [];
-                const unionList = [...(existingDetails || []), ...apiList]; // HỢP NHẤT
+                const unionList = [...(existingDetails || []), ...apiList];
                 if (unionList.length === 0) {
                     container.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Không tìm thấy chi tiết sản phẩm</td></tr>`;
                     syncHiddenFromVisible();
@@ -445,7 +462,6 @@
             })
             .catch(err => {
                 console.error('Error fetching product details:', err);
-                // Lỗi API: vẫn hiển thị existingDetails để không "trống trơn"
                 if (existingDetails && existingDetails.length) {
                     renderList(existingDetails);
                 } else {
@@ -455,7 +471,6 @@
             });
     }
 
-    /* ==== Tìm kiếm & phân trang sản phẩm ==== */
     function renderPagination(totalPages, currentPage, keyword){
         const pagination=document.getElementById("productPagination");
         if(!pagination || !isAdmin) return;
@@ -480,14 +495,15 @@
     }
     function searchProducts(keyword="", page=0){
         if(!isAdmin) return;
-        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}`)
+        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}&selectedProductIds=${[...selectedProductIds].join(',')}`)
             .then(res=>res.json())
             .then(data=>{
                 renderProductList(data.content);
                 renderPagination(data.totalPages, data.number, keyword);
             })
-            .catch(error=>console.error('Error searching products:', error));
+            .catch(console.error);
     }
+
     function renderProductList(products){
         const tbody=document.getElementById("productTableBody");
         tbody.innerHTML=products.length===0
@@ -504,33 +520,28 @@
         updateSelectAll(".product-checkbox", "selectAllProducts");
     }
 
-    /* ==== Boot ==== */
     document.addEventListener("DOMContentLoaded", ()=>{
+
         wireDateValidation();
 
-        // Hidden theo tick ban đầu (sau khi trang render lần đầu)
         syncHiddenFromVisible();
 
-        // Gắn handler ban đầu
         attachCheckboxHandler(".product-checkbox", selectedProductIds, "selectAllProducts");
         updateSelectAll(".product-checkbox", "selectAllProducts");
         attachCheckboxHandler(".detail-checkbox", selectedDetailIds, "selectAllDetails");
         updateSelectAll(".detail-checkbox", "selectAllDetails");
 
-        // Render chi tiết lần đầu (UNION ngay lập tức nếu đã có SP được tick)
         loadProductDetails();
 
-        // “Chọn tất cả” Sản phẩm
         document.getElementById("selectAllProducts")?.addEventListener("change", function(){
             if(!isAdmin) return;
             document.querySelectorAll(".product-checkbox").forEach(cb=>{
                 cb.checked=this.checked;
                 this.checked?selectedProductIds.add(cb.value):selectedProductIds.delete(cb.value);
             });
-            loadProductDetails(); // sẽ tự sync hidden sau render
+            loadProductDetails();
         });
 
-        // “Chọn tất cả” Chi tiết
         document.getElementById("selectAllDetails")?.addEventListener("change", function(){
             if(!isAdmin) return;
             document.querySelectorAll(".detail-checkbox").forEach(cb=>{
@@ -540,14 +551,38 @@
             syncHiddenFromVisible();
         });
 
-        // Submit: đảm bảo hidden khớp phần hiển thị
-        document.getElementById("updateCampaignForm")?.addEventListener("submit", function(e){
+        // ===== MODAL XÁC NHẬN CẬP NHẬT (ĐƠN GIẢN) =====
+        let hasConfirmedUpdate = false;
+        const form = document.getElementById("updateCampaignForm");
+        const modalEl = document.getElementById("confirmUpdateModal");
+        const confirmBtn = document.getElementById("confirmUpdateBtn");
+        let confirmModal = null;
+        if (modalEl && typeof bootstrap !== "undefined") {
+            confirmModal = new bootstrap.Modal(modalEl);
+        }
+
+        form?.addEventListener("submit", function(e){
             if(!isAdmin){ e.preventDefault(); alert('Bạn không có quyền thực hiện thao tác này!'); return; }
             if(!this.reportValidity()){ e.preventDefault(); return; }
+
+            if (!hasConfirmedUpdate && confirmModal) {
+                e.preventDefault();
+                syncHiddenFromVisible();
+                confirmModal.show();
+                return;
+            }
             syncHiddenFromVisible();
         });
 
-        // Tìm kiếm sản phẩm
+        confirmBtn?.addEventListener("click", function(){
+            hasConfirmedUpdate = true;
+            this.disabled = true;
+            this.textContent = "Đang cập nhật...";
+            syncHiddenFromVisible();
+            form?.submit();
+        });
+        // ===============================================
+
         document.getElementById("productSearchInput")?.addEventListener("input", function(){
             if(!isAdmin) return;
             clearTimeout(this._searchTimer);
@@ -555,13 +590,10 @@
             this._searchTimer=setTimeout(()=>searchProducts(query,0),300);
         });
 
-        // Nạp danh sách sản phẩm lần đầu (nếu cần)
         if(isAdmin && !isReadOnly && !viewMode){
             searchProducts("", /*[[${currentProductPage}]]*/ 0);
         }
     });
-
-
 </script>
 <script th:src="@{/js/notification.js}"></script>
 
