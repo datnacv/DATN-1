@@ -1350,6 +1350,7 @@
                 </div>
 
                 <!-- SHIPPING -->
+                <!-- SHIPPING -->
                 <div class="mb-3">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="fas fa-truck"></i>
@@ -1361,21 +1362,28 @@
                             <label class="voucher-card d-flex align-items-start gap-3 border rounded mb-2 w-100"
                                    style="cursor:pointer;"
                                    th:attr="data-scope=${'SHIPPING'},
-                              data-code=${v.ma},
-                              data-min-order=${v.giaTriGiamToiThieu}">
+                      data-code=${v.ma},
+                      data-min-order=${v.giaTriGiamToiThieu}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${v.ten}">Tên phiếu</div>
                                     <div class="text-muted small">
-                    <span th:text="${
-                      v.loai == 'FREESHIP_FULL' ? 'Miễn phí vận chuyển'
-                      : (v.loai == 'FREESHIP_CAP'
-                          ? 'Giảm ' + #numbers.formatDecimal(v.giaTriGiamToiDa, 0, 'POINT', 0, 'COMMA') + ' VND'
-                          : 'Giảm phí vận chuyển')
-                    }">Mô tả freeship</span>
+            <span th:text="${
+              v.loai == 'FREESHIP_FULL' ? 'Miễn phí vận chuyển'
+              : (v.loai == 'FREESHIP_CAP'
+                  ? 'Giảm ' + #numbers.formatDecimal(v.giaTriGiamToiDa, 0, 'POINT', 0, 'COMMA') + ' VND'
+                  : 'Giảm phí vận chuyển')
+            }">Mô tả freeship</span>
                                         • ĐH tối thiểu:
                                         <span th:text="${#numbers.formatDecimal(v.giaTriGiamToiThieu, 0, 'POINT', 0, 'COMMA')}">0</span> VND
                                         • HSD:
                                         <span th:text="${#temporals.format(v.ngayKetThuc,'d/M/yyyy')}"></span>
+                                        <!-- PTTT -->
+                                        • PTTT:
+                                        <span th:text="${
+      #maps.containsKey(voucherPtttMapById, v.id) ? voucherPtttMapById[v.id]
+    : (#maps.containsKey(voucherPtttMapByMa, v.ma) ? voucherPtttMapByMa[v.ma]
+    : 'Tất cả')
+}">Tất cả</span>
                                     </div>
                                 </div>
                                 <input class="form-check-input mt-1" type="radio" name="rb-ship" th:value="${v.ma}">
@@ -1384,6 +1392,7 @@
                     </th:block>
                 </div>
 
+                <!-- ORDER -->
                 <!-- ORDER -->
                 <div class="mt-4">
                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -1396,8 +1405,8 @@
                             <label class="voucher-card d-flex align-items-start gap-3 border rounded mb-2 w-100"
                                    style="cursor:pointer;"
                                    th:attr="data-scope=${'ORDER'},
-                              data-code=${v.ma},
-                              data-min-order=${v.giaTriGiamToiThieu}">
+                      data-code=${v.ma},
+                      data-min-order=${v.giaTriGiamToiThieu}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${v.ten}">Tên phiếu</div>
                                     <div class="text-muted small">
@@ -1408,6 +1417,11 @@
                                         <span th:text="${#numbers.formatDecimal(v.giaTriGiamToiThieu, 0, 'POINT', 0, 'COMMA')}">0</span> VND
                                         • HSD:
                                         <span th:text="${#temporals.format(v.ngayKetThuc,'d/M/yyyy')}"></span>
+                                        • PTTT:
+                                        <span th:text="${#maps.containsKey(voucherPtttMapById, v.id) ? voucherPtttMapById[v.id] :
+                              (#maps.containsKey(voucherPtttMapByMa, v.ma) ? voucherPtttMapByMa[v.ma] : 'Tất cả')}">
+              Tất cả
+            </span>
                                     </div>
                                 </div>
                                 <input class="form-check-input mt-1" type="radio" name="rb-order" th:value="${v.ma}">
@@ -1415,6 +1429,8 @@
                         </th:block>
                     </th:block>
                 </div>
+
+
 
                 <!-- Không có kết quả -->
                 <div id="voucher-no-result" class="text-center text-muted py-3 d-none">

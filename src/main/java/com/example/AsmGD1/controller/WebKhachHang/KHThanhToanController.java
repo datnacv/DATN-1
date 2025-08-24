@@ -145,28 +145,30 @@ public class KHThanhToanController {
         }
 
         try {
+            // Thông tin người dùng + địa chỉ
             model.addAttribute("loggedInUser", nguoiDung);
 
             List<DiaChiNguoiDung> addresses = diaChiNguoiDungRepository.findByNguoiDung_Id(nguoiDung.getId());
             model.addAttribute("addresses", addresses);
 
-            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository
+                    .findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
             if (defaultAddress.isPresent()) {
-                DiaChiNguoiDung address = defaultAddress.get();
-                model.addAttribute("defaultAddress", address.getChiTietDiaChi() + ", " +
-                        address.getPhuongXa() + ", " +
-                        address.getQuanHuyen() + ", " +
-                        address.getTinhThanhPho());
-                model.addAttribute("nguoiNhan", address.getNguoiNhan() != null ? address.getNguoiNhan() : nguoiDung.getHoTen());
-                model.addAttribute("soDienThoaiNguoiNhan", address.getSoDienThoaiNguoiNhan() != null ? address.getSoDienThoaiNguoiNhan() : nguoiDung.getSoDienThoai());
-                model.addAttribute("chiTietDiaChi", address.getChiTietDiaChi() != null ? address.getChiTietDiaChi() : nguoiDung.getChiTietDiaChi());
+                DiaChiNguoiDung a = defaultAddress.get();
+                model.addAttribute("defaultAddress", a.getChiTietDiaChi() + ", " + a.getPhuongXa() + ", "
+                        + a.getQuanHuyen() + ", " + a.getTinhThanhPho());
+                model.addAttribute("nguoiNhan", a.getNguoiNhan() != null ? a.getNguoiNhan() : nguoiDung.getHoTen());
+                model.addAttribute("soDienThoaiNguoiNhan",
+                        a.getSoDienThoaiNguoiNhan() != null ? a.getSoDienThoaiNguoiNhan() : nguoiDung.getSoDienThoai());
+                model.addAttribute("chiTietDiaChi",
+                        a.getChiTietDiaChi() != null ? a.getChiTietDiaChi() : nguoiDung.getChiTietDiaChi());
             } else {
                 model.addAttribute("defaultAddress", "");
                 model.addAttribute("nguoiNhan", nguoiDung.getHoTen());
                 model.addAttribute("soDienThoaiNguoiNhan", nguoiDung.getSoDienThoai());
             }
 
-            // ✅ Lọc theo soLuong (không dùng gioiHanSuDung), rồi gộp với phiếu cá nhân & loại trùng
+            // Lấy danh sách voucher (công khai còn lượt + cá nhân còn hạn), loại trùng
             List<PhieuGiamGia> publicVouchers = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> "cong_khai".equalsIgnoreCase(p.getKieuPhieu()))
                     .filter(p -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(p)))
@@ -183,8 +185,47 @@ public class KHThanhToanController {
             List<PhieuGiamGia> allVouchers = new java.util.ArrayList<>(merged.values());
             model.addAttribute("vouchers", allVouchers);
 
+            // ===== Build map PTTT hiển thị cho từng phiếu =====
+            java.util.Map<UUID, String>  voucherPtttMapById = new java.util.LinkedHashMap<>();
+            java.util.Map<String, String> voucherPtttMapByMa = new java.util.LinkedHashMap<>();
+
+            for (PhieuGiamGia v : allVouchers) {
+                List<PhuongThucThanhToan> list;
+                try {
+                    list = phuongThucRepo.findSelectedPtttByVoucherId(v.getId());
+                } catch (Exception ex) {
+                    list = java.util.Collections.emptyList();
+                }
+
+                String display;
+                if (list == null || list.isEmpty()) {
+                    // Không cấu hình PTTT -> áp dụng tất cả
+                    display = "Tất cả";
+                } else {
+                    display = list.stream()
+                            .map(pm -> {
+                                String ten = pm.getTenPhuongThuc();
+                                return (ten == null || ten.isBlank())
+                                        ? (pm.getId() != null ? pm.getId().toString() : null)
+                                        : ten;
+                            })
+                            .filter(java.util.Objects::nonNull)
+                            .distinct()
+                            .collect(java.util.stream.Collectors.joining(", "));
+                }
+
+                voucherPtttMapById.put(v.getId(), display);
+                if (v.getMa() != null) voucherPtttMapByMa.put(v.getMa(), display);
+            }
+
+            model.addAttribute("voucherPtttMapById", voucherPtttMapById);
+            model.addAttribute("voucherPtttMapByMa", voucherPtttMapByMa);
+
+            // Log kiểm tra
+            logger.info("PTTT map by ID: {}", voucherPtttMapById);
+            logger.info("PTTT map by MA : {}", voucherPtttMapByMa);
             logger.info("Tổng số voucher truyền ra view: {}", allVouchers.size());
-            allVouchers.forEach(v -> logger.info(" - Voucher: {}", v.getMa()));
+
         } catch (Exception e) {
             model.addAttribute("error", "Không thể tải thông tin người dùng: " + e.getMessage());
             model.addAttribute("defaultAddress", "");
@@ -193,6 +234,7 @@ public class KHThanhToanController {
         }
         return "WebKhachHang/thanh-toan";
     }
+
 
 
     @Transactional
