@@ -411,6 +411,10 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  function normalizeName(str) {
+    return str.trim().replace(/\s+/g, ' ');
+  }
+
   // Hàm hiển thị toast notification
   function showToast(message, type = 'success') {
     const toastContainer = document.querySelector('.toast-container');
@@ -832,6 +836,44 @@
   document.getElementById('profileForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = this;
+    let hoTen = document.querySelector('input[name="hoTen"]').value.trim();
+
+    // Kiểm tra nếu họ tên có dấu cách dư thừa ở đầu và cuối chuỗi
+    if (hoTen !== document.querySelector('input[name="hoTen"]').value) {
+      // Nếu có dấu cách thừa ở đầu hoặc cuối, hiển thị thông báo lỗi
+      showToast('Họ tên không được có khoảng trắng dư thừa ở đầu và cuối.', 'danger');
+      return;
+    }
+
+    // Loại bỏ tất cả khoảng trắng dư thừa giữa các từ (nếu có)
+    hoTen = hoTen.replace(/\s+/g, ' '); // Thay thế tất cả dấu cách dư thừa bằng một dấu cách duy nhất
+
+    // Kiểm tra xem họ tên có phải là chuỗi rỗng sau khi loại bỏ dấu cách không hợp lệ
+    if (hoTen === "") {
+      showToast('Họ tên không hợp lệ. Vui lòng nhập họ tên hợp lệ.', 'danger');
+      return;
+    }
+
+    // Biểu thức chính quy kiểm tra họ tên (chỉ chứa chữ cái và dấu cách hợp lệ)
+    const regex = /^[A-Za-zÀ-ỹà-ỹ\s]+$/;
+
+    // Kiểm tra nếu họ tên có ký tự không hợp lệ hoặc có dấu cách dư thừa
+    if (!regex.test(hoTen)) {
+      // Hiển thị thông báo lỗi nếu họ tên không hợp lệ
+      showToast('Họ tên không hợp lệ. Vui lòng chỉ nhập chữ cái và một khoảng cách giữa các phần của tên.', 'danger');
+      return;
+    }
+
+    let soDienThoai = document.querySelector('input[name="soDienThoai"]').value.trim();
+
+    // Cập nhật lại biểu thức chính quy để kiểm tra số điện thoại Việt Nam (10 và 11 số)
+    const regexSDT = /^(0(3|5|7|8|9)[0-9]{8}|02[0-9]{8})$/;
+
+    // Kiểm tra nếu số điện thoại không hợp lệ
+    if (!regexSDT.test(soDienThoai)) {
+      showToast('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ.', 'danger');
+      return;
+    }
 
     const current = {
       hoTen: form.querySelector('input[name="hoTen"]').value.trim(),
@@ -894,7 +936,7 @@
                 swToast(data.message || 'Không thể cập nhật', 'error');
               }
             })
-            .catch(err => swToast('Có lỗi xảy ra: ' + err.message, 'error'))
+            .catch(err => swToast('Vui lòng nhập đúng thông tin', 'error'))
             .finally(() => {
               button.disabled = false;
               button.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';
