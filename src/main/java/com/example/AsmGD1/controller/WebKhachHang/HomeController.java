@@ -51,6 +51,39 @@ public class HomeController {
         this.khachHangGioHangService = khachHangGioHangService;
     }
 
+
+    @GetMapping("/api/products/prices")
+    @ResponseBody
+    public ResponseEntity<Map<UUID, Map<String, Object>>> getUpdatedPrices() {
+        try {
+            List<SanPhamDto> allProducts = khachhangSanPhamService.getAllActiveProductsDtos(); // Hoặc lấy từ cache nếu có
+            Map<UUID, Map<String, Object>> prices = new HashMap<>();
+            for (SanPhamDto product : allProducts) {
+                Map<String, Object> info = new HashMap<>();
+                // Giá sau khi giảm (nếu có flash sale hoặc campaign)
+                info.put("giaSauGiam", product.getDiscountedPrice() != null ? product.getDiscountedPrice() : product.getPrice());
+                // Giá gốc
+                info.put("oldPrice", product.getOldPrice());
+                // Phần trăm giảm giá
+                info.put("discountPercentage", product.getDiscountPercentage() != null ? product.getDiscountPercentage() : BigDecimal.ZERO);
+                // Tên chiến dịch giảm giá
+                info.put("discountCampaignName", product.getDiscountCampaignName() != null ? product.getDiscountCampaignName() : "");
+                // Tổng số lượng tồn kho
+                info.put("tongSoLuong", product.getTongSoLuong());
+                // Số lượng đã bán (nếu có)
+                info.put("sold", product.getSold() != null ? product.getSold() : "0");
+                // Tiến độ flash sale (nếu có)
+                info.put("progress", product.getProgress() != null ? product.getProgress() : 0);
+
+                prices.put(product.getId(), info);
+            }
+            return ResponseEntity.ok(prices);
+        } catch (Exception e) {
+            logger.error("Lỗi khi lấy giá cập nhật: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
     @GetMapping("/")
     public String home(Model model, Authentication authentication) {
 

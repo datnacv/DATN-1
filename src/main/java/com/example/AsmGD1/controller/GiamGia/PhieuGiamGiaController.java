@@ -159,17 +159,24 @@ public class PhieuGiamGiaController {
 
     private String getTrangThai(PhieuGiamGia v) {
         LocalDateTime now = LocalDateTime.now();
-        if (v.getNgayBatDau() == null || v.getNgayKetThuc() == null) {
-            return "Không xác định";
-        }
-        if (now.isBefore(v.getNgayBatDau())) {
-            return "Sắp diễn ra";
-        } else if (!now.isAfter(v.getNgayKetThuc())) {
-            return "Đang diễn ra";
-        } else {
+
+        // Check số lượng trước
+        if (v.getSoLuong() != null && v.getSoLuong() <= 0) {
             return "Đã kết thúc";
         }
+
+        if (v.getNgayBatDau() != null && v.getNgayKetThuc() != null) {
+            if (now.isBefore(v.getNgayBatDau())) {
+                return "Sắp diễn ra";
+            } else if (!now.isAfter(v.getNgayKetThuc())) {
+                return "Đang diễn ra";
+            } else {
+                return "Đã kết thúc";
+            }
+        }
+        return "Không xác định";
     }
+
 
     @GetMapping("/create")
     public String createForm(Model model, RedirectAttributes redirectAttributes) {

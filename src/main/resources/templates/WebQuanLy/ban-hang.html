@@ -1243,6 +1243,32 @@
     return { proceed: true, removed: false };
   }
 
+  // === NEW: Giới hạn theo DECIMAL(18,2) ===
+  const DECIMAL_TOTAL_DIGITS = 18;
+  const DECIMAL_SCALE = 2;
+  const MAX_CENTS_BIG = BigInt('9'.repeat(DECIMAL_TOTAL_DIGITS));          // 999... (18 số 9)
+  const MAX_VND_BIG = 1000000000000000n;
+
+  function clampCashToDbLimit(raw) {
+    // Nhận string bất kỳ (có thể có dấu chấm), trả về { digits, over }
+    let digits = String(raw || '').replace(/[^\d]/g, '');
+    if (digits === '') digits = '0';
+    let over = false;
+    try {
+      let val = BigInt(digits);
+      if (val > MAX_VND_BIG) { val = MAX_VND_BIG; over = true; }
+      return { digits: val.toString(), over };
+    } catch {
+      // Nếu parse lỗi thì coi như 0
+      return { digits: '0', over: true };
+    }
+  }
+
+  function formatBigVndDigits(digitsStr) {
+    // Dùng lại style "12.345" như ô input tiền mặt
+    return String(digitsStr).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
   async function revalidateVouchersOnPaymentChange() {
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
@@ -3444,6 +3470,17 @@
         return;
       }
     }
+    // === NEW: Reject nếu "Tiền khách đưa" vượt DECIMAL(18,2)
+    const cashDigitsForCheck = String(cashAmountInput?.value || '').replace(/[^\d]/g, '');
+    if (clampCashToDbLimit(cashDigitsForCheck).over) {
+      showToast(
+              `Số tiền khách đưa vượt giới hạn. Vui lòng nhập ≤ ${formatBigVndDigits(MAX_VND_BIG.toString())} VNĐ.`,
+              'warning'
+      );
+      cashAmountInput?.classList.add('is-invalid');
+      cashAmountInput?.focus();
+      return;
+    }
 
     // ===== Xác nhận =====
     const confirmResult = await Swal.fire({
@@ -4041,17 +4078,53 @@
     }
 
     // Nhập tiền mặt (định dạng & cập nhật tóm tắt)
+    // Nhập tiền mặt (định dạng, clamp theo DECIMAL(18,2) & cập nhật tóm tắt)
     const cashInput = document.getElementById('cashAmount');
     if (cashInput) {
+      let cashOverflowWarnedAt = 0;
+
       cashInput.addEventListener('input', (e) => {
-        const rawValue = e.target.value.replace(/\./g, '');
-        const formattedValue = formatCashInput(rawValue);
-        e.target.value = formattedValue;
+        // Lấy số, clamp theo DECIMAL(18,2)
+        const rawDigits = e.target.value.replace(/[^\d]/g, '');
+        const { digits, over } = clampCashToDbLimit(rawDigits);
+
+        // Ghi lại lên ô input theo đúng format "12.345"
+        e.target.value = formatBigVndDigits(digits);
+
+        // Cảnh báo (debounce để không spam)
+        if (over) {
+          const now = Date.now();
+          if (now - cashOverflowWarnedAt > 1200) {
+            showToast(
+                    `Giá trị tối đa cho phép là ${formatBigVndDigits(MAX_VND_BIG.toString())} VNĐ.`,
+                    'warning'
+            );
+            cashOverflowWarnedAt = now;
+          }
+          e.target.classList.add('is-invalid');
+        } else {
+          e.target.classList.remove('is-invalid');
+        }
+
+        // Cập nhật state & tóm tắt (tab.cashAmount vẫn là Number cho các case bình thường)
         const tab = tabs.find(t => t.id === currentTabId);
         if (tab) {
-          tab.cashAmount = parseFloat(rawValue) || 0;
+          tab.cashAmount = Number(digits) || 0; // đủ an toàn cho hầu hết case thực tế
           updateSummary(tab);
           localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        }
+      });
+
+      // Khi blur cũng kiểm tra lại để chắc cú
+      cashInput.addEventListener('blur', (e) => {
+        const { digits, over } = clampCashToDbLimit(e.target.value);
+        if (over) {
+          e.target.value = formatBigVndDigits(digits);
+          e.target.classList.add('is-invalid');
+          showToast(
+                  `Số tiền vượt giới hạn lưu trữ. Vui lòng nhập ≤ ${formatBigVndDigits(MAX_VND_BIG.toString())} VNĐ.`,
+                  'warning'
+          );
         }
       });
     }

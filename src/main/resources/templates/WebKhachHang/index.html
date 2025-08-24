@@ -374,12 +374,6 @@
     .product-card:hover .product-media img {
       transform: scale(1.08);
     }
-    .media-gradient {
-      position: absolute;
-      inset: auto 0 0 0;
-      height: 44%;
-      background: linear-gradient(to top, rgba(0,0,0,.45), rgba(0,0,0,0));
-    }
     .badge-new {
       background: #10b981;
       color: #fff;
@@ -575,7 +569,7 @@
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${newProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-52 object-cover" loading="lazy"/>
         </a>
 
         <span class="absolute top-2 left-2 bg-blue-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">New</span>
@@ -597,7 +591,6 @@
             <i class="fas fa-eye text-blue-800"></i>
           </button>
         </div>
-        <div class="media-gradient"></div>
       </div>
 
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
@@ -638,7 +631,7 @@
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${allProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-52 object-cover" loading="lazy"/>
         </a>
 
         <div class="action-group">
@@ -658,7 +651,6 @@
             <i class="fas fa-eye text-blue-800"></i>
           </button>
         </div>
-        <div class="media-gradient"></div>
       </div>
 
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
@@ -698,7 +690,7 @@
     <div class="product-card bg-white rounded-lg shadow-md overflow-hidden" th:each="product : ${bestsellerProducts}">
       <div class="relative">
         <a th:href="@{/chitietsanpham(id=${product.id})}">
-          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-48 object-cover" loading="lazy"/>
+          <img th:src="${product.urlHinhAnh}" th:alt="'Hình ảnh sản phẩm ' + ${product.tenSanPham}" class="w-full h-52 object-cover" loading="lazy"/>
         </a>
 
         <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow">Hot</span>
@@ -720,7 +712,6 @@
             <i class="fas fa-eye text-blue-800"></i>
           </button>
         </div>
-        <div class="media-gradient"></div>
       </div>
 
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
@@ -855,6 +846,88 @@
 <script src="/js/navbar.js"></script>
 <!--chatbot-->
 <script>
+
+  document.addEventListener('DOMContentLoaded', function() {
+    function updateProductPrices() {
+      fetch('/api/products/prices', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      })
+              .then(response => {
+                if (!response.ok) throw new Error('Lỗi khi lấy giá cập nhật');
+                return response.json();
+              })
+              .then(data => {
+                document.querySelectorAll('.product-card').forEach(card => {
+                  const productId = card.querySelector('.cart-icon')?.dataset.productId || card.querySelector('.quick-view-btn')?.dataset.productId;
+                  if (!productId || !data[productId]) return;
+
+                  const priceInfo = data[productId];
+                  const priceEl = card.querySelector('.price');
+                  let oldPriceContainer = card.querySelector('.text-sm.text-red-600.line-through');
+
+                  // Cập nhật giá hiện tại (giá giảm hoặc giá thường)
+                  if (priceEl) {
+                    const newPrice = Number(priceInfo.giaSauGiam || 0).toLocaleString('vi-VN') + ' VNĐ';
+                    if (priceEl.textContent !== newPrice) {
+                      priceEl.textContent = 'Từ ' + newPrice;
+                      priceEl.classList.add('text-blue-600', 'font-bold');
+                    }
+                  }
+
+
+
+                  // Chỉ hiển thị giá gốc nếu có giảm giá (discountPercentage > 0 và oldPrice tồn tại)
+                  if (priceInfo.discountPercentage > 0 && priceInfo.oldPrice && priceInfo.oldPrice !== priceInfo.giaSauGiam) {
+                    const oldPrice = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+                    if (!oldPriceContainer) {
+                      // Tạo phần tử container giá gốc nếu chưa tồn tại
+                      oldPriceContainer = document.createElement('div');
+                      oldPriceContainer.className = 'text-sm text-red-600 line-through';
+                      const oldPriceSpan = document.createElement('span');
+                      oldPriceSpan.className = 'formatted-old-price';
+                      oldPriceContainer.appendChild(oldPriceSpan);
+                      // Chèn ngay sau phần tử giá hiện tại
+                      priceEl.parentNode.insertBefore(oldPriceContainer, priceEl.nextSibling);
+                    }
+
+                    const oldPriceSpan = oldPriceContainer.querySelector('.formatted-old-price');
+                    if (oldPriceSpan.textContent !== oldPrice) {
+                      oldPriceSpan.textContent = oldPrice;
+                    }
+                    oldPriceContainer.style.display = 'block'; // Đảm bảo hiển thị
+                  } else if (oldPriceContainer) {
+                    // Ẩn giá gốc nếu không có giảm giá
+                    oldPriceContainer.style.display = 'none';
+                  }
+
+                  // Cập nhật badge giảm giá
+                  const discountEl = card.querySelector('.badge-discount') || document.createElement('span');
+                  if (!card.contains(discountEl)) {
+                    discountEl.className = 'badge-discount absolute top-2 right-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow';
+                    card.querySelector('.relative').appendChild(discountEl);
+                  }
+                  if (priceInfo.discountPercentage > 0) {
+                    discountEl.textContent = `-${priceInfo.discountPercentage}%`;
+                    discountEl.style.display = 'block';
+                  } else {
+                    discountEl.style.display = 'none';
+                  }
+                });
+              })
+              .catch(error => console.error('Lỗi cập nhật giá:', error));
+    }
+
+    // Cập nhật ban đầu
+    updateProductPrices();
+
+    // Poll mỗi 5 giây (có thể điều chỉnh tần suất)
+    setInterval(updateProductPrices, 5000);
+  });
+
+
   const qrTrigger = document.getElementById('qr-trigger');
   const qrMenu    = document.getElementById('qr-menu');
 
@@ -973,7 +1046,6 @@
     const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
     el.textContent = formatted;
   });
-
 </script>
 <!--scroll-->
 <script>
