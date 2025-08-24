@@ -10,12 +10,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
   <style>
-    /* Enhanced navbar */
-    .navbar {
-      background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+    .navbar {  background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
       backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
+      border-bottom: 1px solid rgba(255,255,255,0.1); }
     .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
 
     .search-suggestions {
@@ -234,7 +231,7 @@
 </head>
 <body>
 
-<div class="ticker py-2 overflow-hidden fixed top-0 w-full z-50">
+<div class="ticker py-1 overflow-hidden" style="height: 40px;">
   <marquee behavior="scroll" direction="left" scrollamount="5">
     🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
   </marquee>
@@ -356,11 +353,17 @@
         <form id="addAddressForm">
           <div class="mb-3">
             <label for="addNguoiNhan" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="addNguoiNhan" name="nguoiNhan" placeholder="Nhập tên người nhận" required>
+            <input type="text" class="form-control" id="addNguoiNhan" name="nguoiNhan"
+                   required maxlength="50"
+                   pattern="(?! )(?!.* {2})[A-Za-zÀ-ỿ\u0110\u0111]+(?: [A-Za-zÀ-ỿ\u0110\u0111]+)*"
+                   title="Chỉ chữ và khoảng trắng, không dư khoảng trắng">
           </div>
           <div class="mb-3">
             <label for="addSoDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="addSoDienThoaiNguoiNhan" name="soDienThoaiNguoiNhan" placeholder="Nhập SĐT người nhận" required>
+            <input type="text" class="form-control" id="addSoDienThoaiNguoiNhan" name="soDienThoaiNguoiNhan"
+                   required inputmode="tel"
+                   pattern="(0(3|5|7|8|9)\d{8}|02\d{9})"
+                   title="Di động: 03/05/07/08/09 + 8 số; Cố định: 02 + 9 số">
           </div>
           <div class="mb-3">
             <label for="addTinhThanhPho" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
@@ -413,20 +416,18 @@
 
             <div class="mb-3">
               <label th:for="'editNguoiNhan' + ${addr.id}" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
-              <input type="text" class="form-control"
-                     th:id="'editNguoiNhan' + ${addr.id}"
-                     name="nguoiNhan"
-                     th:value="${addr.nguoiNhan != null ? addr.nguoiNhan : addr.nguoiDung.hoTen}"
-                     placeholder="Nhập tên người nhận" required>
+              <input type="text" class="form-control" th:id="'editNguoiNhan' + ${addr.id}" name="nguoiNhan"
+                     required maxlength="50"
+                     pattern="(?! )(?!.* {2})[A-Za-zÀ-ỿ\u0110\u0111]+(?: [A-Za-zÀ-ỿ\u0110\u0111]+)*"
+                     title="Chỉ chữ và khoảng trắng, không dư khoảng trắng">
             </div>
 
             <div class="mb-3">
               <label th:for="'editSoDienThoaiNguoiNhan' + ${addr.id}" class="form-label">Số điện thoại người nhận <span class="text-danger">*</span></label>
-              <input type="text" class="form-control"
-                     th:id="'editSoDienThoaiNguoiNhan' + ${addr.id}"
-                     name="soDienThoaiNguoiNhan"
-                     th:value="${addr.soDienThoaiNguoiNhan != null ? addr.soDienThoaiNguoiNhan : addr.nguoiDung.soDienThoai}"
-                     placeholder="Nhập SĐT người nhận" required>
+              <input type="text" class="form-control" th:id="'editSoDienThoaiNguoiNhan' + ${addr.id}" name="soDienThoaiNguoiNhan"
+                     required inputmode="tel"
+                     pattern="(0(3|5|7|8|9)\d{8}|02\d{9})"
+                     title="Di động: 03/05/07/08/09 + 8 số; Cố định: 02 + 9 số">
             </div>
 
             <div class="mb-3">
@@ -476,6 +477,34 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  function normalizeName(str) {
+    return str.trim().replace(/\s+/g, ' ');
+  }
+  function cleanPersonName(str) {
+    // Trim 2 đầu + gom nhiều khoảng trắng thành 1
+    return str.trim().replace(/\s+/g, ' ');
+  }
+
+  // Chỉ chữ cái (kể cả tiếng Việt) và khoảng trắng, không cho space đầu/cuối hay 2 space liên tiếp
+  function isValidPersonName(name) {
+    const re = /^(?! )(?!.* {2})[A-Za-zÀ-ỿ\u0110\u0111]+(?: [A-Za-zÀ-ỿ\u0110\u0111]+)*$/;
+    return re.test(name) && name.length >= 2 && name.length <= 50;
+  }
+
+  // Chuẩn hoá số: bỏ ký tự phân cách, đổi +84 / 84 về 0
+  function normalizeVNPhone(raw) {
+    let s = (raw || '').replace(/[^\d+]/g, '');
+    if (s.startsWith('+84')) s = '0' + s.slice(3);
+    else if (s.startsWith('84')) s = '0' + s.slice(2);
+    return s;
+  }
+
+  // Di động: 03/05/07/08/09 + 8 số (10 số)
+  // Cố định: 02 + 9 số (tổng 11 số, ví dụ 024/028 + 8 số)
+  function isValidVNPhone(phone) {
+    return /^(0(3|5|7|8|9)\d{8}|02\d{9})$/.test(phone);
+  }
+
   // Hàm hiển thị toast notification
   function showToast(message, type = 'success') {
     const toastContainer = document.querySelector('.toast-container');
@@ -762,11 +791,30 @@
 
   function updateAddressHandler() {
     const addressId = this.dataset.id;
-    const form = document.getElementById(`editAddressForm${addressId}`);
+
+    const nameInput  = document.getElementById(`editNguoiNhan${addressId}`);
+    const phoneInput = document.getElementById(`editSoDienThoaiNguoiNhan${addressId}`);
+
+    // --- Validate tên ---
+    let nguoiNhan = cleanPersonName(nameInput.value);
+    if (!isValidPersonName(nguoiNhan)) {
+      showToast('Tên người nhận không hợp lệ. Chỉ chứa chữ và khoảng trắng, không dư khoảng trắng.', 'danger');
+      nameInput.focus();
+      return;
+    }
+
+    // --- Validate SĐT ---
+    let soDienThoaiNguoiNhan = normalizeVNPhone(phoneInput.value);
+    if (!isValidVNPhone(soDienThoaiNguoiNhan)) {
+      showToast('Số điện thoại không hợp lệ. Ví dụ di động: 09xxxxxxxx; cố định: 024/028 + 8 số.', 'danger');
+      phoneInput.focus();
+      return;
+    }
+
     const data = {
       id: document.getElementById(`editId${addressId}`).value,
-      nguoiNhan: document.getElementById(`editNguoiNhan${addressId}`).value,
-      soDienThoaiNguoiNhan: document.getElementById(`editSoDienThoaiNguoiNhan${addressId}`).value,
+      nguoiNhan,
+      soDienThoaiNguoiNhan,
       tinhThanhPho: document.getElementById(`editTinhThanhPho${addressId}`).value,
       quanHuyen: document.getElementById(`editQuanHuyen${addressId}`).value,
       phuongXa: document.getElementById(`editPhuongXa${addressId}`).value,
@@ -778,8 +826,10 @@
       showToast('Vui lòng điền đầy đủ các trường địa chỉ', 'danger');
       return;
     }
+
     const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
     if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
     fetch(`/profile/address/${addressId}/update-ajax`, {
       method: 'POST',
       headers,
@@ -804,9 +854,29 @@
   // Thêm địa chỉ
   document.getElementById('addAddressForm')?.addEventListener('submit', function (e) {
     e.preventDefault();
+
+    const nameInput  = document.getElementById('addNguoiNhan');
+    const phoneInput = document.getElementById('addSoDienThoaiNguoiNhan');
+
+    // --- Validate tên ---
+    let nguoiNhan = cleanPersonName(nameInput.value);
+    if (!isValidPersonName(nguoiNhan)) {
+      showToast('Tên người nhận không hợp lệ. Chỉ chứa chữ và khoảng trắng, không dư khoảng trắng.', 'danger');
+      nameInput.focus();
+      return;
+    }
+
+    // --- Validate SĐT ---
+    let soDienThoaiNguoiNhan = normalizeVNPhone(phoneInput.value);
+    if (!isValidVNPhone(soDienThoaiNguoiNhan)) {
+      showToast('Số điện thoại không hợp lệ. Ví dụ di động: 09xxxxxxxx; cố định: 024/028 + 8 số.', 'danger');
+      phoneInput.focus();
+      return;
+    }
+
     const data = {
-      nguoiNhan: document.getElementById('addNguoiNhan').value,
-      soDienThoaiNguoiNhan: document.getElementById('addSoDienThoaiNguoiNhan').value,
+      nguoiNhan,
+      soDienThoaiNguoiNhan,
       tinhThanhPho: document.getElementById('addTinhThanhPho').value,
       quanHuyen: document.getElementById('addQuanHuyen').value,
       phuongXa: document.getElementById('addPhuongXa').value,
@@ -818,8 +888,10 @@
       showToast('Vui lòng điền đầy đủ các trường địa chỉ', 'danger');
       return;
     }
+
     const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
     if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
     fetch('/profile/address/add-ajax', {
       method: 'POST',
       headers,
@@ -833,20 +905,11 @@
               if (data.status === 'success') {
                 const modalEl = document.getElementById('addAddressModal');
                 const modal = bootstrap.Modal.getInstance(modalEl);
-
-                // Hiện toast trước khi reload
                 showToast(data.message || 'Thêm địa chỉ thành công');
-
-                // Khi modal đóng xong thì reload trang
                 modalEl.addEventListener('hidden.bs.modal', () => {
-                  if (data.redirect) {
-                    window.location.href = data.redirect; // nếu backend trả redirect
-                  } else {
-                    window.location.reload(); // reload để đồng bộ danh sách địa chỉ
-                  }
+                  if (data.redirect) window.location.href = data.redirect;
+                  else window.location.reload();
                 }, { once: true });
-
-                // Đóng modal + reset form
                 modal?.hide();
                 document.getElementById('addAddressForm').reset();
               } else {
@@ -897,6 +960,44 @@
   document.getElementById('profileForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = this;
+    let hoTen = document.querySelector('input[name="hoTen"]').value.trim();
+
+    // Kiểm tra nếu họ tên có dấu cách dư thừa ở đầu và cuối chuỗi
+    if (hoTen !== document.querySelector('input[name="hoTen"]').value) {
+      // Nếu có dấu cách thừa ở đầu hoặc cuối, hiển thị thông báo lỗi
+      showToast('Họ tên không được có khoảng trắng dư thừa ở đầu và cuối.', 'danger');
+      return;
+    }
+
+    // Loại bỏ tất cả khoảng trắng dư thừa giữa các từ (nếu có)
+    hoTen = hoTen.replace(/\s+/g, ' '); // Thay thế tất cả dấu cách dư thừa bằng một dấu cách duy nhất
+
+    // Kiểm tra xem họ tên có phải là chuỗi rỗng sau khi loại bỏ dấu cách không hợp lệ
+    if (hoTen === "") {
+      showToast('Họ tên không hợp lệ. Vui lòng nhập họ tên hợp lệ.', 'danger');
+      return;
+    }
+
+    // Biểu thức chính quy kiểm tra họ tên (chỉ chứa chữ cái và dấu cách hợp lệ)
+    const regex = /^[A-Za-zÀ-ỹà-ỹ\s]+$/;
+
+    // Kiểm tra nếu họ tên có ký tự không hợp lệ hoặc có dấu cách dư thừa
+    if (!regex.test(hoTen)) {
+      // Hiển thị thông báo lỗi nếu họ tên không hợp lệ
+      showToast('Họ tên không hợp lệ. Vui lòng chỉ nhập chữ cái và một khoảng cách giữa các phần của tên.', 'danger');
+      return;
+    }
+
+    let soDienThoai = document.querySelector('input[name="soDienThoai"]').value.trim();
+
+    // Cập nhật lại biểu thức chính quy để kiểm tra số điện thoại Việt Nam (10 và 11 số)
+    const regexSDT = /^(0(3|5|7|8|9)[0-9]{8}|02[0-9]{8})$/;
+
+    // Kiểm tra nếu số điện thoại không hợp lệ
+    if (!regexSDT.test(soDienThoai)) {
+      showToast('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ.', 'danger');
+      return;
+    }
 
     const current = {
       hoTen: form.querySelector('input[name="hoTen"]').value.trim(),
@@ -959,7 +1060,7 @@
                 swToast(data.message || 'Không thể cập nhật', 'error');
               }
             })
-            .catch(err => swToast('Có lỗi xảy ra: ' + err.message, 'error'))
+            .catch(err => swToast('Vui lòng nhập đúng thông tin', 'error'))
             .finally(() => {
               button.disabled = false;
               button.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';
