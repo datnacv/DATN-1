@@ -124,7 +124,9 @@ public class ChienDichGiamGiaController {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+        // CHỈ LẤY SẢN PHẨM CÒN CTSP “RẢNH”
+        Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
+
         model.addAttribute("productPage", productPage);
         model.addAttribute("currentProductPage", productPage.getNumber());
         model.addAttribute("totalProductPages", productPage.getTotalPages());
@@ -132,6 +134,7 @@ public class ChienDichGiamGiaController {
         addUserInfoToModel(model);
         return "WebQuanLy/discount-campaign-form";
     }
+
 
     // ===== Create submit =====
     @PostMapping("/create")
@@ -152,7 +155,9 @@ public class ChienDichGiamGiaController {
             model.addAttribute("chienDich", chienDich);
 
             Pageable pageable = PageRequest.of(0, 10);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            // CHỈ LẤY SẢN PHẨM CÒN CTSP “RẢNH”
+            Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
+
             model.addAttribute("productPage", productPage);
             model.addAttribute("currentProductPage", productPage.getNumber());
             model.addAttribute("totalProductPages", productPage.getTotalPages());
@@ -172,7 +177,9 @@ public class ChienDichGiamGiaController {
             model.addAttribute("chienDich", chienDich);
 
             Pageable pageable = PageRequest.of(0, 10);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            // CHỈ LẤY SẢN PHẨM CÒN CTSP “RẢNH”
+            Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
+
             model.addAttribute("productPage", productPage);
             model.addAttribute("currentProductPage", productPage.getNumber());
             model.addAttribute("totalProductPages", productPage.getTotalPages());
@@ -184,8 +191,6 @@ public class ChienDichGiamGiaController {
     // ===== View =====
     @GetMapping("/view/{id}")
     public String xemChiTiet(@PathVariable("id") UUID id,
-                             @RequestParam(defaultValue = "0") int page,
-                             @RequestParam(defaultValue = "10") int size,
                              Model model,
                              RedirectAttributes redirectAttributes) {
         if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
@@ -196,30 +201,30 @@ public class ChienDichGiamGiaController {
         try {
             ChienDichGiamGia chienDich = chienDichService.timTheoId(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
+            String status = getStatus(chienDich);
 
-            model.addAttribute("readOnly", true);
-            model.addAttribute("viewMode", true);
+            // Lấy đúng CHI TIẾT đã chọn
+            List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
+
+            // SUY RA danh sách SẢN PHẨM từ chi tiết đã chọn (de-duplicate, sort theo tên)
+            List<SanPham> selectedProducts = chiTietDaChon.stream()
+                    .map(ChiTietSanPham::getSanPham)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.collectingAndThen(
+                            Collectors.toMap(SanPham::getId, sp -> sp, (a, b) -> a, LinkedHashMap::new),
+                            m -> m.values().stream()
+                                    .sorted(Comparator.comparing(sp -> Optional.ofNullable(sp.getTenSanPham()).orElse("")))
+                                    .toList()
+                    ));
+
             model.addAttribute("isReadOnly", true);
             model.addAttribute("chienDich", chienDich);
-
-            List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
-            Set<UUID> selectedProductIds = chiTietDaChon.stream()
-                    .filter(ct -> ct.getSanPham() != null)
-                    .map(ct -> ct.getSanPham().getId())
-                    .collect(Collectors.toSet());
-
-            Pageable pageable = PageRequest.of(page, size);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
-
+            model.addAttribute("status", status);
+            model.addAttribute("selectedProducts", selectedProducts);
             model.addAttribute("selectedDetails", chiTietDaChon);
-            model.addAttribute("selectedProductIds", selectedProductIds);
-            model.addAttribute("productPage", productPage);
-            model.addAttribute("currentProductPage", productPage.getNumber());
-            model.addAttribute("totalProductPages", productPage.getTotalPages());
-            model.addAttribute("status", getStatus(chienDich));
 
             addUserInfoToModel(model);
-            return "WebQuanLy/discount-campaign-edit";
+            return "WebQuanLy/discount-campaign-view"; // <-- TÁCH VIEW RIÊNG
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi tải thông tin chiến dịch: " + e.getMessage());
             return "redirect:/acvstore/chien-dich-giam-gia";
@@ -242,9 +247,9 @@ public class ChienDichGiamGiaController {
             return "redirect:/acvstore/chien-dich-giam-gia";
         }
 
+        // Nhân viên luôn chuyển sang trang view
         if (isEmployee) {
-            return "redirect:/acvstore/chien-dich-giam-gia/view/" + id +
-                    "?page=" + page + "&size=" + size;
+            return "redirect:/acvstore/chien-dich-giam-gia/view/" + id;
         }
 
         try {
@@ -252,26 +257,40 @@ public class ChienDichGiamGiaController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
             String status = getStatus(chienDich);
+            boolean isReadOnly = !"UPCOMING".equals(status); // chỉ sửa khi UPCOMING
 
-            model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status));
-            model.addAttribute("viewMode", false);
-            model.addAttribute("chienDich", chienDich);
-            model.addAttribute("status", status);
+            if (isReadOnly) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Chỉ có thể chỉnh sửa chiến dịch sắp diễn ra.");
+                return "redirect:/acvstore/chien-dich-giam-gia/view/" + id;
+            }
 
+            // Lấy danh sách CTSP đang gắn với campaign
             List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
-            Set<UUID> selectedProductIds = chiTietDaChon.stream()
-                    .filter(ct -> ct.getSanPham() != null)
-                    .map(ct -> ct.getSanPham().getId())
-                    .collect(Collectors.toSet());
 
+            // SUY RA danh sách SẢN PHẨM đã được chọn từ các CTSP
+            Set<UUID> selectedProductIds = chiTietDaChon.stream()
+                    .map(ChiTietSanPham::getSanPham)
+                    .filter(Objects::nonNull)
+                    .map(SanPham::getId)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+
+            // Merge thêm các id SP được truyền lên (nếu có)
             if (selectedProductIdsStr != null && !selectedProductIdsStr.isEmpty()) {
                 selectedProductIds.addAll(Arrays.stream(selectedProductIdsStr.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
                         .map(UUID::fromString)
                         .collect(Collectors.toSet()));
             }
 
             Pageable pageable = PageRequest.of(page, size);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            // ⚠️ QUAN TRỌNG: chỉ load SP “rảnh” ∪ “đã chọn”
+            Page<SanPham> productPage = sanPhamService.getPagedAvailableOrSelectedProducts(pageable, selectedProductIds);
+
+            model.addAttribute("chienDich", chienDich);
+            model.addAttribute("status", status);
+            model.addAttribute("isReadOnly", false);
 
             model.addAttribute("selectedDetails", chiTietDaChon);
             model.addAttribute("selectedProductIds", selectedProductIds);
@@ -286,6 +305,8 @@ public class ChienDichGiamGiaController {
             return "redirect:/acvstore/chien-dich-giam-gia";
         }
     }
+
+
 
     // ===== Update submit =====
     @PostMapping("/update")
@@ -363,12 +384,23 @@ public class ChienDichGiamGiaController {
 
     @GetMapping("/multiple-product-details")
     @ResponseBody
-    public List<ChiTietSanPham> getMultipleProductDetails(@RequestParam("productIds") List<UUID> productIds) {
+    public List<ChiTietSanPham> getMultipleProductDetails(
+            @RequestParam("productIds") List<UUID> productIds,
+            @RequestParam(name = "currentCampaignId", required = false) UUID currentCampaignId
+    ) {
         if (productIds == null || productIds.isEmpty()) return List.of();
+
+        // Khi đang SỬA: lấy CTSP "rảnh" HOẶC đang thuộc chính campaign này
+        if (currentCampaignId != null) {
+            return chienDichService.layChiTietConTrongTheoSanPham(productIds, currentCampaignId);
+        }
+
+        // Khi TẠO: chỉ trả CTSP rảnh (method cũ của bạn đã lọc theo nghiệp vụ tạo mới)
         return productIds.stream()
                 .flatMap(id -> chienDichService.layChiTietTheoSanPham(id).stream())
                 .toList();
     }
+
 
     @PostMapping("/delete/{id}")
     public String xoaChienDich(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
@@ -391,13 +423,27 @@ public class ChienDichGiamGiaController {
     public Page<SanPham> timKiemSanPham(
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "5") int size) {
+            @RequestParam(name = "size", defaultValue = "5") int size,
+            @RequestParam(name = "selectedProductIds", required = false) List<UUID> selectedProductIds
+    ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("tenSanPham").ascending());
-        if (keyword.isBlank()) {
-            return sanPhamService.getPagedProducts(pageable);
+
+        // Có danh sách SP đang được chọn -> dùng phiên bản UNION (rảnh ∪ đã chọn)
+        if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
+            if (keyword.isBlank()) {
+                return sanPhamService.getPagedAvailableOrSelectedProducts(pageable, selectedProductIds);
+            }
+            return sanPhamService.searchAvailableOrSelectedByTenOrMa(keyword, pageable, selectedProductIds);
         }
-        return sanPhamService.searchByTenOrMa(keyword, pageable);
+
+        // Không có SP đã chọn -> như tạo mới: chỉ SP rảnh
+        if (keyword.isBlank()) {
+            return sanPhamService.getPagedAvailableProducts(pageable);
+        }
+        return sanPhamService.searchAvailableByTenOrMa(keyword, pageable);
     }
+
+
 
     // ===== Helpers =====
     private String getStatus(ChienDichGiamGia chienDich) {

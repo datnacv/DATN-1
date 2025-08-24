@@ -12,10 +12,7 @@ import com.example.AsmGD1.repository.SanPham.SanPhamRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,10 +20,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -300,4 +295,66 @@ public class SanPhamService {
     public boolean existsByTenSanPham(String tenSanPham) {
         return sanPhamRepository.existsByTenSanPham(tenSanPham);
     }
+
+    public Page<SanPham> getPagedAvailableProducts(Pageable pageable) {
+        Page<SanPham> page = sanPhamRepository.findAvailableProducts(LocalDateTime.now(), pageable);
+        page.getContent().forEach(this::setTongSoLuong);
+        page.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
+        return page;
+    }
+
+    public Page<SanPham> searchAvailableByTenOrMa(String keyword, Pageable pageable) {
+        Page<SanPham> page = sanPhamRepository.searchAvailableByTenOrMa(
+                keyword == null ? "" : keyword.trim(),
+                LocalDateTime.now(),
+                pageable
+        );
+        page.getContent().forEach(this::setTongSoLuong);
+        page.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
+        return page;
+    }
+    public Page<SanPham> getPagedAvailableOrSelectedProducts(Pageable pageable, Collection<UUID> selectedIds) {
+        Page<SanPham> base = sanPhamRepository.findAvailableProducts(LocalDateTime.now(), pageable);
+        if (selectedIds == null || selectedIds.isEmpty()) return base;
+
+        LinkedHashMap<UUID, SanPham> map = new LinkedHashMap<>();
+        // ƯU TIÊN giữ các SP đã chọn (dù không “rảnh”)
+        sanPhamRepository.findAllById(selectedIds).forEach(sp -> map.put(sp.getId(), sp));
+        // Sau đó thêm các SP “rảnh”
+        base.getContent().forEach(sp -> map.putIfAbsent(sp.getId(), sp));
+
+        List<SanPham> all = new ArrayList<>(map.values());
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), all.size());
+        List<SanPham> content = start >= end ? List.of() : all.subList(start, end);
+
+        content.forEach(this::setTongSoLuong);
+        content.forEach(this::autoUpdateStatusBasedOnDetails);
+
+        return new PageImpl<>(content, pageable, all.size());
+    }
+
+    public Page<SanPham> searchAvailableOrSelectedByTenOrMa(String keyword, Pageable pageable, Collection<UUID> selectedIds) {
+        Page<SanPham> base = sanPhamRepository.searchAvailableByTenOrMa(
+                keyword == null ? "" : keyword.trim(),
+                LocalDateTime.now(),
+                pageable
+        );
+        if (selectedIds == null || selectedIds.isEmpty()) return base;
+
+        LinkedHashMap<UUID, SanPham> map = new LinkedHashMap<>();
+        sanPhamRepository.findAllById(selectedIds).forEach(sp -> map.put(sp.getId(), sp));
+        base.getContent().forEach(sp -> map.putIfAbsent(sp.getId(), sp));
+
+        List<SanPham> all = new ArrayList<>(map.values());
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), all.size());
+        List<SanPham> content = start >= end ? List.of() : all.subList(start, end);
+
+        content.forEach(this::setTongSoLuong);
+        content.forEach(this::autoUpdateStatusBasedOnDetails);
+
+        return new PageImpl<>(content, pageable, all.size());
+    }
+
 }
