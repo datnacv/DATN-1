@@ -402,20 +402,81 @@ public class BanHangController {
         tempStockChanges.put(productDetailId, stockInfo);
         session.setAttribute("tempStockChanges", tempStockChanges);
     }
+    // ===== Helpers cho ràng buộc PTTT trên voucher =====
+    private boolean hasPaymentBinding(PhieuGiamGia voucher) {
+        return voucher != null
+                && voucher.getPhuongThucThanhToans() != null
+                && !voucher.getPhuongThucThanhToans().isEmpty();
+    }
+
+    private boolean isPaymentMethodAllowed(PhieuGiamGia voucher, UUID paymentMethodId) {
+        if (!hasPaymentBinding(voucher)) return true;                 // không ràng buộc => luôn OK
+        if (paymentMethodId == null) return false;                    // có ràng buộc mà thiếu id => không OK
+        return voucher.getPhuongThucThanhToans().stream()
+                .filter(pt -> Boolean.TRUE.equals(pt.getTrangThai())) // chỉ PTTT đang bật
+                .anyMatch(pt -> paymentMethodId.equals(pt.getId()));
+    }
+
+    private String allowedPaymentNames(PhieuGiamGia voucher) {
+        if (!hasPaymentBinding(voucher)) return "";
+        return voucher.getPhuongThucThanhToans().stream()
+                .filter(pt -> Boolean.TRUE.equals(pt.getTrangThai()))
+                .map(pt -> {
+                    String ten = pt.getTenPhuongThuc();
+                    return (ten == null || ten.isBlank()) ? pt.getId().toString() : ten;
+                })
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
 
     @GetMapping("/cart/apply-voucher")
     @ResponseBody
     public ResponseEntity<?> applyVoucher(
             @RequestParam UUID voucherId,
             @RequestParam(required = false) BigDecimal shippingFee,
-            @RequestParam String tabId) {
+            @RequestParam String tabId,
+            @RequestParam(required = false) UUID paymentMethodId // <-- thêm param tùy chọn
+    ) {
         try {
             PhieuGiamGia voucher = phieuGiamGiaRepository.findById(voucherId)
                     .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
             String scope = voucher.getPhamViApDung() == null ? "" : voucher.getPhamViApDung().trim().toUpperCase();
 
+            // ===== Kiểm tra ràng buộc phương thức thanh toán (nếu có) =====
+            Set<PhuongThucThanhToan> allowedSet = voucher.getPhuongThucThanhToans();
+            boolean hasBinding = (allowedSet != null && !allowedSet.isEmpty());
+
+            if (hasBinding) {
+                // tên PTTT để thông báo
+                String allowedNames = allowedSet.stream()
+                        .filter(pt -> Boolean.TRUE.equals(pt.getTrangThai()))
+                        .map(pt -> {
+                            String ten = pt.getTenPhuongThuc();
+                            return (ten == null || ten.isBlank()) ? pt.getId().toString() : ten;
+                        })
+                        .collect(Collectors.joining(", "));
+
+                // nếu có ràng buộc mà FE chưa gửi paymentMethodId -> báo lỗi rõ ràng
+                if (paymentMethodId == null) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "Phiếu yêu cầu chọn phương thức thanh toán. Cho phép: " + allowedNames
+                    ));
+                }
+
+                // chỉ chấp nhận khi id PTTT nằm trong whitelist đang bật
+                boolean ok = allowedSet.stream()
+                        .filter(pt -> Boolean.TRUE.equals(pt.getTrangThai()))
+                        .anyMatch(pt -> paymentMethodId.equals(pt.getId()));
+
+                if (!ok) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "error", "Phiếu không áp dụng cho phương thức thanh toán đã chọn. Cho phép: " + allowedNames
+                    ));
+                }
+            }
+
+            // ===== Chuyển tiếp theo scope (GIỮ NGUYÊN CHỮ KÝ 2 method dưới) =====
             if ("ORDER".equals(scope)) {
-                return applyOrderVoucher(voucherId, tabId);
+                return applyOrderVoucher(voucherId, tabId); // <-- không truyền paymentMethodId
             } else if ("SHIPPING".equals(scope)) {
                 if (shippingFee == null) shippingFee = BigDecimal.ZERO;
                 return applyFreeshipVoucher(voucherId, shippingFee, tabId);
@@ -426,6 +487,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng phiếu: " + e.getMessage()));
         }
     }
+
     @GetMapping("/cart/apply-order-voucher")
     @ResponseBody
     public ResponseEntity<?> applyOrderVoucher(
@@ -475,14 +537,15 @@ public class BanHangController {
             gioHang.setPhiVanChuyen(finalShipFee);             // phí ship SAU giảm
             gioHang.setTong(total);
             gioHang.setIdPhieuGiamGia(voucher.getId());        // giữ id ORDER voucher
-            gioHang.setPhiVanChuyenGoc(shipFeeInSession);      // << phí ship GỐC
-            gioHang.setGiamGiaVanChuyen(shipDiscount);         // << số tiền giảm ship (freeship)
+            gioHang.setPhiVanChuyenGoc(shipFeeInSession);      // phí ship GỐC
+            gioHang.setGiamGiaVanChuyen(shipDiscount);         // số tiền giảm ship (freeship)
 
             return ResponseEntity.ok(gioHang);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng ORDER voucher: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/cart/apply-freeship")
     @ResponseBody
@@ -491,10 +554,9 @@ public class BanHangController {
             @RequestParam("shippingFee") BigDecimal shippingFee,
             @RequestParam("tabId") String tabId) {
         try {
-            // Cho phép shippingFee = 0 (giảm sẽ = 0)
             if (shippingFee == null) shippingFee = BigDecimal.ZERO;
 
-            // Ghi nhớ phí ship GỐC cho tab (để ghép ORDER song song)
+            // Ghi nhớ phí ship GỐC cho tab
             session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
 
             GioHangDTO gioHang = gioHangService.layGioHang(shippingFee, tabId);
@@ -544,6 +606,7 @@ public class BanHangController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng FREESHIP voucher: " + e.getMessage()));
         }
     }
+
 
 
 

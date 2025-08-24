@@ -13,6 +13,7 @@
         :root {
             --primary-color: #153054;
             --secondary-color: #9FD5F7;
+            --secondary-color: #9FD5F7;
             --primary-hover: #1e4066;
             --secondary-hover: #7bc3f0;
             --success-color: #10b981;
@@ -2104,7 +2105,7 @@
         const voucherCode = document.getElementById('order-voucher').value.trim();
         const discountEl = document.getElementById('discount-order');
 
-        // không chọn mã -> coi như ok, chỉ clear
+        // Không chọn mã -> clear
         if (!voucherCode) {
             discountEl.textContent = formatVND(0);
             updateTotal();
@@ -2113,12 +2114,27 @@
         }
 
         const mode = getCheckoutMode();
-        const source = mode; // 'cart' | 'cart-selected' | 'buy-now'
+        const source = mode;
         const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
         const checkoutItems = buildVoucherBodyForCurrentMode();
 
+        // ⬅️ LẤY PTTT ĐANG CHỌN
+        const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+        if (!paymentMethodId) {
+            if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
+            discountEl.textContent = formatVND(0);
+            updateTotal();
+            return { ok:false, discount:0, message:'missing paymentMethodId' };
+        }
+
+        const url = `/api/checkout/apply-voucher`
+            + `?voucher=${encodeURIComponent(voucherCode)}`
+            + `&source=${encodeURIComponent(source)}`
+            + `&type=ORDER`
+            + `&subtotal=${subtotal}`
+            + `&paymentMethodId=${encodeURIComponent(paymentMethodId)}`;
+
         try {
-            const url = `/api/checkout/apply-voucher?voucher=${encodeURIComponent(voucherCode)}&source=${source}&type=ORDER&subtotal=${subtotal}`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2152,6 +2168,7 @@
 
 
 
+
     async function applyShipVoucher({ silent = false } = {}) {
         const code = document.getElementById('ship-voucher').value.trim();
         const elDiscountShip = document.getElementById('discount-ship');
@@ -2177,14 +2194,29 @@
             return { ok: false, discount: 0, message: 'Chưa có phí vận chuyển' };
         }
 
-        const url = `/api/checkout/apply-voucher?voucher=${encodeURIComponent(code)}&source=${source}&type=SHIPPING&shippingFee=${shippingFee}&subtotal=${subtotal}`;
+        // ⬅️ LẤY PTTT ĐANG CHỌN
+        const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+        if (!paymentMethodId) {
+            if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
+            elDiscountShip.textContent = formatVND(0);
+            updateTotal();
+            return { ok:false, discount:0, message:'missing paymentMethodId' };
+        }
+
+        const url = `/api/checkout/apply-voucher`
+            + `?voucher=${encodeURIComponent(code)}`
+            + `&source=${encodeURIComponent(source)}`
+            + `&type=SHIPPING`
+            + `&shippingFee=${shippingFee}`
+            + `&subtotal=${subtotal}`
+            + `&paymentMethodId=${encodeURIComponent(paymentMethodId)}`;
 
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(body)
+                body
             });
             const data = await res.json();
 
@@ -2468,12 +2500,18 @@
 
         // ===== PAYMENT CARD SELECT =====
         document.querySelectorAll('.payment-method').forEach(method => {
-            method.addEventListener('click', () => {
+            method.addEventListener('click', async () => {
                 document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
                 method.classList.add('active');
                 method.querySelector('input').checked = true;
+
+                // ⬅️ PTTT đổi -> re-apply voucher để BE check PTTT
+                await applyOrderVoucher({ silent: true });
+                await applyShipVoucher({ silent: true });
+                if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
             });
         });
+
 
         // ===== VOUCHER HIDDEN SELECTS =====
         document.getElementById('order-voucher')?.addEventListener('change', async () => {

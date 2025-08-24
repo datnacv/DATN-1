@@ -9,54 +9,27 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <style>
-        :root{
-            --primary:#153054;
-            --secondary:#9FD5F7;
-            --text:#263238;
-            --line:#e9ecef;
-        }
+        :root{ --primary:#153054; --secondary:#9FD5F7; --text:#263238; --line:#e9ecef; }
         body{background:#f6f9fb;color:var(--text)}
         .content{padding:2rem;margin-left:256px;margin-top:70px}
-        .page-header{
-            background-color:#fff;padding:1.5rem 2rem;margin:-2rem -2rem 2rem -2rem;
-            border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center
-        }
+        .page-header{background:#fff;padding:1.5rem 2rem;margin:-2rem -2rem 2rem;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}
         .page-header h2{font-weight:700;color:#1f2937;margin:0}
-        /* THEME */
         .btn-primary{background:var(--primary);border-color:var(--primary)}
         .btn-primary:hover{filter:brightness(1.08)}
         .btn-outline-secondary{border-color:var(--primary);color:var(--primary)}
         .btn-outline-secondary:hover{background:var(--primary);color:#fff}
         .btn-success{background:#19a974;border-color:#19a974}
-        .card-header{
-            background:linear-gradient(90deg,var(--primary),#1e4066);
-            color:#fff;font-weight:600
-        }
-        .role-badge{
-            background:linear-gradient(135deg,var(--primary),#1e4066);
-            color:#fff;padding:.5rem 1rem;border-radius:20px;
-            font-size:.875rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
-            box-shadow:0 4px 15px rgba(21,48,84,.25);
-            position:fixed;top:20px;right:20px;z-index:1000
-        }
-        .role-badge.employee{
-            background:linear-gradient(135deg,#1f7a8c,var(--secondary));
-            color:#0b2239
-        }
-        .form-control:focus,.form-select:focus{
-            border-color:var(--secondary);box-shadow:0 0 0 .2rem rgba(159,213,247,.35)
-        }
+        .card-header{background:linear-gradient(90deg,var(--primary),#1e4066);color:#fff;font-weight:600}
+        .role-badge{background:linear-gradient(135deg,var(--primary),#1e4066);color:#fff;padding:.5rem 1rem;border-radius:20px;font-size:.875rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;box-shadow:0 4px 15px rgba(21,48,84,.25);position:fixed;top:20px;right:20px;z-index:1000}
+        .role-badge.employee{background:linear-gradient(135deg,#1f7a8c,var(--secondary));color:#0b2239}
+        .form-control:focus,.form-select:focus{border-color:var(--secondary);box-shadow:0 0 0 .2rem rgba(159,213,247,.35)}
         .input-group-text{border-right:0}
         .table th,.table td{vertical-align:middle}
         .pagination{margin-bottom:0}
         .search-container{margin-bottom:15px}
-        .search-container h5{margin-bottom:10px;font-weight:500}
         .loading-spinner{display:none;text-align:center;padding:20px}
-        /* Checkbox tone */
         .form-check-input:checked{background-color:var(--primary);border-color:var(--primary)}
-        /* Links */
-        a{color:var(--primary)}
-        a:hover{color:#0f223f}
+        a{color:var(--primary)} a:hover{color:#0f223f}
     </style>
 </head>
 <body>
@@ -67,25 +40,22 @@
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
 
-    <!-- Role Badge -->
     <div class="role-badge" th:classappend="${isAdmin != null && isAdmin} ? '' : ' employee'">
         <i class="fas fa-user-shield me-1" th:if="${isAdmin != null && isAdmin}"></i>
         <i class="fas fa-user me-1" th:unless="${isAdmin != null && isAdmin}"></i>
         <span th:text="${isAdmin != null && isAdmin} ? 'ADMIN' : 'EMPLOYEE'"></span>
     </div>
 
-    <!-- Nội dung chính -->
     <div class="content" id="content">
         <div class="page-header">
             <div class="d-flex align-items-center">
                 <a th:href="@{/acvstore/chien-dich-giam-gia}" class="btn btn-outline-secondary me-3">
                     <i class="fas fa-arrow-left me-2"></i>Quay lại
                 </a>
-                <h2><i class="fas fa-plus me-2"></i>Tạo chiến dịch giảm giá</h2>
+                <h2><i class="fas a-plus me-2"></i>Tạo chiến dịch giảm giá</h2>
             </div>
         </div>
 
-        <!-- Thông báo -->
         <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
         <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
 
@@ -99,25 +69,37 @@
                     <div class="card">
                         <div class="card-header">Thông tin chiến dịch giảm giá</div>
                         <div class="card-body row g-3">
+                            <!-- MA: chỉ chữ & số, viết liền -->
                             <div class="col-md-4">
                                 <label class="form-label">Mã chiến dịch</label>
+                                <!-- cho phép gõ space khi đang nhập -->
                                 <input type="text" class="form-control" th:field="*{ma}" required
-                                       oninvalid="this.setCustomValidity('Vui lòng nhập mã chiến dịch hợp lệ.')"
-                                       oninput="this.setCustomValidity('')">
+                                       pattern="[A-Za-z0-9]+"
+                                       oninput="this.setCustomValidity('')"
+                                       onblur="normalizeMa(this); validateMa(this)"
+                                       oninvalid="this.setCustomValidity('Vui lòng nhập mã gồm chữ và số, viết liền, không ký tự đặc biệt.')">
                             </div>
+
+                            <!-- TEN: chỉ chữ, giữa từ cách 1 space -->
                             <div class="col-md-4">
                                 <label class="form-label">Tên chiến dịch</label>
+                                <!-- cho phép space đầu khi đang gõ -->
                                 <input type="text" class="form-control" th:field="*{ten}" required maxlength="100"
-                                       oninvalid="this.setCustomValidity('Vui lòng nhập tên chiến dịch.')"
-                                       oninput="this.setCustomValidity('')">
+                                       pattern="[\p{L}]+( [\p{L}]+)*"
+                                       oninput="this.setCustomValidity('')"
+                                       onblur="normalizeTen(this); validateTen(this)"
+                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.')">
                             </div>
+
+                            <!-- PHẦN TRĂM: số nguyên 1..100 -->
                             <div class="col-md-4">
                                 <label class="form-label">% Giảm</label>
-                                <input type="number" step="0.01" class="form-control" th:field="*{phanTramGiam}" required min="0.1" max="100"
-                                       oninvalid="this.setCustomValidity(this.validity.valueMissing ? 'Vui lòng nhập phần trăm giảm.' : 'Nhập phần trăm giảm từ 0.1 đến 100%.')"
-                                       oninput="this.setCustomValidity('')">
+                                <input type="number" class="form-control" th:field="*{phanTramGiam}" required
+                                       min="1" max="100" step="1"
+                                       oninput="validatePercentInt(this)"
+                                       oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 100.')">
                             </div>
-                            <!-- ĐÃ BỎ Ô SỐ LƯỢNG -->
+
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
                                 <input type="datetime-local" class="form-control" th:field="*{ngayBatDau}" required
@@ -143,7 +125,7 @@
                     </div>
                 </div>
 
-                <!-- CHỌN SẢN PHẨM VÀ CHI TIẾT -->
+                <!-- Danh sách SP + Chi tiết SP (giữ nguyên logic hiện tại) -->
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">Danh sách sản phẩm</div>
@@ -218,7 +200,6 @@
                 </div>
             </div>
 
-            <!-- Hidden giữ danh sách chi tiết dạng CSV -->
             <input type="hidden" id="selectedProductDetailIdsInput" name="selectedProductDetailIds" value="">
         </form>
     </div>
@@ -232,9 +213,7 @@
                 <h5 class="modal-title" id="confirmCreateModalLabel">Xác nhận tạo chiến dịch</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Đóng"></button>
             </div>
-            <div class="modal-body">
-                Bạn có chắc chắn muốn tạo chiến dịch giảm giá với các thông tin đã nhập không?
-            </div>
+            <div class="modal-body">Bạn có chắc chắn muốn tạo chiến dịch giảm giá với các thông tin đã nhập không?</div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
                 <button type="button" class="btn btn-primary" id="confirmSubmitBtn">Xác nhận</button>
@@ -244,180 +223,233 @@
 </div>
 
 <script>
-    const STORAGE_KEYS = {
-        selectedProducts: 'selectedProductIds',
-        selectedDetails: 'selectedDetailIds'
-    };
+    // ===== Helper chuẩn hoá + validate MA/TEN/% =====
+    function normalizeMa(el){
+        if(!el) return;
+        // .trim() và loại toàn bộ whitespace bên trong -> viết liền
+        el.value = (el.value || '').trim().replace(/\s+/g,'');
+    }
+    function validateMa(el){
+        if(!el) return;
+        const ok = /^[A-Za-z0-9]+$/.test(el.value);
+        el.setCustomValidity(ok || el.value==='' ? '' : 'Mã chỉ gồm chữ và số, viết liền, không ký tự đặc biệt.');
+    }
 
+    function normalizeTen(el){
+        if(!el) return;
+        // .trim() + gộp nhiều space thành 1
+        el.value = (el.value || '').trim().replace(/\s+/g,' ');
+    }
+    function validateTen(el){
+        if(!el) return;
+        const val = el.value;
+        const ok = /^[\p{L}]+(?: [\p{L}]+)*$/u.test(val);
+        el.setCustomValidity(ok || val==='' ? '' : 'Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.');
+    }
+
+    function validatePercentInt(el){
+        if(!el) return;
+        const v = el.value;
+        // chỉ cho số nguyên 1..100
+        const intOk = /^\d+$/.test(v);
+        const num = Number(v);
+        const ok = intOk && num >= 1 && num <= 100;
+        el.setCustomValidity(ok || v==='' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 100.');
+    }
+
+    // ======= (giữ nguyên) các biến & hàm chọn SP/CTSP, pagination... =======
+    const STORAGE_KEYS = { selectedProducts:'selectedProductIds', selectedDetails:'selectedDetailIds' };
     const selectedProductIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedProducts) || '[]'));
-    const selectedDetailIds = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedDetails) || '[]'));
+    const selectedDetailIds  = new Set(JSON.parse(localStorage.getItem(STORAGE_KEYS.selectedDetails) || '[]'));
+    let currentSearchPage = 0; const pageSize = 5;
 
-    let currentSearchPage = 0;
-    const pageSize = 5;
-
-    function saveSelections() {
+    function saveSelections(){
         localStorage.setItem(STORAGE_KEYS.selectedProducts, JSON.stringify([...selectedProductIds]));
         localStorage.setItem(STORAGE_KEYS.selectedDetails, JSON.stringify([...selectedDetailIds]));
         document.getElementById("selectedProductDetailIdsInput").value = [...selectedDetailIds].join(',');
     }
-
-    function clearSelections() {
+    function clearSelections(){
         localStorage.removeItem(STORAGE_KEYS.selectedProducts);
         localStorage.removeItem(STORAGE_KEYS.selectedDetails);
-        selectedProductIds.clear();
-        selectedDetailIds.clear();
+        selectedProductIds.clear(); selectedDetailIds.clear();
     }
-
-    function restoreSelectedProducts() {
-        document.querySelectorAll(".product-checkbox").forEach(cb => {
-            cb.checked = selectedProductIds.has(cb.value);
-        });
+    function restoreSelectedProducts(){
+        document.querySelectorAll(".product-checkbox").forEach(cb => { cb.checked = selectedProductIds.has(cb.value); });
         updateSelectAll("#selectAllProducts", ".product-checkbox");
         loadProductDetails();
     }
-
-    function updateSelectAll(masterSelector, itemSelector) {
+    function updateSelectAll(masterSelector,itemSelector){
         const all = document.querySelectorAll(itemSelector);
         const master = document.querySelector(masterSelector);
-        if (all.length > 0) {
-            master.checked = Array.from(all).every(cb => cb.checked);
-        }
+        if(all.length>0){ master.checked = Array.from(all).every(cb=>cb.checked); }
     }
-
-    function loadProductDetails() {
-        const body = document.getElementById("productDetailTableBody");
-        if (selectedProductIds.size === 0) return body.innerHTML = "";
-
+    function loadProductDetails(){
+        const body=document.getElementById("productDetailTableBody");
+        if(selectedProductIds.size===0) return body.innerHTML="";
         saveSelections();
         fetch(`/acvstore/chien-dich-giam-gia/multiple-product-details?productIds=${[...selectedProductIds].join(',')}`)
-            .then(res => res.json())
-            .then(data => {
-                body.innerHTML = data.map(detail => `
+            .then(res=>res.json())
+            .then(data=>{
+                body.innerHTML = data.map(detail=>`
                     <tr>
-                        <td><input type="checkbox" class="detail-checkbox form-check-input" value="${detail.id}" ${selectedDetailIds.has(detail.id) ? 'checked' : ''}></td>
+                        <td><input type="checkbox" class="detail-checkbox form-check-input" value="${detail.id}" ${selectedDetailIds.has(detail.id)?'checked':''}></td>
                         <td>${detail.sanPham.tenSanPham}</td>
                         <td>${detail.mauSac?.tenMau ?? 'N/A'}</td>
                         <td>${detail.kichCo?.ten ?? 'N/A'}</td>
                         <td>${formatPrice(detail.gia)}</td>
                         <td>${detail.soLuongTonKho}</td>
-                    </tr>
-                `).join('');
+                    </tr>`).join('');
                 attachCheckboxEvents(".detail-checkbox", selectedDetailIds);
-                updateSelectAll("#selectAllDetails", ".detail-checkbox");
+                updateSelectAll("#selectAllDetails",".detail-checkbox");
             });
     }
-
-    function formatPrice(price) {
-        if (price == null) return 'Không có giá';
-        return new Intl.NumberFormat('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(price) + ' VNĐ';
-    }
-
-    function attachCheckboxEvents(selector, storeSet) {
-        document.querySelectorAll(selector).forEach(cb => {
-            cb.addEventListener("change", () => {
-                const id = cb.value;
-                cb.checked ? storeSet.add(id) : storeSet.delete(id);
+    function formatPrice(price){ if(price==null) return 'Không có giá'; return new Intl.NumberFormat('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:0}).format(price)+' VNĐ'; }
+    function attachCheckboxEvents(selector, storeSet){
+        document.querySelectorAll(selector).forEach(cb=>{
+            cb.addEventListener("change", ()=>{
+                const id=cb.value; cb.checked?storeSet.add(id):storeSet.delete(id);
                 saveSelections();
-                if (selector === ".product-checkbox") loadProductDetails();
+                if(selector===".product-checkbox") loadProductDetails();
             });
         });
     }
-
-    function attachMasterCheckboxEvents() {
-        document.getElementById("selectAllProducts")?.addEventListener("change", function () {
-            document.querySelectorAll(".product-checkbox").forEach(cb => {
-                cb.checked = this.checked;
-                this.checked ? selectedProductIds.add(cb.value) : selectedProductIds.delete(cb.value);
-            });
-            saveSelections();
-            loadProductDetails();
+    function attachMasterCheckboxEvents(){
+        document.getElementById("selectAllProducts")?.addEventListener("change", function(){
+            document.querySelectorAll(".product-checkbox").forEach(cb=>{ cb.checked=this.checked; this.checked?selectedProductIds.add(cb.value):selectedProductIds.delete(cb.value); });
+            saveSelections(); loadProductDetails();
         });
-
-        document.getElementById("selectAllDetails")?.addEventListener("change", function () {
-            document.querySelectorAll(".detail-checkbox").forEach(cb => {
-                cb.checked = this.checked;
-                this.checked ? selectedDetailIds.add(cb.value) : selectedDetailIds.delete(cb.value);
-            });
+        document.getElementById("selectAllDetails")?.addEventListener("change", function(){
+            document.querySelectorAll(".detail-checkbox").forEach(cb=>{ cb.checked=this.checked; this.checked?selectedDetailIds.add(cb.value):selectedDetailIds.delete(cb.value); });
             saveSelections();
         });
     }
-
-    function searchProducts(query, page = 0) {
-        document.getElementById("productsLoading").style.display = "block";
+    function searchProducts(query,page=0){
+        document.getElementById("productsLoading").style.display="block";
         fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`)
-            .then(res => res.json())
-            .then(data => {
+            .then(res=>res.json())
+            .then(data=>{
                 renderSearchResults(data.content);
                 renderPagination(data.totalPages, data.number, query);
-                document.getElementById("productsLoading").style.display = "none";
+                document.getElementById("productsLoading").style.display="none";
             });
     }
-
-    function renderSearchResults(products) {
-        const tbody = document.getElementById("productTableBody");
-        tbody.innerHTML = products.length === 0
+    function renderSearchResults(products){
+        const tbody=document.getElementById("productTableBody");
+        tbody.innerHTML = products.length===0
             ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
-            : products.map(p => `
+            : products.map(p=>`
                 <tr class="product-row" data-id="${p.id}">
-                    <td><input type="checkbox" class="product-checkbox form-check-input" value="${p.id}" ${selectedProductIds.has(p.id) ? 'checked' : ''}></td>
+                    <td><input type="checkbox" class="product-checkbox form-check-input" value="${p.id}" ${selectedProductIds.has(p.id)?'checked':''}></td>
                     <td>${p.maSanPham}</td>
                     <td>${p.tenSanPham}</td>
-                </tr>
-            `).join('');
+                </tr>`).join('');
         attachCheckboxEvents(".product-checkbox", selectedProductIds);
         updateSelectAll("#selectAllProducts", ".product-checkbox");
     }
-
-    function renderPagination(totalPages, currentPage, keyword) {
-        const pagination = document.getElementById("productPagination");
-        if (totalPages <= 1) { pagination.innerHTML = ""; return; }
-
-        let html = '';
-        for (let i = 0; i < totalPages; i++) {
-            html += `
-                <li class="page-item ${i === currentPage ? 'active' : ''}">
-                    <a class="page-link pagination-link" href="#" data-page="${i}" data-keyword="${keyword}">${i + 1}</a>
-                </li>
-            `;
+    function renderPagination(totalPages,currentPage,keyword){
+        const pagination=document.getElementById("productPagination");
+        if(totalPages<=1){ pagination.innerHTML=""; return; }
+        let html=''; for(let i=0;i<totalPages;i++){
+            html+=`<li class="page-item ${i===currentPage?'active':''}">
+                      <a class="page-link pagination-link" data-page="${i}" data-keyword="${keyword}" href="#">${i+1}</a>
+                    </li>`;
         }
-        pagination.innerHTML = `<ul class="pagination justify-content-center">${html}</ul>`;
-        document.querySelectorAll(".pagination-link").forEach(link => {
-            link.addEventListener("click", function (e) {
-                e.preventDefault();
-                const page = parseInt(this.getAttribute("data-page"));
-                const kw = this.getAttribute("data-keyword");
-                currentSearchPage = page;
-                searchProducts(kw, page);
+        pagination.innerHTML=`<ul class="pagination justify-content-center">${html}</ul>`;
+        document.querySelectorAll(".pagination-link").forEach(link=>{
+            link.addEventListener("click",function(e){
+                e.preventDefault(); const page=parseInt(this.getAttribute("data-page")); const kw=this.getAttribute("data-keyword");
+                currentSearchPage=page; searchProducts(kw,page);
             });
         });
     }
-
-    function initEvents() {
-        document.querySelector("button[type='reset']")?.addEventListener("click", () => {
+    function initEvents(){
+        document.querySelector("button[type='reset']")?.addEventListener("click", ()=>{
             clearSelections();
-            document.querySelectorAll(".product-checkbox, .detail-checkbox").forEach(cb => cb.checked = false);
-            document.getElementById("selectAllProducts").checked = false;
-            document.getElementById("selectAllDetails").checked = false;
-            document.getElementById("productDetailTableBody").innerHTML = "";
-            document.getElementById("selectedProductDetailIdsInput").value = "";
-            document.getElementById("productSearchInput").value = "";
-            document.getElementById("productPagination").innerHTML = "";
+            document.querySelectorAll(".product-checkbox, .detail-checkbox").forEach(cb=>cb.checked=false);
+            document.getElementById("selectAllProducts").checked=false;
+            document.getElementById("selectAllDetails").checked=false;
+            document.getElementById("productDetailTableBody").innerHTML="";
+            document.getElementById("selectedProductDetailIdsInput").value="";
+            document.getElementById("productSearchInput").value="";
+            document.getElementById("productPagination").innerHTML="";
         });
-
-        document.getElementById("productSearchInput").addEventListener("input", function () {
+        document.getElementById("productSearchInput").addEventListener("input", function(){
             clearTimeout(this._searchTimer);
-            const query = this.value.trim();
-            this._searchTimer = setTimeout(() => {
-                searchProducts(query, 0);
-            }, 300);
+            const query=this.value.trim();
+            this._searchTimer=setTimeout(()=>{ searchProducts(query,0); },300);
         });
-
         document.getElementById("discountForm").addEventListener("submit", saveSelections);
     }
+    function setupDatetimeValidationAndModalFlow(){
+        const form=document.getElementById('discountForm');
+        const startInput=form.querySelector('input[name="ngayBatDau"]');
+        const endInput=form.querySelector('input[name="ngayKetThuc"]');
+        const percent=form.querySelector('input[name="phanTramGiam"]');
+        const maInput=form.querySelector('input[name="ma"]');
+        const tenInput=form.querySelector('input[name="ten"]');
 
-    function initFormState() {
-        const hasError = !!document.querySelector(".alert.alert-danger");
-        if (window.location.pathname.includes("/acvstore/chien-dich-giam-gia/create") && !hasError) {
+        const pad=n=>String(n).padStart(2,'0');
+        const toLocal=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+        if(startInput){ const now=new Date(); now.setSeconds(0,0); startInput.min=toLocal(now); }
+
+        if(startInput){
+            startInput.addEventListener('invalid', function(){
+                this.setCustomValidity(this.validity.valueMissing ? 'Vui lòng chọn ngày bắt đầu.' : '');
+            });
+            startInput.addEventListener('input', function(){ this.setCustomValidity(''); syncRange(); });
+            startInput.addEventListener('change', syncRange);
+        }
+        if(endInput){
+            endInput.addEventListener('invalid', function(){
+                if(this.validity.valueMissing){
+                    this.setCustomValidity('Vui lòng chọn ngày kết thúc.');
+                }else if(startInput && this.value && startInput.value && this.value < startInput.value){
+                    this.setCustomValidity('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
+                }else this.setCustomValidity('');
+            });
+            endInput.addEventListener('input', function(){ this.setCustomValidity(''); syncRange(); });
+            endInput.addEventListener('change', syncRange);
+        }
+        function syncRange(){
+            if(startInput && endInput){
+                if(startInput.value) endInput.min = startInput.value;
+                if(endInput.value && startInput.value && endInput.value < startInput.value){
+                    endInput.setCustomValidity('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
+                }else endInput.setCustomValidity('');
+            }
+        }
+        if(percent){
+            percent.addEventListener('input', function(){ validatePercentInt(percent); });
+        }
+        // Cho phép gõ thoải mái lúc nhập, chỉ chuẩn hoá khi blur
+        if(maInput){
+            maInput.addEventListener('input', ()=> maInput.setCustomValidity(''));
+            maInput.addEventListener('blur', ()=>{ normalizeMa(maInput); validateMa(maInput); });
+        }
+        if(tenInput){
+            tenInput.addEventListener('input', ()=> tenInput.setCustomValidity(''));
+            tenInput.addEventListener('blur',  ()=>{ normalizeTen(tenInput); validateTen(tenInput); });
+        }
+
+        const confirmModalEl=document.getElementById('confirmCreateModal');
+        confirmModalEl.addEventListener('show.bs.modal', function(event){
+            // Chuẩn hoá MA/TEN trước khi mở modal
+            if(maInput){ normalizeMa(maInput); validateMa(maInput); }
+            if(tenInput){ normalizeTen(tenInput); validateTen(tenInput); }
+            if(percent){ validatePercentInt(percent); }
+            if(!form.checkValidity()){
+                event.preventDefault();
+                setTimeout(()=>form.reportValidity(),0);
+            }else{
+                saveSelections();
+            }
+        });
+    }
+
+    function initFormState(){
+        const hasError=!!document.querySelector(".alert.alert-danger");
+        if(window.location.pathname.includes("/acvstore/chien-dich-giam-gia/create") && !hasError){
             clearSelections();
         }
         restoreSelectedProducts();
@@ -427,88 +459,32 @@
         saveSelections();
         setupDatetimeValidationAndModalFlow();
     }
-
     document.addEventListener("DOMContentLoaded", initFormState);
 
-    document.getElementById("confirmSubmitBtn").addEventListener("click", function () {
-        const form = document.getElementById("discountForm");
+    document.getElementById("confirmSubmitBtn").addEventListener("click", function(){
+        const form=document.getElementById("discountForm");
+        // Lần cuối: chuẩn hoá + validate
+        const maInput=form.querySelector('input[name="ma"]');
+        const tenInput=form.querySelector('input[name="ten"]');
+        const percent=form.querySelector('input[name="phanTramGiam"]');
+        if(maInput){ normalizeMa(maInput); validateMa(maInput); }
+        if(tenInput){ normalizeTen(tenInput); validateTen(tenInput); }
+        if(percent){ validatePercentInt(percent); }
+
         saveSelections();
-        if (form.checkValidity()) {
+        if(form.checkValidity()){
             form.requestSubmit();
-        } else {
-            const modalEl = document.getElementById('confirmCreateModal');
-            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        }else{
+            const modalEl=document.getElementById('confirmCreateModal');
+            const modal=bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
             modal.hide();
-            setTimeout(() => {
+            setTimeout(()=>{
                 form.reportValidity();
-                const firstInvalid = form.querySelector(':invalid');
-                if (firstInvalid) firstInvalid.focus({ preventScroll: false });
-            }, 200);
+                const firstInvalid=form.querySelector(':invalid');
+                if(firstInvalid) firstInvalid.focus({preventScroll:false});
+            },200);
         }
     });
-
-    function setupDatetimeValidationAndModalFlow() {
-        const form = document.getElementById('discountForm');
-        const startInput = form.querySelector('input[name="ngayBatDau"]');
-        const endInput   = form.querySelector('input[name="ngayKetThuc"]');
-        const percent    = form.querySelector('input[name="phanTramGiam"]');
-
-        const pad = n => String(n).padStart(2,'0');
-        const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-
-        if (startInput) { const now=new Date(); now.setSeconds(0,0); startInput.min = toLocal(now); }
-
-        if (startInput){
-            startInput.addEventListener('invalid', function(){
-                this.setCustomValidity(this.validity.valueMissing ? 'Vui lòng chọn ngày bắt đầu.' : '');
-            });
-            startInput.addEventListener('input', function(){ this.setCustomValidity(''); syncRange(); });
-            startInput.addEventListener('change', syncRange);
-        }
-
-        if (endInput){
-            endInput.addEventListener('invalid', function(){
-                if (this.validity.valueMissing){
-                    this.setCustomValidity('Vui lòng chọn ngày kết thúc.');
-                } else if (startInput && this.value && startInput.value && this.value < startInput.value){
-                    this.setCustomValidity('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
-                } else this.setCustomValidity('');
-            });
-            endInput.addEventListener('input', function(){ this.setCustomValidity(''); syncRange(); });
-            endInput.addEventListener('change', syncRange);
-        }
-
-        function syncRange(){
-            if (startInput && endInput){
-                if (startInput.value) endInput.min = startInput.value;
-                if (endInput.value && startInput.value && endInput.value < startInput.value){
-                    endInput.setCustomValidity('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
-                } else endInput.setCustomValidity('');
-            }
-        }
-        syncRange();
-
-        if (percent){
-            percent.addEventListener('invalid', function(){
-                let msg='Nhập phần trăm giảm từ 0.1 đến 100%.';
-                if (this.validity.valueMissing) msg='Vui lòng nhập phần trăm giảm.';
-                this.setCustomValidity(msg);
-            });
-            percent.addEventListener('input', function(){ this.setCustomValidity(''); });
-        }
-
-        const confirmModalEl = document.getElementById('confirmCreateModal');
-        confirmModalEl.addEventListener('show.bs.modal', function (event) {
-            if (!form.checkValidity()){
-                event.preventDefault();
-                form.reportValidity();
-                const firstInvalid = form.querySelector(':invalid');
-                if (firstInvalid) firstInvalid.focus({ preventScroll:false });
-            } else {
-                saveSelections();
-            }
-        });
-    }
 </script>
 
 <script th:src="@{/js/notification.js}"></script>

@@ -1,6 +1,7 @@
 package com.example.AsmGD1.service.GiamGia;
 
 import com.example.AsmGD1.entity.PhieuGiamGia;
+import com.example.AsmGD1.entity.PhuongThucThanhToan;
 import com.example.AsmGD1.repository.GiamGia.PhieuGiamGiaRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -116,6 +118,30 @@ public class PhieuGiamGiaService {
         return giamGia;
     }
 
+    /* =========================
+       RÀNG BUỘC PHƯƠNG THỨC TT
+       ========================= */
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public boolean isPaymentMethodAllowed(PhieuGiamGia phieu, UUID paymentMethodId) {
+        if (paymentMethodId == null) return false;
+        // Không cấu hình danh sách PTTT => áp dụng cho tất cả
+        if (phieu.getPhuongThucThanhToans() == null || phieu.getPhuongThucThanhToans().isEmpty()) {
+            return true;
+        }
+        return phieu.getPhuongThucThanhToans().stream()
+                .anyMatch(pt -> paymentMethodId.equals(pt.getId()));
+    }
+
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public String allowedPaymentMethodNames(PhieuGiamGia phieu) {
+        if (phieu.getPhuongThucThanhToans() == null || phieu.getPhuongThucThanhToans().isEmpty()) {
+            return "tất cả phương thức thanh toán";
+        }
+        return phieu.getPhuongThucThanhToans().stream()
+                .map(PhuongThucThanhToan::getTenPhuongThuc)
+                .collect(Collectors.joining(", "));
+    }
 
     private String normalizeType(String raw) {
         if (raw == null) return "";
@@ -148,13 +174,14 @@ public class PhieuGiamGiaService {
             return BigDecimal.ZERO;
         }
 
-        String loai = phieu.getLoai() == null ? "" : phieu.getLoai().trim().toUpperCase().replace(" ", "");
+        // Dùng chuẩn normalize để hỗ trợ các biến thể cấu hình
+        String loai = normalizeType(phieu.getLoai());
         BigDecimal giamShip = BigDecimal.ZERO;
 
         logger.info("🔎 Tính giảm phí ship - Mã: {}, Loai: {}, GiaTriGiamToiThieu: {}, GiaTriGiamToiDa: {}, PhiShip: {}, Subtotal: {}",
                 phieu.getMa(), loai, phieu.getGiaTriGiamToiThieu(), phieu.getGiaTriGiamToiDa(), phiShip, tongTruocShip);
 
-        switch (loai) {
+        switch (loai) { // đã normalize -> chỉ 2 trường hợp
             case "FREESHIP_FULL":
                 giamShip = phiShip; // Miễn toàn bộ phí ship
                 logger.info("✅ Áp dụng FREESHIP_FULL: giảm {}", giamShip);
@@ -175,5 +202,4 @@ public class PhieuGiamGiaService {
         logger.info("✅ Kết quả giảm phí ship: {}", giamShip);
         return giamShip;
     }
-
 }
