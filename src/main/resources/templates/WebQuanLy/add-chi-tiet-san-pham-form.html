@@ -1208,7 +1208,56 @@
 
         $('#quickAddProductForm').on('submit', function(event) {
             event.preventDefault();
+
+            // Xóa các thông báo lỗi cũ
+            $('.invalid-feedback').remove();
+            $('.is-invalid').removeClass('is-invalid');
+
+            let isValid = true;
+
+            // Validate mã sản phẩm
+            const maSanPham = $('#quickAddMaSanPham').val().trim();
+            if (!maSanPham) {
+                showError('quickAddMaSanPham', 'Mã sản phẩm không được để trống!');
+                isValid = false;
+            } else if (!/^[a-zA-Z0-9_-]+$/.test(maSanPham)) {
+                showError('quickAddMaSanPham', 'Mã sản phẩm không được chứa ký tự đặc biệt (chỉ cho phép chữ cái, số, _, -)!');
+                isValid = false;
+            }
+
+            // Validate tên sản phẩm
+            const tenSanPham = $('#quickAddTenSanPham').val().trim();
+            if (!tenSanPham) {
+                showError('quickAddTenSanPham', 'Tên sản phẩm không được để trống!');
+                isValid = false;
+            } else if (!/^[^\s][\p{L}0-9\s_-]*[^\s]$/u.test(tenSanPham)) {
+                showError('quickAddTenSanPham', 'Tên sản phẩm không được bắt đầu hoặc kết thúc bằng khoảng trắng và chỉ cho phép chữ cái, số, khoảng trắng, _, -!');
+                isValid = false;
+            }
+
+            // Validate ảnh sản phẩm
+            const imageFile = $('#quickAddImageFile')[0].files[0];
+            if (!imageFile) {
+                showError('quickAddImageFile', 'Ảnh sản phẩm không được để trống!');
+                isValid = false;
+            }
+
+            // Validate danh mục
+            const danhMuc = $('#quickAddDanhMuc').val();
+            if (!danhMuc) {
+                showError('quickAddDanhMuc', 'Vui lòng chọn danh mục!');
+                isValid = false;
+            }
+
+            if (!isValid) {
+                return;
+            }
+
+            // Nếu validate thành công, gửi form
             const formData = new FormData(this);
+            formData.set('maSanPham', maSanPham); // Cập nhật giá trị đã trim
+            formData.set('tenSanPham', tenSanPham); // Cập nhật giá trị đã trim
+
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/save-auto-product',
                 type: 'POST',
@@ -1228,27 +1277,44 @@
                     refreshProductSelect(response.id, response.tenSanPham);
                 },
                 error: function(xhr) {
-                    $('#loadingOverlayQuickProduct').hide();
+                    $('#loadingOverlayQuickProduct').fadeOut(200);
                     let errorMessage = xhr.statusText;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
-                        errorMessage = errorResponse.message || xhr.responseText;
-                    } catch (e) {}
-                    // Hiển thị thông báo lỗi trong modal
-                    $('#quickAddProductModal .modal-body').prepend(
-                        `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            ${errorMessage}
+                        if (errorResponse.errors) {
+                            // Xử lý lỗi validate từ server
+                            Object.keys(errorResponse.errors).forEach(field => {
+                                showError(field, errorResponse.errors[field]);
+                            });
+                        } else {
+                            // Hiển thị lỗi chung nếu không có lỗi validate cụ thể
+                            $('#quickAddProductModal .modal-body').prepend(
+                                `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            ${errorResponse.message || errorMessage}
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>`
-                    );
-                    setTimeout(() => {
-                        $('.alert').alert('close');
-                    }, 8000); // Tự động đóng thông báo sau 8 giây
+                            );
+                            setTimeout(() => {
+                                $('.alert').alert('close');
+                            }, 8000);
+                        }
+                    } catch (e) {
+                        // Hiển thị lỗi chung nếu không parse được JSON
+                        $('#quickAddProductModal .modal-body').prepend(
+                            `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        ${errorMessage}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`
+                        );
+                        setTimeout(() => {
+                            $('.alert').alert('close');
+                        }, 8000);
+                    }
                 }
             });
         });
 
-        // Hàm hiển thị thông báo lỗi
+// Hàm hiển thị thông báo lỗi
         function showError(inputId, message) {
             const $input = $('#' + inputId);
             $input.addClass('is-invalid');
@@ -1257,7 +1323,7 @@
             );
             $input.focus();
             // Xóa lỗi khi người dùng nhập lại
-            $input.one('input', function() {
+            $input.one('input change', function() {
                 $(this).removeClass('is-invalid');
                 $(this).next('.invalid-feedback').remove();
             });
