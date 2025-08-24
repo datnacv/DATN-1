@@ -1163,6 +1163,82 @@
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+      // ==== HARD REVALIDATE trước khi checkout ====
+  // Re-validate 1 voucher cụ thể, tự gỡ state + UI nếu fail
+  async function _revalidateOneVoucher({ id, kind }) {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab || !id) return { ok: true };
+
+    const shippingFee = Number(tab.shippingFeeBase || 0);
+    const url = `${BASE_URL}/cart/apply-voucher`
+            + `?voucherId=${id}`
+            + `&shippingFee=${shippingFee}`
+            + `&tabId=${currentTabId}`
+            + `&paymentMethodId=${encodeURIComponent(getSelectedPaymentMethodId())}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        // Gỡ trong state + UI
+        if (kind === 'ORDER') {
+          tab.voucherId = null;
+          tab.orderVoucherId = null;
+          tab.discount = 0;
+          document.querySelectorAll('#voucherModal input[name="orderVoucher"]').forEach(r => {
+            if (r.value === String(id)) r.checked = false;
+          });
+          const voucherSelect = document.getElementById('voucherSelect');
+          if (voucherSelect && voucherSelect.value === String(id)) voucherSelect.value = '';
+        } else if (kind === 'SHIP') {
+          tab.shipVoucherId = null;
+          tab.shippingDiscount = 0;
+          document.querySelectorAll('#voucherModal input[name="shipVoucher"]').forEach(r => {
+            if (r.value === String(id)) r.checked = false;
+          });
+        }
+        updateSummary(tab);
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+        await refreshCartFromServer(); // đảm bảo server-side cũng sạch
+        return { ok: false };
+      }
+
+      // Thành công → đồng bộ lại giỏ/tổng
+      const data = await res.json();
+      updateCartFromResponse(data);
+      return { ok: true };
+    } catch {
+      // Lỗi mạng coi như không ok để an toàn
+      return { ok: false };
+    }
+  }
+
+  // Gọi trước createOrder(): nếu có mã bị gỡ → chặn tạo đơn & báo
+  async function hardRevalidateVouchersBeforeCheckout() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return { proceed: false, removed: false };
+
+    let removed = false;
+
+    // 1) ORDER
+    if (tab.orderVoucherId || tab.voucherId) {
+      const vid = tab.orderVoucherId || tab.voucherId;
+      const r = await _revalidateOneVoucher({ id: vid, kind: 'ORDER' });
+      if (!r.ok) removed = true;
+    }
+
+    // 2) SHIPPING
+    if (isShippingEnabled() && tab.shipVoucherId) {
+      const r = await _revalidateOneVoucher({ id: tab.shipVoucherId, kind: 'SHIP' });
+      if (!r.ok) removed = true;
+    }
+
+    if (removed) {
+      showToast('Một hoặc nhiều mã đã hết hiệu lực và đã được gỡ. Vui lòng kiểm tra lại tổng tiền rồi bấm thanh toán lại.', 'warning', { duration: 5000 });
+      return { proceed: false, removed: true };
+    }
+    return { proceed: true, removed: false };
+  }
+
   async function revalidateVouchersOnPaymentChange() {
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
@@ -3890,7 +3966,40 @@
       if (variantSpinner) variantSpinner.style.display = "none";
     }
   }
+  function openVoucherModal() {
+    const el = document.getElementById('voucherModal');
+    if (!el) return;
+    updateShipSectionVisibility();   // ẩn/hiện mục Freeship theo trạng thái giao hàng
+    fetchVouchers();                 // nạp lại voucher mới nhất
+    el.style.display = 'flex';
+  }
 
+  function closeVoucherModal() {
+    const el = document.getElementById('voucherModal');
+    if (el) el.style.display = 'none';
+  }
+
+  function clearVoucherSelections() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return;
+
+    // Bỏ chọn radio trên UI
+    document.querySelectorAll('#voucherModal input[name="orderVoucher"]:checked')
+            .forEach(r => r.checked = false);
+    document.querySelectorAll('#voucherModal input[name="shipVoucher"]:checked')
+            .forEach(r => r.checked = false);
+
+    // Xoá trong state
+    tab.voucherId = null;            // giữ tương thích cũ
+    tab.orderVoucherId = null;       // order
+    tab.shipVoucherId  = null;       // ship
+    tab.discount = 0;
+    tab.shippingDiscount = 0;
+
+    updateSummary(tab);
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    showToast('Đã bỏ chọn tất cả mã.', 'info');
+  }
   function formatCashInput(value) {
     return value.replace(/\D/g, '') // chỉ lấy số
             .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // thêm dấu chấm
