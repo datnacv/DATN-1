@@ -1182,118 +1182,101 @@
             error.textContent = '';
         });
 
-        // Current date for validation
-        const currentDate = new Date('2025-08-23');
+        const currentDate = new Date();
 
-        // Validate Họ tên
-        const hoTen = document.getElementById('addHoTen').value;
-        const hoTenPattern = /^[a-zA-ZÀ-ỹ\s]+$/;
-        if (!hoTen.trim()) {
-            document.getElementById('hoTenError').textContent = 'Họ tên không được để trống';
-            document.getElementById('hoTenError').style.display = 'block';
-            isValid = false;
+        // Họ tên
+        const hoTen = document.getElementById('addHoTen').value.trim();
+        const hoTenPattern = /^[a-zA-ZÀ-ỹ]+(?:[ '\-][a-zA-ZÀ-ỹ]+)*$/;
+        if (!hoTen) {
+            showError('hoTenError', 'Họ tên không được để trống');
         } else if (!hoTenPattern.test(hoTen) || hoTen.length > 100) {
-            document.getElementById('hoTenError').textContent = 'Họ tên chỉ được chứa chữ cái và khoảng trắng, tối đa 100 ký tự';
-            document.getElementById('hoTenError').style.display = 'block';
-            isValid = false;
+            showError('hoTenError', 'Họ tên chỉ chứa chữ cái, tối đa 100 ký tự, phải đúng định dạng tên');
         }
 
-        // Validate Tên đăng nhập
-        const tenDangNhap = document.getElementById('addTenDangNhap').value;
-        const tenDangNhapPattern = /^[a-zA-Z0-9_]+$/;
-        if (!tenDangNhap.trim()) {
-            document.getElementById('tenDangNhapError').textContent = 'Tên đăng nhập không được để trống';
-            document.getElementById('tenDangNhapError').style.display = 'block';
-            isValid = false;
-        } else if (!tenDangNhapPattern.test(tenDangNhap) || tenDangNhap.length < 4 || tenDangNhap.length > 50) {
-            document.getElementById('tenDangNhapError').textContent = 'Tên đăng nhập chỉ chứa chữ cái, số, dấu gạch dưới, từ 4 đến 50 ký tự';
-            document.getElementById('tenDangNhapError').style.display = 'block';
-            isValid = false;
+        // Tên đăng nhập
+        const tenDangNhap = document.getElementById('addTenDangNhap').value.trim();
+        const tenDangNhapPattern = /^(?!_)(?!.*__)[a-zA-Z][a-zA-Z0-9_]{3,49}$/;
+        if (!tenDangNhap) {
+            showError('tenDangNhapError', 'Tên đăng nhập không được để trống');
+        } else if (!tenDangNhapPattern.test(tenDangNhap)) {
+            showError('tenDangNhapError', 'Tên đăng nhập phải bắt đầu bằng chữ, không chứa "__", dài 4–50 ký tự');
         }
 
-        // Validate Email
-        const email = document.getElementById('addEmail').value;
-        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email.trim()) {
-            document.getElementById('emailError').textContent = 'Email không được để trống';
-            document.getElementById('emailError').style.display = 'block';
-            isValid = false;
+        // Email
+        const email = document.getElementById('addEmail').value.trim();
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+        if (!email) {
+            showError('emailError', 'Email không được để trống');
         } else if (!emailPattern.test(email)) {
-            document.getElementById('emailError').textContent = 'Email không hợp lệ';
-            document.getElementById('emailError').style.display = 'block';
-            isValid = false;
+            showError('emailError', 'Email phải hợp lệ và dùng @gmail.com');
         }
 
-        // Validate Số điện thoại
-        const soDienThoai = document.getElementById('addSoDienThoai').value;
-        if (!soDienThoai.trim()) {
-            document.getElementById('soDienThoaiError').textContent = 'Số điện thoại không được để trống';
-            document.getElementById('soDienThoaiError').style.display = 'block';
-            isValid = false;
-        } else if (!/^[0-9]{10}$/.test(soDienThoai)) {
-            document.getElementById('soDienThoaiError').textContent = 'Số điện thoại phải là 10 chữ số';
-            document.getElementById('soDienThoaiError').style.display = 'block';
-            isValid = false;
+        // Số điện thoại
+        const soDienThoai = document.getElementById('addSoDienThoai').value.trim();
+        if (!soDienThoai) {
+            showError('soDienThoaiError', 'Số điện thoại không được để trống');
+        } else if (!/^0[0-9]{9}$/.test(soDienThoai) || /^(\d)\1{9}$/.test(soDienThoai)) {
+            showError('soDienThoaiError', 'Số điện thoại phải 10 số, bắt đầu bằng 0, không toàn giống nhau');
         }
 
-        // Validate Mật khẩu
+        // Mật khẩu
         const matKhau = document.getElementById('addMatKhau').value;
-        if (!matKhau.trim()) {
-            document.getElementById('matKhauError').textContent = 'Mật khẩu không được để trống';
-            document.getElementById('matKhauError').style.display = 'block';
-            isValid = false;
-        } else if (matKhau.length < 6 || matKhau.length > 20) {
-            document.getElementById('matKhauError').textContent = 'Mật khẩu phải từ 6 đến 20 ký tự';
-            document.getElementById('matKhauError').style.display = 'block';
-            isValid = false;
+        const matKhauPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,20}$/;
+        if (!matKhau) {
+            showError('matKhauError', 'Mật khẩu không được để trống');
+        } else if (!matKhauPattern.test(matKhau)) {
+            showError('matKhauError', 'Mật khẩu 6–20 ký tự, gồm hoa, thường, số và ký tự đặc biệt');
         }
 
         // Validate Ngày sinh
-        const ngaySinh = document.getElementById('addNgaySinh').value;
-        if (ngaySinh) {
+        const ngaySinh = document.getElementById('addNgaySinh').value.trim();
+        if (!ngaySinh) {
+            showError('ngaySinhError', 'Ngày sinh không được để trống');
+        } else {
             const birthDate = new Date(ngaySinh);
-            if (birthDate >= currentDate) {
-                document.getElementById('ngaySinhError').textContent = 'Ngày sinh phải là ngày trong quá khứ';
-                document.getElementById('ngaySinhError').style.display = 'block';
-                isValid = false;
+            const age = currentDate.getFullYear() - birthDate.getFullYear();
+            if (birthDate >= currentDate || birthDate < new Date('1900-01-01') || age < 16) {
+                showError('ngaySinhError', 'Ngày sinh phải trong quá khứ, sau 1900 và trên 16 tuổi');
             }
         }
 
         // Validate Giới tính
         const gioiTinh = document.getElementById('addGioiTinh').value;
-        if (!gioiTinh) {
-            document.getElementById('gioiTinhError').textContent = 'Vui lòng chọn giới tính';
+        if (!gioiTinh) { document.getElementById('gioiTinhError').textContent = 'Vui lòng chọn giới tính';
             document.getElementById('gioiTinhError').style.display = 'block';
-            isValid = false;
-        }
+            isValid = false; }
 
-        // Validate Vai trò
+
+        // Vai trò
         const vaiTro = document.getElementById('addVaiTro').value;
-        if (!vaiTro || !['employee', 'admin'].includes(vaiTro)) {
-            document.getElementById('vaiTroError').textContent = 'Vui lòng chọn vai trò hợp lệ (Nhân viên hoặc Admin)';
-            document.getElementById('vaiTroError').style.display = 'block';
-            isValid = false;
+        if (!['employee', 'admin'].includes(vaiTro)) {
+            showError('vaiTroError', 'Vui lòng chọn vai trò hợp lệ (Nhân viên hoặc Admin)');
         }
 
-        // Validate Trạng thái
+        // Trạng thái
         const trangThai = document.getElementById('addTrangThai').value;
-        if (!trangThai || !['true', 'false'].includes(trangThai)) {
-            document.getElementById('trangThaiError').textContent = 'Vui lòng chọn trạng thái hợp lệ (Hoạt động hoặc Ngưng hoạt động)';
-            document.getElementById('trangThaiError').style.display = 'block';
-            isValid = false;
+        if (!['true', 'false'].includes(trangThai)) {
+            showError('trangThaiError', 'Vui lòng chọn trạng thái hợp lệ (Hoạt động hoặc Ngưng hoạt động)');
         }
 
         // Validate Địa chỉ
-        const chiTietDiaChi = document.getElementById('addChiTietDiaChi').value;
-        if (chiTietDiaChi && chiTietDiaChi.length > 200) {
-            document.getElementById('chiTietDiaChiError').textContent = 'Địa chỉ tối đa 200 ký tự';
-            document.getElementById('chiTietDiaChiError').style.display = 'block';
-            isValid = false;
+        const chiTietDiaChi = document.getElementById('addChiTietDiaChi').value.trim();
+        if (!chiTietDiaChi) {
+            showError('chiTietDiaChiError', 'Địa chỉ không được để trống');
+        } else if (chiTietDiaChi.length > 200 || /^[^a-zA-ZÀ-ỹ]+$/.test(chiTietDiaChi)) {
+            showError('chiTietDiaChiError', 'Địa chỉ tối đa 200 ký tự, phải chứa chữ và không toàn số/ký tự đặc biệt');
         }
 
         if (isValid) {
             event.target.submit();
         }
+
+        function showError(id, message) {
+            document.getElementById(id).textContent = message;
+            document.getElementById(id).style.display = 'block';
+            isValid = false;
+        }
+
         return isValid;
     }
 </script>
