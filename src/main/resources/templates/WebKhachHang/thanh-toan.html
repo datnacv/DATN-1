@@ -8,9 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/image/ACV.png" type="image/png" sizes="32x32"/>
     <style>
         :root {
             --primary-color: #153054;
+            --secondary-color: #9FD5F7;
             --secondary-color: #9FD5F7;
             --primary-hover: #1e4066;
             --secondary-hover: #7bc3f0;
@@ -56,6 +58,138 @@
             background: linear-gradient(135deg, var(--gray-50) 0%, #ffffff 50%, var(--gray-50) 100%);
             padding-top: 100px;
             scroll-behavior: smooth;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
+        }.search-suggestions {
+             position: absolute;
+             top: 100%;
+             left: 0;
+             right: 0;
+             background: white;
+             border: 1px solid #ccc;
+             border-radius: 8px;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+             z-index: 1000;
+             max-height: 300px;
+             overflow-y: auto;
+             opacity: 0;
+             visibility: hidden;
+             transition: opacity 0.3s ease, visibility 0.3s ease;
+         }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
         }
 
         /* Enhanced button system with micro-interactions */
@@ -1216,6 +1350,7 @@
                 </div>
 
                 <!-- SHIPPING -->
+                <!-- SHIPPING -->
                 <div class="mb-3">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="fas fa-truck"></i>
@@ -1227,21 +1362,28 @@
                             <label class="voucher-card d-flex align-items-start gap-3 border rounded mb-2 w-100"
                                    style="cursor:pointer;"
                                    th:attr="data-scope=${'SHIPPING'},
-                              data-code=${v.ma},
-                              data-min-order=${v.giaTriGiamToiThieu}">
+                      data-code=${v.ma},
+                      data-min-order=${v.giaTriGiamToiThieu}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${v.ten}">Tên phiếu</div>
                                     <div class="text-muted small">
-                    <span th:text="${
-                      v.loai == 'FREESHIP_FULL' ? 'Miễn phí vận chuyển'
-                      : (v.loai == 'FREESHIP_CAP'
-                          ? 'Giảm ' + #numbers.formatDecimal(v.giaTriGiamToiDa, 0, 'POINT', 0, 'COMMA') + ' VND'
-                          : 'Giảm phí vận chuyển')
-                    }">Mô tả freeship</span>
+            <span th:text="${
+              v.loai == 'FREESHIP_FULL' ? 'Miễn phí vận chuyển'
+              : (v.loai == 'FREESHIP_CAP'
+                  ? 'Giảm ' + #numbers.formatDecimal(v.giaTriGiamToiDa, 0, 'POINT', 0, 'COMMA') + ' VND'
+                  : 'Giảm phí vận chuyển')
+            }">Mô tả freeship</span>
                                         • ĐH tối thiểu:
                                         <span th:text="${#numbers.formatDecimal(v.giaTriGiamToiThieu, 0, 'POINT', 0, 'COMMA')}">0</span> VND
                                         • HSD:
                                         <span th:text="${#temporals.format(v.ngayKetThuc,'d/M/yyyy')}"></span>
+                                        <!-- PTTT -->
+                                        • PTTT:
+                                        <span th:text="${
+      #maps.containsKey(voucherPtttMapById, v.id) ? voucherPtttMapById[v.id]
+    : (#maps.containsKey(voucherPtttMapByMa, v.ma) ? voucherPtttMapByMa[v.ma]
+    : 'Tất cả')
+}">Tất cả</span>
                                     </div>
                                 </div>
                                 <input class="form-check-input mt-1" type="radio" name="rb-ship" th:value="${v.ma}">
@@ -1250,6 +1392,7 @@
                     </th:block>
                 </div>
 
+                <!-- ORDER -->
                 <!-- ORDER -->
                 <div class="mt-4">
                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -1262,8 +1405,8 @@
                             <label class="voucher-card d-flex align-items-start gap-3 border rounded mb-2 w-100"
                                    style="cursor:pointer;"
                                    th:attr="data-scope=${'ORDER'},
-                              data-code=${v.ma},
-                              data-min-order=${v.giaTriGiamToiThieu}">
+                      data-code=${v.ma},
+                      data-min-order=${v.giaTriGiamToiThieu}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${v.ten}">Tên phiếu</div>
                                     <div class="text-muted small">
@@ -1274,6 +1417,11 @@
                                         <span th:text="${#numbers.formatDecimal(v.giaTriGiamToiThieu, 0, 'POINT', 0, 'COMMA')}">0</span> VND
                                         • HSD:
                                         <span th:text="${#temporals.format(v.ngayKetThuc,'d/M/yyyy')}"></span>
+                                        • PTTT:
+                                        <span th:text="${#maps.containsKey(voucherPtttMapById, v.id) ? voucherPtttMapById[v.id] :
+                              (#maps.containsKey(voucherPtttMapByMa, v.ma) ? voucherPtttMapByMa[v.ma] : 'Tất cả')}">
+              Tất cả
+            </span>
                                     </div>
                                 </div>
                                 <input class="form-check-input mt-1" type="radio" name="rb-order" th:value="${v.ma}">
@@ -1281,6 +1429,8 @@
                         </th:block>
                     </th:block>
                 </div>
+
+
 
                 <!-- Không có kết quả -->
                 <div id="voucher-no-result" class="text-center text-muted py-3 d-none">
@@ -1971,7 +2121,7 @@
         const voucherCode = document.getElementById('order-voucher').value.trim();
         const discountEl = document.getElementById('discount-order');
 
-        // không chọn mã -> coi như ok, chỉ clear
+        // Không chọn mã -> clear
         if (!voucherCode) {
             discountEl.textContent = formatVND(0);
             updateTotal();
@@ -1980,12 +2130,27 @@
         }
 
         const mode = getCheckoutMode();
-        const source = mode; // 'cart' | 'cart-selected' | 'buy-now'
+        const source = mode;
         const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
         const checkoutItems = buildVoucherBodyForCurrentMode();
 
+        // ⬅️ LẤY PTTT ĐANG CHỌN
+        const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+        if (!paymentMethodId) {
+            if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
+            discountEl.textContent = formatVND(0);
+            updateTotal();
+            return { ok:false, discount:0, message:'missing paymentMethodId' };
+        }
+
+        const url = `/api/checkout/apply-voucher`
+            + `?voucher=${encodeURIComponent(voucherCode)}`
+            + `&source=${encodeURIComponent(source)}`
+            + `&type=ORDER`
+            + `&subtotal=${subtotal}`
+            + `&paymentMethodId=${encodeURIComponent(paymentMethodId)}`;
+
         try {
-            const url = `/api/checkout/apply-voucher?voucher=${encodeURIComponent(voucherCode)}&source=${source}&type=ORDER&subtotal=${subtotal}`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -2019,6 +2184,7 @@
 
 
 
+
     async function applyShipVoucher({ silent = false } = {}) {
         const code = document.getElementById('ship-voucher').value.trim();
         const elDiscountShip = document.getElementById('discount-ship');
@@ -2044,14 +2210,29 @@
             return { ok: false, discount: 0, message: 'Chưa có phí vận chuyển' };
         }
 
-        const url = `/api/checkout/apply-voucher?voucher=${encodeURIComponent(code)}&source=${source}&type=SHIPPING&shippingFee=${shippingFee}&subtotal=${subtotal}`;
+        // ⬅️ LẤY PTTT ĐANG CHỌN
+        const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+        if (!paymentMethodId) {
+            if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
+            elDiscountShip.textContent = formatVND(0);
+            updateTotal();
+            return { ok:false, discount:0, message:'missing paymentMethodId' };
+        }
+
+        const url = `/api/checkout/apply-voucher`
+            + `?voucher=${encodeURIComponent(code)}`
+            + `&source=${encodeURIComponent(source)}`
+            + `&type=SHIPPING`
+            + `&shippingFee=${shippingFee}`
+            + `&subtotal=${subtotal}`
+            + `&paymentMethodId=${encodeURIComponent(paymentMethodId)}`;
 
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(body)
+                body
             });
             const data = await res.json();
 
@@ -2335,12 +2516,18 @@
 
         // ===== PAYMENT CARD SELECT =====
         document.querySelectorAll('.payment-method').forEach(method => {
-            method.addEventListener('click', () => {
+            method.addEventListener('click', async () => {
                 document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
                 method.classList.add('active');
                 method.querySelector('input').checked = true;
+
+                // ⬅️ PTTT đổi -> re-apply voucher để BE check PTTT
+                await applyOrderVoucher({ silent: true });
+                await applyShipVoucher({ silent: true });
+                if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
             });
         });
+
 
         // ===== VOUCHER HIDDEN SELECTS =====
         document.getElementById('order-voucher')?.addEventListener('change', async () => {

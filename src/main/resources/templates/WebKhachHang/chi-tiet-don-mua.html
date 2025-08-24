@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="/image/ACV.png" type="image/png" sizes="32x32"/>
   <style>
     /* Enhanced styles with better UX/UI */
     * {
@@ -39,6 +40,73 @@
       width: 100%;
       z-index: 1050;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .search-suggestions.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .suggestion-item:hover {
+      background-color: #f1f5f9;
+    }
+    .suggestion-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+    .history-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+      background-color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-item:hover {
+      background-color: #e2e8f0;
+    }
+    .history-item .highlight {
+      background-color: #9FD5F7;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .history-item .delete-btn {
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s;
+    }
+    .history-item .delete-btn:hover {
+      color: #b91c1c;
     }
 
     /* Enhanced dropdown */
@@ -963,6 +1031,167 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
+
+  // Thêm vào cuối phần <script> trong chi-tiet-don-mua.html
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Lấy mã đơn hàng từ HTML
+    const maDonHangElement = document.querySelector('.order-info h3 span');
+    const maDonHang = maDonHangElement ? maDonHangElement.textContent : null;
+    const hoaDonIdElement = document.querySelector('.btn-confirm, .btn-cancel');
+    const hoaDonId = hoaDonIdElement ? hoaDonIdElement.getAttribute('data-id') : '';
+
+    if (!maDonHang) {
+      console.error('Không tìm thấy mã đơn hàng');
+      return;
+    }
+
+    // Hàm cập nhật trạng thái và timeline
+    function updateOrderStatusAndTimeline() {
+      fetch(`/dsdon-mua/api/orders/status?maDonHang=${encodeURIComponent(maDonHang)}`, {
+        method: 'GET',
+        credentials: 'include'
+      })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error('Lỗi khi lấy trạng thái đơn hàng');
+                }
+                return response.json();
+              })
+              .then(data => {
+                if (data.trangThai) {
+                  const statusElement = document.querySelector('.order-status');
+                  const timelineContainer = document.querySelector('.timeline-container');
+                  const currentStatus = data.trangThai;
+
+                  // Cập nhật trạng thái hiển thị
+                  if (statusElement.textContent !== currentStatus) {
+                    statusElement.textContent = currentStatus;
+                    statusElement.classList.add('bg-yellow-500', 'transition', 'duration-500');
+                    setTimeout(() => statusElement.classList.remove('bg-yellow-500'), 1000);
+                  }
+
+                  // Cập nhật timeline
+                  updateTimeline(currentStatus);
+
+                  // Cập nhật nút hành động
+                  updateActionButtons(currentStatus, hoaDonId, maDonHang);
+                }
+              })
+              .catch(error => console.error('Lỗi khi cập nhật trạng thái:', error));
+    }
+
+    // Hàm cập nhật timeline dựa trên trạng thái
+    function updateTimeline(currentStatus) {
+      const timelineSteps = document.querySelectorAll('.timeline-step');
+      const isCanceled = currentStatus === 'Hủy đơn hàng';
+      const isReturned = currentStatus === 'Đã trả hàng';
+      const isExchanged = currentStatus === 'Đã đổi hàng';
+
+      // Xóa lớp 'completed' và 'cancel' khỏi tất cả các bước
+      timelineSteps.forEach(step => {
+        step.classList.remove('completed', 'cancel');
+        step.removeAttribute('data-status');
+      });
+
+      // Ánh xạ trạng thái với các bước timeline
+      const statusSteps = [
+        { status: 'Chưa xác nhận', step: 0 },
+        { status: 'Đã xác nhận Online', step: 1 },
+        { status: 'Đang xử lý Online', step: 2 },
+        { status: 'Đang vận chuyển', step: 3 },
+        { status: 'Vận chuyển thành công', step: 4 },
+        { status: 'Hoàn thành', step: 5 },
+        { status: 'Đã trả hàng', step: 6 },
+        { status: 'Đã đổi hàng', step: 7 },
+        { status: 'Hủy đơn hàng', step: 8 }
+      ];
+
+      // Tìm bước hiện tại
+      const currentStep = statusSteps.find(s => s.status === currentStatus);
+      if (currentStep) {
+        // Cập nhật các bước trước hoặc bằng bước hiện tại
+        for (let i = 0; i <= currentStep.step; i++) {
+          const stepElement = timelineSteps[i];
+          if (stepElement) {
+            stepElement.classList.add('completed');
+            if (currentStatus === 'Hủy đơn hàng' && i === 8) {
+              stepElement.classList.add('cancel');
+            } else if (currentStatus === 'Đã trả hàng' && i === 6) {
+              stepElement.setAttribute('data-status', 'Đã trả hàng');
+            } else if (currentStatus === 'Đã đổi hàng' && i === 7) {
+              stepElement.setAttribute('data-status', 'Đã đổi hàng');
+            }
+          }
+        }
+
+        // Ẩn các bước không áp dụng khi hủy
+        if (isCanceled) {
+          [3, 4, 5, 6, 7].forEach(i => {
+            if (timelineSteps[i]) {
+              timelineSteps[i].style.display = 'none';
+            }
+          });
+        } else {
+          [3, 4, 5, 6, 7].forEach(i => {
+            if (timelineSteps[i]) {
+              timelineSteps[i].style.display = 'flex';
+            }
+          });
+        }
+      }
+
+      // Cập nhật chiều rộng thanh tiến trình
+      const progressLine = document.querySelector('.timeline-container::after');
+      const completedSteps = document.querySelectorAll('.timeline-step.completed').length;
+      const totalSteps = isCanceled ? 9 : 9; // Tổng số bước (bao gồm cả hủy)
+      const progressWidth = (completedSteps / totalSteps) * 100;
+      progressLine.style.width = `${progressWidth}%`;
+    }
+
+    // Hàm cập nhật nút hành động
+    function updateActionButtons(currentStatus, hoaDonId, maDonHang) {
+      const actionButtons = document.querySelector('.action-buttons');
+      actionButtons.innerHTML = ''; // Xóa các nút hiện tại
+
+      // Các trạng thái cho phép hủy đơn hàng (chỉ 'Chưa xác nhận')
+      const cancelableStatuses = ['Chưa xác nhận'];
+
+      if (currentStatus === 'Vận chuyển thành công') {
+        actionButtons.innerHTML = `
+                <button class="btn-confirm" data-id="${hoaDonId}" onclick="confirmReceivedOrder(this)">
+                    <i class="fas fa-check-double"></i> Xác nhận đã nhận hàng
+                </button>
+                <button class="btn-exchange" onclick="requestExchange('${hoaDonId}')">
+                    <i class="fas fa-exchange-alt"></i> Yêu cầu đổi sản phẩm
+                </button>
+                <button class="btn-cancel" onclick="requestReturn('${hoaDonId}')">
+                    <i class="fas fa-undo"></i> Yêu cầu trả hàng
+                </button>
+            `;
+      } else if (cancelableStatuses.includes(currentStatus)) {
+        actionButtons.innerHTML = `
+                <button class="btn-cancel" onclick="cancelOrder('${maDonHang}', '${hoaDonId}')">
+                    <i class="fas fa-times"></i> Hủy đơn hàng
+                </button>
+            `;
+      } else {
+        // Không hiển thị nút nào cho các trạng thái khác (bao gồm 'Đã xác nhận')
+        actionButtons.innerHTML = '';
+      }
+    }
+
+    // Cập nhật ban đầu
+    updateOrderStatusAndTimeline();
+
+    // Poll mỗi 1 giây
+    setInterval(updateOrderStatusAndTimeline, 1000);
+
+
+
+
+  });
+
   // Cập nhật số lượng giỏ hàng
   async function updateCartCount() {
     try {

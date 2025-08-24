@@ -9,75 +9,96 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Updated color system to use #153054 as primary and #9FD5F7 as secondary */
-    :root {
-      --primary-color: #153054;
-      --primary-dark: #0f2442;
-      --primary-light: #1e4066;
-      --secondary-color: #9FD5F7;
-      --secondary-light: #b8e0f9;
-      --secondary-dark: #7bc4f2;
-      --success-color: #10b981;
-      --danger-color: #ef4444;
-      --warning-color: #f59e0b;
-      --background-color: #f8fafc;
-      --surface-color: #ffffff;
-      --border-color: #e2e8f0;
-      --text-primary: #1e293b;
-      --text-secondary: #64748b;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-      --radius-sm: 6px;
-      --radius-md: 8px;
-      --radius-lg: 12px;
-      --radius-xl: 16px;
-    }
+    .navbar {  background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .navbar { position: fixed; top: 40px; left: 0; width: 100%; z-index: 1040; }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, var(--background-color) 0%, #e2e8f0 100%);
-      padding-top: 118px;
-      line-height: 1.6;
-      color: var(--text-primary);
-      font-weight: 400;
-    }
-
-    /* Updated navbar to use custom primary colors */
-    .navbar {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      box-shadow: var(--shadow-lg);
-    }
-    .navbar {
-      position: fixed;
-      top: 40px;
+    .search-suggestions {
+      position: absolute;
+      top: 100%;
       left: 0;
-      width: 100%;
-      z-index: 1040;
+      right: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .search-suggestions.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .suggestion-item:hover {
+      background-color: #f1f5f9;
+    }
+    .suggestion-item img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      margin-right: 10px;
+      border-radius: 4px;
+    }
+    .history-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+      background-color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .history-item:hover {
+      background-color: #e2e8f0;
+    }
+    .history-item .highlight {
+      background-color: #9FD5F7;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .history-item .delete-btn {
+      color: #ef4444;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 5px;
+      transition: color 0.2s;
+    }
+    .history-item .delete-btn:hover {
+      color: #b91c1c;
     }
 
     /* Enhanced dropdown */
     .dropdown-menu {
       display: none;
       position: absolute;
-      background: rgba(255,255,255,0.98);
-      backdrop-filter: blur(20px);
-      min-width: 220px;
-      box-shadow: var(--shadow-xl);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(10px);
+      min-width: 200px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
       z-index: 1000;
-      padding: 12px;
+      padding: 8px;
     }
 
     .dropdown:hover .dropdown-menu {
       display: block;
-      animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeInUp 0.3s ease;
     }
 
     @keyframes fadeInUp {
@@ -92,17 +113,14 @@
     }
 
     .dropdown-menu a {
-      border-radius: var(--radius-md);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 8px;
+      transition: all 0.2s ease;
       font-weight: 500;
-      padding: 10px 14px;
     }
 
-    /* Updated dropdown hover to use secondary color */
     .dropdown-menu a:hover {
-      background: linear-gradient(135deg, rgba(159, 213, 247, 0.1) 0%, rgba(159, 213, 247, 0.2) 100%);
+      background: linear-gradient(135deg, #e0ebf5 0%, #f1f8ff 100%);
       transform: translateX(4px);
-      color: var(--primary-color);
     }
 
     /* Enhanced search bar */
@@ -110,366 +128,110 @@
       background: rgba(255,255,255,0.95);
       backdrop-filter: blur(10px);
       border: 2px solid transparent;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      border-radius: var(--radius-lg);
+      transition: all 0.3s ease;
     }
 
-    /* Updated search focus to use secondary color */
     .search-container input:focus {
-      border-color: var(--secondary-color);
+      border-color: #9FD5F7;
       box-shadow: 0 0 0 4px rgba(159, 213, 247, 0.2);
-      background: white;
     }
 
     /* Enhanced page title */
     .page-title {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+      background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      font-weight: 700;
-      letter-spacing: -0.025em;
+      font-weight: 800;
+      letter-spacing: -0.02em;
       margin-bottom: 2rem;
-      font-size: 2rem;
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
-    .page-title i {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    /* Enhanced tabs */
+    .nav-tabs {
+      border: none;
+      background: white;
+      border-radius: 16px;
+      padding: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 2rem;
+      overflow-x: auto;
+      white-space: nowrap;
     }
 
-    /* Enhanced cards */
-    .card {
-      border-radius: var(--radius-xl);
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-md);
-      background: var(--surface-color);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    .nav-tabs .nav-item {
+      margin: 0 4px;
+    }
+
+    .nav-tabs .nav-link {
+      color: #64748b;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      position: relative;
       overflow: hidden;
     }
 
-    .card:hover {
-      box-shadow: var(--shadow-lg);
+    .nav-tabs .nav-link:hover {
+      color: #153054;
+      background: rgba(159, 213, 247, 0.1);
       transform: translateY(-2px);
     }
 
-    /* Updated card header with subtle secondary color accent */
-    .card-header {
-      background: linear-gradient(135deg, #f8fafc 0%, rgba(159, 213, 247, 0.05) 100%);
-      border-bottom: 1px solid var(--border-color);
-      font-weight: 600;
-      color: var(--text-primary);
-      padding: 20px 24px;
-      font-size: 1.1rem;
-    }
-
-    .card-body {
-      padding: 24px;
-    }
-
-    /* Enhanced form elements */
-    .form-label {
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 8px;
-      font-size: 0.9rem;
-    }
-
-    .form-control, .form-select {
-      border: 2px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 12px 16px;
-      font-size: 0.95rem;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      background: var(--surface-color);
-    }
-
-    /* Updated form focus states to use primary color */
-    .form-control:focus, .form-select:focus {
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
-      outline: none;
-    }
-
-    /* Enhanced buttons */
-    .btn {
-      border-radius: var(--radius-md);
-      font-weight: 500;
-      padding: 10px 20px;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      border: none;
-      font-size: 0.9rem;
-    }
-
-    /* Updated primary button to use custom primary colors */
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    .nav-tabs .nav-link.active {
+      background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
       color: white;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 4px 15px rgba(21, 48, 84, 0.3);
+      transform: translateY(-2px);
     }
 
-    .btn-primary:hover {
-      background: linear-gradient(135deg, var(--primary-dark) 0%, #0a1a33 100%);
-      transform: translateY(-1px);
-      box-shadow: var(--shadow-md);
-    }
-
-    /* Updated secondary button with subtle secondary color accent */
-    .btn-secondary {
-      background: linear-gradient(135deg, #f1f5f9 0%, rgba(159, 213, 247, 0.1) 100%);
-      color: var(--text-secondary);
-      border: 1px solid var(--border-color);
-    }
-
-    .btn-secondary:hover {
-      background: linear-gradient(135deg, rgba(159, 213, 247, 0.15) 0%, rgba(159, 213, 247, 0.25) 100%);
-      color: var(--primary-color);
-      transform: translateY(-1px);
-    }
-
-    .btn-success {
-      background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%);
-      color: white;
-    }
-
-    .btn-success:hover {
-      background: linear-gradient(135deg, #059669 0%, #047857 100%);
-      transform: translateY(-1px);
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%);
-      color: white;
-    }
-
-    .btn-danger:hover {
-      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-      transform: translateY(-1px);
-    }
-
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 0.8rem;
-      border-radius: var(--radius-sm);
-    }
-
-    /* Updated ticker to use secondary color */
-    .ticker {
-      background: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-dark) 100%);
-      color: var(--primary-color);
-      font-weight: 600;
-      position: fixed;
+    .nav-tabs .nav-link.active::before {
+      content: '';
+      position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      z-index: 1050;
-      box-shadow: var(--shadow-md);
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+      pointer-events: none;
     }
-
-    /* Updated avatar with secondary color gradient */
-    .avatar {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-light) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      color: var(--primary-color);
-      border: 3px solid white;
-      box-shadow: var(--shadow-md);
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      padding-top: 118px;
+      line-height: 1.6;
     }
-
-    /* Enhanced table */
-    .table {
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
+    .page-title { font-size: 1.8rem; font-weight: 700; color: #153054; margin-bottom: 20px; }
+    .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .form-label { font-weight: 600; }
+    .form-control, .form-select {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 0.95rem;
     }
-
-    /* Updated table header with secondary color accent */
-    .table thead th {
-      background: linear-gradient(135deg, #f8fafc 0%, rgba(159, 213, 247, 0.08) 100%);
-      border: none;
-      font-weight: 600;
-      color: var(--text-primary);
-      padding: 16px;
-      font-size: 0.9rem;
+    .ticker { background-color: #9FD5F7; color: #153054; font-weight: bold; position: fixed; top: 0; left: 0; width: 100%; z-index: 1050; }
+    .form-control:focus, .form-select:focus {
+      border-color: #153054;
+      box-shadow: 0 0 0 3px rgba(21, 48, 84, 0.1);
     }
-
-    .table tbody td {
-      padding: 16px;
-      border-color: var(--border-color);
-      vertical-align: middle;
-    }
-
-    .table tbody tr:hover {
-      background: rgba(159, 213, 247, 0.05);
-    }
-
-    .address-cell {
-      max-width: 250px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Enhanced badges */
-    .badge {
-      border-radius: var(--radius-sm);
-      font-weight: 500;
-      padding: 6px 12px;
-      font-size: 0.75rem;
-    }
-
-    .badge.bg-success {
-      background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%) !important;
-    }
-
-    /* Enhanced modals */
-    .modal-content {
-      border-radius: var(--radius-xl);
-      border: none;
-      box-shadow: var(--shadow-xl);
-    }
-
-    .modal-header {
-      border-bottom: 1px solid var(--border-color);
-      padding: 20px 24px;
-    }
-
-    /* Updated modal header to use primary color */
-    .modal-header.bg-primary {
-      background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%) !important;
-      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    }
-
-    .modal-body {
-      padding: 24px;
-    }
-
-    .modal-footer {
-      border-top: 1px solid var(--border-color);
-      padding: 20px 24px;
-    }
-
-    /* Enhanced alerts */
-    .alert {
-      border-radius: var(--radius-lg);
-      border: none;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-    }
-
-    .alert-success {
-      background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
-      color: #065f46;
-      border-left: 4px solid var(--success-color);
-    }
-
-    .alert-danger {
-      background: linear-gradient(135deg, #fef2f2 0%, #fef7f7 100%);
-      color: #991b1b;
-      border-left: 4px solid var(--danger-color);
-    }
-
-    /* Updated alert-info to use primary color */
-    .alert-info {
-      background: linear-gradient(135deg, rgba(159, 213, 247, 0.1) 0%, rgba(159, 213, 247, 0.15) 100%);
-      color: var(--primary-color);
-      border-left: 4px solid var(--primary-color);
-    }
-
-    /* Enhanced toast container */
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1050;
-    }
-
-    /* Enhanced form sections */
-    .profile-section {
-      background: white;
-      border-radius: var(--radius-xl);
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-md);
-      border: 1px solid var(--border-color);
-    }
-
-    .profile-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .profile-info h4 {
-      margin: 0;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .profile-info small {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-    }
-
-    /* Enhanced spacing */
-    .container {
-      max-width: 1200px;
-    }
-
-    /* Responsive improvements */
-    @media (max-width: 768px) {
-      .page-title {
-        font-size: 1.5rem;
-      }
-
-      .card-body {
-        padding: 20px;
-      }
-
-      .profile-header {
-        flex-direction: column;
-        text-align: center;
-      }
-
-      .btn-group-mobile {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .btn-group-mobile .btn {
-        width: 100%;
-      }
-    }
-
-    /* Loading states */
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .spinner-border-sm {
-      width: 1rem;
-      height: 1rem;
-    }
+    .btn-primary { background-color: #153054; border: none; }
+    .btn-primary:hover { background-color: #1e4066; }
+    .btn-secondary { background-color: #e2e6ea; border: none; color: #153054; }
+    .btn-secondary:hover { background-color: #d6dade; }
+    .btn-success { background-color: #28a745; border: none; }
+    .btn-success:hover { background-color: #218838; }
+    .address-cell { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .avatar { width: 80px; height: 80px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #888; }
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1050; }
   </style>
 </head>
 <body>
 
-<div class="ticker py-2 overflow-hidden fixed top-0 w-full z-50">
+<div class="ticker py-1 overflow-hidden" style="height: 40px;">
   <marquee behavior="scroll" direction="left" scrollamount="5">
     🎉 Khuyến mãi đặc biệt: Giảm giá lên đến 50% cho tất cả sản phẩm hôm nay! 🎉 - Miễn phí vận chuyển cho đơn từ 500k!
   </marquee>
@@ -481,128 +243,100 @@
 <div class="toast-container"></div>
 
 <div class="container py-5">
-  <h1 class="page-title">
-    <i class="fas fa-user-circle"></i>
-    Hồ sơ cá nhân
-  </h1>
+  <h1 class="page-title"><i class="fas fa-user-circle me-2"></i> Hồ sơ cá nhân</h1>
 
   <!-- Alert từ backend -->
   <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
   <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
-  <!-- Enhanced profile information section with better layout -->
+  <!-- Thông tin cá nhân -->
   <div class="card mb-4">
-    <div class="card-header">
-      <i class="fas fa-id-card me-2"></i>
-      Thông tin cá nhân
-    </div>
+    <div class="card-header fw-bold"><i class="fas fa-id-card me-1"></i> Thông tin cá nhân</div>
     <div class="card-body">
-      <div class="profile-header">
-        <div class="avatar">
-          <i class="fas fa-user"></i>
-        </div>
-        <div class="profile-info">
-          <h4 th:text="${user.hoTen}">Nguyễn Văn A</h4>
+      <div class="d-flex align-items-center mb-4">
+        <div class="avatar me-3"><i class="fas fa-user"></i></div>
+        <div>
+          <div class="fw-bold" th:text="${user.hoTen}">Nguyễn Văn A</div>
           <small class="text-muted" th:text="${user.email}">example@email.com</small>
         </div>
       </div>
 
       <!-- Form cập nhật thông tin -->
       <form id="profileForm" th:action="@{/profile}" method="post">
-        <div class="row g-3">
-          <div class="col-md-6">
+        <div class="row">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Họ tên</label>
             <input type="text" class="form-control" name="hoTen" th:value="${user.hoTen}" required>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Email</label>
             <input type="email" class="form-control" name="email" th:value="${user.email}" required>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Số điện thoại</label>
             <input type="text" class="form-control" name="soDienThoai" th:value="${user.soDienThoai}" required>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Mật khẩu mới</label>
             <input type="password" class="form-control" name="matKhau" placeholder="Để trống nếu không đổi">
           </div>
         </div>
+        <button type="submit" class="btn btn-primary" id="updateProfileBtn"><i class="fas fa-save me-1"></i> Cập nhật</button>
+      </form>
 
-        <div class="d-flex gap-3 mt-4 flex-wrap">
-          <button type="submit" class="btn btn-primary" id="updateProfileBtn">
-            <i class="fas fa-save me-2"></i>
-            Cập nhật thông tin
-          </button>
-
-          <!-- Form xóa tài khoản -->
-          <form th:action="@{/profile/delete}" method="post" class="d-inline"
-                onsubmit="return confirm('Bạn chắc chắn muốn xóa tài khoản này?')">
-            <button type="submit" class="btn btn-danger">
-              <i class="fas fa-trash me-2"></i>
-              Xóa tài khoản
-            </button>
-          </form>
-        </div>
+      <!-- Form xóa tài khoản -->
+      <form th:action="@{/profile/delete}" method="post" class="mt-3"
+            onsubmit="return confirm('Bạn chắc chắn muốn xóa tài khoản này?')">
+        <button type="submit" class="btn btn-danger"><i class="fas fa-trash me-1"></i> Xóa tài khoản</button>
       </form>
     </div>
   </div>
 
-  <!-- Enhanced address management section -->
+  <!-- Danh sách địa chỉ -->
   <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <span>
-        <i class="fas fa-map-marker-alt me-2"></i>
-        Địa chỉ của tôi
-      </span>
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span class="fw-bold"><i class="fas fa-map-marker-alt me-1"></i> Địa chỉ của tôi</span>
       <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addAddressModal">
-        <i class="fas fa-plus me-2"></i>
-        Thêm địa chỉ mới
+        <i class="fas fa-plus me-1"></i> Thêm địa chỉ
       </button>
     </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table mb-0">
-          <thead>
-          <tr>
-            <th>Người nhận</th>
-            <th>Số điện thoại</th>
-            <th>Địa chỉ</th>
-            <th>Trạng thái</th>
-            <th>Hành động</th>
-          </tr>
-          </thead>
-          <tbody id="addressTableBody">
-          <tr th:each="addr : ${addresses}" th:attr="data-id=${addr.id}">
-            <td>
-              <div class="fw-medium" th:text="${addr.nguoiNhan != null ? addr.nguoiNhan : addr.nguoiDung.hoTen}"></div>
-            </td>
-            <td th:text="${addr.soDienThoaiNguoiNhan != null ? addr.soDienThoaiNguoiNhan : addr.nguoiDung.soDienThoai}"></td>
-            <td class="address-cell"
-                th:title="${addr.tinhThanhPho + ', ' + addr.quanHuyen + ', ' + addr.phuongXa + ', ' + addr.chiTietDiaChi}"
-                th:text="${addr.tinhThanhPho + ', ' + addr.quanHuyen + ', ' + addr.phuongXa + ', ' + addr.chiTietDiaChi}">
-            </td>
-            <td>
-              <span th:if="${addr.macDinh}" class="badge bg-success">Mặc định</span>
-            </td>
-            <td>
-              <div class="btn-group btn-group-sm btn-group-mobile" role="group">
-                <button class="btn btn-primary edit-address-btn" th:data-id="${addr.id}" th:data-bs-target="'#editAddressModal' + ${addr.id}">
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger delete-address-btn" th:data-id="${addr.id}">
-                  <i class="fas fa-trash"></i>
-                </button>
-                <button th:if="${!addr.macDinh}" type="button" class="btn btn-secondary set-default-btn"
-                        th:data-id="${addr.id}">
-                  <i class="fas fa-star me-1"></i>
-                  Đặt mặc định
-                </button>
-              </div>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
+    <div class="card-body">
+      <table class="table align-middle">
+        <thead>
+        <tr>
+          <th>Người nhận</th>
+          <th>Số điện thoại</th>
+          <th>Địa chỉ</th>
+          <th>Mặc định</th>
+          <th>Hành động</th>
+        </tr>
+        </thead>
+        <tbody id="addressTableBody">
+        <tr th:each="addr : ${addresses}" th:attr="data-id=${addr.id}">
+          <td th:text="${addr.nguoiNhan != null ? addr.nguoiNhan : addr.nguoiDung.hoTen}"></td>
+          <td th:text="${addr.soDienThoaiNguoiNhan != null ? addr.soDienThoaiNguoiNhan : addr.nguoiDung.soDienThoai}"></td>
+          <td class="address-cell"
+              th:title="${addr.tinhThanhPho + ', ' + addr.quanHuyen + ', ' + addr.phuongXa + ', ' + addr.chiTietDiaChi}"
+              th:text="${addr.tinhThanhPho + ', ' + addr.quanHuyen + ', ' + addr.phuongXa + ', ' + addr.chiTietDiaChi}">
+          </td>
+          <td>
+            <span th:if="${addr.macDinh}" class="badge bg-success">Mặc định</span>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm edit-address-btn" th:data-id="${addr.id}" th:data-bs-target="'#editAddressModal' + ${addr.id}">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm delete-address-btn" th:data-id="${addr.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+            <button th:if="${!addr.macDinh}" type="button" class="btn btn-secondary btn-sm set-default-btn"
+                    th:data-id="${addr.id}">
+              Đặt mặc định
+            </button>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
@@ -619,11 +353,17 @@
         <form id="addAddressForm">
           <div class="mb-3">
             <label for="addNguoiNhan" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="addNguoiNhan" name="nguoiNhan" placeholder="Nhập tên người nhận" required>
+            <input type="text" class="form-control" id="addNguoiNhan" name="nguoiNhan"
+                   required maxlength="50"
+                   pattern="(?! )(?!.* {2})[A-Za-zÀ-ỿ\u0110\u0111]+(?: [A-Za-zÀ-ỿ\u0110\u0111]+)*"
+                   title="Chỉ chữ và khoảng trắng, không dư khoảng trắng">
           </div>
           <div class="mb-3">
             <label for="addSoDienThoaiNguoiNhan" class="form-label">Số điện thoại người nhận <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="addSoDienThoaiNguoiNhan" name="soDienThoaiNguoiNhan" placeholder="Nhập SĐT người nhận" required>
+            <input type="text" class="form-control" id="addSoDienThoaiNguoiNhan" name="soDienThoaiNguoiNhan"
+                   required inputmode="tel"
+                   pattern="(0(3|5|7|8|9)\d{8}|02\d{9})"
+                   title="Di động: 03/05/07/08/09 + 8 số; Cố định: 02 + 9 số">
           </div>
           <div class="mb-3">
             <label for="addTinhThanhPho" class="form-label">Tỉnh/Thành phố <span class="text-danger">*</span></label>
@@ -676,20 +416,18 @@
 
             <div class="mb-3">
               <label th:for="'editNguoiNhan' + ${addr.id}" class="form-label">Tên người nhận <span class="text-danger">*</span></label>
-              <input type="text" class="form-control"
-                     th:id="'editNguoiNhan' + ${addr.id}"
-                     name="nguoiNhan"
-                     th:value="${addr.nguoiNhan != null ? addr.nguoiNhan : addr.nguoiDung.hoTen}"
-                     placeholder="Nhập tên người nhận" required>
+              <input type="text" class="form-control" th:id="'editNguoiNhan' + ${addr.id}" name="nguoiNhan"
+                     required maxlength="50"
+                     pattern="(?! )(?!.* {2})[A-Za-zÀ-ỿ\u0110\u0111]+(?: [A-Za-zÀ-ỿ\u0110\u0111]+)*"
+                     title="Chỉ chữ và khoảng trắng, không dư khoảng trắng">
             </div>
 
             <div class="mb-3">
               <label th:for="'editSoDienThoaiNguoiNhan' + ${addr.id}" class="form-label">Số điện thoại người nhận <span class="text-danger">*</span></label>
-              <input type="text" class="form-control"
-                     th:id="'editSoDienThoaiNguoiNhan' + ${addr.id}"
-                     name="soDienThoaiNguoiNhan"
-                     th:value="${addr.soDienThoaiNguoiNhan != null ? addr.soDienThoaiNguoiNhan : addr.nguoiDung.soDienThoai}"
-                     placeholder="Nhập SĐT người nhận" required>
+              <input type="text" class="form-control" th:id="'editSoDienThoaiNguoiNhan' + ${addr.id}" name="soDienThoaiNguoiNhan"
+                     required inputmode="tel"
+                     pattern="(0(3|5|7|8|9)\d{8}|02\d{9})"
+                     title="Di động: 03/05/07/08/09 + 8 số; Cố định: 02 + 9 số">
             </div>
 
             <div class="mb-3">
@@ -739,6 +477,34 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  function normalizeName(str) {
+    return str.trim().replace(/\s+/g, ' ');
+  }
+  function cleanPersonName(str) {
+    // Trim 2 đầu + gom nhiều khoảng trắng thành 1
+    return str.trim().replace(/\s+/g, ' ');
+  }
+
+  // Chỉ chữ cái (kể cả tiếng Việt) và khoảng trắng, không cho space đầu/cuối hay 2 space liên tiếp
+  function isValidPersonName(name) {
+    const re = /^(?! )(?!.* {2})[A-Za-zÀ-ỿ\u0110\u0111]+(?: [A-Za-zÀ-ỿ\u0110\u0111]+)*$/;
+    return re.test(name) && name.length >= 2 && name.length <= 50;
+  }
+
+  // Chuẩn hoá số: bỏ ký tự phân cách, đổi +84 / 84 về 0
+  function normalizeVNPhone(raw) {
+    let s = (raw || '').replace(/[^\d+]/g, '');
+    if (s.startsWith('+84')) s = '0' + s.slice(3);
+    else if (s.startsWith('84')) s = '0' + s.slice(2);
+    return s;
+  }
+
+  // Di động: 03/05/07/08/09 + 8 số (10 số)
+  // Cố định: 02 + 9 số (tổng 11 số, ví dụ 024/028 + 8 số)
+  function isValidVNPhone(phone) {
+    return /^(0(3|5|7|8|9)\d{8}|02\d{9})$/.test(phone);
+  }
+
   // Hàm hiển thị toast notification
   function showToast(message, type = 'success') {
     const toastContainer = document.querySelector('.toast-container');
@@ -1025,11 +791,30 @@
 
   function updateAddressHandler() {
     const addressId = this.dataset.id;
-    const form = document.getElementById(`editAddressForm${addressId}`);
+
+    const nameInput  = document.getElementById(`editNguoiNhan${addressId}`);
+    const phoneInput = document.getElementById(`editSoDienThoaiNguoiNhan${addressId}`);
+
+    // --- Validate tên ---
+    let nguoiNhan = cleanPersonName(nameInput.value);
+    if (!isValidPersonName(nguoiNhan)) {
+      showToast('Tên người nhận không hợp lệ. Chỉ chứa chữ và khoảng trắng, không dư khoảng trắng.', 'danger');
+      nameInput.focus();
+      return;
+    }
+
+    // --- Validate SĐT ---
+    let soDienThoaiNguoiNhan = normalizeVNPhone(phoneInput.value);
+    if (!isValidVNPhone(soDienThoaiNguoiNhan)) {
+      showToast('Số điện thoại không hợp lệ. Ví dụ di động: 09xxxxxxxx; cố định: 024/028 + 8 số.', 'danger');
+      phoneInput.focus();
+      return;
+    }
+
     const data = {
       id: document.getElementById(`editId${addressId}`).value,
-      nguoiNhan: document.getElementById(`editNguoiNhan${addressId}`).value,
-      soDienThoaiNguoiNhan: document.getElementById(`editSoDienThoaiNguoiNhan${addressId}`).value,
+      nguoiNhan,
+      soDienThoaiNguoiNhan,
       tinhThanhPho: document.getElementById(`editTinhThanhPho${addressId}`).value,
       quanHuyen: document.getElementById(`editQuanHuyen${addressId}`).value,
       phuongXa: document.getElementById(`editPhuongXa${addressId}`).value,
@@ -1041,8 +826,10 @@
       showToast('Vui lòng điền đầy đủ các trường địa chỉ', 'danger');
       return;
     }
+
     const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
     if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
     fetch(`/profile/address/${addressId}/update-ajax`, {
       method: 'POST',
       headers,
@@ -1067,9 +854,29 @@
   // Thêm địa chỉ
   document.getElementById('addAddressForm')?.addEventListener('submit', function (e) {
     e.preventDefault();
+
+    const nameInput  = document.getElementById('addNguoiNhan');
+    const phoneInput = document.getElementById('addSoDienThoaiNguoiNhan');
+
+    // --- Validate tên ---
+    let nguoiNhan = cleanPersonName(nameInput.value);
+    if (!isValidPersonName(nguoiNhan)) {
+      showToast('Tên người nhận không hợp lệ. Chỉ chứa chữ và khoảng trắng, không dư khoảng trắng.', 'danger');
+      nameInput.focus();
+      return;
+    }
+
+    // --- Validate SĐT ---
+    let soDienThoaiNguoiNhan = normalizeVNPhone(phoneInput.value);
+    if (!isValidVNPhone(soDienThoaiNguoiNhan)) {
+      showToast('Số điện thoại không hợp lệ. Ví dụ di động: 09xxxxxxxx; cố định: 024/028 + 8 số.', 'danger');
+      phoneInput.focus();
+      return;
+    }
+
     const data = {
-      nguoiNhan: document.getElementById('addNguoiNhan').value,
-      soDienThoaiNguoiNhan: document.getElementById('addSoDienThoaiNguoiNhan').value,
+      nguoiNhan,
+      soDienThoaiNguoiNhan,
       tinhThanhPho: document.getElementById('addTinhThanhPho').value,
       quanHuyen: document.getElementById('addQuanHuyen').value,
       phuongXa: document.getElementById('addPhuongXa').value,
@@ -1081,8 +888,10 @@
       showToast('Vui lòng điền đầy đủ các trường địa chỉ', 'danger');
       return;
     }
+
     const headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
     if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+
     fetch('/profile/address/add-ajax', {
       method: 'POST',
       headers,
@@ -1094,12 +903,17 @@
             })
             .then(data => {
               if (data.status === 'success') {
-                appendAddressToTable(data.address);
-                bootstrap.Modal.getInstance(document.getElementById('addAddressModal')).hide();
+                const modalEl = document.getElementById('addAddressModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                showToast(data.message || 'Thêm địa chỉ thành công');
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                  if (data.redirect) window.location.href = data.redirect;
+                  else window.location.reload();
+                }, { once: true });
+                modal?.hide();
                 document.getElementById('addAddressForm').reset();
-                showToast(data.message);
               } else {
-                showToast(data.message, 'danger');
+                showToast(data.message || 'Không thể thêm địa chỉ', 'danger');
               }
             })
             .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'));
@@ -1146,6 +960,44 @@
   document.getElementById('profileForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
     const form = this;
+    let hoTen = document.querySelector('input[name="hoTen"]').value.trim();
+
+    // Kiểm tra nếu họ tên có dấu cách dư thừa ở đầu và cuối chuỗi
+    if (hoTen !== document.querySelector('input[name="hoTen"]').value) {
+      // Nếu có dấu cách thừa ở đầu hoặc cuối, hiển thị thông báo lỗi
+      showToast('Họ tên không được có khoảng trắng dư thừa ở đầu và cuối.', 'danger');
+      return;
+    }
+
+    // Loại bỏ tất cả khoảng trắng dư thừa giữa các từ (nếu có)
+    hoTen = hoTen.replace(/\s+/g, ' '); // Thay thế tất cả dấu cách dư thừa bằng một dấu cách duy nhất
+
+    // Kiểm tra xem họ tên có phải là chuỗi rỗng sau khi loại bỏ dấu cách không hợp lệ
+    if (hoTen === "") {
+      showToast('Họ tên không hợp lệ. Vui lòng nhập họ tên hợp lệ.', 'danger');
+      return;
+    }
+
+    // Biểu thức chính quy kiểm tra họ tên (chỉ chứa chữ cái và dấu cách hợp lệ)
+    const regex = /^[A-Za-zÀ-ỹà-ỹ\s]+$/;
+
+    // Kiểm tra nếu họ tên có ký tự không hợp lệ hoặc có dấu cách dư thừa
+    if (!regex.test(hoTen)) {
+      // Hiển thị thông báo lỗi nếu họ tên không hợp lệ
+      showToast('Họ tên không hợp lệ. Vui lòng chỉ nhập chữ cái và một khoảng cách giữa các phần của tên.', 'danger');
+      return;
+    }
+
+    let soDienThoai = document.querySelector('input[name="soDienThoai"]').value.trim();
+
+    // Cập nhật lại biểu thức chính quy để kiểm tra số điện thoại Việt Nam (10 và 11 số)
+    const regexSDT = /^(0(3|5|7|8|9)[0-9]{8}|02[0-9]{8})$/;
+
+    // Kiểm tra nếu số điện thoại không hợp lệ
+    if (!regexSDT.test(soDienThoai)) {
+      showToast('Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại Việt Nam hợp lệ.', 'danger');
+      return;
+    }
 
     const current = {
       hoTen: form.querySelector('input[name="hoTen"]').value.trim(),
@@ -1176,7 +1028,7 @@
       showCancelButton: true,
       confirmButtonText: 'Xác nhận',
       cancelButtonText: 'Hủy',
-      confirmButtonColor: '#153054',
+      confirmButtonColor: '#153054',  // đồng bộ màu với checkout
       cancelButtonColor: '#d33',
       reverseButtons: true
     });
@@ -1208,7 +1060,7 @@
                 swToast(data.message || 'Không thể cập nhật', 'error');
               }
             })
-            .catch(err => swToast('Có lỗi xảy ra: ' + err.message, 'error'))
+            .catch(err => swToast('Vui lòng nhập đúng thông tin', 'error'))
             .finally(() => {
               button.disabled = false;
               button.innerHTML = '<i class="fas fa-save me-1"></i> Cập nhật';

@@ -122,8 +122,7 @@ public class KHCheckoutController {
             NguoiDung nguoiDung = (NguoiDung) authentication.getPrincipal();
             logger.info("Submitting order for user: {}", nguoiDung.getTenDangNhap());
 
-            // ngay trước dòng:
-            // DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
+            // Log tổng quan tham số
             logger.info("[/api/checkout/submit] user={}, addrId={}, vo={}, vs={}, shipFee={}, items={}",
                     nguoiDung.getTenDangNhap(),
                     request.getAddressId(),
@@ -132,17 +131,57 @@ public class KHCheckoutController {
                     request.getShippingFee(),
                     (request.getOrderItems() == null ? 0 : request.getOrderItems().size()));
 
+            // =========================
+            // 🔒 CHECK PTTT CHO VOUCHER
+            // =========================
+            java.util.UUID pmId = request.getPaymentMethodId();
+            if (pmId == null) {
+                return ResponseEntity.badRequest().body(new APIResponse("Vui lòng chọn phương thức thanh toán"));
+            }
+
+            // Kiểm tra voucher ORDER (nếu có)
+            if (request.getVoucherOrder() != null && !request.getVoucherOrder().isBlank()) {
+                var pOrderOpt = phieuGiamGiaRepository.findByMa(request.getVoucherOrder());
+                if (pOrderOpt.isEmpty()) {
+                    return ResponseEntity.badRequest().body(new APIResponse("Mã ORDER không tồn tại"));
+                }
+                var pOrder = pOrderOpt.get();
+                if (!phieuGiamGiaService.isPaymentMethodAllowed(pOrder, pmId)) {
+                    return ResponseEntity.badRequest().body(
+                            new APIResponse("Mã ORDER chỉ áp dụng cho: " +
+                                    phieuGiamGiaService.allowedPaymentMethodNames(pOrder))
+                    );
+                }
+            }
+
+            // Kiểm tra voucher FREESHIP (nếu có)
+            if (request.getVoucherShipping() != null && !request.getVoucherShipping().isBlank()) {
+                var pShipOpt = phieuGiamGiaRepository.findByMa(request.getVoucherShipping());
+                if (pShipOpt.isEmpty()) {
+                    return ResponseEntity.badRequest().body(new APIResponse("Mã FREESHIP không tồn tại"));
+                }
+                var pShip = pShipOpt.get();
+                if (!phieuGiamGiaService.isPaymentMethodAllowed(pShip, pmId)) {
+                    return ResponseEntity.badRequest().body(
+                            new APIResponse("Mã FREESHIP chỉ áp dụng cho: " +
+                                    phieuGiamGiaService.allowedPaymentMethodNames(pShip))
+                    );
+                }
+            }
+            // ===== HẾT KHỐI CHECK =====
+
+            // Tạo đơn hàng
             DonHang donHang = checkoutService.createOrder(nguoiDung, request, request.getAddressId());
             logger.info("Order submitted successfully: {}", donHang.getMaDonHang());
 
             // ===== Tạo thông báo gốc (ghi 1 role hợp lệ để pass CHECK) =====
             ThongBaoNhom thongBao = new ThongBaoNhom();
-            thongBao.setId(UUID.randomUUID());
+            thongBao.setId(java.util.UUID.randomUUID());
             thongBao.setDonHang(donHang);
-            thongBao.setVaiTroNhan("admin"); // ✅ KHÔNG ghi "admin,employee" để tránh vi phạm CHECK
+            thongBao.setVaiTroNhan("admin"); // ✅ không ghi "admin,employee" để tránh vi phạm CHECK
             thongBao.setTieuDe("Khách hàng đặt đơn hàng");
             thongBao.setNoiDung("Mã đơn: " + donHang.getMaDonHang());
-            thongBao.setThoiGianTao(LocalDateTime.now());
+            thongBao.setThoiGianTao(java.time.LocalDateTime.now());
             thongBao.setTrangThai("Mới");
             thongBaoNhomRepository.save(thongBao);
 
@@ -150,23 +189,22 @@ public class KHCheckoutController {
             List<NguoiDung> danhSachAdmin    = nguoiDungRepository.findByVaiTro("admin");
             List<NguoiDung> danhSachEmployee = nguoiDungRepository.findByVaiTro("employee");
 
-            Map<UUID, NguoiDung> recipients = new LinkedHashMap<>();
+            java.util.Map<java.util.UUID, NguoiDung> recipients = new java.util.LinkedHashMap<>();
             for (NguoiDung u : danhSachAdmin)    recipients.put(u.getId(), u);
             for (NguoiDung u : danhSachEmployee) recipients.put(u.getId(), u);
 
             // ===== Tạo chi tiết thông báo cho mọi người nhận =====
             for (NguoiDung nd : recipients.values()) {
                 ChiTietThongBaoNhom chiTiet = new ChiTietThongBaoNhom();
-                chiTiet.setId(UUID.randomUUID());
+                chiTiet.setId(java.util.UUID.randomUUID());
                 chiTiet.setNguoiDung(nd);
                 chiTiet.setThongBaoNhom(thongBao);
                 chiTiet.setDaXem(false);
                 chiTietThongBaoNhomRepository.save(chiTiet);
-
-
             }
 
             return ResponseEntity.ok(new APIResponse("Đặt hàng thành công", donHang.getMaDonHang()));
+
         } catch (RuntimeException e) {
             logger.error("Error submitting order: {}", e.getMessage());
             return ResponseEntity.badRequest().body(new APIResponse(e.getMessage()));
@@ -175,6 +213,7 @@ public class KHCheckoutController {
             return ResponseEntity.badRequest().body(new APIResponse("Lỗi không xác định: " + e.getMessage()));
         }
     }
+
 
 
     @PostMapping(value = "/apply-voucher", params = "!type")
@@ -253,9 +292,10 @@ public class KHCheckoutController {
 
     @PostMapping(value = "/apply-voucher", params = "type=SHIPPING")
     public ResponseEntity<?> applyShipVoucherV2(@RequestParam("voucher") String voucherCode,
-                                                @RequestParam("source") String source,                // cart | buy-now
+                                                @RequestParam("source") String source,                // cart | buy-now | cart-selected
                                                 @RequestParam("shippingFee") BigDecimal shippingFee,  // phí ship hiện tại
                                                 @RequestParam("subtotal") BigDecimal subtotal,        // tạm tính hàng
+                                                @RequestParam("paymentMethodId") UUID paymentMethodId,
                                                 @RequestBody(required = false) Object body,
                                                 Authentication authentication) {
         try {
@@ -267,6 +307,9 @@ public class KHCheckoutController {
             UUID userId = ((NguoiDung) authentication.getPrincipal()).getId();
             if (userId == null) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            }
+            if (paymentMethodId == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng chọn phương thức thanh toán."));
             }
 
             // ==== Tìm voucher ====
@@ -283,7 +326,14 @@ public class KHCheckoutController {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã này không phải freeship."));
             }
 
-            // ==== Nếu buy-now có gửi items thì tự tính lại subtotal ====
+            // ==== RÀNG BUỘC PTTT ====
+            if (!phieuGiamGiaService.isPaymentMethodAllowed(phieu, paymentMethodId)) {
+                String names = phieuGiamGiaService.allowedPaymentMethodNames(phieu);
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Mã freeship chỉ áp dụng cho: " + names));
+            }
+
+            // ==== Nếu buy-now/cart-selected có gửi items thì tự tính lại subtotal ====
             if (body instanceof java.util.List<?> lst && !lst.isEmpty()) {
                 @SuppressWarnings("unchecked")
                 java.util.List<java.util.Map<String, Object>> items = (java.util.List<java.util.Map<String, Object>>) lst;
@@ -304,7 +354,7 @@ public class KHCheckoutController {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Thiếu/không hợp lệ subtotal."));
             }
 
-            // ==== Chỉ KIỂM TRA khả dụng (KHÔNG trừ lượt ở bước apply) ====
+            // ==== Chỉ kiểm tra khả dụng (không trừ lượt) ====
             boolean canUse = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu())
                     ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(userId, phieu.getId())
                     : (phieu.getSoLuong() != null && phieu.getSoLuong() > 0);
@@ -319,8 +369,8 @@ public class KHCheckoutController {
             if (giamShip == null) giamShip = BigDecimal.ZERO;
             if (giamShip.compareTo(shippingFee) > 0) giamShip = shippingFee;
 
-            logger.info("FREESHIP applied preview: code={}, shippingFee={}, subtotal={}, discount={}",
-                    voucherCode, shippingFee, subtotal, giamShip);
+            logger.info("FREESHIP applied preview: code={}, shippingFee={}, subtotal={}, discount={}, pmId={}",
+                    voucherCode, shippingFee, subtotal, giamShip, paymentMethodId);
 
             return ResponseEntity.ok(new ApiResponse(true, "Áp dụng mã FREESHIP thành công.", giamShip));
         } catch (Exception e) {
@@ -332,10 +382,12 @@ public class KHCheckoutController {
 
 
 
+
     @PostMapping(value = "/apply-voucher", params = "type=ORDER")
     public ResponseEntity<?> applyOrderVoucherV2(@RequestParam("voucher") String voucherCode,
-                                                 @RequestParam("source") String source, // cart | buy-now
+                                                 @RequestParam("source") String source, // cart | buy-now | cart-selected
                                                  @RequestParam(value = "subtotal", required = false) BigDecimal subtotalParam,
+                                                 @RequestParam("paymentMethodId") UUID paymentMethodId,
                                                  @RequestBody(required = false) Object body,
                                                  Authentication authentication) {
         try {
@@ -347,6 +399,9 @@ public class KHCheckoutController {
             UUID userId = ((NguoiDung) authentication.getPrincipal()).getId();
             if (userId == null) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể xác định người dùng."));
+            }
+            if (paymentMethodId == null) {
+                return ResponseEntity.badRequest().body(new ApiResponse(false, "Vui lòng chọn phương thức thanh toán."));
             }
 
             // ==== Tìm voucher ====
@@ -363,13 +418,19 @@ public class KHCheckoutController {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Mã freeship, vui lòng dùng mục FREESHIP."));
             }
 
+            // ==== RÀNG BUỘC PTTT ====
+            if (!phieuGiamGiaService.isPaymentMethodAllowed(phieu, paymentMethodId)) {
+                String names = phieuGiamGiaService.allowedPaymentMethodNames(phieu);
+                return ResponseEntity.badRequest()
+                        .body(new ApiResponse(false, "Mã giảm giá chỉ áp dụng cho: " + names));
+            }
+
             // ==== Lấy / tính subtotal ====
             BigDecimal subtotal = subtotalParam;
             if (subtotal == null && body instanceof java.util.Map<?, ?> map && map.get("subtotal") != null) {
                 subtotal = toBigDecimal(map.get("subtotal"));
             }
             if (subtotal == null) {
-                // Fallback: lấy từ giỏ hàng
                 GioHang gh = khachHangGioHangService.getOrCreateGioHang(userId);
                 var chiTiet = chiTietGioHangService.getGioHangChiTietList(gh.getId());
                 subtotal = chiTiet.stream()
@@ -382,7 +443,7 @@ public class KHCheckoutController {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Đơn hàng chưa đạt giá trị tối thiểu."));
             }
 
-            // ==== Chỉ KIỂM TRA khả dụng (KHÔNG trừ lượt ở bước apply) ====
+            // ==== Chỉ kiểm tra khả dụng (không trừ lượt) ====
             boolean canUse = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu())
                     ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(userId, phieu.getId())
                     : (phieu.getSoLuong() != null && phieu.getSoLuong() > 0);
@@ -396,7 +457,8 @@ public class KHCheckoutController {
             BigDecimal giamDon = phieuGiamGiaService.tinhTienGiamGia(phieu, subtotal);
             if (giamDon == null) giamDon = BigDecimal.ZERO;
 
-            logger.info("ORDER voucher applied preview: code={}, subtotal={}, discount={}", voucherCode, subtotal, giamDon);
+            logger.info("ORDER voucher applied preview: code={}, subtotal={}, discount={}, pmId={}",
+                    voucherCode, subtotal, giamDon, paymentMethodId);
 
             return ResponseEntity.ok(new ApiResponse(true, "Áp dụng mã giảm giá đơn thành công.", giamDon));
         } catch (Exception e) {
@@ -405,5 +467,6 @@ public class KHCheckoutController {
                     .body(new ApiResponse(false, "Lỗi khi áp dụng voucher: " + e.getMessage()));
         }
     }
+
 
 }

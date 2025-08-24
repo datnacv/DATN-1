@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/image/ACV.png" type="image/png" sizes="32x32"/>
 
     <style>
         :root {
@@ -129,22 +130,130 @@
             left: 0;
             right: 0;
             background: white;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             z-index: 1000;
-            max-height: 400px;
+            max-height: 300px;
             overflow-y: auto;
             opacity: 0;
             visibility: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateY(-10px);
+            transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-
         .search-suggestions.active {
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
+        }.search-suggestions {
+             position: absolute;
+             top: 100%;
+             left: 0;
+             right: 0;
+             background: white;
+             border: 1px solid #ccc;
+             border-radius: 8px;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+             z-index: 1000;
+             max-height: 300px;
+             overflow-y: auto;
+             opacity: 0;
+             visibility: hidden;
+             transition: opacity 0.3s ease, visibility 0.3s ease;
+         }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
         }
 
         .suggestion-item {
@@ -695,6 +804,46 @@
                 font-size: 0.8rem;
             }
         }
+
+        .pagination-container {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .pagination .page-link {
+            color: #007bff;
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+        }
+
+        .pagination .page-link:hover {
+            background-color: #e9ecef;
+            border-color: #dee2e6;
+        }
+
+        .pagination .page-item.disabled .page-link {
+            color: #6c757d;
+            pointer-events: none;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+        .pagination .page-item:first-child .page-link {
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+
+        .pagination .page-item:last-child .page-link {
+            border-top-right-radius: 6px;
+            border-bottom-right-radius: 6px;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -719,7 +868,7 @@
 
         <div class="table-container">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="transactionTable">
                     <thead>
                     <tr>
                         <th>Loại giao dịch</th>
@@ -730,8 +879,8 @@
                         <th>Hành động</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <tr th:each="ls : ${lichSu}">
+                    <tbody id="transactionTableBody">
+                    <tr th:each="ls : ${lichSu}" class="transaction-row">
                         <td th:text="${ls.loaiGiaoDich}"></td>
                         <td th:text="${#numbers.formatDecimal(ls.soTien, 0, 'COMMA', 0, 'POINT')} + ' VND'"></td>
                         <td th:text="${#temporals.format(ls.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
@@ -751,7 +900,7 @@
                             <button class="complaint-btn" data-bs-toggle="modal" data-bs-target="#complaintModal" th:attr="data-transaction-id=${ls.id}">Khiếu nại</button>
                         </td>
                     </tr>
-                    <tr th:if="${lichSu == null or lichSu.isEmpty()}">
+                    <tr th:if="${lichSu == null or lichSu.isEmpty()}" id="emptyState">
                         <td colspan="6" class="empty-state">
                             <i class="fas fa-receipt"></i>
                             <p>Không có giao dịch nào.</p>
@@ -759,6 +908,29 @@
                     </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Added pagination controls -->
+        <div class="pagination-container mt-4" id="paginationContainer" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="pagination-info">
+                    Hiển thị <span id="startItem">1</span> - <span id="endItem">10</span> của <span id="totalItems">0</span> giao dịch
+                </div>
+                <nav aria-label="Phân trang giao dịch">
+                    <ul class="pagination mb-0">
+                        <li class="page-item" id="prevPage">
+                            <a class="page-link" href="#" onclick="changePage('prev')">
+                                <i class="fas fa-chevron-left"></i> Trước
+                            </a>
+                        </li>
+                        <li class="page-item" id="nextPage">
+                            <a class="page-link" href="#" onclick="changePage('next')">
+                                Sau <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
 
@@ -1022,6 +1194,92 @@
         link.click();
         document.body.removeChild(link);
     }
+
+    // Added pagination JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+        const rowsPerPage = 10;
+        let currentPage = 1;
+        let totalRows = 0;
+
+        const transactionRows = document.querySelectorAll('.transaction-row');
+        const emptyState = document.getElementById('emptyState');
+        const paginationContainer = document.getElementById('paginationContainer');
+
+        totalRows = transactionRows.length;
+
+        // Hide empty state if there are transactions
+        if (totalRows > 0) {
+            if (emptyState) emptyState.style.display = 'none';
+
+            // Show pagination if more than 10 rows
+            if (totalRows > rowsPerPage) {
+                paginationContainer.style.display = 'block';
+            }
+
+            showPage(1);
+        }
+
+        function showPage(page) {
+            currentPage = page;
+            const startIndex = (page - 1) * rowsPerPage;
+            const endIndex = startIndex + rowsPerPage;
+
+            // Hide all rows first
+            transactionRows.forEach(row => {
+                row.style.display = 'none';
+            });
+
+            // Show rows for current page
+            for (let i = startIndex; i < endIndex && i < totalRows; i++) {
+                if (transactionRows[i]) {
+                    transactionRows[i].style.display = '';
+                }
+            }
+
+            updatePaginationInfo();
+            updatePaginationButtons();
+        }
+
+        function updatePaginationInfo() {
+            const startItem = (currentPage - 1) * rowsPerPage + 1;
+            const endItem = Math.min(currentPage * rowsPerPage, totalRows);
+
+            document.getElementById('startItem').textContent = startItem;
+            document.getElementById('endItem').textContent = endItem;
+            document.getElementById('totalItems').textContent = totalRows;
+        }
+
+        function updatePaginationButtons() {
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+            const prevButton = document.getElementById('prevPage');
+            const nextButton = document.getElementById('nextPage');
+
+            // Update previous button
+            if (currentPage <= 1) {
+                prevButton.classList.add('disabled');
+            } else {
+                prevButton.classList.remove('disabled');
+            }
+
+            // Update next button
+            if (currentPage >= totalPages) {
+                nextButton.classList.add('disabled');
+            } else {
+                nextButton.classList.remove('disabled');
+            }
+        }
+
+        // Make changePage function global
+        window.changePage = function(direction) {
+            const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+            if (direction === 'prev' && currentPage > 1) {
+                showPage(currentPage - 1);
+            } else if (direction === 'next' && currentPage < totalPages) {
+                showPage(currentPage + 1);
+            }
+        };
+    });
 
 </script>
 </body>

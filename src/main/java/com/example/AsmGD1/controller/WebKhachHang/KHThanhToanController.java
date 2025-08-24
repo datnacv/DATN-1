@@ -145,39 +145,87 @@ public class KHThanhToanController {
         }
 
         try {
+            // Thông tin người dùng + địa chỉ
             model.addAttribute("loggedInUser", nguoiDung);
 
             List<DiaChiNguoiDung> addresses = diaChiNguoiDungRepository.findByNguoiDung_Id(nguoiDung.getId());
             model.addAttribute("addresses", addresses);
 
-            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository.findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
+            Optional<DiaChiNguoiDung> defaultAddress = diaChiNguoiDungRepository
+                    .findByNguoiDung_IdAndMacDinhTrue(nguoiDung.getId());
             if (defaultAddress.isPresent()) {
-                DiaChiNguoiDung address = defaultAddress.get();
-                model.addAttribute("defaultAddress", address.getChiTietDiaChi() + ", " +
-                        address.getPhuongXa() + ", " +
-                        address.getQuanHuyen() + ", " +
-                        address.getTinhThanhPho());
-                model.addAttribute("nguoiNhan", address.getNguoiNhan() != null ? address.getNguoiNhan() : nguoiDung.getHoTen());
-                model.addAttribute("soDienThoaiNguoiNhan", address.getSoDienThoaiNguoiNhan() != null ? address.getSoDienThoaiNguoiNhan() : nguoiDung.getSoDienThoai());
-                model.addAttribute("chiTietDiaChi", address.getChiTietDiaChi() != null ? address.getChiTietDiaChi() : nguoiDung.getChiTietDiaChi());
+                DiaChiNguoiDung a = defaultAddress.get();
+                model.addAttribute("defaultAddress", a.getChiTietDiaChi() + ", " + a.getPhuongXa() + ", "
+                        + a.getQuanHuyen() + ", " + a.getTinhThanhPho());
+                model.addAttribute("nguoiNhan", a.getNguoiNhan() != null ? a.getNguoiNhan() : nguoiDung.getHoTen());
+                model.addAttribute("soDienThoaiNguoiNhan",
+                        a.getSoDienThoaiNguoiNhan() != null ? a.getSoDienThoaiNguoiNhan() : nguoiDung.getSoDienThoai());
+                model.addAttribute("chiTietDiaChi",
+                        a.getChiTietDiaChi() != null ? a.getChiTietDiaChi() : nguoiDung.getChiTietDiaChi());
             } else {
                 model.addAttribute("defaultAddress", "");
                 model.addAttribute("nguoiNhan", nguoiDung.getHoTen());
                 model.addAttribute("soDienThoaiNguoiNhan", nguoiDung.getSoDienThoai());
             }
 
+            // Lấy danh sách voucher (công khai còn lượt + cá nhân còn hạn), loại trùng
             List<PhieuGiamGia> publicVouchers = phieuGiamGiaService.layTatCa().stream()
                     .filter(p -> "cong_khai".equalsIgnoreCase(p.getKieuPhieu()))
                     .filter(p -> "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(p)))
-                    .filter(p -> p.getGioiHanSuDung() != null && p.getGioiHanSuDung() > 0)
+                    .filter(p -> p.getSoLuong() != null && p.getSoLuong() > 0)
                     .toList();
-            List<PhieuGiamGia> privateVouchers = phieuGiamGiaCuaNguoiDungService.layPhieuCaNhanConHan(nguoiDung.getId());
-            List<PhieuGiamGia> allVouchers = new ArrayList<>();
-            allVouchers.addAll(publicVouchers);
-            allVouchers.addAll(privateVouchers);
+
+            List<PhieuGiamGia> privateVouchers =
+                    phieuGiamGiaCuaNguoiDungService.layPhieuCaNhanConHan(nguoiDung.getId());
+
+            java.util.Map<UUID, PhieuGiamGia> merged = new java.util.LinkedHashMap<>();
+            publicVouchers.forEach(v -> merged.put(v.getId(), v));
+            privateVouchers.forEach(v -> merged.put(v.getId(), v));
+
+            List<PhieuGiamGia> allVouchers = new java.util.ArrayList<>(merged.values());
             model.addAttribute("vouchers", allVouchers);
+
+            // ===== Build map PTTT hiển thị cho từng phiếu =====
+            java.util.Map<UUID, String>  voucherPtttMapById = new java.util.LinkedHashMap<>();
+            java.util.Map<String, String> voucherPtttMapByMa = new java.util.LinkedHashMap<>();
+
+            for (PhieuGiamGia v : allVouchers) {
+                List<PhuongThucThanhToan> list;
+                try {
+                    list = phuongThucRepo.findSelectedPtttByVoucherId(v.getId());
+                } catch (Exception ex) {
+                    list = java.util.Collections.emptyList();
+                }
+
+                String display;
+                if (list == null || list.isEmpty()) {
+                    // Không cấu hình PTTT -> áp dụng tất cả
+                    display = "Tất cả";
+                } else {
+                    display = list.stream()
+                            .map(pm -> {
+                                String ten = pm.getTenPhuongThuc();
+                                return (ten == null || ten.isBlank())
+                                        ? (pm.getId() != null ? pm.getId().toString() : null)
+                                        : ten;
+                            })
+                            .filter(java.util.Objects::nonNull)
+                            .distinct()
+                            .collect(java.util.stream.Collectors.joining(", "));
+                }
+
+                voucherPtttMapById.put(v.getId(), display);
+                if (v.getMa() != null) voucherPtttMapByMa.put(v.getMa(), display);
+            }
+
+            model.addAttribute("voucherPtttMapById", voucherPtttMapById);
+            model.addAttribute("voucherPtttMapByMa", voucherPtttMapByMa);
+
+            // Log kiểm tra
+            logger.info("PTTT map by ID: {}", voucherPtttMapById);
+            logger.info("PTTT map by MA : {}", voucherPtttMapByMa);
             logger.info("Tổng số voucher truyền ra view: {}", allVouchers.size());
-            allVouchers.forEach(v -> logger.info(" - Voucher: {}", v.getMa()));
+
         } catch (Exception e) {
             model.addAttribute("error", "Không thể tải thông tin người dùng: " + e.getMessage());
             model.addAttribute("defaultAddress", "");
@@ -186,6 +234,8 @@ public class KHThanhToanController {
         }
         return "WebKhachHang/thanh-toan";
     }
+
+
 
     @Transactional
     @PostMapping("/dat-hang")
@@ -280,10 +330,10 @@ public class KHThanhToanController {
             BigDecimal giamGiaOrder = BigDecimal.ZERO;
             BigDecimal giamGiaShipping = BigDecimal.ZERO;
 
-            // Xử lý mã giảm giá đơn hàng (ORDER)
+            // ===== ORDER voucher (preview-only, KHÔNG trừ lượt ở đây) =====
             if (voucherOrder != null && !voucherOrder.trim().isEmpty()) {
                 PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
-                        .filter(p -> p.getMa().equalsIgnoreCase(voucherOrder.trim()))
+                        .filter(p -> p.getMa() != null && p.getMa().equalsIgnoreCase(voucherOrder.trim()))
                         .findFirst()
                         .orElse(null);
                 if (phieu == null) {
@@ -298,23 +348,27 @@ public class KHThanhToanController {
                 if (phieu.getGiaTriGiamToiThieu() != null && tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
                     return ResponseEntity.badRequest().body(new ApiResponse(false, "Đơn hàng chưa đạt giá trị tối thiểu cho mã " + phieu.getMa() + "."));
                 }
+
                 boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
-                boolean used = isCaNhan
-                        ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
-                        : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
-                if (!used) {
-                    return ResponseEntity.badRequest().body(new ApiResponse(false, isCaNhan
-                            ? "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng: " + phieu.getMa()
-                            : "Mã giảm giá công khai đã hết lượt sử dụng: " + phieu.getMa()));
+                boolean canUse = isCaNhan
+                        ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(nguoiDung.getId(), phieu.getId())
+                        : (phieu.getSoLuong() != null && phieu.getSoLuong() > 0);
+                if (!canUse) {
+                    return ResponseEntity.badRequest().body(new ApiResponse(false,
+                            isCaNhan
+                                    ? "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng: " + phieu.getMa()
+                                    : "Mã giảm giá công khai đã hết lượt sử dụng: " + phieu.getMa()));
                 }
+
                 giamGiaOrder = phieuGiamGiaService.tinhTienGiamGia(phieu, tongTien);
-                logger.info("🎯 Áp dụng mã voucherOrder - Mã: {}, Giá trị giảm: {}", phieu.getMa(), giamGiaOrder);
+                if (giamGiaOrder == null) giamGiaOrder = BigDecimal.ZERO;
+                logger.info("🎯 Preview voucherOrder - Mã: {}, Giảm: {}", phieu.getMa(), giamGiaOrder);
             }
 
-            // Xử lý mã giảm giá phí vận chuyển (SHIPPING)
+            // ===== SHIPPING voucher (preview-only, KHÔNG trừ lượt ở đây) =====
             if (voucherShipping != null && !voucherShipping.trim().isEmpty()) {
                 PhieuGiamGia phieu = phieuGiamGiaService.layTatCa().stream()
-                        .filter(p -> p.getMa().equalsIgnoreCase(voucherShipping.trim()))
+                        .filter(p -> p.getMa() != null && p.getMa().equalsIgnoreCase(voucherShipping.trim()))
                         .findFirst()
                         .orElse(null);
                 if (phieu == null) {
@@ -329,34 +383,38 @@ public class KHThanhToanController {
                 if (phieu.getGiaTriGiamToiThieu() != null && tongTien.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
                     return ResponseEntity.badRequest().body(new ApiResponse(false, "Đơn hàng chưa đạt giá trị tối thiểu cho mã " + phieu.getMa() + "."));
                 }
+
                 boolean isCaNhan = "CA_NHAN".equalsIgnoreCase(phieu.getKieuPhieu());
-                boolean used = isCaNhan
-                        ? phieuGiamGiaCuaNguoiDungService.suDungPhieu(nguoiDung.getId(), phieu.getId())
-                        : phieuGiamGiaService.apDungPhieuGiamGia(phieu.getId());
-                if (!used) {
-                    return ResponseEntity.badRequest().body(new ApiResponse(false, isCaNhan
-                            ? "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng: " + phieu.getMa()
-                            : "Mã giảm giá công khai đã hết lượt sử dụng: " + phieu.getMa()));
+                boolean canUse = isCaNhan
+                        ? phieuGiamGiaCuaNguoiDungService.kiemTraPhieuCaNhan(nguoiDung.getId(), phieu.getId())
+                        : (phieu.getSoLuong() != null && phieu.getSoLuong() > 0);
+                if (!canUse) {
+                    return ResponseEntity.badRequest().body(new ApiResponse(false,
+                            isCaNhan
+                                    ? "Mã giảm giá cá nhân không khả dụng hoặc đã hết lượt sử dụng: " + phieu.getMa()
+                                    : "Mã giảm giá công khai đã hết lượt sử dụng: " + phieu.getMa()));
                 }
-                BigDecimal shippingFee = BigDecimal.valueOf(15000); // Giả định phí vận chuyển mặc định
+
+                // TODO: Lấy shippingFee thực tế từ client nếu có; tạm mặc định 15.000đ
+                BigDecimal shippingFee = BigDecimal.valueOf(15000);
                 giamGiaShipping = phieuGiamGiaService.tinhGiamPhiShip(phieu, shippingFee, tongTien);
-                if (giamGiaShipping.compareTo(shippingFee) > 0) {
-                    giamGiaShipping = shippingFee;
-                }
-                logger.info("🎯 Áp dụng mã voucherShipping - Mã: {}, Giá trị giảm: {}", phieu.getMa(), giamGiaShipping);
+                if (giamGiaShipping == null) giamGiaShipping = BigDecimal.ZERO;
+                if (giamGiaShipping.compareTo(shippingFee) > 0) giamGiaShipping = shippingFee;
+
+                logger.info("🎯 Preview voucherShipping - Mã: {}, Giảm: {}", phieu.getMa(), giamGiaShipping);
             }
 
-            // Trả về kết quả
-            ApiResponse response = new ApiResponse(true, "Áp dụng mã giảm giá thành công.");
+            ApiResponse response = new ApiResponse(true, "Áp dụng mã giảm giá thành công (preview).");
             response.setData(new VoucherResponse(giamGiaOrder, giamGiaShipping));
             return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            logger.error("Lỗi khi áp dụng mã giảm giá: {}", e.getMessage());
+            logger.error("Lỗi khi áp dụng mã giảm giá: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse(false, "Lỗi khi áp dụng mã giảm giá: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/api/checkout/default-address")
     public ResponseEntity<?> getDefaultAddress(Authentication authentication) {

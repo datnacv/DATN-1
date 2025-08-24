@@ -65,6 +65,17 @@ public class ChienDichGiamGiaController {
         }
     }
 
+    // ===== Utils normalize =====
+    private String normalizeName(String s) {
+        if (s == null) return null;
+        return s.trim().replaceAll("\\s+", " ");
+    }
+    private String normalizeCode(String s) {
+        if (s == null) return null;
+        // trim rồi loại toàn bộ khoảng trắng bên trong để đảm bảo "viết liền"
+        return s.trim().replaceAll("\\s+", "");
+    }
+
     // ===== List =====
     @GetMapping
     public String danhSach(
@@ -83,7 +94,11 @@ public class ChienDichGiamGiaController {
             return "redirect:/login";
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("ngayBatDau").descending());
+        Pageable pageable = PageRequest.of(
+                page, size,
+                Sort.by(Sort.Direction.DESC, "thoiGianTao", "id")
+        );
+
         Page<ChienDichGiamGia> pageResult =
                 chienDichService.locChienDich(keyword, startDate, endDate, status, discountLevel, pageable);
 
@@ -118,7 +133,8 @@ public class ChienDichGiamGiaController {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+        Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
+
         model.addAttribute("productPage", productPage);
         model.addAttribute("currentProductPage", productPage.getNumber());
         model.addAttribute("totalProductPages", productPage.getTotalPages());
@@ -137,16 +153,20 @@ public class ChienDichGiamGiaController {
             return "redirect:/acvstore/chien-dich-giam-gia";
         }
 
+        // Chuẩn hoá trước khi validate
+        chienDich.setMa(normalizeCode(chienDich.getMa()));
+        chienDich.setTen(normalizeName(chienDich.getTen()));
+
         List<UUID> danhSachChiTietId = parseCsvUuids(selectedIdsRaw);
 
         String error = validateChienDich(chienDich, danhSachChiTietId, true, null);
         if (error != null) {
             model.addAttribute("errorMessage", error);
-            // Giữ lại dữ liệu đã nhập
             model.addAttribute("chienDich", chienDich);
 
             Pageable pageable = PageRequest.of(0, 10);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
+
             model.addAttribute("productPage", productPage);
             model.addAttribute("currentProductPage", productPage.getNumber());
             model.addAttribute("totalProductPages", productPage.getTotalPages());
@@ -162,11 +182,11 @@ public class ChienDichGiamGiaController {
             return "redirect:/acvstore/chien-dich-giam-gia";
         } catch (RuntimeException e) {
             model.addAttribute("errorMessage", e.getMessage());
-            // Giữ lại dữ liệu đã nhập
             model.addAttribute("chienDich", chienDich);
 
             Pageable pageable = PageRequest.of(0, 10);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
+
             model.addAttribute("productPage", productPage);
             model.addAttribute("currentProductPage", productPage.getNumber());
             model.addAttribute("totalProductPages", productPage.getTotalPages());
@@ -178,8 +198,6 @@ public class ChienDichGiamGiaController {
     // ===== View =====
     @GetMapping("/view/{id}")
     public String xemChiTiet(@PathVariable("id") UUID id,
-                             @RequestParam(defaultValue = "0") int page,
-                             @RequestParam(defaultValue = "10") int size,
                              Model model,
                              RedirectAttributes redirectAttributes) {
         if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
@@ -190,30 +208,28 @@ public class ChienDichGiamGiaController {
         try {
             ChienDichGiamGia chienDich = chienDichService.timTheoId(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
-
-            model.addAttribute("readOnly", true);
-            model.addAttribute("viewMode", true);
-            model.addAttribute("isReadOnly", true);
-            model.addAttribute("chienDich", chienDich);
+            String status = getStatus(chienDich);
 
             List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
-            Set<UUID> selectedProductIds = chiTietDaChon.stream()
-                    .filter(ct -> ct.getSanPham() != null)
-                    .map(ct -> ct.getSanPham().getId())
-                    .collect(Collectors.toSet());
 
-            Pageable pageable = PageRequest.of(page, size);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            List<SanPham> selectedProducts = chiTietDaChon.stream()
+                    .map(ChiTietSanPham::getSanPham)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.collectingAndThen(
+                            Collectors.toMap(SanPham::getId, sp -> sp, (a, b) -> a, LinkedHashMap::new),
+                            m -> m.values().stream()
+                                    .sorted(Comparator.comparing(sp -> Optional.ofNullable(sp.getTenSanPham()).orElse("")))
+                                    .toList()
+                    ));
 
+            model.addAttribute("isReadOnly", true);
+            model.addAttribute("chienDich", chienDich);
+            model.addAttribute("status", status);
+            model.addAttribute("selectedProducts", selectedProducts);
             model.addAttribute("selectedDetails", chiTietDaChon);
-            model.addAttribute("selectedProductIds", selectedProductIds);
-            model.addAttribute("productPage", productPage);
-            model.addAttribute("currentProductPage", productPage.getNumber());
-            model.addAttribute("totalProductPages", productPage.getTotalPages());
-            model.addAttribute("status", getStatus(chienDich));
 
             addUserInfoToModel(model);
-            return "WebQuanLy/discount-campaign-edit";
+            return "WebQuanLy/discount-campaign-view";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi tải thông tin chiến dịch: " + e.getMessage());
             return "redirect:/acvstore/chien-dich-giam-gia";
@@ -237,8 +253,7 @@ public class ChienDichGiamGiaController {
         }
 
         if (isEmployee) {
-            return "redirect:/acvstore/chien-dich-giam-gia/view/" + id +
-                    "?page=" + page + "&size=" + size;
+            return "redirect:/acvstore/chien-dich-giam-gia/view/" + id;
         }
 
         try {
@@ -246,26 +261,36 @@ public class ChienDichGiamGiaController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
             String status = getStatus(chienDich);
+            boolean isReadOnly = !"UPCOMING".equals(status);
 
-            model.addAttribute("isReadOnly", "ONGOING".equals(status) || "ENDED".equals(status));
-            model.addAttribute("viewMode", false);
-            model.addAttribute("chienDich", chienDich);
-            model.addAttribute("status", status);
+            if (isReadOnly) {
+                redirectAttributes.addFlashAttribute("errorMessage",
+                        "Chỉ có thể chỉnh sửa chiến dịch sắp diễn ra.");
+                return "redirect:/acvstore/chien-dich-giam-gia/view/" + id;
+            }
 
             List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
+
             Set<UUID> selectedProductIds = chiTietDaChon.stream()
-                    .filter(ct -> ct.getSanPham() != null)
-                    .map(ct -> ct.getSanPham().getId())
-                    .collect(Collectors.toSet());
+                    .map(ChiTietSanPham::getSanPham)
+                    .filter(Objects::nonNull)
+                    .map(SanPham::getId)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
 
             if (selectedProductIdsStr != null && !selectedProductIdsStr.isEmpty()) {
                 selectedProductIds.addAll(Arrays.stream(selectedProductIdsStr.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
                         .map(UUID::fromString)
                         .collect(Collectors.toSet()));
             }
 
             Pageable pageable = PageRequest.of(page, size);
-            Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
+            Page<SanPham> productPage = sanPhamService.getPagedAvailableOrSelectedProducts(pageable, selectedProductIds);
+
+            model.addAttribute("chienDich", chienDich);
+            model.addAttribute("status", status);
+            model.addAttribute("isReadOnly", false);
 
             model.addAttribute("selectedDetails", chiTietDaChon);
             model.addAttribute("selectedProductIds", selectedProductIds);
@@ -302,6 +327,19 @@ public class ChienDichGiamGiaController {
                 return "redirect:/acvstore/chien-dich-giam-gia";
             }
 
+            // Chuẩn hoá input
+            String incomingMa  = normalizeCode(chienDich.getMa());
+            String incomingTen = normalizeName(chienDich.getTen());
+
+            // Không cho đổi mã (server-side)
+            if (!chienDichCu.getMa().equalsIgnoreCase(incomingMa)) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Không được sửa mã chiến dịch.");
+                return "redirect:/acvstore/chien-dich-giam-gia/edit/" + chienDich.getId();
+            }
+            // Khoá mã về mã cũ để chắc chắn
+            chienDich.setMa(chienDichCu.getMa());
+            chienDich.setTen(incomingTen);
+
             List<UUID> danhSachChiTietId = parseCsvUuids(selectedIdsRaw);
             String error = validateChienDich(chienDich, danhSachChiTietId, false, chienDichCu);
             if (error != null) {
@@ -330,6 +368,9 @@ public class ChienDichGiamGiaController {
                 return "WebQuanLy/discount-campaign-edit";
             }
 
+            // Giữ nguyên thời gian tạo
+            chienDich.setThoiGianTao(chienDichCu.getThoiGianTao());
+
             chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chiến dịch thành công!");
         } catch (RuntimeException e) {
@@ -353,8 +394,16 @@ public class ChienDichGiamGiaController {
 
     @GetMapping("/multiple-product-details")
     @ResponseBody
-    public List<ChiTietSanPham> getMultipleProductDetails(@RequestParam("productIds") List<UUID> productIds) {
+    public List<ChiTietSanPham> getMultipleProductDetails(
+            @RequestParam("productIds") List<UUID> productIds,
+            @RequestParam(name = "currentCampaignId", required = false) UUID currentCampaignId
+    ) {
         if (productIds == null || productIds.isEmpty()) return List.of();
+
+        if (currentCampaignId != null) {
+            return chienDichService.layChiTietConTrongTheoSanPham(productIds, currentCampaignId);
+        }
+
         return productIds.stream()
                 .flatMap(id -> chienDichService.layChiTietTheoSanPham(id).stream())
                 .toList();
@@ -381,12 +430,22 @@ public class ChienDichGiamGiaController {
     public Page<SanPham> timKiemSanPham(
             @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "5") int size) {
+            @RequestParam(name = "size", defaultValue = "5") int size,
+            @RequestParam(name = "selectedProductIds", required = false) List<UUID> selectedProductIds
+    ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("tenSanPham").ascending());
-        if (keyword.isBlank()) {
-            return sanPhamService.getPagedProducts(pageable);
+
+        if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
+            if (keyword.isBlank()) {
+                return sanPhamService.getPagedAvailableOrSelectedProducts(pageable, selectedProductIds);
+            }
+            return sanPhamService.searchAvailableOrSelectedByTenOrMa(keyword, pageable, selectedProductIds);
         }
-        return sanPhamService.searchByTenOrMa(keyword, pageable);
+
+        if (keyword.isBlank()) {
+            return sanPhamService.getPagedAvailableProducts(pageable);
+        }
+        return sanPhamService.searchAvailableByTenOrMa(keyword, pageable);
     }
 
     // ===== Helpers =====
@@ -407,61 +466,75 @@ public class ChienDichGiamGiaController {
     }
 
     private String validateChienDich(ChienDichGiamGia chienDich, List<UUID> chiTietIds, boolean isCreate, ChienDichGiamGia chienDichCu) {
-        if (chienDich.getTen() == null || chienDich.getTen().trim().isEmpty() || chienDich.getTen().length() > 100) {
-            return "Tên chiến dịch không được để trống và tối đa 100 ký tự.";
+        // --- MA: không trống, chỉ chữ+số, viết liền ---
+        String ma = normalizeCode(chienDich.getMa());
+        if (ma == null || ma.isEmpty() || ma.length() > 50) {
+            return "Mã chiến dịch không được để trống và tối đa 50 ký tự.";
+        }
+        if (!ma.matches("^[A-Za-z0-9]+$")) {
+            return "Mã chiến dịch chỉ được chứa chữ và số, viết liền, không ký tự đặc biệt.";
         }
 
-        boolean tenChanged = chienDichCu == null || !chienDich.getTen().trim().equalsIgnoreCase(chienDichCu.getTen().trim());
-        if (tenChanged && chienDichService.kiemTraTenTonTai(chienDich.getTen().trim())) {
+        // Tạo mới -> check trùng mã; Cập nhật -> cấm đổi mã
+        if (isCreate) {
+            if (chienDichService.kiemTraMaTonTai(ma)) {
+                return "Mã chiến dịch đã tồn tại.";
+            }
+        } else {
+            if (chienDichCu != null && !chienDichCu.getMa().equalsIgnoreCase(ma)) {
+                return "Không được sửa mã chiến dịch.";
+            }
+        }
+
+        // --- TEN: chỉ chữ, cách đúng 1 space giữa các từ, không trống, tối đa 100, không trùng ---
+        String ten = normalizeName(chienDich.getTen());
+        if (ten == null || ten.isEmpty() || ten.length() > 100) {
+            return "Tên chiến dịch không được để trống và tối đa 100 ký tự.";
+        }
+        if (!ten.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
+            return "Tên chỉ được chứa chữ (có dấu), giữa các từ cách đúng 1 khoảng trắng, không số/ký tự đặc biệt.";
+        }
+
+        boolean tenChanged = (chienDichCu == null) || !ten.equalsIgnoreCase(chienDichCu.getTen());
+        if (tenChanged && chienDichService.kiemTraTenTonTai(ten)) {
             return "Tên chiến dịch đã tồn tại.";
         }
 
-        if (chienDich.getMa() == null || chienDich.getMa().trim().isEmpty() || chienDich.getMa().length() > 50) {
-            return "Mã chiến dịch không được để trống và tối đa 50 ký tự.";
-        }
-
-        if (!chienDich.getMa().matches("^[A-Za-z0-9_-]+$")) {
-            return "Mã chiến dịch chỉ được chứa chữ cái, số, gạch dưới hoặc gạch ngang.";
-        }
-
-        boolean maChanged = chienDichCu == null || !chienDich.getMa().trim().equalsIgnoreCase(chienDichCu.getMa().trim());
-        if (isCreate || maChanged) {
-            if (chienDichService.kiemTraMaTonTai(chienDich.getMa().trim())) {
-                return "Mã chiến dịch đã tồn tại.";
-            }
-        }
-
+        // --- % giảm: số nguyên 1..100 ---
         if (chienDich.getPhanTramGiam() == null) {
             return "Phần trăm giảm không được để trống.";
         }
-
         try {
-            if (chienDich.getPhanTramGiam().compareTo(BigDecimal.ZERO) <= 0) {
-                return "Phần trăm giảm phải lớn hơn 0%.";
+            BigDecimal pt = chienDich.getPhanTramGiam().stripTrailingZeros();
+            if (pt.scale() > 0) {
+                return "Phần trăm giảm phải là số nguyên từ 1 đến 100.";
             }
-            if (chienDich.getPhanTramGiam().compareTo(BigDecimal.valueOf(100)) > 0) {
-                return "Phần trăm giảm không được vượt quá 100%.";
+            if (pt.compareTo(BigDecimal.ONE) < 0 || pt.compareTo(BigDecimal.valueOf(100)) > 0) {
+                return "Phần trăm giảm phải là số nguyên từ 1 đến 100.";
             }
-        } catch (NumberFormatException e) {
-            return "Phần trăm giảm phải là số hợp lệ, không được nhập chữ.";
+        } catch (Exception e) {
+            return "Phần trăm giảm phải là số nguyên từ 1 đến 100.";
         }
 
+        // --- Ngày ---
         if (chienDich.getNgayBatDau() == null || chienDich.getNgayKetThuc() == null) {
             return "Ngày bắt đầu và ngày kết thúc không được để trống.";
         }
-
         if (chienDich.getNgayKetThuc().isBefore(chienDich.getNgayBatDau())) {
             return "Ngày kết thúc không được trước ngày bắt đầu.";
         }
-
         if (isCreate && chienDich.getNgayBatDau().isBefore(LocalDateTime.now())) {
             return "Ngày bắt đầu phải là hiện tại hoặc tương lai.";
         }
 
+        // --- Chi tiết sản phẩm ---
         if (chiTietIds == null || chiTietIds.isEmpty()) {
             return "Vui lòng chọn ít nhất một chi tiết sản phẩm.";
         }
 
+        // Ghi đè lại dữ liệu đã chuẩn hoá để lưu
+        chienDich.setMa(ma);
+        chienDich.setTen(ten);
         return null;
     }
 }

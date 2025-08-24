@@ -114,9 +114,14 @@ public class CustomerController {
 
         try {
 
-            // Validate server-side
-            if (!customer.getHoTen().matches("^[A-Za-zÀ-ỹ\\s]+$")) {
+            // Trim và validate họ tên
+            String hoTen = customer.getHoTen().trim();
+            customer.setHoTen(hoTen); // Cập nhật lại họ tên đã trim
+            if (!hoTen.matches("^[A-Za-zÀ-ỹ\\s]+$")) {
                 throw new IllegalArgumentException("Họ tên chỉ được chứa chữ cái và khoảng trắng");
+            }
+            if (hoTen.contains("  ")) { // Kiểm tra nhiều hơn 1 khoảng trắng
+                throw new IllegalArgumentException("Họ tên chỉ được chứa 1 khoảng trắng giữa các từ");
             }
             if (!customer.getTenDangNhap().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$")) {
                 throw new IllegalArgumentException("Tên đăng nhập phải chứa cả chữ cái và số");
@@ -169,10 +174,14 @@ public class CustomerController {
         }
 
         try {
-
-            // Validate server-side (giữ nguyên logic validate từ trước)
-            if (!customer.getHoTen().matches("^[A-Za-zÀ-ỹ\\s]+$")) {
+            // Trim và validate họ tên
+            String hoTen = customer.getHoTen().trim();
+            customer.setHoTen(hoTen); // Cập nhật lại họ tên đã trim
+            if (!hoTen.matches("^[A-Za-zÀ-ỹ\\s]+$")) {
                 throw new IllegalArgumentException("Họ tên chỉ được chứa chữ cái và khoảng trắng");
+            }
+            if (hoTen.contains("  ")) { // Kiểm tra nhiều hơn 1 khoảng trắng
+                throw new IllegalArgumentException("Họ tên chỉ được chứa 1 khoảng trắng giữa các từ");
             }
             if (!customer.getTenDangNhap().matches("^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d]+$")) {
                 throw new IllegalArgumentException("Tên đăng nhập phải chứa cả chữ cái và số");

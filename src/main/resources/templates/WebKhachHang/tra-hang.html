@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/image/ACV.png" type="image/png" sizes="32x32"/>
     <style>
         /* Kế thừa các kiểu từ chi-tiet-don-mua.html */
         * {
@@ -272,6 +273,138 @@
         /* Tăng khoảng cách cho cột trạng thái */
         table th:last-child, table td:last-child {
             text-align: center;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
+        }.search-suggestions {
+             position: absolute;
+             top: 100%;
+             left: 0;
+             right: 0;
+             background: white;
+             border: 1px solid #ccc;
+             border-radius: 8px;
+             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+             z-index: 1000;
+             max-height: 300px;
+             overflow-y: auto;
+             opacity: 0;
+             visibility: hidden;
+             transition: opacity 0.3s ease, visibility 0.3s ease;
+         }
+        .search-suggestions.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .suggestion-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .suggestion-item:hover {
+            background-color: #f1f5f9;
+        }
+        .suggestion-item img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .history-item:hover {
+            background-color: #e2e8f0;
+        }
+        .history-item .highlight {
+            background-color: #9FD5F7;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .history-item .delete-btn {
+            color: #ef4444;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .history-item .delete-btn:hover {
+            color: #b91c1c;
         }
     </style>
 </head>

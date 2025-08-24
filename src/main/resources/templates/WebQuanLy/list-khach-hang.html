@@ -574,7 +574,7 @@
                 </thead>
                 <tbody>
                 <tr th:each="customer, customerStat : ${customers}">
-                    <td><strong th:text="${customerStat.index + 1}"></strong></td>
+                    <td><strong th:text="${(currentPage * 5) + customerStat.index + 1}"></strong></td>
                     <td>
                         <div class="d-flex align-items-center">
                             <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-size: 0.9rem; font-weight: 600;">
@@ -935,6 +935,7 @@
     document.addEventListener("DOMContentLoaded", function () {
 
         // Hàm validate cho form thêm khách hàng
+        // Hàm validate cho form thêm khách hàng
         function validateAddCustomerForm() {
             let isValid = true;
             const hoTen = document.getElementById('addHoTen');
@@ -951,12 +952,16 @@
             document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
 
             // Validate Họ tên
-            const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/;
-            if (!hoTen.value.trim()) {
+            const hoTenValue = hoTen.value.trim(); // Loại bỏ khoảng trắng đầu và cuối
+            const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/; // Chỉ cho phép chữ cái và khoảng trắng
+            if (!hoTenValue) {
                 document.getElementById('addHoTenError').textContent = 'Họ tên không được để trống';
                 isValid = false;
-            } else if (!hoTenRegex.test(hoTen.value.trim())) {
+            } else if (!hoTenRegex.test(hoTenValue)) {
                 document.getElementById('addHoTenError').textContent = 'Họ tên chỉ được chứa chữ cái và khoảng trắng';
+                isValid = false;
+            } else if (hoTenValue.indexOf('  ') !== -1) { // Kiểm tra có nhiều hơn 1 khoảng trắng liên tiếp
+                document.getElementById('addHoTenError').textContent = 'Họ tên chỉ được chứa 1 khoảng trắng giữa các từ';
                 isValid = false;
             }
 
@@ -1057,12 +1062,16 @@
             form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
 
             // Validate Họ tên
-            const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/;
-            if (!hoTen.value.trim()) {
+            const hoTenValue = hoTen.value.trim(); // Loại bỏ khoảng trắng đầu và cuối
+            const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/; // Chỉ cho phép chữ cái và khoảng trắng
+            if (!hoTenValue) {
                 hoTen.nextElementSibling.textContent = 'Họ tên không được để trống';
                 isValid = false;
-            } else if (!hoTenRegex.test(hoTen.value.trim())) {
+            } else if (!hoTenRegex.test(hoTenValue)) {
                 hoTen.nextElementSibling.textContent = 'Họ tên chỉ được chứa chữ cái và khoảng trắng';
+                isValid = false;
+            } else if (hoTenValue.indexOf('  ') !== -1) { // Kiểm tra có nhiều hơn 1 khoảng trắng liên tiếp
+                hoTen.nextElementSibling.textContent = 'Họ tên chỉ được chứa 1 khoảng trắng giữa các từ';
                 isValid = false;
             }
 

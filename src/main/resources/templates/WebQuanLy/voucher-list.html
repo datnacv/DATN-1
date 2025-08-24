@@ -5,6 +5,8 @@
     <title>Danh sách Phiếu Giảm Giá</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script th:src="@{/js/sidebar.js}" defer></script>
 
@@ -21,9 +23,8 @@
             --soft:#f6f9fc;
             --white:#ffffff;
 
-            /* Sát navbar: đo runtime, fallback 56px */
-            --nav-h: 56px;
-            --header-gap: 0px; /* 0 = không hở */
+            --nav-h: 56px;      /* cao navbar (fallback) */
+            --header-gap: 0px;  /* sát navbar */
         }
 
         *{box-sizing:border-box}
@@ -34,6 +35,7 @@
             color:var(--ink);
             background:var(--white);
             line-height:1.6;
+            -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
         }
 
         /* ========= LAYOUT ========= */
@@ -44,10 +46,7 @@
             min-height:100vh;
             transition:all .3s ease;
         }
-        .content.full-width{
-            margin-left:0;
-            padding-top: calc(var(--nav-h) + var(--header-gap));
-        }
+        .content.full-width{ margin-left:0; padding-top: calc(var(--nav-h) + var(--header-gap)); }
 
         .custom-navbar{
             border-bottom:1px solid var(--line);
@@ -55,38 +54,31 @@
         }
 
         /* ========= PAGE HEADER ========= */
-        .sticky-header h2{
-            position: relative;
-            padding-bottom: 12px;
-        }
-        .sticky-header h2::after{
-            content: "";
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: -6px;
-            width: 180px;
-            height: 4px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, var(--secondary), var(--primary));
-            box-shadow: 0 6px 16px rgba(21,48,84,.18);
-        }
         .sticky-header{
             display:flex;justify-content:center;align-items:center;
             background:linear-gradient(135deg,var(--white),#f9fbfe);
             border:1px solid var(--line);
             border-radius:16px;
-            padding:20px 24px;
-            margin:0 0 24px 0; /* không có margin-top để sát navbar */
+            padding:18px 22px;
+            margin:0 0 20px 0; /* sát navbar */
             text-align:center;
+            box-shadow:0 6px 20px rgba(21,48,84,.06);
         }
         .sticky-header h2{
-            margin:0;display:inline-flex;align-items:center;gap:12px;
-            font-size:1.75rem;font-weight:800;color:var(--primary-700);letter-spacing:-.02em
+            position: relative; margin:0;
+            display:inline-flex;align-items:center;gap:12px;
+            font-size:1.7rem;font-weight:800;color:var(--primary-700);letter-spacing:-.02em;
+            padding-bottom:10px;
+        }
+        .sticky-header h2::after{
+            content:"";position:absolute;left:50%;transform:translateX(-50%);bottom:-6px;
+            width:180px;height:4px;border-radius:999px;
+            background:linear-gradient(90deg,var(--secondary),var(--primary));
+            box-shadow:0 6px 16px rgba(21,48,84,.18);
         }
         .sticky-header h2 i{
             background:linear-gradient(135deg,var(--primary),var(--primary-600));
-            color:#fff;border-radius:12px;padding:10px;font-size:1.1rem
+            color:#fff;border-radius:12px;padding:10px;font-size:1.05rem
         }
 
         /* ========= CARDS ========= */
@@ -106,7 +98,7 @@
         #filterForm{
             display:flex;align-items:flex-end;gap:12px;flex-wrap:nowrap;
             border:1px solid var(--line);border-radius:16px;padding:16px;
-            background:linear-gradient(180deg,#fbfdff, var(--soft));margin-bottom:24px;
+            background:linear-gradient(180deg,#fbfdff, var(--soft));margin-bottom:20px;
         }
         #filterForm > .col-md-3,#filterForm > .col-md-2{flex:1 1 0; max-width:100%}
         .form-label{font-size:.8rem;font-weight:700;color:var(--primary-700);letter-spacing:.02em;text-transform:uppercase;margin-bottom:6px}
@@ -118,14 +110,18 @@
         .btn i{margin-right:.4rem}
         .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-600));color:#fff;box-shadow:0 8px 22px rgba(21,48,84,.25)}
         .btn-primary:hover{background:linear-gradient(135deg,var(--primary-600),var(--primary));transform:translateY(-1px)}
-        .btn-secondary{background:#ecf3fb;color:var(--primary-700);border:2px solid var(--secondary)}
-        .btn-secondary:hover{background:#e3eef9}
         .btn-danger{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;box-shadow:0 8px 22px rgba(239,68,68,.25)}
         .btn-danger:hover{background:linear-gradient(135deg,#dc2626,#991b1b)}
-        .btn-outline-info,.btn-outline-success,.btn-outline-primary,.btn-outline-danger{background:#fff;border:2px solid var(--line);color:var(--primary-700)}
-        .btn-outline-info:hover,.btn-outline-success:hover,.btn-outline-primary:hover{border-color:var(--primary);color:var(--primary)}
+
+        /* Outline (brand tone) */
+        .btn-outline-info,.btn-outline-success,.btn-outline-primary,.btn-outline-danger{
+            background:#fff;border:2px solid var(--line);color:var(--primary-700)
+        }
+        .btn-outline-info:hover,.btn-outline-success:hover,.btn-outline-primary:hover{
+            border-color:var(--primary);color:var(--primary);background:#f3f7fe
+        }
         .btn-outline-danger{border-color:#f1c3c3;color:#b91c1c}
-        .btn-outline-danger:hover{border-color:#dc2626;color:#991b1b}
+        .btn-outline-danger:hover{border-color:#dc2626;color:#991b1b;background:#fff5f5}
         .btn-sm{padding:8px 12px;font-size:.85rem;height:40px;display:inline-flex;align-items:center}
         .btn.disabled,.btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none!important;transform:none!important}
 
@@ -157,7 +153,7 @@
         .badge.bg-secondary{background:linear-gradient(135deg,#e6eef5,#c9d7e6)!important;color:#364152!important}
         .badge.bg-light{background:#eef4fb!important;color:#334155!important}
 
-        /* ========= PAGINATION (center) ========= */
+        /* ========= PAGINATION ========= */
         .pagination{gap:12px;margin-top:18px;justify-content:center}
         .page-link{
             border-radius:14px;border:2px solid var(--line);background:#fff;color:var(--primary-700);
@@ -166,6 +162,16 @@
         .page-link:hover{border-color:var(--primary);color:var(--primary)}
         .page-item.active .page-link{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 10px 22px rgba(21,48,84,.25)}
         .page-item.disabled .page-link{background:#f3f6fb;color:#9aa6b2}
+
+        /* ========= TOAST (fixed top-right) ========= */
+        .toast-container{
+            position:fixed; top:14px; right:14px; z-index:1080; width:auto; max-width:380px;
+            display:flex; flex-direction:column; gap:10px;
+        }
+        .toast{border-radius:14px; box-shadow:0 12px 28px rgba(21,48,84,.15)}
+        .text-bg-success{background:linear-gradient(135deg,#2bb673,#28a745)!important}
+        .text-bg-danger{background:linear-gradient(135deg,#e35b6b,#dc3545)!important}
+        .text-bg-info{background:linear-gradient(135deg,#8ec5ff,#6aa8ff)!important}
 
         /* ========= RESPONSIVE ========= */
         @media (max-width: 1200px){
@@ -181,7 +187,13 @@
             .btn-sm{font-size:.8rem;padding:7px 10px;height:38px}
         }
 
-        /* Load-in */
+        /* ===== Hiệu ứng khi cập nhật ajax ===== */
+        .flash-update{animation:flashBg .8s ease}
+        @keyframes flashBg{
+            0%{background:#fff9c4}
+            100%{background:transparent}
+        }
+
         @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         .sticky-header,.table-responsive,.card{animation:fadeIn .45s ease}
     </style>
@@ -195,7 +207,7 @@
     </nav>
 
     <div class="content" id="content">
-        <!-- Toasts -->
+        <!-- Toasts (fixed, góc phải) -->
         <div class="toast-container" id="toastContainer">
             <div class="toast align-items-center text-bg-success border-0" role="alert" id="successToast" aria-live="assertive" aria-atomic="true" th:if="${successMessage}">
                 <div class="d-flex">
@@ -285,6 +297,7 @@
                     <th><i class="fas fa-arrow-up me-2"></i>GIÁ TRỊ TỐI ĐA</th>
                     <th><i class="fas fa-arrow-down me-2"></i>ĐIỀU KIỆN</th>
                     <th><i class="fas fa-users me-2"></i>LƯỢT DÙNG</th>
+                    <th><i class="fas fa-boxes-stacked me-2"></i>SỐ LƯỢNG</th>
                     <th><i class="fas fa-calendar-plus me-2"></i>NGÀY BẮT ĐẦU</th>
                     <th><i class="fas fa-calendar-minus me-2"></i>NGÀY KẾT THÚC</th>
                     <th><i class="fas fa-info-circle me-2"></i>TRẠNG THÁI</th>
@@ -293,27 +306,39 @@
                 </thead>
                 <tbody>
                 <tr th:if="${vouchers.isEmpty()}">
-                    <td colspan="13" class="text-center text-muted py-4">Không có phiếu giảm giá nào.</td>
+                    <td colspan="14" class="text-center text-muted py-4">Không có phiếu giảm giá nào.</td>
                 </tr>
 
-                <tr th:each="v, stat : ${vouchers}">
-                    <td><strong th:text="${stat.index + 1}">1</strong></td>
+                <tr th:each="v, stat : ${vouchers}" th:attr="data-voucher-id=${v.id}">
+                    <!-- STT liên tục qua trang -->
+                    <td><strong th:text="${currentPage * pageSize + stat.index + 1}">1</strong></td>
+
                     <td th:text="${v.ma}"></td>
                     <td th:text="${v.ten}"></td>
-                    <td th:text="${v.loai == 'PERCENT' ? '%' : 'Tiền mặt'}"></td>
+                    <td th:text="${v.loai == 'PERCENT' ? '%' : (v.loai == 'CASH' ? 'Tiền mặt' : v.loai)}"></td>
                     <td th:text="${v.kieuPhieu == 'cong_khai' ? 'Công Khai' : 'Cá Nhân'}"></td>
                     <td th:text="${formats[v.id]['giaTriGiam']}"></td>
                     <td th:text="${formats[v.id]['giaTriGiamToiDa']}"></td>
                     <td th:text="${formats[v.id]['giaTriGiamToiThieu']}"></td>
                     <td th:text="${v.gioiHanSuDung}"></td>
+
+                    <!-- SỐ LƯỢNG (AJAX cập nhật) -->
+                    <td>
+                        <span class="voucher-qty" th:attr="data-id=${v.id}"
+                              th:text="${v.soLuong != null ? v.soLuong : '-'}">-</span>
+                    </td>
+
                     <td th:text="${#temporals.format(v.ngayBatDau, 'dd/MM/yyyy HH:mm')}"></td>
                     <td th:text="${#temporals.format(v.ngayKetThuc, 'dd/MM/yyyy HH:mm')}"></td>
                     <td>
-                        <span th:switch="${getStatus.apply(v)}">
-                            <span th:case="'Sắp diễn ra'" class="badge bg-warning text-dark">Sắp diễn ra</span>
-                            <span th:case="'Đang diễn ra'" class="badge bg-success">Đang diễn ra</span>
-                            <span th:case="'Đã kết thúc'" class="badge bg-secondary">Đã kết thúc</span>
-                            <span th:case="'Không xác định'" class="badge bg-light text-dark border">Không xác định</span>
+                        <!-- TRẠNG THÁI (AJAX cập nhật) -->
+                        <span class="voucher-status" th:attr="data-id=${v.id}">
+                            <span th:switch="${getStatus.apply(v)}">
+                                <span th:case="'Sắp diễn ra'" class="badge bg-warning text-dark">Sắp diễn ra</span>
+                                <span th:case="'Đang diễn ra'" class="badge bg-success">Đang diễn ra</span>
+                                <span th:case="'Đã kết thúc'" class="badge bg-secondary">Đã kết thúc</span>
+                                <span th:case="'Không xác định'" class="badge bg-light text-dark border">Không xác định</span>
+                            </span>
                         </span>
                     </td>
                     <td class="text-center">
@@ -341,8 +366,7 @@
                                     th:attr="data-voucher-id=${v.id},
                                              data-bs-toggle=${getStatus.apply(v) == 'Sắp diễn ra'} ? 'modal' : '',
                                              data-bs-target=${getStatus.apply(v) == 'Sắp diễn ra'} ? '#deleteModal' : '',
-                                             title=${getStatus.apply(v) == 'Sắp diễn ra'} ? 'Xóa phiếu giảm giá' : 'Chỉ được xóa khi trạng thái Sắp diễn ra'"
-                                    th:onclick="${getStatus.apply(v) == 'Sắp diễn ra'} ? '' : 'return false;'">
+                                             title=${getStatus.apply(v) == 'Sắp diễn ra'} ? 'Xóa phiếu giảm giá' : 'Chỉ được xóa khi trạng thái Sắp diễn ra'">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -361,7 +385,6 @@
                         <i class="fa-solid fa-chevron-left me-1"></i> Trước
                     </a>
                 </li>
-
                 <li class="page-item"
                     th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
                     th:classappend="${i == currentPage} ? 'active'">
@@ -369,7 +392,6 @@
                        th:href="@{/acvstore/phieu-giam-gia(page=${i}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}"
                        th:text="${i + 1}">1</a>
                 </li>
-
                 <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
                     <a class="page-link"
                        th:href="@{/acvstore/phieu-giam-gia(page=${currentPage + 1}, size=${pageSize}, search=${search}, fromDate=${fromDate}, toDate=${toDate}, type=${type}, status=${status})}">
@@ -440,7 +462,7 @@
         const err = document.getElementById('errorToast'); if (err) new bootstrap.Toast(err).show();
         const info = document.getElementById('infoToast'); if (info) new bootstrap.Toast(info).show();
 
-        // Helper toast
+        // Helper toast (fixed top-right)
         function showToast(message, type = 'danger'){
             const container = document.getElementById('toastContainer') || document.body;
             const iconMap = { danger: 'fa-ban', info: 'fa-info-circle', success: 'fa-check-circle', warning: 'fa-triangle-exclamation' };
@@ -461,11 +483,6 @@
             t.show();
         }
 
-        // Tooltip cho nút xóa
-        document.querySelectorAll('.delete-btn').forEach(el=>{
-            try{ new bootstrap.Tooltip(el, { placement:'top', trigger:'hover focus', container:'body' }); }catch(e){}
-        });
-
         // Auto-submit filter
         const form = document.getElementById("filterForm");
         form.querySelectorAll("select, input[type='datetime-local']").forEach(el => {
@@ -482,7 +499,7 @@
             });
         }
 
-        // Delete flow
+        // ===== Delete flow =====
         const isAdmin = /*[[${isAdmin}]]*/ false;
         if (isAdmin) {
             const deleteIdInput = document.getElementById('deleteIdInput');
@@ -491,9 +508,7 @@
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', function (e) {
                     if (this.classList.contains('disabled')) {
-                        const statusCell = this.closest('tr').querySelector('td:nth-child(12)');
-                        const statusText = statusCell ? statusCell.innerText.trim() : 'không phù hợp';
-                        showToast(`Không thể xóa: Trạng thái hiện tại là "${statusText}". Chỉ được xóa khi trạng thái "Sắp diễn ra".`, 'warning');
+                        showToast('Chỉ được xóa khi trạng thái "Sắp diễn ra".', 'warning');
                         e.preventDefault(); return false;
                     }
                     const id = this.getAttribute('data-voucher-id');
@@ -508,6 +523,71 @@
                 if (!deleteIdInput.value) { e.preventDefault(); showToast('Thiếu mã phiếu cần xóa', 'danger'); }
             });
         }
+
+        // ===== AJAX cập nhật SỐ LƯỢNG & TRẠNG THÁI =====
+        function collectVisibleVoucherIds(){
+            return Array.from(document.querySelectorAll('tr[data-voucher-id]'))
+                .map(tr => tr.getAttribute('data-voucher-id'));
+        }
+
+        function renderStatusBadge(status){
+            if(status === 'Sắp diễn ra'){
+                return '<span class="badge bg-warning text-dark">Sắp diễn ra</span>';
+            } else if(status === 'Đang diễn ra'){
+                return '<span class="badge bg-success">Đang diễn ra</span>';
+            } else if(status === 'Đã kết thúc'){
+                return '<span class="badge bg-secondary">Đã kết thúc</span>';
+            } else {
+                return '<span class="badge bg-light text-dark border">Không xác định</span>';
+            }
+        }
+
+        async function refreshVoucherSummary(){
+            const ids = collectVisibleVoucherIds();
+            if (!ids.length) return;
+
+            const url = `/acvstore/phieu-giam-gia/api/summary?ids=${encodeURIComponent(ids.join(','))}&ts=${Date.now()}`;
+            try{
+                const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }});
+                if(!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json(); // [{id, soLuong, status}]
+                data.forEach(item => {
+                    // Update qty
+                    const qtyEl = document.querySelector(`.voucher-qty[data-id="${item.id}"]`);
+                    if (qtyEl){
+                        const old = qtyEl.textContent.trim();
+                        const nextVal = (item.soLuong !== null && item.soLuong !== undefined) ? item.soLuong : '-';
+                        if (old !== String(nextVal)){
+                            qtyEl.textContent = nextVal;
+                            qtyEl.classList.add('flash-update');
+                            setTimeout(()=> qtyEl.classList.remove('flash-update'), 1000);
+                        }
+                    }
+                    // Update status badge
+                    const stEl = document.querySelector(`.voucher-status[data-id="${item.id}"]`);
+                    if (stEl){
+                        const newHtml = renderStatusBadge(item.status || 'Không xác định');
+                        if (stEl.innerHTML.trim() !== newHtml.trim()){
+                            stEl.innerHTML = newHtml;
+                            stEl.classList.add('flash-update');
+                            setTimeout(()=> stEl.classList.remove('flash-update'), 1000);
+                        }
+                    }
+                });
+            }catch(e){
+                console.warn('Refresh voucher summary failed:', e);
+            }
+        }
+
+        // Poll mỗi 10s
+        const POLL_MS = 10000;
+        let pollTimer = setInterval(refreshVoucherSummary, POLL_MS);
+
+        // Lần đầu vào trang cũng cập nhật
+        refreshVoucherSummary();
+
+        // Expose global
+        window.refreshVoucherSummary = refreshVoucherSummary;
     });
 </script>
 <script th:if="${successMessage}">

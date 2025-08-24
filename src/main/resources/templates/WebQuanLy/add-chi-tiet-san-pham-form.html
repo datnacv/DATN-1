@@ -914,6 +914,7 @@
             </div>
 
             <!-- Modal Thêm Nhanh Sản Phẩm -->
+            <!-- Modal Thêm Nhanh Sản Phẩm -->
             <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-labelledby="quickAddProductModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -927,12 +928,10 @@
                                 <div class="mb-3">
                                     <label for="quickAddMaSanPham" class="form-label">Mã sản phẩm</label>
                                     <input type="text" class="form-control" id="quickAddMaSanPham" name="maSanPham" required>
-                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="quickAddTenSanPham" class="form-label">Tên sản phẩm</label>
                                     <input type="text" class="form-control" id="quickAddTenSanPham" name="tenSanPham" required>
-                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="quickAddMoTa" class="form-label">Mô tả</label>
@@ -944,7 +943,6 @@
                                         <option value="">-- Chọn danh mục --</option>
                                         <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}"></option>
                                     </select>
-                                    <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Ảnh sản phẩm</label>
@@ -972,7 +970,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Loading & Success: Lưu chi tiết sản phẩm -->
             <div class="loading-overlay" id="loadingOverlayDetail">
                 <div class="loading-content">
@@ -1212,50 +1209,55 @@
         $('#quickAddProductForm').on('submit', function(event) {
             event.preventDefault();
 
-            // Xác thực phía client
-            const maSanPham = $('#quickAddMaSanPham').val().trim();
-            let tenSanPham = $('#quickAddTenSanPham').val().trim();
-            const danhMuc = $('#quickAddDanhMuc').val();
-            const regexMaSanPham = /^[a-zA-Z0-9_-]+$/; // Regex cho mã sản phẩm
-            const regexTenSanPham = /^[a-zA-Z0-9_-]+(\s[a-zA-Z0-9_-]+)*$/; // Regex cho tên sản phẩm
-
             // Xóa các thông báo lỗi cũ
-            $('.alert').remove();
-            $('.is-invalid').removeClass('is-invalid');
             $('.invalid-feedback').remove();
+            $('.is-invalid').removeClass('is-invalid');
 
-            // Kiểm tra Mã Sản Phẩm
+            let isValid = true;
+
+            // Validate mã sản phẩm
+            const maSanPham = $('#quickAddMaSanPham').val().trim();
             if (!maSanPham) {
                 showError('quickAddMaSanPham', 'Mã sản phẩm không được để trống!');
-                return;
-            }
-            if (!regexMaSanPham.test(maSanPham)) {
-                showError('quickAddMaSanPham', 'Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới hoặc gạch ngang!');
-                return;
+                isValid = false;
+            } else if (!/^[a-zA-Z0-9_-]+$/.test(maSanPham)) {
+                showError('quickAddMaSanPham', 'Mã sản phẩm không được chứa ký tự đặc biệt (chỉ cho phép chữ cái, số, _, -)!');
+                isValid = false;
             }
 
-            // Kiểm tra Tên Sản Phẩm
+            // Validate tên sản phẩm
+            const tenSanPham = $('#quickAddTenSanPham').val().trim();
             if (!tenSanPham) {
                 showError('quickAddTenSanPham', 'Tên sản phẩm không được để trống!');
-                return;
-            }
-            // Loại bỏ khoảng trắng dư thừa
-            tenSanPham = tenSanPham.replace(/\s+/g, ' ').trim();
-            if (!regexTenSanPham.test(tenSanPham)) {
-                showError('quickAddTenSanPham', 'Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!');
-                return;
+                isValid = false;
+            } else if (!/^[^\s][\p{L}0-9\s_-]*[^\s]$/u.test(tenSanPham)) {
+                showError('quickAddTenSanPham', 'Tên sản phẩm không được bắt đầu hoặc kết thúc bằng khoảng trắng và chỉ cho phép chữ cái, số, khoảng trắng, _, -!');
+                isValid = false;
             }
 
-            // Kiểm tra Danh Mục
+            // Validate ảnh sản phẩm
+            const imageFile = $('#quickAddImageFile')[0].files[0];
+            if (!imageFile) {
+                showError('quickAddImageFile', 'Ảnh sản phẩm không được để trống!');
+                isValid = false;
+            }
+
+            // Validate danh mục
+            const danhMuc = $('#quickAddDanhMuc').val();
             if (!danhMuc) {
                 showError('quickAddDanhMuc', 'Vui lòng chọn danh mục!');
+                isValid = false;
+            }
+
+            if (!isValid) {
                 return;
             }
 
-            // Cập nhật giá trị tên sản phẩm đã được chuẩn hóa
-            $('#quickAddTenSanPham').val(tenSanPham);
-
+            // Nếu validate thành công, gửi form
             const formData = new FormData(this);
+            formData.set('maSanPham', maSanPham); // Cập nhật giá trị đã trim
+            formData.set('tenSanPham', tenSanPham); // Cập nhật giá trị đã trim
+
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/save-auto-product',
                 type: 'POST',
@@ -1275,27 +1277,44 @@
                     refreshProductSelect(response.id, response.tenSanPham);
                 },
                 error: function(xhr) {
-                    $('#loadingOverlayQuickProduct').hide();
+                    $('#loadingOverlayQuickProduct').fadeOut(200);
                     let errorMessage = xhr.statusText;
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
-                        errorMessage = errorResponse.message || xhr.responseText;
-                    } catch (e) {}
-                    // Hiển thị thông báo lỗi trong modal
-                    $('#quickAddProductModal .modal-body').prepend(
-                        `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    ${errorMessage}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>`
-                    );
-                    setTimeout(() => {
-                        $('.alert').alert('close');
-                    }, 8000);
+                        if (errorResponse.errors) {
+                            // Xử lý lỗi validate từ server
+                            Object.keys(errorResponse.errors).forEach(field => {
+                                showError(field, errorResponse.errors[field]);
+                            });
+                        } else {
+                            // Hiển thị lỗi chung nếu không có lỗi validate cụ thể
+                            $('#quickAddProductModal .modal-body').prepend(
+                                `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            ${errorResponse.message || errorMessage}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>`
+                            );
+                            setTimeout(() => {
+                                $('.alert').alert('close');
+                            }, 8000);
+                        }
+                    } catch (e) {
+                        // Hiển thị lỗi chung nếu không parse được JSON
+                        $('#quickAddProductModal .modal-body').prepend(
+                            `<div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        ${errorMessage}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>`
+                        );
+                        setTimeout(() => {
+                            $('.alert').alert('close');
+                        }, 8000);
+                    }
                 }
             });
         });
 
-        // Hàm hiển thị thông báo lỗi
+// Hàm hiển thị thông báo lỗi
         function showError(inputId, message) {
             const $input = $('#' + inputId);
             $input.addClass('is-invalid');
@@ -1304,7 +1323,7 @@
             );
             $input.focus();
             // Xóa lỗi khi người dùng nhập lại
-            $input.one('input', function() {
+            $input.one('input change', function() {
                 $(this).removeClass('is-invalid');
                 $(this).next('.invalid-feedback').remove();
             });

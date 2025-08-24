@@ -835,9 +835,9 @@
                 <div class="info-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0"><i class="fas fa-user"></i> Thông tin khách hàng</h6>
-                        <button id="editButton" class="btn-custom btn-edit" onclick="toggleEditForm()" style="background: linear-gradient(135deg, var(--btn-edit-bg) 0%, #e8681a 100%); color: #fff; min-width: 120px;">
-                            <i class="fas fa-edit"></i> Thay đổi
-                        </button>
+<!--                        <button id="editButton" class="btn-custom btn-edit" onclick="toggleEditForm()" style="background: linear-gradient(135deg, var(&#45;&#45;btn-edit-bg) 0%, #e8681a 100%); color: #fff; min-width: 120px;">-->
+<!--                            <i class="fas fa-edit"></i> Thay đổi-->
+<!--                        </button>-->
                     </div>
                     <div class="info-row">
                         <span class="info-label">
@@ -1443,32 +1443,81 @@
 
     $("#editHoaDonForm").submit(function(e) {
         e.preventDefault();
-        const formData = {
-            hoTen: $("#hoTen").val(),
-            soDienThoai: $("#soDienThoai").val(),
-            tinhThanhPho: $("#tinhThanhPho").val(),
-            quanHuyen: $("#quanHuyen").val(),
-            phuongXa: $("#phuongXa").val(),
-            chiTietDiaChi: $("#chiTietDiaChi").val()
-        };
-        $("#invoiceSpinner").show();
-        $.ajax({
-            url: `/acvstore/hoa-don/update/${hoaDonId}`,
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(formData),
-            success: function(response) {
-                showToast(response.message, "success");
-                window.location.reload();
-            },
-            error: function(error) {
-                showToast("Lỗi khi cập nhật thông tin: " + (error.responseJSON?.error || "Không xác định"), "error");
-            },
-            complete: function() {
-                $("#invoiceSpinner").hide();
-                toggleEditForm();
-            }
-        });
+        let isValid = true;
+
+        // Lấy các giá trị từ form
+        const hoTen = $("#hoTen").val().trim();
+        const soDienThoai = $("#soDienThoai").val().trim();
+        const tinhThanhPho = $("#tinhThanhPho").val();
+        const quanHuyen = $("#quanHuyen").val();
+        const phuongXa = $("#phuongXa").val();
+        const chiTietDiaChi = $("#chiTietDiaChi").val().trim();
+
+        // Xóa thông báo lỗi cũ (nếu có)
+        $("#hoTen").next(".error-message").remove();
+        $("#soDienThoai").next(".error-message").remove();
+
+        // Validate Họ tên
+        const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/;
+        if (!hoTen) {
+            $("#hoTen").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Họ tên không được để trống</div>');
+            isValid = false;
+        } else if (!hoTenRegex.test(hoTen)) {
+            $("#hoTen").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Họ tên chỉ được chứa chữ cái và khoảng trắng</div>');
+            isValid = false;
+        } else if (hoTen.indexOf('  ') !== -1) {
+            $("#hoTen").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Họ tên chỉ được chứa 1 khoảng trắng giữa các từ</div>');
+            isValid = false;
+        }
+
+        // Validate Số điện thoại
+        const soDienThoaiRegex = /^[0-9]{10}$/;
+        if (!soDienThoai) {
+            $("#soDienThoai").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Số điện thoại không được để trống</div>');
+            isValid = false;
+        } else if (!soDienThoaiRegex.test(soDienThoai)) {
+            $("#soDienThoai").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Số điện thoại phải là 10 chữ số</div>');
+            isValid = false;
+        }
+
+        // Validate các trường địa chỉ
+        if (!tinhThanhPho || !quanHuyen || !phuongXa) {
+            showToast("Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện và phường/xã", "error");
+            isValid = false;
+        }
+        if (!chiTietDiaChi) {
+            $("#chiTietDiaChi").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Chi tiết địa chỉ không được để trống</div>');
+            isValid = false;
+        }
+
+        if (isValid) {
+            const formData = {
+                hoTen: hoTen,
+                soDienThoai: soDienThoai,
+                tinhThanhPho: tinhThanhPho,
+                quanHuyen: quanHuyen,
+                phuongXa: phuongXa,
+                chiTietDiaChi: chiTietDiaChi
+            };
+            $("#invoiceSpinner").show();
+            $.ajax({
+                url: `/acvstore/hoa-don/update/${hoaDonId}`,
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    showToast(response.message, "success");
+                    window.location.reload();
+                },
+                error: function(error) {
+                    showToast("Lỗi khi cập nhật thông tin: " + (error.responseJSON?.error || "Không xác định"), "error");
+                },
+                complete: function() {
+                    $("#invoiceSpinner").hide();
+                    toggleEditForm();
+                }
+            });
+        }
     });
 
     async function fetchProvinces() {

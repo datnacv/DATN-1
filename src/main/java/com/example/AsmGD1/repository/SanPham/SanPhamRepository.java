@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,6 +48,42 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
             @Param("tenSanPham") String tenSanPham,
             Pageable pageable
     );
+
     boolean existsByMaSanPham(String maSanPham);
     boolean existsByTenSanPham(String tenSanPham);
+
+    // ===========================
+    // MỚI: Chỉ lấy sản phẩm có ÍT NHẤT 1 CTSP "rảnh"
+    // (rảnh = không có chiến dịch, hoặc chiến dịch đã kết thúc: ngayKetThuc <= :now)
+    // Lưu ý so sánh theo ID để tránh IDE báo đỏ thuộc tính.
+    // ===========================
+    @Query("""
+        SELECT sp FROM SanPham sp
+        WHERE sp.trangThai = true
+          AND EXISTS (
+             SELECT 1 FROM ChiTietSanPham ct
+             LEFT JOIN ct.chienDichGiamGia cdg
+             WHERE ct.sanPham.id = sp.id
+               AND (cdg IS NULL OR cdg.ngayKetThuc <= :now)
+          )
+        """)
+    Page<SanPham> findAvailableProducts(@Param("now") LocalDateTime now, Pageable pageable);
+
+    @Query("""
+        SELECT sp FROM SanPham sp
+        WHERE sp.trangThai = true
+          AND (
+               LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(sp.maSanPham)  LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+          AND EXISTS (
+             SELECT 1 FROM ChiTietSanPham ct
+             LEFT JOIN ct.chienDichGiamGia cdg
+             WHERE ct.sanPham.id = sp.id
+               AND (cdg IS NULL OR cdg.ngayKetThuc <= :now)
+          )
+        """)
+    Page<SanPham> searchAvailableByTenOrMa(@Param("keyword") String keyword,
+                                           @Param("now") LocalDateTime now,
+                                           Pageable pageable);
 }

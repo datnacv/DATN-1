@@ -517,47 +517,67 @@ public class ChiTietSanPhamController {
             @RequestParam(value = "danhMuc.id", required = false) UUID danhMucId,
             @RequestParam(value = "imageFile", required = false) MultipartFile imageFile) {
         Map<String, Object> response = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
+
         try {
+            // Check admin or employee permission
             if (!canCurrentUserEdit()) {
                 response.put("success", false);
                 response.put("message", "Bạn không có quyền thực hiện chức năng này!");
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Validate maSanPham
             String maSanPham = sanPham.getMaSanPham();
             if (maSanPham == null || maSanPham.trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Mã sản phẩm không được để trống!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            if (!maSanPham.matches("^[a-zA-Z0-9_-]+$")) {
-                response.put("success", false);
-                response.put("message", "Mã sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới hoặc gạch ngang!");
-                return ResponseEntity.badRequest().body(response);
-            }
-            if (sanPhamService.existsByMaSanPham(maSanPham)) {
-                response.put("success", false);
-                response.put("message", "Mã sản phẩm đã tồn tại!");
-                return ResponseEntity.badRequest().body(response);
+                errors.put("quickAddMaSanPham", "Mã sản phẩm không được để trống!");
+            } else {
+                maSanPham = maSanPham.trim();
+                if (!maSanPham.matches("^[a-zA-Z0-9_-]+$")) {
+                    errors.put("quickAddMaSanPham", "Mã sản phẩm không được chứa ký tự đặc biệt (chỉ cho phép chữ cái, số, _, -)!");
+                } else if (sanPhamService.existsByMaSanPham(maSanPham)) {
+                    errors.put("quickAddMaSanPham", "Mã sản phẩm đã tồn tại!");
+                }
             }
 
+            // Validate tenSanPham
             String tenSanPham = sanPham.getTenSanPham();
             if (tenSanPham == null || tenSanPham.trim().isEmpty()) {
-                response.put("success", false);
-                response.put("message", "Tên sản phẩm không được để trống!");
-                return ResponseEntity.badRequest().body(response);
+                errors.put("quickAddTenSanPham", "Tên sản phẩm không được để trống!");
+            } else {
+                tenSanPham = tenSanPham.trim();
+                if (!tenSanPham.matches("^(?!\\s).*[^\\s]$")) {
+                    errors.put("quickAddTenSanPham", "Tên sản phẩm không được bắt đầu hoặc kết thúc bằng khoảng trắng!");
+                } else if (!tenSanPham.matches("^[\\p{L}0-9\\s_-]+$")) {
+                    errors.put("quickAddTenSanPham", "Tên sản phẩm chỉ cho phép chữ cái, số, khoảng trắng, _, -!");
+                } else if (sanPhamService.existsByTenSanPham(tenSanPham)) {
+                    errors.put("quickAddTenSanPham", "Tên sản phẩm đã tồn tại!");
+                }
             }
-            if (!tenSanPham.matches("^[a-zA-Z0-9_-]+(\\s[a-zA-Z0-9_-]+)*$")) {
-                response.put("success", false);
-                response.put("message", "Tên sản phẩm chỉ được chứa chữ cái, số, dấu gạch dưới, gạch ngang và khoảng trắng giữa các từ!");
-                return ResponseEntity.badRequest().body(response);
+
+            // Validate imageFile
+            if (imageFile == null || imageFile.isEmpty()) {
+                errors.put("quickAddImageFile", "Ảnh sản phẩm không được để trống!");
             }
-            if (sanPhamService.existsByTenSanPham(tenSanPham)) {
+
+            // Validate danhMuc
+            if (danhMucId == null) {
+                errors.put("quickAddDanhMuc", "Vui lòng chọn danh mục!");
+            } else {
+                DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
+                if (danhMuc == null) {
+                    errors.put("quickAddDanhMuc", "Danh mục không tồn tại!");
+                }
+            }
+
+            // Nếu có lỗi validate, trả về danh sách lỗi
+            if (!errors.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "Tên sản phẩm đã tồn tại!");
+                response.put("errors", errors);
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Nếu validate thành công, lưu sản phẩm
             SanPham newSanPham = new SanPham();
             newSanPham.setMaSanPham(maSanPham);
             newSanPham.setTenSanPham(tenSanPham);
@@ -565,21 +585,10 @@ public class ChiTietSanPhamController {
             newSanPham.setTrangThai(true);
             newSanPham.setThoiGianTao(LocalDateTime.now());
 
-            if (danhMucId != null) {
-                DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
-                if (danhMuc != null) {
-                    newSanPham.setDanhMuc(danhMuc);
-                } else {
-                    response.put("success", false);
-                    response.put("message", "Danh mục không tồn tại!");
-                    return ResponseEntity.badRequest().body(response);
-                }
-            } else {
-                response.put("success", false);
-                response.put("message", "Vui lòng chọn danh mục!");
-                return ResponseEntity.badRequest().body(response);
-            }
+            DanhMuc danhMuc = danhMucService.getDanhMucById(danhMucId);
+            newSanPham.setDanhMuc(danhMuc);
 
+            // Lưu trữ ảnh cục bộ
             String UPLOAD_DIR = System.getProperty("os.name").toLowerCase().contains("win")
                     ? "C:/DATN/uploads/san_pham/"
                     : System.getProperty("user.home") + "/DATN/uploads/san_pham/";
