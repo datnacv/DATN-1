@@ -58,9 +58,13 @@ public class AdminExchangeController {
             @RequestParam(required = false) String searchHoTen,
             Model model) {
 
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String tenDangNhap = authentication.getName();
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        NguoiDung currentUser = auth != null && auth.getPrincipal() instanceof NguoiDung ? (NguoiDung) auth.getPrincipal() : null;
-        boolean isAdmin = currentUser != null && "ADMIN".equalsIgnoreCase(currentUser.getVaiTro());
+        if (auth != null && auth.getPrincipal() instanceof NguoiDung) {
+            NguoiDung user = (NguoiDung) auth.getPrincipal();
+            model.addAttribute("user", user);
+        }
 
         Sort sort = Sort.by(Sort.Direction.DESC, "thoiGianDoi");
         Pageable pageable = PageRequest.of(page, 10, sort);
