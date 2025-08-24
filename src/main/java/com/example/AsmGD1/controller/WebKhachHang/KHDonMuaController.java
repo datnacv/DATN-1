@@ -1109,8 +1109,7 @@ public class KHDonMuaController {
 
             // Tạo thông báo cho admin
             try {
-                String thongBaoContent = "Khách hàng " + user.getHoTen() + " yêu cầu đổi sản phẩm cho đơn hàng " + hoaDon.getDonHang().getMaDonHang() +
-                        (priceDifference.compareTo(BigDecimal.ZERO) > 0 ? ". Chênh lệch giá: " + formatVND(priceDifference.doubleValue()) : "");
+                String thongBaoContent = "Khách hàng " + user.getHoTen() + " yêu cầu đổi sản phẩm cho đơn hàng " + hoaDon.getDonHang().getMaDonHang();
                 thongBaoService.taoThongBaoHeThong(
                         "admin",
                         "Yêu cầu đổi sản phẩm mới",

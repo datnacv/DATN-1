@@ -847,6 +847,85 @@
 <!--chatbot-->
 <script>
 
+  document.addEventListener('DOMContentLoaded', function() {
+    function updateProductPrices() {
+      fetch('/api/products/prices', {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Accept': 'application/json' }
+      })
+              .then(response => {
+                if (!response.ok) throw new Error('Lỗi khi lấy giá cập nhật');
+                return response.json();
+              })
+              .then(data => {
+                document.querySelectorAll('.product-card').forEach(card => {
+                  const productId = card.querySelector('.cart-icon')?.dataset.productId || card.querySelector('.quick-view-btn')?.dataset.productId;
+                  if (!productId || !data[productId]) return;
+
+                  const priceInfo = data[productId];
+                  const priceEl = card.querySelector('.price');
+                  let oldPriceContainer = card.querySelector('.text-sm.text-red-600.line-through');
+
+                  // Cập nhật giá hiện tại (giá giảm hoặc giá thường)
+                  if (priceEl) {
+                    const newPrice = Number(priceInfo.giaSauGiam || 0).toLocaleString('vi-VN') + ' VNĐ';
+                    if (priceEl.textContent !== newPrice) {
+                      priceEl.textContent = 'Từ ' + newPrice;
+                      priceEl.classList.add('text-blue-600', 'font-bold');
+                    }
+                  }
+
+
+
+                  // Chỉ hiển thị giá gốc nếu có giảm giá (discountPercentage > 0 và oldPrice tồn tại)
+                  if (priceInfo.discountPercentage > 0 && priceInfo.oldPrice && priceInfo.oldPrice !== priceInfo.giaSauGiam) {
+                    const oldPrice = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+                    if (!oldPriceContainer) {
+                      // Tạo phần tử container giá gốc nếu chưa tồn tại
+                      oldPriceContainer = document.createElement('div');
+                      oldPriceContainer.className = 'text-sm text-red-600 line-through';
+                      const oldPriceSpan = document.createElement('span');
+                      oldPriceSpan.className = 'formatted-old-price';
+                      oldPriceContainer.appendChild(oldPriceSpan);
+                      // Chèn ngay sau phần tử giá hiện tại
+                      priceEl.parentNode.insertBefore(oldPriceContainer, priceEl.nextSibling);
+                    }
+
+                    const oldPriceSpan = oldPriceContainer.querySelector('.formatted-old-price');
+                    if (oldPriceSpan.textContent !== oldPrice) {
+                      oldPriceSpan.textContent = oldPrice;
+                    }
+                    oldPriceContainer.style.display = 'block'; // Đảm bảo hiển thị
+                  } else if (oldPriceContainer) {
+                    // Ẩn giá gốc nếu không có giảm giá
+                    oldPriceContainer.style.display = 'none';
+                  }
+
+                  // Cập nhật badge giảm giá
+                  const discountEl = card.querySelector('.badge-discount') || document.createElement('span');
+                  if (!card.contains(discountEl)) {
+                    discountEl.className = 'badge-discount absolute top-2 right-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow';
+                    card.querySelector('.relative').appendChild(discountEl);
+                  }
+                  if (priceInfo.discountPercentage > 0) {
+                    discountEl.textContent = `-${priceInfo.discountPercentage}%`;
+                    discountEl.style.display = 'block';
+                  } else {
+                    discountEl.style.display = 'none';
+                  }
+                });
+              })
+              .catch(error => console.error('Lỗi cập nhật giá:', error));
+    }
+
+    // Cập nhật ban đầu
+    updateProductPrices();
+
+    // Poll mỗi 5 giây (có thể điều chỉnh tần suất)
+    setInterval(updateProductPrices, 5000);
+  });
 
 
   const qrTrigger = document.getElementById('qr-trigger');
@@ -967,7 +1046,6 @@
     const formatted = Number(raw).toLocaleString('vi-VN') + ' VNĐ';
     el.textContent = formatted;
   });
-
 </script>
 <!--scroll-->
 <script>
