@@ -1814,7 +1814,7 @@
             checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải dịch vụ vận chuyển:', err);
-            Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Không lấy được dịch vụ vận chuyển: ' + err.message });
+            // Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Không lấy được dịch vụ vận chuyển: ' + err.message });
             loadingState.shippingServices = true;
             checkLoadingComplete();
         }
@@ -2016,7 +2016,7 @@
                 }
             } catch (err) {
                 console.error('Lỗi khi cập nhật địa chỉ:', err);
-                Swal.fire({ icon: 'error', title: 'Lỗi cập nhật địa chỉ', text: err.message });
+                // Swal.fire({ icon: 'error', title: 'Lỗi cập nhật địa chỉ', text: err.message });
             }
         })();
 
