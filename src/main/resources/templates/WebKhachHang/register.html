@@ -173,10 +173,10 @@
                     <div class="col-md-6 form-section">
                         <h4 class="mb-4">Thông tin cơ bản</h4>
                         <div class="form-floating">
-                            <input type="text" class="form-control" th:field="*{tenDangNhap}" placeholder="Tên đăng nhập" required minlength="3" pattern="^[a-zA-Z0-9_]{3,}$">
+                            <input type="text" class="form-control" th:field="*{tenDangNhap}" placeholder="Tên đăng nhập" required minlength="3" pattern="^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9_]{3,}$">
                             <label>Tên đăng nhập</label>
                             <i class="fas fa-user input-icon"></i>
-                            <div class="invalid-feedback">Tên đăng nhập phải ít nhất 3 ký tự, chỉ chứa chữ cái, số và dấu gạch dưới.</div>
+                            <div class="invalid-feedback">Tên đăng nhập phải ít nhất 3 ký tự, chứa cả chữ và số, chỉ chứa chữ cái, số và dấu gạch dưới.</div>
                         </div>
                         <div class="form-floating position-relative">
                             <input type="password" class="form-control" th:field="*{matKhau}" id="passwordField" placeholder="Mật khẩu" required minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$">
