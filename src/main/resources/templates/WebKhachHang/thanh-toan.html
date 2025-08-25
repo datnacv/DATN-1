@@ -1106,7 +1106,7 @@
                     <button type="button" class="btn btn-primary" onclick="openVoucherModal()">Chọn</button>
                 </div>
                 <!-- tóm tắt mã đang chọn -->
-                <div id="voucher-summary" class="small text-muted">Chưa chọn</div>
+                <div id="voucher-summary" class="small text-muted"></div>
 
                 <!-- Giữ 2 select ẨN để dùng lại applyOrderVoucher/applyShipVoucher -->
                 <select id="order-voucher" hidden>
@@ -1625,7 +1625,7 @@
             const t = selShip.querySelector(`option[value="${selShip.value}"]`)?.textContent || selShip.value;
             parts.push('SHIP: ' + t);
         }
-        document.getElementById('voucher-summary').textContent = parts.length ? parts.join(' | ') : 'Chưa chọn';
+        // document.getElementById('voucher-summary').textContent = parts.length ? parts.join(' | ') : 'Chưa chọn';
     }
     function _num(x){ const n = Number(String(x??0).toString().replace(/[^\d.]/g,'')); return isFinite(n)? n : 0; }
 
@@ -2240,13 +2240,16 @@
     }
 
     // ================== VOUCHERS ==================
+    // Hàm áp dụng voucher ORDER
     async function applyOrderVoucher({ silent = false } = {}) {
         const voucherCode = document.getElementById('order-voucher').value.trim();
         const discountEl = document.getElementById('discount-order');
+        const selOrder = document.getElementById('order-voucher');
 
         // Không chọn mã -> clear
         if (!voucherCode) {
             discountEl.textContent = formatVND(0);
+            selOrder.value = ''; // Đảm bảo select ẩn được reset
             updateTotal();
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
             return { ok: true, discount: 0, message: 'Không chọn mã ORDER' };
@@ -2257,13 +2260,14 @@
         const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
         const checkoutItems = buildVoucherBodyForCurrentMode();
 
-        // ⬅️ LẤY PTTT ĐANG CHỌN
+        // LẤY PTTT ĐANG CHỌN
         const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
         if (!paymentMethodId) {
-            if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
+            if (!silent) Swal.fire({ icon: 'warning', title: 'Chưa chọn phương thức thanh toán' });
             discountEl.textContent = formatVND(0);
+            selOrder.value = ''; // Bỏ chọn nếu thiếu PTTT
             updateTotal();
-            return { ok:false, discount:0, message:'missing paymentMethodId' };
+            return { ok: false, discount: 0, message: 'missing paymentMethodId' };
         }
 
         const url = `/api/checkout/apply-voucher`
@@ -2286,18 +2290,38 @@
                 const discount = Number(data.data || 0);
                 discountEl.textContent = formatVND(discount);
                 if (!silent) {
-                    Swal.fire({ icon:'success', title:'Áp dụng mã ORDER thành công', text:`Giảm ${formatVND(discount)}`, timer:1200, showConfirmButton:false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Áp dụng mã ORDER thành công',
+                        text: `Giảm ${formatVND(discount)}`,
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                 }
                 return { ok: true, discount, message: data.message || '' };
             } else {
                 discountEl.textContent = formatVND(0);
-                if (!silent) Swal.fire({ icon:'error', title:'ORDER thất bại', text: data.message || 'Áp dụng mã thất bại' });
+                selOrder.value = ''; // Bỏ chọn nếu áp dụng thất bại
+                if (!silent) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ORDER thất bại',
+                        text: data.message || 'Áp dụng mã thất bại'
+                    });
+                }
                 return { ok: false, discount: 0, message: data.message || 'Áp dụng mã thất bại' };
             }
         } catch (err) {
             console.error('Lỗi ORDER voucher:', err);
             discountEl.textContent = formatVND(0);
-            if (!silent) Swal.fire({ icon:'error', title:'Lỗi', text:'Đã xảy ra lỗi khi áp dụng mã ORDER!' });
+            selOrder.value = ''; // Bỏ chọn nếu có lỗi
+            if (!silent) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Đã xảy ra lỗi khi áp dụng mã ORDER!'
+                });
+            }
             return { ok: false, discount: 0, message: 'Lỗi áp dụng mã ORDER' };
         } finally {
             updateTotal();
@@ -2305,28 +2329,35 @@
         }
     }
 
-
-
-
+    // Hàm áp dụng voucher SHIPPING
     async function applyShipVoucher({ silent = false } = {}) {
         const code = document.getElementById('ship-voucher').value.trim();
         const elDiscountShip = document.getElementById('discount-ship');
+        const selShip = document.getElementById('ship-voucher');
 
         if (!code) {
             elDiscountShip.textContent = formatVND(0);
+            selShip.value = ''; // Đảm bảo select ẩn được reset
             updateTotal();
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
             return { ok: true, discount: 0, message: 'Không chọn mã FREESHIP' };
         }
 
         const shippingFee = onlyDigits(document.getElementById('shipping-fee').textContent);
-        const subtotal    = onlyDigits(document.getElementById('subtotal').textContent);
-        const mode        = getCheckoutMode();
-        const source      = mode;
+        const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
+        const mode = getCheckoutMode();
+        const source = mode;
 
         if (shippingFee <= 0) {
-            if (!silent) Swal.fire({ icon:'warning', title:'Chưa có phí vận chuyển', text:'Vui lòng chọn địa chỉ để tính phí ship trước.' });
+            if (!silent) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa có phí vận chuyển',
+                    text: 'Vui lòng chọn địa chỉ để tính phí ship trước.'
+                });
+            }
             elDiscountShip.textContent = formatVND(0);
+            selShip.value = ''; // Bỏ chọn nếu chưa có phí ship
             updateTotal();
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
             return { ok: false, discount: 0, message: 'Chưa có phí vận chuyển' };
@@ -2334,10 +2365,11 @@
 
         const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
         if (!paymentMethodId) {
-            if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
+            if (!silent) Swal.fire({ icon: 'warning', title: 'Chưa chọn phương thức thanh toán' });
             elDiscountShip.textContent = formatVND(0);
+            selShip.value = ''; // Bỏ chọn nếu thiếu PTTT
             updateTotal();
-            return { ok:false, discount:0, message:'missing paymentMethodId' };
+            return { ok: false, discount: 0, message: 'missing paymentMethodId' };
         }
 
         const url = `/api/checkout/apply-voucher`
@@ -2355,7 +2387,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify(payload)       // <-- cần stringify
+                body: JSON.stringify(payload)
             });
             const data = await res.json();
 
@@ -2364,18 +2396,38 @@
                 const discount = Math.min(Number(data.data || 0), currentShip);
                 elDiscountShip.textContent = formatVND(discount);
                 if (!silent) {
-                    Swal.fire({ icon:'success', title:'Áp dụng FREESHIP thành công', text:`Giảm ${formatVND(discount)} phí vận chuyển`, timer:1200, showConfirmButton:false });
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Áp dụng FREESHIP thành công',
+                        text: `Giảm ${formatVND(discount)} phí vận chuyển`,
+                        timer: 1200,
+                        showConfirmButton: false
+                    });
                 }
                 return { ok: true, discount, message: data.message || '' };
             } else {
                 elDiscountShip.textContent = formatVND(0);
-                if (!silent) Swal.fire({ icon:'error', title:'FREESHIP thất bại', text: data.message || 'Áp dụng mã freeship thất bại' });
+                selShip.value = ''; // Bỏ chọn nếu áp dụng thất bại
+                if (!silent) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'FREESHIP thất bại',
+                        text: data.message || 'Áp dụng mã freeship thất bại'
+                    });
+                }
                 return { ok: false, discount: 0, message: data.message || 'Áp dụng mã freeship thất bại' };
             }
         } catch (e) {
             console.error('Lỗi FREESHIP:', e);
             elDiscountShip.textContent = formatVND(0);
-            if (!silent) Swal.fire({ icon:'error', title:'Lỗi', text:'Đã xảy ra lỗi khi áp dụng mã freeship!' });
+            selShip.value = ''; // Bỏ chọn nếu có lỗi
+            if (!silent) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: 'Đã xảy ra lỗi khi áp dụng mã freeship!'
+                });
+            }
             return { ok: false, discount: 0, message: 'Lỗi áp dụng mã FREESHIP' };
         } finally {
             updateTotal();
@@ -2735,8 +2787,8 @@
                     const t = selShip.querySelector(`option[value="${CSS.escape(ship)}"]`)?.textContent || ship;
                     parts.push('SHIP: ' + t);
                 }
-                document.getElementById('voucher-summary').textContent =
-                    parts.length ? parts.join(' | ') : 'Chưa chọn';
+                // document.getElementById('voucher-summary').textContent =
+                //     parts.length ? parts.join(' | ') : 'Chưa chọn';
 
                 // Tạo thông báo tổng hợp
                 const lines = [];
