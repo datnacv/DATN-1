@@ -742,8 +742,34 @@ public class KHDonMuaController {
             }
         }
 
+        // Lấy chi tiết từng phiếu giảm giá áp cho đơn (ORDER/SHIPPING)
+        List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+
+        List<DonHangPhieuGiamGia> voucherOrder = allVouchers.stream()
+                .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        List<DonHangPhieuGiamGia> voucherShip = allVouchers.stream()
+                .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        // Tính tổng giảm giá cho từng loại
+        BigDecimal tongGiamOrder = voucherOrder.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal tongGiamShip = voucherShip.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Đẩy dữ liệu ra view
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
+        model.addAttribute("tongGiamOrder", tongGiamOrder);
+        model.addAttribute("tongGiamShip", tongGiamShip);
+
         return "WebKhachHang/tra-hang";
     }
 
@@ -804,6 +830,19 @@ public class KHDonMuaController {
         }
 
         try {
+            // Lấy thông tin giảm giá
+            List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+            BigDecimal tongGiamOrder = allVouchers.stream()
+                    .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal tongGiamShip = allVouchers.stream()
+                    .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             double totalReturnAmount = 0;
             for (UUID chiTietId : selectedProductIds) {
                 ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
@@ -847,8 +886,6 @@ public class KHDonMuaController {
                 chiTietSanPhamRepository.save(sanPham);
             }
 
-
-
             hoaDon.setTrangThai("Đã trả hàng");
             hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
             hoaDonService.save(hoaDon);
@@ -861,13 +898,15 @@ public class KHDonMuaController {
                     hoaDon.getDonHang()
             );
 
-            // Gửi email thông báo
+            // Gửi email thông báo với thông tin giảm giá
             String emailContent = "<h2>Thông báo yêu cầu trả hàng</h2>" +
                     "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
                     "<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
                     "<p><strong>Trạng thái:</strong> Đã trả hàng</p>" +
                     "<p><strong>Lý do:</strong> " + reason + "</p>" +
                     "<p><strong>Mô tả:</strong> " + (description != null ? description : "Không có") + "</p>" +
+                    "<p><strong>Giảm giá đơn:</strong> " + formatVND(tongGiamOrder.doubleValue()) + "</p>" +
+                    "<p><strong>Giảm phí vận chuyển:</strong> " + formatVND(tongGiamShip.doubleValue()) + "</p>" +
                     "<p><strong>Tổng tiền hoàn:</strong> " + formatVND(totalReturnAmount) + "</p>" +
                     "<p>Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.</p>" +
                     "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
