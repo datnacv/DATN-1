@@ -93,7 +93,6 @@
                             <!-- MA: readonly khi edit -->
                             <div class="col-md-4">
                                 <label class="form-label">Mã đợt</label>
-                                <!-- KHÔNG CHO SỬA MÃ -->
                                 <input type="text" class="form-control" th:field="*{ma}" required
                                        pattern="[A-Za-z0-9]+"
                                        th:readonly="${true}"
@@ -102,19 +101,24 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Tên đợt</label>
-                                <input type="text" class="form-control" th:field="*{ten}" required maxlength="100"
-                                       pattern="[\p{L}]+( [\p{L}]+)*"
+                                <!-- BỎ pattern, validate bằng JS: không space đầu/cuối, không 2+ space giữa, chỉ chữ, ≥6 ký tự (không tính space) -->
+                                <input type="text" class="form-control"
+                                       th:field="*{ten}"
+                                       required maxlength="100"
                                        th:readonly="${isReadOnly or !isAdmin}"
                                        oninput="this.setCustomValidity('')"
-                                       onblur="this.value=this.value.trim().replace(/\s+/g,' ')"
-                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.')">
+                                       onblur="validateTen(this)"
+                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), phải là các từ cách nhau đúng 1 khoảng trắng. Cho phép khoảng trắng ở đầu/cuối. Tối thiểu 6 ký tự (không tính khoảng trắng).')">
+
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">% giảm</label>
-                                <input type="number" class="form-control" th:field="*{phanTramGiam}"
+                                <input type="number" class="form-control"
+                                       th:field="*{phanTramGiam}"
+                                       th:value="*{phanTramGiam != null ? phanTramGiam.stripTrailingZeros().toPlainString() : ''}"
                                        required min="1" max="100" step="1"
                                        th:readonly="${isReadOnly or !isAdmin}"
-                                       oninput="(function(el){ const v=el.value; const ok=/^\d+$/.test(v)&& +v>=1 && +v<=100; el.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.'); })(this)"
+                                       oninput="(function(el){ const v=el.value.trim(); const ok=/^\d+$/.test(v)&& +v>=1 && +v<=100; el.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.'); })(this)"
                                        oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 100.')">
                             </div>
 
@@ -249,6 +253,50 @@
     const isReadOnly= /*[[${isReadOnly}]]*/ false;
     const viewMode  = /*[[${viewMode}]]*/ false;
 
+    /* ===== Helpers cho TÊN đợt ===== */
+    function normalizeTen(el){
+        if(!el) return;
+        // chỉ gọi sau khi HỢP LỆ: trim + gộp nhiều space -> 1
+        el.value = (el.value || '').trim().replace(/\s+/g,' ');
+    }
+    function validateTen(el){
+        if(!el) return;
+        const raw = el.value || '';
+
+        if (raw === '') { el.setCustomValidity(''); return; } // required xử lý riêng
+
+        // Lấy nội dung để kiểm tra: cắt đầu/cuối CHỈ để kiểm tra (KHÔNG gán ngược)
+        const trimmed = raw.trim();
+
+        // 1) Không cho 2+ khoảng trắng liên tiếp ở GIỮA
+        if (/\s{2,}/.test(trimmed)) {
+            el.setCustomValidity('Giữa các từ chỉ được 1 khoảng trắng.');
+            return;
+        }
+
+        // 2) Chỉ chữ theo từng từ (có thể có 1 space giữa các từ)
+        if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(trimmed)) {
+            el.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng.');
+            return;
+        }
+
+        // 3) Độ dài không tính khoảng trắng ≥ 6
+        const nonSpaceLen = trimmed.replace(/\s+/g,'').length;
+        if (nonSpaceLen < 6) {
+            el.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).');
+            return;
+        }
+
+        // 4) Tối đa 100 ký tự tổng thể (tuỳ bạn giữ luật này)
+        if (trimmed.length > 100) {
+            el.setCustomValidity('Tên tối đa 100 ký tự.');
+            return;
+        }
+
+        el.setCustomValidity('');
+    }
+
+
     function toLocalDatetimeValue(d){
         const pad=n=>String(n).padStart(2,'0');
         return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -287,16 +335,20 @@
         });
         end?.addEventListener('input', function(){ this.setCustomValidity(''); });
 
-        // Tên: cho phép space lúc đang gõ; chuẩn hoá khi blur
+        // Tên: validate trước, nếu OK mới normalize khi blur
         if(ten){
             ten.addEventListener('input', ()=> ten.setCustomValidity(''));
-            ten.addEventListener('blur',  ()=>{ ten.value = ten.value.trim().replace(/\s+/g,' '); ten.reportValidity(); });
+            ten.addEventListener('blur',  ()=>{
+                validateTen(ten);
+                if (ten.checkValidity()) normalizeTen(ten);
+                ten.reportValidity();
+            });
         }
 
         // % giảm: số nguyên 1..100
         if(percent){
             percent.addEventListener('input', function(){
-                const v=this.value; const intOk=/^\d+$/.test(v); const num=+v;
+                const v=this.value.trim(); const intOk=/^\d+$/.test(v); const num=+v;
                 const ok=intOk && num>=1 && num<=100;
                 this.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.');
             });
@@ -305,10 +357,13 @@
         form.addEventListener('submit', function(e){
             if(!isAdmin){ e.preventDefault(); alert('Bạn không có quyền thực hiện thao tác này!'); return; }
 
-            // Chuẩn hoá tên trước khi kiểm tra
-            if(ten){ ten.value = ten.value.trim().replace(/\s+/g,' '); }
+            // Tên: VALIDATE trước, hợp lệ mới normalize
+            if(ten){
+                validateTen(ten);
+                if (ten.checkValidity()) normalizeTen(ten);
+            }
             if(percent){
-                const v=percent.value; const intOk=/^\d+$/.test(v); const num=+v;
+                const v=percent.value.trim(); const intOk=/^\d+$/.test(v); const num=+v;
                 const ok=intOk && num>=1 && num<=100;
                 percent.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.');
             }

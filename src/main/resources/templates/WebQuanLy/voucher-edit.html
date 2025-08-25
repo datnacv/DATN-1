@@ -164,19 +164,19 @@
                                 <span>Phạm vi áp dụng & Kiểu giảm</span>
                             </div>
                             <div class="card-body">
-                                <!-- Phạm vi -->
-                                <div class="mb-3">
+                                <!-- Phạm vi (LOCKED) -->
+                                <div class="mb-3" id="scopeGroup" data-locked="true">
+                                    <!-- giữ giá trị để submit vì radio disabled -->
+                                    <input type="hidden" name="phamViApDung" th:value="*{phamViApDung}" id="scopeLockedVal"/>
                                     <label class="form-label"><i class="fas fa-truck me-2"></i>Phạm vi áp dụng:</label>
                                     <div class="d-flex flex-wrap gap-4">
                                         <label class="form-check-label">
                                             <input type="radio" th:field="*{phamViApDung}" value="ORDER"
-                                                   onchange="toggleScopeFields()"
-                                                   th:disabled="${st != 'Sắp diễn ra'}"> Giảm giá đơn hàng
+                                                   onchange="toggleScopeFields()" disabled> Giảm giá đơn hàng
                                         </label>
                                         <label class="form-check-label">
                                             <input type="radio" th:field="*{phamViApDung}" value="SHIPPING"
-                                                   onchange="toggleScopeFields()"
-                                                   th:disabled="${st != 'Sắp diễn ra'}"> Giảm phí vận chuyển
+                                                   onchange="toggleScopeFields()" disabled> Giảm phí vận chuyển
                                         </label>
                                     </div>
                                 </div>
@@ -476,8 +476,33 @@
         });
     }
 
+    /* ===== Chuẩn hoá & validate tên (không khoảng trắng đầu/cuối, giữa từ 1 khoảng, chỉ chữ có dấu, >=6 ký tự không tính khoảng) ===== */
+    function normalizeNameOnce(str){
+        if (typeof str !== 'string') return '';
+        // cấm khoảng trắng đầu/cuối
+        const trimmed = str.trim();
+        // gộp nhiều khoảng trong chuỗi thành 1
+        return trimmed.replace(/\s+/g,' ');
+    }
+    function validateNameValue(name){
+        if (!name) return 'Tên phiếu không được để trống.';
+        // không cho khoảng trắng đầu/cuối: so sánh sau trim
+        if (name !== name.trim()) return 'Không cho phép khoảng trắng ở đầu hoặc cuối.';
+        // cấm nhiều khoảng giữa hai từ (sẽ bị bắt bởi regex dưới, nhưng báo lỗi rõ ràng hơn)
+        if (/\s{2,}/.test(name)) return 'Giữa các từ chỉ được 1 khoảng trắng.';
+        // chỉ chữ (có dấu) + 1 khoảng giữa các từ
+        if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(name)) return 'Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.';
+        // tối thiểu 6 ký tự không tính khoảng
+        const nonSpaceLen = name.replace(/\s+/g,'').length;
+        if (nonSpaceLen < 6) return 'Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).';
+        return null;
+    }
+
     /* ===== Toggles ===== */
     function toggleScopeFields() {
+        // KHÓA chuyển phạm vi khi sửa
+        if ($('#scopeGroup').data('locked') === true) return;
+
         const scope = $('input[name="phamViApDung"]:checked').val();
         const isShipping = scope === 'SHIPPING';
         $('#shipTypeGroup').toggle(isShipping);
@@ -524,7 +549,6 @@
     }
 
     function toggleUsageCount(kieu, fromSwitch) {
-        // Nếu có tham số thì dùng, không thì đọc radio đang chọn
         const checked = kieu ? kieu : ($('input[name="kieuPhieu"]:checked').val() || '');
         const isCaNhan = checked === 'ca_nhan';
 
@@ -533,17 +557,14 @@
         const $luot = $('#gioiHanSuDung');
 
         if (isCaNhan) {
-            // Cá nhân luôn = 1
             $luot.val('1').prop('readonly', true).trigger('input');
             $('#caNhanNote').show();
         } else {
-            // Công khai: chỉ xóa trắng khi là thao tác chuyển (fromSwitch = true)
             $('#caNhanNote').hide();
             $luot.prop('readonly', false);
             if (fromSwitch === true) {
-                $luot.val('').trigger('input');   // xóa để nhập lại
+                $luot.val('').trigger('input');
             }
-            // fromSwitch !== true => giữ nguyên giá trị server bind
         }
     }
 
@@ -591,33 +612,94 @@
             isValid = false;
         }
 
+        // Validate TÊN (nghiêm)
+        const rawName = $('#ten').val() || '';
+        const normalizedName = normalizeNameOnce(rawName);
+        if (rawName !== normalizedName){
+            // Không tự ý sửa ở FE — báo lỗi rõ ràng
+            $('#ten').addClass('is-invalid');
+            // Ưu tiên lỗi khoảng trắng đầu/cuối
+            if (rawName !== rawName.trim()){
+                $('#tenError').text('Không cho phép khoảng trắng ở đầu hoặc cuối.').show();
+            }else{
+                $('#tenError').text('Giữa các từ chỉ được 1 khoảng trắng.').show();
+            }
+            isValid = false;
+        } else {
+            const msg = validateNameValue(normalizedName);
+            if (msg){
+                $('#ten').addClass('is-invalid'); $('#tenError').text(msg).show(); isValid=false;
+            }
+        }
+
+        // KHÓA phạm vi (ORDER/SHIPPING) – chỉ validate loại nằm trong phạm vi hiện tại
+        const scope = $('#scopeLockedVal').val(); // hidden giữ giá trị
         const type = $('input[name="loai"]:checked').val();
-        const scope = $('input[name="phamViApDung"]:checked').val();
+
+        if (scope === 'ORDER' && !['PERCENT','CASH'].includes(type)){
+            // đề phòng ai đó chỉnh DOM
+            $('#discountTypeGroup').find('input[type=radio]').addClass('is-invalid');
+            alert('Phạm vi đang là GIẢM GIÁ ĐƠN HÀNG – chỉ được chọn kiểu PERCENT hoặc CASH.');
+            isValid = false;
+        }
+        if (scope === 'SHIPPING' && !['FREESHIP_FULL','FREESHIP_CAP'].includes(type)){
+            $('#shipTypeGroup').find('input[type=radio]').addClass('is-invalid');
+            alert('Phạm vi đang là GIẢM PHÍ VẬN CHUYỂN – chỉ được chọn FREESHIP_FULL hoặc FREESHIP_CAP.');
+            isValid = false;
+        }
+
         const giaTriGiam = parseFloat(parseNumber($('#giaTriGiam').val() || '0')) || 0;
         const giaTriGiamToiDa = parseFloat(parseNumber($('#giaTriGiamToiDa').val() || '0')) || 0;
         const giaTriGiamToiThieu = parseFloat(parseNumber($('#giaTriGiamToiThieu').val() || '0')) || 0;
 
+        // Số âm đơn tối thiểu
+        if (giaTriGiamToiThieu < 0){
+            $('#giaTriGiamToiThieu').addClass('is-invalid');
+            $('#giaTriGiamToiThieuError').text('Đơn tối thiểu không được âm.').show();
+            isValid = false;
+        }
+
+        // Theo phạm vi
         if (scope === 'ORDER'){
             if (type === 'PERCENT' || type === 'CASH'){
+                // giá trị giảm >0
                 if (giaTriGiam <= 0){
                     $('#giaTriGiam').addClass('is-invalid');
                     $('#giaTriGiamError').text('Giá trị giảm phải lớn hơn 0.').show();
                     isValid = false;
                 }
-                if (type === 'PERCENT' && giaTriGiam > 100){
-                    $('#giaTriGiam').addClass('is-invalid');
-                    $('#giaTriGiamError').text('Giảm theo % không được vượt quá 100.').show();
-                    isValid = false;
-                }
-                if (type === 'PERCENT' && giaTriGiamToiDa <= 0){
-                    $('#giaTriGiamToiDa').addClass('is-invalid');
-                    $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 khi giảm theo %.').show();
-                    isValid = false;
-                }
-                if (type === 'CASH' && giaTriGiamToiThieu > 0 && giaTriGiam > giaTriGiamToiThieu){
-                    $('#giaTriGiam').addClass('is-invalid');
-                    $('#giaTriGiamError').text('Giá trị giảm không được lớn hơn đơn tối thiểu.').show();
-                    isValid = false;
+                if (type === 'PERCENT'){
+                    // % nguyên 1..100
+                    const raw = ($('#giaTriGiam').val() || '').trim();
+                    // không cho nhập dấu thập phân cho %
+                    if (/[.,]/.test(raw)){
+                        $('#giaTriGiam').addClass('is-invalid');
+                        $('#giaTriGiamError').text('Giảm theo % phải là số nguyên.').show();
+                        isValid=false;
+                    }
+                    if (giaTriGiam > 100){
+                        $('#giaTriGiam').addClass('is-invalid');
+                        $('#giaTriGiamError').text('Giảm theo % không được vượt quá 100.').show();
+                        isValid = false;
+                    }
+                    if (giaTriGiamToiDa <= 0){
+                        $('#giaTriGiamToiDa').addClass('is-invalid');
+                        $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 khi giảm theo %.').show();
+                        isValid = false;
+                    }
+                    // Max discount < Min order (siết chặt như yêu cầu)
+                    if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu){
+                        $('#giaTriGiamToiDa').addClass('is-invalid');
+                        $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
+                        isValid = false;
+                    }
+                } else { // CASH
+                    // tiền mặt < đơn tối thiểu (nếu có thiết lập)
+                    if (giaTriGiamToiThieu > 0 && giaTriGiam >= giaTriGiamToiThieu){
+                        $('#giaTriGiam').addClass('is-invalid');
+                        $('#giaTriGiamError').text('Giá trị giảm (tiền mặt) phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
+                        isValid = false;
+                    }
                 }
             }
         } else if (scope === 'SHIPPING'){
@@ -627,6 +709,14 @@
                     $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 cho FREESHIP_CAP.').show();
                     isValid = false;
                 }
+                // yêu cầu: max < minOrder
+                if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu){
+                    $('#giaTriGiamToiDa').addClass('is-invalid');
+                    $('#giaTriGiamToiDaError').text('Giảm phí ship tối đa phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
+                    isValid = false;
+                }
+                // nếu cần giữ giới hạn 150% thì mở chú thích dưới (tuỳ bạn):
+                /*
                 if (giaTriGiamToiThieu > 0){
                     const maxAllowed = giaTriGiamToiThieu * 1.5;
                     if (giaTriGiamToiDa > maxAllowed){
@@ -635,43 +725,11 @@
                         isValid = false;
                     }
                 }
+                */
             }
         }
 
-        if (giaTriGiamToiThieu < 0){
-            $('#giaTriGiamToiThieu').addClass('is-invalid');
-            $('#giaTriGiamToiThieuError').text('Đơn tối thiểu không được âm.').show();
-            isValid = false;
-        }
-
-        const ma = $('#ma').val();
-        if (!ma || ma.trim() === ''){
-            $('#ma').addClass('is-invalid');
-            $('#maError').text('Mã phiếu không được để trống.').show();
-            isValid = false;
-        }
-
-        const ten = $('#ten').val();
-        if (!ten || ten.trim() === ''){
-            $('#ten').addClass('is-invalid');
-            $('#tenError').text('Tên phiếu không được để trống.').show();
-            isValid = false;
-        }
-
-        const isCaNhan = $('input[name="kieuPhieu"]:checked').val() === 'ca_nhan';
-        const gioiHan = $('#gioiHanSuDung').val();
-        if (!isCaNhan && (!gioiHan || parseInt(gioiHan) <= 0)){
-            $('#gioiHanSuDung').addClass('is-invalid');
-            $('#gioiHanSuDungError').text('Lượt sử dụng phải > 0 cho phiếu công khai.').show();
-            isValid = false;
-        }
-        if (isCaNhan && $('.customerCheckbox:checked').length === 0){
-            $('#customerSection .alert').remove();
-            $('#customerSection').prepend('<div class="alert alert-danger mb-3">Vui lòng chọn ít nhất một khách hàng cho phiếu cá nhân.</div>');
-            isValid = false;
-        }
-
-        // ===== PTTT bắt buộc (bỏ 'all') =====
+        // PTTT bắt buộc (bỏ 'all')
         const ptttChosen = ($('#paymentMethodSelect').val() || []).filter(v => v !== 'all');
         if (ptttChosen.length === 0){
             $('#ptttError').text('Vui lòng chọn ít nhất một phương thức thanh toán.').removeClass('d-none');
@@ -710,9 +768,15 @@
             }
         });
 
-        // Định dạng số khi blur
+        // Định dạng số khi blur (động theo kiểu giảm)
+        const formatGiaTriGiam = () => {
+            const type = $('input[name="loai"]:checked').val();
+            const allowDecimal = (type !== 'PERCENT'); // % phải là số nguyên
+            const $el = $('#giaTriGiam');
+            $el.val(formatNumber($el.val(), allowDecimal));
+        };
+
         [
-            { selector: '#giaTriGiam', allowDecimal: true },
             { selector: '#giaTriGiamToiDa', allowDecimal: true },
             { selector: '#giaTriGiamToiThieu', allowDecimal: true },
             { selector: '#gioiHanSuDung', allowDecimal: false }
@@ -726,10 +790,17 @@
             });
         });
 
+        // Riêng #giaTriGiam định dạng theo type
+        if ($('#giaTriGiam').val()){
+            formatGiaTriGiam();
+        }
+        $('#giaTriGiam').on('blur', formatGiaTriGiam);
+        $(document).on('change','input[name="loai"]', formatGiaTriGiam);
+
         // Tìm kiếm KH + chọn tất cả
         $('#searchCustomerInput').on('keyup', function () {
             const keyword = $(this).val().toLowerCase();
-            $('#customerTableBody tr').each(function () {
+            $('#customerTableBody').find('tr').each(function () {
                 const visible = $(this).text().toLowerCase().indexOf(keyword) > -1;
                 $(this).toggle(visible);
             });

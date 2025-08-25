@@ -3148,7 +3148,6 @@
             const pvRes = await fetch(`/acvstore/customers/vouchers/${tab.customerPhone}`);
             if (pvRes.ok) {
               const pv = await pvRes.json();
-              // Chịu được cả dạng mảng trực tiếp lẫn { vouchers: [...] }
               personalVouchers = Array.isArray(pv) ? pv : (pv?.vouchers || []);
             }
           }
@@ -3158,14 +3157,25 @@
       }
     }
 
-    // ===== Voucher công khai =====
+    // ===== Voucher công khai (nhận thêm map PTTT nếu BE trả kèm) =====
     let publicAll = [];
     try {
       const res = await fetch(`${BASE_URL}/vouchers?${qsBase}`);
       if (!res.ok) throw new Error('Lỗi khi lấy phiếu giảm giá công khai.');
       const data = await res.json();
-      // Chịu được cả dạng mảng trực tiếp lẫn { vouchers: [...] }
-      publicAll = Array.isArray(data) ? data : (data?.vouchers || []);
+
+      if (Array.isArray(data)) {
+        publicAll = data;
+      } else {
+        publicAll = Array.isArray(data?.vouchers) ? data.vouchers : [];
+        // 👉 giữ map PTTT từ BE (nếu có)
+        if (data?.voucherPtttMapById && typeof data.voucherPtttMapById === 'object') {
+          voucherPtttMapById = data.voucherPtttMapById;
+        }
+        if (data?.voucherPtttMapByMa && typeof data.voucherPtttMapByMa === 'object') {
+          voucherPtttMapByMa = data.voucherPtttMapByMa;
+        }
+      }
     } catch (e) {
       console.error('Lỗi get public vouchers:', e);
     }
@@ -4384,7 +4394,6 @@
 
 
   // Render danh sách ORDER / SHIPPING vào modal
-  // Render danh sách ORDER / SHIPPING vào modal (hoàn chỉnh + eligibility + toggle-off)
   function renderVoucherModalLists(allVouchers = []) {
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
@@ -4398,6 +4407,10 @@
 
     // ===== Helpers (local) =====
     const fmtVND = (n) => (Number(n) || 0).toLocaleString('vi-VN') + ' VNĐ';
+    const fmtPct = (x) => {
+      const n = Number(x) || 0;
+      return Number.isInteger(n) ? String(n) : String(+n.toFixed(2));
+    };
 
     const firstNonEmpty = (obj, keys = []) => {
       for (const k of keys) {
@@ -4415,8 +4428,12 @@
       if (val == null) return 0;
       if (typeof val === 'number' && !isNaN(val)) return val;
       const s = String(val).trim();
-      const kMatch = s.match(/^(\d+(?:[.,]\d+)?)\s*k$/i); // 20k -> 20000
+
+      // '20k' -> 20000
+      const kMatch = s.match(/^(\d+(?:[.,]\d+)?)\s*k$/i);
       if (kMatch) return Math.round(parseFloat(kMatch[1].replace(',', '.')) * 1000);
+
+      // số (có thể âm, có phần thập phân)
       const m = s.match(/-?\d+(?:[.,]\d+)?/);
       if (!m) return 0;
       return Number(m[0].replace(',', '.'));
@@ -4430,17 +4447,63 @@
       return isNaN(n) ? 0 : n;
     };
 
-    // ==== ĐỌC GIẢM % / TIỀN cho ORDER (đã fix kiểu dữ liệu) ====
-    function getPercent(v) {
-      const typeRaw = String(v?.loaiGiamGia ?? v?.discountType ?? v?.type ?? '').toUpperCase();
-      const isPercentType = /PHAN|PERCENT|%/.test(typeRaw);
+    // ====== CHUẨN HOÁ TYPE ======
+    const _normType = (s) =>
+            String(s || '')
+                    .toUpperCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^A-Z0-9%]/g, '');
 
+    // ===== Heuristic nhận diện % khi type mơ hồ =====
+    function _isLikelyPercent(v) {
+      const raw = firstNonEmpty(v, ['giaTriGiam','mucGiam']);
+      const val = toNumberSafe(raw);
+      if (!(val > 0)) return false;
+
+      // Có ký hiệu %
+      if (/%/.test(String(raw))) return true;
+
+      // Có "trần" → thường là giảm theo %
+      const cap = toNumberSafe(firstNonEmpty(v, [
+        'mucGiamToiDa','giamToiDa','maxDiscount','maxShipDiscount','tranGiamVanChuyen','cap','giaTriGiamToiDa'
+      ]));
+
+      const hasMoneyFields = firstNonEmpty(v, ['soTien','discountAmount','fixedDiscount']) != null;
+
+      // 0<val<=100 và (không có field tiền) hoặc có trần → nghiêng về %
+      if (val <= 100 && (!hasMoneyFields || cap > 0)) return true;
+
+      return false;
+    }
+
+    // ==== ĐỌC GIẢM % / TIỀN cho ORDER ====
+    function getPercent(v) {
+      const typeRaw = _normType(
+              v?.loaiGiamGia ?? v?.discountType ?? v?.type ??
+              v?.hinhThucGiamGia ?? v?.kieuGiamGia ?? v?.hinhThuc ?? v?.kieu ?? ''
+      );
+      const isPercentType = /(PHANTRAM|PERCENT|PCT|TYLE|%)/.test(typeRaw);
+
+      // Field % "chuẩn"
       let pct = toNumberSafe(firstNonEmpty(v, [
         'phanTram','phanTramGiam','phanTramGiamGia','tyLe','percentage','tyLeGiam'
       ]));
 
+      // BE để % trong giaTriGiam/mucGiam khi type báo %
       if ((!pct || pct === 0) && isPercentType) {
-        // BE để % trong giaTriGiam/mucGiam
+        pct = toNumberSafe(firstNonEmpty(v, ['giaTriGiam','mucGiam']));
+      }
+
+      // Chính giá trị có ký hiệu %
+      if (!pct || pct === 0) {
+        const rawCandidate = firstNonEmpty(v, ['giaTriGiam','mucGiam']);
+        if (/%/.test(String(rawCandidate))) {
+          pct = toNumberSafe(rawCandidate);
+        }
+      }
+
+      // Heuristic: type mơ hồ nhưng số nằm trong (0,100] → coi là %
+      if ((!pct || pct === 0) && _isLikelyPercent(v)) {
         pct = toNumberSafe(firstNonEmpty(v, ['giaTriGiam','mucGiam']));
       }
 
@@ -4449,12 +4512,20 @@
     }
 
     function getMoneyDiscount(v) {
-      const typeRaw = String(v?.loaiGiamGia ?? v?.discountType ?? v?.type ?? '').toUpperCase();
-      const isPercentType = /PHAN|PERCENT|%/.test(typeRaw);
-      if (isPercentType) return 0; // phần trăm thì không coi giaTriGiam là tiền
-      return toNumberSafe(firstNonEmpty(v, [
+      const typeRaw = _normType(
+              v?.loaiGiamGia ?? v?.discountType ?? v?.type ??
+              v?.hinhThucGiamGia ?? v?.kieuGiamGia ?? v?.hinhThuc ?? v?.kieu ?? ''
+      );
+      const isPercentType = /(PHANTRAM|PERCENT|PCT|TYLE|%)/.test(typeRaw);
+
+      const raw = firstNonEmpty(v, [
         'giaTriGiam','mucGiam','soTien','discountAmount','fixedDiscount'
-      ]));
+      ]);
+
+      // có ký hiệu % hoặc type là % hoặc heuristic đoán % -> KHÔNG phải tiền
+      if (/%/.test(String(raw)) || isPercentType || _isLikelyPercent(v)) return 0;
+
+      return toNumberSafe(raw);
     }
 
     const getMinOrder    = (v) => toNumberSafe(firstNonEmpty(v, ['donToiThieu','giaTriGiamToiThieu','minOrder','donHangToiThieu','minTotal','minSubtotal']));
@@ -4544,7 +4615,23 @@
       return { labels: outLabels, keys: outKeys, hasConstraint: true };
     }
 
+    // 👉 Ưu tiên label PTTT do BE trả kèm
+    function ptttLabelFromMaps(v) {
+      const id = String(v?.id ?? '').trim();
+      const code = getVoucherCode(v); // helper có sẵn trong file
+      const label =
+              (id && voucherPtttMapById && voucherPtttMapById[id]) ? voucherPtttMapById[id]
+                      : (code && voucherPtttMapByMa && voucherPtttMapByMa[code]) ? voucherPtttMapByMa[code]
+                              : '';
+      return label ? `PTTT: ${label}` : '';
+    }
+
     function buildPaymentMethodLabel(v) {
+      // ưu tiên map từ BE
+      const fromMap = ptttLabelFromMaps(v);
+      if (fromMap) return fromMap;
+
+      // fallback tự suy
       const { labels, hasConstraint } = parsePaymentMethodsFromVoucher(v, pmMap);
       if (!hasConstraint) return 'PTTT: Tất cả';
       if (labels.length === 0) return 'PTTT: Có giới hạn';
@@ -4570,7 +4657,7 @@
       else orders.push(v);
     });
 
-    // Mô tả dòng chính
+    // Mô tả dòng chính – thêm % (nếu có)
     function buildInfoLine(v, type = 'ORDER') {
       let main = '';
       if (type === 'SHIPPING') {
@@ -4578,13 +4665,21 @@
       } else {
         const pct   = getPercent(v);
         const money = getMoneyDiscount(v);
-        if (pct > 0)       main = `Giảm ${pct}%`;
+        if (pct > 0)       main = `Giảm ${fmtPct(pct)}%`;
         else if (money>0)  main = `Giảm ${fmtVND(money)}`;
         else               main = 'Giảm';
       }
 
       const parts = [main];
+
+      // ✅ PTTT luôn có (ưu tiên từ map)
       parts.push(buildPaymentMethodLabel(v));
+
+      // ✅ % giảm (nếu có) — tránh trùng nếu main đã là "Giảm xx%"
+      const pctForInfo = getPercent(v);
+      if (pctForInfo > 0 && !/Giảm\s+\d+(\.\d+)?%/.test(main)) {
+        parts.push(`Ưu đãi: ${fmtPct(pctForInfo)}%`);
+      }
 
       const minOrder = getMinOrder(v);
       if (minOrder) parts.push(`ĐH tối thiểu: ${fmtVND(minOrder)}`);
@@ -4624,10 +4719,10 @@
       }
 
       // Điều kiện PTTT: so cả label & key
-      const { labels, keys, hasConstraint } = parsePaymentMethodsFromVoucher(v, pmMap);
-      if (hasConstraint && (labels.length > 0 || keys.size > 0)) {
-        const labelMatch = labels.includes(currentPaymentLabel);
-        const keyMatch   = keys.has(currentPaymentKey);
+      const candidates = parsePaymentMethodsFromVoucher(v, pmMap);
+      if (candidates.hasConstraint && (candidates.labels.length > 0 || candidates.keys.size > 0)) {
+        const labelMatch = candidates.labels.includes(currentPaymentLabel);
+        const keyMatch   = candidates.keys.has(currentPaymentKey);
         if (!labelMatch && !keyMatch) {
           ok = false;
           reasons.push('Không áp dụng cho PTTT đang chọn');
