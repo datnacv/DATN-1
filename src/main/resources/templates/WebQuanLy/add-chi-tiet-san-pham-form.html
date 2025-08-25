@@ -1012,14 +1012,13 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
     $(document).ready(function () {
-
         $('.modal').on('hidden.bs.modal', function () {
-            $('.modal-backdrop').remove(); // Xoá lớp nền đen
-            $('body').removeClass('modal-open'); // Trả lại cuộn trang
-            $('body').css('overflow', 'auto'); // Fix cuộn bị khóa
+            $('.modal-backdrop').remove();
+            $('body').removeClass('modal-open');
+            $('body').css('overflow', 'auto');
         });
 
-        // Khởi tạo TomSelect và lưu instances
+        // Khởi tạo TomSelect
         const productTomSelect = new TomSelect('#productSelect', {
             create: false,
             placeholder: '-- Chọn sản phẩm --',
@@ -1028,7 +1027,7 @@
             onChange: function(value) {
                 if (value) {
                     fetchProductDetails(value);
-                    generateVariations(); // Tái tạo biến thể khi sản phẩm thay đổi
+                    generateVariations();
                 } else {
                     enableAllAttributes();
                     resetAttributeValues();
@@ -1041,6 +1040,7 @@
             placeholder: 'Chọn màu...',
             maxOptions: 200,
             allowClear: true,
+            onChange: function() { generateVariations(); }
         });
 
         const sizeTomSelect = new TomSelect('#sizeSelect', {
@@ -1048,6 +1048,7 @@
             placeholder: 'Chọn kích cỡ...',
             maxOptions: 200,
             allowClear: true,
+            onChange: function() { generateVariations(); }
         });
 
         const originTomSelect = new TomSelect('#originSelect', {
@@ -1114,8 +1115,7 @@
                 $('#quickAddModalLabel').text('Thêm Nhanh ' + capitalize(entity));
             }
         });
-// Xóa phần khởi tạo Cloudinary widget
-// Thêm sự kiện cho input file để xem trước ảnh
+
         $('#quickAddImageFile').on('change', function() {
             const file = this.files[0];
             const imageNameDisplay = $('#quickAddImageNameDisplay');
@@ -1131,13 +1131,13 @@
                 imageNameDisplay.text('Chưa chọn ảnh');
                 imagePreview.hide();
             }
-
-            var selectedProductId = /*[[${selectedProductId ?: null}]]*/ null;
-            if (selectedProductId) {
-                productTomSelect.setValue(selectedProductId);
-                fetchProductDetails(selectedProductId);
-            }
         });
+
+        var selectedProductId = /*[[${selectedProductId ?: null}]]*/ null;
+        if (selectedProductId) {
+            productTomSelect.setValue(selectedProductId);
+            fetchProductDetails(selectedProductId);
+        }
 
         function fetchProductDetails(productId) {
             $.ajax({
@@ -1159,7 +1159,6 @@
             });
         }
 
-        // Set giá trị cho các select thuộc tính chung (sử dụng TomSelect API)
         function setAttributeValues(data) {
             originTomSelect.setValue(data.originId || '');
             materialTomSelect.setValue(data.materialId || '');
@@ -1170,12 +1169,10 @@
             genderTomSelect.setValue(data.gender || '');
         }
 
-        // Disable các select thuộc tính chung và nút thêm nhanh (sử dụng TomSelect API)
         function disableAttributes() {
             [originTomSelect, materialTomSelect, styleTomSelect, sleeveTomSelect, collarTomSelect, brandTomSelect, genderTomSelect]
                 .forEach(ts => {
-                    ts.lock(); // KHÓA thay vì disable
-                    // thêm class mờ cho cảm giác "disable"
+                    ts.lock();
                     ts.wrapper.classList.add('ts-readonly');
                 });
 
@@ -1183,19 +1180,16 @@
                 '.quick-add-btn[data-entity="sleeve"], .quick-add-btn[data-entity="collar"], .quick-add-btn[data-entity="brand"]').prop('disabled', true);
         }
 
-
-        // Enable tất cả và reset nếu cần (sử dụng TomSelect API)
         function enableAllAttributes() {
             [originTomSelect, materialTomSelect, styleTomSelect, sleeveTomSelect, collarTomSelect, brandTomSelect, genderTomSelect]
                 .forEach(ts => {
-                    ts.unlock(); // MỞ KHÓA thay vì enable
+                    ts.unlock();
                     ts.wrapper.classList.remove('ts-readonly');
                 });
 
             $('.quick-add-btn:not([data-entity="product"])').prop('disabled', false);
         }
 
-        // Reset giá trị select thuộc tính chung (sử dụng TomSelect API)
         function resetAttributeValues() {
             originTomSelect.clear();
             materialTomSelect.clear();
@@ -1206,46 +1200,183 @@
             genderTomSelect.clear();
         }
 
+        // Hàm validate form
+        function validateForm() {
+            let isValid = true;
+            $('.invalid-feedback').remove();
+            $('.is-invalid').removeClass('is-invalid');
+
+            // Validate productId
+            if (!$('#productSelect').val()) {
+                showError('productSelect', 'Vui lòng chọn sản phẩm.');
+                isValid = false;
+            }
+
+            // Validate originId
+            if (!$('#originSelect').val()) {
+                showError('originSelect', 'Vui lòng chọn xuất xứ.');
+                isValid = false;
+            }
+
+            // Validate materialId
+            if (!$('#materialSelect').val()) {
+                showError('materialSelect', 'Vui lòng chọn chất liệu.');
+                isValid = false;
+            }
+
+            // Validate styleId
+            if (!$('#styleSelect').val()) {
+                showError('styleSelect', 'Vui lòng chọn kiểu dáng.');
+                isValid = false;
+            }
+
+            // Validate sleeveId
+            if (!$('#sleeveSelect').val()) {
+                showError('sleeveSelect', 'Vui lòng chọn tay áo.');
+                isValid = false;
+            }
+
+            // Validate collarId
+            if (!$('#collarSelect').val()) {
+                showError('collarSelect', 'Vui lòng chọn cổ áo.');
+                isValid = false;
+            }
+
+            // Validate brandId
+            if (!$('#brandSelect').val()) {
+                showError('brandSelect', 'Vui lòng chọn thương hiệu.');
+                isValid = false;
+            }
+
+            // Validate gender
+            if (!$('#genderSelect').val()) {
+                showError('genderSelect', 'Vui lòng chọn giới tính.');
+                isValid = false;
+            }
+
+            // Validate colors
+            const colors = $('#colorSelect').val() || [];
+            if (colors.length === 0) {
+                showError('colorSelect', 'Vui lòng chọn ít nhất một màu sắc.');
+                isValid = false;
+            }
+
+            // Validate sizes
+            const sizes = $('#sizeSelect').val() || [];
+            if (sizes.length === 0) {
+                showError('sizeSelect', 'Vui lòng chọn ít nhất một kích cỡ.');
+                isValid = false;
+            }
+
+            // Validate images for each color
+            colors.forEach(colorId => {
+                const inputElement = $(`#image-input-${colorId}`);
+                if (!inputElement[0] || !inputElement[0].files || inputElement[0].files.length === 0) {
+                    showError(`image-input-${colorId}`, `Vui lòng tải lên ít nhất một ảnh cho màu ${$('#colorSelect option[value="' + colorId + '"]').text()}.`);
+                    isValid = false;
+                }
+            });
+
+            // Validate variations (price and stock)
+            $('.variation-item').each(function() {
+                const priceInput = $(this).find('.variation-price');
+                const stockInput = $(this).find('.variation-stock');
+                const index = $(this).data('index');
+
+                if (!priceInput.val() || parseFloat(priceInput.val()) <= 0) {
+                    showError(`variations[${index}].price`, 'Giá phải là số dương.');
+                    isValid = false;
+                }
+
+                if (!stockInput.val() || parseInt(stockInput.val()) < 0) {
+                    showError(`variations[${index}].stockQuantity`, 'Số lượng tồn kho không được âm.');
+                    isValid = false;
+                }
+            });
+
+            return isValid;
+        }
+
+        function showError(inputId, message) {
+            const $input = $('#' + inputId);
+            $input.addClass('is-invalid');
+            $input.after(`<div class="invalid-feedback">${message}</div>`);
+            $input.focus();
+            $input.one('input change', function() {
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
+            });
+        }
+
+        $('#batchForm').on('submit', function(event) {
+            event.preventDefault();
+            if (!validateForm()) {
+                return;
+            }
+
+            const formData = new FormData(this);
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                beforeSend: function() {
+                    $('#loadingOverlayDetail').css('display', 'flex');
+                },
+                success: function(response) {
+                    $('#loadingOverlayDetail').hide();
+                    $('#successNotificationDetail').css('display', 'block');
+                    setTimeout(() => {
+                        $('#successNotificationDetail').css('display', 'none');
+                        window.location.href = '/acvstore/chi-tiet-san-pham?productId=' + $('#productSelect').val() + '&success=Thêm thành công';
+                    }, 2000);
+                },
+                error: function(xhr) {
+                    $('#loadingOverlayDetail').hide();
+                    let errorMessage = xhr.statusText;
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.message || xhr.responseText;
+                    } catch (e) {}
+                    alert('Lỗi khi thêm chi tiết sản phẩm: ' + errorMessage);
+                }
+            });
+        });
+
         $('#quickAddProductForm').on('submit', function(event) {
             event.preventDefault();
-
-            // Xóa các thông báo lỗi cũ
             $('.invalid-feedback').remove();
             $('.is-invalid').removeClass('is-invalid');
 
             let isValid = true;
-
-            // Validate mã sản phẩm
             const maSanPham = $('#quickAddMaSanPham').val().trim();
             if (!maSanPham) {
-                showError('quickAddMaSanPham', 'Mã sản phẩm không được để trống!');
+                showError('quickAddMaSanPham', 'Mã sản phẩm không được để trống.');
                 isValid = false;
             } else if (!/^[a-zA-Z0-9_-]+$/.test(maSanPham)) {
-                showError('quickAddMaSanPham', 'Mã sản phẩm không được chứa ký tự đặc biệt (chỉ cho phép chữ cái, số, _, -)!');
+                showError('quickAddMaSanPham', 'Mã sản phẩm chỉ cho phép chữ cái, số, _, -.');
                 isValid = false;
             }
 
-            // Validate tên sản phẩm
             const tenSanPham = $('#quickAddTenSanPham').val().trim();
             if (!tenSanPham) {
-                showError('quickAddTenSanPham', 'Tên sản phẩm không được để trống!');
+                showError('quickAddTenSanPham', 'Tên sản phẩm không được để trống.');
                 isValid = false;
             } else if (!/^[^\s][\p{L}0-9\s_-]*[^\s]$/u.test(tenSanPham)) {
-                showError('quickAddTenSanPham', 'Tên sản phẩm không được bắt đầu hoặc kết thúc bằng khoảng trắng và chỉ cho phép chữ cái, số, khoảng trắng, _, -!');
+                showError('quickAddTenSanPham', 'Tên sản phẩm không được bắt đầu hoặc kết thúc bằng khoảng trắng.');
                 isValid = false;
             }
 
-            // Validate ảnh sản phẩm
             const imageFile = $('#quickAddImageFile')[0].files[0];
             if (!imageFile) {
-                showError('quickAddImageFile', 'Ảnh sản phẩm không được để trống!');
+                showError('quickAddImageFile', 'Ảnh sản phẩm không được để trống.');
                 isValid = false;
             }
 
-            // Validate danh mục
             const danhMuc = $('#quickAddDanhMuc').val();
             if (!danhMuc) {
-                showError('quickAddDanhMuc', 'Vui lòng chọn danh mục!');
+                showError('quickAddDanhMuc', 'Vui lòng chọn danh mục.');
                 isValid = false;
             }
 
@@ -1253,10 +1384,9 @@
                 return;
             }
 
-            // Nếu validate thành công, gửi form
             const formData = new FormData(this);
-            formData.set('maSanPham', maSanPham); // Cập nhật giá trị đã trim
-            formData.set('tenSanPham', tenSanPham); // Cập nhật giá trị đã trim
+            formData.set('maSanPham', maSanPham);
+            formData.set('tenSanPham', tenSanPham);
 
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/save-auto-product',
@@ -1282,29 +1412,26 @@
                     try {
                         const errorResponse = JSON.parse(xhr.responseText);
                         if (errorResponse.errors) {
-                            // Xử lý lỗi validate từ server
                             Object.keys(errorResponse.errors).forEach(field => {
                                 showError(field, errorResponse.errors[field]);
                             });
                         } else {
-                            // Hiển thị lỗi chung nếu không có lỗi validate cụ thể
                             $('#quickAddProductModal .modal-body').prepend(
                                 `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            ${errorResponse.message || errorMessage}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>`
+                                    ${errorResponse.message || errorMessage}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>`
                             );
                             setTimeout(() => {
                                 $('.alert').alert('close');
                             }, 8000);
                         }
                     } catch (e) {
-                        // Hiển thị lỗi chung nếu không parse được JSON
                         $('#quickAddProductModal .modal-body').prepend(
                             `<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        ${errorMessage}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>`
+                                ${errorMessage}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>`
                         );
                         setTimeout(() => {
                             $('.alert').alert('close');
@@ -1314,59 +1441,11 @@
             });
         });
 
-// Hàm hiển thị thông báo lỗi
-        function showError(inputId, message) {
-            const $input = $('#' + inputId);
-            $input.addClass('is-invalid');
-            $input.after(
-                `<div class="invalid-feedback">${message}</div>`
-            );
-            $input.focus();
-            // Xóa lỗi khi người dùng nhập lại
-            $input.one('input change', function() {
-                $(this).removeClass('is-invalid');
-                $(this).next('.invalid-feedback').remove();
-            });
-        }
-
-        $('#batchForm').on('submit', function(event) {
-            event.preventDefault();
-            const formData = new FormData(this);
-            $.ajax({
-                url: $(this).attr('action'),
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                beforeSend: function() {
-                    $('#loadingOverlayDetail').css('display', 'flex');
-                },
-                success: function(response) {
-                    $('#loadingOverlayDetail').hide();
-                    $('#successNotificationDetail').css('display', 'block');
-
-                    setTimeout(() => {
-                        $('#successNotificationDetail').css('display', 'none');
-                        window.location.href = '/acvstore/chi-tiet-san-pham?productId=' + $('#productSelect').val() + '&success=Thêm thành công';
-                    }, 2000); // giảm thời gian hiển thị xuống 2s
-                },
-                error: function(xhr) {
-                    $('#loadingOverlayDetail').hide();
-                    let errorMessage = xhr.statusText;
-                    try {
-                        const errorResponse = JSON.parse(xhr.responseText);
-                        errorMessage = errorResponse.message || xhr.responseText;
-                    } catch (e) {}
-                    alert('Lỗi khi thêm chi tiết sản phẩm: ' + errorMessage);
-                }
-            });
-        });
-
-        // Toggle bulk edit row based on checkbox selection
         $('#variationsContainer').on('change', '.variation-checkbox', function() {
             const anyChecked = $('.variation-checkbox:checked').length > 0;
             $('#bulkEditRow').toggleClass('active', anyChecked);
         });
+
         $('#selectAllVariations').on('change', function() {
             const anyChecked = $(this).is(':checked');
             $('#bulkEditRow').toggleClass('active', anyChecked);
@@ -1376,7 +1455,6 @@
     function generateVariations() {
         const colors = $('#colorSelect').val() || [];
         const sizes = $('#sizeSelect').val() || [];
-        const productId = $('#productSelect').val();
         const container = $('#variationsContainer');
         container.empty();
         $('#variationsTable').show();
@@ -1471,7 +1549,6 @@
             row.remove();
             updateSTT();
 
-            // Kiểm tra xem tất cả các biến thể của màu này đã bị xóa chưa
             const remainingVariants = $(`.variation-item[data-color="${colorId}"]`).length;
             if (remainingVariants === 0) {
                 $(`.color-group[data-color="${colorId}"]`).remove();
@@ -1550,7 +1627,6 @@
         }
 
         const data = { name: name };
-
         $.ajax({
             url: '/acvstore/chi-tiet-san-pham/save-auto-' + entity,
             type: 'POST',
