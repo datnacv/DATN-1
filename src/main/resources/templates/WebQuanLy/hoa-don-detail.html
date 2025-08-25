@@ -9,9 +9,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+VN:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Thêm SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    <!-- Thêm SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script th:src="@{/js/sidebar.js}" defer></script>
@@ -485,18 +483,17 @@
             color: #fff;
         }
 
-        /* Fixed table layout for order information */
         .table-order-info {
             table-layout: fixed;
             width: 100%;
         }
 
-        .table-order-info th:nth-child(1), .table-order-info td:nth-child(1) { width: 15%; } /* Mã đơn hàng */
-        .table-order-info th:nth-child(2), .table-order-info td:nth-child(2) { width: 20%; } /* Phương thức */
-        .table-order-info th:nth-child(3), .table-order-info td:nth-child(3) { width: 15%; min-width: 120px; text-align: right; } /* Phí vận chuyển */
-        .table-order-info th:nth-child(4), .table-order-info td:nth-child(4) { width: 15%; min-width: 120px; text-align: right; } /* Giảm giá */
-        .table-order-info th:nth-child(5), .table-order-info td:nth-child(5) { width: 20%; text-align: left; } /* Phiếu giảm giá */
-        .table-order-info th:nth-child(6), .table-order-info td:nth-child(6) { width: 25%; } /* Thời gian */
+        .table-order-info th:nth-child(1), .table-order-info td:nth-child(1) { width: 15%; }
+        .table-order-info th:nth-child(2), .table-order-info td:nth-child(2) { width: 20%; }
+        .table-order-info th:nth-child(3), .table-order-info td:nth-child(3) { width: 15%; min-width: 120px; text-align: right; }
+        .table-order-info th:nth-child(4), .table-order-info td:nth-child(4) { width: 15%; min-width: 120px; text-align: right; }
+        .table-order-info th:nth-child(5), .table-order-info td:nth-child(5) { width: 20%; text-align: left; }
+        .table-order-info th:nth-child(6), .table-order-info td:nth-child(6) { width: 25%; }
 
         @media (max-width: 1200px) {
             .action-group {
@@ -747,8 +744,6 @@
                         </div>
                     </div>
 
-
-                    <!-- Workflow-indicator cho Giao hàng -->
                     <div class="workflow-indicator" th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Giao hàng')}">
                         <div class="workflow-step"
                              th:classappend="${currentStatus == 'Chưa xác nhận' ? 'active' : 'completed'}">
@@ -835,9 +830,6 @@
                 <div class="info-card">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0"><i class="fas fa-user"></i> Thông tin khách hàng</h6>
-<!--                        <button id="editButton" class="btn-custom btn-edit" onclick="toggleEditForm()" style="background: linear-gradient(135deg, var(&#45;&#45;btn-edit-bg) 0%, #e8681a 100%); color: #fff; min-width: 120px;">-->
-<!--                            <i class="fas fa-edit"></i> Thay đổi-->
-<!--                        </button>-->
                     </div>
                     <div class="info-row">
                         <span class="info-label">
@@ -864,51 +856,6 @@
                             <i class="fas fa-info-circle"></i> Trạng thái:
                         </span>
                         <span id="statusBadge" class="status-badge" th:text="${currentStatus}"></span>
-                    </div>
-
-                    <div id="editForm" class="edit-form" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: var(--bg-medium); border-radius: 12px; border: 1px solid var(--border-light);">
-                        <form id="editHoaDonForm" th:action="@{/acvstore/hoa-don/update/{id}(id=${hoaDon.id})}" method="post">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="hoTen" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Tên khách hàng:</label>
-                                    <input type="text" class="form-control" id="hoTen" name="hoTen" th:value="${hoaDon.nguoiDung.hoTen}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="soDienThoai" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Số điện thoại:</label>
-                                    <input type="text" class="form-control" id="soDienThoai" name="soDienThoai" th:value="${hoaDon.nguoiDung.soDienThoai}" pattern="[0-9]{10}" title="Số điện thoại phải là 10 chữ số" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="tinhThanhPho" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Tỉnh/Thành phố <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="tinhThanhPho" name="tinhThanhPho" th:data-current-value="${hoaDon.nguoiDung.tinhThanhPho}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
-                                        <option value="">Chọn tỉnh/thành phố</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="quanHuyen" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Quận/Huyện <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="quanHuyen" name="quanHuyen" th:data-current-value="${hoaDon.nguoiDung.quanHuyen}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
-                                        <option value="">Chọn quận/huyện</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="phuongXa" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Phường/Xã <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="phuongXa" name="phuongXa" th:data-current-value="${hoaDon.nguoiDung.phuongXa}" required style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
-                                        <option value="">Chọn phường/xã</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="chiTietDiaChi" class="form-label" style="font-weight: 600; color: var(--text-secondary); margin-bottom: 0.5rem;">Chi tiết địa chỉ:</label>
-                                    <input type="text" class="form-control" id="chiTietDiaChi" name="chiTietDiaChi" th:value="${hoaDon.nguoiDung.chiTietDiaChi}" style="padding: 0.75rem 1rem; border: 2px solid var(--border-medium); border-radius: 8px; font-size: 0.9rem; transition: all 0.3s ease; background: var(--bg-light);">
-                                </div>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn-custom btn-primary">
-                                    <i class="fas fa-save"></i> Lưu thay đổi
-                                </button>
-                                <button type="button" class="btn-custom btn-back" onclick="toggleEditForm()">
-                                    <i class="fas fa-times"></i> Hủy
-                                </button>
-                            </div>
-                        </form>
                     </div>
                 </div>
 
@@ -965,7 +912,7 @@
                 <div class="table-wrapper">
                     <div class="table-header">
                         <h6><i class="fas fa-box"></i> Danh sách sản phẩm</h6>
-                        <a th:if="${hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần' or hoaDon.trangThai == 'Vận chuyển thành công'}"
+                        <a th:if="${hoaDon.donHang.phuongThucBanHang.equalsIgnoreCase('Tại quầy') and (hoaDon.trangThai == 'Hoàn thành' or hoaDon.trangThai == 'Vận chuyển thành công' or hoaDon.trangThai == 'Đã trả hàng một phần' or hoaDon.trangThai == 'Vận chuyển thành công')}"
                            th:href="@{/acvstore/tra-hang/{hoaDonId}(hoaDonId=${hoaDon.id})}"
                            class="btn-custom btn-return" style="min-width: 120px;">
                             <i class="fas fa-undo"></i> Trả hàng
