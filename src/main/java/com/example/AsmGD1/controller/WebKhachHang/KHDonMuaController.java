@@ -3,6 +3,7 @@ package com.example.AsmGD1.controller.WebKhachHang;
 import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
+import com.example.AsmGD1.repository.BanHang.DonHangPhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
@@ -104,6 +105,9 @@ public class KHDonMuaController {
 
     @Autowired
     private ChienDichGiamGiaService chienDichGiamGiaService;
+    @Autowired
+    private DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
+
 
 
 
@@ -271,68 +275,118 @@ public class KHDonMuaController {
     }
 
     @GetMapping("/chi-tiet/{id}")
-    public String chiTietDonHang(@PathVariable("id") UUID id, Model model, Authentication authentication) {
+    public String chiTietDonHang(@PathVariable("id") UUID id,
+                                 Model model,
+                                 Authentication authentication) {
+
+        // 1) Bảo vệ đăng nhập
         if (authentication == null || !authentication.isAuthenticated()) {
             return "redirect:/dang-nhap";
         }
-
         UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
         if (nguoiDungId == null) {
             return "redirect:/dang-nhap";
         }
-
         NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
         if (nguoiDung == null) {
             return "redirect:/dang-nhap";
         }
 
+        // 2) Tải hóa đơn và kiểm tra quyền sở hữu
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+        if (hoaDon == null || hoaDon.getDonHang() == null
+                || hoaDon.getDonHang().getNguoiDung() == null
+                || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return "redirect:/dsdon-mua";
         }
 
+        // 3) Định dạng tiền
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-        hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
+        hoaDon.setFormattedTongTien(
+                hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0"
+        );
 
+        // 4) Bơm thông tin giảm giá theo chiến dịch (nếu có) cho từng dòng sản phẩm
         for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
-            chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
+            chiTiet.setFormattedGia(
+                    chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0"
+            );
 
-            // Lấy thông tin giảm giá từ ChiTietSanPham
             ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
-            Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
-            if (activeCampaign.isPresent()) {
-                ChienDichGiamGia campaign = activeCampaign.get();
-                ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
-                chiTietSanPhamDto.setId(chiTietSanPham.getId());
-                chiTietSanPhamDto.setGia(chiTietSanPham.getGia());
-                chiTietSanPhamDto.setOldPrice(chiTietSanPham.getGia());
-                chiTietSanPhamDto.setDiscountPercentage(campaign.getPhanTramGiam());
-                chiTietSanPhamDto.setDiscountCampaignName(campaign.getTen());
+            if (chiTietSanPham != null) {
+                Optional<ChienDichGiamGia> activeCampaign =
+                        chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
 
-                // Tính giá sau giảm
-                BigDecimal discount = chiTietSanPham.getGia()
-                        .multiply(campaign.getPhanTramGiam())
-                        .divide(BigDecimal.valueOf(100));
-                chiTietSanPhamDto.setGia(chiTietSanPham.getGia().subtract(discount));
-                chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
+                if (activeCampaign.isPresent()) {
+                    ChienDichGiamGia campaign = activeCampaign.get();
 
-                // Gán DTO vào chiTiet để sử dụng trong view
-                chiTiet.setChiTietSanPhamDto(chiTietSanPhamDto);
-                chiTiet.setFormattedGia(formatter.format(chiTietSanPhamDto.getGia()));
+                    ChiTietSanPhamDto dto = new ChiTietSanPhamDto();
+                    dto.setId(chiTietSanPham.getId());
+                    dto.setGia(chiTietSanPham.getGia());
+                    dto.setOldPrice(chiTietSanPham.getGia());
+                    dto.setDiscountPercentage(campaign.getPhanTramGiam());
+                    dto.setDiscountCampaignName(campaign.getTen());
+
+                    // Giá sau giảm
+                    BigDecimal discount = chiTietSanPham.getGia()
+                            .multiply(campaign.getPhanTramGiam())
+                            .divide(BigDecimal.valueOf(100));
+                    dto.setGia(chiTietSanPham.getGia().subtract(discount));
+                    dto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
+
+                    // Gán DTO vào chi tiết
+                    chiTiet.setChiTietSanPhamDto(dto);
+                    chiTiet.setFormattedGia(formatter.format(dto.getGia()));
+                }
             }
         }
 
+        // 5) Lấy trạng thái hiện tại
         String currentStatus = hoaDonService.getCurrentStatus(hoaDon);
+
+        // 6) Lấy chi tiết từng phiếu giảm giá áp cho đơn (ORDER/SHIPPING)
+        // Cần khai báo @Autowired DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
+        List<DonHangPhieuGiamGia> allVouchers =
+                donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+
+        List<DonHangPhieuGiamGia> voucherOrder = allVouchers.stream()
+                .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        List<DonHangPhieuGiamGia> voucherShip = allVouchers.stream()
+                .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        // (Tuỳ chọn) Tổng của từng nhóm – nếu muốn dùng ở View
+        BigDecimal tongGiamOrder = voucherOrder.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal tongGiamShip = voucherShip.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 7) Đẩy dữ liệu ra view
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
         model.addAttribute("currentStatus", currentStatus);
-        model.addAttribute("statusHistory", hoaDon.getLichSuHoaDons() != null ? hoaDon.getLichSuHoaDons() : new ArrayList<>());
+        model.addAttribute("statusHistory",
+                hoaDon.getLichSuHoaDons() != null ? hoaDon.getLichSuHoaDons() : new ArrayList<>());
+
+        // các list chi tiết phiếu để render bảng/khối “Chi tiết giảm giá”
+        model.addAttribute("voucherOrder", voucherOrder);
+        model.addAttribute("voucherShip", voucherShip);
+        model.addAttribute("tongGiamOrder", tongGiamOrder);
+        model.addAttribute("tongGiamShip", tongGiamShip);
 
         return "WebKhachHang/chi-tiet-don-mua";
     }
+
 
     @GetMapping("/danh-gia/{id}")
     public String danhGiaPage(@PathVariable("id") UUID id,

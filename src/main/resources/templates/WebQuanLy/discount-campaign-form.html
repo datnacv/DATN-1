@@ -86,22 +86,22 @@
                                 <label class="form-label">Tên chiến dịch</label>
                                 <input type="text" class="form-control"
                                        th:field="*{ten}"
-                                       required maxlength="100"
-                                       th:readonly="${isReadOnly or !isAdmin}"
+                                       required minlength="6" maxlength="100"
                                        oninput="this.setCustomValidity('')"
-                                       onblur="validateTen(this)"
-                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), phải là các từ cách nhau đúng 1 khoảng trắng. Cho phép khoảng trắng ở đầu/cuối. Tối thiểu 6 ký tự (không tính khoảng trắng).')">
-
+                                       onblur="validateTen(this); if(this.checkValidity()) normalizeTen(this);"
+                                       oninvalid="this.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng), chỉ gồm chữ (có dấu), giữa các từ chỉ được 1 khoảng trắng, và không có khoảng trắng ở đầu/cuối.')">
                             </div>
 
                             <!-- PHẦN TRĂM: số nguyên 1..100 -->
+                            <!-- PHẦN TRĂM: số nguyên 1..99 -->
                             <div class="col-md-4">
                                 <label class="form-label">% Giảm</label>
                                 <input type="number" class="form-control" th:field="*{phanTramGiam}" required
-                                       min="1" max="100" step="1"
+                                       min="1" max="99" step="1"
                                        oninput="validatePercentInt(this)"
-                                       oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 100.')">
+                                       oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 99.')">
                             </div>
+
 
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
@@ -293,9 +293,10 @@
         const v = el.value;
         const intOk = /^\d+$/.test(v);
         const num = Number(v);
-        const ok = intOk && num >= 1 && num <= 100;
-        el.setCustomValidity(ok || v==='' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 100.');
+        const ok = intOk && num >= 1 && num <= 99;
+        el.setCustomValidity(ok || v==='' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 99.');
     }
+
 
     // ======= (giữ nguyên) các biến & hàm chọn SP/CTSP, pagination... =======
     const STORAGE_KEYS = { selectedProducts:'selectedProductIds', selectedDetails:'selectedDetailIds' };
