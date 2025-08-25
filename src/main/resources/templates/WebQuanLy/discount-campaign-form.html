@@ -69,26 +69,29 @@
                     <div class="card">
                         <div class="card-header">Thông tin chiến dịch giảm giá</div>
                         <div class="card-body row g-3">
-                            <!-- MA: chỉ chữ & số, viết liền -->
+                            <!-- MÃ: 6..50, chữ & số, viết liền -->
                             <div class="col-md-4">
                                 <label class="form-label">Mã chiến dịch</label>
-                                <!-- cho phép gõ space khi đang nhập -->
-                                <input type="text" class="form-control" th:field="*{ma}" required
+                                <input type="text" class="form-control"
+                                       th:field="*{ma}"
+                                       required minlength="6" maxlength="50"
                                        pattern="[A-Za-z0-9]+"
                                        oninput="this.setCustomValidity('')"
                                        onblur="normalizeMa(this); validateMa(this)"
-                                       oninvalid="this.setCustomValidity('Vui lòng nhập mã gồm chữ và số, viết liền, không ký tự đặc biệt.')">
+                                       oninvalid="this.setCustomValidity('Mã phải từ 6–50 ký tự, chỉ gồm chữ và số, viết liền, không ký tự đặc biệt.')">
                             </div>
 
-                            <!-- TEN: chỉ chữ, giữa từ cách 1 space -->
+                            <!-- TÊN: không cho khoảng trắng đầu/cuối; giữa các từ chỉ 1 khoảng; chỉ chữ; >=6 ký tự (không tính khoảng) -->
                             <div class="col-md-4">
                                 <label class="form-label">Tên chiến dịch</label>
-                                <!-- cho phép space đầu khi đang gõ -->
-                                <input type="text" class="form-control" th:field="*{ten}" required maxlength="100"
-                                       pattern="[\p{L}]+( [\p{L}]+)*"
+                                <input type="text" class="form-control"
+                                       th:field="*{ten}"
+                                       required maxlength="100"
+                                       th:readonly="${isReadOnly or !isAdmin}"
                                        oninput="this.setCustomValidity('')"
-                                       onblur="normalizeTen(this); validateTen(this)"
-                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.')">
+                                       onblur="validateTen(this)"
+                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), phải là các từ cách nhau đúng 1 khoảng trắng. Cho phép khoảng trắng ở đầu/cuối. Tối thiểu 6 ký tự (không tính khoảng trắng).')">
+
                             </div>
 
                             <!-- PHẦN TRĂM: số nguyên 1..100 -->
@@ -125,7 +128,7 @@
                     </div>
                 </div>
 
-                <!-- Danh sách SP + Chi tiết SP (giữ nguyên logic hiện tại) -->
+                <!-- Danh sách SP + Chi tiết SP -->
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">Danh sách sản phẩm</div>
@@ -231,26 +234,63 @@
     }
     function validateMa(el){
         if(!el) return;
-        const ok = /^[A-Za-z0-9]+$/.test(el.value);
-        el.setCustomValidity(ok || el.value==='' ? '' : 'Mã chỉ gồm chữ và số, viết liền, không ký tự đặc biệt.');
+        const v = (el.value || '');
+        const lenOk = v.length >= 6 && v.length <= 50;
+        const formatOk = /^[A-Za-z0-9]+$/.test(v);
+        const ok = (!v || (lenOk && formatOk));
+        el.setCustomValidity(ok ? '' : (!lenOk
+            ? 'Mã phải từ 6 đến 50 ký tự.'
+            : 'Mã chỉ gồm chữ và số, viết liền, không ký tự đặc biệt.'));
     }
 
+    // KHÔNG normalize ngay – chỉ normalize SAU KHI hợp lệ
     function normalizeTen(el){
         if(!el) return;
-        // .trim() + gộp nhiều space thành 1
+        // trim + gộp nhiều khoảng thành 1 (sau khi đã pass validate)
         el.value = (el.value || '').trim().replace(/\s+/g,' ');
     }
+
     function validateTen(el){
         if(!el) return;
-        const val = el.value;
-        const ok = /^[\p{L}]+(?: [\p{L}]+)*$/u.test(val);
-        el.setCustomValidity(ok || val==='' ? '' : 'Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.');
+        const raw = el.value || '';
+
+        if (raw === '') { el.setCustomValidity(''); return; } // required xử lý riêng
+
+        // Lấy nội dung để kiểm tra: cắt đầu/cuối CHỈ để kiểm tra (KHÔNG gán ngược)
+        const trimmed = raw.trim();
+
+        // 1) Không cho 2+ khoảng trắng liên tiếp ở GIỮA
+        if (/\s{2,}/.test(trimmed)) {
+            el.setCustomValidity('Giữa các từ chỉ được 1 khoảng trắng.');
+            return;
+        }
+
+        // 2) Chỉ chữ theo từng từ (có thể có 1 space giữa các từ)
+        if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(trimmed)) {
+            el.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng.');
+            return;
+        }
+
+        // 3) Độ dài không tính khoảng trắng ≥ 6
+        const nonSpaceLen = trimmed.replace(/\s+/g,'').length;
+        if (nonSpaceLen < 6) {
+            el.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).');
+            return;
+        }
+
+        // 4) Tối đa 100 ký tự tổng thể (tuỳ bạn giữ luật này)
+        if (trimmed.length > 100) {
+            el.setCustomValidity('Tên tối đa 100 ký tự.');
+            return;
+        }
+
+        el.setCustomValidity('');
     }
+
 
     function validatePercentInt(el){
         if(!el) return;
         const v = el.value;
-        // chỉ cho số nguyên 1..100
         const intOk = /^\d+$/.test(v);
         const num = Number(v);
         const ok = intOk && num >= 1 && num <= 100;
@@ -422,21 +462,28 @@
         if(percent){
             percent.addEventListener('input', function(){ validatePercentInt(percent); });
         }
-        // Cho phép gõ thoải mái lúc nhập, chỉ chuẩn hoá khi blur
+        // Cho phép gõ thoải mái lúc nhập, validate khi blur
         if(maInput){
             maInput.addEventListener('input', ()=> maInput.setCustomValidity(''));
             maInput.addEventListener('blur', ()=>{ normalizeMa(maInput); validateMa(maInput); });
         }
         if(tenInput){
             tenInput.addEventListener('input', ()=> tenInput.setCustomValidity(''));
-            tenInput.addEventListener('blur',  ()=>{ normalizeTen(tenInput); validateTen(tenInput); });
+            // VALIDATE trước, nếu hợp lệ mới normalize
+            tenInput.addEventListener('blur',  ()=>{
+                validateTen(tenInput);
+                if (tenInput.checkValidity()) normalizeTen(tenInput);
+            });
         }
 
         const confirmModalEl=document.getElementById('confirmCreateModal');
         confirmModalEl.addEventListener('show.bs.modal', function(event){
-            // Chuẩn hoá MA/TEN trước khi mở modal
+            // Validate trước, nếu OK mới normalize
             if(maInput){ normalizeMa(maInput); validateMa(maInput); }
-            if(tenInput){ normalizeTen(tenInput); validateTen(tenInput); }
+            if(tenInput){
+                validateTen(tenInput);
+                if (tenInput.checkValidity()) normalizeTen(tenInput);
+            }
             if(percent){ validatePercentInt(percent); }
             if(!form.checkValidity()){
                 event.preventDefault();
@@ -463,12 +510,15 @@
 
     document.getElementById("confirmSubmitBtn").addEventListener("click", function(){
         const form=document.getElementById("discountForm");
-        // Lần cuối: chuẩn hoá + validate
         const maInput=form.querySelector('input[name="ma"]');
         const tenInput=form.querySelector('input[name="ten"]');
         const percent=form.querySelector('input[name="phanTramGiam"]');
+
         if(maInput){ normalizeMa(maInput); validateMa(maInput); }
-        if(tenInput){ normalizeTen(tenInput); validateTen(tenInput); }
+        if(tenInput){
+            validateTen(tenInput);
+            if (tenInput.checkValidity()) normalizeTen(tenInput);
+        }
         if(percent){ validatePercentInt(percent); }
 
         saveSelections();

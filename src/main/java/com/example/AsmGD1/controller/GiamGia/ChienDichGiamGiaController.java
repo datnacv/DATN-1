@@ -75,6 +75,11 @@ public class ChienDichGiamGiaController {
         // trim rồi loại toàn bộ khoảng trắng bên trong để đảm bảo "viết liền"
         return s.trim().replaceAll("\\s+", "");
     }
+    // >>> Thêm: chuẩn hoá keyword cho tìm kiếm (trim + gộp khoảng)
+    private String normalizeSearchKeyword(String s) {
+        if (s == null) return null;
+        return s.trim().replaceAll("\\s+", " ");
+    }
 
     // ===== List =====
     @GetMapping
@@ -93,6 +98,9 @@ public class ChienDichGiamGiaController {
         if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
             return "redirect:/login";
         }
+
+        // >>> Thêm: chuẩn hoá keyword để "cách một khoảng" vẫn tìm được
+        keyword = normalizeSearchKeyword(keyword);
 
         Pageable pageable = PageRequest.of(
                 page, size,
@@ -260,6 +268,11 @@ public class ChienDichGiamGiaController {
             ChienDichGiamGia chienDich = chienDichService.timTheoId(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
+            // >>> Strip .00 để input hiển thị "12" thay vì "12.00"
+            if (chienDich.getPhanTramGiam() != null) {
+                chienDich.setPhanTramGiam(chienDich.getPhanTramGiam().stripTrailingZeros());
+            }
+
             String status = getStatus(chienDich);
             boolean isReadOnly = !"UPCOMING".equals(status);
 
@@ -306,6 +319,7 @@ public class ChienDichGiamGiaController {
         }
     }
 
+
     // ===== Update submit =====
     @PostMapping("/update")
     public String capNhatChienDich(@ModelAttribute("chienDich") ChienDichGiamGia chienDich,
@@ -343,6 +357,11 @@ public class ChienDichGiamGiaController {
             List<UUID> danhSachChiTietId = parseCsvUuids(selectedIdsRaw);
             String error = validateChienDich(chienDich, danhSachChiTietId, false, chienDichCu);
             if (error != null) {
+                // >>> Strip .00 trước khi render lại form lỗi
+                if (chienDich.getPhanTramGiam() != null) {
+                    chienDich.setPhanTramGiam(chienDich.getPhanTramGiam().stripTrailingZeros());
+                }
+
                 model.addAttribute("errorMessage", error);
 
                 Pageable pageable = PageRequest.of(0, 10);
@@ -378,6 +397,7 @@ public class ChienDichGiamGiaController {
         }
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
+
 
     // ===== APIs phụ trợ =====
     @GetMapping("/chi-tiet-san-pham")
@@ -465,11 +485,17 @@ public class ChienDichGiamGiaController {
                 .collect(Collectors.toList());
     }
 
-    private String validateChienDich(ChienDichGiamGia chienDich, List<UUID> chiTietIds, boolean isCreate, ChienDichGiamGia chienDichCu) {
-        // --- MA: không trống, chỉ chữ+số, viết liền ---
+    private String validateChienDich(ChienDichGiamGia chienDich,
+                                     List<UUID> chiTietIds,
+                                     boolean isCreate,
+                                     ChienDichGiamGia chienDichCu) {
+        // --- MÃ: không trống, chỉ chữ+số, viết liền, từ 6..50 ký tự ---
         String ma = normalizeCode(chienDich.getMa());
-        if (ma == null || ma.isEmpty() || ma.length() > 50) {
-            return "Mã chiến dịch không được để trống và tối đa 50 ký tự.";
+        if (ma == null || ma.isEmpty()) {
+            return "Mã chiến dịch không được để trống.";
+        }
+        if (ma.length() < 6 || ma.length() > 50) {
+            return "Mã chiến dịch phải từ 6 đến 50 ký tự.";
         }
         if (!ma.matches("^[A-Za-z0-9]+$")) {
             return "Mã chiến dịch chỉ được chứa chữ và số, viết liền, không ký tự đặc biệt.";
@@ -486,17 +512,35 @@ public class ChienDichGiamGiaController {
             }
         }
 
-        // --- TEN: chỉ chữ, cách đúng 1 space giữa các từ, không trống, tối đa 100, không trùng ---
-        String ten = normalizeName(chienDich.getTen());
-        if (ten == null || ten.isEmpty() || ten.length() > 100) {
-            return "Tên chiến dịch không được để trống và tối đa 100 ký tự.";
+        // --- TÊN: cho phép khoảng trắng đầu/cuối; GIỮA CÁC TỪ chỉ được 1 khoảng trắng; chỉ chữ; ≥6 ký tự (không tính khoảng) ---
+        String tenRaw = chienDich.getTen();
+        if (tenRaw == null || tenRaw.isBlank()) {
+            return "Tên chiến dịch không được để trống.";
         }
-        if (!ten.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
+        String tenTrim = tenRaw.trim();
+
+        // Không cho 2+ khoảng trắng liên tiếp ở giữa các từ
+        if (tenTrim.matches(".*\\s{2,}.*")) {
+            return "Giữa các từ chỉ được 1 khoảng trắng.";
+        }
+        // Chỉ chữ theo từng từ (có thể có đúng 1 khoảng giữa các từ)
+        if (!tenTrim.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
             return "Tên chỉ được chứa chữ (có dấu), giữa các từ cách đúng 1 khoảng trắng, không số/ký tự đặc biệt.";
         }
+        // Độ dài không tính khoảng trắng ≥ 6
+        int tenNonSpaceLen = tenTrim.replaceAll("\\s+", "").length();
+        if (tenNonSpaceLen < 6) {
+            return "Tên chiến dịch phải có ít nhất 6 ký tự (không tính khoảng trắng).";
+        }
+        // Tối đa 100 ký tự tổng thể (trên phần nội dung)
+        if (tenTrim.length() > 100) {
+            return "Tên chiến dịch tối đa 100 ký tự.";
+        }
 
-        boolean tenChanged = (chienDichCu == null) || !ten.equalsIgnoreCase(chienDichCu.getTen());
-        if (tenChanged && chienDichService.kiemTraTenTonTai(ten)) {
+        // Kiểm tra trùng tên (so sánh theo phiên bản đã trim để bỏ qua khoảng trắng đầu/cuối)
+        String tenCuTrim = (chienDichCu == null || chienDichCu.getTen() == null) ? "" : chienDichCu.getTen().trim();
+        boolean tenChanged = (chienDichCu == null) || !tenTrim.equalsIgnoreCase(tenCuTrim);
+        if (tenChanged && chienDichService.kiemTraTenTonTai(tenTrim)) {
             return "Tên chiến dịch đã tồn tại.";
         }
 
@@ -532,9 +576,62 @@ public class ChienDichGiamGiaController {
             return "Vui lòng chọn ít nhất một chi tiết sản phẩm.";
         }
 
-        // Ghi đè lại dữ liệu đã chuẩn hoá để lưu
+        // Ghi đè lại dữ liệu đã chuẩn hoá/chuẩn xác để lưu
         chienDich.setMa(ma);
-        chienDich.setTen(ten);
+        // LƯU Ý: Giữ nguyên khoảng trắng đầu/cuối theo yêu cầu -> set giá trị gốc
+        // Nếu muốn lưu sạch khoảng trắng đầu/cuối, thay bằng: chienDich.setTen(tenTrim);
+        chienDich.setTen(tenRaw);
+
         return null;
+    }
+
+
+
+    @GetMapping("/statuses")
+    @ResponseBody
+    public Map<String, String> layTrangThaiTheoIds(
+            @RequestParam("ids") List<UUID> ids
+    ) {
+        // Cho phép cả admin & employee xem danh sách, nếu muốn siết chặt thì bật check tương tự danhSach()
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> result = new LinkedHashMap<>();
+        for (UUID id : ids) {
+            chienDichService.timTheoId(id).ifPresent(cd -> {
+                result.put(id.toString(), getStatus(cd)); // UPCOMING | ONGOING | ENDED
+            });
+        }
+        return result;
+    }
+
+    // >>> Thêm: API gợi ý từ khoá (auto-suggest)
+    @GetMapping("/suggest")
+    @ResponseBody
+    public List<String> goiY(@RequestParam("q") String q,
+                             @RequestParam(name = "limit", defaultValue = "8") int limit) {
+        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) return List.of();
+
+        String kw = normalizeSearchKeyword(q);
+        if (kw == null || kw.isEmpty()) return List.of();
+
+        Pageable pageable = PageRequest.of(0, Math.max(1, Math.min(limit, 20)),
+                Sort.by(Sort.Direction.DESC, "thoiGianTao", "id"));
+
+        Page<ChienDichGiamGia> page = chienDichService.locChienDich(kw, null, null, null, null, pageable);
+
+        LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+        for (ChienDichGiamGia cd : page.getContent()) {
+            if (cd.getTen() != null && !cd.getTen().isBlank()) suggestions.add(cd.getTen());
+            if (cd.getMa()  != null && !cd.getMa().isBlank())  suggestions.add(cd.getMa());
+            if (cd.getPhanTramGiam() != null) {
+                String pt = cd.getPhanTramGiam().stripTrailingZeros().toPlainString();
+                suggestions.add(pt);
+                suggestions.add(pt + "%");
+            }
+            if (suggestions.size() >= limit) break;
+        }
+        return suggestions.stream().limit(limit).toList();
     }
 }

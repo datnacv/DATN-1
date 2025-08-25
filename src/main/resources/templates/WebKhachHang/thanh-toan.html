@@ -1351,7 +1351,7 @@
 
                 <!-- SHIPPING -->
                 <!-- SHIPPING -->
-                <div class="mb-3">
+                <div class="mb-3" id="ship-list">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="fas fa-truck"></i>
                         <span class="fw-bold">Freeship (SHIPPING)</span>
@@ -1363,7 +1363,10 @@
                                    style="cursor:pointer;"
                                    th:attr="data-scope=${'SHIPPING'},
                       data-code=${v.ma},
-                      data-min-order=${v.giaTriGiamToiThieu}">
+                      data-min-order=${v.giaTriGiamToiThieu},
+                      data-loai=${v.loai},
+                      data-giam=${v.giaTriGiam != null ? v.giaTriGiam : 0},
+                      data-cap=${v.giaTriGiamToiDa != null ? v.giaTriGiamToiDa : 0}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${v.ten}">Tên phiếu</div>
                                     <div class="text-muted small">
@@ -1377,13 +1380,12 @@
                                         <span th:text="${#numbers.formatDecimal(v.giaTriGiamToiThieu, 0, 'POINT', 0, 'COMMA')}">0</span> VND
                                         • HSD:
                                         <span th:text="${#temporals.format(v.ngayKetThuc,'d/M/yyyy')}"></span>
-                                        <!-- PTTT -->
                                         • PTTT:
                                         <span th:text="${
-      #maps.containsKey(voucherPtttMapById, v.id) ? voucherPtttMapById[v.id]
-    : (#maps.containsKey(voucherPtttMapByMa, v.ma) ? voucherPtttMapByMa[v.ma]
-    : 'Tất cả')
-}">Tất cả</span>
+              #maps.containsKey(voucherPtttMapById, v.id) ? voucherPtttMapById[v.id]
+              : (#maps.containsKey(voucherPtttMapByMa, v.ma) ? voucherPtttMapByMa[v.ma]
+              : 'Tất cả')
+            }">Tất cả</span>
                                     </div>
                                 </div>
                                 <input class="form-check-input mt-1" type="radio" name="rb-ship" th:value="${v.ma}">
@@ -1392,9 +1394,10 @@
                     </th:block>
                 </div>
 
+
                 <!-- ORDER -->
                 <!-- ORDER -->
-                <div class="mt-4">
+                <div class="mt-4" id="order-list">
                     <div class="d-flex align-items-center gap-2 mb-2">
                         <i class="fas fa-receipt"></i>
                         <span class="fw-bold">Mã giảm giá đơn hàng (ORDER)</span>
@@ -1406,7 +1409,10 @@
                                    style="cursor:pointer;"
                                    th:attr="data-scope=${'ORDER'},
                       data-code=${v.ma},
-                      data-min-order=${v.giaTriGiamToiThieu}">
+                      data-min-order=${v.giaTriGiamToiThieu},
+                      data-loai=${v.loai},
+                      data-giam=${v.giaTriGiam != null ? v.giaTriGiam : 0},
+                      data-cap=${v.giaTriGiamToiDa != null ? v.giaTriGiamToiDa : 0}">
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold" th:text="${v.ten}">Tên phiếu</div>
                                     <div class="text-muted small">
@@ -1429,6 +1435,7 @@
                         </th:block>
                     </th:block>
                 </div>
+
 
 
 
@@ -1521,7 +1528,11 @@
         return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(Number(number||0)) + ' VNĐ';
     }
 
-    function onlyDigits(s) { return Number((s || '').toString().replace(/[^\d]/g, '')) || 0; }
+    function onlyDigits(s) {
+        return Number(String(s || '').replace(/[^\d]/g, '')) || 0;
+    }
+    // để không đụng các chỗ đang gọi _num ở computePotentialDiscount
+    function _num(x) { return onlyDigits(x); }
 
     function getCheckoutMode() {
         const from = new URLSearchParams(location.search).get('from');
@@ -1616,6 +1627,118 @@
         }
         document.getElementById('voucher-summary').textContent = parts.length ? parts.join(' | ') : 'Chưa chọn';
     }
+        function _num(x){ const n = Number(String(x??0).toString().replace(/[^\d.]/g,'')); return isFinite(n)? n : 0; }
+
+        function computePotentialDiscount(label, subtotal, shipping){
+        const scope = label.dataset.scope;
+        const loai  = (label.dataset.loai || '').toUpperCase();
+        const giam  = _num(label.dataset.giam);
+        const cap   = _num(label.dataset.cap);
+        const minOrder = _num(label.dataset.minOrder);
+
+        // Điều kiện cơ bản (đã phản ánh cùng logic markVoucherEligibility)
+        const okByOrder = subtotal >= minOrder;
+        const okByShip  = scope !== 'SHIPPING' || shipping > 0;
+        const eligible  = okByOrder && okByShip;
+
+        let potential = 0;
+
+        if (scope === 'ORDER'){
+        if (!eligible) return { eligible:false, potential:0 };
+        if (loai === 'PERCENT'){
+        potential = Math.floor(subtotal * giam / 100);
+    } else { // AMOUNT hoặc các loại số tiền khác
+        potential = giam;
+    }
+        if (cap > 0) potential = Math.min(potential, cap);
+        potential = Math.min(potential, subtotal);
+    } else { // SHIPPING
+        if (!eligible) return { eligible:false, potential:0 };
+        if (loai === 'FREESHIP_FULL'){
+        potential = shipping;
+    } else if (loai === 'FREESHIP_CAP'){
+        potential = Math.min(cap || shipping, shipping);
+    } else if (loai === 'PERCENT'){
+        potential = Math.floor(shipping * giam / 100);
+        if (cap > 0) potential = Math.min(potential, cap);
+        potential = Math.min(potential, shipping);
+    } else { // AMOUNT hoặc fallback
+        potential = Math.min(giam, shipping);
+    }
+    }
+        return { eligible:true, potential: Math.max(0, potential) };
+    }
+
+    function sortVouchersInModal() {
+        const modal = document.getElementById('voucherModal');
+        if (!modal) return;
+
+        // LẤY GIÁ TRỊ THỰC TỪ DOM (100.000 VNĐ -> 100000)
+        const subtotal = onlyDigits(document.getElementById('subtotal')?.textContent);
+        const shipping = onlyDigits(document.getElementById('shipping-fee')?.textContent);
+
+        const sortContainer = (containerSelector) => {
+            const box = modal.querySelector(containerSelector);
+            if (!box) return;
+
+            const items = Array.from(box.querySelectorAll('label.voucher-card'));
+            if (!items.length) return;
+
+            const scored = items.map(el => {
+                const isDisabled = el.classList.contains('voucher-disabled'); // đã set ở markVoucherEligibility
+                const { eligible, potential } = computePotentialDiscount(el, subtotal, shipping);
+                const finalEligible = !isDisabled && eligible;
+                return {
+                    el,
+                    eligible: finalEligible,
+                    potential: finalEligible ? potential : 0,
+                    code: (el.dataset.code || '')
+                };
+            });
+
+            scored.sort((a, b) => {
+                // đủ điều kiện trước, không đủ xuống dưới
+                if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+                // mức giảm tiềm năng cao lên trên
+                if (b.potential !== a.potential) return b.potential - a.potential;
+                // tie-break ổn định
+                return a.code.localeCompare(b.code);
+            });
+
+            scored.forEach(s => box.appendChild(s.el));
+        };
+
+        sortContainer('#ship-list');
+        sortContainer('#order-list');
+    }
+
+
+    // Gọi sắp xếp sau khi đánh dấu eligibility
+        const _origMarkVoucherEligibility = markVoucherEligibility;
+        markVoucherEligibility = function(){
+        _origMarkVoucherEligibility();
+        // Sau khi đánh dấu enable/disable -> sort lại
+        sortVouchersInModal();
+    };
+
+        // Khi lọc tìm kiếm trong modal xong cũng sort lại (đảm bảo thứ tự trong kết quả)
+        const _origFilterInModal = filterVouchersInModal;
+        filterVouchersInModal = function(term){
+        _origFilterInModal(term);
+        sortVouchersInModal();
+    };
+
+        // An toàn: khi mở modal lần đầu, tính & sort
+        document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('voucherModal');
+        if (modalEl){
+        modalEl.addEventListener('shown.bs.modal', () => {
+        if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
+        sortVouchersInModal();
+    });
+    }
+    });
+
 
     async function loadDistricts(provinceId, target = "district") {
         try {
