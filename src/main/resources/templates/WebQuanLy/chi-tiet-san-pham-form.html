@@ -2196,9 +2196,14 @@
             const productDetailId = $(this).data('id');
             const newStatus = $(this).is(':checked');
             const statusLabel = $(this).next('.form-check-label');
+            const toggleElement = $(this); // Lưu reference để dùng trong callback
 
             const row = $(this).closest('tr');
-            const stockQuantity = parseInt(row.find('td').eq(13).text()) || 0;
+            // Sửa lại index column - kiểm tra đúng cột số lượng tồn
+            const stockQuantityText = row.find('td').eq(8).text().trim(); // Cột "Số lượng tồn" là cột thứ 9 (index 8)
+            const stockQuantity = parseInt(stockQuantityText) || 0;
+
+            console.log('Stock quantity:', stockQuantity, 'New status:', newStatus); // Debug
 
             if (newStatus && stockQuantity === 0) {
                 showToast('Không thể bật trạng thái "Đang Bán" khi số lượng tồn kho bằng 0.', 'warning');
@@ -2212,6 +2217,7 @@
                 return;
             }
 
+            // Cập nhật label ngay lập tức
             statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
 
             $.ajax({
@@ -2224,16 +2230,22 @@
                 }),
                 success: function (response) {
                     if (response.success) {
-                        showToast(response.message, 'success');
+                        showToast(response.message || 'Cập nhật trạng thái thành công!', 'success');
+                        // Đảm bảo UI được cập nhật đúng
+                        toggleElement.prop('checked', newStatus);
+                        statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
                     } else {
-                        showToast(response.message, 'error');
-                        $(this).prop('checked', !newStatus);
+                        showToast(response.message || 'Có lỗi xảy ra', 'error');
+                        // Revert lại trạng thái cũ
+                        toggleElement.prop('checked', !newStatus);
                         statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                     }
                 },
                 error: function (xhr) {
-                    showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseText || xhr.statusText), 'error');
-                    $(this).prop('checked', !newStatus);
+                    console.error('Ajax error:', xhr); // Debug
+                    showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseJSON?.message || xhr.responseText || xhr.statusText), 'error');
+                    // Revert lại trạng thái cũ
+                    toggleElement.prop('checked', !newStatus);
                     statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                 }
             });
