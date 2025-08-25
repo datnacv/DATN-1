@@ -624,6 +624,17 @@
       color: #dc2626;
     }
 
+    .timeline-step.completed:not(.cancel)[data-status="Đã trả hàng"] .step-icon,
+    .timeline-step.completed:not(.cancel)[data-status="Đã trả hàng một phần"] .step-icon {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
+    }
+
+    .timeline-step.completed:not(.cancel)[data-status="Đã trả hàng"] .step-label,
+    .timeline-step.completed:not(.cancel)[data-status="Đã trả hàng một phần"] .step-label {
+      color: #d97706;
+    }
+
     /* Responsive improvements */
     @media (max-width: 768px) {
       body { padding-top: 100px; }
@@ -704,6 +715,16 @@
     .timeline-step.completed[data-status="Đã đổi sản phẩm"] .step-label {
       color: #059669;
     }
+
+    /* Đã trả hàng */
+    .timeline-step.completed:not(.cancel)[data-status="Đã trả hàng"] .step-icon {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
+    }
+
+    .timeline-step.completed:not(.cancel)[data-status="Đã trả hàng"] .step-label {
+      color: #d97706;
+    }
     .btn-exchange {
       background: linear-gradient(135deg, #059669 0%, #10b981 100%);
       color: white;
@@ -770,30 +791,34 @@
     </div>
 
     <!-- Enhanced Timeline -->
-    <div class="timeline-container" th:with="isCanceled=${currentStatus == 'Hủy đơn hàng'}">
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Chưa xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
+    <div class="timeline-container" th:with="isCanceled=${currentStatus == 'Hủy đơn hàng'}, isReturned=${currentStatus == 'Đã trả hàng'}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Chưa xác nhận' or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-shopping-cart"></i></div>
         <div class="step-label">Đã đặt hàng</div>
       </div>
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Đã xác nhận Online' or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-check-circle"></i></div>
         <div class="step-label">Cửa hàng xác nhận</div>
       </div>
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Đang xử lý Online' or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-cog"></i></div>
         <div class="step-label">Đang xử lý</div>
       </div>
-      <div class="timeline-step" th:classappend="${isCanceled or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
+      <div class="timeline-step" th:classappend="${isCanceled or isReturned or currentStatus == 'Đang vận chuyển' or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
         <div class="step-icon"><i class="fas fa-truck"></i></div>
         <div class="step-label">Đang vận chuyển</div>
       </div>
-      <div class="timeline-step" th:classappend="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
+      <div class="timeline-step" th:classappend="${isReturned or currentStatus == 'Vận chuyển thành công' or currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
         <div class="step-icon"><i class="fas fa-box-open"></i></div>
         <div class="step-label">Đã giao hàng</div>
       </div>
       <div class="timeline-step" th:classappend="${currentStatus == 'Hoàn thành' ? 'completed' : ''}" th:unless="${isCanceled}">
         <div class="step-icon"><i class="fas fa-user-check"></i></div>
         <div class="step-label">Đã nhận hàng</div>
+      </div>
+      <div class="timeline-step" th:classappend="${currentStatus == 'Đã trả hàng' ? 'completed' : ''}" data-status="Đã trả hàng">
+        <div class="step-icon"><i class="fas fa-undo"></i></div>
+        <div class="step-label">Đã trả hàng</div>
       </div>
       <div class="timeline-step" th:classappend="${currentStatus == 'Đã đổi hàng' ? 'completed' : ''}">
         <div class="step-icon"><i class="fas fa-exchange-alt"></i></div>
@@ -819,7 +844,12 @@
               th:attr="onclick=|requestExchange('${hoaDon.id}')|">
         <i class="fas fa-exchange-alt"></i> Yêu cầu đổi sản phẩm
       </button>
-
+      <button th:if="${currentStatus == 'Vận chuyển thành công'}"
+              class="btn-cancel"
+              th:attr="onclick=|requestReturn('${hoaDon.id}')|">
+        <i class="fas fa-undo"></i>
+        Yêu cầu trả hàng
+      </button>
       <button th:if="${currentStatus == 'Chưa xác nhận'}"
               class="btn-cancel"
               th:attr="onclick=|cancelOrder('${hoaDon.donHang.maDonHang}', '${hoaDon.id}')|">
@@ -879,26 +909,26 @@
             <span class="price font-semibold" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
           </td>
           <td>
-        <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-          <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
-        </span>
+            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
+              <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
+            </span>
             <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-          -
-        </span>
+              -
+            </span>
           </td>
           <td>
-        <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
-          <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
-        </span>
+            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
+              <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
+            </span>
             <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">
-        </span>
+            </span>
           </td>
           <td>
-        <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
-          <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
-        </span>
+            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
+              <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
+            </span>
             <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}">
-        </span>
+            </span>
           </td>
           <td>
             <span class="price font-semibold text-[#153054]" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia * chiTiet.soLuong : chiTiet.gia * chiTiet.soLuong}"></span>
@@ -929,6 +959,13 @@
           <i class="fas fa-percentage mr-2"></i>Giảm giá
         </span>
         <span class="payment-value" id="tienGiam" th:attr="data-value=${hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0}"></span>
+      </div>
+
+      <div class="payment-info" th:if="${currentStatus == 'Đã trả hàng'}">
+        <span class="payment-label">
+          <i class="fas fa-undo mr-2"></i>Trạng thái trả hàng
+        </span>
+        <span class="payment-value text-green-600" th:text="${currentStatus}"></span>
       </div>
 
       <div class="payment-info total-row">
@@ -1002,9 +1039,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
-
-  // Thêm vào cuối phần <script> trong chi-tiet-don-mua.html
-
+  // Giữ nguyên toàn bộ JavaScript như trong file gốc, chỉ cập nhật hàm updateTimeline
   document.addEventListener('DOMContentLoaded', function() {
     // Lấy mã đơn hàng từ HTML
     const maDonHangElement = document.querySelector('.order-info h3 span');
@@ -1056,6 +1091,7 @@
     function updateTimeline(currentStatus) {
       const timelineSteps = document.querySelectorAll('.timeline-step');
       const isCanceled = currentStatus === 'Hủy đơn hàng';
+      const isReturned = currentStatus === 'Đã trả hàng';
 
       // Xóa lớp 'completed' và 'cancel' khỏi tất cả các bước
       timelineSteps.forEach(step => {
@@ -1071,8 +1107,10 @@
         { status: 'Đang vận chuyển', step: 3 },
         { status: 'Vận chuyển thành công', step: 4 },
         { status: 'Hoàn thành', step: 5 },
-        { status: 'Đã đổi hàng', step: 6 },
-        { status: 'Hủy đơn hàng', step: 7 }
+        { status: 'Đã trả hàng', step: 6 },
+        { status: 'Đã trả hàng một phần', step: 6 },
+        { status: 'Đã đổi hàng', step: 7 },
+        { status: 'Hủy đơn hàng', step: 8 }
       ];
 
       // Tìm bước hiện tại
@@ -1083,9 +1121,11 @@
           const stepElement = timelineSteps[i];
           if (stepElement) {
             stepElement.classList.add('completed');
-            if (currentStatus === 'Hủy đơn hàng' && i === 7) {
+            if (currentStatus === 'Hủy đơn hàng' && i === 8) {
               stepElement.classList.add('cancel');
-            } else if (currentStatus === 'Đã đổi hàng' && i === 6) {
+            } else if ((currentStatus === 'Đã trả hàng' || currentStatus === 'Đã trả hàng một phần') && i === 6) {
+              stepElement.setAttribute('data-status', 'Đã trả hàng');
+            } else if (currentStatus === 'Đã đổi hàng' && i === 7) {
               stepElement.setAttribute('data-status', 'Đã đổi hàng');
             }
           }
@@ -1093,13 +1133,13 @@
 
         // Ẩn các bước không áp dụng khi hủy
         if (isCanceled) {
-          [3, 4, 5, 6].forEach(i => {
+          [3, 4, 5, 6, 7].forEach(i => {
             if (timelineSteps[i]) {
               timelineSteps[i].style.display = 'none';
             }
           });
         } else {
-          [3, 4, 5, 6].forEach(i => {
+          [3, 4, 5, 6, 7].forEach(i => {
             if (timelineSteps[i]) {
               timelineSteps[i].style.display = 'flex';
             }
@@ -1110,7 +1150,7 @@
       // Cập nhật chiều rộng thanh tiến trình
       const progressLine = document.querySelector('.timeline-container::after');
       const completedSteps = document.querySelectorAll('.timeline-step.completed').length;
-      const totalSteps = isCanceled ? 8 : 8; // Tổng số bước (bao gồm cả hủy)
+      const totalSteps = isCanceled ? 9 : 9; // Tổng số bước (bao gồm cả hủy)
       const progressWidth = (completedSteps / totalSteps) * 100;
       progressLine.style.width = `${progressWidth}%`;
     }
@@ -1120,7 +1160,7 @@
       const actionButtons = document.querySelector('.action-buttons');
       actionButtons.innerHTML = ''; // Xóa các nút hiện tại
 
-      // Các trạng thái cho phép hủy đơn hàng (chỉ 'Chưa xác nhận')
+      // Các trạng thái cho phép hủy đơn hàng
       const cancelableStatuses = ['Chưa xác nhận'];
 
       if (currentStatus === 'Vận chuyển thành công') {
@@ -1131,6 +1171,9 @@
                 <button class="btn-exchange" onclick="requestExchange('${hoaDonId}')">
                     <i class="fas fa-exchange-alt"></i> Yêu cầu đổi sản phẩm
                 </button>
+                <button class="btn-cancel" onclick="requestReturn('${hoaDonId}')">
+                    <i class="fas fa-undo"></i> Yêu cầu trả hàng
+                </button>
             `;
       } else if (cancelableStatuses.includes(currentStatus)) {
         actionButtons.innerHTML = `
@@ -1139,7 +1182,7 @@
                 </button>
             `;
       } else {
-        // Không hiển thị nút nào cho các trạng thái khác (bao gồm 'Đã xác nhận')
+        // Không hiển thị nút nào cho các trạng thái khác
         actionButtons.innerHTML = '';
       }
     }
@@ -1151,7 +1194,7 @@
     setInterval(updateOrderStatusAndTimeline, 1000);
   });
 
-  // Cập nhật số lượng giỏ hàng
+  // Giữ nguyên các hàm JavaScript còn lại như trong file gốc
   async function updateCartCount() {
     try {
       const response = await fetch('/api/cart', { credentials: 'include' });
@@ -1181,6 +1224,28 @@
     }).then((result) => {
       if (result.isConfirmed) {
         window.location.href = `/dsdon-mua/tra-doi-san-pham/${id}`;
+      }
+    });
+  }
+
+  function requestReturn(id) {
+    Swal.fire({
+      title: 'Yêu cầu trả hàng?',
+      text: 'Bạn có chắc chắn muốn gửi yêu cầu trả hàng cho đơn hàng này?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-undo mr-2"></i>Gửi yêu cầu',
+      cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+      confirmButtonColor: '#153054',
+      cancelButtonColor: '#6b7280',
+      customClass: {
+        popup: 'rounded-lg',
+        confirmButton: 'rounded-lg',
+        cancelButton: 'rounded-lg'
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = `/dsdon-mua/tra-hang/${id}`;
       }
     });
   }
@@ -1285,13 +1350,12 @@
     Swal.fire({
       title: 'Xác nhận đã nhận hàng?',
       html: `
-    <p style="color: red; font-weight: bold; margin-top: 10px; margin-bottom: 15px">
-      <i class="fas fa-exclamation-circle" style="color: red; margin-right: 5px;"></i>
-      Lưu ý quan trọng
-    </p>
-    <p>Sau khi xác nhận sẽ không thể yêu cầu đổi hoặc trả hàng nữa. Vui lòng kiểm tra kỹ sản phẩm trước khi xác nhận.</p>
-
-  `,
+        <p style="color: red; font-weight: bold; margin-top: 10px; margin-bottom: 15px">
+          <i class="fas fa-exclamation-circle" style="color: red; margin-right: 5px;"></i>
+          Lưu ý quan trọng
+        </p>
+        <p>Sau khi xác nhận sẽ không thể yêu cầu đổi hoặc trả hàng nữa. Vui lòng kiểm tra kỹ sản phẩm trước khi xác nhận.</p>
+      `,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: '<i class="fas fa-check mr-2"></i>Xác nhận',

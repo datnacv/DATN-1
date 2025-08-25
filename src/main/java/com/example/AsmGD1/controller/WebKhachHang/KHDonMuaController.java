@@ -105,17 +105,7 @@ public class KHDonMuaController {
     @Autowired
     private ChienDichGiamGiaService chienDichGiamGiaService;
 
-    @GetMapping("/api/orders/status")
-    public ResponseEntity<Map<String, String>> getOrderStatusByMa(@RequestParam("maDonHang") String maDonHang, Authentication authentication) {
-        // Kiểm tra authentication tương tự các method khác...
-        HoaDon hoaDon = hoaDonRepo.findByDonHang_MaDonHang(maDonHang);
-        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(getNguoiDungIdFromAuthentication(authentication))) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-        Map<String, String> response = new HashMap<>();
-        response.put("trangThai", hoaDon.getTrangThai());
-        return ResponseEntity.ok(response);
-    }
+
 
     public KHDonMuaController() {
         String os = System.getProperty("os.name").toLowerCase();
@@ -771,9 +761,8 @@ public class KHDonMuaController {
                 chiTietSanPhamRepository.save(sanPham);
             }
 
-            // Cập nhật trạng thái hóa đơn thành "Hoàn trả"
-            hoaDon.setTrangThai("Hoàn trả");
-            hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn trả", "Khách hàng yêu cầu trả hàng: " + reason);
+            hoaDon.setTrangThai("Đã trả hàng");
+            hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
             hoaDonService.save(hoaDon);
 
             // Gửi thông báo hệ thống
@@ -788,7 +777,7 @@ public class KHDonMuaController {
             String emailContent = "<h2>Thông báo yêu cầu trả hàng</h2>" +
                     "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
                     "<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
-                    "<p><strong>Trạng thái:</strong> Hoàn trả</p>" +
+                    "<p><strong>Trạng thái:</strong> Đã trả hàng</p>" +
                     "<p><strong>Lý do:</strong> " + reason + "</p>" +
                     "<p><strong>Mô tả:</strong> " + (description != null ? description : "Không có") + "</p>" +
                     "<p><strong>Tổng tiền hoàn:</strong> " + formatVND(totalReturnAmount) + "</p>" +
