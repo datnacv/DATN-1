@@ -172,6 +172,11 @@ public class HomeController {
         commonUserCart(model, authentication);
         return "WebKhachHang/list-bestsellers";
     }
+    @GetMapping("/chinh-sach")
+    public String chinhSach(Model model, Authentication authentication) {
+        commonUserCart(model, authentication);
+        return "WebKhachHang/chinh-sach";
+    }
 
     @GetMapping("/category/{id}")
     public String categoryPage(@PathVariable UUID id, Model model, Authentication authentication){
