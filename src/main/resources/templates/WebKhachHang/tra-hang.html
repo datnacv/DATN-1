@@ -264,15 +264,19 @@
             th, td { padding: 12px 8px; }
         }
 
-        /* Checkbox vô hiệu hóa */
-        input[type="checkbox"]:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
         /* Tăng khoảng cách cho cột trạng thái */
         table th:last-child, table td:last-child {
             text-align: center;
+        }
+
+        /* Thêm style cho sản phẩm không thể trả */
+        .non-returnable {
+            opacity: 0.6;
+            background-color: #f8f9fa;
+        }
+
+        .returnable-row {
+            background-color: #f0f9ff;
         }
 
         .search-suggestions {
@@ -291,71 +295,6 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        .search-suggestions.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .suggestion-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .suggestion-item:hover {
-            background-color: #f1f5f9;
-        }
-        .suggestion-item img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            margin-right: 10px;
-            border-radius: 4px;
-        }
-        .history-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-            background-color: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .history-item:hover {
-            background-color: #e2e8f0;
-        }
-        .history-item .highlight {
-            background-color: #9FD5F7;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
-        .history-item .delete-btn {
-            color: #ef4444;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 5px;
-            transition: color 0.2s;
-        }
-        .history-item .delete-btn:hover {
-            color: #b91c1c;
-        }.search-suggestions {
-             position: absolute;
-             top: 100%;
-             left: 0;
-             right: 0;
-             background: white;
-             border: 1px solid #ccc;
-             border-radius: 8px;
-             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-             z-index: 1000;
-             max-height: 300px;
-             overflow-y: auto;
-             opacity: 0;
-             visibility: hidden;
-             transition: opacity 0.3s ease, visibility 0.3s ease;
-         }
         .search-suggestions.active {
             opacity: 1;
             visibility: visible;
@@ -454,13 +393,16 @@
         <form id="returnForm" th:action="@{/dsdon-mua/api/orders/return/{id}(id=${hoaDon.id})}" method="post">
             <!-- Danh sách sản phẩm -->
             <div class="info-section">
-                <h4><i class="fas fa-box mr-2"></i>Chọn sản phẩm trả hàng</h4>
+                <h4><i class="fas fa-box mr-2"></i>Danh sách sản phẩm trả hàng</h4>
+                <p class="text-sm text-gray-600 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Tất cả sản phẩm có thể trả hàng sẽ được tự động bao gồm trong yêu cầu
+                </p>
             </div>
             <div class="product-table-container">
                 <table>
                     <thead>
                     <tr>
-                        <th><i class="fas fa-check-square mr-2"></i>Chọn</th>
                         <th><i class="fas fa-image mr-2"></i>Sản phẩm</th>
                         <th><i class="fas fa-sort-numeric-up mr-2"></i>Số lượng</th>
                         <th><i class="fas fa-tag mr-2"></i>Giá</th>
@@ -469,14 +411,9 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}">
-                        <td>
-                            <input type="checkbox" name="selectedProducts"
-                                   th:value="${chiTiet.id}"
-                                   th:attr="data-price=${chiTiet.gia},data-quantity=${chiTiet.soLuong}"
-                                   th:disabled="${chiTiet.trangThaiHoanTra}"
-                                   onchange="calculateTotal()">
-                        </td>
+                    <tr th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}"
+                        th:class="${chiTiet.trangThaiHoanTra} ? 'non-returnable' : 'returnable-row'"
+                        th:attr="data-returnable=${!chiTiet.trangThaiHoanTra},data-price=${chiTiet.gia},data-quantity=${chiTiet.soLuong},data-product-id=${chiTiet.id}">
                         <td>
                             <div class="product-info">
                                 <img th:src="${chiTiet.chiTietSanPham.hinhAnhSanPhams != null and !#lists.isEmpty(chiTiet.chiTietSanPham.hinhAnhSanPhams) ? chiTiet.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}"
@@ -503,10 +440,10 @@
                         </td>
                         <td>
             <span th:if="${chiTiet.trangThaiHoanTra}" class="text-amber-600 font-semibold">
-                <i class="fas fa-undo mr-1"></i>Đã trả hàng
+                <i class="fas fa-ban mr-1"></i>Đã trả hàng
             </span>
-                            <span th:unless="${chiTiet.trangThaiHoanTra}" class="text-gray-600">
-                <i class="fas fa-check mr-1"></i>Có thể trả
+                            <span th:unless="${chiTiet.trangThaiHoanTra}" class="text-green-600 font-semibold">
+                <i class="fas fa-check-circle mr-1"></i>Sẽ được trả
             </span>
                         </td>
                     </tr>
@@ -542,6 +479,10 @@
                 <h4 class="text-lg font-bold text-gray-700 mb-4">
                     <i class="fas fa-money-bill-wave mr-2"></i>Tổng tiền hoàn
                 </h4>
+                <div class="payment-info">
+                    <span class="payment-label">Số sản phẩm trả hàng:</span>
+                    <span class="payment-value" id="returnableCount">0</span>
+                </div>
                 <div class="payment-info total-row">
                     <span class="payment-label">Tổng tiền hoàn</span>
                     <span class="payment-value price" id="totalReturnAmount" data-value="0">0 VNĐ</span>
@@ -549,7 +490,7 @@
             </div>
 
             <div class="text-center">
-                <button type="submit" class="btn-submit">
+                <button type="submit" class="btn-submit" id="submitBtn">
                     <i class="fas fa-undo"></i> Gửi yêu cầu trả hàng
                 </button>
             </div>
@@ -600,32 +541,75 @@
 
     function calculateTotal() {
         let total = 0;
-        document.querySelectorAll('input[name="selectedProducts"]:checked').forEach(checkbox => {
-            const price = parseFloat(checkbox.getAttribute('data-price'));
-            const quantity = parseInt(checkbox.getAttribute('data-quantity'));
+        let count = 0;
+        const returnableRows = document.querySelectorAll('tr[data-returnable="true"]');
+
+        returnableRows.forEach(row => {
+            const price = parseFloat(row.getAttribute('data-price'));
+            const quantity = parseInt(row.getAttribute('data-quantity'));
             total += price * quantity;
+            count++;
         });
+
         const totalElement = document.getElementById('totalReturnAmount');
+        const countElement = document.getElementById('returnableCount');
+        const submitBtn = document.getElementById('submitBtn');
+
         totalElement.setAttribute('data-value', total);
         totalElement.textContent = formatVND(total);
+        countElement.textContent = count + ' sản phẩm';
+
+        // Vô hiệu hóa nút submit nếu không có sản phẩm nào có thể trả
+        if (count === 0) {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+    }
+
+    function addHiddenInputsForReturnableProducts() {
+        // Xóa các input ẩn cũ
+        document.querySelectorAll('input[name="selectedProducts"]').forEach(input => input.remove());
+
+        // Thêm input ẩn cho tất cả sản phẩm có thể trả
+        const returnableRows = document.querySelectorAll('tr[data-returnable="true"]');
+        const form = document.getElementById('returnForm');
+
+        returnableRows.forEach(row => {
+            const productId = row.getAttribute('data-product-id');
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'selectedProducts';
+            hiddenInput.value = productId;
+            form.appendChild(hiddenInput);
+        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        calculateTotal();
+        // Format giá tiền
         document.querySelectorAll('.price').forEach(element => {
             const value = parseFloat(element.getAttribute('data-value')) || 0;
             element.textContent = formatVND(value);
         });
 
+        // Tính tổng tiền và thêm hidden inputs
+        calculateTotal();
+        addHiddenInputsForReturnableProducts();
+
         const form = document.getElementById('returnForm');
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const selectedProducts = document.querySelectorAll('input[name="selectedProducts"]:checked');
-            if (selectedProducts.length === 0) {
+
+            const returnableCount = document.querySelectorAll('tr[data-returnable="true"]').length;
+            if (returnableCount === 0) {
                 Swal.fire({
-                    title: 'Lỗi!',
-                    text: 'Vui lòng chọn ít nhất một sản phẩm để trả hàng.',
-                    icon: 'error',
+                    title: 'Thông báo!',
+                    text: 'Không có sản phẩm nào có thể trả hàng trong đơn này.',
+                    icon: 'info',
                     confirmButtonColor: '#153054',
                     customClass: { popup: 'rounded-lg', confirmButton: 'rounded-lg' }
                 });
@@ -634,7 +618,7 @@
 
             Swal.fire({
                 title: 'Xác nhận yêu cầu trả hàng?',
-                text: 'Bạn có chắc chắn muốn gửi yêu cầu trả hàng này?',
+                html: `Bạn có chắc chắn muốn trả <strong>${returnableCount} sản phẩm</strong> trong đơn hàng này?<br><small class="text-gray-600">Tất cả sản phẩm có thể trả hàng sẽ được bao gồm trong yêu cầu.</small>`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-undo mr-2"></i>Gửi yêu cầu',
@@ -660,7 +644,7 @@
                             if (status === 200) {
                                 Swal.fire({
                                     title: 'Thành công!',
-                                    text: data.message || 'Yêu cầu trả hàng đã được gửi.',
+                                    text: data.message || 'Yêu cầu trả hàng đã được gửi thành công.',
                                     icon: 'success',
                                     confirmButtonColor: '#153054',
                                     customClass: { popup: 'rounded-lg', confirmButton: 'rounded-lg' }

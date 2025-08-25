@@ -758,8 +758,15 @@ public class HoaDonService {
             throw new IllegalArgumentException("Danh sách sản phẩm trả không hợp lệ.");
         }
 
-        BigDecimal tongTienHoan = BigDecimal.ZERO;
+        BigDecimal tongTienHangTra = BigDecimal.ZERO; // Tổng tiền hàng trả (giá gốc)
+        BigDecimal tongTienGocHoaDon = BigDecimal.ZERO; // Tổng tiền hàng gốc của hóa đơn
+
         try {
+            // Tính tổng tiền hàng gốc của hóa đơn (để tính tỷ lệ)
+            for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
+                tongTienGocHoaDon = tongTienGocHoaDon.add(chiTiet.getThanhTien());
+            }
+
             for (UUID chiTietId : chiTietDonHangIds) {
                 ChiTietDonHang chiTiet = chiTietDonHangRepository.findById(chiTietId)
                         .orElseThrow(() -> new RuntimeException("Chi tiết đơn hàng không tồn tại với ID: " + chiTietId));
@@ -778,6 +785,9 @@ public class HoaDonService {
                 chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + soLuongTra);
                 chiTietSanPhamRepository.save(chiTietSanPham);
 
+                // Cộng dồn tổng tiền hàng trả
+                tongTienHangTra = tongTienHangTra.add(chiTiet.getThanhTien());
+
                 LichSuTraHang lichSu = new LichSuTraHang();
                 lichSu.setHoaDon(hoaDon);
                 lichSu.setChiTietDonHang(chiTiet);
@@ -787,8 +797,24 @@ public class HoaDonService {
                 lichSu.setThoiGianTra(LocalDateTime.now());
                 lichSu.setTrangThai("Đã trả");
                 lichSuTraHangRepository.save(lichSu);
+            }
 
-                tongTienHoan = tongTienHoan.add(chiTiet.getThanhTien());
+            // Tính tỷ lệ hoàn trả
+            BigDecimal tyLeHoanTra = BigDecimal.ZERO;
+            if (tongTienGocHoaDon.compareTo(BigDecimal.ZERO) > 0) {
+                tyLeHoanTra = tongTienHangTra.divide(tongTienGocHoaDon, 4, RoundingMode.HALF_UP);
+            }
+
+            // Tính giảm giá tương ứng với sản phẩm hoàn trả
+            BigDecimal tienGiamHoaDon = hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO;
+            BigDecimal giamGiaHoanTra = tienGiamHoaDon.multiply(tyLeHoanTra).setScale(0, RoundingMode.HALF_UP);
+
+            // Tổng tiền hoàn thực tế = Tiền hàng trả - Giảm giá tương ứng
+            BigDecimal tongTienHoanThucTe = tongTienHangTra.subtract(giamGiaHoanTra);
+
+            // Đảm bảo không âm
+            if (tongTienHoanThucTe.compareTo(BigDecimal.ZERO) < 0) {
+                tongTienHoanThucTe = BigDecimal.ZERO;
             }
 
             List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
@@ -797,12 +823,45 @@ public class HoaDonService {
                     .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
                     .count();
 
-            hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoan));
+            // Cập nhật tổng tiền hóa đơn (trừ đi tiền hoàn thực tế)
+            hoaDon.setTongTien(hoaDon.getTongTien().subtract(tongTienHoanThucTe));
 
             String trangThaiTraHang = returnedItems == totalItems ? "Đã trả hàng" : "Đã trả hàng một phần";
-            String ghiChu = "Lý do trả hàng: " + lyDoTraHang + ". Tổng tiền hoàn trả: " + formatCurrency(tongTienHoan);
+            String ghiChu = "Lý do trả hàng: " + lyDoTraHang +
+                    ". Tổng tiền hàng trả: " + formatCurrency(tongTienHangTra) +
+                    ". Giảm giá tương ứng: " + formatCurrency(giamGiaHoanTra) +
+                    ". Tổng tiền hoàn trả thực tế: " + formatCurrency(tongTienHoanThucTe);
 
             updateStatus(hoaDonId, trangThaiTraHang, ghiChu, true);
+
+            // Xử lý hoàn tiền vào ví (nếu có)
+            if (tongTienHoanThucTe.compareTo(BigDecimal.ZERO) > 0) {
+                String pttt = hoaDon.getPhuongThucThanhToan() != null
+                        ? hoaDon.getPhuongThucThanhToan().getTenPhuongThuc().trim()
+                        : "";
+
+                if (List.of("Ví Thanh Toán", "Ví", "Chuyển khoản").contains(pttt)) {
+                    NguoiDung nguoiDung = hoaDon.getNguoiDung();
+                    if (nguoiDung != null) {
+                        ViThanhToan viThanhToan = viThanhToanRepo.findByNguoiDung(nguoiDung)
+                                .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
+                        viThanhToan.setSoDu(viThanhToan.getSoDu().add(tongTienHoanThucTe));
+                        viThanhToan.setThoiGianCapNhat(LocalDateTime.now());
+                        viThanhToanRepo.save(viThanhToan);
+
+                        LichSuGiaoDichVi lichSu = new LichSuGiaoDichVi();
+                        lichSu.setIdViThanhToan(viThanhToan.getId());
+                        lichSu.setLoaiGiaoDich("Hoàn tiền");
+                        lichSu.setSoTien(tongTienHoanThucTe);
+                        lichSu.setMoTa("Hoàn tiền trả hàng cho hóa đơn: " + hoaDon.getDonHang().getMaDonHang());
+                        lichSu.setCreatedAt(LocalDateTime.now());
+                        lichSu.setThoiGianGiaoDich(LocalDateTime.now());
+                        lichSuRepo.save(lichSu);
+                    }
+                }
+            }
+
         } catch (Exception e) {
             System.err.println("Lỗi trong processReturn: " + e.getMessage());
             throw e; // Ném lại ngoại lệ để rollback giao dịch
