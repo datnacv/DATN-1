@@ -4,6 +4,7 @@ import com.example.AsmGD1.dto.BanHang.GioHangItemDTO;
 import com.example.AsmGD1.dto.HoaDonDTO;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
+import com.example.AsmGD1.repository.BanHang.DonHangPhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
@@ -45,10 +46,8 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
@@ -90,6 +89,9 @@ public class HoaDonService {
     private PhieuGiamGiaService phieuGiamGiaService;
     @Autowired
     private LichSuDoiSanPhamRepository lichSuDoiSanPhamRepository;
+
+    @Autowired
+    private DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -207,26 +209,28 @@ public class HoaDonService {
                     .map(ChiTietDonHang::getThanhTien)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal totalDiscountAmount = BigDecimal.ZERO;
+            // Tính toán giảm giá đơn hàng và giảm giá phí vận chuyển
+            List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(donHang.getId());
+            BigDecimal tongGiamOrder = allVouchers.stream()
+                    .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal tongGiamShip = allVouchers.stream()
+                    .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal totalDiscountAmount = tongGiamOrder.add(tongGiamShip);
             String maPhieuGiamGia = "Không sử dụng";
             List<String> maPhieuList = new ArrayList<>();
             BigDecimal tienGiam = hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO;
 
-            if (!donHang.getDsPhieu().isEmpty()) {
-                for (DonHangPhieuGiamGia donHangPhieu : donHang.getDsPhieu()) {
-                    PhieuGiamGia phieuGiamGia = donHangPhieu.getPhieuGiamGia();
-                    maPhieuList.add(phieuGiamGia.getMa());
-                    BigDecimal discountAmount;
-                    if ("SHIPPING".equalsIgnoreCase(phieuGiamGia.getPhamViApDung())) {
-                        discountAmount = phieuGiamGiaService.tinhGiamPhiShip(
-                                phieuGiamGia,
-                                donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO,
-                                tongTienHang);
-                    } else {
-                        discountAmount = phieuGiamGiaService.tinhTienGiamGia(phieuGiamGia, tongTienHang);
-                    }
-                    totalDiscountAmount = totalDiscountAmount.add(discountAmount);
-                }
+            if (!allVouchers.isEmpty()) {
+                maPhieuList = allVouchers.stream()
+                        .map(voucher -> voucher.getPhieuGiamGia().getMa())
+                        .collect(Collectors.toList());
                 maPhieuGiamGia = String.join(", ", maPhieuList);
             } else if (tienGiam.compareTo(BigDecimal.ZERO) > 0) {
                 if (tienGiam.compareTo(new BigDecimal("100")) > 0) {
@@ -245,7 +249,9 @@ public class HoaDonService {
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền hàng:", formatCurrency(tongTienHang));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Phí vận chuyển:", formatCurrency(donHang.getPhiVanChuyen() != null ? donHang.getPhiVanChuyen() : BigDecimal.ZERO));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Mã phiếu giảm giá:", maPhieuGiamGia);
-            addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá:", formatCurrency(totalDiscountAmount));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá đơn hàng:", formatCurrency(tongGiamOrder));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Giảm giá phí vận chuyển:", formatCurrency(tongGiamShip));
+            addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng giảm giá:", formatCurrency(totalDiscountAmount));
             addSummaryCell(summaryTable, fontBold, fontNormal, "Tổng tiền:", formatCurrency(hoaDon.getTongTien()));
 
             BigDecimal soTienKhachDua = donHang.getSoTienKhachDua() != null ? donHang.getSoTienKhachDua() : BigDecimal.ZERO;
