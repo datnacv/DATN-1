@@ -43,7 +43,12 @@
 
         @Column(name = "thoi_gian_tao")
         private LocalDateTime thoiGianTao;
+        @Lob
+        @Column(name = "chi_tiet_snapshot_json")
+        private String chiTietSnapshotJson;
 
+        @Column(name = "snapshot_at")
+        private LocalDateTime snapshotAt;
         @OneToMany(mappedBy = "chienDichGiamGia", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
         @JsonIgnore
         private List<ChiTietSanPham> chiTietSanPhams;
