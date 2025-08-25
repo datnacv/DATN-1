@@ -653,9 +653,39 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
-        // Chỉ cho phép trả hàng khi trạng thái là "Vận chuyển thành công"
         if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
             return "redirect:/dsdon-mua";
+        }
+
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+
+        hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
+
+        for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
+            chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
+
+            ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
+            Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
+            if (activeCampaign.isPresent()) {
+                ChienDichGiamGia campaign = activeCampaign.get();
+                ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
+                chiTietSanPhamDto.setId(chiTietSanPham.getId());
+                chiTietSanPhamDto.setGia(chiTietSanPham.getGia());
+                chiTietSanPhamDto.setOldPrice(chiTietSanPham.getGia());
+                chiTietSanPhamDto.setDiscountPercentage(campaign.getPhanTramGiam());
+                chiTietSanPhamDto.setDiscountCampaignName(campaign.getTen());
+
+                BigDecimal discount = chiTietSanPham.getGia()
+                        .multiply(campaign.getPhanTramGiam())
+                        .divide(BigDecimal.valueOf(100));
+                chiTietSanPhamDto.setGia(chiTietSanPham.getGia().subtract(discount));
+                chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
+
+                chiTiet.setChiTietSanPhamDto(chiTietSanPhamDto);
+                chiTiet.setFormattedGia(formatter.format(chiTietSanPhamDto.getGia()));
+            }
         }
 
         model.addAttribute("hoaDon", hoaDon);
@@ -701,7 +731,6 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        // Chỉ cho phép trả hàng khi trạng thái là "Vận chuyển thành công"
         if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
             response.put("success", false);
             response.put("message", "Chỉ có thể gửi yêu cầu trả hàng khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
@@ -714,7 +743,6 @@ public class KHDonMuaController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
-        // Kiểm tra nếu không trả toàn bộ sản phẩm
         if (selectedProductIds.size() != hoaDon.getDonHang().getChiTietDonHangs().size()) {
             response.put("success", false);
             response.put("message", "Phải trả toàn bộ sản phẩm trong đơn hàng.");
@@ -722,7 +750,6 @@ public class KHDonMuaController {
         }
 
         try {
-            // Tính tổng tiền hoàn và xử lý từng sản phẩm
             double totalReturnAmount = 0;
             for (UUID chiTietId : selectedProductIds) {
                 ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
@@ -734,7 +761,12 @@ public class KHDonMuaController {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
                 }
 
-                BigDecimal amount = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong()));
+                // Tính giá sau giảm nếu có
+                BigDecimal finalPrice = chiTiet.getChiTietSanPhamDto() != null
+                        ? chiTiet.getChiTietSanPhamDto().getGia()
+                        : chiTiet.getGia();
+
+                BigDecimal amount = finalPrice.multiply(BigDecimal.valueOf(chiTiet.getSoLuong()));
                 totalReturnAmount += amount.doubleValue();
 
                 // Tạo bản ghi lịch sử trả hàng
@@ -761,8 +793,8 @@ public class KHDonMuaController {
                 chiTietSanPhamRepository.save(sanPham);
             }
 
-            hoaDon.setTrangThai("Đã trả hàng");
-            hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
+            hoaDon.setTrangThai("Đã trả hàng");
+            hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
             hoaDonService.save(hoaDon);
 
             // Gửi thông báo hệ thống
