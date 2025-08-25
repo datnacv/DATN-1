@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.GiamGia;
 
+import com.example.AsmGD1.dto.GiamGia.SnapshotDetailItem;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.service.GiamGia.ChienDichGiamGiaService;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
@@ -72,10 +73,8 @@ public class ChienDichGiamGiaController {
     }
     private String normalizeCode(String s) {
         if (s == null) return null;
-        // trim rồi loại toàn bộ khoảng trắng bên trong để đảm bảo "viết liền"
         return s.trim().replaceAll("\\s+", "");
     }
-    // >>> Thêm: chuẩn hoá keyword cho tìm kiếm (trim + gộp khoảng)
     private String normalizeSearchKeyword(String s) {
         if (s == null) return null;
         return s.trim().replaceAll("\\s+", " ");
@@ -99,7 +98,6 @@ public class ChienDichGiamGiaController {
             return "redirect:/login";
         }
 
-        // >>> Thêm: chuẩn hoá keyword để "cách một khoảng" vẫn tìm được
         keyword = normalizeSearchKeyword(keyword);
 
         Pageable pageable = PageRequest.of(
@@ -161,7 +159,6 @@ public class ChienDichGiamGiaController {
             return "redirect:/acvstore/chien-dich-giam-gia";
         }
 
-        // Chuẩn hoá trước khi validate
         chienDich.setMa(normalizeCode(chienDich.getMa()));
         chienDich.setTen(normalizeName(chienDich.getTen()));
 
@@ -203,7 +200,7 @@ public class ChienDichGiamGiaController {
         }
     }
 
-    // ===== View =====
+    // ===== View (đã sửa: ưu tiên snapshot khi ENDED) =====
     @GetMapping("/view/{id}")
     public String xemChiTiet(@PathVariable("id") UUID id,
                              Model model,
@@ -218,6 +215,25 @@ public class ChienDichGiamGiaController {
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
             String status = getStatus(chienDich);
 
+            // Nếu đã kết thúc, ưu tiên lấy snapshot để luôn hiển thị
+            if ("ENDED".equals(status)) {
+                List<SnapshotDetailItem> snap = chienDichService.getSnapshot(id);
+                if (snap != null && !snap.isEmpty()) {
+                    model.addAttribute("isReadOnly", true);
+                    model.addAttribute("chienDich", chienDich);
+                    model.addAttribute("status", status);
+
+                    // Bật chế độ hiển thị snapshot (view cần đọc useSnapshot + snapshotDetails)
+                    model.addAttribute("useSnapshot", true);
+                    model.addAttribute("snapshotDetails", snap);
+
+                    addUserInfoToModel(model);
+                    return "WebQuanLy/discount-campaign-view";
+                }
+                // Nếu chưa có snapshot (legacy), fallback xuống luồng “live” phía dưới
+            }
+
+            // Luồng mặc định (UPCOMING/ONGOING hoặc ENDED nhưng chưa có snapshot legacy)
             List<ChiTietSanPham> chiTietDaChon = chienDichService.layChiTietDaChonTheoChienDich(id);
 
             List<SanPham> selectedProducts = chiTietDaChon.stream()
@@ -235,6 +251,9 @@ public class ChienDichGiamGiaController {
             model.addAttribute("status", status);
             model.addAttribute("selectedProducts", selectedProducts);
             model.addAttribute("selectedDetails", chiTietDaChon);
+
+            // Không đặt thông báo nào — chỉ hiển thị dữ liệu
+            model.addAttribute("useSnapshot", false);
 
             addUserInfoToModel(model);
             return "WebQuanLy/discount-campaign-view";
@@ -268,7 +287,6 @@ public class ChienDichGiamGiaController {
             ChienDichGiamGia chienDich = chienDichService.timTheoId(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch"));
 
-            // >>> Strip .00 để input hiển thị "12" thay vì "12.00"
             if (chienDich.getPhanTramGiam() != null) {
                 chienDich.setPhanTramGiam(chienDich.getPhanTramGiam().stripTrailingZeros());
             }
@@ -319,7 +337,6 @@ public class ChienDichGiamGiaController {
         }
     }
 
-
     // ===== Update submit =====
     @PostMapping("/update")
     public String capNhatChienDich(@ModelAttribute("chienDich") ChienDichGiamGia chienDich,
@@ -341,23 +358,19 @@ public class ChienDichGiamGiaController {
                 return "redirect:/acvstore/chien-dich-giam-gia";
             }
 
-            // Chuẩn hoá input
             String incomingMa  = normalizeCode(chienDich.getMa());
             String incomingTen = normalizeName(chienDich.getTen());
 
-            // Không cho đổi mã (server-side)
             if (!chienDichCu.getMa().equalsIgnoreCase(incomingMa)) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Không được sửa mã chiến dịch.");
                 return "redirect:/acvstore/chien-dich-giam-gia/edit/" + chienDich.getId();
             }
-            // Khoá mã về mã cũ để chắc chắn
             chienDich.setMa(chienDichCu.getMa());
             chienDich.setTen(incomingTen);
 
             List<UUID> danhSachChiTietId = parseCsvUuids(selectedIdsRaw);
             String error = validateChienDich(chienDich, danhSachChiTietId, false, chienDichCu);
             if (error != null) {
-                // >>> Strip .00 trước khi render lại form lỗi
                 if (chienDich.getPhanTramGiam() != null) {
                     chienDich.setPhanTramGiam(chienDich.getPhanTramGiam().stripTrailingZeros());
                 }
@@ -387,7 +400,6 @@ public class ChienDichGiamGiaController {
                 return "WebQuanLy/discount-campaign-edit";
             }
 
-            // Giữ nguyên thời gian tạo
             chienDich.setThoiGianTao(chienDichCu.getThoiGianTao());
 
             chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
@@ -397,7 +409,6 @@ public class ChienDichGiamGiaController {
         }
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
-
 
     // ===== APIs phụ trợ =====
     @GetMapping("/chi-tiet-san-pham")
@@ -485,12 +496,10 @@ public class ChienDichGiamGiaController {
                 .collect(Collectors.toList());
     }
 
-    // ===== Helpers =====
     private String validateChienDich(ChienDichGiamGia chienDich,
                                      List<UUID> chiTietIds,
                                      boolean isCreate,
                                      ChienDichGiamGia chienDichCu) {
-        // --- MÃ: không trống, chỉ chữ+số, viết liền, từ 6..50 ký tự ---
         String ma = normalizeCode(chienDich.getMa());
         if (ma == null || ma.isEmpty()) {
             return "Mã chiến dịch không được để trống.";
@@ -502,7 +511,6 @@ public class ChienDichGiamGiaController {
             return "Mã chiến dịch chỉ được chứa chữ và số, viết liền, không ký tự đặc biệt.";
         }
 
-        // Tạo mới -> check trùng mã; Cập nhật -> cấm đổi mã
         if (isCreate) {
             if (chienDichService.kiemTraMaTonTai(ma)) {
                 return "Mã chiến dịch đã tồn tại.";
@@ -513,7 +521,6 @@ public class ChienDichGiamGiaController {
             }
         }
 
-        // --- TÊN ---
         String tenRaw = chienDich.getTen();
         if (tenRaw == null || tenRaw.isBlank()) {
             return "Tên chiến dịch không được để trống.";
@@ -538,7 +545,6 @@ public class ChienDichGiamGiaController {
             return "Tên chiến dịch đã tồn tại.";
         }
 
-        // --- % giảm: số nguyên 1..99 ---
         if (chienDich.getPhanTramGiam() == null) {
             return "Phần trăm giảm không được để trống.";
         }
@@ -554,7 +560,6 @@ public class ChienDichGiamGiaController {
             return "Phần trăm giảm phải là số nguyên từ 1 đến 99.";
         }
 
-        // --- Ngày ---
         if (chienDich.getNgayBatDau() == null || chienDich.getNgayKetThuc() == null) {
             return "Ngày bắt đầu và ngày kết thúc không được để trống.";
         }
@@ -565,64 +570,13 @@ public class ChienDichGiamGiaController {
             return "Ngày bắt đầu phải là hiện tại hoặc tương lai.";
         }
 
-        // --- Chi tiết sản phẩm ---
         if (chiTietIds == null || chiTietIds.isEmpty()) {
             return "Vui lòng chọn ít nhất một chi tiết sản phẩm.";
         }
 
-        // Ghi đè lại dữ liệu đã chuẩn hoá/chuẩn xác để lưu
         chienDich.setMa(ma);
-        chienDich.setTen(tenRaw); // giữ nguyên khoảng trắng đầu/cuối theo yêu cầu
+        chienDich.setTen(tenRaw);
 
         return null;
-    }
-
-
-    @GetMapping("/statuses")
-    @ResponseBody
-    public Map<String, String> layTrangThaiTheoIds(
-            @RequestParam("ids") List<UUID> ids
-    ) {
-        // Cho phép cả admin & employee xem danh sách, nếu muốn siết chặt thì bật check tương tự danhSach()
-        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
-            return Collections.emptyMap();
-        }
-
-        Map<String, String> result = new LinkedHashMap<>();
-        for (UUID id : ids) {
-            chienDichService.timTheoId(id).ifPresent(cd -> {
-                result.put(id.toString(), getStatus(cd)); // UPCOMING | ONGOING | ENDED
-            });
-        }
-        return result;
-    }
-
-    // >>> Thêm: API gợi ý từ khoá (auto-suggest)
-    @GetMapping("/suggest")
-    @ResponseBody
-    public List<String> goiY(@RequestParam("q") String q,
-                             @RequestParam(name = "limit", defaultValue = "8") int limit) {
-        if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) return List.of();
-
-        String kw = normalizeSearchKeyword(q);
-        if (kw == null || kw.isEmpty()) return List.of();
-
-        Pageable pageable = PageRequest.of(0, Math.max(1, Math.min(limit, 20)),
-                Sort.by(Sort.Direction.DESC, "thoiGianTao", "id"));
-
-        Page<ChienDichGiamGia> page = chienDichService.locChienDich(kw, null, null, null, null, pageable);
-
-        LinkedHashSet<String> suggestions = new LinkedHashSet<>();
-        for (ChienDichGiamGia cd : page.getContent()) {
-            if (cd.getTen() != null && !cd.getTen().isBlank()) suggestions.add(cd.getTen());
-            if (cd.getMa()  != null && !cd.getMa().isBlank())  suggestions.add(cd.getMa());
-            if (cd.getPhanTramGiam() != null) {
-                String pt = cd.getPhanTramGiam().stripTrailingZeros().toPlainString();
-                suggestions.add(pt);
-                suggestions.add(pt + "%");
-            }
-            if (suggestions.size() >= limit) break;
-        }
-        return suggestions.stream().limit(limit).toList();
     }
 }

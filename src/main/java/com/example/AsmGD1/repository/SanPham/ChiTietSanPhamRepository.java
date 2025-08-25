@@ -167,6 +167,9 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     List<ChiTietSanPham> findAvailableByProductIds(@Param("productIds") List<UUID> productIds,
                                                    @Param("now") LocalDateTime now,
                                                    @Param("excludeId") UUID excludeId);
+    @Modifying
+    @Query("UPDATE ChiTietSanPham ct SET ct.chienDichGiamGia = NULL WHERE ct.chienDichGiamGia.id = :campaignId")
+    void detachByCampaignId(@Param("campaignId") UUID campaignId);
 
     // Bulk detach CTSP khỏi campaign đã hết hạn
     @Modifying

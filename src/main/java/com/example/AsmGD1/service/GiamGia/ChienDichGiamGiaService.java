@@ -1,5 +1,6 @@
 package com.example.AsmGD1.service.GiamGia;
 
+import com.example.AsmGD1.dto.GiamGia.SnapshotDetailItem;
 import com.example.AsmGD1.entity.ChienDichGiamGia;
 import com.example.AsmGD1.entity.ChiTietSanPham;
 import org.springframework.data.domain.Page;
@@ -43,4 +44,9 @@ public interface ChienDichGiamGiaService {
 
     // NEW
     List<ChiTietSanPham> layChiTietConTrongTheoSanPham(List<UUID> productIds, UUID excludeCampaignId);
+
+    // Snapshot API mới
+    void refreshSnapshot(UUID campaignId);
+
+    List<SnapshotDetailItem> getSnapshot(UUID campaignId);
 }
