@@ -265,7 +265,7 @@
                 padding: 0 10px;
             }
         }
-    /*    chatbot*/
+        /*    chatbot*/
         #chatbot-box{
             position: fixed; bottom: 100px; right: 30px;
             width: 420px;
@@ -562,7 +562,7 @@
                      style="display:none"></div>
 
                 <div th:if="${productDetail.discountCampaignName != null}" class="text-sm text-green-600 mt-1">
-<!--                    <span th:text="'Giảm giá: ' + ${productDetail.discountCampaignName}"></span>-->
+                    <!--                    <span th:text="'Giảm giá: ' + ${productDetail.discountCampaignName}"></span>-->
                 </div>
             </div>
 
@@ -867,40 +867,40 @@
 </div>
 
 <footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px; position: relative; z-index: 1;">
-  <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-    <div>
-      <h3 class="text-lg font-bold mb-4">ACV Store</h3>
-      <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+    <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div>
+            <h3 class="text-lg font-bold mb-4">ACV Store</h3>
+            <p class="text-sm">Cửa hàng thời trang hàng đầu với các sản phẩm chất lượng và giá cả hợp lý.</p>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
+            <ul class="space-y-2">
+                <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
+                <li><a href="/all" class="hover:text-blue-300">Tất cả sản phẩm</a></li>
+                <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
+            <p class="text-sm">Địa chỉ: 330 Phố Nam Dư, Trần Phú, Hai Bà Trưng, Hà Nội, Việt Nam</p>
+            <p class="text-sm">Email: datn.acv@gmail.com</p>
+            <p class="text-sm">Hotline: 0911 006 045</p>
+            <div class="flex space-x-4 mt-4">
+                <a href="https://www.facebook.com" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://www.instagram.com" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://twitter.com" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            </div>
+        </div>
     </div>
-    <div>
-      <h3 class="text-lg font-bold mb-4">Liên kết nhanh</h3>
-      <ul class="space-y-2">
-        <li><a href="/new" class="hover:text-blue-300">Sản phẩm mới</a></li>
-        <li><a href="/all" class="hover:text-blue-300">Tất cả sản phẩm</a></li>
-        <li><a href="/bestsellers" class="hover:text-blue-300">Sản phẩm bán chạy</a></li>
-      </ul>
+    <div class="container mx-auto mt-8">
+        <div class="map-container relative overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.7142835949912!2d105.85287637508011!3d21.004087180639065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ad002fc50fd1%3A0x9a7962d208d20498!2sACV%20Store!5e0!3m2!1sen!2s!4v1755701406991!5m2!1sen!2s" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+        <p class="text-center text-sm mt-2 text-gray-300">* Bản đồ hiển thị vị trí chi nhánh chính tại ACV Store tại 330 Phố Nam Dư, Trần Phú, Hai Bà Trưng, Hà Nội. Vui lòng liên hệ để xác nhận giờ mở cửa.</p>
     </div>
-    <div>
-      <h3 class="text-lg font-bold mb-4">Liên hệ</h3>
-      <p class="text-sm">Địa chỉ: 330 Phố Nam Dư, Trần Phú, Hai Bà Trưng, Hà Nội, Việt Nam</p>
-      <p class="text-sm">Email: datn.acv@gmail.com</p>
-      <p class="text-sm">Hotline: 0911 006 045</p>
-      <div class="flex space-x-4 mt-4">
-        <a href="https://www.facebook.com" class="text-white hover:text-blue-300" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-        <a href="https://www.instagram.com" class="text-white hover:text-blue-300" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-        <a href="https://twitter.com" class="text-white hover:text-blue-300" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-      </div>
-    </div>
-  </div>
-  <div class="container mx-auto mt-8">
-    <div class="map-container relative overflow-hidden rounded-lg shadow-md transition-all duration-300 hover:shadow-lg">
-      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.7142835949912!2d105.85287637508011!3d21.004087180639065!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ad002fc50fd1%3A0x9a7962d208d20498!2sACV%20Store!5e0!3m2!1sen!2s!4v1755701406991!5m2!1sen!2s" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-    </div>
-    <p class="text-center text-sm mt-2 text-gray-300">* Bản đồ hiển thị vị trí chi nhánh chính tại ACV Store tại 330 Phố Nam Dư, Trần Phú, Hai Bà Trưng, Hà Nội. Vui lòng liên hệ để xác nhận giờ mở cửa.</p>
-  </div>
-  <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
-  <!-- Hiệu ứng nền -->
-  <div class="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%),linear-gradient(-45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%)] bg-[length:60px_60px] animate-[patternMove_20s_linear_infinite] -z-10"></div>
+    <div class="text-center mt-8 text-sm">© 2025 ACV Store. All rights reserved.</div>
+    <!-- Hiệu ứng nền -->
+    <div class="absolute top-0 left-0 w-full h-full bg-[linear-gradient(45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%),linear-gradient(-45deg,transparent_40%,rgba(0,0,0,0.02)_50%,transparent_60%)] bg-[length:60px_60px] animate-[patternMove_20s_linear_infinite] -z-10"></div>
 </footer>
 
 <button id="back-to-top" class="fixed bottom-20 right-20 bg-blue-600 text-white p-3 rounded-full shadow-lg hidden" aria-label="Quay lại đầu trang">
@@ -1246,7 +1246,7 @@
             return 'Xin lỗi, bot không phản hồi đúng định dạng.';
         }
 
-        let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
+        let cleanedMessage = data.message.replace(/\`\`\`json\n|\n\`\`\`/g, '').trim();
         console.log('Trước khi làm sạch:', cleanedMessage);
 
         cleanedMessage = cleanedMessage.replace(/[\u001F\u007F-\u009F]/g, '');
@@ -1325,6 +1325,51 @@
 </script>
 
 <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', () => {
+        const sizeOptions = document.querySelectorAll('.size-option');
+        const colorOptions = document.querySelectorAll('.color-option');
+        const mainImage = document.querySelector('.product-img');
+        const defaultImage = mainImage.src; // Ảnh mặc định khi chưa chọn size hoặc màu
+
+        // Khi chọn size hoặc color, kiểm tra và cập nhật ảnh
+        sizeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                updateMainImage();
+            });
+        });
+
+        colorOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                updateMainImage();
+            });
+        });
+
+        // Hàm kiểm tra và cập nhật ảnh chính
+        function updateMainImage() {
+            const selectedSize = document.querySelector('.size-option.active');
+            const selectedColor = document.querySelector('.color-option.active');
+
+            if (!selectedSize || !selectedColor) {
+                // Nếu chưa chọn đầy đủ, trở về ảnh mặc định
+                mainImage.src = defaultImage;
+            } else {
+                // Nếu đã chọn đầy đủ, cập nhật ảnh sản phẩm tương ứng
+                const sizeId = selectedSize.dataset.sizeId;
+                const colorId = selectedColor.dataset.colorId;
+                fetch(`/api/getChiTietSanPham?sanPhamId=${sanPhamId}&sizeId=${sizeId}&colorId=${colorId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.images && data.images.length > 0) {
+                            mainImage.src = data.images[0]; // Cập nhật ảnh theo size và màu
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Lỗi khi cập nhật ảnh:', err);
+                    });
+            }
+        }
+    });
+
     document.addEventListener("DOMContentLoaded", () => {
         const moTa = document.getElementById("moTa");
         const toggleBtn = document.getElementById("toggleBtn");
@@ -1578,9 +1623,41 @@
                 if (oldPriceElement) {
                     if (data.oldPrice && data.oldPrice !== data.gia) {
                         oldPriceElement.textContent = formatVND(data.oldPrice);
-                        oldPriceElement.style.display = 'inline-block';
+                        oldPriceElement.style.display = 'inline';
                     } else {
                         oldPriceElement.style.display = 'none';
+                    }
+                }
+
+                if (data.images && data.images.length > 0) {
+                    // Update main product image with first image of the variant
+                    const mainImage = document.querySelector('.product-img');
+                    if (mainImage) {
+                        mainImage.src = data.images[0];
+                    }
+
+                    // Update thumbnail images
+                    const thumbnailContainer = document.querySelector('.flex.space-x-2.mt-4');
+                    if (thumbnailContainer) {
+                        // Clear existing thumbnails
+                        thumbnailContainer.innerHTML = '';
+
+                        // Add new thumbnails for this variant
+                        data.images.forEach(imageUrl => {
+                            const thumbnail = document.createElement('img');
+                            thumbnail.src = imageUrl;
+                            thumbnail.alt = data.tenSanPham || 'Product image';
+                            thumbnail.className = 'thumbnail-img rounded cursor-pointer';
+
+                            // Add click event to update main image
+                            thumbnail.addEventListener('click', () => {
+                                if (mainImage) {
+                                    mainImage.src = imageUrl;
+                                }
+                            });
+
+                            thumbnailContainer.appendChild(thumbnail);
+                        });
                     }
                 }
             })
@@ -1778,7 +1855,7 @@
                                     });
                                 }
                             })
-                                .catch(error => {
+                            .catch(error => {
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Lỗi',
@@ -1828,7 +1905,7 @@
         button.addEventListener('click', () => handleProductAction(button, 'buy'));
     });
 
-        document.addEventListener("DOMContentLoaded", function () {
+    document.addEventListener("DOMContentLoaded", function () {
         const sanPhamId = /*[[${productDetail.sanPhamId}]]*/ '';
         const listEl = document.getElementById("ratings-list");
         const avgEl = document.getElementById("avg-rating");
@@ -1843,33 +1920,33 @@
         let rawData = { myReviews: [], otherReviews: [] };
         let filtered = [];
 
-            const renderStars = (n=0) => {
-                const clamped = Math.max(0, Math.min(5, Number(n) || 0));
-                const full = Math.floor(clamped);
-                const hasHalf = clamped - full >= 0.25 && clamped - full < 0.75; // nửa sao khi lệch vừa
-                const stars = [];
-                for (let i=0;i<5;i++){
-                    if (i < full) stars.push('<i class="fa-solid fa-star star-fill" aria-hidden="true"></i>');
-                    else if (i === full && hasHalf) stars.push('<i class="fa-solid fa-star-half-stroke star-fill" aria-hidden="true"></i>');
-                    else stars.push('<i class="fa-regular fa-star star-empty" aria-hidden="true"></i>');
-                }
-                return stars.join('');
-            };
+        const renderStars = (n=0) => {
+            const clamped = Math.max(0, Math.min(5, Number(n) || 0));
+            const full = Math.floor(clamped);
+            const hasHalf = (clamped - full) >= 0.25 && (clamped - full) < 0.75; // nửa sao khi lệch vừa
+            const stars = [];
+            for (let i=0;i<5;i++){
+                if (i < full) stars.push('<i class="fa-solid fa-star star-fill" aria-hidden="true"></i>');
+                else if (i === full && hasHalf) stars.push('<i class="fa-solid fa-star-half-stroke star-fill" aria-hidden="true"></i>');
+                else stars.push('<i class="fa-regular fa-star star-empty" aria-hidden="true"></i>');
+            }
+            return stars.join('');
+        };
 
-            const fmtDate = (d) => {
-        try{
-        const dt = new Date(d);
-        return dt.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
-    }catch{ return d || ''; }
-    };
+        const fmtDate = (d) => {
+            try{
+                const dt = new Date(d);
+                return dt.toLocaleDateString('vi-VN', { day:'2-digit', month:'2-digit', year:'numeric' });
+            }catch{ return d || ''; }
+        };
 
-            const buildHistogram = (reviews) => {
-                const counts = {1:0,2:0,3:0,4:0,5:0};
-                reviews.forEach(r => counts[r.rating] = (counts[r.rating]||0)+1);
-                const total = reviews.length || 1;
-                histogramEl.innerHTML = [5,4,3,2,1].map(s => {
-                    const pct = Math.round((counts[s] / total) * 100);
-                    return `
+        const buildHistogram = (reviews) => {
+            const counts = {1:0,2:0,3:0,4:0,5:0};
+            reviews.forEach(r => counts[r.rating] = (counts[r.rating]||0)+1);
+            const total = reviews.length || 1;
+            histogramEl.innerHTML = [5,4,3,2,1].map(s => {
+                const pct = Math.round((counts[s] / total) * 100);
+                return `
       <div class="hist-row" title="${pct}% đánh giá là ${s} sao">
         <span class="hist-label">${s}</span>
         <div class="hist-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}">
@@ -1877,49 +1954,49 @@
         </div>
         <span class="hist-count">${counts[s]}</span>
       </div>`;
-                }).join('');
-            };
+            }).join('');
+        };
 
 
-            const applyFilters = () => {
-        const activeStarChip = chips.find(c => c.dataset.star && c.classList.contains('active'));
-        const star = activeStarChip ? activeStarChip.dataset.star : 'all';
-        const hasMedia = chips.find(c => c.dataset.hasMedia === 'true' && c.classList.contains('active')) ? true : null;
+        const applyFilters = () => {
+            const activeStarChip = chips.find(c => c.dataset.star && c.classList.contains('active'));
+            const star = activeStarChip ? activeStarChip.dataset.star : 'all';
+            const hasMedia = chips.find(c => c.dataset.hasMedia === 'true' && c.classList.contains('active')) ? true : null;
 
-        let out = [...(rawData.myReviews||[]), ...(rawData.otherReviews||[])];
+            let out = [...(rawData.myReviews||[]), ...(rawData.otherReviews||[])];
 
-        if (star !== 'all') {
-        const s = parseInt(star);
-        out = out.filter(r => r.rating === s);
-    }
-        if (hasMedia !== null) {
-        out = out.filter(r => r.media && r.media.trim() !== '');
-    }
+            if (star !== 'all') {
+                const s = parseInt(star);
+                out = out.filter(r => r.rating === s);
+            }
+            if (hasMedia !== null) {
+                out = out.filter(r => r.media && r.media.trim() !== '');
+            }
 
-        // sort
-        switch (sortSelect.value) {
-        case 'newest': out.sort((a,b)=> new Date(b.date)-new Date(a.date)); break;
-        case 'oldest': out.sort((a,b)=> new Date(a.date)-new Date(b.date)); break;
-        case 'highest': out.sort((a,b)=> b.rating - a.rating); break;
-        case 'lowest': out.sort((a,b)=> a.rating - b.rating); break;
-    }
+            // sort
+            switch (sortSelect.value) {
+                case 'newest': out.sort((a,b)=> new Date(b.date)-new Date(a.date)); break;
+                case 'oldest': out.sort((a,b)=> new Date(a.date)-new Date(b.date)); break;
+                case 'highest': out.sort((a,b)=> b.rating - a.rating); break;
+                case 'lowest': out.sort((a,b)=> a.rating - b.rating); break;
+            }
 
-        filtered = out;
-        renderList();
-    };
+            filtered = out;
+            renderList();
+        };
 
         const avatarText = (name='?') => {
-        const t = (name||'?').trim();
-        const parts = t.split(' ');
-        const letters = (parts.length>=2 ? (parts[0][0]+parts[parts.length-1][0]) : t.slice(0,2)).toUpperCase();
-        return letters;
-    };
+            const t = (name||'?').trim();
+            const parts = t.split(' ');
+            const letters = (parts.length>=2 ? (parts[0][0]+parts[parts.length-1][0]) : t.slice(0,2)).toUpperCase();
+            return letters;
+        };
 
         const renderReview = (r, isMine=false) => {
-        const mediaHtml = r.media
-        ? r.media.split(",").filter(Boolean).map(url => `<img src="${url}" alt="media" loading="lazy" data-preview="${url}">`).join("")
-        : "";
-        return `
+            const mediaHtml = r.media
+                ? r.media.split(",").filter(Boolean).map(url => `<img src="${url}" alt="media" loading="lazy" data-preview="${url}">`).join("")
+                : "";
+            return `
       <div class="review-card ${isMine ? 'my' : ''}">
         <div class="rev-head">
           <div class="user-badge">
@@ -1937,54 +2014,54 @@
         ${mediaHtml ? `<div class="media-grid">${mediaHtml}</div>` : ''}
       </div>
     `;
-    };
+        };
 
         const renderList = () => {
-        if (!filtered.length) {
-        listEl.innerHTML = `<p class="text-gray-500">Không tìm thấy đánh giá phù hợp bộ lọc.</p>`;
-        return;
-    }
-        const mySet = new Set((rawData.myReviews||[]).map(x => x.id || JSON.stringify(x)));
-        listEl.innerHTML = filtered.map(r => {
-        const key = r.id || JSON.stringify(r);
-        const isMine = mySet.has(key);
-        return renderReview(r, isMine);
-    }).join('');
+            if (!filtered.length) {
+                listEl.innerHTML = `<p class="text-gray-500">Không tìm thấy đánh giá phù hợp bộ lọc.</p>`;
+                return;
+            }
+            const mySet = new Set((rawData.myReviews||[]).map(x => x.id || JSON.stringify(x)));
+            listEl.innerHTML = filtered.map(r => {
+                const key = r.id || JSON.stringify(r);
+                const isMine = mySet.has(key);
+                return renderReview(r, isMine);
+            }).join('');
 
-        // Lightbox preview
-        listEl.querySelectorAll('.media-grid img').forEach(img => {
-        img.addEventListener('click', () => {
-        lbImg.src = img.dataset.preview || img.src;
-        lb.classList.add('show');
-    });
-    });
-    };
+            // Lightbox preview
+            listEl.querySelectorAll('.media-grid img').forEach(img => {
+                img.addEventListener('click', () => {
+                    lbImg.src = img.dataset.preview || img.src;
+                    lb.classList.add('show');
+                });
+            });
+        };
 
         // Lightbox close
         lb.addEventListener('click', () => lb.classList.remove('show'));
         document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') lb.classList.remove('show') });
 
         const hydrateHeader = (allReviews) => {
-        const avg = allReviews.reduce((s, r) => s + (r.rating || 0), 0) / (allReviews.length || 1);
-        avgEl.textContent = (allReviews.length ? avg.toFixed(1) : '0');
-        totalEl.textContent = allReviews.length;
-        avgStarsEl.innerHTML = renderStars(avg);
-        buildHistogram(allReviews);
-    };
+            const avg = allReviews.reduce((s, r) => s + (r.rating || 0), 0) / (allReviews.length || 1);
+            avgEl.textContent = (allReviews.length ? avg.toFixed(1) : '0');
+            totalEl.textContent = allReviews.length;
+            avgStarsEl.innerHTML = renderStars(avg);
+            buildHistogram(allReviews);
+        };
 
         // actions
         chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-        // toggle single-select for star chips; multi with media chip
-        if (chip.dataset.star) {
-        chips.filter(c => c.dataset.star).forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-    } else if (chip.dataset.hasMedia === 'true') {
-        chip.classList.toggle('active');
-    }
-        applyFilters();
-    });
-    });
+            chip.addEventListener('click', () => {
+                // toggle single-select for star chips; multi with media chip
+                if (chip.dataset.star) {
+                    chips.filter(c => c.dataset.star).forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                } else if (chip.dataset.hasMedia === 'true') {
+                    chip.classList.toggle('active');
+                }
+                applyFilters();
+            });
+        });
         // set default: Tất cả active
         const defaultAll = chips.find(c => c.dataset.star === 'all');
         if (defaultAll) defaultAll.classList.add('active');
@@ -1993,39 +2070,39 @@
 
         // Fetch data (giữ nguyên endpoint/logic)
         fetch(`/api/product/${sanPhamId}/ratings`, { credentials: 'include' })
-        .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        return res.json();
-    })
-        .then(data => {
-        rawData = {
-        myReviews: data.myReviews || [],
-        otherReviews: data.otherReviews || []
-    };
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                rawData = {
+                    myReviews: data.myReviews || [],
+                    otherReviews: data.otherReviews || []
+                };
 
-        const allReviews = [...rawData.myReviews, ...rawData.otherReviews];
-        // header
-        hydrateHeader(allReviews);
+                const allReviews = [...rawData.myReviews, ...rawData.otherReviews];
+                // header
+                hydrateHeader(allReviews);
 
-        // init list
-        filtered = allReviews;
-        // default sort newest
-        filtered.sort((a,b)=> new Date(b.date)-new Date(a.date));
-        renderList();
+                // init list
+                filtered = allReviews;
+                // default sort newest
+                filtered.sort((a,b)=> new Date(b.date)-new Date(a.date));
+                renderList();
 
-        // Nếu trống
-        if (!allReviews.length) {
-        listEl.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
-    }
-    })
-        .catch(err => {
-        console.error("Lỗi khi tải đánh giá:", err);
-        listEl.innerHTML = "<p class='text-red-500'>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
-        avgEl.textContent = "0";
-        totalEl.textContent = "0";
-        avgStarsEl.innerHTML = renderStars(0);
-        histogramEl.innerHTML = "";
-    });
+                // Nếu trống
+                if (!allReviews.length) {
+                    listEl.innerHTML = "<p>Chưa có đánh giá nào cho sản phẩm này.</p>";
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi khi tải đánh giá:", err);
+                listEl.innerHTML = "<p class='text-red-500'>Lỗi khi tải đánh giá. Vui lòng thử lại sau.</p>";
+                avgEl.textContent = "0";
+                totalEl.textContent = "0";
+                avgStarsEl.innerHTML = renderStars(0);
+                histogramEl.innerHTML = "";
+            });
     });
 
 </script>

@@ -292,20 +292,17 @@ public class KhachhangSanPhamService {
         coAoDto.setTenCoAo(chiTiet.getCoAo().getTenCoAo());
         dto.setCoAo(coAoDto);
 
-        // Lấy ảnh của biến thể hiện tại
-        List<String> currentVariantImages =
-                khachHangSanPhamRepository.findProductImagesByChiTietSanPhamId(chiTiet.getId());
+        // Lấy ảnh thumbnail của màu sắc hiện tại
+        List<String> colorImages = khachHangSanPhamRepository.findProductImagesBySanPhamIdAndMauSacId(
+                chiTiet.getSanPham().getId(), chiTiet.getMauSac().getId());
 
-        // Lấy tất cả ảnh của mọi biến thể trong cùng sản phẩm
-        List<String> allProductImages =
-                khachHangSanPhamRepository.findProductImagesBySanPhamId(chiTiet.getSanPham().getId());
+        // Nếu không có ảnh cho màu sắc cụ thể, lấy ảnh mặc định của sản phẩm
+        if (colorImages == null || colorImages.isEmpty()) {
+            colorImages = List.of(chiTiet.getSanPham().getUrlHinhAnh());
+        }
 
-        // Gộp: ưu tiên ảnh của biến thể hiện tại trước, rồi đến các ảnh khác; khử trùng lặp & giữ thứ tự
-        LinkedHashSet<String> merged = new LinkedHashSet<>();
-        if (currentVariantImages != null) merged.addAll(currentVariantImages);
-        if (allProductImages != null) merged.addAll(allProductImages);
-
-        dto.setHinhAnhList(new ArrayList<>(merged));
+        // Đặt danh sách ảnh chỉ chứa ảnh của màu sắc
+        dto.setHinhAnhList(colorImages);
 
         return dto;
     }

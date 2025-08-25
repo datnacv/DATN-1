@@ -160,4 +160,12 @@ ORDER BY h.thuTu ASC
     ORDER BY SUM(ctdh.soLuong) DESC
 """)
     List<Object[]> findSanPhamBanChayWithGiaAndSold();
+
+    @Query("SELECT h.urlHinhAnh FROM HinhAnhSanPham h " +
+            "WHERE h.chiTietSanPham.sanPham.id = :sanPhamId " +
+            "AND h.chiTietSanPham.mauSac.id = :mauSacId " +
+            "AND h.chiTietSanPham.trangThai = true " +
+            "ORDER BY h.thuTu")
+    List<String> findProductImagesBySanPhamIdAndMauSacId(@Param("sanPhamId") UUID sanPhamId,
+                                                         @Param("mauSacId") UUID mauSacId);
 }
