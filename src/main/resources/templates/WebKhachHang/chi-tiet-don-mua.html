@@ -923,10 +923,32 @@
         </span>
         <span class="payment-value price" th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 36501}"></span>
       </div>
+      <!-- Giảm giá đơn (ORDER) -->
+      <!-- Giảm giá đơn (ORDER) - luôn hiện 0 nếu không có -->
+      <div class="payment-info">
+  <span class="payment-label">
+    <i class="fas fa-receipt mr-2"></i>Giảm giá đơn
+  </span>
+        <!-- dùng class price để JS tự format VND, data-value = 0 khi null -->
+        <span class="payment-value price" id="tienGiamOrder"
+              th:attr="data-value=${tongGiamOrder != null ? tongGiamOrder : 0}"></span>
+      </div>
+
+
+      <!-- Giảm phí vận chuyển (SHIPPING/FREESHIP) - luôn hiện 0 nếu không có -->
+      <div class="payment-info">
+  <span class="payment-label">
+    <i class="fas fa-ticket-alt mr-2"></i>Giảm phí vận chuyển
+  </span>
+        <span class="payment-value price" id="tienGiamShip"
+              th:attr="data-value=${tongGiamShip != null ? tongGiamShip : 0}"></span>
+      </div>
+
+
 
       <div class="payment-info">
         <span class="payment-label">
-          <i class="fas fa-percentage mr-2"></i>Giảm giá
+          <i class="fas fa-percentage mr-2"></i>Tổng giảm giá
         </span>
         <span class="payment-value" id="tienGiam" th:attr="data-value=${hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0}"></span>
       </div>
