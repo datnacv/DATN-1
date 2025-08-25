@@ -1058,15 +1058,9 @@
                         <th>Sản phẩm</th>
                         <th>Màu sắc</th>
                         <th>Kích cỡ</th>
-                        <th>Xuất xứ</th>
-                        <th>Chất liệu</th>
-                        <th>Kiểu dáng</th>
-                        <th>Tay áo</th>
-                        <th>Cổ áo</th>
-                        <th>Thương hiệu</th>
+                        <th>Giới tính</th>
                         <th>Giá</th>
                         <th>Số lượng tồn</th>
-                        <th>Giới tính</th>
                         <!-- Cập nhật header để hiển thị cột thao tác cho user có quyền chỉnh sửa -->
                         <th style="min-width: 150px;">Trạng thái</th>
                         <th th:if="${canEdit}">Thao tác</th>
@@ -1100,15 +1094,9 @@
                         <td class="fw-semibold text-dark" th:text="${pd.sanPham?.tenSanPham ?: 'N/A'}"></td>
                         <td th:text="${pd.mauSac?.tenMau ?: 'N/A'}"></td>
                         <td th:text="${pd.kichCo?.ten ?: 'N/A'}"></td>
-                        <td th:text="${pd.xuatXu?.tenXuatXu ?: 'N/A'}"></td>
-                        <td th:text="${pd.chatLieu?.tenChatLieu ?: 'N/A'}"></td>
-                        <td th:text="${pd.kieuDang?.tenKieuDang ?: 'N/A'}"></td>
-                        <td th:text="${pd.tayAo?.tenTayAo ?: 'N/A'}"></td>
-                        <td th:text="${pd.coAo?.tenCoAo ?: 'N/A'}"></td>
-                        <td th:text="${pd.thuongHieu?.tenThuongHieu ?: 'N/A'}"></td>
+                        <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
                         <td class="fw-bold" th:text="${#numbers.formatDecimal(pd.gia, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
                         <td class="fw-bold" th:text="${pd.soLuongTonKho}"></td>
-                        <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
                         <td style="min-width: 150px;">
                             <!-- Cập nhật để hiển thị switch cho user có quyền chỉnh sửa -->
                             <th:block th:if="${canEdit}">
