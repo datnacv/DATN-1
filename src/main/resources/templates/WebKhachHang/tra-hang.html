@@ -432,7 +432,6 @@
                         <th><i class="fas fa-image mr-2"></i>Sản phẩm</th>
                         <th><i class="fas fa-sort-numeric-up mr-2"></i>Số lượng</th>
                         <th><i class="fas fa-tag mr-2"></i>Đơn giá</th>
-                        <th><i class="fas fa-percentage mr-2"></i>Giảm giá</th>
                         <th><i class="fas fa-calculator mr-2"></i>Thành tiền</th>
                         <th><i class="fas fa-undo mr-2"></i>Trạng thái</th>
                     </tr>
@@ -469,21 +468,37 @@
                             </div>
                         </td>
                         <td>
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500 font-semibold" th:text="${chiTiet.chiTietSanPhamDto.discount}"></span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">0%</span>
+                <span class="price font-semibold text-[#153054]"
+                      th:attr="data-value=${(chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia) * chiTiet.soLuong}"
+                      th:text="${#numbers.formatDecimal((chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia) * chiTiet.soLuong, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
                         </td>
                         <td>
-                            <span class="price font-semibold text-[#153054]"
-                                  th:attr="data-value=${(chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia) * chiTiet.soLuong}"
-                                  th:text="${#numbers.formatDecimal((chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia) * chiTiet.soLuong, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
-                        </td>
-                        <td>
-                            <span th:if="${chiTiet.trangThaiHoanTra}" class="text-amber-600 font-semibold">
-                                <i class="fas fa-ban mr-1"></i>Đã trả hàng
-                            </span>
+                <span th:if="${chiTiet.trangThaiHoanTra}" class="text-amber-600 font-semibold">
+                    <i class="fas fa-ban mr-1"></i>Đã trả hàng
+                </span>
                             <span th:unless="${chiTiet.trangThaiHoanTra}" class="text-green-600 font-semibold">
-                                <i class="fas fa-check-circle mr-1"></i>Sẽ được trả
-                            </span>
+                    <i class="fas fa-check-circle mr-1"></i>Sẽ được trả
+                </span>
+                        </td>
+                    </tr>
+                    <!-- Add Shipping Fee Row -->
+                    <tr>
+                        <td colspan="3">
+                            <div class="product-info">
+                                <div class="product-details">
+                                    <strong>Phí vận chuyển</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                <span class="price font-semibold text-[#153054]"
+                      th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 36501}"
+                      th:text="${#numbers.formatDecimal(hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 36501, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                        </td>
+                        <td>
+                <span class="text-green-600 font-semibold">
+                    <i class="fas fa-check-circle mr-1"></i>Sẽ được trả
+                </span>
                         </td>
                     </tr>
                     </tbody>
@@ -532,7 +547,9 @@
                 </div>
                 <div class="payment-info total-row">
                     <span class="payment-label">Tổng tiền hoàn</span>
-                    <span class="payment-value price" id="totalReturnAmount" data-value="0">0 VNĐ</span>
+                    <span class="payment-value price" id="totalReturnAmount"
+                          th:attr="data-value=${hoaDon.tongTien}"
+                          th:text="${#numbers.formatDecimal(hoaDon.tongTien, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
                 </div>
             </div>
 
@@ -590,6 +607,8 @@
         let total = 0;
         let count = 0;
         const returnableRows = document.querySelectorAll('tr[data-returnable="true"]');
+        const shippingFeeElement = document.querySelector('tr:not([data-returnable]) .price'); // Select the shipping fee row
+        const shippingFee = shippingFeeElement ? parseFloat(shippingFeeElement.getAttribute('data-value')) || 0 : 0;
 
         returnableRows.forEach(row => {
             const unitPrice = parseFloat(row.getAttribute('data-unit-price'));
@@ -599,17 +618,17 @@
         });
 
         const tienGiam = parseFloat(document.getElementById('tienGiam').getAttribute('data-value')) || 0;
-        const totalReturnAmount = total - tienGiam; // Trừ đi giảm giá
+        const totalReturnAmount = total + shippingFee - tienGiam; // Include shipping fee and subtract discount
 
         const totalElement = document.getElementById('totalReturnAmount');
         const countElement = document.getElementById('returnableCount');
         const submitBtn = document.getElementById('submitBtn');
 
-        totalElement.setAttribute('data-value', Math.max(totalReturnAmount, 0)); // Đảm bảo không âm
+        totalElement.setAttribute('data-value', Math.max(totalReturnAmount, 0)); // Ensure non-negative
         totalElement.textContent = formatVND(Math.max(totalReturnAmount, 0));
         countElement.textContent = count + ' sản phẩm';
 
-        if (count === 0) {
+        if (count === 0 && shippingFee === 0) {
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.5';
             submitBtn.style.cursor = 'not-allowed';

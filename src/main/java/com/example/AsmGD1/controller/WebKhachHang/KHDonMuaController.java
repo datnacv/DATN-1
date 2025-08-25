@@ -182,7 +182,7 @@ public class KHDonMuaController {
                 case "van-chuyen-thanh-cong" -> "Vận chuyển thành công";
                 case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
-                case "da-tra-hang" -> "Hoàn trả";
+                case "da-tra-hang" -> "Đã trả hàng";
                 case "da-doi-hang" -> "Đã đổi hàng";
                 case "cho-doi-hang" -> "Chờ xử lý đổi hàng";
                 default -> "";
@@ -792,6 +792,8 @@ public class KHDonMuaController {
                 sanPham.setSoLuongTonKho(sanPham.getSoLuongTonKho() + chiTiet.getSoLuong());
                 chiTietSanPhamRepository.save(sanPham);
             }
+
+
 
             hoaDon.setTrangThai("Đã trả hàng");
             hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
