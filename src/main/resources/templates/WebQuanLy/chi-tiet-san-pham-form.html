@@ -760,6 +760,12 @@
             color: var(--primary-color);
         }
 
+        .error-message {
+            font-size: 0.875rem;
+            color: var(--error-text);
+            margin-top: 0.25rem;
+        }
+
         .qr-container {
             display: flex;
             flex-direction: column;
@@ -1476,6 +1482,35 @@
         return $('.row-check:checked').length;
     }
 
+
+    function validateNumberInput(value, fieldName) {
+        // Loại bỏ dấu chấm (.) để kiểm tra
+        const cleanValue = value.replace(/\./g, '');
+
+        // Kiểm tra trống
+        if (!cleanValue || cleanValue.trim() === '') {
+            return `${fieldName} không được để trống.`;
+        }
+
+        // Kiểm tra chỉ chứa số
+        if (!/^\d+$/.test(cleanValue)) {
+            return `${fieldName} chỉ được chứa số, không chứa ký tự đặc biệt hoặc chữ.`;
+        }
+
+        // Kiểm tra số âm
+        const numValue = parseInt(cleanValue);
+        if (numValue < 0) {
+            return `${fieldName} không được là số âm.`;
+        }
+
+        // Kiểm tra giá bán không được bằng 0
+        if (fieldName === 'Giá bán' && numValue === 0) {
+            return `${fieldName} phải lớn hơn 0.`;
+        }
+
+        return null; // Hợp lệ
+    }
+
     function showToast(message, type = "info") {
         const container = document.getElementById("toastContainer");
         if (!container) return;
@@ -1531,6 +1566,37 @@
 
     $(document).ready(function () {
         const permissions = checkUserPermissions();
+
+        // Real-time formatting và validate cho giá bán và số lượng tồn
+        $('#editPrice, #editStockQuantity, #bulkPrice, #bulkFullEditForm input[name="stockQuantity"]').on('input', function() {
+            const fieldName = $(this).closest('.floating-label').find('label').text();
+            let value = $(this).val().replace(/\./g, '');
+
+            // Chỉ cho phép số
+            if (value && !/^\d*$/.test(value)) {
+                value = value.replace(/[^0-9]/g, '');
+                $(this).val(value);
+            }
+
+            // Định dạng số với dấu chấm
+            if (value) {
+                $(this).val(formatNumber(value));
+            }
+
+            // Validate
+            const error = validateNumberInput($(this).val(), fieldName);
+            const $parent = $(this).closest('.floating-label');
+
+            // Xóa thông báo lỗi cũ
+            $parent.find('.error-message').remove();
+
+            if (error) {
+                $(this).addClass('is-invalid');
+                $parent.append(`<div class="error-message text-danger mt-1">${error}</div>`);
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
 
         $('#editChiTietSanPhamModal').on('show.bs.modal', function() {
             if (permissions.isEmployee) {
@@ -1746,13 +1812,42 @@
             }
         });
 
-        $('#bulkFullEditForm').on('submit', function(e){
+        $('#bulkFullEditForm').on('submit', function(e) {
             e.preventDefault();
-            const fd = new FormData(this);
 
-            // chuẩn hóa price
-            const p = $('#bulkPrice').val();
-            if (p) fd.set('price', parseNumber(p));
+            // Validate giá bán và số lượng tồn
+            const priceError = validateNumberInput($('#bulkPrice').val(), 'Giá bán');
+            const stockError = validateNumberInput($('input[name="stockQuantity"]').val(), 'Số lượng tồn');
+
+            // Xóa thông báo lỗi cũ
+            $('#bulkPrice').closest('.floating-label').find('.error-message').remove();
+            $('input[name="stockQuantity"]').closest('.floating-label').find('.error-message').remove();
+
+            let hasError = false;
+
+            if (priceError) {
+                $('#bulkPrice').addClass('is-invalid');
+                $('#bulkPrice').closest('.floating-label').append(`<div class="error-message text-danger mt-1">${priceError}</div>`);
+                hasError = true;
+            } else {
+                $('#bulkPrice').removeClass('is-invalid');
+            }
+
+            if (stockError) {
+                $('input[name="stockQuantity"]').addClass('is-invalid');
+                $('input[name="stockQuantity"]').closest('.floating-label').append(`<div class="error-message text-danger mt-1">${stockError}</div>`);
+                hasError = true;
+            } else {
+                $('input[name="stockQuantity"]').removeClass('is-invalid');
+            }
+
+            if (hasError) {
+                showToast('Vui lòng kiểm tra và sửa lỗi trong biểu mẫu.', 'error');
+                return;
+            }
+
+            const fd = new FormData(this);
+            fd.set('price', parseNumber($('#bulkPrice').val()));
 
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/update-bulk',
@@ -1763,14 +1858,11 @@
                 success: function (res) {
                     showToast(res.message || 'Cập nhật thành công!', 'success');
                     setTimeout(() => {
-                        // reload lại theo productId đang chọn (nếu có)
                         const pidRaw = $('#editProductHidden').val() || $('[name="productId"]').val();
                         const pid = (pidRaw && pidRaw !== 'undefined' && pidRaw !== 'null' && pidRaw.trim() !== '') ? pidRaw : '';
-
                         const href = pid
                             ? `/acvstore/chi-tiet-san-pham?productId=${pid}&success=Cập nhật thành công`
                             : `/acvstore/chi-tiet-san-pham?success=Cập nhật thành công`;
-
                         window.location.href = href;
                     }, 800);
                 },
@@ -1891,6 +1983,38 @@
 
         $('#editChiTietSanPhamForm').on('submit', function (e) {
             e.preventDefault();
+
+            // Validate giá bán và số lượng tồn
+            const priceError = validateNumberInput($('#editPrice').val(), 'Giá bán');
+            const stockError = validateNumberInput($('#editStockQuantity').val(), 'Số lượng tồn');
+
+            // Xóa thông báo lỗi cũ
+            $('#editPrice').closest('.floating-label').find('.error-message').remove();
+            $('#editStockQuantity').closest('.floating-label').find('.error-message').remove();
+
+            let hasError = false;
+
+            if (priceError) {
+                $('#editPrice').addClass('is-invalid');
+                $('#editPrice').closest('.floating-label').append(`<div class="error-message text-danger mt-1">${priceError}</div>`);
+                hasError = true;
+            } else {
+                $('#editPrice').removeClass('is-invalid');
+            }
+
+            if (stockError) {
+                $('#editStockQuantity').addClass('is-invalid');
+                $('#editStockQuantity').closest('.floating-label').append(`<div class="error-message text-danger mt-1">${stockError}</div>`);
+                hasError = true;
+            } else {
+                $('#editStockQuantity').removeClass('is-invalid');
+            }
+
+            if (hasError) {
+                showToast('Vui lòng kiểm tra và sửa lỗi trong biểu mẫu.', 'error');
+                return;
+            }
+
             const id = $('#editId').val();
             if (!id || id === 'undefined' || id === 'null') {
                 showToast('Không xác định được ID chi tiết sản phẩm.', 'error');
