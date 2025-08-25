@@ -528,6 +528,7 @@
                 </div>
             </div>
 
+
             <!-- Tổng tiền hoàn -->
             <div class="payment-summary">
                 <h4 class="text-lg font-bold text-gray-700 mb-4">
@@ -539,11 +540,27 @@
                 </div>
                 <div class="payment-info">
         <span class="payment-label">
-            <i class="fas fa-percentage mr-2"></i>Giảm giá
+            <i class="fas fa-receipt mr-2"></i>Giảm giá đơn
         </span>
-                    <span class="payment-value" id="tienGiam"
-                          th:attr="data-value=${hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0}"
-                          th:text="${#numbers.formatDecimal(hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
+                    <span class="payment-value price" id="tienGiamOrder"
+                          th:attr="data-value=${tongGiamOrder != null ? tongGiamOrder : 0}"
+                          th:text="${#numbers.formatDecimal(tongGiamOrder != null ? tongGiamOrder : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
+                </div>
+                <div class="payment-info">
+        <span class="payment-label">
+            <i class="fas fa-ticket-alt mr-2"></i>Giảm phí vận chuyển
+        </span>
+                    <span class="payment-value price" id="tienGiamShip"
+                          th:attr="data-value=${tongGiamShip != null ? tongGiamShip : 0}"
+                          th:text="${#numbers.formatDecimal(tongGiamShip != null ? tongGiamShip : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
+                </div>
+                <div class="payment-info">
+        <span class="payment-label">
+            <i class="fas fa-percentage mr-2"></i>Tổng giảm giá
+        </span>
+                    <span class="payment-value price" id="tienGiam"
+                          th:attr="data-value=${tongGiamOrder != null && tongGiamShip != null ? (tongGiamOrder + tongGiamShip) : 0}"
+                          th:text="${#numbers.formatDecimal(tongGiamOrder != null && tongGiamShip != null ? (tongGiamOrder + tongGiamShip) : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
                 </div>
                 <div class="payment-info total-row">
                     <span class="payment-label">Tổng tiền hoàn</span>
@@ -607,7 +624,7 @@
         let total = 0;
         let count = 0;
         const returnableRows = document.querySelectorAll('tr[data-returnable="true"]');
-        const shippingFeeElement = document.querySelector('tr:not([data-returnable]) .price'); // Select the shipping fee row
+        const shippingFeeElement = document.querySelector('tr:not([data-returnable]) .price');
         const shippingFee = shippingFeeElement ? parseFloat(shippingFeeElement.getAttribute('data-value')) || 0 : 0;
 
         returnableRows.forEach(row => {
@@ -617,17 +634,25 @@
             count++;
         });
 
-        const tienGiam = parseFloat(document.getElementById('tienGiam').getAttribute('data-value')) || 0;
-        const totalReturnAmount = total + shippingFee - tienGiam; // Include shipping fee and subtract discount
+        // Lấy giá trị giảm giá đơn và giảm phí vận chuyển
+        const tienGiamOrder = parseFloat(document.getElementById('tienGiamOrder').getAttribute('data-value')) || 0;
+        const tienGiamShip = parseFloat(document.getElementById('tienGiamShip').getAttribute('data-value')) || 0;
+        const tienGiam = tienGiamOrder + tienGiamShip; // Tổng giảm giá
+        const totalReturnAmount = total + shippingFee - tienGiam; // Tổng tiền hoàn
 
         const totalElement = document.getElementById('totalReturnAmount');
         const countElement = document.getElementById('returnableCount');
+        const tienGiamElement = document.getElementById('tienGiam');
         const submitBtn = document.getElementById('submitBtn');
 
-        totalElement.setAttribute('data-value', Math.max(totalReturnAmount, 0)); // Ensure non-negative
+        // Cập nhật giá trị hiển thị
+        totalElement.setAttribute('data-value', Math.max(totalReturnAmount, 0));
         totalElement.textContent = formatVND(Math.max(totalReturnAmount, 0));
         countElement.textContent = count + ' sản phẩm';
+        tienGiamElement.setAttribute('data-value', tienGiam);
+        tienGiamElement.textContent = formatVND(tienGiam);
 
+        // Vô hiệu hóa nút gửi nếu không có sản phẩm hoặc phí vận chuyển để trả
         if (count === 0 && shippingFee === 0) {
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.5';
