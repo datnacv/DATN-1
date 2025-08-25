@@ -38,21 +38,20 @@ public class EmployeeController {
         } else {
             employees = nguoiDungService.findUsersByVaiTro(vaiTro, keyword, page, 5);
         }
+
         model.addAttribute("employees", employees.getContent());
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", employees.getTotalPages());
+        model.addAttribute("pageSize", employees.getSize()); // ✅ Thêm dòng này
         model.addAttribute("keyword", keyword);
         model.addAttribute("vaiTro", vaiTro);
         model.addAttribute("employee", new NguoiDung());
-        model.addAttribute("isAdmin", isAdmin); // Truyền trạng thái ADMIN để kiểm soát giao diện
-        model.addAttribute("currentUser", currentUser); // Gán người dùng hiện tại
-
-        // Loại bỏ logic lấy admin đầu tiên, chỉ giữ currentUser
-        // List<NguoiDung> admins = nguoiDungService.findUsersByVaiTro("admin", "", 0, 1).getContent();
-        // model.addAttribute("user", admins.isEmpty() ? new NguoiDung() : admins.get(0));
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("currentUser", currentUser);
 
         return "WebQuanLy/list-nhan-vien";
     }
+
 
     @PostMapping("/add")
     public String addEmployee(@ModelAttribute("employee") NguoiDung employee, RedirectAttributes redirectAttributes, Authentication authentication) {
