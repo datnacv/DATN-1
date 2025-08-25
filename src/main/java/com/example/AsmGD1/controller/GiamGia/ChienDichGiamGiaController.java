@@ -485,6 +485,7 @@ public class ChienDichGiamGiaController {
                 .collect(Collectors.toList());
     }
 
+    // ===== Helpers =====
     private String validateChienDich(ChienDichGiamGia chienDich,
                                      List<UUID> chiTietIds,
                                      boolean isCreate,
@@ -512,52 +513,45 @@ public class ChienDichGiamGiaController {
             }
         }
 
-        // --- TÊN: cho phép khoảng trắng đầu/cuối; GIỮA CÁC TỪ chỉ được 1 khoảng trắng; chỉ chữ; ≥6 ký tự (không tính khoảng) ---
+        // --- TÊN ---
         String tenRaw = chienDich.getTen();
         if (tenRaw == null || tenRaw.isBlank()) {
             return "Tên chiến dịch không được để trống.";
         }
         String tenTrim = tenRaw.trim();
-
-        // Không cho 2+ khoảng trắng liên tiếp ở giữa các từ
         if (tenTrim.matches(".*\\s{2,}.*")) {
             return "Giữa các từ chỉ được 1 khoảng trắng.";
         }
-        // Chỉ chữ theo từng từ (có thể có đúng 1 khoảng giữa các từ)
         if (!tenTrim.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
             return "Tên chỉ được chứa chữ (có dấu), giữa các từ cách đúng 1 khoảng trắng, không số/ký tự đặc biệt.";
         }
-        // Độ dài không tính khoảng trắng ≥ 6
         int tenNonSpaceLen = tenTrim.replaceAll("\\s+", "").length();
         if (tenNonSpaceLen < 6) {
             return "Tên chiến dịch phải có ít nhất 6 ký tự (không tính khoảng trắng).";
         }
-        // Tối đa 100 ký tự tổng thể (trên phần nội dung)
         if (tenTrim.length() > 100) {
             return "Tên chiến dịch tối đa 100 ký tự.";
         }
-
-        // Kiểm tra trùng tên (so sánh theo phiên bản đã trim để bỏ qua khoảng trắng đầu/cuối)
         String tenCuTrim = (chienDichCu == null || chienDichCu.getTen() == null) ? "" : chienDichCu.getTen().trim();
         boolean tenChanged = (chienDichCu == null) || !tenTrim.equalsIgnoreCase(tenCuTrim);
         if (tenChanged && chienDichService.kiemTraTenTonTai(tenTrim)) {
             return "Tên chiến dịch đã tồn tại.";
         }
 
-        // --- % giảm: số nguyên 1..100 ---
+        // --- % giảm: số nguyên 1..99 ---
         if (chienDich.getPhanTramGiam() == null) {
             return "Phần trăm giảm không được để trống.";
         }
         try {
             BigDecimal pt = chienDich.getPhanTramGiam().stripTrailingZeros();
             if (pt.scale() > 0) {
-                return "Phần trăm giảm phải là số nguyên từ 1 đến 100.";
+                return "Phần trăm giảm phải là số nguyên từ 1 đến 99.";
             }
-            if (pt.compareTo(BigDecimal.ONE) < 0 || pt.compareTo(BigDecimal.valueOf(100)) > 0) {
-                return "Phần trăm giảm phải là số nguyên từ 1 đến 100.";
+            if (pt.compareTo(BigDecimal.ONE) < 0 || pt.compareTo(BigDecimal.valueOf(99)) > 0) {
+                return "Phần trăm giảm phải là số nguyên từ 1 đến 99.";
             }
         } catch (Exception e) {
-            return "Phần trăm giảm phải là số nguyên từ 1 đến 100.";
+            return "Phần trăm giảm phải là số nguyên từ 1 đến 99.";
         }
 
         // --- Ngày ---
@@ -578,13 +572,10 @@ public class ChienDichGiamGiaController {
 
         // Ghi đè lại dữ liệu đã chuẩn hoá/chuẩn xác để lưu
         chienDich.setMa(ma);
-        // LƯU Ý: Giữ nguyên khoảng trắng đầu/cuối theo yêu cầu -> set giá trị gốc
-        // Nếu muốn lưu sạch khoảng trắng đầu/cuối, thay bằng: chienDich.setTen(tenTrim);
-        chienDich.setTen(tenRaw);
+        chienDich.setTen(tenRaw); // giữ nguyên khoảng trắng đầu/cuối theo yêu cầu
 
         return null;
     }
-
 
 
     @GetMapping("/statuses")
