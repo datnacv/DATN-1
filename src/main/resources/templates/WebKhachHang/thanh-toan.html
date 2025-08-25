@@ -1627,9 +1627,9 @@
         }
         document.getElementById('voucher-summary').textContent = parts.length ? parts.join(' | ') : 'Chưa chọn';
     }
-        function _num(x){ const n = Number(String(x??0).toString().replace(/[^\d.]/g,'')); return isFinite(n)? n : 0; }
+    function _num(x){ const n = Number(String(x??0).toString().replace(/[^\d.]/g,'')); return isFinite(n)? n : 0; }
 
-        function computePotentialDiscount(label, subtotal, shipping){
+    function computePotentialDiscount(label, subtotal, shipping){
         const scope = label.dataset.scope;
         const loai  = (label.dataset.loai || '').toUpperCase();
         const giam  = _num(label.dataset.giam);
@@ -1644,28 +1644,28 @@
         let potential = 0;
 
         if (scope === 'ORDER'){
-        if (!eligible) return { eligible:false, potential:0 };
-        if (loai === 'PERCENT'){
-        potential = Math.floor(subtotal * giam / 100);
-    } else { // AMOUNT hoặc các loại số tiền khác
-        potential = giam;
-    }
-        if (cap > 0) potential = Math.min(potential, cap);
-        potential = Math.min(potential, subtotal);
-    } else { // SHIPPING
-        if (!eligible) return { eligible:false, potential:0 };
-        if (loai === 'FREESHIP_FULL'){
-        potential = shipping;
-    } else if (loai === 'FREESHIP_CAP'){
-        potential = Math.min(cap || shipping, shipping);
-    } else if (loai === 'PERCENT'){
-        potential = Math.floor(shipping * giam / 100);
-        if (cap > 0) potential = Math.min(potential, cap);
-        potential = Math.min(potential, shipping);
-    } else { // AMOUNT hoặc fallback
-        potential = Math.min(giam, shipping);
-    }
-    }
+            if (!eligible) return { eligible:false, potential:0 };
+            if (loai === 'PERCENT'){
+                potential = Math.floor(subtotal * giam / 100);
+            } else { // AMOUNT hoặc các loại số tiền khác
+                potential = giam;
+            }
+            if (cap > 0) potential = Math.min(potential, cap);
+            potential = Math.min(potential, subtotal);
+        } else { // SHIPPING
+            if (!eligible) return { eligible:false, potential:0 };
+            if (loai === 'FREESHIP_FULL'){
+                potential = shipping;
+            } else if (loai === 'FREESHIP_CAP'){
+                potential = Math.min(cap || shipping, shipping);
+            } else if (loai === 'PERCENT'){
+                potential = Math.floor(shipping * giam / 100);
+                if (cap > 0) potential = Math.min(potential, cap);
+                potential = Math.min(potential, shipping);
+            } else { // AMOUNT hoặc fallback
+                potential = Math.min(giam, shipping);
+            }
+        }
         return { eligible:true, potential: Math.max(0, potential) };
     }
 
@@ -1714,29 +1714,29 @@
 
 
     // Gọi sắp xếp sau khi đánh dấu eligibility
-        const _origMarkVoucherEligibility = markVoucherEligibility;
-        markVoucherEligibility = function(){
+    const _origMarkVoucherEligibility = markVoucherEligibility;
+    markVoucherEligibility = function(){
         _origMarkVoucherEligibility();
         // Sau khi đánh dấu enable/disable -> sort lại
         sortVouchersInModal();
     };
 
-        // Khi lọc tìm kiếm trong modal xong cũng sort lại (đảm bảo thứ tự trong kết quả)
-        const _origFilterInModal = filterVouchersInModal;
-        filterVouchersInModal = function(term){
+    // Khi lọc tìm kiếm trong modal xong cũng sort lại (đảm bảo thứ tự trong kết quả)
+    const _origFilterInModal = filterVouchersInModal;
+    filterVouchersInModal = function(term){
         _origFilterInModal(term);
         sortVouchersInModal();
     };
 
-        // An toàn: khi mở modal lần đầu, tính & sort
-        document.addEventListener('DOMContentLoaded', () => {
+    // An toàn: khi mở modal lần đầu, tính & sort
+    document.addEventListener('DOMContentLoaded', () => {
         const modalEl = document.getElementById('voucherModal');
         if (modalEl){
-        modalEl.addEventListener('shown.bs.modal', () => {
-        if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
-        sortVouchersInModal();
-    });
-    }
+            modalEl.addEventListener('shown.bs.modal', () => {
+                if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
+                sortVouchersInModal();
+            });
+        }
     });
 
 
