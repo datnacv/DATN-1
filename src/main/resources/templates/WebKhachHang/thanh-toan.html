@@ -2320,10 +2320,9 @@
         }
 
         const shippingFee = onlyDigits(document.getElementById('shipping-fee').textContent);
-        const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
-        const mode = getCheckoutMode();
-        const source = mode;
-        const body = buildVoucherBodyForCurrentMode();
+        const subtotal    = onlyDigits(document.getElementById('subtotal').textContent);
+        const mode        = getCheckoutMode();
+        const source      = mode;
 
         if (shippingFee <= 0) {
             if (!silent) Swal.fire({ icon:'warning', title:'Chưa có phí vận chuyển', text:'Vui lòng chọn địa chỉ để tính phí ship trước.' });
@@ -2333,7 +2332,6 @@
             return { ok: false, discount: 0, message: 'Chưa có phí vận chuyển' };
         }
 
-        // ⬅️ LẤY PTTT ĐANG CHỌN
         const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
         if (!paymentMethodId) {
             if (!silent) Swal.fire({ icon:'warning', title:'Chưa chọn phương thức thanh toán' });
@@ -2350,12 +2348,14 @@
             + `&subtotal=${subtotal}`
             + `&paymentMethodId=${encodeURIComponent(paymentMethodId)}`;
 
+        const payload = buildVoucherBodyForCurrentMode() || [];
+
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body
+                body: JSON.stringify(payload)       // <-- cần stringify
             });
             const data = await res.json();
 
@@ -2382,6 +2382,7 @@
             if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
         }
     }
+
 
 
 
