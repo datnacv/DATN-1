@@ -111,16 +111,18 @@
                                        oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), phải là các từ cách nhau đúng 1 khoảng trắng. Cho phép khoảng trắng ở đầu/cuối. Tối thiểu 6 ký tự (không tính khoảng trắng).')">
 
                             </div>
+                            <!-- % giảm: số nguyên 1..99 -->
                             <div class="col-md-4">
                                 <label class="form-label">% giảm</label>
                                 <input type="number" class="form-control"
                                        th:field="*{phanTramGiam}"
                                        th:value="*{phanTramGiam != null ? phanTramGiam.stripTrailingZeros().toPlainString() : ''}"
-                                       required min="1" max="100" step="1"
+                                       required min="1" max="99" step="1"
                                        th:readonly="${isReadOnly or !isAdmin}"
-                                       oninput="(function(el){ const v=el.value.trim(); const ok=/^\d+$/.test(v)&& +v>=1 && +v<=100; el.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.'); })(this)"
-                                       oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 100.')">
+                                       oninput="(function(el){ const v=el.value.trim(); const ok=/^\d+$/.test(v)&& +v>=1 && +v<=99; el.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 99.'); })(this)"
+                                       oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 99.')">
                             </div>
+
 
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
@@ -344,15 +346,16 @@
                 ten.reportValidity();
             });
         }
-
-        // % giảm: số nguyên 1..100
-        if(percent){
-            percent.addEventListener('input', function(){
-                const v=this.value.trim(); const intOk=/^\d+$/.test(v); const num=+v;
-                const ok=intOk && num>=1 && num<=100;
-                this.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.');
+        if (percent) {
+            percent.addEventListener('input', function () {
+                const v = this.value.trim();
+                const intOk = /^\d+$/.test(v);
+                const num = +v;
+                const ok = intOk && num >= 1 && num <= 99;
+                this.setCustomValidity(ok || v === '' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 99.');
             });
         }
+
 
         form.addEventListener('submit', function(e){
             if(!isAdmin){ e.preventDefault(); alert('Bạn không có quyền thực hiện thao tác này!'); return; }
@@ -362,11 +365,14 @@
                 validateTen(ten);
                 if (ten.checkValidity()) normalizeTen(ten);
             }
-            if(percent){
-                const v=percent.value.trim(); const intOk=/^\d+$/.test(v); const num=+v;
-                const ok=intOk && num>=1 && num<=100;
-                percent.setCustomValidity(ok||v===''?'':'Phần trăm giảm phải là số nguyên từ 1 đến 100.');
+            if (percent) {
+                const v = percent.value.trim();
+                const intOk = /^\d+$/.test(v);
+                const num = +v;
+                const ok = intOk && num >= 1 && num <= 99;
+                percent.setCustomValidity(ok || v === '' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 99.');
             }
+
 
             if(!this.reportValidity()){ e.preventDefault(); return; }
 

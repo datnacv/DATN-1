@@ -1,9 +1,14 @@
 package com.example.AsmGD1.service.GiamGia;
 
+import com.example.AsmGD1.dto.GiamGia.SnapshotDetailItem;
 import com.example.AsmGD1.entity.ChienDichGiamGia;
+import com.example.AsmGD1.entity.ChienDichGiamGiaSnapshot;
+import com.example.AsmGD1.entity.ChienDichGiamGiaSnapshotDetail;
 import com.example.AsmGD1.entity.ChiTietSanPham;
+import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.repository.GiamGia.ChienDichGiamGiaRepository;
 import com.example.AsmGD1.repository.GiamGia.ChienDichGiamGiaSpecification;
+import com.example.AsmGD1.repository.GiamGia.ChienDichGiamGiaSnapshotRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -29,11 +34,8 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
-    @Scheduled(cron = "0 0 * * * ?")
-    @Transactional
-    public void cleanupEndedCampaigns() {
-        chiTietSanPhamRepository.detachEndedCampaigns(LocalDateTime.now());
-    }
+    @Autowired
+    private ChienDichGiamGiaSnapshotRepository snapshotRepository;
 
     private String getStatus(ChienDichGiamGia chienDich) {
         LocalDateTime now = LocalDateTime.now();
@@ -42,18 +44,125 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
         return "ONGOING";
     }
 
+    /* =========================
+       SNAPSHOT – helpers
+       ========================= */
+
+    /** Tạo mới snapshot cho 1 campaign từ dữ liệu “live” hiện tại (ghi đè hoàn toàn). */
+    @Transactional
+    protected void createSnapshot(UUID campaignId) {
+        ChienDichGiamGia cd = chienDichRepository.findById(campaignId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy chiến dịch: " + campaignId));
+
+        // Lấy toàn bộ chi tiết hiện đang thuộc campaign
+        List<ChiTietSanPham> details = chiTietSanPhamRepository.findByChienDichGiamGiaId(campaignId);
+
+        ChienDichGiamGiaSnapshot snap = new ChienDichGiamGiaSnapshot();
+        snap.setCampaign(cd);
+        snap.setCapturedAt(LocalDateTime.now());
+        snap.setMa(cd.getMa());
+        snap.setTen(cd.getTen());
+        snap.setPhanTramGiam(cd.getPhanTramGiam());
+        snap.setNgayBatDau(cd.getNgayBatDau());
+        snap.setNgayKetThuc(cd.getNgayKetThuc());
+
+        for (ChiTietSanPham d : details) {
+            ChienDichGiamGiaSnapshotDetail sd = new ChienDichGiamGiaSnapshotDetail();
+            sd.setSnapshot(snap);
+
+            SanPham sp = d.getSanPham();
+            sd.setSanPhamId(sp != null ? sp.getId() : null);
+            sd.setChiTietId(d.getId());
+            sd.setMaSanPham(sp != null ? sp.getMaSanPham() : null);
+            sd.setTenSanPham(sp != null ? sp.getTenSanPham() : null);
+            sd.setMau(d.getMauSac() != null ? d.getMauSac().getTenMau() : null);
+            sd.setSize(d.getKichCo() != null ? d.getKichCo().getTen() : null);
+            sd.setGia(d.getGia());
+            sd.setTon(d.getSoLuongTonKho());
+
+            snap.getDetails().add(sd);
+        }
+
+        snapshotRepository.saveAndFlush(snap);
+    }
+
+    /** Đảm bảo có snapshot (nếu chưa có thì tạo). */
+    @Transactional
+    protected void ensureSnapshotExists(UUID campaignId) {
+        if (!snapshotRepository.existsByCampaign_Id(campaignId)) {
+            createSnapshot(campaignId);
+        }
+    }
+
+    /* =========================
+       SNAPSHOT – public API
+       ========================= */
+
+    @Override
+    @Transactional
+    public void refreshSnapshot(UUID campaignId) {
+        // Xoá snapshot cũ (nếu có) rồi tạo lại
+        snapshotRepository.findByCampaign_Id(campaignId)
+                .ifPresent(snapshotRepository::delete);
+        createSnapshot(campaignId);
+    }
+
+    @Override
+    public List<SnapshotDetailItem> getSnapshot(UUID campaignId) {
+        return snapshotRepository.findByCampaign_Id(campaignId)
+                .map(snap -> snap.getDetails().stream()
+                        .map(this::toSnapshotDetailItem)
+                        .collect(Collectors.toList())
+                )
+                .orElseGet(Collections::emptyList);
+    }
+
+    private SnapshotDetailItem toSnapshotDetailItem(ChienDichGiamGiaSnapshotDetail d) {
+        SnapshotDetailItem it = new SnapshotDetailItem(); // cần có no-args constructor + setters
+        it.setMaSanPham(d.getMaSanPham());
+        it.setTenSanPham(d.getTenSanPham());
+        it.setMau(d.getMau());
+        it.setSize(d.getSize());
+        it.setGia(d.getGia());
+        it.setTon(d.getTon());
+        return it;
+    }
+
+    @Scheduled(cron = "0 0 * * * ?")
+    @Transactional
+    public void finalizeEndedCampaigns() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ChienDichGiamGia> ended = chienDichRepository.findByNgayKetThucBefore(now);
+        for (ChienDichGiamGia cd : ended) {
+            try {
+                ensureSnapshotExists(cd.getId()); // đảm bảo có snapshot
+            } catch (Exception ex) {
+                logger.warn("Snapshot campaign {} error: {}", cd.getId(), ex.getMessage());
+            }
+            // gỡ các chi tiết khỏi campaign đã kết thúc
+            chiTietSanPhamRepository.removeChienDichGiamGiaById(cd.getId());
+        }
+    }
+
+    /* =========================
+       CREATE/UPDATE
+       ========================= */
+
     @Override
     @Transactional
     public void taoMoiChienDichKemChiTiet(ChienDichGiamGia chienDich, List<UUID> danhSachChiTietSanPham) {
         for (UUID chiTietId : danhSachChiTietSanPham) {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(chiTietId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm: " + chiTietId));
+
             if (chiTiet.getChienDichGiamGia() != null) {
-                String status = getStatus(chiTiet.getChienDichGiamGia());
+                ChienDichGiamGia old = chiTiet.getChienDichGiamGia();
+                String status = getStatus(old);
                 if (!"ENDED".equals(status)) {
-                    throw new RuntimeException("Chi tiết " + chiTietId + " đã thuộc chiến dịch: "
-                            + chiTiet.getChienDichGiamGia().getTen());
+                    throw new RuntimeException("Chi tiết " + chiTietId + " đã thuộc chiến dịch: " + old.getTen());
                 } else {
+                    // ĐÃ KẾT THÚC => chụp snapshot trước khi gỡ
+                    ensureSnapshotExists(old.getId());
                     chiTiet.setChienDichGiamGia(null);
                     chiTietSanPhamRepository.save(chiTiet);
                 }
@@ -106,11 +215,12 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository.findById(chiTietId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết: " + chiTietId));
             if (chiTiet.getChienDichGiamGia() != null && !chiTiet.getChienDichGiamGia().getId().equals(existing.getId())) {
-                String status = getStatus(chiTiet.getChienDichGiamGia());
+                ChienDichGiamGia old = chiTiet.getChienDichGiamGia();
+                String status = getStatus(old);
                 if (!"ENDED".equals(status)) {
-                    throw new RuntimeException("Chi tiết " + chiTietId + " đã thuộc chiến dịch: "
-                            + chiTiet.getChienDichGiamGia().getTen());
+                    throw new RuntimeException("Chi tiết " + chiTietId + " đã thuộc chiến dịch: " + old.getTen());
                 } else {
+                    ensureSnapshotExists(old.getId());
                     chiTiet.setChienDichGiamGia(null);
                     chiTietSanPhamRepository.save(chiTiet);
                 }
@@ -119,6 +229,10 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
             chiTietSanPhamRepository.save(chiTiet);
         }
     }
+
+    /* =========================
+       LIST/FIND/DELETE
+       ========================= */
 
     @Override
     public Page<ChienDichGiamGia> locChienDich(String keyword, LocalDateTime startDate, LocalDateTime endDate,
@@ -155,6 +269,7 @@ public class ChienDichGiamGiaServiceImpl implements ChienDichGiamGiaService {
             throw new RuntimeException("Không thể xóa chiến dịch đang diễn ra.");
         }
 
+        // không ảnh hưởng snapshot đã lưu
         chiTietSanPhamRepository.removeChienDichGiamGiaById(id);
         chienDichRepository.delete(chienDich);
     }

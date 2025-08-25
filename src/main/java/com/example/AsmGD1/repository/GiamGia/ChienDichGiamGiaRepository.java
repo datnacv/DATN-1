@@ -26,4 +26,13 @@ public interface ChienDichGiamGiaRepository extends JpaRepository<ChienDichGiamG
            """)
     List<ChienDichGiamGia> findBySanPhamIdAndActive(@Param("sanPhamId") UUID sanPhamId,
                                                     @Param("now") LocalDateTime now);
+    @Query("""
+       SELECT DISTINCT c.id
+       FROM ChienDichGiamGia c
+       JOIN ChiTietSanPham ct ON ct.chienDichGiamGia.id = c.id
+       WHERE c.ngayKetThuc <= :now
+       """)
+    List<UUID> findEndedCampaignIdsWithDetails(@Param("now") LocalDateTime now);
+    List<ChienDichGiamGia> findByNgayKetThucBefore(LocalDateTime time);
+
 }

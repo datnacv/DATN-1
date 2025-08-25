@@ -25,7 +25,6 @@
         .btn-outline-secondary{ border-color:var(--primary); color:var(--primary); }
         .btn-outline-secondary:hover{ background:var(--primary); color:#fff; }
         .badge-status{ border-radius:999px; padding:.4rem .7rem; font-weight:700; }
-        /* Đồng bộ sắc primary (#153054) cho badge "UPCOMING" */
         .badge.bg-primary{ background-color:var(--primary) !important; }
         .table th,.table td{ vertical-align:middle; }
     </style>
@@ -68,9 +67,8 @@
                 </div>
                 <div class="col-md-2">
                     <div class="form-label">% giảm (chỉ số)</div>
-                    <!-- CHỈ HIỂN THỊ SỐ, KHÔNG CÓ KÝ HIỆU % -->
                     <div class="form-control" disabled
-                         th:text="${chienDich.phanTramGiam % 1 == 0} ? ${chienDich.phanTramGiam.intValue()} : ${chienDich.phanTramGiam}">10</div>
+                         th:text="${(chienDich.phanTramGiam % 1 == 0) ? chienDich.phanTramGiam.intValue() : chienDich.phanTramGiam}">10</div>
                 </div>
                 <div class="col-md-3">
                     <div class="form-label">Ngày tạo</div>
@@ -102,7 +100,22 @@
                                     <th>Tên sản phẩm</th>
                                 </tr>
                                 </thead>
-                                <tbody>
+
+                                <!-- NHÁNH SNAPSHOT: lấy unique theo maSanPham từ snapshotDetails -->
+                                <tbody th:if="${useSnapshot}" th:with="seen=${new java.util.HashSet()}">
+                                <tr th:each="d : ${snapshotDetails}"
+                                    th:if="${d.maSanPham != null and seen.add(d.maSanPham)}">
+                                    <td class="text-center" th:text="${seen.size()}"></td>
+                                    <td th:text="${d.maSanPham}"></td>
+                                    <td th:text="${d.tenSanPham}"></td>
+                                </tr>
+                                <tr th:if="${seen.isEmpty()}">
+                                    <td colspan="3" class="text-center text-muted">Không có sản phẩm nào</td>
+                                </tr>
+                                </tbody>
+
+                                <!-- NHÁNH DỮ LIỆU HIỆN THỜI -->
+                                <tbody th:unless="${useSnapshot}">
                                 <tr th:each="p, iStat : ${selectedProducts}">
                                     <td class="text-center" th:text="${iStat.count}"></td>
                                     <td th:text="${p.maSanPham}"></td>
@@ -112,6 +125,7 @@
                                     <td colspan="3" class="text-center text-muted">Không có sản phẩm nào</td>
                                 </tr>
                                 </tbody>
+
                             </table>
                         </div>
                     </div>
@@ -135,7 +149,24 @@
                                     <th>Tồn</th>
                                 </tr>
                                 </thead>
-                                <tbody>
+
+                                <!-- NHÁNH SNAPSHOT -->
+                                <tbody th:if="${useSnapshot}">
+                                <tr th:each="d, iStat : ${snapshotDetails}">
+                                    <td class="text-center" th:text="${iStat.count}"></td>
+                                    <td th:text="${d.tenSanPham != null ? d.tenSanPham : 'Không có'}"></td>
+                                    <td th:text="${d.mau != null ? d.mau : 'Không có'}"></td>
+                                    <td th:text="${d.size != null ? d.size : 'Không có'}"></td>
+                                    <td th:text="${d.gia != null ? #numbers.formatDecimal(d.gia, 0, 'POINT', 0, 'NONE') + ' VNĐ' : 'Không có'}"></td>
+                                    <td th:text="${d.ton != null ? d.ton : 0}"></td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(snapshotDetails)}">
+                                    <td colspan="6" class="text-center text-muted">Không có chi tiết nào</td>
+                                </tr>
+                                </tbody>
+
+                                <!-- NHÁNH DỮ LIỆU HIỆN THỜI -->
+                                <tbody th:unless="${useSnapshot}">
                                 <tr th:each="d, iStat : ${selectedDetails}">
                                     <td class="text-center" th:text="${iStat.count}"></td>
                                     <td th:text="${d.sanPham != null ? d.sanPham.tenSanPham : 'Không có'}"></td>
@@ -148,6 +179,7 @@
                                     <td colspan="6" class="text-center text-muted">Không có chi tiết nào</td>
                                 </tr>
                                 </tbody>
+
                             </table>
                         </div>
                     </div>

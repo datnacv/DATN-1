@@ -3,6 +3,7 @@ package com.example.AsmGD1.controller.WebKhachHang;
 import com.example.AsmGD1.dto.KhachHang.ChiTietSanPhamDto;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.ChiTietDonHangRepository;
+import com.example.AsmGD1.repository.BanHang.DonHangPhieuGiamGiaRepository;
 import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
@@ -104,6 +105,9 @@ public class KHDonMuaController {
 
     @Autowired
     private ChienDichGiamGiaService chienDichGiamGiaService;
+    @Autowired
+    private DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
+
 
 
 
@@ -182,7 +186,7 @@ public class KHDonMuaController {
                 case "van-chuyen-thanh-cong" -> "Vận chuyển thành công";
                 case "hoan-thanh" -> "Hoàn thành";
                 case "da-huy" -> "Hủy đơn hàng";
-                case "da-tra-hang" -> "Hoàn trả";
+                case "da-tra-hang" -> "Đã trả hàng";
                 case "da-doi-hang" -> "Đã đổi hàng";
                 case "cho-doi-hang" -> "Chờ xử lý đổi hàng";
                 default -> "";
@@ -271,68 +275,118 @@ public class KHDonMuaController {
     }
 
     @GetMapping("/chi-tiet/{id}")
-    public String chiTietDonHang(@PathVariable("id") UUID id, Model model, Authentication authentication) {
+    public String chiTietDonHang(@PathVariable("id") UUID id,
+                                 Model model,
+                                 Authentication authentication) {
+
+        // 1) Bảo vệ đăng nhập
         if (authentication == null || !authentication.isAuthenticated()) {
             return "redirect:/dang-nhap";
         }
-
         UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
         if (nguoiDungId == null) {
             return "redirect:/dang-nhap";
         }
-
         NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
         if (nguoiDung == null) {
             return "redirect:/dang-nhap";
         }
 
+        // 2) Tải hóa đơn và kiểm tra quyền sở hữu
         HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+        if (hoaDon == null || hoaDon.getDonHang() == null
+                || hoaDon.getDonHang().getNguoiDung() == null
+                || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
             return "redirect:/dsdon-mua";
         }
 
+        // 3) Định dạng tiền
         DecimalFormatSymbols symbols = new DecimalFormatSymbols();
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-        hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
+        hoaDon.setFormattedTongTien(
+                hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0"
+        );
 
+        // 4) Bơm thông tin giảm giá theo chiến dịch (nếu có) cho từng dòng sản phẩm
         for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
-            chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
+            chiTiet.setFormattedGia(
+                    chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0"
+            );
 
-            // Lấy thông tin giảm giá từ ChiTietSanPham
             ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
-            Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
-            if (activeCampaign.isPresent()) {
-                ChienDichGiamGia campaign = activeCampaign.get();
-                ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
-                chiTietSanPhamDto.setId(chiTietSanPham.getId());
-                chiTietSanPhamDto.setGia(chiTietSanPham.getGia());
-                chiTietSanPhamDto.setOldPrice(chiTietSanPham.getGia());
-                chiTietSanPhamDto.setDiscountPercentage(campaign.getPhanTramGiam());
-                chiTietSanPhamDto.setDiscountCampaignName(campaign.getTen());
+            if (chiTietSanPham != null) {
+                Optional<ChienDichGiamGia> activeCampaign =
+                        chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
 
-                // Tính giá sau giảm
-                BigDecimal discount = chiTietSanPham.getGia()
-                        .multiply(campaign.getPhanTramGiam())
-                        .divide(BigDecimal.valueOf(100));
-                chiTietSanPhamDto.setGia(chiTietSanPham.getGia().subtract(discount));
-                chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
+                if (activeCampaign.isPresent()) {
+                    ChienDichGiamGia campaign = activeCampaign.get();
 
-                // Gán DTO vào chiTiet để sử dụng trong view
-                chiTiet.setChiTietSanPhamDto(chiTietSanPhamDto);
-                chiTiet.setFormattedGia(formatter.format(chiTietSanPhamDto.getGia()));
+                    ChiTietSanPhamDto dto = new ChiTietSanPhamDto();
+                    dto.setId(chiTietSanPham.getId());
+                    dto.setGia(chiTietSanPham.getGia());
+                    dto.setOldPrice(chiTietSanPham.getGia());
+                    dto.setDiscountPercentage(campaign.getPhanTramGiam());
+                    dto.setDiscountCampaignName(campaign.getTen());
+
+                    // Giá sau giảm
+                    BigDecimal discount = chiTietSanPham.getGia()
+                            .multiply(campaign.getPhanTramGiam())
+                            .divide(BigDecimal.valueOf(100));
+                    dto.setGia(chiTietSanPham.getGia().subtract(discount));
+                    dto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
+
+                    // Gán DTO vào chi tiết
+                    chiTiet.setChiTietSanPhamDto(dto);
+                    chiTiet.setFormattedGia(formatter.format(dto.getGia()));
+                }
             }
         }
 
+        // 5) Lấy trạng thái hiện tại
         String currentStatus = hoaDonService.getCurrentStatus(hoaDon);
+
+        // 6) Lấy chi tiết từng phiếu giảm giá áp cho đơn (ORDER/SHIPPING)
+        // Cần khai báo @Autowired DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
+        List<DonHangPhieuGiamGia> allVouchers =
+                donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+
+        List<DonHangPhieuGiamGia> voucherOrder = allVouchers.stream()
+                .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        List<DonHangPhieuGiamGia> voucherShip = allVouchers.stream()
+                .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        // (Tuỳ chọn) Tổng của từng nhóm – nếu muốn dùng ở View
+        BigDecimal tongGiamOrder = voucherOrder.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal tongGiamShip = voucherShip.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 7) Đẩy dữ liệu ra view
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
         model.addAttribute("currentStatus", currentStatus);
-        model.addAttribute("statusHistory", hoaDon.getLichSuHoaDons() != null ? hoaDon.getLichSuHoaDons() : new ArrayList<>());
+        model.addAttribute("statusHistory",
+                hoaDon.getLichSuHoaDons() != null ? hoaDon.getLichSuHoaDons() : new ArrayList<>());
+
+        // các list chi tiết phiếu để render bảng/khối “Chi tiết giảm giá”
+        model.addAttribute("voucherOrder", voucherOrder);
+        model.addAttribute("voucherShip", voucherShip);
+        model.addAttribute("tongGiamOrder", tongGiamOrder);
+        model.addAttribute("tongGiamShip", tongGiamShip);
 
         return "WebKhachHang/chi-tiet-don-mua";
     }
+
 
     @GetMapping("/danh-gia/{id}")
     public String danhGiaPage(@PathVariable("id") UUID id,
@@ -653,13 +707,69 @@ public class KHDonMuaController {
             return "redirect:/dsdon-mua";
         }
 
-        // Chỉ cho phép trả hàng khi trạng thái là "Vận chuyển thành công"
         if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
             return "redirect:/dsdon-mua";
         }
 
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        DecimalFormat formatter = new DecimalFormat("#,###", symbols);
+
+        hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
+
+        for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
+            chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
+
+            ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
+            Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
+            if (activeCampaign.isPresent()) {
+                ChienDichGiamGia campaign = activeCampaign.get();
+                ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
+                chiTietSanPhamDto.setId(chiTietSanPham.getId());
+                chiTietSanPhamDto.setGia(chiTietSanPham.getGia());
+                chiTietSanPhamDto.setOldPrice(chiTietSanPham.getGia());
+                chiTietSanPhamDto.setDiscountPercentage(campaign.getPhanTramGiam());
+                chiTietSanPhamDto.setDiscountCampaignName(campaign.getTen());
+
+                BigDecimal discount = chiTietSanPham.getGia()
+                        .multiply(campaign.getPhanTramGiam())
+                        .divide(BigDecimal.valueOf(100));
+                chiTietSanPhamDto.setGia(chiTietSanPham.getGia().subtract(discount));
+                chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
+
+                chiTiet.setChiTietSanPhamDto(chiTietSanPhamDto);
+                chiTiet.setFormattedGia(formatter.format(chiTietSanPhamDto.getGia()));
+            }
+        }
+
+        // Lấy chi tiết từng phiếu giảm giá áp cho đơn (ORDER/SHIPPING)
+        List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+
+        List<DonHangPhieuGiamGia> voucherOrder = allVouchers.stream()
+                .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        List<DonHangPhieuGiamGia> voucherShip = allVouchers.stream()
+                .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                .toList();
+
+        // Tính tổng giảm giá cho từng loại
+        BigDecimal tongGiamOrder = voucherOrder.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal tongGiamShip = voucherShip.stream()
+                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Đẩy dữ liệu ra view
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("user", nguoiDung);
+        model.addAttribute("tongGiamOrder", tongGiamOrder);
+        model.addAttribute("tongGiamShip", tongGiamShip);
+
         return "WebKhachHang/tra-hang";
     }
 
@@ -673,57 +783,70 @@ public class KHDonMuaController {
             @RequestParam("email") String email,
             Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            response.put("success", false);
-            response.put("message", "Vui lòng đăng nhập để gửi yêu cầu trả hàng.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
-        if (nguoiDungId == null) {
-            response.put("success", false);
-            response.put("message", "Không thể xác định người dùng.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
-        if (nguoiDung == null) {
-            response.put("success", false);
-            response.put("message", "Người dùng không tồn tại.");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
-        }
-
-        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getNguoiDung().getId().equals(nguoiDung.getId())) {
-            response.put("success", false);
-            response.put("message", "Hóa đơn không hợp lệ hoặc không thuộc về bạn.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        // Chỉ cho phép trả hàng khi trạng thái là "Vận chuyển thành công"
-        if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
-            response.put("success", false);
-            response.put("message", "Chỉ có thể gửi yêu cầu trả hàng khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        if (selectedProductIds == null || selectedProductIds.isEmpty()) {
-            response.put("success", false);
-            response.put("message", "Vui lòng chọn ít nhất một sản phẩm để trả hàng.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
-
-        // Kiểm tra nếu không trả toàn bộ sản phẩm
-        if (selectedProductIds.size() != hoaDon.getDonHang().getChiTietDonHangs().size()) {
-            response.put("success", false);
-            response.put("message", "Phải trả toàn bộ sản phẩm trong đơn hàng.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-        }
+        logger.info("Processing return request for order ID: {} by user: {}", id, authentication.getName());
 
         try {
-            // Tính tổng tiền hoàn và xử lý từng sản phẩm
-            double totalReturnAmount = 0;
+            // Kiểm tra xác thực
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Vui lòng đăng nhập để gửi yêu cầu trả hàng.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                response.put("success", false);
+                response.put("message", "Không thể xác định người dùng.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+            if (nguoiDung == null) {
+                response.put("success", false);
+                response.put("message", "Người dùng không tồn tại.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
+            if (hoaDon == null || hoaDon.getDonHang() == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+                response.put("success", false);
+                response.put("message", "Hóa đơn không hợp lệ hoặc không thuộc về bạn.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+                response.put("success", false);
+                response.put("message", "Chỉ có thể gửi yêu cầu trả hàng khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+            if (selectedProductIds == null || selectedProductIds.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Vui lòng chọn ít nhất một sản phẩm để trả hàng.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+            if (selectedProductIds.size() != hoaDon.getDonHang().getChiTietDonHangs().size()) {
+                response.put("success", false);
+                response.put("message", "Phải trả toàn bộ sản phẩm trong đơn hàng.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+
+            // Lấy thông tin giảm giá
+            List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+            BigDecimal tongGiamOrder = allVouchers.stream()
+                    .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal tongGiamShip = allVouchers.stream()
+                    .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
+                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                    .filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Tính tổng tiền hoàn lại
+            BigDecimal totalReturnAmount = BigDecimal.ZERO;
             for (UUID chiTietId : selectedProductIds) {
                 ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
                         .filter(ct -> ct.getId().equals(chiTietId))
@@ -734,8 +857,12 @@ public class KHDonMuaController {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
                 }
 
-                BigDecimal amount = chiTiet.getGia().multiply(BigDecimal.valueOf(chiTiet.getSoLuong()));
-                totalReturnAmount += amount.doubleValue();
+                // Tính giá sau giảm nếu có
+                BigDecimal finalPrice = chiTiet.getChiTietSanPhamDto() != null
+                        ? chiTiet.getChiTietSanPhamDto().getGia()
+                        : chiTiet.getGia();
+                BigDecimal amount = finalPrice.multiply(BigDecimal.valueOf(chiTiet.getSoLuong()));
+                totalReturnAmount = totalReturnAmount.add(amount);
 
                 // Tạo bản ghi lịch sử trả hàng
                 LichSuTraHang traHang = new LichSuTraHang();
@@ -761,8 +888,23 @@ public class KHDonMuaController {
                 chiTietSanPhamRepository.save(sanPham);
             }
 
-            hoaDon.setTrangThai("Đã trả hàng");
-            hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
+            // Thêm phí vận chuyển vào tổng tiền hoàn (chỉ khi không có giảm giá phí vận chuyển)
+            BigDecimal shippingFee = hoaDon.getDonHang().getPhiVanChuyen() != null
+                    ? hoaDon.getDonHang().getPhiVanChuyen()
+                    : BigDecimal.ZERO;
+            if (tongGiamShip.compareTo(BigDecimal.ZERO) == 0) {
+                totalReturnAmount = totalReturnAmount.add(shippingFee);
+            }
+
+            // Trừ đi các khoản giảm giá
+            totalReturnAmount = totalReturnAmount.subtract(tongGiamOrder).subtract(tongGiamShip);
+
+            // Đảm bảo tổng tiền hoàn không âm
+            totalReturnAmount = totalReturnAmount.max(BigDecimal.ZERO);
+
+            // Cập nhật trạng thái hóa đơn
+            hoaDon.setTrangThai("Đã trả hàng");
+            hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
             hoaDonService.save(hoaDon);
 
             // Gửi thông báo hệ thống
@@ -773,22 +915,40 @@ public class KHDonMuaController {
                     hoaDon.getDonHang()
             );
 
-            // Gửi email thông báo
-            String emailContent = "<h2>Thông báo yêu cầu trả hàng</h2>" +
-                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
-                    "<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công.</p>" +
-                    "<p><strong>Trạng thái:</strong> Đã trả hàng</p>" +
-                    "<p><strong>Lý do:</strong> " + reason + "</p>" +
-                    "<p><strong>Mô tả:</strong> " + (description != null ? description : "Không có") + "</p>" +
-                    "<p><strong>Tổng tiền hoàn:</strong> " + formatVND(totalReturnAmount) + "</p>" +
-                    "<p>Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.</p>" +
-                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
-            emailService.sendEmail(email, "Yêu cầu trả hàng - ACV Store", emailContent);
+            // Gửi email thông báo với thông tin giảm giá và danh sách sản phẩm
+            StringBuilder emailContent = new StringBuilder("<h2>Thông báo yêu cầu trả hàng</h2>");
+            emailContent.append("<p>Xin chào ").append(nguoiDung.getHoTen()).append(",</p>");
+            emailContent.append("<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>")
+                    .append(hoaDon.getDonHang().getMaDonHang()).append("</strong> đã được gửi thành công.</p>");
+            emailContent.append("<p><strong>Sản phẩm trả hàng:</strong></p><ul>");
+            for (UUID chiTietId : selectedProductIds) {
+                ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                        .filter(ct -> ct.getId().equals(chiTietId)).findFirst().orElse(null);
+                if (chiTiet != null) {
+                    emailContent.append("<li>").append(chiTiet.getTenSanPham())
+                            .append(" - Số lượng: ").append(chiTiet.getSoLuong())
+                            .append(" - Giá: ").append(formatVND(chiTiet.getChiTietSanPhamDto() != null
+                                    ? chiTiet.getChiTietSanPhamDto().getGia().doubleValue() : chiTiet.getGia().doubleValue()))
+                            .append("</li>");
+                }
+            }
+            emailContent.append("</ul>");
+            emailContent.append("<p><strong>Phí vận chuyển:</strong> ").append(tongGiamShip.compareTo(BigDecimal.ZERO) == 0 ? formatVND(shippingFee.doubleValue()) : "Không được hoàn").append("</p>");
+            emailContent.append("<p><strong>Trạng thái:</strong> Đã trả hàng</p>")
+                    .append("<p><strong>Lý do:</strong> ").append(reason).append("</p>")
+                    .append("<p><strong>Mô tả:</strong> ").append(description != null ? description : "Không có").append("</p>")
+                    .append("<p><strong>Giảm giá đơn:</strong> ").append(formatVND(tongGiamOrder.doubleValue())).append("</p>")
+                    .append("<p><strong>Giảm phí vận chuyển:</strong> ").append(formatVND(tongGiamShip.doubleValue())).append("</p>")
+                    .append("<p><strong>Tổng tiền hoàn:</strong> ").append(formatVND(totalReturnAmount.doubleValue())).append("</p>")
+                    .append("<p>Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.</p>")
+                    .append("<p>Trân trọng,<br>Đội ngũ ACV Store</p>");
+            emailService.sendEmail(email, "Yêu cầu trả hàng - ACV Store", emailContent.toString());
 
             response.put("success", true);
             response.put("message", "Yêu cầu trả hàng đã được gửi thành công.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            logger.error("Lỗi khi gửi yêu cầu trả hàng: {}", e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Lỗi khi gửi yêu cầu trả hàng: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

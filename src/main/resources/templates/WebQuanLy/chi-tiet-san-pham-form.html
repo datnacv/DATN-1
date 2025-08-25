@@ -1029,455 +1029,440 @@
                 </form>
             </div>
         </div>
-        <div class="card glass-card">
-            <div class="card-header">
-                <div class="d-flex align-items-center gap-3">
-                    <i class="fas fa-list fs-4"></i>
-                    <span class="fs-5 fw-bold">Danh sách chi tiết sản phẩm</span>
-                </div>
+        <!-- Hide quick edit section for employees -->
+        <div class="d-flex justify-content-between align-items-center mb-3" th:if="${canEdit}">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-pen fs-5 text-muted"></i>
+                <span class="text-muted">Chọn biến thể để sửa nhanh</span>
             </div>
-            <div class="d-flex justify-content-between align-items-center p-3">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="fas fa-pen fs-5 text-muted"></i>
-                    <span class="text-muted">Chọn biến thể để sửa nhanh</span>
-                </div>
-                <!-- Cập nhật để hiển thị nút sửa cho cả admin và employee -->
-                <button id="bulkEditBtn" class="btn btn-primary" disabled th:if="${canEdit}">
-                    <i class="fas fa-edit me-2"></i>Sửa mục đã chọn
-                </button>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-hover mb-0" id="chiTietSanPhamTable">
-                    <thead>
-                    <tr>
-                        <th style="width:42px;">
-                            <input type="checkbox" id="selectAll" title="Chọn tất cả"/>
-                        </th>
-                        <th>#</th>
-                        <th>Ảnh</th>
-                        <th>Sản phẩm</th>
-                        <th>Màu sắc</th>
-                        <th>Kích cỡ</th>
-                        <th>Xuất xứ</th>
-                        <th>Chất liệu</th>
-                        <th>Kiểu dáng</th>
-                        <th>Tay áo</th>
-                        <th>Cổ áo</th>
-                        <th>Thương hiệu</th>
-                        <th>Giá</th>
-                        <th>Số lượng tồn</th>
-                        <th>Giới tính</th>
-                        <!-- Cập nhật header để hiển thị cột thao tác cho user có quyền chỉnh sửa -->
-                        <th style="min-width: 150px;">Trạng thái</th>
-                        <th th:if="${canEdit}">Thao tác</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:if="${chiTietSanPhamList == null or chiTietSanPhamList.isEmpty()}">
-                        <!-- Cập nhật colspan để phù hợp với quyền chỉnh sửa -->
-                        <td th:colspan="${canEdit} ? 16 : 15" class="text-center text-muted py-5">Chưa có chi tiết sản phẩm nào được thêm.</td>
-                    </tr>
-                    <tr th:each="pd, stats : ${chiTietSanPhamList}" th:data-id="${pd.id}">
-                        <td>
-                            <input type="checkbox" class="row-check" th:value="${pd.id}" />
-                        </td>
-                        <td th:text="${stats.count}"></td>
-                        <td>
-                            <div th:if="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}">
-                                <div th:with="img = ${pd.hinhAnhSanPhams[0]}">
-                                    <img th:if="${img.urlHinhAnh != null and !#strings.isEmpty(img.urlHinhAnh)}"
-                                         th:src="${img.urlHinhAnh}"
-                                         class="product-image"
-                                         alt="Ảnh sản phẩm"
-                                         onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
-                                    <span th:if="${img.urlHinhAnh == null or #strings.isEmpty(img.urlHinhAnh)}"
-                                          class="text-muted">Không có</span>
-                                </div>
-                            </div>
-                            <span th:unless="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}"
-                                  class="text-muted">Không có</span>
-                        </td>
-                        <td class="fw-semibold text-dark" th:text="${pd.sanPham?.tenSanPham ?: 'N/A'}"></td>
-                        <td th:text="${pd.mauSac?.tenMau ?: 'N/A'}"></td>
-                        <td th:text="${pd.kichCo?.ten ?: 'N/A'}"></td>
-                        <td th:text="${pd.xuatXu?.tenXuatXu ?: 'N/A'}"></td>
-                        <td th:text="${pd.chatLieu?.tenChatLieu ?: 'N/A'}"></td>
-                        <td th:text="${pd.kieuDang?.tenKieuDang ?: 'N/A'}"></td>
-                        <td th:text="${pd.tayAo?.tenTayAo ?: 'N/A'}"></td>
-                        <td th:text="${pd.coAo?.tenCoAo ?: 'N/A'}"></td>
-                        <td th:text="${pd.thuongHieu?.tenThuongHieu ?: 'N/A'}"></td>
-                        <td class="fw-bold" th:text="${#numbers.formatDecimal(pd.gia, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
-                        <td class="fw-bold" th:text="${pd.soLuongTonKho}"></td>
-                        <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
-                        <td style="min-width: 150px;">
-                            <!-- Cập nhật để hiển thị switch cho user có quyền chỉnh sửa -->
-                            <th:block th:if="${canEdit}">
-                                <div class="form-check form-switch d-flex justify-content-center align-items-center">
-                                    <input class="form-check-input status-toggle"
-                                           type="checkbox"
-                                           th:checked="${pd.trangThai != null and pd.trangThai}"
-                                           th:data-id="${pd.id}"
-                                           role="switch">
-                                    <label class="form-check-label ms-2"
-                                           th:text="${pd.trangThai != null and pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></label>
-                                </div>
-                            </th:block>
-                            <!-- Hiển thị status badge cho user không có quyền chỉnh sửa -->
-                            <th:block th:unless="${canEdit}">
-                                <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
-                                      th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
-                            </th:block>
-                        </td>
-                        <!-- Updated to show view button for employees and edit button for admins -->
-                        <td class="text-center action-buttons">
-                            <!-- Show for both admin and employee, but different functionality -->
-                            <button class="btn btn-sm edit-btn"
-                                    th:class="'btn btn-sm edit-btn ' + (${isAdmin} ? 'btn-warning' : 'btn-info')"
-                                    th:data-id="${pd.id}"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#editChiTietSanPhamModal"
-                                    th:title="${isAdmin} ? 'Sửa' : 'Xem'">
-                                <i th:class="${isAdmin} ? 'fas fa-edit' : 'fas fa-eye'"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+            <!-- Cập nhật để hiển thị nút sửa cho cả admin và employee -->
+            <button id="bulkEditBtn" class="btn btn-primary" disabled th:if="${canEdit}">
+                <i class="fas fa-edit me-2"></i>Sửa mục đã chọn
+            </button>
         </div>
-
-        <!-- Updated modal to show for both admin and employee -->
-        <div class="modal fade" id="editChiTietSanPhamModal" tabindex="-1" aria-labelledby="editChiTietSanPhamModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <!-- Dynamic title based on user role -->
-                        <h5 class="modal-title" id="editChiTietSanPhamModalLabel">
-                            <i th:class="${isAdmin} ? 'fas fa-edit me-2' : 'fas fa-eye me-2'"></i>
-                            <span th:text="${isAdmin} ? 'Sửa Chi Tiết Sản Phẩm' : 'Xem Chi Tiết Sản Phẩm'">Chi Tiết Sản Phẩm</span>
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form id="editChiTietSanPhamForm" enctype="multipart/form-data">
-                        <div class="modal-body">
-                            <input type="hidden" id="editId" name="id"/>
-                            <input type="hidden" name="deletedImageIds" id="deletedImageIds">
-                            <input type="hidden" id="editMode" name="restricted" value="false"/>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editProduct">Sản phẩm</label>
-                                        <input type="text" class="form-control lockable" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
-                                        <input type="hidden" id="editProductHidden" name="productId" class="lockable" th:value="${selectedProductId}"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editOrigin">Xuất xứ</label>
-                                        <select class="form-select lockable" id="editOrigin" name="originId" required>
-                                            <option value="">Chọn xuất xứ...</option>
-                                            <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editSize">Kích cỡ</label>
-                                        <select class="form-select lockable" id="editSize" name="sizeId" required>
-                                            <option value="">Chọn kích cỡ...</option>
-                                            <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editColor">Màu sắc</label>
-                                        <select class="form-select lockable" id="editColor" name="colorId" required>
-                                            <option value="">Chọn màu...</option>
-                                            <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editMaterial">Chất liệu</label>
-                                        <select class="form-select lockable" id="editMaterial" name="materialId" required>
-                                            <option value="">Chọn chất liệu...</option>
-                                            <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editStyle">Kiểu dáng</label>
-                                        <select class="form-select lockable" id="editStyle" name="styleId" required>
-                                            <option value="">Chọn kiểu dáng...</option>
-                                            <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editSleeve">Tay áo</label>
-                                        <select class="form-select lockable" id="editSleeve" name="sleeveId" required>
-                                            <option value="">Chọn tay áo...</option>
-                                            <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editCollar">Cổ áo</label>
-                                        <select class="form-select lockable" id="editCollar" name="collarId" required>
-                                            <option value="">Chọn cổ áo...</option>
-                                            <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editBrand">Thương hiệu</label>
-                                        <select class="form-select lockable" id="editBrand" name="brandId" required>
-                                            <option value="">Chọn thương hiệu...</option>
-                                            <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editGender">Giới tính</label>
-                                        <select class="form-select lockable" id="editGender" name="gender" required>
-                                            <option value="">Chọn giới tính...</option>
-                                            <option value="Nam">Nam</option>
-                                            <option value="Nữ">Nữ</option>
-                                            <option value="Unisex">Unisex</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editPrice">Giá bán</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">VNĐ</span>
-                                            <input type="text" class="form-control" id="editPrice" name="price" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label for="editStockQuantity">Số lượng tồn</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                            <input type="number" class="form-control" id="editStockQuantity" name="stockQuantity" min="0" required>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="editStatus" class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
-                                        <div class="form-check form-switch d-flex align-items-center">
-                                            <input class="form-check-input" type="checkbox" id="editStatus" name="status" value="true">
-                                            <label class="form-check-label ms-3 fw-semibold fs-6" id="statusLabel" for="editStatus">Ngừng Bán</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-12">
-                                    <label class="form-label fw-semibold text-dark mb-3">
-                                        <i class="fas fa-images me-2"></i>Ảnh hiện có (Nhấn nút '×' để xóa)
-                                    </label>
-                                    <div class="image-preview-container" id="existingImages">
-                                        <div id="noExistingImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center text-muted" style="min-height: 100px; display: none;">
-                                            <i class="fas fa-image fs-3 mb-2"></i>
-                                            <span>Chưa có ảnh nào</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-12">
-                                    <label for="editImages" class="form-label fw-semibold text-dark mb-3">
-                                        <i class="fas fa-plus-circle me-2"></i>Thêm ảnh mới (tối đa 3 ảnh)
-                                    </label>
-                                    <input type="file" class="form-control" id="editImages" name="imageFiles" multiple accept="image/*">
-                                    <div class="image-preview-container" id="newImagesPreview">
-                                        <div id="noNewImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center text-muted" style="min-height: 100px;">
-                                            <i class="fas fa-upload fs-3 mb-2"></i>
-                                            <span>Chọn ảnh để xem trước</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4">
-                                <div class="col-md-12">
-                                    <label class="form-label fw-semibold text-dark mb-3">
-                                        <i class="fas fa-qrcode me-2"></i>Mã QR
-                                    </label>
-                                    <div class="qr-container" id="qrCodeContainer">
-                                        <img id="qrCodeImage" src="/placeholder.svg" alt="Mã QR" class="qr-image" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Không có mã QR';">
-                                        <a id="downloadQrLink" href="" download="qr_code.png" class="btn btn-primary btn-sm">
-                                            <i class="fas fa-download me-2"></i>Tải mã QR
-                                        </a>
-                                    </div>
-                                </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="chiTietSanPhamTable">
+                <thead>
+                <tr>
+                    <!-- Hide checkbox column for employees -->
+                    <th style="width:42px;" th:if="${canEdit}">
+                        <input type="checkbox" id="selectAll" title="Chọn tất cả"/>
+                    </th>
+                    <th>#</th>
+                    <th>Ảnh</th>
+                    <th>Sản phẩm</th>
+                    <th>Màu sắc</th>
+                    <th>Kích cỡ</th>
+                    <th>Giới tính</th>
+                    <th>Giá</th>
+                    <th>Số lượng tồn</th>
+                    <!-- Cập nhật header để hiển thị cột thao tác cho user có quyền chỉnh sửa -->
+                    <th style="min-width: 150px;">Trạng thái</th>
+                    <!-- Always show action column with different text based on user role -->
+                    <th th:text="${canEdit} ? 'Thao tác' : 'Xem'"></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${chiTietSanPhamList == null or chiTietSanPhamList.isEmpty()}">
+                    <!-- Update colspan to account for hidden checkbox column -->
+                    <td th:colspan="${canEdit} ? 11 : 10" class="text-center text-muted py-5">Chưa có chi tiết sản phẩm nào được thêm.</td>
+                </tr>
+                <tr th:each="pd, stats : ${chiTietSanPhamList}" th:data-id="${pd.id}">
+                    <!-- Hide checkbox for employees -->
+                    <td th:if="${canEdit}">
+                        <input type="checkbox" class="row-check" th:value="${pd.id}" />
+                    </td>
+                    <td th:text="${stats.count}"></td>
+                    <td>
+                        <div th:if="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}">
+                            <div th:with="img = ${pd.hinhAnhSanPhams[0]}">
+                                <img th:if="${img.urlHinhAnh != null and !#strings.isEmpty(img.urlHinhAnh)}"
+                                     th:src="${img.urlHinhAnh}"
+                                     class="product-image"
+                                     alt="Ảnh sản phẩm"
+                                     onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Ảnh lỗi';">
+                                <span th:if="${img.urlHinhAnh == null or #strings.isEmpty(img.urlHinhAnh)}"
+                                      class="text-muted">Không có</span>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <span th:text="${isAdmin} ? 'Hủy' : 'Đóng'">Đóng</span>
-                            </button>
-                            <!-- Only show save button for admin -->
-                            <button type="submit" class="btn btn-primary" th:if="${isAdmin}">
-                                <i class="fas fa-save me-2"></i>Lưu thay đổi
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                        <span th:unless="${pd.hinhAnhSanPhams != null and !pd.hinhAnhSanPhams.isEmpty()}"
+                              class="text-muted">Không có</span>
+                    </td>
+                    <td class="fw-semibold text-dark" th:text="${pd.sanPham?.tenSanPham ?: 'N/A'}"></td>
+                    <td th:text="${pd.mauSac?.tenMau ?: 'N/A'}"></td>
+                    <td th:text="${pd.kichCo?.ten ?: 'N/A'}"></td>
+                    <td th:text="${pd.gioiTinh ?: 'N/A'}"></td>
+                    <td class="fw-bold" th:text="${#numbers.formatDecimal(pd.gia, 0, 'POINT', 0, 'COMMA')} + ' VNĐ'"></td>
+                    <td class="fw-bold" th:text="${pd.soLuongTonKho}"></td>
+                    <td style="min-width: 150px;">
+                        <!-- Cập nhật để hiển thị switch cho user có quyền chỉnh sửa -->
+                        <th:block th:if="${canEdit}">
+                            <div class="form-check form-switch d-flex justify-content-center align-items-center">
+                                <input class="form-check-input status-toggle"
+                                       type="checkbox"
+                                       th:checked="${pd.trangThai != null and pd.trangThai}"
+                                       th:data-id="${pd.id}"
+                                       role="switch">
+                                <label class="form-check-label ms-2"
+                                       th:text="${pd.trangThai != null and pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></label>
+                            </div>
+                        </th:block>
+                        <!-- Hiển thị status badge cho user không có quyền chỉnh sửa -->
+                        <th:block th:unless="${canEdit}">
+                            <span th:class="${pd.trangThai} ? 'status-badge status-active' : 'status-badge status-inactive'"
+                                  th:text="${pd.trangThai} ? 'Đang Bán' : 'Ngừng Bán'"></span>
+                        </th:block>
+                    </td>
+                    <!-- Updated to show view button for employees and edit button for admins -->
+                    <td class="text-center action-buttons">
+                        <!-- Show for both admin and employee, but different functionality -->
+                        <button class="btn btn-sm edit-btn"
+                                th:class="'btn btn-sm edit-btn ' + (${isAdmin} ? 'btn-warning' : 'btn-info')"
+                                th:data-id="${pd.id}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editChiTietSanPhamModal"
+                                th:title="${isAdmin} ? 'Sửa' : 'Xem'">
+                            <i th:class="${isAdmin} ? 'fas fa-edit' : 'fas fa-eye'"></i>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
         </div>
-
-        <div class="modal fade" id="bulkFullEditModal" tabindex="-1" aria-hidden="true" th:if="${isAdmin}">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <form id="bulkFullEditForm">
-                        <div class="modal-header">
-                            <h5 class="modal-title"><i class="fas fa-tools me-2"></i>Sửa toàn bộ thuộc tính (tất cả biến thể)</h5>
-                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
-                        </div>
-                        <div class="modal-body">
-                            <input type="hidden" id="bulkIds" name="ids"/>
-                            <!-- Reuse các block select giống modal edit, NHƯNG không gắn class lockable -->
-                            <!-- LƯU Ý: Modal này KHÔNG xử lý ảnh (mỗi biến thể ảnh khác nhau). -->
-                            <!-- Sản phẩm -->
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Xuất xứ</label>
-                                        <select class="form-select" name="originId" required>
-                                            <option value="">Chọn xuất xứ...</option>
-                                            <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Chất liệu</label>
-                                        <select class="form-select" name="materialId" required>
-                                            <option value="">Chọn chất liệu...</option>
-                                            <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4 mt-1">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Kiểu dáng</label>
-                                        <select class="form-select" name="styleId" required>
-                                            <option value="">Chọn kiểu dáng...</option>
-                                            <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Tay áo</label>
-                                        <select class="form-select" name="sleeveId" required>
-                                            <option value="">Chọn tay áo...</option>
-                                            <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4 mt-1">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Cổ áo</label>
-                                        <select class="form-select" name="collarId" required>
-                                            <option value="">Chọn cổ áo...</option>
-                                            <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Thương hiệu</label>
-                                        <select class="form-select" name="brandId" required>
-                                            <option value="">Chọn thương hiệu...</option>
-                                            <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4 mt-1">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Giới tính</label>
-                                        <select class="form-select" name="gender" required>
-                                            <option value="">Chọn giới tính...</option>
-                                            <option value="Nam">Nam</option>
-                                            <option value="Nữ">Nữ</option>
-                                            <option value="Unisex">Unisex</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Giá bán</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text">VNĐ</span>
-                                            <input type="text" class="form-control" id="bulkPrice" name="price" required>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row g-4 mt-1">
-                                <div class="col-md-6">
-                                    <div class="floating-label">
-                                        <label>Số lượng tồn</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                            <input type="number" class="form-control" name="stockQuantity" min="0" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
-                                    <div class="form-check form-switch d-flex align-items-center">
-                                        <input class="form-check-input" type="checkbox" id="bulkStatus" name="status" value="true">
-                                        <label class="form-check-label ms-3">Đang Bán</label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="alert alert-info mt-4">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Thao tác này áp dụng cho <strong>tất cả biến thể được chọn</strong>. Ảnh chi tiết không chỉnh hàng loạt.
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>Lưu thay đổi cho tất cả
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
     </div>
+
+    <!-- Updated modal to show for both admin and employee -->
+    <div class="modal fade" id="editChiTietSanPhamModal" tabindex="-1" aria-labelledby="editChiTietSanPhamModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <!-- Dynamic title based on user role -->
+                    <h5 class="modal-title" id="editChiTietSanPhamModalLabel">
+                        <i th:class="${isAdmin} ? 'fas fa-edit me-2' : 'fas fa-eye me-2'"></i>
+                        <span th:text="${isAdmin} ? 'Sửa Chi Tiết Sản Phẩm' : 'Xem Chi Tiết Sản Phẩm'">Chi Tiết Sản Phẩm</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editChiTietSanPhamForm" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" id="editId" name="id"/>
+                        <input type="hidden" name="deletedImageIds" id="deletedImageIds">
+                        <input type="hidden" id="editMode" name="restricted" value="false"/>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editProduct">Sản phẩm</label>
+                                    <input type="text" class="form-control lockable" id="editProduct" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
+                                    <input type="hidden" id="editProductHidden" name="productId" class="lockable" th:value="${selectedProductId}"/>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editOrigin">Xuất xứ</label>
+                                    <select class="form-select lockable" id="editOrigin" name="originId" required>
+                                        <option value="">Chọn xuất xứ...</option>
+                                        <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editSize">Kích cỡ</label>
+                                    <select class="form-select lockable" id="editSize" name="sizeId" required>
+                                        <option value="">Chọn kích cỡ...</option>
+                                        <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editColor">Màu sắc</label>
+                                    <select class="form-select lockable" id="editColor" name="colorId" required>
+                                        <option value="">Chọn màu...</option>
+                                        <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editMaterial">Chất liệu</label>
+                                    <select class="form-select lockable" id="editMaterial" name="materialId" required>
+                                        <option value="">Chọn chất liệu...</option>
+                                        <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editStyle">Kiểu dáng</label>
+                                    <select class="form-select lockable" id="editStyle" name="styleId" required>
+                                        <option value="">Chọn kiểu dáng...</option>
+                                        <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editSleeve">Tay áo</label>
+                                    <select class="form-select lockable" id="editSleeve" name="sleeveId" required>
+                                        <option value="">Chọn tay áo...</option>
+                                        <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editCollar">Cổ áo</label>
+                                    <select class="form-select lockable" id="editCollar" name="collarId" required>
+                                        <option value="">Chọn cổ áo...</option>
+                                        <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editBrand">Thương hiệu</label>
+                                    <select class="form-select lockable" id="editBrand" name="brandId" required>
+                                        <option value="">Chọn thương hiệu...</option>
+                                        <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editGender">Giới tính</label>
+                                    <select class="form-select lockable" id="editGender" name="gender" required>
+                                        <option value="">Chọn giới tính...</option>
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                        <option value="Unisex">Unisex</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editPrice">Giá bán</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">VNĐ</span>
+                                        <input type="text" class="form-control" id="editPrice" name="price" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label for="editStockQuantity">Số lượng tồn</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                        <input type="number" class="form-control" id="editStockQuantity" name="stockQuantity" min="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editStatus" class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
+                                    <div class="form-check form-switch d-flex align-items-center">
+                                        <input class="form-check-input" type="checkbox" id="editStatus" name="status" value="true">
+                                        <label class="form-check-label ms-3 fw-semibold fs-6" id="statusLabel" for="editStatus">Ngừng Bán</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold text-dark mb-3">
+                                    <i class="fas fa-images me-2"></i>Ảnh hiện có (Nhấn nút '×' để xóa)
+                                </label>
+                                <div class="image-preview-container" id="existingImages">
+                                    <div id="noExistingImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center text-muted" style="min-height: 100px; display: none;">
+                                        <i class="fas fa-image fs-3 mb-2"></i>
+                                        <span>Chưa có ảnh nào</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label for="editImages" class="form-label fw-semibold text-dark mb-3">
+                                    <i class="fas fa-plus-circle me-2"></i>Thêm ảnh mới (tối đa 3 ảnh)
+                                </label>
+                                <input type="file" class="form-control" id="editImages" name="imageFiles" multiple accept="image/*">
+                                <div class="image-preview-container" id="newImagesPreview">
+                                    <div id="noNewImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center text-muted" style="min-height: 100px;">
+                                        <i class="fas fa-upload fs-3 mb-2"></i>
+                                        <span>Chọn ảnh để xem trước</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold text-dark mb-3">
+                                    <i class="fas fa-qrcode me-2"></i>Mã QR
+                                </label>
+                                <div class="qr-container" id="qrCodeContainer">
+                                    <img id="qrCodeImage" src="/placeholder.svg" alt="Mã QR" class="qr-image" onerror="this.onerror=null; this.src='/image/placeholder.svg'; this.alt='Không có mã QR';">
+                                    <a id="downloadQrLink" href="" download="qr_code.png" class="btn btn-primary btn-sm">
+                                        <i class="fas fa-download me-2"></i>Tải mã QR
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <span th:text="${isAdmin} ? 'Hủy' : 'Đóng'">Đóng</span>
+                        </button>
+                        <!-- Only show save button for admin -->
+                        <button type="submit" class="btn btn-primary" th:if="${isAdmin}">
+                            <i class="fas fa-save me-2"></i>Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="bulkFullEditModal" tabindex="-1" aria-hidden="true" th:if="${isAdmin}">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form id="bulkFullEditForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-tools me-2"></i>Sửa toàn bộ thuộc tính (tất cả biến thể)</h5>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="bulkIds" name="ids"/>
+                        <!-- Reuse các block select giống modal edit, NHƯNG không gắn class lockable -->
+                        <!-- LƯU Ý: Modal này KHÔNG xử lý ảnh (mỗi biến thể ảnh khác nhau). -->
+                        <!-- Sản phẩm -->
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Xuất xứ</label>
+                                    <select class="form-select" name="originId" required>
+                                        <option value="">Chọn xuất xứ...</option>
+                                        <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Chất liệu</label>
+                                    <select class="form-select" name="materialId" required>
+                                        <option value="">Chọn chất liệu...</option>
+                                        <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4 mt-1">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Kiểu dáng</label>
+                                    <select class="form-select" name="styleId" required>
+                                        <option value="">Chọn kiểu dáng...</option>
+                                        <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Tay áo</label>
+                                    <select class="form-select" name="sleeveId" required>
+                                        <option value="">Chọn tay áo...</option>
+                                        <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4 mt-1">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Cổ áo</label>
+                                    <select class="form-select" name="collarId" required>
+                                        <option value="">Chọn cổ áo...</option>
+                                        <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Thương hiệu</label>
+                                    <select class="form-select" name="brandId" required>
+                                        <option value="">Chọn thương hiệu...</option>
+                                        <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4 mt-1">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Giới tính</label>
+                                    <select class="form-select" name="gender" required>
+                                        <option value="">Chọn giới tính...</option>
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                        <option value="Unisex">Unisex</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Giá bán</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">VNĐ</span>
+                                        <input type="text" class="form-control" id="bulkPrice" name="price" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-4 mt-1">
+                            <div class="col-md-6">
+                                <div class="floating-label">
+                                    <label>Số lượng tồn</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                                        <input type="number" class="form-control" name="stockQuantity" min="0" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark mb-2">Trạng thái</label>
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    <input class="form-check-input" type="checkbox" id="bulkStatus" name="status" value="true">
+                                    <label class="form-check-label ms-3">Đang Bán</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Thao tác này áp dụng cho <strong>tất cả biến thể được chọn</strong>. Ảnh chi tiết không chỉnh hàng loạt.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Lưu thay đổi cho tất cả
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
 </div>
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>

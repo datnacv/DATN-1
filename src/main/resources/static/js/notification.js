@@ -263,16 +263,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function loadNotificationsForModal(page = currentPage, size = 5) {
         const loadingState = document.getElementById('modalTableLoadingState');
-        theEmptyState = document.getElementById('modalTableEmptyState');
-        const tableBody = document.getElementById('modalNotificationTableBody');
+        const emptyState   = document.getElementById('modalTableEmptyState');
+        const tableBody    = document.getElementById('modalNotificationTableBody');
         const filterStatus = document.getElementById('filterStatus').value;
-
         if (!tableBody) return;
 
+        // trạng thái đầu
         tableBody.style.minHeight = tableBody.offsetHeight + 'px';
-        if (loadingState) loadingState.classList.remove('d-none');
-        if (theEmptyState) theEmptyState.classList.add('d-none');
+        loadingState && loadingState.classList.remove('d-none');
+        emptyState && emptyState.classList.add('d-none');
 
+        // xoá dữ liệu cũ
         requestAnimationFrame(() => {
             const existing = tableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
             existing.forEach(row => row.remove());
@@ -283,33 +284,34 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(res => res.ok ? res.json() : Promise.reject(res.status))
             .then(data => {
                 setTimeout(() => {
-                    if (loadingState) loadingState.classList.add('d-none');
+                    loadingState && loadingState.classList.add('d-none');
 
                     if (data.notifications?.length) {
+                        // có dữ liệu -> ẩn empty row TRƯỚC khi render
+                        emptyState && emptyState.classList.add('d-none');
                         renderNotificationsForTable(data.notifications, true);
                         unreadCount = data.unreadCount || 0;
                         updateUnreadCount(unreadCount);
                         totalPages = Math.ceil((data.totalCount || data.notifications.length) / size);
                         updatePagination(page);
                     } else {
-                        if (theEmptyState) theEmptyState.classList.remove('d-none');
+                        emptyState && emptyState.classList.remove('d-none');
                         totalPages = 1;
                         updatePagination(page);
                     }
 
-                    checkEmptyState();
+                    checkEmptyState(); // toggle lại cho chắc
                 }, 200);
             })
             .catch(err => {
                 console.error('Lỗi tải modal:', err);
-                if (loadingState) loadingState.classList.add('d-none');
+                loadingState && loadingState.classList.add('d-none');
                 tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
-                        </td>
-                    </tr>
-                `;
+        <tr>
+          <td colspan="5" class="text-center">
+            <div class="alert alert-danger m-3">Không thể tải thông báo. Vui lòng thử lại sau.</div>
+          </td>
+        </tr>`;
             });
     }
     window.filterNotificationsByStatus = function () {
@@ -363,67 +365,64 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function renderNotificationsForTable(notifications, isModal = false) {
-        const tableBody = isModal ? document.getElementById('modalNotificationTableBody') : document.getElementById('notificationTableBody');
-        const emptyState = isModal ? document.getElementById('modalTableEmptyState') : document.getElementById('tableEmptyState');
-
-        if (!tableBody) {
-            console.error('Table body not found');
-            return;
-        }
+        const tableBody = isModal ? document.getElementById('modalNotificationTableBody')
+            : document.getElementById('notificationTableBody');
+        const emptyState = isModal ? document.getElementById('modalTableEmptyState')
+            : document.getElementById('tableEmptyState');
+        if (!tableBody) return;
 
         tableBody.classList.add('opacity-50');
 
-        if (!notifications || !Array.isArray(notifications) || notifications.length === 0) {
-            if (emptyState) emptyState.classList.remove('d-none');
+        // không dữ liệu -> show empty + return
+        if (!Array.isArray(notifications) || notifications.length === 0) {
+            emptyState && emptyState.classList.remove('d-none');
             tableBody.classList.remove('opacity-50');
             return;
         }
 
+        // có dữ liệu -> ẩn empty trước khi render
+        emptyState && emptyState.classList.add('d-none');
+
+        // xoá cũ
         const existingRows = tableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
         existingRows.forEach(item => item.remove());
 
-        notifications.forEach((notification) => {
-            const timeAgo = formatTimeAgo(notification.thoiGian);
-            const tieuDe = notification.tieuDe || 'Không có tiêu đề';
-            const noiDung = notification.noiDung || 'Không có nội dung';
-
+        // render
+        notifications.forEach((n) => {
             const row = document.createElement('tr');
-            row.className = notification.daXem ? '' : 'notification-unread';
-            row.dataset.notificationId = notification.idChiTietThongBao;
-            row.dataset.read = notification.daXem ? 'true' : 'false';
+            row.className = n.daXem ? '' : 'notification-unread';
+            row.dataset.notificationId = n.idChiTietThongBao;
+            row.dataset.read = n.daXem ? 'true' : 'false';
 
-            if (!isModal) {
-                row.style.cursor = 'pointer';
-                row.onclick = () => showConfirmModal(notification.idChiTietThongBao, row, tieuDe);
-            }
+            const timeAgo = formatTimeAgo(n.thoiGian);
+            const tieuDe  = n.tieuDe  || 'Không có tiêu đề';
+            const noiDung = n.noiDung || 'Không có nội dung';
 
             const actionButtons = isModal ? `
-                <td class="text-center">
-                    <div class="d-flex gap-2 justify-content-center">
-                        <button class="btn btn-light" onclick="markAs${notification.daXem ? 'Unread' : 'Read'}(this)" title="Đánh dấu ${notification.daXem ? 'chưa đọc' : 'đã đọc'}">
-                            <i class="fas fa-${notification.daXem ? 'eye-slash' : 'eye'}"></i>
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteNotification(this)" title="Xoá thông báo">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </td>
-            ` : '<td></td>';
+      <td class="text-center">
+        <div class="d-flex gap-2 justify-content-center">
+          <button class="btn btn-light" onclick="${n.daXem ? 'markAsUnread' : 'markAsRead'}(this)"
+                  title="Đánh dấu ${n.daXem ? 'chưa đọc' : 'đã đọc'}">
+            <i class="fas fa-${n.daXem ? 'eye-slash' : 'eye'}"></i>
+          </button>
+          <button class="btn btn-danger" onclick="deleteNotification(this)" title="Xoá thông báo">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </td>` : '<td></td>';
 
             row.innerHTML = `
-                <td>${escapeHtml(tieuDe)}</td>
-                <td>${escapeHtml(noiDung)}</td>
-                <td>${timeAgo}</td>
-                <td class="status-cell"><span class="badge ${notification.daXem ? 'bg-secondary' : 'bg-primary'}">${notification.daXem ? 'Đã đọc' : 'Mới'}</span></td>
-                ${actionButtons}
-            `;
+      <td>${escapeHtml(tieuDe)}</td>
+      <td>${escapeHtml(noiDung)}</td>
+      <td>${timeAgo}</td>
+      <td class="status-cell"><span class="badge ${n.daXem ? 'bg-secondary' : 'bg-primary'}">${n.daXem ? 'Đã đọc' : 'Mới'}</span></td>
+      ${actionButtons}
+    `;
 
             tableBody.appendChild(row);
         });
 
-        setTimeout(() => {
-            tableBody.classList.remove('opacity-50');
-        }, 100);
+        setTimeout(() => tableBody.classList.remove('opacity-50'), 100);
     }
 
     function escapeHtml(text) {
@@ -931,33 +930,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function checkEmptyState() {
-        const modalTableBody = document.getElementById('modalNotificationTableBody');
-        const tableBody = document.getElementById('notificationTableBody');
-        const notificationContainer = document.getElementById('notificationContainer');
+        // modal
+        (function(){
+            const body = document.getElementById('modalNotificationTableBody');
+            const empty = document.getElementById('modalTableEmptyState');
+            if (!body || !empty) return;
+            const hasRows = body.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)').length > 0;
+            empty.classList.toggle('d-none', hasRows);
+        })();
 
-        if (modalTableBody) {
-            const items = modalTableBody.querySelectorAll('tr:not(#modalTableLoadingState):not(#modalTableEmptyState)');
-            const emptyState = document.getElementById('modalTableEmptyState');
-            if (items.length === 0 && emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-        }
+        // bảng chính (nếu có)
+        (function(){
+            const body = document.getElementById('notificationTableBody');
+            const empty = document.getElementById('tableEmptyState');
+            if (!body || !empty) return;
+            const hasRows = body.querySelectorAll('tr:not(#tableLoadingState):not(#tableEmptyState)').length > 0;
+            empty.classList.toggle('d-none', hasRows);
+        })();
 
-        if (tableBody) {
-            const items = tableBody.querySelectorAll('tr:not(#tableLoadingState):not(#tableEmptyState)');
-            const emptyState = document.getElementById('tableEmptyState');
-            if (items.length === 0 && emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-        }
-
-        if (notificationContainer) {
-            const items = notificationContainer.querySelectorAll('.notification-item:not(#loadingState):not(#emptyState)');
-            const emptyState = document.getElementById('emptyState');
-            if (items.length === 0 && emptyState) {
-                emptyState.classList.remove('d-none');
-            }
-        }
+        // dropdown
+        (function(){
+            const cont = document.getElementById('notificationContainer');
+            const empty = document.getElementById('emptyState');
+            if (!cont || !empty) return;
+            const hasItems = cont.querySelectorAll('.notification-item:not(#loadingState):not(#emptyState)').length > 0;
+            empty.classList.toggle('d-none', hasItems);
+        })();
     }
 
     function updatePagination(page) {

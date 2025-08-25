@@ -345,6 +345,31 @@
         .history-item .delete-btn:hover {
             color: #b91c1c;
         }
+
+        /* Thêm style cho giá có giảm */
+        .price-with-discount {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        .original-price {
+            text-decoration: line-through;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+        .discounted-price {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .discount-badge {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-top: 2px;
+        }
     </style>
 </head>
 <body>
@@ -399,13 +424,14 @@
                     Tất cả sản phẩm có thể trả hàng sẽ được tự động bao gồm trong yêu cầu
                 </p>
             </div>
+            <!-- Trong phần <table> của product-table-container -->
             <div class="product-table-container">
                 <table>
                     <thead>
                     <tr>
                         <th><i class="fas fa-image mr-2"></i>Sản phẩm</th>
                         <th><i class="fas fa-sort-numeric-up mr-2"></i>Số lượng</th>
-                        <th><i class="fas fa-tag mr-2"></i>Giá</th>
+                        <th><i class="fas fa-tag mr-2"></i>Đơn giá</th>
                         <th><i class="fas fa-calculator mr-2"></i>Thành tiền</th>
                         <th><i class="fas fa-undo mr-2"></i>Trạng thái</th>
                     </tr>
@@ -413,7 +439,7 @@
                     <tbody>
                     <tr th:each="chiTiet : ${hoaDon.donHang.chiTietDonHangs}"
                         th:class="${chiTiet.trangThaiHoanTra} ? 'non-returnable' : 'returnable-row'"
-                        th:attr="data-returnable=${!chiTiet.trangThaiHoanTra},data-price=${chiTiet.gia},data-quantity=${chiTiet.soLuong},data-product-id=${chiTiet.id}">
+                        th:attr="data-returnable=${!chiTiet.trangThaiHoanTra},data-unit-price=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia},data-quantity=${chiTiet.soLuong},data-product-id=${chiTiet.id},data-discount=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.discount : '0%'}">
                         <td>
                             <div class="product-info">
                                 <img th:src="${chiTiet.chiTietSanPham.hinhAnhSanPhams != null and !#lists.isEmpty(chiTiet.chiTietSanPham.hinhAnhSanPhams) ? chiTiet.chiTietSanPham.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}"
@@ -433,18 +459,49 @@
                             <span class="font-semibold text-lg" th:text="${chiTiet.soLuong}"></span>
                         </td>
                         <td>
-                            <span class="price font-semibold" th:attr="data-value=${chiTiet.gia}"></span>
+                            <div th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountPercentage != null}" class="price-with-discount">
+                                <span class="original-price" th:attr="data-value=${chiTiet.gia}" th:text="${#numbers.formatDecimal(chiTiet.gia, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                                <span class="discounted-price" th:attr="data-value=${chiTiet.chiTietSanPhamDto.gia}" th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.gia, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                            </div>
+                            <div th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountPercentage != null}">
+                                <span class="font-semibold" th:attr="data-value=${chiTiet.gia}" th:text="${#numbers.formatDecimal(chiTiet.gia, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                            </div>
                         </td>
                         <td>
-                            <span class="price font-semibold text-[#153054]" th:attr="data-value=${chiTiet.gia * chiTiet.soLuong}"></span>
+                <span class="price font-semibold text-[#153054]"
+                      th:attr="data-value=${(chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia) * chiTiet.soLuong}"
+                      th:text="${#numbers.formatDecimal((chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia) * chiTiet.soLuong, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
                         </td>
                         <td>
-            <span th:if="${chiTiet.trangThaiHoanTra}" class="text-amber-600 font-semibold">
-                <i class="fas fa-ban mr-1"></i>Đã trả hàng
-            </span>
+                <span th:if="${chiTiet.trangThaiHoanTra}" class="text-amber-600 font-semibold">
+                    <i class="fas fa-ban mr-1"></i>Đã trả hàng
+                </span>
                             <span th:unless="${chiTiet.trangThaiHoanTra}" class="text-green-600 font-semibold">
-                <i class="fas fa-check-circle mr-1"></i>Sẽ được trả
-            </span>
+                    <i class="fas fa-check-circle mr-1"></i>Sẽ được trả
+                </span>
+                        </td>
+                    </tr>
+                    <!-- Add Shipping Fee Row -->
+                    <tr>
+                        <td colspan="3">
+                            <div class="product-info">
+                                <div class="product-details">
+                                    <strong>Phí vận chuyển</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+        <span class="price font-semibold text-[#153054]"
+              th:attr="data-value=${hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0}"
+              th:text="${#numbers.formatDecimal(hoaDon.donHang.phiVanChuyen != null ? hoaDon.donHang.phiVanChuyen : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></span>
+                        </td>
+                        <td>
+        <span th:if="${tongGiamShip == null || tongGiamShip == 0}" class="text-amber-600 font-semibold">
+
+        </span>
+                            <span th:unless="${tongGiamShip == null || tongGiamShip == 0}" class="text-green-600 font-semibold">
+
+        </span>
                         </td>
                     </tr>
                     </tbody>
@@ -483,9 +540,27 @@
                     <span class="payment-label">Số sản phẩm trả hàng:</span>
                     <span class="payment-value" id="returnableCount">0</span>
                 </div>
+                <div class="payment-info">
+        <span class="payment-label">
+            <i class="fas fa-receipt mr-2"></i>Giảm giá đơn
+        </span>
+                    <span class="payment-value price" id="tienGiamOrder"
+                          th:attr="data-value=${tongGiamOrder != null ? tongGiamOrder : 0}"
+                          th:text="${#numbers.formatDecimal(tongGiamOrder != null ? tongGiamOrder : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
+                </div>
+                <div class="payment-info">
+        <span class="payment-label">
+            <i class="fas fa-ticket-alt mr-2"></i>Giảm giá phí vận chuyển
+        </span>
+                    <span class="payment-value price" id="tienGiamShip"
+                          th:attr="data-value=${tongGiamShip != null ? tongGiamShip : 0}"
+                          th:text="${#numbers.formatDecimal(tongGiamShip != null ? tongGiamShip : 0, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
+                </div>
                 <div class="payment-info total-row">
                     <span class="payment-label">Tổng tiền hoàn</span>
-                    <span class="payment-value price" id="totalReturnAmount" data-value="0">0 VNĐ</span>
+                    <span class="payment-value price" id="totalReturnAmount"
+                          th:attr="data-value=${hoaDon.tongTien}"
+                          th:text="${#numbers.formatDecimal(hoaDon.tongTien, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">0 VNĐ</span>
                 </div>
             </div>
 
@@ -543,24 +618,38 @@
         let total = 0;
         let count = 0;
         const returnableRows = document.querySelectorAll('tr[data-returnable="true"]');
+        const shippingFeeElement = document.querySelector('tr:not([data-returnable]) .price');
+        const shippingFee = shippingFeeElement ? parseFloat(shippingFeeElement.getAttribute('data-value')) || 0 : 0;
 
+        // Tính tổng giá trị sản phẩm trả hàng
         returnableRows.forEach(row => {
-            const price = parseFloat(row.getAttribute('data-price'));
+            const unitPrice = parseFloat(row.getAttribute('data-unit-price'));
             const quantity = parseInt(row.getAttribute('data-quantity'));
-            total += price * quantity;
+            total += unitPrice * quantity;
             count++;
         });
 
+        // Lấy giá trị giảm giá đơn và giảm giá phí vận chuyển
+        const tienGiamOrder = parseFloat(document.getElementById('tienGiamOrder').getAttribute('data-value')) || 0;
+        const tienGiamShip = parseFloat(document.getElementById('tienGiamShip').getAttribute('data-value')) || 0;
+
+        // Nếu không có giảm giá phí vận chuyển, không tính phí vận chuyển
+        const effectiveShippingFee = tienGiamShip > 0 ? shippingFee : 0;
+
+        // Tổng tiền hoàn = Tổng giá sản phẩm + Phí vận chuyển (nếu có giảm giá phí vận chuyển) - Giảm giá đơn - Giảm giá phí vận chuyển
+        const totalReturnAmount = total + effectiveShippingFee - tienGiamOrder - tienGiamShip;
+
+        // Cập nhật giao diện
         const totalElement = document.getElementById('totalReturnAmount');
         const countElement = document.getElementById('returnableCount');
         const submitBtn = document.getElementById('submitBtn');
 
-        totalElement.setAttribute('data-value', total);
-        totalElement.textContent = formatVND(total);
+        totalElement.setAttribute('data-value', Math.max(totalReturnAmount, 0));
+        totalElement.textContent = formatVND(Math.max(totalReturnAmount, 0));
         countElement.textContent = count + ' sản phẩm';
 
-        // Vô hiệu hóa nút submit nếu không có sản phẩm nào có thể trả
-        if (count === 0) {
+        // Vô hiệu hóa nút gửi nếu không có sản phẩm hoặc (phí vận chuyển và giảm giá phí vận chuyển đều bằng 0)
+        if (count === 0 && effectiveShippingFee === 0 && tienGiamShip === 0) {
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.5';
             submitBtn.style.cursor = 'not-allowed';
@@ -590,8 +679,8 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Format giá tiền
-        document.querySelectorAll('.price').forEach(element => {
+        // Format giá tiền cho tất cả các element có class 'price' hoặc có data-value
+        document.querySelectorAll('[data-value]').forEach(element => {
             const value = parseFloat(element.getAttribute('data-value')) || 0;
             element.textContent = formatVND(value);
         });
@@ -605,10 +694,11 @@
             e.preventDefault();
 
             const returnableCount = document.querySelectorAll('tr[data-returnable="true"]').length;
-            if (returnableCount === 0) {
+            const tienGiamShip = parseFloat(document.getElementById('tienGiamShip').getAttribute('data-value')) || 0;
+            if (returnableCount === 0 && tienGiamShip === 0) {
                 Swal.fire({
                     title: 'Thông báo!',
-                    text: 'Không có sản phẩm nào có thể trả hàng trong đơn này.',
+                    text: 'Không có sản phẩm hoặc phí vận chuyển nào có thể trả hàng trong đơn này.',
                     icon: 'info',
                     confirmButtonColor: '#153054',
                     customClass: { popup: 'rounded-lg', confirmButton: 'rounded-lg' }
@@ -618,7 +708,7 @@
 
             Swal.fire({
                 title: 'Xác nhận yêu cầu trả hàng?',
-                html: `Bạn có chắc chắn muốn trả <strong>${returnableCount} sản phẩm</strong> trong đơn hàng này?<br><small class="text-gray-600">Tất cả sản phẩm có thể trả hàng sẽ được bao gồm trong yêu cầu.</small>`,
+                html: `Bạn có chắc chắn muốn trả <strong>${returnableCount} sản phẩm</strong>${tienGiamShip > 0 ? ' và phí vận chuyển' : ''} trong đơn hàng này?<br><small class="text-gray-600">Tất cả sản phẩm và phí vận chuyển (nếu có giảm giá) sẽ được bao gồm trong yêu cầu.</small>`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-undo mr-2"></i>Gửi yêu cầu',

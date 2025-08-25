@@ -767,7 +767,7 @@
                     </thead>
                     <tbody>
                     <tr th:each="employee, employeeStat : ${employees}">
-                        <td th:text="${employeeStat.index + 1}"></td>
+                        <td th:text="${(currentPage * pageSize) + employeeStat.index + 1}"></td>
                         <td class="long-text" th:text="${employee.hoTen}" th:data-full-text="${employee.hoTen}"></td>
                         <td class="long-text" th:text="${employee.tenDangNhap}" th:data-full-text="${employee.tenDangNhap}"></td>
                         <td class="long-text">******</td>
