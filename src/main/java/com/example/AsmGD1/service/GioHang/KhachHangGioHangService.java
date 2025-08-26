@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,11 @@ public class KhachHangGioHangService {
 
     @Transactional
     public ChiTietGioHang addToGioHang(UUID gioHangId, UUID chiTietSanPhamId, Integer soLuong) {
+        if (soLuong == null || soLuong < 1) {
+            throw new IllegalArgumentException("Số lượng phải >= 1");
+        }
+
+        // 1) Lấy giỏ hàng & chi tiết sản phẩm
         GioHang gioHang = gioHangRepository.findById(gioHangId)
                 .orElseThrow(() -> new RuntimeException("Giỏ hàng không tồn tại với ID: " + gioHangId));
 
@@ -67,55 +73,76 @@ public class KhachHangGioHangService {
             throw new RuntimeException("Số lượng tồn kho không đủ: " + chiTietSanPham.getSoLuongTonKho());
         }
 
-        // Kiểm tra chiến dịch giảm giá
-        BigDecimal giaGiam = chiTietSanPham.getGia();
-        BigDecimal tienGiam = BigDecimal.ZERO;
-        Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamId);
-        if (activeCampaign.isPresent()) {
-            ChienDichGiamGia campaign = activeCampaign.get();
-            if (campaign.getPhanTramGiam() != null && campaign.getSoLuong() != null && campaign.getSoLuong() >= soLuong) {
-                tienGiam = chiTietSanPham.getGia().multiply(campaign.getPhanTramGiam().divide(BigDecimal.valueOf(100)));
-                giaGiam = chiTietSanPham.getGia().subtract(tienGiam);
-                chienDichGiamGiaService.truSoLuong(campaign.getId(), soLuong);
+        // 2) Tính giảm giá theo CHI TIẾT SẢN PHẨM (quota null = không giới hạn)
+        BigDecimal giaGoc = chiTietSanPham.getGia();
+        BigDecimal perUnitGiam = BigDecimal.ZERO;
+
+        Optional<ChienDichGiamGia> active = chienDichGiamGiaService
+                .getActiveCampaignForProductDetail(chiTietSanPhamId);
+
+        if (active.isPresent()) {
+            ChienDichGiamGia c = active.get();
+            boolean unlimited = (c.getSoLuong() == null);
+            boolean enough    = unlimited || c.getSoLuong() >= soLuong;
+
+            if (c.getPhanTramGiam() != null && enough) {
+                perUnitGiam = giaGoc.multiply(c.getPhanTramGiam())
+                        .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP); // làm tròn VND
+                if (!unlimited) {
+                    // chỉ trừ quota khi có giới hạn
+                    chienDichGiamGiaService.truSoLuong(c.getId(), soLuong);
+                }
             }
         }
 
-        Optional<ChiTietGioHang> existingChiTiet = chiTietGioHangRepository.findByGioHangIdAndChiTietSanPhamId(gioHangId, chiTietSanPhamId);
-        if (existingChiTiet.isPresent()) {
-            ChiTietGioHang chiTiet = existingChiTiet.get();
-            int newQuantity = chiTiet.getSoLuong() + soLuong;
+        BigDecimal giaSauGiam = giaGoc.subtract(perUnitGiam);
 
-            if (chiTietSanPham.getSoLuongTonKho() < newQuantity) {
+        // 3) Nếu dòng đã tồn tại trong giỏ: cộng dồn số lượng & tính lại đơn giá theo campaign hiện tại
+        Optional<ChiTietGioHang> existingOpt = chiTietGioHangRepository
+                .findByGioHangIdAndChiTietSanPhamId(gioHangId, chiTietSanPhamId);
+
+        if (existingOpt.isPresent()) {
+            ChiTietGioHang existing = existingOpt.get();
+
+            int oldQty = existing.getSoLuong();
+            int newQty = oldQty + soLuong;
+
+            if (chiTietSanPham.getSoLuongTonKho() < newQty) {
                 throw new RuntimeException("Số lượng tồn kho không đủ sau khi cộng dồn: " + chiTietSanPham.getSoLuongTonKho());
             }
 
-            chiTiet.setSoLuong(newQuantity);
-            chiTiet.setGia(giaGiam);
-            chiTiet.setTienGiam(tienGiam.multiply(BigDecimal.valueOf(newQuantity)));
-            chiTietGioHangRepository.save(chiTiet);
+            // tổng cũ & mới (lưu ý: existing.getGia() là đơn giá sau giảm trước đó)
+            BigDecimal oldLine = existing.getGia().multiply(BigDecimal.valueOf(oldQty));
+            BigDecimal newLine = giaSauGiam.multiply(BigDecimal.valueOf(newQty));
 
-            BigDecimal tongTienMoi = gioHang.getTongTien().add(giaGiam.multiply(BigDecimal.valueOf(soLuong)));
-            gioHang.setTongTien(tongTienMoi);
+            existing.setSoLuong(newQty);
+            existing.setGia(giaSauGiam); // đơn giá sau giảm hiện tại
+            existing.setTienGiam(perUnitGiam.multiply(BigDecimal.valueOf(newQty)));
+            chiTietGioHangRepository.save(existing);
+
+            gioHang.setTongTien(gioHang.getTongTien().subtract(oldLine).add(newLine));
             gioHangRepository.save(gioHang);
 
-            return chiTiet;
+            return existing;
         }
 
+        // 4) Tạo mới dòng chi tiết giỏ hàng
         ChiTietGioHang chiTiet = new ChiTietGioHang();
         chiTiet.setGioHang(gioHang);
         chiTiet.setChiTietSanPham(chiTietSanPham);
         chiTiet.setSoLuong(soLuong);
-        chiTiet.setGia(giaGiam);
-        chiTiet.setTienGiam(tienGiam.multiply(BigDecimal.valueOf(soLuong)));
+        chiTiet.setGia(giaSauGiam); // lưu đơn giá sau giảm
+        chiTiet.setTienGiam(perUnitGiam.multiply(BigDecimal.valueOf(soLuong))); // tổng tiền giảm của dòng
         chiTiet.setThoiGianThem(LocalDateTime.now());
         chiTiet.setTrangThai(true);
-        chiTiet = chiTietGioHangRepository.save(chiTiet);
 
-        BigDecimal tongTienMoi = gioHang.getTongTien().add(giaGiam.multiply(BigDecimal.valueOf(soLuong)));
-        gioHang.setTongTien(tongTienMoi);
+        ChiTietGioHang saved = chiTietGioHangRepository.save(chiTiet);
+
+        BigDecimal lineTotal = giaSauGiam.multiply(BigDecimal.valueOf(soLuong));
+        gioHang.setTongTien(gioHang.getTongTien().add(lineTotal));
         gioHangRepository.save(gioHang);
 
-        return chiTiet;
+        return saved;
     }
 
     public List<ChiTietGioHang> getGioHangChiTiets(UUID gioHangId) {
