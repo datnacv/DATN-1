@@ -6,7 +6,7 @@
     <title>Quản Lý Chi Tiết Sản Phẩm</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap&subset=latin-ext" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
@@ -45,7 +45,8 @@
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
             background-color: var(--main-background);
             color: var(--text-content);
             min-height: 100vh;
@@ -927,96 +928,40 @@
                 <form th:action="@{/acvstore/chi-tiet-san-pham}" method="get">
                     <input type="hidden" name="productId" th:value="${selectedProductId}"/>
                     <div class="row g-4 align-items-end">
-                        <div class="col-md-4 col-lg-4">
+
+                        <!-- Hàng 1: Sản phẩm -->
+                        <div class="col-12">
                             <div class="floating-label">
                                 <label for="productFilter">Sản phẩm</label>
-                                <input type="text" class="form-control" id="productFilter" th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
+                                <input type="text" class="form-control" id="productFilter"
+                                       th:value="${sanPhamDaChon?.tenSanPham}" disabled/>
                             </div>
                         </div>
-                        <div class="col-md-4 col-lg-4">
+
+                        <!-- Hàng 2: Màu sắc - Kích cỡ - Trạng thái - Xóa bộ lọc -->
+                        <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="colorFilter">Màu sắc</label>
                                 <select class="form-select" id="colorFilter" name="colorId" onchange="this.form.submit()">
                                     <option value="">-- Tất cả màu sắc --</option>
-                                    <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}" th:selected="${c.id == selectedColorId}"></option>
+                                    <option th:each="c : ${mauSacs}" th:value="${c.id}" th:text="${c.tenMau}"
+                                            th:selected="${c.id == selectedColorId}"></option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4 col-lg-4">
+
+                        <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="sizeFilter">Kích cỡ</label>
                                 <select class="form-select" id="sizeFilter" name="sizeId" onchange="this.form.submit()">
                                     <option value="">-- Tất cả kích cỡ --</option>
-                                    <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}" th:selected="${s.id == selectedSizeId}"></option>
+                                    <option th:each="s : ${kichCos}" th:value="${s.id}" th:text="${s.ten}"
+                                            th:selected="${s.id == selectedSizeId}"></option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="originFilter">Xuất xứ</label>
-                                <select class="form-select" id="originFilter" name="originId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả xuất xứ --</option>
-                                    <option th:each="o : ${xuatXus}" th:value="${o.id}" th:text="${o.tenXuatXu}" th:selected="${o.id == selectedOriginId}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="materialFilter">Chất liệu</label>
-                                <select class="form-select" id="materialFilter" name="materialId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả chất liệu --</option>
-                                    <option th:each="m : ${chatLieus}" th:value="${m.id}" th:text="${m.tenChatLieu}" th:selected="${m.id == selectedMaterialId}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="styleFilter">Kiểu dáng</label>
-                                <select class="form-select" id="styleFilter" name="styleId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả kiểu dáng --</option>
-                                    <option th:each="st : ${kieuDangs}" th:value="${st.id}" th:text="${st.tenKieuDang}" th:selected="${st.id == selectedStyleId}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="sleeveFilter">Tay áo</label>
-                                <select class="form-select" id="sleeveFilter" name="sleeveId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả tay áo --</option>
-                                    <option th:each="sa : ${tayAos}" th:value="${sa.id}" th:text="${sa.tenTayAo}" th:selected="${sa.id == selectedSleeveId}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="collarFilter">Cổ áo</label>
-                                <select class="form-select" id="collarFilter" name="collarId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả cổ áo --</option>
-                                    <option th:each="ca : ${coAos}" th:value="${ca.id}" th:text="${ca.tenCoAo}" th:selected="${ca.id == selectedCollarId}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="brandFilter">Thương hiệu</label>
-                                <select class="form-select" id="brandFilter" name="brandId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả thương hiệu --</option>
-                                    <option th:each="th : ${thuongHieus}" th:value="${th.id}" th:text="${th.tenThuongHieu}" th:selected="${th.id == selectedBrandId}"></option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
-                            <div class="floating-label">
-                                <label for="genderFilter">Giới tính</label>
-                                <select class="form-select" id="genderFilter" name="gender" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả giới tính --</option>
-                                    <option value="Nam" th:selected="${selectedGender == 'Nam'}">Nam</option>
-                                    <option value="Nữ" th:selected="${selectedGender == 'Nữ'}">Nữ</option>
-                                    <option value="Unisex" th:selected="${selectedGender == 'Unisex'}">Unisex</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4 col-lg-4">
+
+                        <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="statusFilter">Trạng thái</label>
                                 <select class="form-select" id="statusFilter" name="status" onchange="this.form.submit()">
@@ -1026,15 +971,20 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4 col-lg-4 d-flex align-items-end">
-                            <a th:href="@{/acvstore/chi-tiet-san-pham(productId=${selectedProductId})}" class="btn btn-secondary w-100" style="height: 58px; margin-bottom: 37px;">
-                                <i class="fas fa-filter"></i> Xóa bộ lọc
+
+                        <!-- Removed align-top class and simplified alignment -->
+                        <div class="col-md-3" style="margin-bottom: 35px">
+                            <a th:href="@{/acvstore/chi-tiet-san-pham(productId=${selectedProductId})}"
+                               class="btn btn-secondary d-flex align-items-center justify-content-center" style="height: 65px">
+                                <i class="fas fa-filter me-2"></i> Xóa bộ lọc
                             </a>
                         </div>
                     </div>
                 </form>
             </div>
         </div>
+
+
         <!-- Hide quick edit section for employees -->
         <div class="d-flex justify-content-between align-items-center mb-3" th:if="${canEdit}">
             <div class="d-flex align-items-center gap-2">

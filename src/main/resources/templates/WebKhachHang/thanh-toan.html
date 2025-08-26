@@ -1163,113 +1163,14 @@
                     <div id="address-list" class="mb-4" style="max-height: 300px; overflow-y: auto; padding-right: 8px;"></div>
                 </div>
 
-                <!-- Enhanced add new address button -->
-                <button type="button" class="btn w-100 mb-4 d-flex align-items-center justify-content-center" onclick="showAddAddressForm()"
+                <button type="button" class="btn w-100 mb-4 d-flex align-items-center justify-content-center"
+                        onclick="openAddAddressModal()"
                         style="background: linear-gradient(135deg, var(--secondary-color) 0%, #7cc7f0 100%);
-                               border: none; color: var(--primary-color); font-weight: 600;
-                               padding: 16px; border-radius: var(--border-radius);
-                               transition: var(--transition); box-shadow: var(--shadow-sm);">
+               border: none; color: var(--primary-color); font-weight: 600;
+               padding: 16px; border-radius: var(--border-radius);">
                     <i class="fas fa-plus me-2"></i>
                     Thêm địa chỉ mới
                 </button>
-
-                <!-- Enhanced add address form with better styling -->
-                <div id="add-address-form" class="d-none" style="background: white; border-radius: var(--border-radius); padding: 24px; box-shadow: var(--shadow-md); border: 1px solid var(--gray-200);">
-                    <h6 class="mb-4 d-flex align-items-center" style="color: var(--primary-color); font-weight: 600; font-size: 1.1rem;">
-                        <i class="fas fa-plus-circle me-2"></i>
-                        Thêm địa chỉ mới
-                    </h6>
-                    <form id="new-address-form">
-                        <!-- Enhanced form fields with better styling -->
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="new-fullName" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
-                                    <i class="fas fa-user me-1 text-primary"></i>
-                                    Họ và tên
-                                </label>
-                                <input type="text" id="new-fullName" class="form-control" required
-                                       style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
-                                              padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;"
-                                       placeholder="Nhập họ và tên"/>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="new-phone" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
-                                    <i class="fas fa-phone me-1 text-primary"></i>
-                                    Số điện thoại
-                                </label>
-                                <input type="tel" id="new-phone" class="form-control" required
-                                       style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
-                                              padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;"
-                                       placeholder="Nhập số điện thoại"/>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="new-address" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
-                                <i class="fas fa-home me-1 text-primary"></i>
-                                Địa chỉ chi tiết
-                            </label>
-                            <input type="text" id="new-address" class="form-control" required
-                                   style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
-                                          padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;"
-                                   placeholder="Số nhà, tên đường..."/>
-                        </div>
-
-                        <!-- Enhanced location selects with better styling -->
-                        <div class="row mb-4">
-                            <div class="col-md-4 mb-3">
-                                <label for="new-province" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
-                                    <i class="fas fa-map me-1 text-primary"></i>
-                                    Tỉnh/Thành phố
-                                </label>
-                                <select id="new-province" class="form-control" required
-                                        style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
-                                               padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;">
-                                    <option value="">-- Chọn tỉnh/thành --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="new-district" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
-                                    <i class="fas fa-building me-1 text-primary"></i>
-                                    Quận/Huyện
-                                </label>
-                                <select id="new-district" class="form-control" required
-                                        style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
-                                               padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;">
-                                    <option value="">-- Chọn quận/huyện --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="new-ward" class="form-label" style="font-weight: 500; color: var(--gray-700); margin-bottom: 8px;">
-                                    <i class="fas fa-location-dot me-1 text-primary"></i>
-                                    Phường/Xã
-                                </label>
-                                <select id="new-ward" class="form-control" required
-                                        style="border: 2px solid var(--gray-200); border-radius: var(--border-radius);
-                                               padding: 12px 16px; transition: var(--transition); font-size: 0.95rem;">
-                                    <option value="">-- Chọn phường/xã --</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Enhanced action buttons with better styling -->
-                        <div class="d-flex gap-3 justify-content-end">
-                            <button type="button" class="btn px-4 py-2" onclick="hideAddAddressForm()"
-                                    style="background: var(--gray-100); color: var(--gray-600); border: 2px solid var(--gray-200);
-                                           border-radius: var(--border-radius); font-weight: 500; transition: var(--transition);">
-                                <i class="fas fa-times me-1"></i>
-                                Hủy
-                            </button>
-                            <button type="button" class="btn px-4 py-2" onclick="saveNewAddress()"
-                                    style="background: linear-gradient(135deg, var(--primary-color) 0%, #1a3a5f 100%);
-                                           color: white; border: none; border-radius: var(--border-radius);
-                                           font-weight: 600; transition: var(--transition); box-shadow: var(--shadow-sm);">
-                                <i class="fas fa-save me-1"></i>
-                                Lưu địa chỉ
-                            </button>
-                        </div>
-                    </form>
-                </div>
             </div>
 
             <!-- Enhanced modal footer -->
@@ -1284,6 +1185,69 @@
         </div>
     </div>
 </div>
+
+<!-- Add Address Modal (mới) -->
+<div class="modal fade" id="addAddressModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: var(--border-radius-lg); border: none; box-shadow: var(--shadow-xl);">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary-color) 0%, #1a3a5f 100%); color: #fff;">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Thêm địa chỉ mới</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" style="padding: 24px;">
+                <form id="new-address-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-user me-1 text-primary"></i>Họ và tên</label>
+                            <input id="new-fullName" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fas fa-phone me-1 text-primary"></i>Số điện thoại</label>
+                            <input id="new-phone" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><i class="fas fa-home me-1 text-primary"></i>Địa chỉ chi tiết</label>
+                        <input id="new-address" class="form-control" required placeholder="Số nhà, tên đường...">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label"><i class="fas fa-map me-1 text-primary"></i>Tỉnh/Thành phố</label>
+                            <select id="new-province" class="form-control" required>
+                                <option value="">-- Chọn tỉnh/thành --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label"><i class="fas fa-building me-1 text-primary"></i>Quận/Huyện</label>
+                            <select id="new-district" class="form-control" required>
+                                <option value="">-- Chọn quận/huyện --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label"><i class="fas fa-location-dot me-1 text-primary"></i>Phường/Xã</label>
+                            <select id="new-ward" class="form-control" required>
+                                <option value="">-- Chọn phường/xã --</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer" style="background:#f8fafc;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Hủy
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveNewAddress()">
+                    <i class="fas fa-save me-1"></i>Lưu địa chỉ
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <footer style="background: linear-gradient(to right, #153054, #1e4066); color: white; padding-top: 30px; padding-bottom: 20px; position: relative; z-index: 1;">
     <div class="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1462,6 +1426,22 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
+    window.openAddAddressModal = function () {
+        // reset field
+        document.getElementById('new-fullName').value = '';
+        document.getElementById('new-phone').value = '';
+        document.getElementById('new-address').value = '';
+        document.getElementById('new-province').innerHTML = '<option value="">-- Chọn tỉnh/thành --</option>';
+        document.getElementById('new-district').innerHTML = '<option value="">-- Chọn quận/huyện --</option>';
+        document.getElementById('new-ward').innerHTML     = '<option value="">-- Chọn phường/xã --</option>';
+
+        // nạp tỉnh/thành cho modal mới
+        loadProvinces('new-province');
+
+        // mở modal thêm địa chỉ (không cần đóng addressModal, Bootstrap cho phép xếp chồng)
+        new bootstrap.Modal(document.getElementById('addAddressModal')).show();
+    };
+
     // Chỉ bật đặt hàng khi đã nhận được phản hồi tính phí ship (kể cả 0đ vẫn OK)
     let shippingFeeReady = false;
 
@@ -1520,8 +1500,10 @@
     };
 
     function checkLoadingComplete() {
+        const overlay = document.getElementById('loading-overlay');
+        if (!overlay) return; // Không có overlay thì thôi, khỏi thao tác classList
         const allLoaded = Object.values(loadingState).every(s => s === true);
-        if (allLoaded) document.getElementById('loading-overlay').classList.remove('active');
+        if (allLoaded) overlay.classList.remove('active');
     }
 
     function formatVND(number) {
@@ -1566,7 +1548,7 @@
             checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải tỉnh/thành:', err);
-            Swal.fire({ icon: 'error', title: 'Lỗi tải tỉnh/thành', text: err.message });
+            // Swal.fire({ icon: 'error', title: 'Lỗi tải tỉnh/thành', text: err.message });
             loadingState.provinces = true;
             checkLoadingComplete();
         }
@@ -2110,9 +2092,8 @@
             await loadShippingServices(districtId);
             await calculateShipping();
 
-            // Đóng modal + thông báo
-            bootstrap.Modal.getInstance(document.getElementById('addressModal')).hide();
-            document.getElementById('add-address-form').classList.add('d-none');
+            const addM = bootstrap.Modal.getInstance(document.getElementById('addAddressModal'));
+            if (addM) addM.hide();
             Swal.fire({icon:'success',title:'Đã thêm địa chỉ',timer:1200,showConfirmButton:false});
         } catch (err) {
             console.error(err);
