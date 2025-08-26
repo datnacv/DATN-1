@@ -101,5 +101,34 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/images/danh_gia/**")
                 .addResourceLocations(ratingUploadPath)
                 .setCachePeriod(0);
+
+        // ======== CẤU HÌNH MÃ QR (/qr/**) ==========
+        String qrUploadPath;
+        String qrDirPath;
+
+        if (os.contains("win")) {
+            qrUploadPath = "file:///C:/DATN/uploads/qr/";
+            qrDirPath = "C:/DATN/uploads/qr/";
+        } else {
+            String userHome = System.getProperty("user.home");
+            qrUploadPath = "file://" + userHome + "/DATN/uploads/qr/";
+            qrDirPath = userHome + "/DATN/uploads/qr/";
+        }
+
+        try {
+            Path qrPath = Paths.get(qrDirPath);
+            if (!Files.exists(qrPath)) {
+                Files.createDirectories(qrPath);
+                System.out.println("Đã tạo thư mục QR: " + qrPath);
+            } else {
+                System.out.println("Thư mục QR đã tồn tại: " + qrPath);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể tạo hoặc truy cập thư mục QR: " + qrDirPath, e);
+        }
+
+        registry.addResourceHandler("/qr/**")
+                .addResourceLocations(qrUploadPath)
+                .setCachePeriod(0);
     }
 }
