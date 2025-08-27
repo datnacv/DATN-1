@@ -12,11 +12,12 @@ public class FaceAuthPageController {
 
     @GetMapping("/verify-face")
     public String showFaceAuthPage(Model model, Authentication authentication) {
-        if (authentication != null && authentication.isAuthenticated()) {
+        if (authentication != null) {
             model.addAttribute("username", authentication.getName());
         } else {
-            model.addAttribute("username", "unknown");
+            model.addAttribute("username", "anonymous");
         }
         return "WebQuanLy/verify-face";
     }
+
 }

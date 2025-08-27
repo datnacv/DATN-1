@@ -173,34 +173,25 @@
                     <div class="col-md-6 form-section">
                         <h4 class="mb-4">Thông tin cơ bản</h4>
                         <div class="form-floating">
-                            <input type="text" class="form-control" th:field="*{tenDangNhap}" placeholder="Tên đăng nhập" required minlength="3" pattern="^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9_]{3,}$">
+                            <input type="text" class="form-control" th:field="*{tenDangNhap}" placeholder="Tên đăng nhập" required>
                             <label>Tên đăng nhập</label>
                             <i class="fas fa-user input-icon"></i>
-                            <div class="invalid-feedback">Tên đăng nhập phải ít nhất 3 ký tự, chứa cả chữ và số, chỉ chứa chữ cái, số và dấu gạch dưới.</div>
+                            <div class="invalid-feedback">Tên đăng nhập là bắt buộc.</div>
                         </div>
                         <div class="form-floating position-relative">
-                            <input type="password" class="form-control" th:field="*{matKhau}" id="passwordField" placeholder="Mật khẩu" required minlength="8" pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$">
+                            <input type="password" class="form-control" th:field="*{matKhau}" id="passwordField" placeholder="Mật khẩu" required autocomplete="new-password">
                             <label>Mật khẩu</label>
                             <i class="fas fa-lock input-icon"></i>
                             <button type="button" class="password-toggle" id="togglePassword">
                                 <i class="fas fa-eye" id="togglePasswordIcon"></i>
                             </button>
-                            <div class="invalid-feedback">Mật khẩu phải ít nhất 8 ký tự, chứa chữ hoa, chữ thường, số và ký tự đặc biệt.</div>
-                        </div>
-                        <div class="form-floating position-relative">
-                            <input type="password" class="form-control" id="confirmPasswordField" placeholder="Xác nhận mật khẩu" required>
-                            <label>Xác nhận mật khẩu</label>
-                            <i class="fas fa-lock input-icon"></i>
-                            <button type="button" class="password-toggle" id="toggleConfirmPassword">
-                                <i class="fas fa-eye" id="toggleConfirmPasswordIcon"></i>
-                            </button>
-                            <div class="invalid-feedback" id="confirmPasswordFeedback">Mật khẩu xác nhận không khớp.</div>
+                            <div class="invalid-feedback">Mật khẩu là bắt buộc.</div>
                         </div>
                         <div class="form-floating">
-                            <input type="text" class="form-control" th:field="*{hoTen}" placeholder="Họ và tên" required minlength="2" pattern="^[a-zA-ZÀ-ỹ\s]{2,}$">
+                            <input type="text" class="form-control" th:field="*{hoTen}" placeholder="Họ và tên" required>
                             <label>Họ và tên</label>
                             <i class="fas fa-user-tie input-icon"></i>
-                            <div class="invalid-feedback">Họ và tên phải ít nhất 2 ký tự, chỉ chứa chữ cái và khoảng trắng.</div>
+                            <div class="invalid-feedback">Họ và tên là bắt buộc.</div>
                         </div>
                         <div class="form-floating">
                             <input type="email" class="form-control" th:field="*{email}" placeholder="Email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$">
@@ -209,10 +200,10 @@
                             <div class="invalid-feedback">Vui lòng nhập email hợp lệ.</div>
                         </div>
                         <div class="form-floating">
-                            <input type="text" class="form-control" th:field="*{soDienThoai}" placeholder="Số điện thoại" required pattern="^0\d{9}$">
+                            <input type="text" class="form-control" th:field="*{soDienThoai}" placeholder="Số điện thoại" required pattern="[0-9]{10}">
                             <label>Số điện thoại</label>
                             <i class="fas fa-phone input-icon"></i>
-                            <div class="invalid-feedback">Số điện thoại phải là 10 chữ số, bắt đầu bằng 0.</div>
+                            <div class="invalid-feedback">Số điện thoại phải là 10 chữ số.</div>
                         </div>
                     </div>
 
@@ -249,13 +240,13 @@
                             <div class="invalid-feedback">Phường/Xã là bắt buộc.</div>
                         </div>
                         <div class="form-floating">
-                            <input type="text" class="form-control" th:field="*{chiTietDiaChi}" placeholder="Chi tiết địa chỉ" required minlength="5">
+                            <input type="text" class="form-control" th:field="*{chiTietDiaChi}" placeholder="Chi tiết địa chỉ" required>
                             <label>Chi tiết địa chỉ</label>
                             <i class="fas fa-home input-icon"></i>
-                            <div class="invalid-feedback">Chi tiết địa chỉ phải ít nhất 5 ký tự.</div>
+                            <div class="invalid-feedback">Chi tiết địa chỉ là bắt buộc.</div>
                         </div>
 
-                        <!-- Keep old values on error -->
+                        <!-- 🔒 GIỮ LẠI GIÁ TRỊ CŨ KHI BÁO LỖI -->
                         <input type="hidden" id="currentDistrictName" th:value="*{quanHuyen}">
                         <input type="hidden" id="currentWardName" th:value="*{phuongXa}">
                     </div>
@@ -276,32 +267,28 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    // Standard Bootstrap validation
-    (function () {
+    /* Client-side validate giữ nguyên */
+    (function() {
         'use strict';
-        window.addEventListener('load', function () {
-            var forms = document.querySelectorAll('.needs-validation');
-            Array.prototype.slice.call(forms).forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    const password = document.getElementById('passwordField');
-                    const confirmPassword = document.getElementById('confirmPasswordField');
-                    if (password.value !== confirmPassword.value) {
-                        confirmPassword.setCustomValidity('Mật khẩu xác nhận không khớp.');
-                        confirmPassword.classList.add('is-invalid');
-                        document.getElementById('confirmPasswordFeedback').textContent = 'Mật khẩu xác nhận không khớp.';
-                        event.preventDefault();
-                        event.stopPropagation();
+        window.addEventListener('load', function() {
+            var form = document.getElementById('registerForm');
+            form.addEventListener('submit', function(event) {
+                var isValid = true;
+                var inputs = form.querySelectorAll('[required]');
+                inputs.forEach(function(input) {
+                    if (!input.value.trim()) {
+                        input.classList.add('is-invalid');
+                        isValid = false;
                     } else {
-                        confirmPassword.setCustomValidity('');
-                        confirmPassword.classList.remove('is-invalid');
+                        input.classList.remove('is-invalid');
                     }
-                    if (!form.checkValidity()) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                }, false);
-            });
+                });
+                if (!isValid) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
         }, false);
     })();
 
@@ -309,11 +296,7 @@
         const passwordField = document.getElementById('passwordField');
         const togglePassword = document.getElementById('togglePassword');
         const togglePasswordIcon = document.getElementById('togglePasswordIcon');
-        const confirmPasswordField = document.getElementById('confirmPasswordField');
-        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
-        const toggleConfirmPasswordIcon = document.getElementById('toggleConfirmPasswordIcon');
 
-        // Toggle password visibility
         if (togglePassword) {
             togglePassword.addEventListener('click', function () {
                 const isPassword = passwordField.type === 'password';
@@ -323,33 +306,12 @@
             });
         }
 
-        if (toggleConfirmPassword) {
-            toggleConfirmPassword.addEventListener('click', function () {
-                const isPassword = confirmPasswordField.type === 'password';
-                confirmPasswordField.type = isPassword ? 'text' : 'password';
-                toggleConfirmPasswordIcon.classList.toggle('fa-eye');
-                toggleConfirmPasswordIcon.classList.toggle('fa-eye-slash');
-            });
-        }
-
-        // Real-time password confirmation validation
-        confirmPasswordField.addEventListener('input', function () {
-            if (passwordField.value !== confirmPasswordField.value) {
-                confirmPasswordField.setCustomValidity('Mật khẩu xác nhận không khớp.');
-                confirmPasswordField.classList.add('is-invalid');
-                document.getElementById('confirmPasswordFeedback').textContent = 'Mật khẩu xác nhận không khớp.';
-            } else {
-                confirmPasswordField.setCustomValidity('');
-                confirmPasswordField.classList.remove('is-invalid');
-            }
-        });
-
         const $province = $('#province');
         const $district = $('#district');
         const $ward = $('#ward');
 
-        const currentDistrictName = $('#currentDistrictName').val();
-        const currentWardName = $('#currentWardName').val();
+        const currentDistrictName = $('#currentDistrictName').val(); // tên đã chọn trước đó
+        const currentWardName = $('#currentWardName').val();         // tên đã chọn trước đó
 
         function loadDistricts(provinceId, preselectName) {
             return $.get('/customers/register/districts', { provinceId: provinceId })
@@ -362,6 +324,7 @@
                     if (preselectName) {
                         $district.val(preselectName);
                     }
+                    // trả về districtId đang chọn (nếu có) để load wards
                     const selectedDid = $district.find('option:selected').data('id');
                     return selectedDid || null;
                 });
@@ -381,6 +344,7 @@
                 });
         }
 
+        // 🔁 Rehydrate khi trang reload do lỗi: nếu đã chọn Tỉnh → tự load lại Quận/Huyện & Phường/Xã
         const hasProvince = !!$province.val();
         if (hasProvince) {
             const provinceId = $province.find('option:selected').data('id');
@@ -395,6 +359,7 @@
             }
         }
 
+        // Handlers change
         $province.off('change').on('change', function () {
             const pid = $(this).find('option:selected').data('id');
             if (pid) {
@@ -414,12 +379,6 @@
             } else {
                 $ward.empty().append('<option value="">Chọn Phường/Xã</option>');
             }
-        });
-
-        // Debug: Log form data before submission
-        document.getElementById('registerForm').addEventListener('submit', function(event) {
-            const formData = new FormData(this);
-            console.log('Form data submitted:', Object.fromEntries(formData));
         });
     });
 </script>

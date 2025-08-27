@@ -20,16 +20,38 @@ import java.util.UUID;
 public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
 
     @Query(value = """
-    SELECT COALESCE(SUM(hd.tong_tien - COALESCE(dh.phi_van_chuyen, 0)), 0)
-    FROM hoa_don hd
-    JOIN don_hang dh ON dh.id = hd.id_don_hang
-    JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
-    WHERE ls.thoi_gian >= :start
-      AND ls.thoi_gian <  :end
-      AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
+WITH completed_orders AS (
+  SELECT DISTINCT hd.id        AS id_hoa_don,
+                  dh.id        AS id_don_hang
+  FROM hoa_don hd
+  JOIN don_hang dh       ON dh.id = hd.id_don_hang
+  JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
+  WHERE ls.thoi_gian >= :start
+    AND ls.thoi_gian <  :end
+    AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
+),
+merch AS (
+  SELECT co.id_don_hang,
+         COALESCE(SUM(ct.so_luong * ct.gia), 0) AS total_merch
+  FROM chi_tiet_don_hang ct
+  JOIN completed_orders co ON co.id_don_hang = ct.id_don_hang
+  GROUP BY co.id_don_hang
+),
+order_disc AS (
+  SELECT co.id_don_hang,
+         COALESCE(SUM(v.gia_tri_giam), 0) AS order_disc
+  FROM don_hang_phieu_giam_gia v
+  JOIN completed_orders co ON co.id_don_hang = v.id_don_hang
+  WHERE UPPER(v.loai_giam_gia) = N'ORDER'
+  GROUP BY co.id_don_hang
+)
+SELECT COALESCE(SUM(m.total_merch - COALESCE(od.order_disc, 0)), 0)
+FROM merch m
+LEFT JOIN order_disc od ON od.id_don_hang = m.id_don_hang
 """, nativeQuery = true)
     BigDecimal tinhDoanhThuTheoHoaDon(@Param("start") LocalDateTime start,
                                       @Param("end")   LocalDateTime end);
+
 
 
     @Query(value = """
@@ -165,18 +187,44 @@ public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
                                            @Param("end")   LocalDateTime end);
 
     @Query(value = """
-    SELECT CAST(ls.thoi_gian AS date) AS d,
-           COALESCE(SUM(hd.tong_tien - COALESCE(dh.phi_van_chuyen, 0)), 0) AS s
-    FROM hoa_don hd
-    JOIN don_hang dh ON dh.id = hd.id_don_hang
-    JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
-    WHERE ls.thoi_gian >= :start
-      AND ls.thoi_gian <  :end
-      AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
-    GROUP BY CAST(ls.thoi_gian AS date)
-    ORDER BY d
+WITH completed_orders AS (
+  SELECT DISTINCT CAST(ls.thoi_gian AS date) AS d,
+                  hd.id AS id_hoa_don,
+                  dh.id AS id_don_hang
+  FROM hoa_don hd
+  JOIN don_hang dh       ON dh.id = hd.id_don_hang
+  JOIN lich_su_hoa_don ls ON ls.id_hoa_don = hd.id
+  WHERE ls.thoi_gian >= :start
+    AND ls.thoi_gian <  :end
+    AND UPPER(REPLACE(REPLACE(ls.trang_thai COLLATE Vietnamese_100_CI_AI_SC_UTF8, N'_', N''), N' ', N'')) = N'HOANTHANH'
+),
+merch AS (
+  SELECT co.d,
+         co.id_don_hang,
+         COALESCE(SUM(ct.so_luong * ct.gia), 0) AS total_merch
+  FROM chi_tiet_don_hang ct
+  JOIN completed_orders co ON co.id_don_hang = ct.id_don_hang
+  GROUP BY co.d, co.id_don_hang
+),
+order_disc AS (
+  SELECT co.d,
+         co.id_don_hang,
+         COALESCE(SUM(v.gia_tri_giam), 0) AS order_disc
+  FROM don_hang_phieu_giam_gia v
+  JOIN completed_orders co ON co.id_don_hang = v.id_don_hang
+  WHERE UPPER(v.loai_giam_gia) = N'ORDER'
+  GROUP BY co.d, co.id_don_hang
+)
+SELECT m.d,
+       COALESCE(SUM(m.total_merch - COALESCE(od.order_disc, 0)), 0) AS s
+FROM merch m
+LEFT JOIN order_disc od
+  ON od.id_don_hang = m.id_don_hang AND od.d = m.d
+GROUP BY m.d
+ORDER BY m.d
 """, nativeQuery = true)
     List<Object[]> thongKeDoanhThuTheoNgay(@Param("start") LocalDateTime start,
                                            @Param("end")   LocalDateTime end);
+
 
 }

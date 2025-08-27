@@ -101,16 +101,16 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">Tên đợt</label>
-                                <!-- BỎ pattern, validate bằng JS: không space đầu/cuối, không 2+ space giữa, chỉ chữ, ≥6 ký tự (không tính space) -->
+                                <!-- Validate bằng JS: cho chữ (có dấu), số, '-', '/'; nhóm cách 1 space; >=6 ký tự (không tính space) -->
                                 <input type="text" class="form-control"
                                        th:field="*{ten}"
                                        required maxlength="100"
                                        th:readonly="${isReadOnly or !isAdmin}"
                                        oninput="this.setCustomValidity('')"
                                        onblur="validateTen(this)"
-                                       oninvalid="this.setCustomValidity('Tên chỉ gồm chữ (có dấu), phải là các từ cách nhau đúng 1 khoảng trắng. Cho phép khoảng trắng ở đầu/cuối. Tối thiểu 6 ký tự (không tính khoảng trắng).')">
-
+                                       oninvalid="this.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng), chỉ gồm chữ (có dấu), số, dấu gạch ngang (-) và dấu gạch chéo (/), giữa các nhóm cách 1 khoảng trắng.')">
                             </div>
+
                             <!-- % giảm: số nguyên 1..99 -->
                             <div class="col-md-4">
                                 <label class="form-label">% giảm</label>
@@ -267,29 +267,31 @@
 
         if (raw === '') { el.setCustomValidity(''); return; } // required xử lý riêng
 
-        // Lấy nội dung để kiểm tra: cắt đầu/cuối CHỈ để kiểm tra (KHÔNG gán ngược)
+        // Kiểm tra trên phiên bản đã trim (KHÔNG gán ngược ở đây)
         const trimmed = raw.trim();
 
-        // 1) Không cho 2+ khoảng trắng liên tiếp ở GIỮA
+        // 1) Không cho 2+ khoảng trắng liên tiếp ở giữa
         if (/\s{2,}/.test(trimmed)) {
             el.setCustomValidity('Giữa các từ chỉ được 1 khoảng trắng.');
             return;
         }
 
-        // 2) Chỉ chữ theo từng từ (có thể có 1 space giữa các từ)
-        if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(trimmed)) {
-            el.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng.');
+        // 2) Cho phép: chữ (có dấu), số, '-', '/' ; các nhóm ngăn cách bằng đúng 1 khoảng trắng
+        //    Dùng Unicode property cho \p{L} với cờ 'u'
+        const allowed = /^[\p{L}\d\-\/]+(?: [\p{L}\d\-\/]+)*$/u;
+        if (!allowed.test(trimmed)) {
+            el.setCustomValidity('Tên chỉ được dùng chữ (có dấu), số, dấu gạch ngang (-) và dấu gạch chéo (/), giữa các nhóm cách 1 khoảng trắng.');
             return;
         }
 
-        // 3) Độ dài không tính khoảng trắng ≥ 6
+        // 3) Độ dài tối thiểu 6 ký tự (không tính khoảng trắng)
         const nonSpaceLen = trimmed.replace(/\s+/g,'').length;
         if (nonSpaceLen < 6) {
             el.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).');
             return;
         }
 
-        // 4) Tối đa 100 ký tự tổng thể (tuỳ bạn giữ luật này)
+        // 4) Tối đa 100 ký tự tổng thể
         if (trimmed.length > 100) {
             el.setCustomValidity('Tên tối đa 100 ký tự.');
             return;
@@ -297,6 +299,7 @@
 
         el.setCustomValidity('');
     }
+
 
 
     function toLocalDatetimeValue(d){

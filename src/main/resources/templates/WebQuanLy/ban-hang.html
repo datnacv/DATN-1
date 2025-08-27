@@ -1215,6 +1215,28 @@
       return { ok: false };
     }
   }
+  function clearAddressUiElements() {
+    const addressSection          = document.getElementById('addressSection');
+    const shippingFeeContainer    = document.getElementById('shippingFeeContainer');
+    const shippingMethodContainer = document.getElementById('shippingMethodContainer');
+    const addressSelect           = document.getElementById('addressSelect');
+
+    addressSection?.classList.add('d-none');
+    shippingFeeContainer?.classList.add('d-none');
+    shippingMethodContainer?.classList.add('d-none');
+    if (addressSelect) addressSelect.innerHTML = '<option value="">Chọn địa chỉ</option>';
+  }
+  function resetShippingStateForCurrentTab() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return;
+    tab.selectedAddress  = '';
+    tab.shippingFeeBase  = 0;
+    tab.shippingDiscount = 0;
+    tab.shipVoucherId    = null;
+    updateSummary(tab);
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    updateShipSectionVisibility?.();
+  }
 
   // Gọi trước createOrder(): nếu có mã bị gỡ → chặn tạo đơn & báo
   async function hardRevalidateVouchersBeforeCheckout() {
@@ -1275,10 +1297,11 @@
 
     await reapplyCurrentOrderVoucher();
     await reapplyCurrentShipVoucher();
-    fetchVouchers();
+    await fetchVouchers();                 // <<<<<< đảm bảo UI voucher đúng theo PTTT mới
     updateSummary(tab);
     showToast('Đã kiểm tra lại điều kiện mã theo phương thức thanh toán mới.', 'info');
   }
+
 
   const DEFAULT_PHONE_PLACEHOLDER = 'Nhập số điện thoại khách hàng';
   function normalizeVNPhone(raw) {
@@ -1293,24 +1316,43 @@
     // cố định 11 số: 0 + 2 + 9 số
     return /^0(?:[35789]\d{8}|2\d{9})$/.test(n);
   }
-  function finalizePhoneInput() {
+
+  async function finalizePhoneInput() {
     const el = document.getElementById('customerPhone');
     if (!el) return '';
 
-    const n = normalizeVNPhone(el.value);        // đổi +84 → 0, bỏ ký tự lạ…
+    // Chuẩn hoá số: bỏ ký tự lạ, +84 -> 0, chỉ giữ số
+    const n = normalizeVNPhone(el.value);
+
+    // Validate (trừ mã “Khách lẻ”)
     if (n && !isValidVNPhone(n) && n !== '0999999999') {
       showToast('SĐT VN không hợp lệ: di động 10 số (03/05/07/08/09) hoặc cố định 11 số (02...)', 'warning');
       return '';
     }
-    el.value = n;                                // đẩy lại giá trị đã chuẩn hoá
 
+    // Ghi giá trị đã chuẩn hoá về input
+    el.value = n;
+
+    // Đồng bộ state & kích hoạt luồng đổi khách chuẩn
     const tab = tabs.find(t => t.id === currentTabId);
     if (tab) {
-      tab.customerPhone = n || '';
-      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      const prev = tab.customerPhone || '';
+      const next = n || '';
+
+      if (prev !== next) {
+        // ⚠️ KHÁC KHÁCH: dùng 1 entry-point chuẩn để clear voucher, reset ship, nạp lại dữ liệu
+        await onCustomerChanged(next);
+      } else {
+        // Không đổi khách: chỉ đồng bộ lại state hiện tại
+        tab.customerPhone = next;
+        localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      }
     }
+
     return n;
   }
+
+
 
 
   function clearAddressUI() {
@@ -3419,7 +3461,7 @@
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
-    // ===== Validate cơ bản =====
+    // validate cơ bản
     if (!tab.customerPhone) {
       showToast('Vui lòng nhập số điện thoại khách hàng.', 'warning');
       return;
@@ -3433,7 +3475,6 @@
       return;
     }
 
-    // ===== Tính phí ship & tổng =====
     const isDelivery       = tab.saleMethod === 'Giao hàng';
     const shippingBase     = isDelivery ? Number(tab.shippingFeeBase || 0) : 0;
     const shippingDiscount = isDelivery ? Number(tab.shippingDiscount || 0) : 0;
@@ -3443,9 +3484,8 @@
     const orderDiscount = Number(tab.discount || 0);
     const totalAmount   = subTotal - orderDiscount + shippingPay;
 
-    // ===== Validate theo phương thức thanh toán =====
-    const CASH_ID  = '550E8400-E29B-41D4-A716-446655440017'; // Tiền mặt
-    const BANK_ID  = '550E8400-E29B-41D4-A716-446655440018'; // Chuyển khoản
+    const CASH_ID  = '550E8400-E29B-41D4-A716-446655440017';
+    const BANK_ID  = '550E8400-E29B-41D4-A716-446655440018';
 
     const cashAmountInput = document.getElementById('cashAmount');
     const getRawCash = () => {
@@ -3455,19 +3495,16 @@
 
     if (tab.paymentMethod === CASH_ID) {
       const cash = getRawCash();
-      // Bắt buộc nhập & phải là số dương
       if (!Number.isFinite(cash) || cash <= 0) {
         showToast('Vui lòng nhập "Tiền khách đưa" (lớn hơn 0).', 'warning');
         if (cashAmountInput) {
           cashAmountInput.classList.add('is-invalid');
           cashAmountInput.focus();
-          // bỏ lớp lỗi khi người dùng gõ lại
           const rmErr = () => { cashAmountInput.classList.remove('is-invalid'); cashAmountInput.removeEventListener('input', rmErr); };
           cashAmountInput.addEventListener('input', rmErr);
         }
         return;
       }
-      // Phải đủ để thanh toán
       if (cash < totalAmount) {
         const thieu = (totalAmount - cash).toLocaleString('vi-VN');
         showToast(`Số tiền khách đưa chưa đủ. Thiếu ${thieu} VNĐ.`, 'warning');
@@ -3480,7 +3517,8 @@
         return;
       }
     }
-    // === NEW: Reject nếu "Tiền khách đưa" vượt DECIMAL(18,2)
+
+    // clamp theo DECIMAL(18,2)
     const cashDigitsForCheck = String(cashAmountInput?.value || '').replace(/[^\d]/g, '');
     if (clampCashToDbLimit(cashDigitsForCheck).over) {
       showToast(
@@ -3492,7 +3530,11 @@
       return;
     }
 
-    // ===== Xác nhận =====
+    // ===== NEW: revalidate tất cả mã trước khi confirm =====
+    const gate = await hardRevalidateVouchersBeforeCheckout();
+    if (!gate.proceed) return; // đã gỡ & báo trong hàm trên
+
+    // confirm
     const confirmResult = await Swal.fire({
       icon: 'question',
       title: 'Xác nhận thanh toán',
@@ -3509,11 +3551,9 @@
       confirmButtonColor: '#f97316',
       cancelButtonColor: '#d33',
     });
-
     if (!confirmResult.isConfirmed) return;
 
     try {
-      // ===== Chuẩn bị payload =====
       const soTienKhachDua =
               tab.paymentMethod === CASH_ID
                       ? (Number(String(cashAmountInput?.value || '0').replace(/\./g, '')) || 0)
@@ -3524,24 +3564,16 @@
         phuongThucBanHang: tab.saleMethod,
         phuongThucThanhToan: tab.paymentMethod,
         soTienKhachDua: soTienKhachDua,
-
-        // —— PHÍ VẬN CHUYỂN —— //
-        phiVanChuyen: shippingPay,          // phí sau giảm (tương thích BE cũ)
-        phiVanChuyenGoc: shippingBase,      // phí gốc
-        giamGiaVanChuyen: shippingDiscount, // giảm phí ship
-
-        // —— VOUCHER —— //
-        idPhieuGiamGia: tab.voucherId || null, // voucher ORDER (giữ tương thích)
-
-        // —— KHÁC —— //
+        phiVanChuyen: Math.max(0, shippingBase - shippingDiscount),
+        phiVanChuyenGoc: shippingBase,
+        giamGiaVanChuyen: shippingDiscount,
+        idPhieuGiamGia: tab.voucherId || null,
         danhSachSanPham: tab.cart,
         diaChiGiaoHang: tab.selectedAddress,
         tabId: String(currentTabId)
       };
 
-      // ===== Nhánh thanh toán =====
       if (tab.paymentMethod === BANK_ID) {
-        // Tạo link thanh toán
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/create-payment-link';
@@ -3565,14 +3597,12 @@
         descriptionInput.value = `Thanh toán đơn hàng ${currentTabId}`;
         form.appendChild(descriptionInput);
 
-        // Lưu đầy đủ dữ liệu đơn để BE xử lý sau redirect
         sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData, tabId: currentTabId }));
         document.body.appendChild(form);
         form.submit();
         return;
       }
 
-      // ===== Thanh toán tiền mặt =====
       const response = await fetch(`${BASE_URL}/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -3593,7 +3623,6 @@
       const data = await response.json();
       showToast(`Hóa đơn ${data.maDonHang} đã được tạo và in hóa đơn thành công!`, 'success');
 
-      // Tải & lưu file PDF nếu có
       if (data.pdfData) {
         try {
           const byteCharacters = atob(data.pdfData);
@@ -3616,14 +3645,14 @@
         }
       }
 
-      // ===== Reset tab sau khi tạo đơn =====
+      // giữ nguyên flow reset tab sau thanh toán…
       tabs = tabs.filter(t => t.id !== currentTabId);
       if (tabs.length === 0) {
         await addNewTab();
       } else {
         currentTabId = tabs[tabs.length - 1].id;
         const lastTab = tabs.find(t => t.id === currentTabId);
-        if (lastTab) lastTab.paymentMethod = CASH_ID; // mặc định lại tiền mặt
+        if (lastTab) lastTab.paymentMethod = CASH_ID;
       }
 
       localStorage.setItem('orderTabs', JSON.stringify(tabs));
@@ -3636,6 +3665,7 @@
       showToast('Lỗi khi tạo đơn hàng: ' + error.message, 'error');
     }
   }
+
 
 
 
@@ -3695,35 +3725,27 @@
     const tab = tabs.find(t => t.id === currentTabId);
     if (!tab) return;
 
-    tab.customerPhone = phone;
-    setDeliveryVisibilityForPhone(phone);
-    tab.customerName  = name;
-    tab.customerEmail = email;
-
-    const phoneEl   = document.getElementById('customerPhone');
-    const nameEl    = document.getElementById('customerName');
-    const emailEl   = document.getElementById('customerEmail');
-    const modalEl   = document.getElementById('customerModal');
+    // Giữ UI name/email như cũ
+    const phoneEl = document.getElementById('customerPhone');
+    const nameEl  = document.getElementById('customerName');
+    const emailEl = document.getElementById('customerEmail');
 
     if (phoneEl) {
-      if (phone === '0999999999') { // Khách lẻ
-        phoneEl.value = '';
-        phoneEl.placeholder = 'Khách lẻ (không thu thập SĐT)';
-      } else {
-        phoneEl.value = phone;
-        phoneEl.placeholder = DEFAULT_PHONE_PLACEHOLDER;
-      }
+      phoneEl.value = (phone === '0999999999') ? '' : phone;
+      phoneEl.placeholder = (phone === '0999999999')
+              ? 'Khách lẻ (không thu thập SĐT)' : DEFAULT_PHONE_PLACEHOLDER;
     }
-
     if (nameEl)  nameEl.value  = (phone === '0999999999') ? 'Khách lẻ' : (name || '');
     if (emailEl) emailEl.value = (phone === '0999999999') ? ''         : (email || '');
 
-    if (modalEl) modalEl.style.display = 'none';
+    // 🔁 THAY cho việc gán trực tiếp & gọi lẻ tẻ: dùng 1 entry point chuẩn
+    onCustomerChanged(phone);
 
-    toggleAddressSection(); // sẽ khoá giao hàng nếu là Khách lẻ
-    fetchCustomerAddresses();
-    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    const modalEl = document.getElementById('customerModal');
+    if (modalEl) modalEl.style.display = 'none';
   }
+
+
 
   document.getElementById('productSearch').addEventListener('input', function() {
     const keyword = this.value.trim();
@@ -4017,43 +4039,78 @@
       if (variantSpinner) variantSpinner.style.display = "none";
     }
   }
-  function openVoucherModal() {
-    const el = document.getElementById('voucherModal');
-    if (!el) return;
-    updateShipSectionVisibility();   // ẩn/hiện mục Freeship theo trạng thái giao hàng
-    fetchVouchers();                 // nạp lại voucher mới nhất
-    el.style.display = 'flex';
+  async function openVoucherModal() {
+    const m = document.getElementById('voucherModal');
+    if (!m) return;
+
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (tab && isShippingEnabled()) {
+      if (!Number(tab.shippingFeeBase) || Number(tab.shippingFeeBase) <= 0) {
+        try { await setupShippingForSelectedAddress({ recalcOnly: false }); } catch {}
+      }
+    }
+
+    await fetchVouchers();         // luôn nạp theo trạng thái mới nhất
+    m.style.display = 'flex';
+    updateShipSectionVisibility();
   }
 
-  function closeVoucherModal() {
-    const el = document.getElementById('voucherModal');
-    if (el) el.style.display = 'none';
-  }
 
   function clearVoucherSelections() {
+    document
+            .querySelectorAll('#voucherModal input[type=radio][name="orderVoucher"], #voucherModal input[type=radio][name="shipVoucher"]')
+            .forEach(el => el.checked = false);
+
     const tab = tabs.find(t => t.id === currentTabId);
-    if (!tab) return;
-
-    // Bỏ chọn radio trên UI
-    document.querySelectorAll('#voucherModal input[name="orderVoucher"]:checked')
-            .forEach(r => r.checked = false);
-    document.querySelectorAll('#voucherModal input[name="shipVoucher"]:checked')
-            .forEach(r => r.checked = false);
-
-    // Xoá trong state
-    tab.voucherId = null;            // giữ tương thích cũ
-    tab.orderVoucherId = null;       // order
-    tab.shipVoucherId  = null;       // ship
-    tab.discount = 0;
-    tab.shippingDiscount = 0;
-
-    updateSummary(tab);
-    localStorage.setItem('orderTabs', JSON.stringify(tabs));
-    showToast('Đã bỏ chọn tất cả mã.', 'info');
+    if (tab) {
+      tab.orderVoucherId = null;
+      tab.shipVoucherId  = null;
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+    }
+    showToast('Đã bỏ chọn trong modal. Nhấn "Áp dụng" để cập nhật đơn.', 'info');
   }
   function formatCashInput(value) {
     return value.replace(/\D/g, '') // chỉ lấy số
             .replace(/\B(?=(\d{3})+(?!\d))/g, '.'); // thêm dấu chấm
+  }
+  async function onCustomerChanged(newPhone) {
+    const tab = tabs.find(t => t.id === currentTabId);
+    if (!tab) return;
+
+    // 1) Cập nhật khách
+    tab.customerPhone = newPhone || '';
+
+    // 2) CLEAR ưu đãi & vận chuyển theo chuẩn POS
+    //   - Clear ORDER voucher
+    tab.voucherId = null;
+    tab.orderVoucherId = null;
+    tab.discount = 0;
+
+    //   - Clear SHIPPING voucher + phí ship + địa chỉ
+    tab.shipVoucherId = null;
+    tab.shippingDiscount = 0;
+    tab.shippingFeeBase = 0;
+    tab.selectedAddress = '';
+
+    // 3) UI: bỏ chọn radio trong modal (nếu đang mở)
+    document.querySelectorAll('#voucherModal input[name="orderVoucher"]').forEach(r => (r.checked = false));
+    document.querySelectorAll('#voucherModal input[name="shipVoucher"]').forEach(r => (r.checked = false));
+
+    // 4) Cập nhật tóm tắt + lưu
+    updateSummary(tab);
+    localStorage.setItem('orderTabs', JSON.stringify(tabs));
+
+    // 5) Điều chỉnh hiển thị giao hàng theo số mới (khoá nếu khách lẻ)
+    setDeliveryVisibilityForPhone(newPhone);
+    toggleAddressSection(); // sẽ ẩn khu giao hàng nếu bị khoá
+
+    // 6) Nạp lại địa chỉ & danh sách voucher theo khách mới
+    if (newPhone && newPhone !== '0999999999') {
+      await fetchCustomerAddresses();
+    } else {
+      clearAddressUI();
+    }
+    await fetchVouchers();
   }
 
   // Event Listeners
@@ -4405,7 +4462,6 @@
     orderList.innerHTML = '';
     shipList.innerHTML  = '';
 
-    // ===== Helpers (local) =====
     const fmtVND = (n) => (Number(n) || 0).toLocaleString('vi-VN') + ' VNĐ';
     const fmtPct = (x) => {
       const n = Number(x) || 0;
@@ -4428,12 +4484,8 @@
       if (val == null) return 0;
       if (typeof val === 'number' && !isNaN(val)) return val;
       const s = String(val).trim();
-
-      // '20k' -> 20000
       const kMatch = s.match(/^(\d+(?:[.,]\d+)?)\s*k$/i);
       if (kMatch) return Math.round(parseFloat(kMatch[1].replace(',', '.')) * 1000);
-
-      // số (có thể âm, có phần thập phân)
       const m = s.match(/-?\d+(?:[.,]\d+)?/);
       if (!m) return 0;
       return Number(m[0].replace(',', '.'));
@@ -4447,36 +4499,25 @@
       return isNaN(n) ? 0 : n;
     };
 
-    // ====== CHUẨN HOÁ TYPE ======
     const _normType = (s) =>
             String(s || '')
                     .toUpperCase()
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
                     .replace(/[^A-Z0-9%]/g, '');
 
-    // ===== Heuristic nhận diện % khi type mơ hồ =====
     function _isLikelyPercent(v) {
       const raw = firstNonEmpty(v, ['giaTriGiam','mucGiam']);
       const val = toNumberSafe(raw);
       if (!(val > 0)) return false;
-
-      // Có ký hiệu %
       if (/%/.test(String(raw))) return true;
-
-      // Có "trần" → thường là giảm theo %
       const cap = toNumberSafe(firstNonEmpty(v, [
         'mucGiamToiDa','giamToiDa','maxDiscount','maxShipDiscount','tranGiamVanChuyen','cap','giaTriGiamToiDa'
       ]));
-
       const hasMoneyFields = firstNonEmpty(v, ['soTien','discountAmount','fixedDiscount']) != null;
-
-      // 0<val<=100 và (không có field tiền) hoặc có trần → nghiêng về %
       if (val <= 100 && (!hasMoneyFields || cap > 0)) return true;
-
       return false;
     }
 
-    // ==== ĐỌC GIẢM % / TIỀN cho ORDER ====
     function getPercent(v) {
       const typeRaw = _normType(
               v?.loaiGiamGia ?? v?.discountType ?? v?.type ??
@@ -4484,30 +4525,23 @@
       );
       const isPercentType = /(PHANTRAM|PERCENT|PCT|TYLE|%)/.test(typeRaw);
 
-      // Field % "chuẩn"
       let pct = toNumberSafe(firstNonEmpty(v, [
         'phanTram','phanTramGiam','phanTramGiamGia','tyLe','percentage','tyLeGiam'
       ]));
 
-      // BE để % trong giaTriGiam/mucGiam khi type báo %
       if ((!pct || pct === 0) && isPercentType) {
         pct = toNumberSafe(firstNonEmpty(v, ['giaTriGiam','mucGiam']));
       }
-
-      // Chính giá trị có ký hiệu %
       if (!pct || pct === 0) {
         const rawCandidate = firstNonEmpty(v, ['giaTriGiam','mucGiam']);
         if (/%/.test(String(rawCandidate))) {
           pct = toNumberSafe(rawCandidate);
         }
       }
-
-      // Heuristic: type mơ hồ nhưng số nằm trong (0,100] → coi là %
       if ((!pct || pct === 0) && _isLikelyPercent(v)) {
         pct = toNumberSafe(firstNonEmpty(v, ['giaTriGiam','mucGiam']));
       }
-
-      if (pct > 0 && pct <= 1) pct *= 100; // 0.12 -> 12%
+      if (pct > 0 && pct <= 1) pct *= 100;
       return Math.max(0, pct || 0);
     }
 
@@ -4521,10 +4555,7 @@
       const raw = firstNonEmpty(v, [
         'giaTriGiam','mucGiam','soTien','discountAmount','fixedDiscount'
       ]);
-
-      // có ký hiệu % hoặc type là % hoặc heuristic đoán % -> KHÔNG phải tiền
       if (/%/.test(String(raw)) || isPercentType || _isLikelyPercent(v)) return 0;
-
       return toNumberSafe(raw);
     }
 
@@ -4532,7 +4563,6 @@
     const getMaxDiscount = (v) => toNumberSafe(firstNonEmpty(v, ['mucGiamToiDa','giamToiDa','maxDiscount','maxShipDiscount','tranGiamVanChuyen','cap','giaTriGiamToiDa']));
     const getExpiry      = (v) => firstNonEmpty(v, ['ngayKetThuc','thoiGianKetThuc','hanSuDung','expiredAt','endAt']);
 
-    // ===== PTTT mapping (local) =====
     const _pmNormalize = (s) =>
             String(s || '')
                     .toUpperCase()
@@ -4544,7 +4574,6 @@
       ['CASH','TIENMAT','TM','MAT','COD'].forEach(k => M.set(k, '💵 Tiền mặt'));
       ['BANK','BANKTRANSFER','TRANSFER','CK','CHUYENKHOAN','ATM','IB','INTERNETBANKING'].forEach(k => M.set(k, '🏦 Chuyển khoản'));
       ['WALLET','EWALLET','VI','VIDIENTU','MOMO','ZALOPAY','VNPAY','PAYOS','AIRPAY','SHOPEEPAY'].forEach(k => M.set(k, '👛 Ví'));
-      // UUID app
       M.set(_pmNormalize('550E8400-E29B-41D4-A716-446655440017'), '💵 Tiền mặt');
       M.set(_pmNormalize('550E8400-E29B-41D4-A716-446655440018'), '🏦 Chuyển khoản');
       return M;
@@ -4563,7 +4592,6 @@
       return map;
     })();
 
-    // Trả về cả labels (để hiển thị) và keys (để so với value hiện tại)
     function parsePaymentMethodsFromVoucher(v, pmMap) {
       const candidates = [
         v?.paymentMethods, v?.allowedPaymentMethods, v?.phuongThucThanhToan,
@@ -4596,14 +4624,12 @@
         const key = _pmNormalize(x);
         outKeys.add(key);
 
-        // Tra label từ map / regex fallback
         let label = pmMap.get(key);
         if (!label) {
           if (/CASH|TIEN.?MAT|^TM$/.test(key))      label = '💵 Tiền mặt';
           else if (/BANK|TRANSFER|CHUYEN.?KHOAN|^CK$/.test(key)) label = '🏦 Chuyển khoản';
           else if (/WALLET|VI|MOMO|ZALO|VNPAY|PAYOS|AIRPAY|SHOPEE/.test(key)) label = '👛 Ví';
         }
-        // Nếu vẫn không suy ra label, dùng raw để không bị rơi vào "Tất cả"
         if (!label) label = String(x);
 
         if (!seenLabel.has(label)) {
@@ -4615,10 +4641,9 @@
       return { labels: outLabels, keys: outKeys, hasConstraint: true };
     }
 
-    // 👉 Ưu tiên label PTTT do BE trả kèm
     function ptttLabelFromMaps(v) {
       const id = String(v?.id ?? '').trim();
-      const code = getVoucherCode(v); // helper có sẵn trong file
+      const code = getVoucherCode(v);
       const label =
               (id && voucherPtttMapById && voucherPtttMapById[id]) ? voucherPtttMapById[id]
                       : (code && voucherPtttMapByMa && voucherPtttMapByMa[code]) ? voucherPtttMapByMa[code]
@@ -4627,18 +4652,15 @@
     }
 
     function buildPaymentMethodLabel(v) {
-      // ưu tiên map từ BE
       const fromMap = ptttLabelFromMaps(v);
       if (fromMap) return fromMap;
 
-      // fallback tự suy
       const { labels, hasConstraint } = parsePaymentMethodsFromVoucher(v, pmMap);
       if (!hasConstraint) return 'PTTT: Tất cả';
       if (labels.length === 0) return 'PTTT: Có giới hạn';
       return `PTTT: ${labels.join(', ')}`;
     }
 
-    // Lấy base/current để tính eligibility
     let shipBase = Number(tab.shippingFeeBase || 0) || domMoney('shippingFeeBaseDisplay') || domMoney('shippingFee');
     let subTotal = Number(tab.subTotal || 0) || domMoney('subTotal');
 
@@ -4648,16 +4670,14 @@
             : '';
     const currentPaymentKey = _pmNormalize(paymentSel?.value || '');
 
-    // Phân loại type (hiển thị "tất cả" voucher – cái không đủ điều kiện sẽ disable + có lý do)
     const orders = [];
     const ships  = [];
     (Array.isArray(allVouchers) ? allVouchers : []).forEach(v => {
-      const t = getVoucherType(v); // 'ORDER' | 'SHIPPING'
+      const t = getVoucherType(v);
       if (t === 'SHIPPING') ships.push(v);
       else orders.push(v);
     });
 
-    // Mô tả dòng chính – thêm % (nếu có)
     function buildInfoLine(v, type = 'ORDER') {
       let main = '';
       if (type === 'SHIPPING') {
@@ -4671,11 +4691,8 @@
       }
 
       const parts = [main];
-
-      // ✅ PTTT luôn có (ưu tiên từ map)
       parts.push(buildPaymentMethodLabel(v));
 
-      // ✅ % giảm (nếu có) — tránh trùng nếu main đã là "Giảm xx%"
       const pctForInfo = getPercent(v);
       if (pctForInfo > 0 && !/Giảm\s+\d+(\.\d+)?%/.test(main)) {
         parts.push(`Ưu đãi: ${fmtPct(pctForInfo)}%`);
@@ -4696,19 +4713,40 @@
       return parts.join(' • ');
     }
 
-    // Eligibility hiện tại (để disable radio nhưng vẫn hiển thị)
+    // === UPDATED: kiểm tra hết hạn/hết số lượng + các điều kiện khác
     function checkEligibility(v, type) {
       const reasons = [];
       let ok = true;
 
-      // Điều kiện min order
+      // hết hạn
+      const expiry = getExpiry(v);
+      if (expiry) {
+        const d = new Date(expiry);
+        if (!isNaN(d.getTime()) && d.getTime() < Date.now()) {
+          ok = false;
+          reasons.push('Mã đã hết hạn');
+        }
+      }
+
+      // hết số lượng/lượt
+      const qtyFields = [
+        v?.soLuongConLai, v?.soLuong, v?.remaining, v?.remain, v?.stockLeft,
+        v?.soLuotConLai, v?.soLuotSuDungConLai, v?.gioiHanSuDungConLai
+      ];
+      const left = qtyFields.map(Number).find(x => Number.isFinite(x));
+      if (left !== undefined && left <= 0) {
+        ok = false;
+        reasons.push('Hết số lượng');
+      }
+
+      // min order
       const minOrder = getMinOrder(v);
       if (minOrder && subTotal < minOrder) {
         ok = false;
         reasons.push('Chưa đạt giá trị tối thiểu');
       }
 
-      // Điều kiện giao hàng với SHIPPING
+      // SHIPPING điều kiện
       if (type === 'SHIPPING') {
         if (!isShippingEnabled()) {
           ok = false;
@@ -4718,7 +4756,7 @@
         }
       }
 
-      // Điều kiện PTTT: so cả label & key
+      // PTTT phù hợp?
       const candidates = parsePaymentMethodsFromVoucher(v, pmMap);
       if (candidates.hasConstraint && (candidates.labels.length > 0 || candidates.keys.size > 0)) {
         const labelMatch = candidates.labels.includes(currentPaymentLabel);
@@ -4732,7 +4770,6 @@
       return { ok, message: reasons.join('; ') };
     }
 
-    // HTML item
     const makeOrderItem = (v, checked, disabled, reason) => `
     <label class="d-flex align-items-center justify-content-between p-3 border rounded-3 ${disabled ? 'bg-light' : ''}">
       <div class="me-3">
@@ -4753,66 +4790,39 @@
       <input type="radio" name="shipVoucher" value="${v.id}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''}>
     </label>`;
 
-    // Build lists (ưu tiên voucher đang được chọn lên trước)
     const orderItems = [];
     const shipItems  = [];
 
-    // ORDER
     orders.forEach(v => {
       const eligible = checkEligibility(v, 'ORDER');
       const checked  = String(tab.orderVoucherId || tab.voucherId || '') === String(v.id) && eligible.ok;
-      orderItems.push({
-        html: makeOrderItem(v, checked, !eligible.ok, eligible.message),
-        sortKey: checked ? 0 : 1
-      });
+      orderItems.push({ html: makeOrderItem(v, checked, !eligible.ok, eligible.message), sortKey: checked ? 0 : 1 });
     });
 
-    // SHIPPING
     ships.forEach(v => {
       const eligible = checkEligibility(v, 'SHIPPING');
       const checked  = String(tab.shipVoucherId || '') === String(v.id) && eligible.ok;
-      shipItems.push({
-        html: makeShipItem(v, checked, !eligible.ok, eligible.message),
-        sortKey: checked ? 0 : 1
-      });
+      shipItems.push({ html: makeShipItem(v, checked, !eligible.ok, eligible.message), sortKey: checked ? 0 : 1 });
     });
 
     orderItems.sort((a,b) => a.sortKey - b.sortKey);
     shipItems.sort((a,b) => a.sortKey - b.sortKey);
 
-    orderList.innerHTML = orderItems.map(x => x.html).join('') || `
-    <div class="text-muted small">Chưa có mã đơn hàng khả dụng.</div>
-  `;
-    shipList.innerHTML = shipItems.map(x => x.html).join('') || `
-    <div class="text-muted small">Chưa có mã Freeship khả dụng.</div>
-  `;
+    orderList.innerHTML = orderItems.map(x => x.html).join('') || `<div class="text-muted small">Chưa có mã đơn hàng khả dụng.</div>`;
+    shipList.innerHTML  = shipItems.map(x => x.html).join('')  || `<div class="text-muted small">Chưa có mã Freeship khả dụng.</div>`;
 
-    // Cho phép click lần 2 để bỏ chọn
     enableRadioToggleOff('orderVoucher');
     enableRadioToggleOff('shipVoucher');
 
-    // Ẩn khu Freeship khi không đủ điều kiện giao hàng
     updateShipSectionVisibility();
   }
 
 
-  // ==== Modal helpers ====
-  function openVoucherModal() {
-    const modal = document.getElementById('voucherModal');
-    if (!modal) return;
-    // Tải lại danh sách (để tính eligibility theo trạng thái mới nhất) rồi mở
-    Promise.resolve()
-            .then(() => fetchVouchers())
-            .finally(() => {
-              modal.style.display = 'flex';
-              updateShipSectionVisibility();
-            });
-  }
 
-  function closeVoucherModal() {
-    const modal = document.getElementById('voucherModal');
-    if (modal) modal.style.display = 'none';
-  }
+  // ==== Modal helpers ====
+
+
+
 
   function clearVoucherSelections() {
     document.querySelectorAll('#voucherModal input[name="orderVoucher"]').forEach(r => { r.checked = false; });
@@ -4826,41 +4836,16 @@
 
 
   // Mở/đóng modal voucher
-  async function openVoucherModal() {
+
+
+  function closeVoucherModal() {
     const m = document.getElementById('voucherModal');
-    if (!m) return;
-
-    const tab = tabs.find(t => t.id === currentTabId);
-    if (tab && isShippingEnabled()) {
-      // Nếu chưa có phí gốc hoặc = 0 thì tính GHN trước
-      if (!Number(tab.shippingFeeBase) || Number(tab.shippingFeeBase) <= 0) {
-        try { await setupShippingForSelectedAddress({ recalcOnly: false }); } catch {}
-      }
-    }
-
-    // Luôn nạp danh sách dựa trên trạng thái hiện tại
-    await fetchVouchers();
-    m.style.display = 'flex';
+    if (m) m.style.display = 'none';
   }
-
-  function closeVoucherModal(){ const m = document.getElementById('voucherModal'); if (m) m.style.display='none'; }
-
   // Bỏ chọn tất cả radio trong modal
 
 
-  function clearVoucherSelections() {
-    document
-            .querySelectorAll('#voucherModal input[type=radio][name="orderVoucher"], #voucherModal input[type=radio][name="shipVoucher"]')
-            .forEach(el => el.checked = false);
 
-    const tab = tabs.find(t => t.id === currentTabId);
-    if (tab) {
-      tab.orderVoucherId = null;
-      tab.shipVoucherId  = null;
-      // Không động vào tab.voucherId để tránh chỗ cũ còn dùng; discount/shipDiscount sẽ set lại khi bấm Áp dụng
-      localStorage.setItem('orderTabs', JSON.stringify(tabs));
-    }
-  }
 
 
 
