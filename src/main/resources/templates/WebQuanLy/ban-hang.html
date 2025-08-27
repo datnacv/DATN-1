@@ -2140,36 +2140,51 @@
   }
 
   // Hàm làm mới giỏ hàng từ server khi có lỗi
+  // === FIX 2: refresh cũng không set lại phí ship về 0 khi BE không gửi ===
   async function refreshCartFromServer() {
     const tab = tabs.find((t) => t.id === currentTabId);
     if (!tab) return;
 
     try {
       const response = await fetch(`${BASE_URL}/cart/get?tabId=${currentTabId}&shippingFee=${tab.shippingFeeBase}`);
-      if (response.ok) {
-        const cartData = await response.json();
-        tab.cart     = cartData.danhSachSanPham || [];
-        tab.subTotal = cartData.tongTienHang    || 0;
-        tab.discount = cartData.giamGia         || 0;
-        tab.total    = cartData.tong            || 0;
+      if (!response.ok) return;
 
-        // map fields mới nếu BE trả về
-        if (typeof cartData.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = cartData.phiVanChuyenGoc;
-        if (typeof cartData.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = cartData.giamGiaVanChuyen;
-        // fallback legacy
-        if (typeof cartData.phiVanChuyen !== 'undefined' && typeof cartData.phiVanChuyenGoc === 'undefined') {
-          tab.shippingFeeBase = cartData.phiVanChuyen || 0;
+      const cartData = await response.json();
+
+      tab.cart     = cartData.danhSachSanPham || [];
+      tab.subTotal = Number(cartData.tongTienHang ?? 0);
+      tab.discount = Number(cartData.giamGia ?? 0);
+      tab.total    = Number(cartData.tong ?? 0);
+
+      // ⚠️ Không set 0 đè lên base khi BE không trả field
+      const hasBase   = Object.prototype.hasOwnProperty.call(cartData, 'phiVanChuyenGoc');
+      const hasDisc   = Object.prototype.hasOwnProperty.call(cartData, 'giamGiaVanChuyen');
+      const hasLegacy = Object.prototype.hasOwnProperty.call(cartData, 'phiVanChuyen');
+
+      if (hasBase) {
+        tab.shippingFeeBase = Number(cartData.phiVanChuyenGoc) || 0;
+      } else if (hasLegacy && !hasBase) {
+        const legacyPayable = Number(cartData.phiVanChuyen) || 0;
+        if (legacyPayable > 0 && tab.saleMethod === 'Giao hàng') {
+          tab.shippingFeeBase = legacyPayable;
         }
-
-        renderCart(tab.cart);
-        updateSummary(tab);
-        localStorage.setItem("orderTabs", JSON.stringify(tabs));
+        // = 0 thì giữ nguyên
       }
+
+      if (hasDisc) {
+        tab.shippingDiscount = Number(cartData.giamGiaVanChuyen) || 0;
+      }
+
+      renderCart(tab.cart);
+      updateSummary(tab);
+      localStorage.setItem("orderTabs", JSON.stringify(tabs));
     } catch (error) {
       console.error("Lỗi khi làm mới giỏ hàng:", error);
       showToast("Không thể làm mới giỏ hàng. Vui lòng thử lại.", "error");
     }
   }
+
+
 
 
   // Cải thiện hàm thêm sản phẩm với kiểm tra tồn kho
@@ -2349,28 +2364,40 @@
     }
   }
 
-  // Cập nhật giỏ hàng từ response
   function updateCartFromResponse(data) {
     const tab = tabs.find((t) => t.id === currentTabId);
     if (!tab) return;
 
+    // Tổng tiền & giỏ
     tab.cart     = data.danhSachSanPham || [];
-    tab.subTotal = data.tongTienHang    || 0;
-    tab.discount = data.giamGia         || 0;
-    tab.total    = data.tong            || 0;
+    tab.subTotal = Number(data.tongTienHang ?? data.subTotal ?? 0);
+    tab.discount = Number(data.giamGia ?? data.discount ?? 0);
+    tab.total    = Number(data.tong ?? data.total ?? 0);
 
-    // map fields mới nếu BE trả về
-    if (typeof data.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = data.phiVanChuyenGoc;
-    if (typeof data.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = data.giamGiaVanChuyen;
-    // fallback legacy
-    if (typeof data.phiVanChuyen !== 'undefined' && typeof data.phiVanChuyenGoc === 'undefined') {
-      tab.shippingFeeBase = data.phiVanChuyen || 0;
+    // ⚠️ Chỉ cập nhật phí ship khi BE trả về
+    const hasBase   = Object.prototype.hasOwnProperty.call(data, 'phiVanChuyenGoc');
+    const hasDisc   = Object.prototype.hasOwnProperty.call(data, 'giamGiaVanChuyen');
+    const hasLegacy = Object.prototype.hasOwnProperty.call(data, 'phiVanChuyen');
+
+    if (hasBase) {
+      tab.shippingFeeBase = Number(data.phiVanChuyenGoc) || 0;
+    } else if (hasLegacy && !hasBase) {
+      // Legacy: phiVanChuyen là phí phải trả; chỉ dùng làm base nếu > 0
+      const legacyPayable = Number(data.phiVanChuyen) || 0;
+      if (legacyPayable > 0 && tab.saleMethod === 'Giao hàng') {
+        tab.shippingFeeBase = legacyPayable;
+      }
+      // = 0 → giữ nguyên base hiện tại
     }
+
+    if (hasDisc) {
+      tab.shippingDiscount = Number(data.giamGiaVanChuyen) || 0;
+    }
+    // không có field → giữ nguyên
 
     renderCart(tab.cart);
     updateSummary(tab);
 
-    // ⛔ đừng recalc ship nếu đang apply voucher
     if (tab.saleMethod === 'Giao hàng' && tab.selectedAddress && !isApplyingVoucher) {
       setupShippingForSelectedAddress({ recalcOnly: true });
     }
@@ -2378,6 +2405,8 @@
     localStorage.setItem("orderTabs", JSON.stringify(tabs));
     fetchVouchers();
   }
+
+
 
 
 
@@ -2619,14 +2648,35 @@
       const response = await fetch(`${BASE_URL}/cart/get?tabId=${tabId}&shippingFee=${tab.shippingFeeBase}`);
       if (response.ok) {
         const cartData = await response.json();
-        tab.cart = cartData.danhSachSanPham || [];
-        tab.subTotal = cartData.tongTienHang || 0;
-        tab.discount = cartData.giamGia || 0;
-        tab.total = cartData.tong || 0;
-        tab.cashAmount = cartData.cashAmount || 0;
 
-        if (typeof cartData.phiVanChuyenGoc  !== 'undefined') tab.shippingFeeBase  = cartData.phiVanChuyenGoc;
-        if (typeof cartData.giamGiaVanChuyen !== 'undefined') tab.shippingDiscount = cartData.giamGiaVanChuyen;
+        tab.cart       = cartData.danhSachSanPham || [];
+        tab.subTotal   = Number(cartData.tongTienHang ?? 0);
+        tab.discount   = Number(cartData.giamGia ?? 0);
+        tab.total      = Number(cartData.tong ?? 0);
+        tab.cashAmount = Number(cartData.cashAmount ?? tab.cashAmount ?? 0);
+
+        // ⚠️ Chỉ cập nhật phí ship khi BE thật sự trả field tương ứng
+        const hasBase   = Object.prototype.hasOwnProperty.call(cartData, 'phiVanChuyenGoc');
+        const hasDisc   = Object.prototype.hasOwnProperty.call(cartData, 'giamGiaVanChuyen');
+        const hasLegacy = Object.prototype.hasOwnProperty.call(cartData, 'phiVanChuyen');
+
+        if (hasBase) {
+          tab.shippingFeeBase = Number(cartData.phiVanChuyenGoc) || 0;
+        } else if (hasLegacy && !hasBase) {
+          // Legacy: phiVanChuyen là phí phải trả; chỉ dùng làm base nếu > 0
+          const legacyPayable = Number(cartData.phiVanChuyen) || 0;
+          if (legacyPayable > 0 && tab.saleMethod === 'Giao hàng') {
+            tab.shippingFeeBase = legacyPayable;
+          }
+          // = 0 → giữ nguyên base hiện tại
+        }
+
+        if (hasDisc) {
+          tab.shippingDiscount = Number(cartData.giamGiaVanChuyen) || 0;
+        }
+
+        // cập nhật lại ô nhập phí ship theo base mới (nếu có)
+        if (elements.shippingFee) elements.shippingFee.value = formatCurrency(tab.shippingFeeBase);
 
         renderCart(tab.cart);
         updateSummary(tab);
@@ -4199,13 +4249,13 @@
     // Enter trên ô SĐT → tải địa chỉ
     const customerPhone = document.getElementById('customerPhone');
     if (customerPhone) {
-      customerPhone.addEventListener('keydown', (e) => {
+      customerPhone.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
-          e.preventDefault();                // không submit form
-          const n = finalizePhoneInput();    // chuẩn hoá + lưu vào tab + validate
-          if (!n) return;                    // sai -> giữ focus, KHÔNG blur (tránh toast lặp)
-          setDeliveryVisibilityForPhone(n);  // cập nhật cho phép/khóa "Giao hàng"
-          fetchCustomerAddresses();          // nạp địa chỉ nếu có
+          e.preventDefault();
+          const n = await finalizePhoneInput();
+          if (!n) return;
+          setDeliveryVisibilityForPhone(n);
+          await fetchCustomerAddresses();
           customerPhone.blur();
         }
       });

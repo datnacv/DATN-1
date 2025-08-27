@@ -116,7 +116,7 @@ public class DonHangService {
         NguoiDung khachHang = nguoiDungRepository.findBySoDienThoai(soDienThoai)
                 .orElseThrow(() -> new RuntimeException("Khách hàng không tồn tại với số điện thoại: " + soDienThoai));
 
-        // ==== RÚT VOUCHER TỪ SESSION nếu FE không gửi ====
+        // Lấy voucher đang treo trong session nếu FE không gửi
         HttpSession ss = layPhien();
         UUID orderVoucherIdInSession = (UUID) ss.getAttribute("ORDER_VOUCHER_ID_" + donHangDTO.getTabId());
         UUID shipVoucherIdInSession  = (UUID) ss.getAttribute("SHIP_VOUCHER_ID_" + donHangDTO.getTabId());
@@ -127,20 +127,32 @@ public class DonHangService {
         donHang.setNguoiDung(khachHang);
         donHang.setMaDonHang(taoMaDonHang());
 
-        // ==== LUÔN DÙNG PHÍ SHIP GỐC TỪ SESSION ====
-        BigDecimal shipBase = getShipBaseFromSession(donHangDTO.getTabId());
-        donHang.setPhiVanChuyen(shipBase);
-
-        // Phương thức thanh toán, bán hàng, địa chỉ
+        // PTTT, PT bán hàng, địa chỉ
         donHang.setPhuongThucThanhToan(
                 phuongThucThanhToanRepository.findById(UUID.fromString(donHangDTO.getPhuongThucThanhToan())).orElse(null));
-        donHang.setPhuongThucBanHang(donHangDTO.getPhuongThucBanHang());
+        donHang.setPhuongThucBanHang(
+                donHangDTO.getPhuongThucBanHang() == null ? "Tại quầy" : donHangDTO.getPhuongThucBanHang());
         donHang.setDiaChiGiaoHang(donHangDTO.getDiaChiGiaoHang());
         donHang.setThoiGianTao(LocalDateTime.now());
 
+        boolean isDelivery = "Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang());
+
+        // ===== LẤY PHÍ SHIP GỐC =====
+        // Ưu tiên phí FE gửi (PhiVanChuyen), nếu không có thì fallback session
+        BigDecimal shipBase = Optional.ofNullable(donHangDTO.getPhiVanChuyen())
+                .filter(f -> f.compareTo(BigDecimal.ZERO) > 0)
+                .orElse(getShipBaseFromSession(donHangDTO.getTabId()));
+
+        // Nếu không phải giao hàng thì phí ship = 0
+        if (!isDelivery) {
+            shipBase = BigDecimal.ZERO;
+        }
+
+        // Nếu FE không set PTBH nhưng có shipBase > 0, auto set "Giao hàng"
         if ((donHang.getPhuongThucBanHang() == null || donHang.getPhuongThucBanHang().isBlank())
                 && shipBase.compareTo(BigDecimal.ZERO) > 0) {
             donHang.setPhuongThucBanHang("Giao hàng");
+            isDelivery = true;
         }
 
         BigDecimal tongTien = BigDecimal.ZERO; // subtotal
@@ -150,13 +162,12 @@ public class DonHangService {
             throw new RuntimeException("Danh sách sản phẩm không được để trống.");
         }
 
-        // ===== Khóa & kiểm kho =====
+        // Khóa & kiểm kho
         List<ChiTietSanPham> chiTietSanPhams = new ArrayList<>();
         for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
             ChiTietSanPham chiTiet = chiTietSanPhamRepository
                     .findById(item.getIdChiTietSanPham(), LockModeType.PESSIMISTIC_WRITE)
                     .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại với ID: " + item.getIdChiTietSanPham()));
-
             if (chiTiet.getSoLuongTonKho() < item.getSoLuong()) {
                 throw new RuntimeException("Số lượng tồn kho không đủ cho sản phẩm: " + chiTiet.getSanPham().getTenSanPham());
             }
@@ -167,29 +178,29 @@ public class DonHangService {
             GioHangItemDTO item = donHangDTO.getDanhSachSanPham().get(i);
             ChiTietSanPham chiTiet = chiTietSanPhams.get(i);
 
-            ChiTietDonHang chiTietDonHang = new ChiTietDonHang();
-            chiTietDonHang.setChiTietSanPham(chiTiet);
-            chiTietDonHang.setSoLuong(item.getSoLuong());
-            chiTietDonHang.setGia(item.getGia());
-            chiTietDonHang.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
-            chiTietDonHang.setThanhTien(item.getThanhTien());
-            chiTietDonHang.setGhiChu(item.getMauSac() + ", " + item.getKichCo());
+            ChiTietDonHang ctdh = new ChiTietDonHang();
+            ctdh.setChiTietSanPham(chiTiet);
+            ctdh.setSoLuong(item.getSoLuong());
+            ctdh.setGia(item.getGia());
+            ctdh.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
+            ctdh.setThanhTien(item.getThanhTien());
+            ctdh.setGhiChu(item.getMauSac() + ", " + item.getKichCo());
+            donHang.addChiTietDonHang(ctdh);
 
-            donHang.addChiTietDonHang(chiTietDonHang);
-
-            // Trừ kho
-            ChiTietSanPham updatedChiTiet = chiTietSanPhamService.updateStockAndStatus(chiTiet.getId(), -item.getSoLuong());
+            ChiTietSanPham updated = chiTietSanPhamService.updateStockAndStatus(chiTiet.getId(), -item.getSoLuong());
             tongTien = tongTien.add(item.getThanhTien());
-            soLuongTonKho.put(chiTiet.getId(), updatedChiTiet.getSoLuongTonKho());
+            soLuongTonKho.put(chiTiet.getId(), updated.getSoLuongTonKho());
         }
 
-        // ================== ÁP DỤNG VOUCHER (ORDER + SHIPPING) ==================
+        // ===== ÁP DỤNG VOUCHER (ORDER + SHIPPING) =====
         BigDecimal subtotal = tongTien;
-        BigDecimal giamDon = BigDecimal.ZERO;
+        final BigDecimal subtotalFinal = subtotal; // dùng trong lambda
+
+        BigDecimal giamDon  = BigDecimal.ZERO;
         BigDecimal giamShip = BigDecimal.ZERO;
 
         PhieuGiamGia orderVoucher = null;
-        PhieuGiamGia shipVoucher = null;
+        PhieuGiamGia shipVoucher  = null;
 
         if (donHangDTO.getIdPhieuGiamGia() != null) {
             orderVoucher = phieuGiamGiaRepository.findById(donHangDTO.getIdPhieuGiamGia())
@@ -200,27 +211,27 @@ public class DonHangService {
                     .orElseThrow(() -> new RuntimeException("Phiếu freeship (SHIPPING) không tồn tại."));
         }
 
-        UUID paymentMethodId = donHang.getPhuongThucThanhToan() != null ? donHang.getPhuongThucThanhToan().getId() : null;
-        boolean isDelivery = "Giao hàng".equalsIgnoreCase(
-                Optional.ofNullable(donHangDTO.getPhuongThucBanHang()).orElse(donHang.getPhuongThucBanHang())
-        );
+        // *** đóng băng các biến dùng trong lambda ***
+        final UUID paymentMethodIdFinal = donHang.getPhuongThucThanhToan() != null
+                ? donHang.getPhuongThucThanhToan().getId() : null;
+        final boolean isDeliveryFinal = isDelivery;
 
-        // validate helper (freeship yêu cầu đơn giao hàng)
+        // validate helper
         java.util.function.Consumer<PhieuGiamGia> validate = (v) -> {
             if (v == null) return;
             if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v))) {
                 throw new RuntimeException("Phiếu " + v.getMa() + " không còn hiệu lực.");
             }
-            if (paymentMethodId != null && v.getPhuongThucThanhToans() != null && !v.getPhuongThucThanhToans().isEmpty()) {
-                boolean ok = v.getPhuongThucThanhToans().stream().anyMatch(pm -> paymentMethodId.equals(pm.getId()));
+            if (paymentMethodIdFinal != null && v.getPhuongThucThanhToans() != null && !v.getPhuongThucThanhToans().isEmpty()) {
+                boolean ok = v.getPhuongThucThanhToans().stream().anyMatch(pm -> paymentMethodIdFinal.equals(pm.getId()));
                 if (!ok) throw new RuntimeException("Phiếu " + v.getMa() + " không áp dụng cho phương thức thanh toán đã chọn.");
             }
             if (!"SHIPPING".equalsIgnoreCase(v.getPhamViApDung())) {
-                if (v.getGiaTriGiamToiThieu() != null && subtotal.compareTo(v.getGiaTriGiamToiThieu()) < 0) {
+                if (v.getGiaTriGiamToiThieu() != null && subtotalFinal.compareTo(v.getGiaTriGiamToiThieu()) < 0) {
                     throw new RuntimeException("Chưa đạt đơn tối thiểu để dùng phiếu " + v.getMa());
                 }
             } else {
-                if (!isDelivery) {
+                if (!isDeliveryFinal) {
                     throw new RuntimeException("Freeship chỉ áp dụng cho đơn giao hàng.");
                 }
             }
@@ -236,37 +247,33 @@ public class DonHangService {
         if (shipVoucher != null && "SHIPPING".equalsIgnoreCase(shipVoucher.getPhamViApDung())) {
             giamShip = phieuGiamGiaService.tinhGiamPhiShip(shipVoucher, shipBase, subtotal);
             if (giamShip == null) giamShip = BigDecimal.ZERO;
-            if (giamShip.compareTo(shipBase) > 0) giamShip = shipBase; // clamp theo base
+            if (giamShip.compareTo(shipBase) > 0) giamShip = shipBase; // clamp
         }
 
-        // ====== (đoạn mới) ======
-        BigDecimal tongGiam = giamDon.add(giamShip);        // tổng giảm = ORDER + SHIPPING
-        donHang.setTienGiam(tongGiam);                      // ghi nhận tổng giảm vào cột tien_giam
-
+        // Tổng giảm & tổng tiền
         BigDecimal phiShipSauGiam = shipBase.subtract(giamShip).max(BigDecimal.ZERO);
-// Lưu ý: Ở công thức tổng tiền, chỉ trừ giamDon vì giamShip đã được khấu trừ trong phiShipSauGiam
+        BigDecimal tongGiam       = giamDon.add(giamShip);
         BigDecimal tongTienDonHang = subtotal.subtract(giamDon).add(phiShipSauGiam).max(BigDecimal.ZERO);
+
+        // LƯU vào ĐƠN HÀNG — luôn set dù có voucher hay không
+        donHang.setPhiVanChuyen(phiShipSauGiam);
+        donHang.setTienGiam(tongGiam);
         donHang.setTongTien(tongTienDonHang);
 
-
-        // ====== TIỀN KHÁCH ĐƯA & TRẠNG THÁI ======
+        // Tiền khách đưa & trạng thái
         BigDecimal tienKhachDua = Optional.ofNullable(donHangDTO.getSoTienKhachDua()).orElse(BigDecimal.ZERO);
         donHang.setSoTienKhachDua(tienKhachDua);
-
-        // Mặc định chưa thanh toán
         donHang.setTrangThaiThanhToan(false);
 
-        if ("Tại quầy".equalsIgnoreCase(donHangDTO.getPhuongThucBanHang())) {
+        if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
             if (donHang.getPhuongThucThanhToan() != null &&
                     "Tiền mặt".equals(donHang.getPhuongThucThanhToan().getTenPhuongThuc())) {
-
                 if (tienKhachDua.compareTo(tongTienDonHang) < 0) {
                     throw new RuntimeException("Số tiền khách đưa không đủ.");
                 }
                 donHang.setTrangThaiThanhToan(true);
                 donHang.setThoiGianThanhToan(LocalDateTime.now());
                 donHang.setTrangThai("hoan_thanh");
-
             } else if (donHang.getPhuongThucThanhToan() != null) {
                 donHang.setTrangThaiThanhToan(true);
                 donHang.setThoiGianThanhToan(LocalDateTime.now());
@@ -280,58 +287,50 @@ public class DonHangService {
             donHang.setTrangThai("cho_xac_nhan");
         }
 
-        // ===== GẮN THÔNG TIN PHIẾU VÀO DonHang.dsPhieu =====
+        // Gắn chi tiết phiếu đã áp dụng vào DonHang
         donHang.setDsPhieu(new ArrayList<>());
         if (orderVoucher != null && giamDon.compareTo(BigDecimal.ZERO) > 0) {
-            DonHangPhieuGiamGia donHangPhieu = new DonHangPhieuGiamGia();
-            donHangPhieu.setDonHang(donHang);
-            donHangPhieu.setPhieuGiamGia(orderVoucher);
-            donHangPhieu.setLoaiGiamGia("ORDER");
-            donHangPhieu.setGiaTriGiam(giamDon);
-            donHangPhieu.setThoiGianApDung(LocalDateTime.now());
-            donHang.getDsPhieu().add(donHangPhieu);
+            DonHangPhieuGiamGia dhp = new DonHangPhieuGiamGia();
+            dhp.setDonHang(donHang);
+            dhp.setPhieuGiamGia(orderVoucher);
+            dhp.setLoaiGiamGia("ORDER");
+            dhp.setGiaTriGiam(giamDon);
+            dhp.setThoiGianApDung(LocalDateTime.now());
+            donHang.getDsPhieu().add(dhp);
         }
         if (shipVoucher != null && giamShip.compareTo(BigDecimal.ZERO) > 0) {
-            DonHangPhieuGiamGia donHangPhieu = new DonHangPhieuGiamGia();
-            donHangPhieu.setDonHang(donHang);
-            donHangPhieu.setPhieuGiamGia(shipVoucher);
-            donHangPhieu.setLoaiGiamGia("SHIPPING");
-            donHangPhieu.setGiaTriGiam(giamShip);
-            donHangPhieu.setThoiGianApDung(LocalDateTime.now());
-            donHang.getDsPhieu().add(donHangPhieu);
+            DonHangPhieuGiamGia dhp = new DonHangPhieuGiamGia();
+            dhp.setDonHang(donHang);
+            dhp.setPhieuGiamGia(shipVoucher);
+            dhp.setLoaiGiamGia("SHIPPING");
+            dhp.setGiaTriGiam(giamShip);
+            dhp.setThoiGianApDung(LocalDateTime.now());
+            donHang.getDsPhieu().add(dhp);
         }
 
-        // ===== LƯU ĐƠN HÀNG =====
+        // Lưu đơn
         donHang = donHangRepository.save(donHang);
-        // Thông báo ngắn cho đơn GIAO HÀNG
-        if ("Giao hàng".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
-            try {
-                String title = "Đơn giao hàng";
-                String content = new StringBuilder()
-                        .append("Mã đơn: ")
-                        .append(donHang.getMaDonHang())
-                        .toString();
 
-                thongBaoService.taoThongBaoHeThong("admin", title, content);
-            } catch (Exception ignore) {
-                // Không để lỗi thông báo chặn luồng tạo đơn
-            }
+        // Thông báo ngắn cho đơn giao hàng (nếu cần)
+        if (isDeliveryFinal) {
+            try {
+                thongBaoService.taoThongBaoHeThong("admin", "Đơn giao hàng",
+                        "Mã đơn: " + donHang.getMaDonHang());
+            } catch (Exception ignore) {}
         }
 
-
-        // ===== TRỪ LƯỢT/SỐ LƯỢNG VOUCHER =====
+        // Trừ lượt/số lượng voucher
         java.util.function.Consumer<PhieuGiamGia> deductUsage = (v) -> {
             if (v == null) return;
 
             if ("ca_nhan".equalsIgnoreCase(v.getKieuPhieu())) {
-                PhieuGiamGiaCuaNguoiDung phieuCaNhan = phieuGiamGiaCuaNguoiDungRepository
+                PhieuGiamGiaCuaNguoiDung caNhan = phieuGiamGiaCuaNguoiDungRepository
                         .findByPhieuGiamGia_IdAndNguoiDung_Id(v.getId(), khachHang.getId()).orElse(null);
-
-                if (phieuCaNhan == null || phieuCaNhan.getSoLuotConLai() == null || phieuCaNhan.getSoLuotConLai() <= 0) {
+                if (caNhan == null || caNhan.getSoLuotConLai() == null || caNhan.getSoLuotConLai() <= 0) {
                     throw new RuntimeException("Phiếu cá nhân " + v.getMa() + " đã hết lượt sử dụng.");
                 }
-                phieuCaNhan.setSoLuotConLai(phieuCaNhan.getSoLuotConLai() - 1);
-                phieuGiamGiaCuaNguoiDungRepository.save(phieuCaNhan);
+                caNhan.setSoLuotConLai(caNhan.getSoLuotConLai() - 1);
+                phieuGiamGiaCuaNguoiDungRepository.save(caNhan);
             }
 
             if (v.getSoLuong() == null || v.getSoLuong() <= 0) {
@@ -340,41 +339,39 @@ public class DonHangService {
             v.setSoLuong(v.getSoLuong() - 1);
             phieuGiamGiaRepository.save(v);
         };
-
         deductUsage.accept(orderVoucher);
         deductUsage.accept(shipVoucher);
 
-        // Thống kê + thông báo (nếu đã thanh toán)
+        // Nếu đã thanh toán -> ghi thống kê & thông báo
         if (donHang.getTrangThaiThanhToan()) {
             thongBaoService.taoThongBaoHeThong(
                     "admin,employee",
                     "Thanh toán tại quầy",
                     "Khách hàng " + khachHang.getHoTen()
-                            + " đã thanh toán tại quầy. "
-                            + "Mã đơn: " + donHang.getMaDonHang()
+                            + " đã thanh toán tại quầy. Mã đơn: " + donHang.getMaDonHang()
                             + ". Tổng tiền: " + dinhDangTien(donHang.getTongTien())
             );
 
-            for (ChiTietDonHang chiTietDonHang : donHang.getChiTietDonHangs()) {
-                ChiTietSanPham chiTiet = chiTietDonHang.getChiTietSanPham();
-                ThongKe thongKe = new ThongKe();
-                thongKe.setId(UUID.randomUUID());
-                thongKe.setNgayThanhToan(donHang.getThoiGianThanhToan().toLocalDate());
-                thongKe.setIdChiTietDonHang(chiTietDonHang.getId());
-                thongKe.setIdChiTietSanPham(chiTiet.getId());
-                thongKe.setIdSanPham(chiTiet.getSanPham().getId());
-                thongKe.setTenSanPham(chiTiet.getSanPham().getTenSanPham());
-                thongKe.setKichCo(chiTiet.getKichCo().getTen());
-                thongKe.setMauSac(chiTiet.getMauSac().getTenMau());
-                thongKe.setSoLuongDaBan(chiTietDonHang.getSoLuong());
-                thongKe.setDoanhThu(chiTietDonHang.getThanhTien());
-                thongKe.setSoLuongTonKho(chiTiet.getSoLuongTonKho());
-                thongKe.setImageUrl(chiTiet.getSanPham().getUrlHinhAnh());
-                thongKeRepository.save(thongKe);
+            for (ChiTietDonHang ctdh : donHang.getChiTietDonHangs()) {
+                ChiTietSanPham ct = ctdh.getChiTietSanPham();
+                ThongKe tk = new ThongKe();
+                tk.setId(UUID.randomUUID());
+                tk.setNgayThanhToan(donHang.getThoiGianThanhToan().toLocalDate());
+                tk.setIdChiTietDonHang(ctdh.getId());
+                tk.setIdChiTietSanPham(ct.getId());
+                tk.setIdSanPham(ct.getSanPham().getId());
+                tk.setTenSanPham(ct.getSanPham().getTenSanPham());
+                tk.setKichCo(ct.getKichCo().getTen());
+                tk.setMauSac(ct.getMauSac().getTenMau());
+                tk.setSoLuongDaBan(ctdh.getSoLuong());
+                tk.setDoanhThu(ctdh.getThanhTien());
+                tk.setSoLuongTonKho(ct.getSoLuongTonKho());
+                tk.setImageUrl(ct.getSanPham().getUrlHinhAnh());
+                thongKeRepository.save(tk);
             }
         }
 
-        // Tạo record hoá đơn (không phải PDF)
+        // Tạo hóa đơn (record)
         hoaDonService.createHoaDonFromDonHang(donHang);
 
         KetQuaDonHangDTO ketQua = new KetQuaDonHangDTO();
@@ -382,7 +379,7 @@ public class DonHangService {
         ketQua.setSoLuongTonKho(soLuongTonKho);
         ketQua.setChangeAmount(tienKhachDua.subtract(tongTienDonHang));
 
-        // ==== DỌN SESSION ĐỂ TRÁNH DOUBLE-APPLY Ở LẦN SAU ====
+        // Dọn session theo tab
         try {
             final String tabKey = donHangDTO.getTabId();
             ss.removeAttribute("tempStockChanges");
@@ -397,8 +394,6 @@ public class DonHangService {
         log.info("Tạo đơn hàng thành công với mã: {}", donHang.getMaDonHang());
         return ketQua;
     }
-
-
 
 
 

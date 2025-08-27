@@ -96,7 +96,7 @@ public class ThongKeController {
         }
 
         // Set page size (e.g., 5 items per page)
-        Pageable topSellingPageable = PageRequest.of(topSellingPage, 2);
+        Pageable topSellingPageable = PageRequest.of(topSellingPage, 5);
         Pageable lowStockPageable = PageRequest.of(lowStockPage, 5);
 
         ThongKeDoanhThuDTO thongKe = thongKeDichVu.layThongKeDoanhThu(boLoc, ngayBatDau, ngayKetThuc);
