@@ -1426,6 +1426,88 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
+    function normalizeVNPhone(raw='') {
+        let s = String(raw).trim().replace(/\s|\.|-/g,'');
+        if (s.startsWith('+84')) s = '0' + s.slice(3);
+        else if (s.startsWith('84')) s = '0' + s.slice(2);
+        return s;
+    }
+
+    // Trả về { ok, errors[], data{fullName, phone, address} }
+    function validateNewAddressForm() {
+        const elName = document.getElementById('new-fullName');
+        const elPhone = document.getElementById('new-phone');
+        const elAddr = document.getElementById('new-address');
+
+        // reset trạng thái invalid
+        [elName, elPhone, elAddr].forEach(el => el.classList.remove('is-invalid'));
+
+        const fullName = (elName.value || '').trim().replace(/\s+/g,' ');
+        const phoneRaw = (elPhone.value || '');
+        const address = (elAddr.value || '').trim();
+
+        const errors = [];
+
+        // --- HỌ TÊN ---
+        // - Tối thiểu 2 từ
+        // - Không chứa số/ký tự lạ; cho phép chữ có dấu, khoảng trắng, dấu nối
+        const nameHasTwoWords = fullName.split(/\s+/).length >= 2;
+        const nameOkChars = /^[A-Za-zÀ-ỹĐđ'’. -]+$/u.test(fullName);
+        const nameLenOK = fullName.length >= 4 && fullName.length <= 60;
+        if (!fullName || !nameHasTwoWords || !nameOkChars || !nameLenOK) {
+            elName.classList.add('is-invalid');
+            errors.push('• Họ và tên không hợp lệ (ít nhất 2 từ, 4–60 ký tự, chỉ bao gồm chữ và khoảng trắng).');
+        }
+
+        // --- SỐ ĐIỆN THOẠI ---
+        // - Chuẩn hoá +84 -> 0
+        // - 10 số, bắt đầu bằng 0
+        const phone = normalizeVNPhone(phoneRaw);
+        const phoneOk = /^0\d{9}$/.test(phone); // mobile VN hiện là 10 số
+        if (!phoneOk) {
+            elPhone.classList.add('is-invalid');
+            errors.push('• Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0; chấp nhận nhập dạng +84...).');
+        }
+
+        // --- ĐỊA CHỈ CHI TIẾT ---
+        // - 5–150 ký tự; cho phép chữ số, dấu / , . - #
+        // - Khuyến khích có số nhà
+        const addrOkChars = /^[0-9A-Za-zÀ-ỹĐđ\s,./#-]{5,150}$/u.test(address);
+        const addrHasNumber = /\d/.test(address); // thường có số nhà
+        if (!address || !addrOkChars || !addrHasNumber) {
+            elAddr.classList.add('is-invalid');
+            errors.push('• Địa chỉ chi tiết chưa đúng (5–150 ký tự, nên có số nhà; chỉ dùng chữ số).');
+        }
+
+        return {
+            ok: errors.length === 0,
+            errors,
+            data: { fullName, phone, address }
+        };
+    }
+
+    // 👉 Thêm submit cho form để Enter hoạt động
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('new-address-form');
+        if (form) {
+            // Submit mặc định
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (typeof saveNewAddress === 'function') saveNewAddress();
+            });
+
+            // Bắt Enter trong input/select của modal (phòng khi trình duyệt không tự submit)
+            document.querySelectorAll('#addAddressModal input, #addAddressModal select').forEach(el => {
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (typeof saveNewAddress === 'function') saveNewAddress();
+                    }
+                });
+            });
+        }
+    });
+
     window.openAddAddressModal = function () {
         // reset field
         document.getElementById('new-fullName').value = '';
@@ -2023,9 +2105,24 @@
     };
 
     window.saveNewAddress = async function () {
-        const fullName = document.getElementById('new-fullName').value.trim();
-        const phone    = document.getElementById('new-phone').value.trim();
-        const address  = document.getElementById('new-address').value.trim();
+        const v = validateNewAddressForm();
+        if (!v.ok) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Thông tin chưa hợp lệ',
+                html: v.errors.join('<br>'),
+            });
+            // focus vào ô lỗi đầu tiên
+            const firstInvalid = document.querySelector('#addAddressModal .is-invalid');
+            if (firstInvalid) firstInvalid.focus();
+            return;
+        }
+        // Dùng dữ liệu đã chuẩn hoá
+        const fullName = v.data.fullName;
+        const phone    = v.data.phone;   // đã chuẩn hoá 0xxxxxxxxx
+        const address  = v.data.address;
+
+        // (phần còn lại của hàm giữ nguyên như bạn đang có)
         const pSel = document.getElementById('new-province');
         const dSel = document.getElementById('new-district');
         const wSel = document.getElementById('new-ward');
