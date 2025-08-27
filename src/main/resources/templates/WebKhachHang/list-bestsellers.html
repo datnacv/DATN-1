@@ -223,6 +223,24 @@
 <!-- Navbar -->
 <div th:replace="~{fragments/kh_navbar :: navbar(user=${user}, keyword=${keyword}, cartCount=${cartCount})}"></div>
 
+<div class="container mx-auto py-8">
+    <div class="swiper banner-slider">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner1.png" alt="Banner thời trang nam" class="w-full h-full object-cover"/>
+            </div>
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner2.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+            </div>
+            <div class="swiper-slide">
+                <img loading="lazy" src="/image/banner3.png" alt="Banner khuyến mãi" class="w-full h-full object-cover"/>
+            </div>
+        </div>
+        <div class="swiper-button-next text-blue-800"></div>
+        <div class="swiper-button-prev text-blue-800"></div>
+        <div class="swiper-pagination"></div>
+    </div>
+</div>
 <!-- Modal thêm giỏ -->
 <div class="modal fade" id="addToCartModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -422,6 +440,12 @@
 <script src="/js/navbar.js"></script>
 
 <script>
+    new Swiper('.banner-slider', {
+        loop: true,
+        autoplay: { delay: 5000 },
+        navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+        pagination: { el: '.swiper-pagination', clickable: true },
+    });
     /* ------------ Quick reply combobox ------------ */
     const qrTrigger=document.getElementById('qr-trigger');
     const qrMenu=document.getElementById('qr-menu');

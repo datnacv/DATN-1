@@ -285,7 +285,6 @@
 </div>
 
 <!-- CONTENT -->
-<!-- CONTENT -->
 <div class="container mx-auto py-8">
     <!-- Tiêu đề + dropdown sắp xếp -->
     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-6">
@@ -462,6 +461,12 @@
 <script src="/js/navbar.js"></script>
 <!-- Sort (Giá/Tên) cho trang Sản phẩm mới -->
 <script>
+    new Swiper('.banner-slider', {
+        loop: true,
+        autoplay: { delay: 5000 },
+        navigation: { nextEl: '.swiper-button-next', prevEl: '.swiper-button-prev' },
+        pagination: { el: '.swiper-pagination', clickable: true },
+    });
     (() => {
         const grid   = document.getElementById('productGridNew');
         const select = document.getElementById('sortSelectNew');

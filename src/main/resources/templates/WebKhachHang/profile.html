@@ -226,7 +226,7 @@
     .btn-success:hover { background-color: #218838; }
     .address-cell { max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .avatar { width: 80px; height: 80px; border-radius: 50%; background: #ddd; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #888; }
-    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 1050; }
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 20000; }
   </style>
 </head>
 <body>
@@ -379,7 +379,10 @@
           </div>
           <div class="mb-3">
             <label for="addChiTietDiaChi" class="form-label">Địa chỉ chi tiết</label>
-            <input type="text" class="form-control" id="addChiTietDiaChi" name="chiTietDiaChi" required>
+            <input type="text" class="form-control" id="addChiTietDiaChi" name="chiTietDiaChi"
+                   required maxlength="200"
+                   pattern="^(?! )(?!.* {2})(?!.*[<>\'\\|?*%$!~^=&{}\[\];])[0-9A-Za-zÀ-ỿ.,:/#()\-\s]{3,200}$"
+            title="3–200 ký tự. Không chứa: < > &quot; ' \ | ? * % $ ! ~ ^ = & { } [ ] ; . Không có khoảng trắng đầu/cuối hay 2 khoảng trắng liên tiếp.">
           </div>
           <div class="mb-3 form-check">
             <input type="checkbox" class="form-check-input" id="addMacDinh" name="macDinh">
@@ -448,7 +451,9 @@
             <div class="mb-3">
               <label th:for="'editChiTietDiaChi' + ${addr.id}" class="form-label">Địa chỉ chi tiết</label>
               <input type="text" class="form-control" th:id="'editChiTietDiaChi' + ${addr.id}" name="chiTietDiaChi"
-                     th:value="${addr.chiTietDiaChi}" required>
+                     th:value="${addr.chiTietDiaChi}" required maxlength="200"
+                     pattern="^(?! )(?!.* {2})(?!.*[<>\'\\|?*%$!~^=&{}\[\];])[0-9A-Za-zÀ-ỿ.,:/#()\-\s]{3,200}$"
+              title="3–200 ký tự. Không chứa: < > &quot; ' \ | ? * % $ ! ~ ^ = & { } [ ] ; . Không có khoảng trắng đầu/cuối hay 2 khoảng trắng liên tiếp.">
             </div>
             <div class="mb-3 form-check">
               <input type="checkbox" class="form-check-input" th:id="'editMacDinh' + ${addr.id}" name="macDinh"
@@ -471,6 +476,28 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  function cleanAddressDetail(s) {
+    return (s || '').trim().replace(/\s+/g, ' ');
+  }
+
+  const FORBIDDEN_ADDR_CHARS = /[<>\"'\\|?*%$!~^=&{}\[\];]/;
+
+  function isValidAddressDetail(s) {
+    if (!s) return false;
+    if (s.length < 3 || s.length > 200) return false;
+    if (s.startsWith(' ') || s.endsWith(' ') || /\s{2,}/.test(s)) return false;
+    if (FORBIDDEN_ADDR_CHARS.test(s)) return false;
+    // Allow-list an toàn cho địa chỉ (chữ có dấu, số, khoảng trắng và vài ký tự thường dùng)
+    return /^[0-9A-Za-zÀ-ỿ.,:/#()\-\s]+$/.test(s);
+  }
+
+  // (tuỳ chọn) Chặn ngay khi gõ các ký tự bị cấm
+  document.addEventListener('input', function(e) {
+    if (e.target.matches('#addChiTietDiaChi, [id^="editChiTietDiaChi"]')) {
+      e.target.value = e.target.value.replace(FORBIDDEN_ADDR_CHARS, '');
+    }
+  });
+
   function normalizeName(str) {
     return str.trim().replace(/\s+/g, ' ');
   }
@@ -533,9 +560,6 @@
         <button class="btn btn-primary btn-sm edit-address-btn" data-id="${address.id}" data-bs-target="#editAddressModal${address.id}">
           <i class="fas fa-edit"></i>
         </button>
-        <button class="btn btn-danger btn-sm delete-address-btn" data-id="${address.id}">
-          <i class="fas fa-trash"></i>
-        </button>
         ${!address.macDinh ? `<button class="btn btn-secondary btn-sm set-default-btn" data-id="${address.id}">Đặt mặc định</button>` : ''}
       </td>
     `;
@@ -557,9 +581,6 @@
         <td>
           <button class="btn btn-primary btn-sm edit-address-btn" data-id="${address.id}" data-bs-target="#editAddressModal${address.id}">
             <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-danger btn-sm delete-address-btn" data-id="${address.id}">
-            <i class="fas fa-trash"></i>
           </button>
           ${!address.macDinh ? `<button class="btn btn-secondary btn-sm set-default-btn" data-id="${address.id}">Đặt mặc định</button>` : ''}
         </td>
@@ -802,13 +823,17 @@
             });
   }
 
-  function updateAddressHandler() {
-    const addressId = this.dataset.id;
+  function phoneCharError(raw) {
+    if (/[^0-9\s().\-+]/.test(raw)) return 'invalid_char';
+    if (/\+/.test(raw) && !raw.trim().startsWith('+')) return 'plus_not_at_start';
+    return null; // ok
+  }
 
+  function runUpdateAddress(addressId) {
     const nameInput  = document.getElementById(`editNguoiNhan${addressId}`);
     const phoneInput = document.getElementById(`editSoDienThoaiNguoiNhan${addressId}`);
 
-    // --- Validate tên ---
+    // validate tên
     let nguoiNhan = cleanPersonName(nameInput.value);
     if (!isValidPersonName(nguoiNhan)) {
       showToast('Tên người nhận không hợp lệ. Chỉ chứa chữ và khoảng trắng, không dư khoảng trắng.', 'danger');
@@ -816,11 +841,27 @@
       return;
     }
 
-    // --- Validate SĐT ---
-    let soDienThoaiNguoiNhan = normalizeVNPhone(phoneInput.value);
+    // validate SĐT
+    const rawPhone = phoneInput.value;
+    const charErr = phoneCharError(rawPhone);
+    if (charErr) {
+      showToast('Số điện thoại chỉ được chứa số, khoảng trắng, ., -, (, ) và có thể bắt đầu bằng +84.', 'danger');
+      phoneInput.focus();
+      return;
+    }
+    let soDienThoaiNguoiNhan = normalizeVNPhone(rawPhone);
     if (!isValidVNPhone(soDienThoaiNguoiNhan)) {
       showToast('Số điện thoại không hợp lệ. Ví dụ di động: 09xxxxxxxx; cố định: 024/028 + 8 số.', 'danger');
       phoneInput.focus();
+      return;
+    }
+
+    // validate địa chỉ chi tiết
+    const chiTietEl = document.getElementById(`editChiTietDiaChi${addressId}`);
+    let chiTietDiaChi = cleanAddressDetail(chiTietEl.value);
+    if (!isValidAddressDetail(chiTietDiaChi)) {
+      showToast('Địa chỉ chi tiết không hợp lệ. Không chứa các ký tự: < > " \\ | ? * % $ ! ~ ^ = & { } [ ] ; và không có khoảng trắng dư thừa (3–200 ký tự).', 'danger');
+      chiTietEl.focus();
       return;
     }
 
@@ -831,7 +872,7 @@
       tinhThanhPho: document.getElementById(`editTinhThanhPho${addressId}`).value,
       quanHuyen: document.getElementById(`editQuanHuyen${addressId}`).value,
       phuongXa: document.getElementById(`editPhuongXa${addressId}`).value,
-      chiTietDiaChi: document.getElementById(`editChiTietDiaChi${addressId}`).value,
+      chiTietDiaChi: chiTietDiaChi,
       macDinh: document.getElementById(`editMacDinh${addressId}`).checked
     };
 
@@ -844,14 +885,9 @@
     if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
 
     fetch(`/profile/address/${addressId}/update-ajax`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data)
+      method: 'POST', headers, body: JSON.stringify(data)
     })
-            .then(res => {
-              if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-              return res.json();
-            })
+            .then(res => { if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`); return res.json(); })
             .then(data => {
               if (data.status === 'success') {
                 updateAddressInTable(data.address);
@@ -862,6 +898,12 @@
               }
             })
             .catch(err => showToast('Có lỗi xảy ra: ' + err.message, 'danger'));
+  }
+
+  function updateAddressHandler(e) {
+    e.preventDefault();           // ⬅️ quan trọng
+    const addressId = this.dataset.id;
+    runUpdateAddress(addressId);
   }
 
   // Thêm địa chỉ
@@ -887,13 +929,20 @@
       return;
     }
 
+    let chiTietDiaChi = cleanAddressDetail(document.getElementById('addChiTietDiaChi').value);
+    if (!isValidAddressDetail(chiTietDiaChi)) {
+      showToast('Địa chỉ chi tiết không hợp lệ. Không chứa các ký tự: < > " \' \\ | ? * % $ ! ~ ^ = & { } [ ] ; và không có khoảng trắng dư thừa (3–200 ký tự).', 'danger');
+      document.getElementById('addChiTietDiaChi').focus();
+      return;
+    }
+
     const data = {
       nguoiNhan,
       soDienThoaiNguoiNhan,
       tinhThanhPho: document.getElementById('addTinhThanhPho').value,
       quanHuyen: document.getElementById('addQuanHuyen').value,
       phuongXa: document.getElementById('addPhuongXa').value,
-      chiTietDiaChi: document.getElementById('addChiTietDiaChi').value,
+      chiTietDiaChi: chiTietDiaChi,
       macDinh: document.getElementById('addMacDinh').checked
     };
 
@@ -937,11 +986,12 @@
     return Swal.fire({
       toast: true,
       position: 'top-end',
-      icon: type,                 // 'success' | 'error' | 'info' | 'warning' | 'question'
+      icon: type,
       title: message,
       showConfirmButton: false,
       timer: 1800,
-      timerProgressBar: true
+      timerProgressBar: true,
+      zIndex: 20000
     });
   }
 
@@ -1111,6 +1161,14 @@
   // Khởi tạo tải dữ liệu tỉnh/thành phố
   document.addEventListener('DOMContentLoaded', function () {
     bindAddressEventListeners();
+
+    document.querySelectorAll('form[id^="editAddressForm"]').forEach(form => {
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        const addressId = this.id.replace('editAddressForm','');
+        runUpdateAddress(addressId);
+      });
+    });
 
     // Thiết lập dữ liệu cho form thêm
     const addProvinceSelect = document.getElementById('addTinhThanhPho');
