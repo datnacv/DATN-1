@@ -519,10 +519,16 @@
           <h6 class="font-semibold">Số lượng:</h6>
           <div class="quantity-control flex items-center space-x-2 mt-2">
             <button class="quantity-btn minus px-3 py-1 bg-gray-200 rounded">-</button>
-            <input type="number" value="1" min="1" class="quantity-input w-16 text-center border rounded">
+            <input type="number" value="1" min="1" step="1"
+                   class="quantity-input w-16 text-center border rounded">
             <button class="quantity-btn plus px-3 py-1 bg-gray-200 rounded">+</button>
           </div>
+
+          <!-- THÊM MỚI: lỗi số lượng -->
+          <div id="qtyError" class="text-red-500 text-sm mt-2 hidden"
+               role="alert" aria-live="assertive"></div>
         </div>
+
         <div id="modalError" class="text-red-500 text-sm mt-2 hidden">Vui lòng chọn kích thước và màu sắc!</div>
       </div>
       <div class="modal-footer">
@@ -1504,12 +1510,49 @@
       const minusBtn = modalEl.querySelector('.quantity-btn.minus');
       const plusBtn  = modalEl.querySelector('.quantity-btn.plus');
       const qtyInput = modalEl.querySelector('.quantity-input');
-      minusBtn.onclick = () => { qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) - 1); };
-      plusBtn.onclick  = () => {
+      const qtyError = modalEl.querySelector('#qtyError');
+
+      qtyInput.addEventListener('keydown', (e) => {                     // NEW
+        if (e.key === '-' || e.key === 'Minus') e.preventDefault();
+      });
+      function validateQty() {                                          // NEW
+        const raw = qtyInput.value.trim();
+        const n = Number(raw);
+
+        // Không phải số nguyên dương
+        if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) {
+          qtyError.textContent = 'Số lượng phải là số nguyên dương (≥ 1).';
+          qtyError.classList.remove('hidden');
+          confirmButton?.setAttribute('disabled', 'true');
+          return false;
+        }
+
+        // Nếu đã biết tồn kho của biến thể hiện tại
+        if (typeof currentVariant?.soLuongTonKho === 'number' && n > currentVariant.soLuongTonKho) {
+          qtyError.textContent = `Tối đa ${currentVariant.soLuongTonKho} sản phẩm trong kho.`;
+          qtyError.classList.remove('hidden');
+          confirmButton?.setAttribute('disabled', 'true');
+          return false;
+        }
+
+        qtyError.classList.add('hidden');
+        confirmButton?.removeAttribute('disabled');
+        return true;
+      }
+
+      minusBtn.onclick = () => {                                        // (giữ code cũ)
+        qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) - 1);
+        validateQty();                                                  // NEW
+      };
+      plusBtn.onclick  = () => {                                        // (giữ code cũ)
         const max = parseInt(qtyInput.max || '999999', 10);
         qtyInput.value = Math.min((parseInt(qtyInput.value) || 1) + 1, max);
+        validateQty();                                                  // NEW
       };
 
+      ['input','change','blur'].forEach(ev =>                           // NEW
+              qtyInput.addEventListener(ev, validateQty)
+      );
 
       let selectedSizeId  = null;
       let selectedColorId = null;
@@ -1716,6 +1759,7 @@
 
         confirmButton.disabled = true;
         confirmButton.classList.add('loading');
+        validateQty();
 
         try {
           const payload = { id: currentVariant.id, quantity };

@@ -420,7 +420,10 @@
                         <input type="checkbox"
                                class="modern-checkbox select-item"
                                aria-label="Chọn sản phẩm"
-                               th:attr="data-item-id=${item.id},data-gia=${item.gia},data-so-luong=${item.soLuong}"/>
+                               th:attr="data-item-id=${item.id},
+                                data-gia=${item.gia},
+                                data-so-luong=${item.soLuong},
+                                data-max=${item.chiTietSanPham.soLuongTonKho}"/>
                     </td>
                     <td>
                         <div class="flex items-center gap-4">
@@ -447,7 +450,13 @@
                     <td>
                         <div class="quantity-control">
                             <button class="quantity-btn minus" th:attr="data-item-id=${item.id}" aria-label="Giảm số lượng">-</button>
-                            <input type="number" th:value="${item.soLuong}" min="1" class="quantity-input" th:attr="data-item-id=${item.id}" aria-label="Số lượng"/>
+                            <input type="number"
+                                   th:value="${item.soLuong}" min="1"
+                                   class="quantity-input"
+                                   th:attr="data-item-id=${item.id},
+                                    data-prev=${item.soLuong},
+                                    max=${item.chiTietSanPham.soLuongTonKho}"
+                                                       aria-label="Số lượng"/>
                             <button class="quantity-btn plus" th:attr="data-item-id=${item.id}" aria-label="Tăng số lượng">+</button>
                         </div>
                     </td>
@@ -571,6 +580,31 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/js/navbar.js"></script>
 <script>
+    function clampAndRollbackIfNeeded(input, checkbox, quantity) {
+        const prev = parseInt(input.dataset.prev || input.value || '1', 10);
+        const maxStock = parseInt(checkbox?.dataset.max || input.getAttribute('max') || '999999', 10);
+        if (quantity > maxStock) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Vượt số lượng tồn',
+                text: `Tồn kho tối đa: ${maxStock}.`,
+            });
+            input.value = prev; // rollback
+            checkbox && (checkbox.dataset.soLuong = prev);
+            return { valid: false, quantity: prev };
+        }
+        return { valid: true, quantity };
+    }
+
+    function updateRowTotal(row, unitPrice, quantity) {
+        const priceCell = row.querySelector('td:nth-child(7) .final-price');
+        if (priceCell) priceCell.textContent = formatVND(unitPrice * quantity);
+    }
+
+    function setPrev(input, quantity) {
+        input.dataset.prev = String(quantity);
+    }
+
     // Format number to VND
     function formatVND(number) {
         return new Intl.NumberFormat('vi-VN', { style: 'decimal', minimumFractionDigits: 0 }).format(number) + ' VNĐ';
@@ -761,128 +795,151 @@
 
         // ====== Cập nhật số lượng ======
         document.querySelectorAll('.quantity-btn').forEach(button => {
-            if (button) {
-                button.addEventListener('click', async (e) => {
-                    e.preventDefault();
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const itemId = button.dataset.itemId;
+                const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
+                const checkbox = document.querySelector(`.select-item[data-item-id="${itemId}"]`);
+                const row = button.closest('tr');
+                const unitPrice = parseFloat(checkbox?.dataset.gia || '0');
 
-                    const itemId = button.dataset.itemId;
-                    const input = document.querySelector(`.quantity-input[data-item-id="${itemId}"]`);
-                    let quantity = parseInt(input.value, 10);
+                let quantity = parseInt(input.value, 10) || 1;
 
-                    if (button.classList.contains('minus') && quantity > 1) {
-                        quantity--;
-                    } else if (button.classList.contains('plus')) {
-                        quantity++;
-                    }
+                // lưu prev trước khi đổi
+                setPrev(input, quantity);
 
-                    input.value = quantity;
+                if (button.classList.contains('minus') && quantity > 1) quantity--;
+                else if (button.classList.contains('plus')) quantity++;
 
-                    const checkbox = document.querySelector(`.select-item[data-item-id="${itemId}"]`);
-                    if (checkbox) {
-                        checkbox.dataset.soLuong = quantity;
-                    }
-
+                // kiểm tra FE (tồn kho)
+                const chk = clampAndRollbackIfNeeded(input, checkbox, quantity);
+                quantity = chk.quantity;
+                if (!chk.valid) {
+                    updateRowTotal(row, unitPrice, quantity);
                     updateSelectedSummaryUI();
+                    return;
+                }
 
-                    try {
-                        const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include'
-                        });
+                // tạm cập nhật giao diện
+                input.value = quantity;
+                checkbox && (checkbox.dataset.soLuong = quantity);
+                updateRowTotal(row, unitPrice, quantity);
+                updateSelectedSummaryUI();
 
-                        if (response.ok) {
-                            const row = button.closest('tr');
-                            const priceCell = row.querySelector('td:nth-child(7) .final-price');
-                            const unitPrice = parseFloat(checkbox.dataset.gia || '0');
-                            const newTotal = unitPrice * quantity;
-                            if (priceCell) {
-                                priceCell.textContent = formatVND(newTotal);
-                            }
+                try {
+                    const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
 
-                            updateSelectedSummaryUI();
-                        } else if (response.status === 401) {
-                            window.location.href = '/customers/login';
-                        } else {
-                            const errorData = await response.json();
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi',
-                                text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
-                            });
-                        }
-                    } catch (error) {
+                    if (response.ok) {
+                        setPrev(input, quantity); // commit
+                    } else if (response.status === 401) {
+                        window.location.href = '/customers/login';
+                    } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        const prev = parseInt(input.dataset.prev || '1', 10);
                         Swal.fire({
                             icon: 'error',
                             title: 'Lỗi',
-                            text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+                            text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
                         });
+                        // rollback
+                        input.value = prev;
+                        checkbox && (checkbox.dataset.soLuong = prev);
+                        updateRowTotal(row, unitPrice, prev);
+                        updateSelectedSummaryUI();
                     }
-                });
-            }
+                } catch {
+                    const prev = parseInt(input.dataset.prev || '1', 10);
+                    Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Có lỗi xảy ra khi cập nhật số lượng!' });
+                    // rollback
+                    input.value = prev;
+                    checkbox && (checkbox.dataset.soLuong = prev);
+                    updateRowTotal(row, unitPrice, prev);
+                    updateSelectedSummaryUI();
+                }
+            });
         });
 
         // ====== Nhập số lượng trực tiếp ======
         document.querySelectorAll('.quantity-input').forEach(input => {
-            if (input) {
-                input.addEventListener('input', () => {
+            // luôn nhớ số lượng hiện tại làm "prev"
+            setPrev(input, parseInt(input.value, 10) || 1);
+            input.addEventListener('focusin', () => {
+                setPrev(input, parseInt(input.value, 10) || 1);
+            });
+
+            input.addEventListener('input', () => {
+                // cập nhật phần tóm tắt khi đang gõ
+                updateSelectedSummaryUI();
+            });
+
+            input.addEventListener('change', async (e) => {
+                e.preventDefault();
+                const itemId = input.dataset.itemId;
+                let quantity = parseInt(input.value, 10);
+                if (isNaN(quantity) || quantity < 1) quantity = 1;
+
+                const checkbox = document.querySelector(`.select-item[data-item-id="${itemId}"]`);
+                const row = input.closest('tr');
+                const unitPrice = parseFloat(checkbox?.dataset.gia || '0');
+
+                // kiểm tra FE (tồn kho)
+                const chk = clampAndRollbackIfNeeded(input, checkbox, quantity);
+                quantity = chk.quantity;
+                if (!chk.valid) {
+                    updateRowTotal(row, unitPrice, quantity);
                     updateSelectedSummaryUI();
-                });
+                    return; // không gọi API nếu đã vượt kho ở FE
+                }
 
-                input.addEventListener('change', async (e) => {
-                    e.preventDefault();
+                // tạm cập nhật giao diện
+                input.value = quantity;
+                checkbox && (checkbox.dataset.soLuong = quantity);
+                updateRowTotal(row, unitPrice, quantity);
+                updateSelectedSummaryUI();
 
-                    const itemId = input.dataset.itemId;
-                    let quantity = parseInt(input.value, 10);
+                try {
+                    const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
 
-                    if (isNaN(quantity) || quantity < 1) {
-                        input.value = 1;
-                        quantity = 1;
-                    }
-
-                    const checkbox = document.querySelector(`.select-item[data-item-id="${itemId}"]`);
-                    if (checkbox) {
-                        checkbox.dataset.soLuong = quantity;
-                    }
-
-                    updateSelectedSummaryUI();
-
-                    try {
-                        const response = await fetch(`/api/cart/update-quantity/${itemId}?quantity=${quantity}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include'
-                        });
-
-                        if (response.ok) {
-                            const row = input.closest('tr');
-                            const priceCell = row.querySelector('td:nth-child(7) .final-price');
-                            const unitPrice = parseFloat(checkbox.dataset.gia || '0');
-                            const newTotal = unitPrice * quantity;
-                            if (priceCell) {
-                                priceCell.textContent = formatVND(newTotal);
-                            }
-
-                            updateSelectedSummaryUI();
-                        } else if (response.status === 401) {
-                            window.location.href = '/customers/login';
-                        } else {
-                            const errorData = await response.json();
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Lỗi',
-                                text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
-                            });
-                        }
-                    } catch (error) {
+                    if (response.ok) {
+                        // commit số lượng mới làm prev
+                        setPrev(input, quantity);
+                    } else if (response.status === 401) {
+                        window.location.href = '/customers/login';
+                    } else {
+                        // backend có thể trả { error, maxAvailable, currentQty }
+                        const errorData = await response.json().catch(() => ({}));
+                        const maxAvail = parseInt(errorData.maxAvailable || input.getAttribute('max') || '0', 10);
                         Swal.fire({
                             icon: 'error',
                             title: 'Lỗi',
-                            text: 'Có lỗi xảy ra khi cập nhật số lượng!',
+                            text: errorData.error || 'Có lỗi xảy ra khi cập nhật số lượng!',
                         });
+
+                        // rollback về prev
+                        const prev = parseInt(input.dataset.prev || '1', 10);
+                        input.value = prev;
+                        checkbox && (checkbox.dataset.soLuong = prev);
+                        updateRowTotal(row, unitPrice, prev);
+                        updateSelectedSummaryUI();
                     }
-                });
-            }
+                } catch (err) {
+                    Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Có lỗi xảy ra khi cập nhật số lượng!' });
+                    // rollback về prev khi lỗi mạng
+                    const prev = parseInt(input.dataset.prev || '1', 10);
+                    input.value = prev;
+                    checkbox && (checkbox.dataset.soLuong = prev);
+                    updateRowTotal(row, unitPrice, prev);
+                    updateSelectedSummaryUI();
+                }
+            });
         });
 
         // ====== Xoá sản phẩm ======
