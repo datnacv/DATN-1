@@ -49,4 +49,7 @@
 
         @Query("SELECT u FROM NguoiDung u WHERE u.vaiTro IN ('employee', 'admin') AND (u.hoTen LIKE %:keyword% OR u.email LIKE %:keyword% OR u.soDienThoai LIKE %:keyword%)")
         Page<NguoiDung> findByVaiTroNotCustomer(@Param("keyword") String keyword, Pageable pageable);
+        List<NguoiDung> findByFaceDescriptorIsNotNullAndFaceRegisteredTrue();
+
     }
+
