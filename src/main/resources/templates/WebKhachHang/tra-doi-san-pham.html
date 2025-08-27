@@ -800,7 +800,7 @@
         // Hàm tải danh sách sản phẩm thay thế
         function loadReplacementProducts(page = 0, keyword = '') {
             const hoaDonId = document.getElementById('exchangeForm').getAttribute('action').match(/\/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/)[1];
-            const size = 5; // Kích thước trang
+            const size = 5;
 
             fetch(`/dsdon-mua/api/replacement-products/${hoaDonId}?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}`, {
                 method: 'GET',
@@ -830,34 +830,51 @@
                 });
         }
 
-        // Hàm render danh sách sản phẩm thay thế
+        // Hàm render danh sách sản phẩm thay thế với thông tin tồn kho
         function renderReplacementProducts(products) {
             const container = document.getElementById('replacementProductsContainer');
             container.innerHTML = '';
 
             products.forEach(product => {
                 const productHtml = `
-                    <div class="replacement-product">
-                        <input type="checkbox" name="replacementProducts" value="${product.id}"/>
-                        <img src="${product.imageUrl}" class="product-img" alt="Ảnh sản phẩm thay thế"/>
-                        <div class="flex-1">
-                            <span>${product.tenSanPham} (${product.mauSac}, ${product.kichCo})</span>
-                            <div class="flex items-center gap-4 mt-1">
-                                <span class="price" data-value="${product.giaValue}">${product.gia}</span>
-                                ${product.oldPrice ? `<span><del>${product.oldPrice}</del></span>` : ''}
-                                ${product.discount ? `<span class="text-red-500"><strong>${product.discount}</strong></span>` : ''}
-                                ${product.campaignName ? `<span class="text-blue-500"><strong>${product.campaignName}</strong></span>` : ''}
-                                <span class="text-sm text-gray-600">Tồn kho: ${product.soLuongTonKho}</span>
-                            </div>
+                <div class="replacement-product">
+                    <input type="checkbox" name="replacementProducts" value="${product.id}" data-stock="${product.soLuongTonKho}"/>
+                    <img src="${product.imageUrl}" class="product-img" alt="Ảnh sản phẩm thay thế"/>
+                    <div class="flex-1">
+                        <span>${product.tenSanPham} (${product.mauSac}, ${product.kichCo})</span>
+                        <div class="flex items-center gap-4 mt-1">
+                            <span class="price" data-value="${product.giaValue}">${product.gia}</span>
+                            ${product.oldPrice ? `<span><del>${product.oldPrice}</del></span>` : ''}
+                            ${product.discount ? `<span class="text-red-500"><strong>${product.discount}</strong></span>` : ''}
+                            ${product.campaignName ? `<span class="text-blue-500"><strong>${product.campaignName}</strong></span>` : ''}
+                            <span class="text-sm text-gray-600">Tồn kho: ${product.soLuongTonKho}</span>
                         </div>
                     </div>
-                `;
+                </div>
+            `;
                 container.insertAdjacentHTML('beforeend', productHtml);
             });
 
-            // Gắn lại sự kiện cho các checkbox mới
-            document.querySelectorAll('input[name="replacementProducts"]').forEach(element => {
-                element.addEventListener('change', calculatePriceDifference);
+            // Gắn sự kiện kiểm tra tồn kho khi tick checkbox
+            document.querySelectorAll('input[name="replacementProducts"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const soLuong = parseInt(document.getElementById('soLuong').value) || 0;
+                    const stock = parseInt(this.getAttribute('data-stock'));
+
+                    if (this.checked && soLuong > stock) {
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: `Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: ${stock}. Vui lòng giảm số lượng xuống hoặc chọn sản phẩm khác.`,
+                            icon: 'error',
+                            confirmButtonColor: '#153054'
+                        }).then(() => {
+                            this.checked = false; // Bỏ chọn checkbox nếu vượt tồn kho
+                            calculatePriceDifference();
+                        });
+                    } else {
+                        calculatePriceDifference();
+                    }
+                });
             });
         }
 
@@ -866,37 +883,33 @@
             const paginationLinks = document.getElementById('paginationLinks');
             paginationLinks.innerHTML = '';
 
-            // Nút Previous
             const prevDisabled = currentPage === 0 ? 'disabled' : '';
             paginationLinks.insertAdjacentHTML('beforeend', `
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
-                        <span aria-hidden="true">&laquo;</span>
-                    </a>
-                </li>
-            `);
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `);
 
-            // Các trang
             for (let i = 0; i < totalPages; i++) {
                 const active = i === currentPage ? 'active' : '';
                 paginationLinks.insertAdjacentHTML('beforeend', `
-                    <li class="page-item ${active}">
-                        <a class="page-link" href="#" data-page="${i}">${i + 1}</a>
-                    </li>
-                `);
-            }
-
-            // Nút Next
-            const nextDisabled = currentPage === totalPages - 1 ? 'disabled' : '';
-            paginationLinks.insertAdjacentHTML('beforeend', `
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
-                        <span aria-hidden="true">&raquo;</span>
-                    </a>
+                <li class="page-item ${active}">
+                    <a class="page-link" href="#" data-page="${i}">${i + 1}</a>
                 </li>
             `);
+            }
 
-            // Gắn sự kiện cho các liên kết phân trang
+            const nextDisabled = currentPage === totalPages - 1 ? 'disabled' : '';
+            paginationLinks.insertAdjacentHTML('beforeend', `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        `);
+
             document.querySelectorAll('.page-link[data-page]').forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -916,7 +929,7 @@
             searchTimeout = setTimeout(() => {
                 const keyword = this.value.trim();
                 loadReplacementProducts(0, keyword);
-            }, 500); // Debounce 500ms
+            }, 500);
         });
 
         // Xử lý form submit
@@ -1017,6 +1030,25 @@
         // Gắn sự kiện cho các input để tính chênh lệch giá
         document.querySelectorAll('input[name="selectedProducts"], #soLuong').forEach(element => {
             element.addEventListener('change', calculatePriceDifference);
+        });
+
+        // Gắn sự kiện cho thay đổi số lượng để kiểm tra tồn kho
+        document.getElementById('soLuong').addEventListener('change', function() {
+            const soLuong = parseInt(this.value) || 0;
+            document.querySelectorAll('input[name="replacementProducts"]:checked').forEach(checkbox => {
+                const stock = parseInt(checkbox.getAttribute('data-stock'));
+                if (soLuong > stock) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: `Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: ${stock}. Vui lòng giảm số lượng xuống hoặc chọn sản phẩm khác.`,
+                        icon: 'error',
+                        confirmButtonColor: '#153054'
+                    }).then(() => {
+                        this.value = stock; // Đặt lại số lượng tối đa bằng tồn kho
+                        calculatePriceDifference();
+                    });
+                }
+            });
         });
     });
 </script>

@@ -839,13 +839,8 @@ public class KHDonMuaController {
                     .map(DonHangPhieuGiamGia::getGiaTriGiam)
                     .filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal tongGiamShip = allVouchers.stream()
-                    .filter(p -> "SHIPPING".equalsIgnoreCase(p.getLoaiGiamGia()))
-                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            // Tính tổng tiền hoàn lại
+            // Tính tổng tiền hoàn (chỉ dựa trên thành tiền trừ giảm hóa đơn)
             BigDecimal totalReturnAmount = BigDecimal.ZERO;
             for (UUID chiTietId : selectedProductIds) {
                 ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
@@ -857,7 +852,6 @@ public class KHDonMuaController {
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
                 }
 
-                // Tính giá sau giảm nếu có
                 BigDecimal finalPrice = chiTiet.getChiTietSanPhamDto() != null
                         ? chiTiet.getChiTietSanPhamDto().getGia()
                         : chiTiet.getGia();
@@ -873,8 +867,6 @@ public class KHDonMuaController {
                 traHang.setLyDoTraHang(description != null ? reason + ": " + description : reason);
                 traHang.setThoiGianTra(LocalDateTime.now());
                 traHang.setTrangThai("Chờ xử lý");
-
-                // Lưu bản ghi trả hàng
                 lichSuTraHangRepository.save(traHang);
 
                 // Cập nhật trạng thái hoàn trả của chi tiết đơn hàng
@@ -888,16 +880,8 @@ public class KHDonMuaController {
                 chiTietSanPhamRepository.save(sanPham);
             }
 
-            // Thêm phí vận chuyển vào tổng tiền hoàn (chỉ khi không có giảm giá phí vận chuyển)
-            BigDecimal shippingFee = hoaDon.getDonHang().getPhiVanChuyen() != null
-                    ? hoaDon.getDonHang().getPhiVanChuyen()
-                    : BigDecimal.ZERO;
-            if (tongGiamShip.compareTo(BigDecimal.ZERO) == 0) {
-                totalReturnAmount = totalReturnAmount.add(shippingFee);
-            }
-
-            // Trừ đi các khoản giảm giá
-            totalReturnAmount = totalReturnAmount.subtract(tongGiamOrder).subtract(tongGiamShip);
+            // Trừ đi giảm giá hóa đơn, không tính phí vận chuyển hoặc giảm giá vận chuyển
+            totalReturnAmount = totalReturnAmount.subtract(tongGiamOrder);
 
             // Đảm bảo tổng tiền hoàn không âm
             totalReturnAmount = totalReturnAmount.max(BigDecimal.ZERO);
@@ -915,7 +899,7 @@ public class KHDonMuaController {
                     hoaDon.getDonHang()
             );
 
-            // Gửi email thông báo với thông tin giảm giá và danh sách sản phẩm
+            // Gửi email thông báo
             StringBuilder emailContent = new StringBuilder("<h2>Thông báo yêu cầu trả hàng</h2>");
             emailContent.append("<p>Xin chào ").append(nguoiDung.getHoTen()).append(",</p>");
             emailContent.append("<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>")
@@ -933,12 +917,11 @@ public class KHDonMuaController {
                 }
             }
             emailContent.append("</ul>");
-            emailContent.append("<p><strong>Phí vận chuyển:</strong> ").append(tongGiamShip.compareTo(BigDecimal.ZERO) == 0 ? formatVND(shippingFee.doubleValue()) : "Không được hoàn").append("</p>");
+            emailContent.append("<p><strong>Phí vận chuyển:</strong> Không được hoàn</p>");
             emailContent.append("<p><strong>Trạng thái:</strong> Đã trả hàng</p>")
                     .append("<p><strong>Lý do:</strong> ").append(reason).append("</p>")
                     .append("<p><strong>Mô tả:</strong> ").append(description != null ? description : "Không có").append("</p>")
                     .append("<p><strong>Giảm giá đơn:</strong> ").append(formatVND(tongGiamOrder.doubleValue())).append("</p>")
-                    .append("<p><strong>Giảm phí vận chuyển:</strong> ").append(formatVND(tongGiamShip.doubleValue())).append("</p>")
                     .append("<p><strong>Tổng tiền hoàn:</strong> ").append(formatVND(totalReturnAmount.doubleValue())).append("</p>")
                     .append("<p>Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.</p>")
                     .append("<p>Trân trọng,<br>Đội ngũ ACV Store</p>");
@@ -1159,7 +1142,7 @@ public class KHDonMuaController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Tính toán chênh lệch giá
+            // Tính toán chênh lệch giá và kiểm tra tồn kho
             BigDecimal totalOriginalPrice = BigDecimal.ZERO;
             BigDecimal totalReplacementPrice = BigDecimal.ZERO;
 
@@ -1204,7 +1187,7 @@ public class KHDonMuaController {
                 ChiTietSanPham chiTietSanPhamThayThe = sanPhamThayTheOpt.get();
                 if (chiTietSanPhamThayThe.getSoLuongTonKho() < soLuong) {
                     response.put("success", false);
-                    response.put("message", "Sản phẩm thay thế không đủ tồn kho.");
+                    response.put("message", "Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: " + chiTietSanPhamThayThe.getSoLuongTonKho());
                     return ResponseEntity.badRequest().body(response);
                 }
 
