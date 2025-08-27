@@ -856,7 +856,14 @@
               </div>
               <div class="floating-label">
                 <label for="addressLine">Địa chỉ cụ thể</label>
-                <input type="text" id="addressLine" class="form-control" placeholder="Số nhà, đường,...">
+                <input
+                        type="text"
+                        id="addressLine"
+                        class="form-control"
+                        placeholder="Số nhà, đường… (vd: 12/5 Ngõ 8 Phố Huế)"
+                        required
+                        maxlength="120"
+                        autocomplete="address-line1">
               </div>
             </div>
             <div class="d-flex gap-3 mt-3">
@@ -2878,50 +2885,120 @@
     }
   }
 
+  function sanitizeSpaces(str) {
+    return String(str || '')
+            .replace(/\s+/g, ' ')
+            .replace(/\s*,\s*/g, ', ')
+            .replace(/\s*([./\-#])\s*/g, '$1')
+            .trim();
+  }
+  function addFieldError(el, msg) {
+    if (!el) return;
+    el.classList.add('is-invalid');
+    let fb = el.nextElementSibling;
+    if (!fb || !fb.classList.contains('invalid-feedback')) {
+      fb = document.createElement('div');
+      fb.className = 'invalid-feedback';
+      el.after(fb);
+    }
+    fb.textContent = msg || 'Giá trị không hợp lệ';
+  }
+  function clearFieldError(el) {
+    if (!el) return;
+    el.classList.remove('is-invalid');
+    const fb = el.nextElementSibling;
+    if (fb && fb.classList.contains('invalid-feedback')) fb.textContent = '';
+  }
+
+  // Kiểm tra "địa chỉ cụ thể"
+  function validateAddressDetail(raw) {
+    const s0 = sanitizeSpaces(raw);
+    if (s0.length < 5 || s0.length > 120) {
+      return { ok:false, msg:'Độ dài phải từ 5–120 ký tự.' };
+    }
+    // bắt đầu/kết thúc bằng ký tự hợp lệ
+    if (/^[,./\-#]/.test(s0) || /[,./\-#]$/.test(s0)) {
+      return { ok:false, msg:'Không bắt đầu/kết thúc bằng ký hiệu (.,-/#).' };
+    }
+    // chỉ cho chữ có dấu tiếng Việt, số, khoảng trắng và , . / - #
+    if (/[^0-9A-Za-zÀ-Ỹà-ỹĐđ\s,./\-#]/.test(s0)) {
+      return { ok:false, msg:'Chỉ dùng chữ, số và ký hiệu , . / - #.' };
+    }
+    // nên có ít nhất một chữ số (thường là số nhà/ngõ)
+    if (!/[0-9]/.test(s0)) {
+      return { ok:false, msg:'Vui lòng thêm số nhà/ngõ (ít nhất 1 chữ số).' };
+    }
+    // nên có chữ cái (tên đường/khu)
+    if (!/[A-Za-zÀ-Ỹà-ỹĐđ]/.test(s0)) {
+      return { ok:false, msg:'Vui lòng nhập tên đường/khu vực.' };
+    }
+    // gom dấu trùng
+    const s = s0
+            .replace(/,{2,}/g, ',')
+            .replace(/\.{2,}/g, '.')
+            .replace(/\/{2,}/g, '/');
+    return { ok:true, value:s };
+  }
+
+  // Gợi ý: validate live khi blur
+  (function wireAddressLineValidation(){
+    const el = document.getElementById('addressLine');
+    if (!el) return;
+    el.addEventListener('blur', () => {
+      const v = validateAddressDetail(el.value);
+      if (!v.ok) addFieldError(el, v.msg); else { el.value = v.value; clearFieldError(el); }
+    });
+  })();
+
   async function addNewAddress() {
-    const phoneInput = document.getElementById('customerPhone');
-    const addressLineInput = document.getElementById('addressLine');
-    const wardSelect = document.getElementById('wardSelect');
-    const districtSelect = document.getElementById('districtSelect');
-    const provinceSelect = document.getElementById('provinceSelect');
+    const phoneInput      = document.getElementById('customerPhone');
+    const addressLineInput= document.getElementById('addressLine');
+    const wardSelect      = document.getElementById('wardSelect');
+    const districtSelect  = document.getElementById('districtSelect');
+    const provinceSelect  = document.getElementById('provinceSelect');
 
     if (!phoneInput || !addressLineInput || !wardSelect || !districtSelect || !provinceSelect) {
       showToast('Không tìm thấy các trường nhập liệu.', 'error');
       return;
     }
 
-    const phone = phoneInput.value.trim();
-    const chiTietDiaChi = addressLineInput.value.trim();
+    clearFieldError(addressLineInput); // NEW
+    const phone = (phoneInput.value || '').trim();
+    const chiTietDiaChiRaw = addressLineInput.value;
 
-    // Kiểm tra người dùng có chọn đủ phường/xã, quận/huyện, tỉnh/thành chưa
-    if (
-            !phone || !chiTietDiaChi ||
-            wardSelect.selectedIndex <= 0 ||
-            districtSelect.selectedIndex <= 0 ||
-            provinceSelect.selectedIndex <= 0
-    ) {
-      showToast('Vui lòng nhập đầy đủ địa chỉ và số điện thoại.', 'warning');
+    // NEW: validate "địa chỉ cụ thể"
+    const check = validateAddressDetail(chiTietDiaChiRaw);
+    if (!check.ok) { addFieldError(addressLineInput, check.msg); showToast(check.msg, 'warning'); return; }
+    const chiTietDiaChi = check.value;
+
+    // chọn đủ 3 cấp hành chính
+    if (wardSelect.selectedIndex <= 0 || districtSelect.selectedIndex <= 0 || provinceSelect.selectedIndex <= 0) {
+      showToast('Vui lòng chọn đủ Phường/Xã, Quận/Huyện, Tỉnh/Thành.', 'warning');
       return;
     }
 
-    const phuongXa = wardSelect.options[wardSelect.selectedIndex].text;
-    const quanHuyen = districtSelect.options[districtSelect.selectedIndex].text;
-    const tinhThanhPho = provinceSelect.options[provinceSelect.selectedIndex].text;
+    // build chuỗi đúng định dạng
+    const phuongXa     = wardSelect.options[wardSelect.selectedIndex].text.trim();
+    const quanHuyen    = districtSelect.options[districtSelect.selectedIndex].text.trim();
+    const tinhThanhPho = provinceSelect.options[provinceSelect.selectedIndex].text.trim();
+    const fullAddress  = `${chiTietDiaChi}, ${phuongXa}, ${quanHuyen}, ${tinhThanhPho}`;
 
-    const requestData = {
-      chiTietDiaChi,
-      phuongXa,
-      quanHuyen,
-      tinhThanhPho
-    };
+    // NEW: pre-check khớp GHN trước khi lưu (bắt lỗi sớm nếu sai)
+    try {
+      await mapAddressTextToGhnCodes(fullAddress);
+    } catch (e) {
+      addFieldError(addressLineInput, 'Địa chỉ chưa khớp hệ thống GHN, vui lòng kiểm tra lại.');
+      showToast(e?.message || 'Địa chỉ chưa khớp GHN, vui lòng kiểm tra lại.', 'warning');
+      return;
+    }
+
+    // Payload gửi BE giữ nguyên như của bạn
+    const requestData = { chiTietDiaChi, phuongXa, quanHuyen, tinhThanhPho };
 
     try {
       const response = await fetch(`${BASE_URL}/customer/${phone}/add-address`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(requestData)
       });
 
@@ -2933,35 +3010,35 @@
 
       const data = await response.json();
 
+      // cập nhật UI hiện có (giữ nguyên logic của bạn)
       const tab = tabs.find(t => t.id === currentTabId);
       if (tab) {
-        const fullAddress = `${chiTietDiaChi}, ${phuongXa}, ${quanHuyen}, ${tinhThanhPho}`;
+        const fmt = (s) => s.trim();
+        const normalized = fmt(fullAddress);
+        // chống trùng (so sánh không phân biệt hoa/thường & khoảng trắng)
+        const existed = (tab.addresses || []).some(a => fmt(a).toLowerCase() === normalized.toLowerCase());
+        if (!existed) tab.addresses.push(normalized);
+        tab.selectedAddress = normalized;
 
-        // Không thêm nếu đã có địa chỉ này
-        if (!tab.addresses.includes(fullAddress)) {
-          tab.addresses.push(fullAddress);
-        }
-
-        // Cập nhật địa chỉ đang chọn
-        tab.selectedAddress = fullAddress;
-
-        // Thêm vào dropdown
         const addressSelect = document.getElementById('addressSelect');
         if (addressSelect) {
-          const option = document.createElement('option');
-          option.value = fullAddress;
-          option.text = fullAddress;
-          addressSelect.appendChild(option);
-          addressSelect.value = fullAddress;
-          setupShippingForSelectedAddress();
+          // nếu chưa có option trùng -> thêm vào
+          const hasOption = [...addressSelect.options].some(o => fmt(o.value).toLowerCase() === normalized.toLowerCase());
+          if (!hasOption) {
+            const opt = document.createElement('option');
+            opt.value = normalized;
+            opt.text  = normalized;
+            addressSelect.appendChild(opt);
+          }
+          addressSelect.value = normalized;
+          await setupShippingForSelectedAddress(); // tính phí GHN
         }
 
-        // Lưu tabs vào localStorage
         localStorage.setItem('orderTabs', JSON.stringify(tabs));
       }
 
-      // Ẩn form và thông báo thành công
       document.getElementById('addAddressForm').classList.add('d-none');
+      clearFieldError(addressLineInput); // NEW
       showToast('Đã thêm địa chỉ thành công!', 'success');
     } catch (error) {
       console.error('Lỗi khi thêm địa chỉ:', error);
