@@ -52,7 +52,7 @@
                 <a th:href="@{/acvstore/chien-dich-giam-gia}" class="btn btn-outline-secondary me-3">
                     <i class="fas fa-arrow-left me-2"></i>Quay lại
                 </a>
-                <h2><i class="fas a-plus me-2"></i>Tạo chiến dịch giảm giá</h2>
+                <h2><i class="fas fa-plus me-2"></i>Tạo chiến dịch giảm giá</h2>
             </div>
         </div>
 
@@ -81,7 +81,7 @@
                                        oninvalid="this.setCustomValidity('Mã phải từ 6–50 ký tự, chỉ gồm chữ và số, viết liền, không ký tự đặc biệt.')">
                             </div>
 
-                            <!-- TÊN: không cho khoảng trắng đầu/cuối; giữa các từ chỉ 1 khoảng; chỉ chữ; >=6 ký tự (không tính khoảng) -->
+                            <!-- TÊN: cho chữ (có dấu), số, '-', '/'; giữa các nhóm 1 khoảng; >=6 ký tự (không tính khoảng) -->
                             <div class="col-md-4">
                                 <label class="form-label">Tên chiến dịch</label>
                                 <input type="text" class="form-control"
@@ -89,10 +89,9 @@
                                        required minlength="6" maxlength="100"
                                        oninput="this.setCustomValidity('')"
                                        onblur="validateTen(this); if(this.checkValidity()) normalizeTen(this);"
-                                       oninvalid="this.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng), chỉ gồm chữ (có dấu), giữa các từ chỉ được 1 khoảng trắng, và không có khoảng trắng ở đầu/cuối.')">
+                                       oninvalid="this.setCustomValidity('Tên phải có ít nhất 6 ký tự (không tính khoảng trắng), chỉ gồm chữ (có dấu), số, dấu gạch ngang (-) và dấu gạch chéo (/), giữa các nhóm cách 1 khoảng trắng, và không có khoảng trắng ở đầu/cuối.')">
                             </div>
 
-                            <!-- PHẦN TRĂM: số nguyên 1..100 -->
                             <!-- PHẦN TRĂM: số nguyên 1..99 -->
                             <div class="col-md-4">
                                 <label class="form-label">% Giảm</label>
@@ -101,7 +100,6 @@
                                        oninput="validatePercentInt(this)"
                                        oninvalid="this.setCustomValidity('Phần trăm giảm phải là số nguyên từ 1 đến 99.')">
                             </div>
-
 
                             <div class="col-md-4">
                                 <label class="form-label">Ngày bắt đầu</label>
@@ -265,9 +263,11 @@
             return;
         }
 
-        // 2) Chỉ chữ theo từng từ (có thể có 1 space giữa các từ)
-        if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(trimmed)) {
-            el.setCustomValidity('Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng.');
+        // 2) Cho phép: chữ (có dấu), số, '-', '/'; các nhóm cách nhau đúng 1 khoảng trắng
+        //    Dùng Unicode property cho \\p{L} với cờ 'u'
+        const allowed = /^[\p{L}\d\-\/]+(?: [\p{L}\d\-\/]+)*$/u;
+        if (!allowed.test(trimmed)) {
+            el.setCustomValidity('Tên chỉ được dùng chữ (có dấu), số, dấu gạch ngang (-) và dấu gạch chéo (/), giữa các nhóm cách 1 khoảng trắng.');
             return;
         }
 
@@ -278,7 +278,7 @@
             return;
         }
 
-        // 4) Tối đa 100 ký tự tổng thể (tuỳ bạn giữ luật này)
+        // 4) Tối đa 100 ký tự tổng thể
         if (trimmed.length > 100) {
             el.setCustomValidity('Tên tối đa 100 ký tự.');
             return;
@@ -286,7 +286,6 @@
 
         el.setCustomValidity('');
     }
-
 
     function validatePercentInt(el){
         if(!el) return;
@@ -296,7 +295,6 @@
         const ok = intOk && num >= 1 && num <= 99;
         el.setCustomValidity(ok || v==='' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 99.');
     }
-
 
     // ======= (giữ nguyên) các biến & hàm chọn SP/CTSP, pagination... =======
     const STORAGE_KEYS = { selectedProducts:'selectedProductIds', selectedDetails:'selectedDetailIds' };

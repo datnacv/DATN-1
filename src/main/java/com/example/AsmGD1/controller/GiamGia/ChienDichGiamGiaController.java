@@ -500,6 +500,7 @@ public class ChienDichGiamGiaController {
                                      List<UUID> chiTietIds,
                                      boolean isCreate,
                                      ChienDichGiamGia chienDichCu) {
+        // ===== MÃ =====
         String ma = normalizeCode(chienDich.getMa());
         if (ma == null || ma.isEmpty()) {
             return "Mã chiến dịch không được để trống.";
@@ -510,7 +511,6 @@ public class ChienDichGiamGiaController {
         if (!ma.matches("^[A-Za-z0-9]+$")) {
             return "Mã chiến dịch chỉ được chứa chữ và số, viết liền, không ký tự đặc biệt.";
         }
-
         if (isCreate) {
             if (chienDichService.kiemTraMaTonTai(ma)) {
                 return "Mã chiến dịch đã tồn tại.";
@@ -521,30 +521,38 @@ public class ChienDichGiamGiaController {
             }
         }
 
+        // ===== TÊN (>= 6 ký tự, không tính khoảng trắng) =====
         String tenRaw = chienDich.getTen();
         if (tenRaw == null || tenRaw.isBlank()) {
             return "Tên chiến dịch không được để trống.";
         }
-        String tenTrim = tenRaw.trim();
-        if (tenTrim.matches(".*\\s{2,}.*")) {
-            return "Giữa các từ chỉ được 1 khoảng trắng.";
+
+        // Chuẩn hoá: gộp nhiều khoảng trắng thành 1
+        String tenTrim = tenRaw.trim().replaceAll("\\s+", " ");
+
+        // Cho phép: chữ (có dấu), số, '-', '/'; các nhóm ngăn cách bởi đúng 1 khoảng trắng
+        if (!tenTrim.matches("^[\\p{L}\\d\\-/]+(?: [\\p{L}\\d\\-/]+)*$")) {
+            return "Tên chỉ được dùng chữ (có dấu), số, dấu gạch ngang (-) và dấu gạch chéo (/), giữa các nhóm cách 1 khoảng trắng.";
         }
-        if (!tenTrim.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
-            return "Tên chỉ được chứa chữ (có dấu), giữa các từ cách đúng 1 khoảng trắng, không số/ký tự đặc biệt.";
-        }
+
+        // Độ dài tối thiểu: 6 ký tự (không tính khoảng trắng)
         int tenNonSpaceLen = tenTrim.replaceAll("\\s+", "").length();
         if (tenNonSpaceLen < 6) {
             return "Tên chiến dịch phải có ít nhất 6 ký tự (không tính khoảng trắng).";
         }
+
         if (tenTrim.length() > 100) {
             return "Tên chiến dịch tối đa 100 ký tự.";
         }
+
+        // Check trùng tên (nếu đổi tên)
         String tenCuTrim = (chienDichCu == null || chienDichCu.getTen() == null) ? "" : chienDichCu.getTen().trim();
         boolean tenChanged = (chienDichCu == null) || !tenTrim.equalsIgnoreCase(tenCuTrim);
         if (tenChanged && chienDichService.kiemTraTenTonTai(tenTrim)) {
             return "Tên chiến dịch đã tồn tại.";
         }
 
+        // ===== PHẦN TRĂM GIẢM =====
         if (chienDich.getPhanTramGiam() == null) {
             return "Phần trăm giảm không được để trống.";
         }
@@ -560,6 +568,7 @@ public class ChienDichGiamGiaController {
             return "Phần trăm giảm phải là số nguyên từ 1 đến 99.";
         }
 
+        // ===== THỜI GIAN =====
         if (chienDich.getNgayBatDau() == null || chienDich.getNgayKetThuc() == null) {
             return "Ngày bắt đầu và ngày kết thúc không được để trống.";
         }
@@ -570,13 +579,16 @@ public class ChienDichGiamGiaController {
             return "Ngày bắt đầu phải là hiện tại hoặc tương lai.";
         }
 
+        // ===== SẢN PHẨM/CHI TIẾT =====
         if (chiTietIds == null || chiTietIds.isEmpty()) {
             return "Vui lòng chọn ít nhất một chi tiết sản phẩm.";
         }
 
+        // Ghi lại giá trị đã chuẩn hoá
         chienDich.setMa(ma);
-        chienDich.setTen(tenRaw);
+        chienDich.setTen(tenTrim);
 
         return null;
     }
+
 }

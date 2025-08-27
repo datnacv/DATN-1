@@ -100,7 +100,8 @@
     
         @Autowired
         private HttpSession session;
-    
+
+
         @GetMapping("/customers")
         public ResponseEntity<Map<String, Object>> getCustomers(@RequestParam(required = false, defaultValue = "") String keyword) {
             try {
@@ -280,8 +281,8 @@
                 return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi lấy phiếu giảm giá: " + e.getMessage()));
             }
         }
-    
-    
+
+
         @PostMapping("/create-order")
         @ResponseBody
         public ResponseEntity<Map<String, Object>> createOrder(@RequestBody DonHangDTO donHangDTO) {
@@ -289,101 +290,10 @@
                 if (donHangDTO.getDanhSachSanPham() == null || donHangDTO.getDanhSachSanPham().isEmpty()) {
                     return ResponseEntity.badRequest().body(Map.of("error", "Danh sách sản phẩm trống!"));
                 }
-    
-                // ===== LẤY VOUCHER TỪ SESSION THEO TAB & GHÉP VÀO DTO =====
-                final String tabKey = donHangDTO.getTabId();
-                UUID orderVoucherIdInSession = (UUID) session.getAttribute("ORDER_VOUCHER_ID_" + tabKey);
-                UUID shipVoucherIdInSession  = (UUID) session.getAttribute("SHIP_VOUCHER_ID_" + tabKey);
-    
-                if (donHangDTO.getIdPhieuGiamGia() == null && orderVoucherIdInSession != null) {
-                    donHangDTO.setIdPhieuGiamGia(orderVoucherIdInSession); // ORDER voucher
-                }
-                if (donHangDTO.getIdPhieuFreeship() == null && shipVoucherIdInSession != null) {
-                    donHangDTO.setIdPhieuFreeship(shipVoucherIdInSession); // SHIPPING voucher
-                }
-    
-                // ===== BỔ SUNG: LẤY PHÍ SHIP GỐC TỪ SESSION NẾU FE KHÔNG GỬI =====
-                BigDecimal shipBaseInSession = (BigDecimal) Optional
-                        .ofNullable(session.getAttribute("SHIP_FEE_" + tabKey))
-                        .orElse(BigDecimal.ZERO);
-    
-                if (donHangDTO.getPhiVanChuyen() == null || donHangDTO.getPhiVanChuyen().compareTo(BigDecimal.ZERO) <= 0) {
-                    donHangDTO.setPhiVanChuyen(shipBaseInSession);
-                }
-    
-                // Nếu có phí ship gốc mà thiếu phương thức bán hàng → mặc định "Giao hàng"
-                if ((donHangDTO.getPhuongThucBanHang() == null || donHangDTO.getPhuongThucBanHang().isBlank())
-                        && shipBaseInSession.compareTo(BigDecimal.ZERO) > 0) {
-                    donHangDTO.setPhuongThucBanHang("Giao hàng");
-                }
-    // ======= RE-VALIDATE VOUCHER TRƯỚC KHI TẠO ĐƠN =======
-                UUID paymentMethodId = null;
-                try {
-                    if (donHangDTO.getPhuongThucThanhToan() != null && !donHangDTO.getPhuongThucThanhToan().isBlank()) {
-                        paymentMethodId = UUID.fromString(donHangDTO.getPhuongThucThanhToan());
-                    }
-                } catch (Exception ignored) {}
-    
-                GioHangDTO gioHangCheck = gioHangService.layGioHang(shipBaseInSession, tabKey);
-                BigDecimal subtotalCheck = (gioHangCheck.getDanhSachSanPham() == null) ? BigDecimal.ZERO :
-                        gioHangCheck.getDanhSachSanPham().stream().map(GioHangItemDTO::getThanhTien)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
-                boolean orderRemoved = false, shipRemoved = false;
-    
-    // ORDER voucher
-                if (orderVoucherIdInSession != null) {
-                    Optional<PhieuGiamGia> ov = phieuGiamGiaRepository.findById(orderVoucherIdInSession);
-                    boolean valid = false;
-                    if (ov.isPresent()) {
-                        PhieuGiamGia v = ov.get();
-                        valid =
-                                "ORDER".equalsIgnoreCase(v.getPhamViApDung()) &&
-                                        "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)) &&
-                                        (v.getGiaTriGiamToiThieu() == null || subtotalCheck.compareTo(v.getGiaTriGiamToiThieu()) >= 0) &&
-                                        isPaymentMethodAllowed(v, paymentMethodId);
-                    }
-                    if (!valid) {
-                        session.removeAttribute("ORDER_VOUCHER_ID_" + tabKey);
-                        session.removeAttribute("ORDER_DISCOUNT_" + tabKey);
-                        donHangDTO.setIdPhieuGiamGia(null);
-                        orderRemoved = true;
-                    }
-                }
-    
-    // SHIPPING voucher
-                if (shipVoucherIdInSession != null) {
-                    Optional<PhieuGiamGia> sv = phieuGiamGiaRepository.findById(shipVoucherIdInSession);
-                    boolean valid = false;
-                    if (sv.isPresent()) {
-                        PhieuGiamGia v = sv.get();
-                        valid =
-                                "SHIPPING".equalsIgnoreCase(v.getPhamViApDung()) &&
-                                        "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)) &&
-                                        shipBaseInSession != null && shipBaseInSession.signum() > 0 &&
-                                        (v.getGiaTriGiamToiThieu() == null || subtotalCheck.compareTo(v.getGiaTriGiamToiThieu()) >= 0) &&
-                                        isPaymentMethodAllowed(v, paymentMethodId);
-                    }
-                    if (!valid) {
-                        session.removeAttribute("SHIP_VOUCHER_ID_" + tabKey);
-                        session.removeAttribute("SHIP_DISCOUNT_" + tabKey);
-                        donHangDTO.setIdPhieuFreeship(null);
-                        shipRemoved = true;
-                    }
-                }
-    
-    // Nếu có voucher bị gỡ → cảnh báo FE cập nhật lại tổng trước khi tạo đơn
-                if (orderRemoved || shipRemoved) {
-                    Map<String, Object> r = new HashMap<>();
-                    r.put("error", "Voucher không còn đủ điều kiện theo PTTT hiện tại, đã gỡ. Vui lòng kiểm tra lại tổng tiền.");
-                    r.put("orderVoucherRemoved", orderRemoved);
-                    r.put("shipVoucherRemoved", shipRemoved);
-                    return ResponseEntity.status(409).body(r);
-                }
-    
-                // ===== Tạo đơn hàng (service sẽ tính giảm + lưu bảng phụ) =====
+
+                // ==== GỌI SERVICE: Service sẽ tự lấy phí ship gốc + voucher từ session và tính toàn bộ ====
                 KetQuaDonHangDTO ketQua = donHangService.taoDonHang(donHangDTO);
-    
+
                 // Cập nhật số lượng chiến dịch nếu có
                 for (GioHangItemDTO item : donHangDTO.getDanhSachSanPham()) {
                     ChiTietSanPham chiTiet = chiTietSanPhamService.findById(item.getIdChiTietSanPham());
@@ -394,12 +304,12 @@
                         }
                     }
                 }
-    
-                // Xóa tab hiện tại
+
+                // Xóa tab hiện tại + giỏ hàng tạm
                 donHangTamRepository.deleteByTabId(donHangDTO.getTabId());
                 gioHangService.xoaTatCaGioHang(donHangDTO.getTabId());
-    
-                // Kiểm tra số lượng tab còn lại
+
+                // Chọn tab mới (nếu còn)
                 List<DonHangTam> remainingTabs = donHangTamRepository.findAll();
                 String newTabId;
                 if (remainingTabs.isEmpty()) {
@@ -408,21 +318,11 @@
                 } else {
                     newTabId = remainingTabs.get(remainingTabs.size() - 1).getTabId();
                 }
-    
-                // Dọn dẹp session (kể cả voucher)
-                session.removeAttribute("tempStockChanges");
-                session.removeAttribute("pendingOrder_" + donHangDTO.getTabId());
-                session.removeAttribute("ORDER_VOUCHER_ID_" + tabKey);
-                session.removeAttribute("ORDER_DISCOUNT_" + tabKey);
-                session.removeAttribute("SHIP_VOUCHER_ID_" + tabKey);
-                session.removeAttribute("SHIP_DISCOUNT_" + tabKey);
-                session.removeAttribute("SHIP_FEE_" + tabKey);
-    
-                // Tạo hóa đơn PDF
+
+                // Tạo hóa đơn PDF để FE in/preview
                 byte[] pdfData = hoaDonService.taoHoaDon(ketQua.getMaDonHang());
                 String pdfBase64 = Base64.getEncoder().encodeToString(pdfData);
-    
-                // Trả về kết quả
+
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Tạo đơn hàng thành công!");
                 response.put("maDonHang", ketQua.getMaDonHang());
@@ -432,17 +332,16 @@
                 response.put("remainingTabs", remainingTabs.size());
                 response.put("hasNewNotification", true);
                 return ResponseEntity.ok(response);
-    
+
             } catch (Exception e) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Lỗi tạo đơn hàng: " + e.getMessage()));
             }
         }
-    
-    
-    
-    
-    
-    
+
+
+
+
+
         private int getAvailableStock(UUID productDetailId, int originalStock) {
             @SuppressWarnings("unchecked")
             Map<UUID, Map<String, Integer>> tempStockChanges = (Map<UUID, Map<String, Integer>>) session.getAttribute("tempStockChanges");
@@ -597,43 +496,52 @@
             try {
                 BigDecimal shipFeeInSession = (BigDecimal) Optional.ofNullable(session.getAttribute("SHIP_FEE_" + tabId))
                         .orElse(BigDecimal.ZERO);
-    
+
                 GioHangDTO gioHang = gioHangService.layGioHang(shipFeeInSession, tabId);
                 if (gioHang == null || gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
                     return ResponseEntity.badRequest().body(Map.of("error", "Giỏ hàng trống."));
                 }
-    
+
                 BigDecimal subtotal = gioHang.getDanhSachSanPham().stream()
                         .map(GioHangItemDTO::getThanhTien)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
+
                 PhieuGiamGia voucher = phieuGiamGiaRepository.findById(voucherId)
                         .orElseThrow(() -> new RuntimeException("Phiếu giảm giá không tồn tại."));
                 if (!"ORDER".equalsIgnoreCase(voucher.getPhamViApDung())) {
                     return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không phải loại ORDER."));
                 }
                 if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(voucher))) {
+                    // Hết hạn / chưa diễn ra -> dọn session nếu đang giữ
+                    session.removeAttribute("ORDER_VOUCHER_ID_" + tabId);
+                    session.removeAttribute("ORDER_DISCOUNT_" + tabId);
                     return ResponseEntity.badRequest().body(Map.of("error", "Phiếu giảm giá không còn hiệu lực."));
                 }
                 if (voucher.getGiaTriGiamToiThieu() != null
                         && subtotal.compareTo(voucher.getGiaTriGiamToiThieu()) < 0) {
+                    session.removeAttribute("ORDER_VOUCHER_ID_" + tabId);
+                    session.removeAttribute("ORDER_DISCOUNT_" + tabId);
                     return ResponseEntity.badRequest().body(Map.of("error", "Chưa đạt đơn tối thiểu của phiếu."));
                 }
                 if (hasPaymentBinding(voucher) && !isPaymentMethodAllowed(voucher, paymentMethodId)) {
+                    // PTTT không hợp lệ -> dọn session ORDER
+                    session.removeAttribute("ORDER_VOUCHER_ID_" + tabId);
+                    session.removeAttribute("ORDER_DISCOUNT_" + tabId);
                     return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không áp dụng cho phương thức thanh toán đã chọn."));
                 }
-    
+
                 BigDecimal orderDiscount = phieuGiamGiaService.tinhTienGiamGia(voucher, subtotal).min(subtotal);
-    
+
+                // Lưu ORDER vào session
                 session.setAttribute("ORDER_VOUCHER_ID_" + tabId, voucher.getId());
                 session.setAttribute("ORDER_DISCOUNT_" + tabId, orderDiscount);
-    
-                BigDecimal shipDiscount = (BigDecimal) Optional.ofNullable(session.getAttribute("SHIP_DISCOUNT_" + tabId))
-                        .orElse(BigDecimal.ZERO);
-    
+
+                // >>> Re-validate SHIPPING dựa trên PTTT & ship gốc hiện tại
+                BigDecimal shipDiscount = revalidateShipVoucherForTab(tabId, shipFeeInSession, subtotal, paymentMethodId);
+
                 BigDecimal finalShipFee = shipFeeInSession.subtract(shipDiscount).max(BigDecimal.ZERO);
                 BigDecimal total = subtotal.subtract(orderDiscount).add(finalShipFee);
-    
+
                 gioHang.setTongTienHang(subtotal);
                 gioHang.setGiamGia(orderDiscount);
                 gioHang.setPhiVanChuyen(finalShipFee);
@@ -641,15 +549,16 @@
                 gioHang.setIdPhieuGiamGia(voucher.getId());
                 gioHang.setPhiVanChuyenGoc(shipFeeInSession);
                 gioHang.setGiamGiaVanChuyen(shipDiscount);
-    
+
                 return ResponseEntity.ok(gioHang);
             } catch (Exception e) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng ORDER voucher: " + e.getMessage()));
             }
         }
-    
-    
-    
+
+
+
+
         @GetMapping("/cart/apply-freeship")
         @ResponseBody
         public ResponseEntity<?> applyFreeshipVoucher(
@@ -660,60 +569,141 @@
             try {
                 if (shippingFee == null) shippingFee = BigDecimal.ZERO;
                 session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
-    
+
                 GioHangDTO gioHang = gioHangService.layGioHang(shippingFee, tabId);
                 if (gioHang == null || gioHang.getDanhSachSanPham() == null || gioHang.getDanhSachSanPham().isEmpty()) {
                     return ResponseEntity.badRequest().body(Map.of("error", "Giỏ hàng trống."));
                 }
-    
+
                 BigDecimal subtotal = gioHang.getDanhSachSanPham().stream()
                         .map(GioHangItemDTO::getThanhTien)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
+
                 PhieuGiamGia voucher = phieuGiamGiaRepository.findById(voucherId)
                         .orElseThrow(() -> new RuntimeException("Phiếu freeship không tồn tại."));
                 if (!"SHIPPING".equalsIgnoreCase(voucher.getPhamViApDung())) {
                     return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không phải loại SHIPPING."));
                 }
                 if (!"Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(voucher))) {
+                    session.removeAttribute("SHIP_VOUCHER_ID_" + tabId);
+                    session.removeAttribute("SHIP_DISCOUNT_" + tabId);
                     return ResponseEntity.badRequest().body(Map.of("error", "Phiếu freeship không còn hiệu lực."));
                 }
                 if (hasPaymentBinding(voucher) && !isPaymentMethodAllowed(voucher, paymentMethodId)) {
+                    session.removeAttribute("SHIP_VOUCHER_ID_" + tabId);
+                    session.removeAttribute("SHIP_DISCOUNT_" + tabId);
                     return ResponseEntity.badRequest().body(Map.of("error", "Phiếu không áp dụng cho phương thức thanh toán đã chọn."));
                 }
-    
+                if (shippingFee.signum() <= 0) {
+                    // Không có phí ship gốc -> không áp freeship, dọn session nếu đang giữ
+                    session.removeAttribute("SHIP_VOUCHER_ID_" + tabId);
+                    session.removeAttribute("SHIP_DISCOUNT_" + tabId);
+                    return ResponseEntity.badRequest().body(Map.of("error", "Không thể áp freeship khi phí vận chuyển = 0."));
+                }
+
                 BigDecimal shipDiscount = phieuGiamGiaService.tinhGiamPhiShip(voucher, shippingFee, subtotal);
                 if (shipDiscount == null) shipDiscount = BigDecimal.ZERO;
                 if (shipDiscount.compareTo(shippingFee) > 0) shipDiscount = shippingFee;
-    
+
+                // Lưu SHIPPING vào session
                 session.setAttribute("SHIP_VOUCHER_ID_" + tabId, voucher.getId());
                 session.setAttribute("SHIP_DISCOUNT_" + tabId, shipDiscount);
-    
-                BigDecimal orderDiscount = (BigDecimal) Optional.ofNullable(session.getAttribute("ORDER_DISCOUNT_" + tabId))
-                        .orElse(BigDecimal.ZERO);
-    
+
+                // >>> Re-validate ORDER lại theo PTTT & subtotal hiện tại
+                BigDecimal orderDiscount = revalidateOrderVoucherForTab(tabId, subtotal, paymentMethodId);
+
                 BigDecimal finalShipFee = shippingFee.subtract(shipDiscount).max(BigDecimal.ZERO);
                 BigDecimal total = subtotal.subtract(orderDiscount).add(finalShipFee);
-    
+
                 gioHang.setTongTienHang(subtotal);
                 gioHang.setGiamGia(orderDiscount);
                 gioHang.setPhiVanChuyen(finalShipFee);
                 gioHang.setTong(total);
                 gioHang.setPhiVanChuyenGoc(shippingFee);
                 gioHang.setGiamGiaVanChuyen(shipDiscount);
-    
+
                 return ResponseEntity.ok(gioHang);
             } catch (Exception e) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Lỗi áp dụng FREESHIP voucher: " + e.getMessage()));
             }
         }
-    
-    
-    
-    
-    
-    
-    
+
+
+        // ===== Re-validate ORDER voucher đang treo trong session cho 1 tab =====
+        private BigDecimal revalidateOrderVoucherForTab(String tabId, BigDecimal subtotal, UUID paymentMethodId) {
+            UUID orderVoucherId = (UUID) session.getAttribute("ORDER_VOUCHER_ID_" + tabId);
+            if (orderVoucherId == null) return BigDecimal.ZERO;
+
+            Optional<PhieuGiamGia> ov = phieuGiamGiaRepository.findById(orderVoucherId);
+            if (ov.isEmpty()) {
+                session.removeAttribute("ORDER_VOUCHER_ID_" + tabId);
+                session.removeAttribute("ORDER_DISCOUNT_" + tabId);
+                return BigDecimal.ZERO;
+            }
+            PhieuGiamGia v = ov.get();
+
+            boolean valid =
+                    "ORDER".equalsIgnoreCase(v.getPhamViApDung()) &&
+                            "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)) &&
+                            (v.getGiaTriGiamToiThieu() == null || subtotal.compareTo(v.getGiaTriGiamToiThieu()) >= 0) &&
+                            isPaymentMethodAllowed(v, paymentMethodId);
+
+            if (!valid) {
+                session.removeAttribute("ORDER_VOUCHER_ID_" + tabId);
+                session.removeAttribute("ORDER_DISCOUNT_" + tabId);
+                return BigDecimal.ZERO;
+            }
+
+            BigDecimal orderDiscount = phieuGiamGiaService.tinhTienGiamGia(v, subtotal).min(subtotal);
+            session.setAttribute("ORDER_DISCOUNT_" + tabId, orderDiscount);
+            return orderDiscount;
+        }
+
+        // ===== Re-validate SHIPPING voucher đang treo trong session cho 1 tab =====
+        private BigDecimal revalidateShipVoucherForTab(String tabId, BigDecimal shipBase, BigDecimal subtotal, UUID paymentMethodId) {
+            UUID shipVoucherId = (UUID) session.getAttribute("SHIP_VOUCHER_ID_" + tabId);
+            if (shipVoucherId == null) return BigDecimal.ZERO;
+
+            // Không có phí ship gốc hoặc = 0 => freeship vô nghĩa -> dọn luôn
+            if (shipBase == null || shipBase.signum() <= 0) {
+                session.removeAttribute("SHIP_VOUCHER_ID_" + tabId);
+                session.removeAttribute("SHIP_DISCOUNT_" + tabId);
+                return BigDecimal.ZERO;
+            }
+
+            Optional<PhieuGiamGia> sv = phieuGiamGiaRepository.findById(shipVoucherId);
+            if (sv.isEmpty()) {
+                session.removeAttribute("SHIP_VOUCHER_ID_" + tabId);
+                session.removeAttribute("SHIP_DISCOUNT_" + tabId);
+                return BigDecimal.ZERO;
+            }
+            PhieuGiamGia v = sv.get();
+
+            boolean valid =
+                    "SHIPPING".equalsIgnoreCase(v.getPhamViApDung()) &&
+                            "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)) &&
+                            (v.getGiaTriGiamToiThieu() == null || subtotal.compareTo(v.getGiaTriGiamToiThieu()) >= 0) &&
+                            isPaymentMethodAllowed(v, paymentMethodId);
+
+            if (!valid) {
+                session.removeAttribute("SHIP_VOUCHER_ID_" + tabId);
+                session.removeAttribute("SHIP_DISCOUNT_" + tabId);
+                return BigDecimal.ZERO;
+            }
+
+            BigDecimal shipDiscount = phieuGiamGiaService.tinhGiamPhiShip(v, shipBase, subtotal);
+            if (shipDiscount == null) shipDiscount = BigDecimal.ZERO;
+            if (shipDiscount.compareTo(shipBase) > 0) shipDiscount = shipBase;
+
+            session.setAttribute("SHIP_DISCOUNT_" + tabId, shipDiscount);
+            return shipDiscount;
+        }
+
+
+
+
+
+
         private String constructDetailedAddress(NguoiDung nguoiDung) {
             StringBuilder sb = new StringBuilder();
             if (nguoiDung.getChiTietDiaChi() != null && !nguoiDung.getChiTietDiaChi().isBlank()) sb.append(nguoiDung.getChiTietDiaChi());
@@ -1036,10 +1026,10 @@
                 if (shippingFee != null) {
                     session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
                 }
-    
+
                 BigDecimal shipBase = (BigDecimal) Optional.ofNullable(session.getAttribute("SHIP_FEE_" + tabId))
                         .orElse(shippingFee != null ? shippingFee : BigDecimal.ZERO);
-    
+
                 // Lấy giỏ hàng theo phí ship GỐC
                 GioHangDTO gioHang = gioHangService.layGioHang(shipBase, tabId);
     
@@ -1061,14 +1051,14 @@
                         : gioHang.getDanhSachSanPham().stream()
                         .map(GioHangItemDTO::getThanhTien)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-    
+
                 // ==== Re-validate 2 voucher đang treo trong session ====
                 UUID orderVoucherId = (UUID) session.getAttribute("ORDER_VOUCHER_ID_" + tabId);
                 UUID shipVoucherId  = (UUID) session.getAttribute("SHIP_VOUCHER_ID_" + tabId);
-    
+
                 BigDecimal orderDiscount = BigDecimal.ZERO;
                 BigDecimal shipDiscount  = BigDecimal.ZERO;
-    
+
                 // ORDER voucher
                 if (orderVoucherId != null) {
                     Optional<PhieuGiamGia> ov = phieuGiamGiaRepository.findById(orderVoucherId);
@@ -1080,7 +1070,7 @@
                                         "Đang diễn ra".equals(phieuGiamGiaService.tinhTrang(v)) &&
                                         (v.getGiaTriGiamToiThieu() == null || subtotal.compareTo(v.getGiaTriGiamToiThieu()) >= 0) &&
                                         isPaymentMethodAllowed(v, paymentMethodId);
-    
+
                         if (valid) {
                             orderDiscount = phieuGiamGiaService.tinhTienGiamGia(v, subtotal).min(subtotal);
                             session.setAttribute("ORDER_DISCOUNT_" + tabId, orderDiscount);
@@ -1091,7 +1081,7 @@
                         session.removeAttribute("ORDER_DISCOUNT_" + tabId);
                     }
                 }
-    
+
                 // SHIPPING voucher
                 if (shipVoucherId != null) {
                     Optional<PhieuGiamGia> sv = phieuGiamGiaRepository.findById(shipVoucherId);
@@ -1105,7 +1095,7 @@
                                         // (tuỳ chính sách nếu cần) min order cho freeship:
                                         (v.getGiaTriGiamToiThieu() == null || subtotal.compareTo(v.getGiaTriGiamToiThieu()) >= 0) &&
                                         isPaymentMethodAllowed(v, paymentMethodId);
-    
+
                         if (valid) {
                             shipDiscount = phieuGiamGiaService.tinhGiamPhiShip(v, shipBase, subtotal);
                             if (shipDiscount == null) shipDiscount = BigDecimal.ZERO;
@@ -1118,26 +1108,26 @@
                         session.removeAttribute("SHIP_DISCOUNT_" + tabId);
                     }
                 }
-    
+
                 // Tính tổng & map ra DTO
                 BigDecimal finalShipFee = shipBase.subtract(shipDiscount).max(BigDecimal.ZERO);
                 BigDecimal total = subtotal.subtract(orderDiscount).add(finalShipFee);
-    
+
                 gioHang.setTongTienHang(subtotal);
                 gioHang.setGiamGia(orderDiscount);          // giảm đơn (ORDER)
                 gioHang.setPhiVanChuyen(finalShipFee);      // phí ship SAU giảm
                 gioHang.setPhiVanChuyenGoc(shipBase);       // phí ship GỐC
                 gioHang.setGiamGiaVanChuyen(shipDiscount);  // số tiền giảm ship (freeship)
                 gioHang.setTong(total);
-    
+
                 return ResponseEntity.ok(gioHang);
             } catch (Exception e) {
                 System.err.println("Exception in cart/get: " + e.getMessage());
                 return ResponseEntity.badRequest().body(new GioHangDTO());
             }
         }
-    
-    
+
+
         @PostMapping("/cart/add")
         @ResponseBody
         public ResponseEntity<?> themVaoGioHang(@RequestBody Map<String, Object> request) {
