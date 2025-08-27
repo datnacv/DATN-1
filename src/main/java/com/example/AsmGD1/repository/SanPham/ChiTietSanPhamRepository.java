@@ -2,6 +2,8 @@ package com.example.AsmGD1.repository.SanPham;
 
 import com.example.AsmGD1.entity.ChiTietSanPham;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -20,6 +22,11 @@ import java.util.UUID;
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, UUID> {
 
     List<ChiTietSanPham> findByGiaGreaterThanEqualAndSoLuongTonKhoGreaterThan(BigDecimal gia, int soLuongTonKho);
+
+    Page<ChiTietSanPham> findBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqual(int soLuongTonKho, BigDecimal gia, Pageable pageable);
+
+    Page<ChiTietSanPham> findBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqualAndSanPham_TenSanPhamContainingIgnoreCase(
+            int soLuongTonKho, BigDecimal gia, String tenSanPham, Pageable pageable);
 
     @Query("SELECT c FROM ChiTietSanPham c WHERE c.trangThai = true AND (c.sanPham.tenSanPham LIKE %:keyword% OR c.mauSac.tenMau LIKE %:keyword% OR c.kichCo.ten LIKE %:keyword%)")
     List<ChiTietSanPham> findAllByTrangThaiAndKeyword(@Param("keyword") String keyword);

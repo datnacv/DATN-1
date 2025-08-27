@@ -618,8 +618,6 @@
         let total = 0;
         let count = 0;
         const returnableRows = document.querySelectorAll('tr[data-returnable="true"]');
-        const shippingFeeElement = document.querySelector('tr:not([data-returnable]) .price');
-        const shippingFee = shippingFeeElement ? parseFloat(shippingFeeElement.getAttribute('data-value')) || 0 : 0;
 
         // Tính tổng giá trị sản phẩm trả hàng
         returnableRows.forEach(row => {
@@ -629,15 +627,11 @@
             count++;
         });
 
-        // Lấy giá trị giảm giá đơn và giảm giá phí vận chuyển
+        // Lấy giá trị giảm giá đơn
         const tienGiamOrder = parseFloat(document.getElementById('tienGiamOrder').getAttribute('data-value')) || 0;
-        const tienGiamShip = parseFloat(document.getElementById('tienGiamShip').getAttribute('data-value')) || 0;
 
-        // Nếu không có giảm giá phí vận chuyển, không tính phí vận chuyển
-        const effectiveShippingFee = tienGiamShip > 0 ? shippingFee : 0;
-
-        // Tổng tiền hoàn = Tổng giá sản phẩm + Phí vận chuyển (nếu có giảm giá phí vận chuyển) - Giảm giá đơn - Giảm giá phí vận chuyển
-        const totalReturnAmount = total + effectiveShippingFee - tienGiamOrder - tienGiamShip;
+        // Tổng tiền hoàn = Tổng giá sản phẩm - Giảm giá đơn
+        const totalReturnAmount = total - tienGiamOrder;
 
         // Cập nhật giao diện
         const totalElement = document.getElementById('totalReturnAmount');
@@ -648,8 +642,8 @@
         totalElement.textContent = formatVND(Math.max(totalReturnAmount, 0));
         countElement.textContent = count + ' sản phẩm';
 
-        // Vô hiệu hóa nút gửi nếu không có sản phẩm hoặc (phí vận chuyển và giảm giá phí vận chuyển đều bằng 0)
-        if (count === 0 && effectiveShippingFee === 0 && tienGiamShip === 0) {
+        // Vô hiệu hóa nút gửi nếu không có sản phẩm
+        if (count === 0) {
             submitBtn.disabled = true;
             submitBtn.style.opacity = '0.5';
             submitBtn.style.cursor = 'not-allowed';
@@ -690,15 +684,15 @@
         addHiddenInputsForReturnableProducts();
 
         const form = document.getElementById('returnForm');
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const returnableCount = document.querySelectorAll('tr[data-returnable="true"]').length;
-            const tienGiamShip = parseFloat(document.getElementById('tienGiamShip').getAttribute('data-value')) || 0;
-            if (returnableCount === 0 && tienGiamShip === 0) {
+            if (returnableCount === 0) {
                 Swal.fire({
                     title: 'Thông báo!',
-                    text: 'Không có sản phẩm hoặc phí vận chuyển nào có thể trả hàng trong đơn này.',
+                    text: 'Không có sản phẩm nào có thể trả hàng trong đơn này.',
                     icon: 'info',
                     confirmButtonColor: '#153054',
                     customClass: { popup: 'rounded-lg', confirmButton: 'rounded-lg' }
@@ -708,7 +702,7 @@
 
             Swal.fire({
                 title: 'Xác nhận yêu cầu trả hàng?',
-                html: `Bạn có chắc chắn muốn trả <strong>${returnableCount} sản phẩm</strong>${tienGiamShip > 0 ? ' và phí vận chuyển' : ''} trong đơn hàng này?<br><small class="text-gray-600">Tất cả sản phẩm và phí vận chuyển (nếu có giảm giá) sẽ được bao gồm trong yêu cầu.</small>`,
+                html: `Bạn có chắc chắn muốn trả <strong>${returnableCount} sản phẩm</strong> trong đơn hàng này?<br><small class="text-gray-600">Phí vận chuyển sẽ không được hoàn. Tất cả sản phẩm sẽ được bao gồm trong yêu cầu.</small>`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-undo mr-2"></i>Gửi yêu cầu',

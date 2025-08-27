@@ -662,28 +662,22 @@
                             <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
                         </td>
                         <td>
-                <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-                    <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
-                </span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-                    -
-                </span>
+                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
+                                <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
+                            </span>
+                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">-</span>
                         </td>
                         <td>
-                <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
-                    <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
-                </span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">
-                    -
-                </span>
+                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
+                                <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
+                            </span>
+                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">-</span>
                         </td>
                         <td>
-                <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
-                    <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
-                </span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}">
-                    -
-                </span>
+                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
+                                <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
+                            </span>
+                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}">-</span>
                         </td>
                     </tr>
                     </tbody>
@@ -691,34 +685,29 @@
             </div>
 
             <!-- Phần danh sách sản phẩm thay thế -->
+            <!-- Trong phần <div class="info-section"> của danh sách sản phẩm thay thế -->
             <div class="info-section">
                 <h4><i class="fas fa-box-open mr-2"></i>Chọn sản phẩm thay thế</h4>
-                <div th:each="chiTiet : ${replacementProducts}" class="replacement-product">
-                    <input type="checkbox" name="replacementProducts" th:value="${chiTiet.id}"/>
-                    <img th:src="${chiTiet.hinhAnhSanPhams != null and !#lists.isEmpty(chiTiet.hinhAnhSanPhams) ? chiTiet.hinhAnhSanPhams[0].urlHinhAnh : '/images/default-product.jpg'}"
-                         class="product-img" alt="Ảnh sản phẩm thay thế"/>
-                    <div class="flex-1">
-                        <span th:text="${chiTiet.sanPham.tenSanPham} + ' (' + ${chiTiet.mauSac != null ? chiTiet.mauSac.tenMau : 'N/A'} + ', ' + ${chiTiet.kichCo != null ? chiTiet.kichCo.ten : 'N/A'} + ')'"></span>
-                        <div class="flex items-center gap-4 mt-1">
-                            <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
-                            -
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-                    <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
-                </span>
-                            -
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
-                    <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
-                </span>
-                            -
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
-                    <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
-                </span>
-                            <span class="text-sm text-gray-600">Tồn kho: <span th:text="${chiTiet.soLuongTonKho}"></span></span>
-                        </div>
-                    </div>
+                <div class="form-group mb-4 position-relative">
+                    <label for="searchProduct">Tìm kiếm sản phẩm thay thế:</label>
+                    <input type="text" id="searchProduct" name="keyword" th:value="${keyword}" placeholder="Nhập tên sản phẩm..." class="form-control"/>
+                    <div id="searchSuggestions" class="search-suggestions"></div>
+                </div>
+                <div id="replacementProductsContainer">
+                    <!-- Danh sách sản phẩm sẽ được render bởi JavaScript -->
+                </div>
+
+                <!-- Phân trang -->
+                <div id="paginationContainer" class="pagination mt-4 d-flex justify-content-center">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination" id="paginationLinks">
+                            <!-- Phân trang sẽ được render bởi JavaScript -->
+                        </ul>
+                    </nav>
                 </div>
             </div>
 
+            <!-- Phần thông tin yêu cầu đổi -->
             <div class="info-section">
                 <h4><i class="fas fa-comment mr-2"></i>Thông tin yêu cầu đổi</h4>
                 <div class="form-group">
@@ -772,11 +761,10 @@
             element.textContent = new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
-            }).format(value);
+            }).format(value).replace('₫', ' VNĐ');
         });
 
-        // Tính toán chênh lệch giá
-        // Tính toán chênh lệch giá
+        // Hàm tính chênh lệch giá
         function calculatePriceDifference() {
             const selectedProducts = document.querySelectorAll('input[name="selectedProducts"]:checked');
             const replacementProducts = document.querySelectorAll('input[name="replacementProducts"]:checked');
@@ -805,16 +793,147 @@
             priceDifferenceElement.textContent = new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
-            }).format(priceDifference);
+            }).format(priceDifference).replace('₫', ' VNĐ');
             priceDifferenceValue.value = priceDifference;
         }
 
-        // Gắn sự kiện thay đổi
-        document.querySelectorAll('input[name="selectedProducts"], input[name="replacementProducts"], #soLuong')
-            .forEach(element => element.addEventListener('change', calculatePriceDifference));
+        // Hàm tải danh sách sản phẩm thay thế
+        function loadReplacementProducts(page = 0, keyword = '') {
+            const hoaDonId = document.getElementById('exchangeForm').getAttribute('action').match(/\/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/)[1];
+            const size = 5;
 
-        // Form submission
-        document.getElementById('exchangeForm').addEventListener('submit', function (e) {
+            fetch(`/dsdon-mua/api/replacement-products/${hoaDonId}?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderReplacementProducts(data.products);
+                        renderPagination(data.currentPage, data.totalPages, keyword);
+                    } else {
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: data.message,
+                            icon: 'error',
+                            confirmButtonColor: '#153054'
+                        });
+                    }
+                })
+                .catch(error => {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: 'Không thể tải danh sách sản phẩm thay thế.',
+                        icon: 'error',
+                        confirmButtonColor: '#153054'
+                    });
+                });
+        }
+
+        // Hàm render danh sách sản phẩm thay thế với thông tin tồn kho
+        function renderReplacementProducts(products) {
+            const container = document.getElementById('replacementProductsContainer');
+            container.innerHTML = '';
+
+            products.forEach(product => {
+                const productHtml = `
+                <div class="replacement-product">
+                    <input type="checkbox" name="replacementProducts" value="${product.id}" data-stock="${product.soLuongTonKho}"/>
+                    <img src="${product.imageUrl}" class="product-img" alt="Ảnh sản phẩm thay thế"/>
+                    <div class="flex-1">
+                        <span>${product.tenSanPham} (${product.mauSac}, ${product.kichCo})</span>
+                        <div class="flex items-center gap-4 mt-1">
+                            <span class="price" data-value="${product.giaValue}">${product.gia}</span>
+                            ${product.oldPrice ? `<span><del>${product.oldPrice}</del></span>` : ''}
+                            ${product.discount ? `<span class="text-red-500"><strong>${product.discount}</strong></span>` : ''}
+                            ${product.campaignName ? `<span class="text-blue-500"><strong>${product.campaignName}</strong></span>` : ''}
+                            <span class="text-sm text-gray-600">Tồn kho: ${product.soLuongTonKho}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+                container.insertAdjacentHTML('beforeend', productHtml);
+            });
+
+            // Gắn sự kiện kiểm tra tồn kho khi tick checkbox
+            document.querySelectorAll('input[name="replacementProducts"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const soLuong = parseInt(document.getElementById('soLuong').value) || 0;
+                    const stock = parseInt(this.getAttribute('data-stock'));
+
+                    if (this.checked && soLuong > stock) {
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: `Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: ${stock}. Vui lòng giảm số lượng xuống hoặc chọn sản phẩm khác.`,
+                            icon: 'error',
+                            confirmButtonColor: '#153054'
+                        }).then(() => {
+                            this.checked = false; // Bỏ chọn checkbox nếu vượt tồn kho
+                            calculatePriceDifference();
+                        });
+                    } else {
+                        calculatePriceDifference();
+                    }
+                });
+            });
+        }
+
+        // Hàm render phân trang
+        function renderPagination(currentPage, totalPages, keyword) {
+            const paginationLinks = document.getElementById('paginationLinks');
+            paginationLinks.innerHTML = '';
+
+            const prevDisabled = currentPage === 0 ? 'disabled' : '';
+            paginationLinks.insertAdjacentHTML('beforeend', `
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+        `);
+
+            for (let i = 0; i < totalPages; i++) {
+                const active = i === currentPage ? 'active' : '';
+                paginationLinks.insertAdjacentHTML('beforeend', `
+                <li class="page-item ${active}">
+                    <a class="page-link" href="#" data-page="${i}">${i + 1}</a>
+                </li>
+            `);
+            }
+
+            const nextDisabled = currentPage === totalPages - 1 ? 'disabled' : '';
+            paginationLinks.insertAdjacentHTML('beforeend', `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        `);
+
+            document.querySelectorAll('.page-link[data-page]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = parseInt(e.currentTarget.getAttribute('data-page'));
+                    if (page >= 0 && page < totalPages) {
+                        loadReplacementProducts(page, keyword);
+                    }
+                });
+            });
+        }
+
+        // Xử lý tìm kiếm
+        let searchTimeout;
+        const searchInput = document.getElementById('searchProduct');
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const keyword = this.value.trim();
+                loadReplacementProducts(0, keyword);
+            }, 500);
+        });
+
+        // Xử lý form submit
+        document.getElementById('exchangeForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const selectedProducts = document.querySelectorAll('input[name="selectedProducts"]:checked');
@@ -903,6 +1022,33 @@
                         confirmButtonText: 'Đồng ý'
                     });
                 });
+        });
+
+        // Tải danh sách sản phẩm ban đầu
+        loadReplacementProducts(0, document.getElementById('searchProduct').value);
+
+        // Gắn sự kiện cho các input để tính chênh lệch giá
+        document.querySelectorAll('input[name="selectedProducts"], #soLuong').forEach(element => {
+            element.addEventListener('change', calculatePriceDifference);
+        });
+
+        // Gắn sự kiện cho thay đổi số lượng để kiểm tra tồn kho
+        document.getElementById('soLuong').addEventListener('change', function() {
+            const soLuong = parseInt(this.value) || 0;
+            document.querySelectorAll('input[name="replacementProducts"]:checked').forEach(checkbox => {
+                const stock = parseInt(checkbox.getAttribute('data-stock'));
+                if (soLuong > stock) {
+                    Swal.fire({
+                        title: 'Lỗi!',
+                        text: `Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: ${stock}. Vui lòng giảm số lượng xuống hoặc chọn sản phẩm khác.`,
+                        icon: 'error',
+                        confirmButtonColor: '#153054'
+                    }).then(() => {
+                        this.value = stock; // Đặt lại số lượng tối đa bằng tồn kho
+                        calculatePriceDifference();
+                    });
+                }
+            });
         });
     });
 </script>
