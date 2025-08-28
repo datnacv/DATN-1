@@ -1391,7 +1391,7 @@
                                     <label>Số lượng tồn</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                        <input type="number" class="form-control" name="stockQuantity" min="0" required>
+                                        <input type="text" class="form-control" name="stockQuantity" required>
                                     </div>
                                 </div>
                             </div>
@@ -1692,7 +1692,7 @@
                     $('#editBrand').val(response.brandId).trigger('change');
                     $('#editGender').val(response.gender).trigger('change');
                     $('#editPrice').val(formatNumber(response.price || 0));
-                    $('#editStockQuantity').val(response.stockQuantity);
+                    $('#editStockQuantity').val(formatNumber(response.stockQuantity || 0));
                     $('#editStatus').prop('checked', response.status === true);
 
                     const qrUrl = '/qr/qr_' + response.id + '.png';
@@ -1741,7 +1741,7 @@
         function updateStatusLabel() {
             const statusInput = $('#editStatus');
             const statusLabel = $('#statusLabel');
-            const stockQuantity = parseInt($('#editStockQuantity').val()) || 0;
+            const stockQuantity = parseNumber($('#editStockQuantity').val()) || 0;
 
             if (stockQuantity === 0) {
                 statusInput.prop('checked', false).prop('disabled', true);
@@ -1765,30 +1765,35 @@
         $('#bulkFullEditForm').on('submit', function(e) {
             e.preventDefault();
 
-            // Validate giá bán và số lượng tồn
-            const priceError = validateNumberInput($('#bulkPrice').val(), 'Giá bán');
-            const stockError = validateNumberInput($('input[name="stockQuantity"]').val(), 'Số lượng tồn');
+            // Scope to the current form
+            var $form = $(this);
+            var $priceInput = $form.find('input[name="price"]');  // This is #bulkPrice
+            var $stockInput = $form.find('input[name="stockQuantity"]');
 
-            // Xóa thông báo lỗi cũ
-            $('#bulkPrice').closest('.floating-label').find('.error-message').remove();
-            $('input[name="stockQuantity"]').closest('.floating-label').find('.error-message').remove();
+            // Xóa thông báo lỗi cũ (scoped)
+            $priceInput.closest('.floating-label').find('.error-message').remove();
+            $stockInput.closest('.floating-label').find('.error-message').remove();
+
+            // Validate (using scoped values)
+            const priceError = validateNumberInput($priceInput.val(), 'Giá bán');
+            const stockError = validateNumberInput($stockInput.val(), 'Số lượng tồn');
 
             let hasError = false;
 
             if (priceError) {
-                $('#bulkPrice').addClass('is-invalid');
-                $('#bulkPrice').closest('.floating-label').append(`<div class="error-message text-danger mt-1">${priceError}</div>`);
+                $priceInput.addClass('is-invalid');
+                $priceInput.closest('.floating-label').append(`<div class="error-message text-danger mt-1">${priceError}</div>`);
                 hasError = true;
             } else {
-                $('#bulkPrice').removeClass('is-invalid');
+                $priceInput.removeClass('is-invalid');
             }
 
             if (stockError) {
-                $('input[name="stockQuantity"]').addClass('is-invalid');
-                $('input[name="stockQuantity"]').closest('.floating-label').append(`<div class="error-message text-danger mt-1">${stockError}</div>`);
+                $stockInput.addClass('is-invalid');
+                $stockInput.closest('.floating-label').append(`<div class="error-message text-danger mt-1">${stockError}</div>`);
                 hasError = true;
             } else {
-                $('input[name="stockQuantity"]').removeClass('is-invalid');
+                $stockInput.removeClass('is-invalid');
             }
 
             if (hasError) {
@@ -1796,8 +1801,10 @@
                 return;
             }
 
+            // Proceed with form data (scoped)
             const fd = new FormData(this);
-            fd.set('price', parseNumber($('#bulkPrice').val()));
+            fd.set('price', parseNumber($priceInput.val()));
+            fd.set('stockQuantity', parseNumber($stockInput.val()));
 
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/update-bulk',
@@ -1842,7 +1849,7 @@
                     $('#editBrand').val(response.brandId).trigger('change');
                     $('#editGender').val(response.gender).trigger('change');
                     $('#editPrice').val(formatNumber(response.price || 0));
-                    $('#editStockQuantity').val(response.stockQuantity);
+                    $('#editStockQuantity').val(formatNumber(response.stockQuantity || 0));
                     $('#editStatus').prop('checked', response.status === true);
                     const qrUrl = '/qr/qr_' + response.id + '.png';
                     $('#qrCodeImage').attr('src', qrUrl);
@@ -1974,6 +1981,7 @@
             formData.set('status', $('#editStatus').is(':checked'));
             formData.set('deletedImageIds', deletedImageIds.join(','));
             formData.set('price', parseNumber($('#editPrice').val()));
+            formData.set('stockQuantity', parseNumber($('#editStockQuantity').val()));
 
             $.ajax({
                 url: '/acvstore/chi-tiet-san-pham/update/' + id,
@@ -2097,7 +2105,7 @@
                     $('#bulkFullEditForm select[name="brandId"]').val(commonAttributes.brandId || '').trigger('change');
                     $('#bulkFullEditForm select[name="gender"]').val(commonAttributes.gender || '').trigger('change');
                     $('#bulkFullEditForm input[name="price"]').val(commonAttributes.price ? formatNumber(commonAttributes.price) : '');
-                    $('#bulkFullEditForm input[name="stockQuantity"]').val(commonAttributes.stockQuantity || '');
+                    $('#bulkFullEditForm input[name="stockQuantity"]').val(commonAttributes.stockQuantity ? formatNumber(commonAttributes.stockQuantity) : '');
                     $('#bulkFullEditForm input[name="status"]').prop('checked', commonAttributes.status === true);
                     $('#bulkFullEditForm .form-check-label').text(commonAttributes.status ? 'Đang Bán' : 'Ngừng Bán');
                 }
