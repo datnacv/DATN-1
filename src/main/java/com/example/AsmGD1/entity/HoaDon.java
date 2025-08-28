@@ -31,6 +31,10 @@ public class HoaDon {
     private DonHang donHang;
 
     @ManyToOne
+    @JoinColumn(name = "id_dia_chi") // Thêm mối quan hệ Many-to-One với DiaChiNguoiDung
+    private DiaChiNguoiDung diaChi;
+
+    @ManyToOne
     @JoinColumn(name = "id_ma_giam_gia")
     private ChienDichGiamGia maGiamGia;
 
