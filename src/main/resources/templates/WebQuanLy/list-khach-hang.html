@@ -935,7 +935,6 @@
     document.addEventListener("DOMContentLoaded", function () {
 
         // Hàm validate cho form thêm khách hàng
-        // Hàm validate cho form thêm khách hàng
         function validateAddCustomerForm() {
             let isValid = true;
             const hoTen = document.getElementById('addHoTen');
@@ -1155,67 +1154,69 @@
             });
         });
 
-
-        let provincesData = [];
-
-        async function fetchProvinces() {
+        async function ghnFetchProvinces() {
             try {
-                let response = await fetch("https://provinces.open-api.vn/api/p/");
-                let provinces = await response.json();
-                provincesData = provinces;
+                const res  = await fetch('/api/ghn/provinces');
+                const json = await res.json();
+                const list = JSON.parse(json.data)?.data || []; // [{ProvinceID, ProvinceName}, ...]
 
-                const provinceSelects = document.querySelectorAll('select[id^="addTinhThanhPho"], select[id^="editTinhThanhPho"]');
+                const provinceSelects = document.querySelectorAll(
+                    'select[id^="addTinhThanhPho"], select[id^="editTinhThanhPho"]'
+                );
                 provinceSelects.forEach(select => {
                     select.innerHTML = '<option value="">Chọn tỉnh/thành phố</option>';
-                    provinces.forEach(province => {
-                        const option = document.createElement("option");
-                        option.value = province.name;
-                        option.textContent = province.name;
-                        option.setAttribute("data-code", province.code);
-                        select.appendChild(option);
+                    list.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value       = p.ProvinceName; // lưu tên để hiển thị/submit
+                        opt.textContent = p.ProvinceName;
+                        opt.dataset.id  = p.ProvinceID;   // GHN ProvinceID
+                        select.appendChild(opt);
                     });
                 });
-                return provinces;
-            } catch (error) {
-                console.error("Lỗi tải tỉnh/thành phố", error);
+                return list;
+            } catch (e) {
+                console.error('Lỗi tải tỉnh/thành phố (GHN):', e);
                 return [];
             }
         }
 
-        async function fetchDistricts(provinceCode, districtSelect, wardSelect) {
+        async function ghnFetchDistricts(provinceId, districtSelect, wardSelect) {
             try {
-                let response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-                let data = await response.json();
-                districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
-                wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                const res  = await fetch(`/api/ghn/districts?provinceId=${provinceId}`);
+                const json = await res.json();
+                const list = JSON.parse(json.data)?.data || []; // [{DistrictID, DistrictName}, ...]
 
-                data.districts.forEach(district => {
-                    const option = document.createElement("option");
-                    option.value = district.name;
-                    option.textContent = district.name;
-                    option.setAttribute("data-code", district.code);
-                    districtSelect.appendChild(option);
+                districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+                wardSelect.innerHTML     = '<option value="">Chọn phường/xã</option>';
+
+                list.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value       = d.DistrictName;
+                    opt.textContent = d.DistrictName;
+                    opt.dataset.id  = d.DistrictID; // GHN DistrictID
+                    districtSelect.appendChild(opt);
                 });
-            } catch (error) {
-                console.error("Lỗi tải quận/huyện", error);
+            } catch (e) {
+                console.error('Lỗi tải quận/huyện (GHN):', e);
             }
         }
 
-        async function fetchWards(districtCode, wardSelect) {
+        async function ghnFetchWards(districtId, wardSelect) {
             try {
-                let response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-                let data = await response.json();
-                wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                const res  = await fetch(`/api/ghn/wards?districtId=${districtId}`);
+                const json = await res.json();
+                const list = JSON.parse(json.data)?.data || []; // [{WardCode, WardName}, ...]
 
-                data.wards.forEach(ward => {
-                    const option = document.createElement("option");
-                    option.value = ward.name;
-                    option.textContent = ward.name;
-                    option.setAttribute("data-code", ward.code);
-                    wardSelect.appendChild(option);
+                wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                list.forEach(w => {
+                    const opt = document.createElement('option');
+                    opt.value        = w.WardName;
+                    opt.textContent  = w.WardName;
+                    opt.dataset.code = w.WardCode; // GHN WardCode
+                    wardSelect.appendChild(opt);
                 });
-            } catch (error) {
-                console.error("Lỗi tải phường/xã", error);
+            } catch (e) {
+                console.error('Lỗi tải phường/xã (GHN):', e);
             }
         }
 
@@ -1231,110 +1232,102 @@
             }
         }
 
-        function setupEditForm(customerId, currentProvince, currentDistrict, currentWard) {
+        function setupEditFormGHN(customerId, currentProvince, currentDistrict, currentWard) {
             const provinceSelect = document.getElementById(`editTinhThanhPho${customerId}`);
             const districtSelect = document.getElementById(`editQuanHuyen${customerId}`);
-            const wardSelect = document.getElementById(`editPhuongXa${customerId}`);
-
+            const wardSelect     = document.getElementById(`editPhuongXa${customerId}`);
             if (!provinceSelect || !districtSelect || !wardSelect) return;
 
             setSelectValue(provinceSelect, currentProvince);
+            const pId = Number(provinceSelect.selectedOptions[0]?.dataset.id);
+            if (!pId) return;
 
-            const selectedProvinceOption = provinceSelect.querySelector(`option[value="${currentProvince}"]`);
-            if (selectedProvinceOption) {
-                const provinceCode = selectedProvinceOption.getAttribute('data-code');
-                fetchDistricts(provinceCode, districtSelect, wardSelect).then(() => {
-                    setSelectValue(districtSelect, currentDistrict);
+            ghnFetchDistricts(pId, districtSelect, wardSelect).then(() => {
+                setSelectValue(districtSelect, currentDistrict);
+                const dId = Number(districtSelect.selectedOptions[0]?.dataset.id);
+                if (!dId) return;
 
-                    const selectedDistrictOption = districtSelect.querySelector(`option[value="${currentDistrict}"]`);
-                    if (selectedDistrictOption) {
-                        const districtCode = selectedDistrictOption.getAttribute('data-code');
-                        fetchWards(districtCode, wardSelect).then(() => {
-                            setSelectValue(wardSelect, currentWard);
-                        });
-                    }
+                ghnFetchWards(dId, wardSelect).then(() => {
+                    setSelectValue(wardSelect, currentWard);
                 });
-            }
+            });
         }
 
-        fetchProvinces().then(() => {
+        // === KHỞI TẠO GHN (sau khi đã khai báo các hàm ghn* ở trên) ===
+        ghnFetchProvinces().then(() => {
+            // --- ADD form selects ---
             const addProvinceSelect = document.getElementById('addTinhThanhPho');
             const addDistrictSelect = document.getElementById('addQuanHuyen');
-            const addWardSelect = document.getElementById('addPhuongXa');
+            const addWardSelect     = document.getElementById('addPhuongXa');
 
             if (addProvinceSelect && addDistrictSelect && addWardSelect) {
-                addProvinceSelect.addEventListener('change', function() {
-                    const selectedOption = this.options[this.selectedIndex];
-                    const provinceCode = selectedOption.getAttribute('data-code');
-                    if (provinceCode) {
-                        fetchDistricts(provinceCode, addDistrictSelect, addWardSelect);
+                addProvinceSelect.addEventListener('change', function () {
+                    const provinceId = Number(this.selectedOptions[0]?.dataset.id);
+                    if (provinceId) {
+                        ghnFetchDistricts(provinceId, addDistrictSelect, addWardSelect);
                     } else {
                         addDistrictSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
-                        addWardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                        addWardSelect.innerHTML     = '<option value="">Chọn phường/xã</option>';
                     }
                 });
 
-                addDistrictSelect.addEventListener('change', function() {
-                    const selectedOption = this.options[this.selectedIndex];
-                    const districtCode = selectedOption.getAttribute('data-code');
-                    if (districtCode) {
-                        fetchWards(districtCode, addWardSelect);
+                addDistrictSelect.addEventListener('change', function () {
+                    const districtId = Number(this.selectedOptions[0]?.dataset.id);
+                    if (districtId) {
+                        ghnFetchWards(districtId, addWardSelect);
                     } else {
                         addWardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
                     }
                 });
             }
 
+            // --- EDIT modals: load sẵn khi mở modal ---
             const editModals = document.querySelectorAll('[id^="editCustomerModal"]');
             editModals.forEach(modal => {
-                modal.addEventListener('show.bs.modal', function (event) {
-                    const customerId = modal.id.replace('editCustomerModal', '');
+                modal.addEventListener('show.bs.modal', function () {
+                    const customerId     = modal.id.replace('editCustomerModal', '');
                     const provinceSelect = document.getElementById(`editTinhThanhPho${customerId}`);
                     const districtSelect = document.getElementById(`editQuanHuyen${customerId}`);
-                    const wardSelect = document.getElementById(`editPhuongXa${customerId}`);
+                    const wardSelect     = document.getElementById(`editPhuongXa${customerId}`);
 
                     if (provinceSelect && districtSelect && wardSelect) {
-                        const currentProvince = provinceSelect.getAttribute('data-current-value');
-                        const currentDistrict = districtSelect.getAttribute('data-current-value');
-                        const currentWard = wardSelect.getAttribute('data-current-value');
-
-                        setupEditForm(customerId, currentProvince, currentDistrict, currentWard);
+                        const currentProvince = provinceSelect.getAttribute('data-current-value') || '';
+                        const currentDistrict = districtSelect.getAttribute('data-current-value') || '';
+                        const currentWard     = wardSelect.getAttribute('data-current-value') || '';
+                        setupEditFormGHN(customerId, currentProvince, currentDistrict, currentWard);
                     }
                 });
             });
         });
 
-        document.addEventListener('change', function(e) {
+        document.addEventListener('change', function (e) {
             if (e.target.matches('select[id^="editTinhThanhPho"]')) {
-                const customerId = e.target.id.replace('editTinhThanhPho', '');
+                const customerId     = e.target.id.replace('editTinhThanhPho','');
                 const districtSelect = document.getElementById(`editQuanHuyen${customerId}`);
-                const wardSelect = document.getElementById(`editPhuongXa${customerId}`);
+                const wardSelect     = document.getElementById(`editPhuongXa${customerId}`);
+                const provinceId     = Number(e.target.selectedOptions[0]?.dataset.id);
 
-                const selectedOption = e.target.options[e.target.selectedIndex];
-                const provinceCode = selectedOption.getAttribute('data-code');
-
-                if (provinceCode && districtSelect && wardSelect) {
-                    fetchDistricts(provinceCode, districtSelect, wardSelect);
-                } else if (districtSelect && wardSelect) {
+                if (provinceId) {
+                    ghnFetchDistricts(provinceId, districtSelect, wardSelect);
+                } else {
                     districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
-                    wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
+                    wardSelect.innerHTML     = '<option value="">Chọn phường/xã</option>';
                 }
             }
 
             if (e.target.matches('select[id^="editQuanHuyen"]')) {
-                const customerId = e.target.id.replace('editQuanHuyen', '');
+                const customerId = e.target.id.replace('editQuanHuyen','');
                 const wardSelect = document.getElementById(`editPhuongXa${customerId}`);
+                const districtId = Number(e.target.selectedOptions[0]?.dataset.id);
 
-                const selectedOption = e.target.options[e.target.selectedIndex];
-                const districtCode = selectedOption.getAttribute('data-code');
-
-                if (districtCode && wardSelect) {
-                    fetchWards(districtCode, wardSelect);
-                } else if (wardSelect) {
+                if (districtId) {
+                    ghnFetchWards(districtId, wardSelect);
+                } else {
                     wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
                 }
             }
         });
+
     });
 </script>
 <script th:src="@{/js/notification.js}"></script>
