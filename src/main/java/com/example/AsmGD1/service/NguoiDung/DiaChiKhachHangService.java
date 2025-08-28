@@ -59,12 +59,12 @@
                 dc.setMacDinh(true);
                 diaChiRepo.save(dc);
 
-                // 3) Xoá địa chỉ khỏi bảng nguoi_dung (đảm bảo chỉ lưu 1 nơi)
-                customer.setChiTietDiaChi(null);
-                customer.setPhuongXa(null);
-                customer.setQuanHuyen(null);
-                customer.setTinhThanhPho(null);
-                nguoiDungRepository.save(customer);
+//                // 3) Xoá địa chỉ khỏi bảng nguoi_dung (đảm bảo chỉ lưu 1 nơi)
+//                customer.setChiTietDiaChi(null);
+//                customer.setPhuongXa(null);
+//                customer.setQuanHuyen(null);
+//                customer.setTinhThanhPho(null);
+//                nguoiDungRepository.save(customer);
             }
 
             return customer;
