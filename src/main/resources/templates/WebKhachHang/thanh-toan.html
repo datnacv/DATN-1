@@ -1599,10 +1599,18 @@
     function _num(x) { return onlyDigits(x); }
 
     function getCheckoutMode() {
-        const from = new URLSearchParams(location.search).get('from');
-        if (from === 'cart') return 'cart';
-        if (from === 'cart-selected') return 'cart-selected';
-        return 'buy-now';
+        const qs = new URLSearchParams(location.search).get('from');
+        if (['cart','cart-selected','buy-now'].includes(qs)) return qs;
+
+        // Ưu tiên dữ liệu thực tế đang có
+        if (localStorage.getItem('checkoutItem'))       return 'buy-now';
+        if (localStorage.getItem('cartSelectedItems'))  return 'cart-selected';
+
+        // Cuối cùng mới dùng session (có thể là giá trị cũ)
+        const ss = sessionStorage.getItem('checkout.from');
+        if (['cart','cart-selected','buy-now'].includes(ss)) return ss;
+
+        return 'cart';
     }
 
     // ================== GHN LOCATION & SHIPPING ==================
@@ -2674,6 +2682,15 @@
                 descriptionInput.value = 'Thanh toán đơn hàng'; form.appendChild(descriptionInput);
 
                 sessionStorage.setItem('pendingOrder', JSON.stringify({ orderData }));
+                const mode = getCheckoutMode();
+                sessionStorage.setItem('checkout.from', mode);
+
+                const fromInput = document.createElement('input');
+                fromInput.type = 'hidden';
+                fromInput.name = 'from';
+                fromInput.value = mode;
+                form.appendChild(fromInput);
+
                 document.body.appendChild(form); form.submit();
             } else {
                 const response = await fetch('/api/checkout/submit', {
@@ -2727,6 +2744,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        const mode = getCheckoutMode();
+        sessionStorage.setItem('checkout.from', mode);
+        if (mode === 'buy-now')       localStorage.removeItem('cartSelectedItems');
+        if (mode === 'cart-selected') localStorage.removeItem('checkoutItem');
+
         // ===== INIT =====
         shippingFeeReady = false;
         updateSubmitEnabled();
