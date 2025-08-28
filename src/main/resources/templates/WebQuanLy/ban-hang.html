@@ -1170,6 +1170,14 @@
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+  function hydrateCashInputFromState() {
+    const tab = tabs.find(t => t.id === currentTabId);
+    const cashEl = document.getElementById('cashAmount');
+    if (!tab || !cashEl) return;
+    const digits = String(tab.cashAmount || 0);
+    cashEl.value = formatBigVndDigits(digits); // -> "12.000"
+  }
+
   // === PTTT maps (ưu tiên label PTTT do BE trả về) ===
   let voucherPtttMapById = {};
   let voucherPtttMapByMa = {};
@@ -2578,7 +2586,7 @@
   }
 
   async function loadTabContent(tabId) {
-    clearAddressUI();
+    clearAddressUiElements();
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;
 
@@ -2644,7 +2652,10 @@
 
     if (elements.shippingFee) elements.shippingFee.value = formatCurrency(tab.shippingFeeBase);
     if (elements.paymentMethod) elements.paymentMethod.value = tab.paymentMethod;
-    if (elements.cashAmount) elements.cashAmount.value = tab.cashAmount || 0;
+    if (elements.cashAmount) {
+      elements.cashAmount.value = formatBigVndDigits(String(tab.cashAmount || 0));
+    }
+
 
     toggleCashInput();
     renderCart(tab.cart);
@@ -2661,6 +2672,9 @@
         tab.discount   = Number(cartData.giamGia ?? 0);
         tab.total      = Number(cartData.tong ?? 0);
         tab.cashAmount = Number(cartData.cashAmount ?? tab.cashAmount ?? 0);
+        if (elements.cashAmount) {
+          elements.cashAmount.value = formatBigVndDigits(String(tab.cashAmount || 0));
+        }
 
         // ⚠️ Chỉ cập nhật phí ship khi BE thật sự trả field tương ứng
         const hasBase   = Object.prototype.hasOwnProperty.call(cartData, 'phiVanChuyenGoc');
@@ -2690,6 +2704,30 @@
       }
     } catch (error) {
       console.error('Lỗi khi load giỏ hàng:', error);
+    }
+
+    try {
+      // Nếu đang giao hàng & có địa chỉ: đảm bảo có phí ship gốc trước
+      if (tab.saleMethod === 'Giao hàng' && tab.selectedAddress) {
+        await setupShippingForSelectedAddress({ recalcOnly: true });
+      }
+
+      // Re-apply ORDER voucher (nếu trước đó đã chọn)
+      if (tab.orderVoucherId || tab.voucherId) {
+        await reapplyCurrentOrderVoucher();
+      }
+
+      // Re-apply SHIPPING voucher (nếu trước đó đã chọn)
+      if (tab.shipVoucherId) {
+        await reapplyCurrentShipVoucher();
+      }
+    } catch (e) {
+      console.warn('Khôi phục voucher sau reload lỗi:', e);
+    } finally {
+      updateSummary(tab);
+      localStorage.setItem('orderTabs', JSON.stringify(tabs));
+      // nạp lại danh sách để modal hiển thị đúng "đang chọn"
+      await fetchVouchers();
     }
 
     if (tab.customerPhone && tab.customerPhone !== '0999999999') {
@@ -3194,6 +3232,7 @@
       tab.paymentMethod = paymentMethod;
       if (paymentMethod === '550E8400-E29B-41D4-A716-446655440017') {
         cashInput.classList.remove('d-none');
+        hydrateCashInputFromState();
       } else {
         cashInput.classList.add('d-none');
       }
