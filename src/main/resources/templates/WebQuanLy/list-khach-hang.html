@@ -1257,6 +1257,19 @@
             }
         }
 
+        function setSelectValue(selectElement, value) {
+            if (!selectElement || !value) return;
+
+            // Find and select the option with matching value
+            const options = selectElement.options;
+            for (let i = 0; i < options.length; i++) {
+                if (options[i].value === value) {
+                    selectElement.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
         fetchProvinces().then(() => {
             const addProvinceSelect = document.getElementById('addTinhThanhPho');
             const addDistrictSelect = document.getElementById('addQuanHuyen');
