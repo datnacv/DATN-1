@@ -780,26 +780,26 @@ public class KHDonMuaController {
             @RequestParam("selectedProducts") List<UUID> selectedProductIds,
             @RequestParam("reason") String reason,
             @RequestParam(value = "description", required = false) String description,
-            @RequestParam("email") String email,
+            @RequestParam("email") String email, // giữ nếu cần dùng cho mục đích khác
             Authentication authentication) {
+
         Map<String, Object> response = new HashMap<>();
-        logger.info("Processing return request for order ID: {} by user: {}", id, authentication.getName());
 
         try {
-            // Kiểm tra xác thực
+            // 1) Kiểm tra đăng nhập
             if (authentication == null || !authentication.isAuthenticated()) {
                 response.put("success", false);
                 response.put("message", "Vui lòng đăng nhập để gửi yêu cầu trả hàng.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
+            // 2) Lấy & kiểm tra người dùng
             UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
             if (nguoiDungId == null) {
                 response.put("success", false);
                 response.put("message", "Không thể xác định người dùng.");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
-
             NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
             if (nguoiDung == null) {
                 response.put("success", false);
@@ -807,134 +807,66 @@ public class KHDonMuaController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
-            HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-            if (hoaDon == null || hoaDon.getDonHang() == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+            // 3) Kiểm tra hóa đơn & quyền sở hữu
+            Optional<HoaDon> hoaDonOpt = hoaDonRepo.findById(id);
+            if (hoaDonOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Hóa đơn không tồn tại.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            HoaDon hoaDon = hoaDonOpt.get();
+            if (hoaDon.getDonHang() == null
+                    || hoaDon.getDonHang().getNguoiDung() == null
+                    || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
                 response.put("success", false);
                 response.put("message", "Hóa đơn không hợp lệ hoặc không thuộc về bạn.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
-                response.put("success", false);
-                response.put("message", "Chỉ có thể gửi yêu cầu trả hàng khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-            }
-
+            // 4) Kiểm tra danh sách sản phẩm trả
             if (selectedProductIds == null || selectedProductIds.isEmpty()) {
                 response.put("success", false);
                 response.put("message", "Vui lòng chọn ít nhất một sản phẩm để trả hàng.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            if (selectedProductIds.size() != hoaDon.getDonHang().getChiTietDonHangs().size()) {
+            // (Khuyến nghị) Xác nhận các ID được chọn thuộc chi tiết của đơn này
+            var validIds = hoaDon.getDonHang().getChiTietDonHangs()
+                    .stream().map(ChiTietDonHang::getId).collect(Collectors.toSet());
+            boolean allBelong = selectedProductIds.stream().allMatch(validIds::contains);
+            if (!allBelong) {
                 response.put("success", false);
-                response.put("message", "Phải trả toàn bộ sản phẩm trong đơn hàng.");
+                response.put("message", "Có sản phẩm không thuộc hóa đơn này.");
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
 
-            // Lấy thông tin giảm giá
-            List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
-            BigDecimal tongGiamOrder = allVouchers.stream()
-                    .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
-                    .map(DonHangPhieuGiamGia::getGiaTriGiam)
-                    .filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            // 5) Gọi service xử lý trả hàng (tính tiền hoàn, pro-rate giảm giá, hoàn ví nếu PTTT phù hợp,
+            //    cập nhật tồn kho, lịch sử trả, cập nhật trạng thái + thông báo/email)
+            String lyDoGop = (description != null && !description.isBlank())
+                    ? (reason + ": " + description)
+                    : reason;
+            hoaDonService.processReturn(id, selectedProductIds, lyDoGop);
 
-            // Tính tổng tiền hoàn (chỉ dựa trên thành tiền trừ giảm hóa đơn)
-            BigDecimal totalReturnAmount = BigDecimal.ZERO;
-            for (UUID chiTietId : selectedProductIds) {
-                ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                        .filter(ct -> ct.getId().equals(chiTietId))
-                        .findFirst().orElse(null);
-                if (chiTiet == null || chiTiet.getTrangThaiHoanTra()) {
-                    response.put("success", false);
-                    response.put("message", "Sản phẩm đã được trả hoặc không hợp lệ.");
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-                }
-
-                BigDecimal finalPrice = chiTiet.getChiTietSanPhamDto() != null
-                        ? chiTiet.getChiTietSanPhamDto().getGia()
-                        : chiTiet.getGia();
-                BigDecimal amount = finalPrice.multiply(BigDecimal.valueOf(chiTiet.getSoLuong()));
-                totalReturnAmount = totalReturnAmount.add(amount);
-
-                // Tạo bản ghi lịch sử trả hàng
-                LichSuTraHang traHang = new LichSuTraHang();
-                traHang.setChiTietDonHang(chiTiet);
-                traHang.setHoaDon(hoaDon);
-                traHang.setSoLuong(chiTiet.getSoLuong());
-                traHang.setTongTienHoan(amount);
-                traHang.setLyDoTraHang(description != null ? reason + ": " + description : reason);
-                traHang.setThoiGianTra(LocalDateTime.now());
-                traHang.setTrangThai("Chờ xử lý");
-                lichSuTraHangRepository.save(traHang);
-
-                // Cập nhật trạng thái hoàn trả của chi tiết đơn hàng
-                chiTiet.setTrangThaiHoanTra(true);
-                chiTiet.setLyDoTraHang(description != null ? reason + ": " + description : reason);
-                chiTietDonHangRepository.save(chiTiet);
-
-                // Cập nhật số lượng tồn kho
-                ChiTietSanPham sanPham = chiTiet.getChiTietSanPham();
-                sanPham.setSoLuongTonKho(sanPham.getSoLuongTonKho() + chiTiet.getSoLuong());
-                chiTietSanPhamRepository.save(sanPham);
-            }
-
-            // Trừ đi giảm giá hóa đơn, không tính phí vận chuyển hoặc giảm giá vận chuyển
-            totalReturnAmount = totalReturnAmount.subtract(tongGiamOrder);
-
-            // Đảm bảo tổng tiền hoàn không âm
-            totalReturnAmount = totalReturnAmount.max(BigDecimal.ZERO);
-
-            // Cập nhật trạng thái hóa đơn
-            hoaDon.setTrangThai("Đã trả hàng");
-            hoaDonService.addLichSuHoaDon(hoaDon, "Đã trả hàng", "Khách hàng yêu cầu trả hàng: " + reason);
-            hoaDonService.save(hoaDon);
-
-            // Gửi thông báo hệ thống
-            thongBaoService.taoThongBaoHeThong(
-                    "admin",
-                    "Yêu cầu trả hàng",
-                    "Khách hàng yêu cầu trả hàng cho đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + ". Lý do: " + reason,
-                    hoaDon.getDonHang()
-            );
-
-            // Gửi email thông báo
-            StringBuilder emailContent = new StringBuilder("<h2>Thông báo yêu cầu trả hàng</h2>");
-            emailContent.append("<p>Xin chào ").append(nguoiDung.getHoTen()).append(",</p>");
-            emailContent.append("<p>Yêu cầu trả hàng của bạn cho đơn hàng mã <strong>")
-                    .append(hoaDon.getDonHang().getMaDonHang()).append("</strong> đã được gửi thành công.</p>");
-            emailContent.append("<p><strong>Sản phẩm trả hàng:</strong></p><ul>");
-            for (UUID chiTietId : selectedProductIds) {
-                ChiTietDonHang chiTiet = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                        .filter(ct -> ct.getId().equals(chiTietId)).findFirst().orElse(null);
-                if (chiTiet != null) {
-                    emailContent.append("<li>").append(chiTiet.getTenSanPham())
-                            .append(" - Số lượng: ").append(chiTiet.getSoLuong())
-                            .append(" - Giá: ").append(formatVND(chiTiet.getChiTietSanPhamDto() != null
-                                    ? chiTiet.getChiTietSanPhamDto().getGia().doubleValue() : chiTiet.getGia().doubleValue()))
-                            .append("</li>");
-                }
-            }
-            emailContent.append("</ul>");
-            emailContent.append("<p><strong>Phí vận chuyển:</strong> Không được hoàn</p>");
-            emailContent.append("<p><strong>Trạng thái:</strong> Đã trả hàng</p>")
-                    .append("<p><strong>Lý do:</strong> ").append(reason).append("</p>")
-                    .append("<p><strong>Mô tả:</strong> ").append(description != null ? description : "Không có").append("</p>")
-                    .append("<p><strong>Giảm giá đơn:</strong> ").append(formatVND(tongGiamOrder.doubleValue())).append("</p>")
-                    .append("<p><strong>Tổng tiền hoàn:</strong> ").append(formatVND(totalReturnAmount.doubleValue())).append("</p>")
-                    .append("<p>Chúng tôi sẽ xử lý yêu cầu của bạn trong thời gian sớm nhất.</p>")
-                    .append("<p>Trân trọng,<br>Đội ngũ ACV Store</p>");
-            emailService.sendEmail(email, "Yêu cầu trả hàng - ACV Store", emailContent.toString());
+            // 6) Lấy trạng thái sau cập nhật để trả về client
+            HoaDon hoaDonAfter = hoaDonRepo.findById(id).orElse(hoaDon);
+            String currentStatus = hoaDonService.getCurrentStatus(hoaDonAfter);
 
             response.put("success", true);
-            response.put("message", "Yêu cầu trả hàng đã được gửi thành công.");
+            response.put("message", "Yêu cầu trả hàng đã được ghi nhận. Nếu đơn thanh toán bằng ví/chuyển khoản, tiền sẽ được hoàn vào ví.");
+            response.put("currentStatus", currentStatus);
             return ResponseEntity.ok(response);
+
+        } catch (IllegalStateException e) {
+            // Ví dụ: trạng thái hóa đơn không cho phép trả hàng (service đã kiểm tra)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        } catch (ObjectOptimisticLockingFailureException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Lỗi xung đột đồng thời. Vui lòng thử lại."));
         } catch (Exception e) {
             logger.error("Lỗi khi gửi yêu cầu trả hàng: {}", e.getMessage(), e);
-            response.put("success", false);
-            response.put("message", "Lỗi khi gửi yêu cầu trả hàng: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Lỗi khi gửi yêu cầu trả hàng: " + e.getMessage()));
         }
     }
 

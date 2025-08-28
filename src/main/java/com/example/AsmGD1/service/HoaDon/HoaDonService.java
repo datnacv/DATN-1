@@ -885,6 +885,17 @@ public class HoaDonService {
     private void validateTransition(String oldStatus, String newStatus, String salesMethod) {
         String o = oldStatus == null ? "Chưa xác nhận" : oldStatus;
 
+        // ✅ CHO PHÉP TRẢ HÀNG (mọi luồng)
+        // Từ: "Hoàn thành", "Vận chuyển thành công" hoặc đã "Đã trả hàng một phần"
+        // Sang: "Đã trả hàng" hoặc "Đã trả hàng một phần"
+        if ("Đã trả hàng".equals(newStatus) || "Đã trả hàng một phần".equals(newStatus)) {
+            if (List.of("Hoàn thành", "Vận chuyển thành công", "Đã trả hàng một phần").contains(o)) {
+                return; // hợp lệ -> không kiểm tra các rule khác nữa
+            }
+            throw new IllegalStateException("Không thể chuyển sang '" + newStatus + "' từ trạng thái: " + o);
+        }
+
+        // Giữ nguyên các rule hiện có bên dưới
         if ("Hủy đơn hàng".equals(newStatus)) {
             if (List.of("Chưa xác nhận", "Đã xác nhận", "Đã xác nhận Online", "Đang xử lý Online", "Đang vận chuyển").contains(o)) {
                 return;
@@ -901,7 +912,6 @@ public class HoaDonService {
 
         if ("Tại quầy".equalsIgnoreCase(salesMethod)) {
             if (("Chưa xác nhận".equals(o) && "Hoàn thành".equals(newStatus)) || "Hoàn thành".equals(newStatus)) return;
-            // Mới: Cho phép trả hàng từ trạng thái "Hoàn thành" cho bán hàng tại quầy
             if ("Hoàn thành".equals(o) && List.of("Đã trả hàng", "Đã trả hàng một phần").contains(newStatus)) return;
             throw new IllegalStateException("Luồng Tại quầy không hỗ trợ chuyển từ " + o + " -> " + newStatus);
         }
