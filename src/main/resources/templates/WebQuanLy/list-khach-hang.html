@@ -947,6 +947,7 @@
             const tinhThanhPho = document.getElementById('addTinhThanhPho');
             const quanHuyen = document.getElementById('addQuanHuyen');
             const phuongXa = document.getElementById('addPhuongXa');
+            const chiTietDiaChi = document.getElementById('addChiTietDiaChi');
 
             // Xóa thông báo lỗi cũ
             document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
@@ -1005,11 +1006,23 @@
             }
 
             // Validate Ngày sinh (tùy chọn, chỉ kiểm tra định dạng nếu có giá trị)
-            if (ngaySinh.value) {
+            if (!ngaySinh.value) {
+                document.getElementById('addNgaySinhError').textContent = 'Ngày sinh không được để trống';
+                isValid = false;
+            } else {
                 const today = new Date();
                 const birthDate = new Date(ngaySinh.value);
+                const age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+
                 if (birthDate > today) {
                     document.getElementById('addNgaySinhError').textContent = 'Ngày sinh không được lớn hơn ngày hiện tại';
+                    isValid = false;
+                } else if (age < 13 || (age === 13 && monthDiff < 0) || (age === 13 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    document.getElementById('addNgaySinhError').textContent = 'Tuổi phải từ 13 tuổi trở lên';
+                    isValid = false;
+                } else if (age > 120) {
+                    document.getElementById('addNgaySinhError').textContent = 'Tuổi không được vượt quá 120 tuổi';
                     isValid = false;
                 }
             }
@@ -1029,6 +1042,19 @@
             // Validate Phường/Xã
             if (!phuongXa.value) {
                 document.getElementById('addPhuongXaError').textContent = 'Vui lòng chọn phường/xã';
+                isValid = false;
+            }
+
+            // Validate Địa chỉ chi tiết
+            const chiTietDiaChiValue = chiTietDiaChi.value.trim();
+            if (!chiTietDiaChiValue) {
+                document.getElementById('addChiTietDiaChiError').textContent = 'Địa chỉ chi tiết không được để trống';
+                isValid = false;
+            } else if (chiTietDiaChiValue.length < 5) {
+                document.getElementById('addChiTietDiaChiError').textContent = 'Địa chỉ chi tiết phải có ít nhất 5 ký tự';
+                isValid = false;
+            } else if (chiTietDiaChiValue.length > 200) {
+                document.getElementById('addChiTietDiaChiError').textContent = 'Địa chỉ chi tiết không được vượt quá 200 ký tự';
                 isValid = false;
             }
 
@@ -1057,6 +1083,7 @@
             const tinhThanhPho = form.querySelector('select[name="tinhThanhPho"]');
             const quanHuyen = form.querySelector('select[name="quanHuyen"]');
             const phuongXa = form.querySelector('select[name="phuongXa"]');
+            const chiTietDiaChi = form.querySelector('input[name="chiTietDiaChi"]');
 
             // Xóa thông báo lỗi cũ
             form.querySelectorAll('.error-message').forEach(el => el.textContent = '');
@@ -1115,11 +1142,23 @@
             }
 
             // Validate Ngày sinh (tùy chọn)
-            if (ngaySinh.value) {
+            if (!ngaySinh.value) {
+                ngaySinh.nextElementSibling.textContent = 'Ngày sinh không được để trống';
+                isValid = false;
+            } else {
                 const today = new Date();
                 const birthDate = new Date(ngaySinh.value);
+                const age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+
                 if (birthDate > today) {
                     ngaySinh.nextElementSibling.textContent = 'Ngày sinh không được lớn hơn ngày hiện tại';
+                    isValid = false;
+                } else if (age < 13 || (age === 13 && monthDiff < 0) || (age === 13 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    ngaySinh.nextElementSibling.textContent = 'Tuổi phải từ 13 tuổi trở lên';
+                    isValid = false;
+                } else if (age > 120) {
+                    ngaySinh.nextElementSibling.textContent = 'Tuổi không được vượt quá 120 tuổi';
                     isValid = false;
                 }
             }
@@ -1139,6 +1178,19 @@
             // Validate Phường/Xã
             if (!phuongXa.value) {
                 phuongXa.nextElementSibling.textContent = 'Vui lòng chọn phường/xã';
+                isValid = false;
+            }
+
+            // Validate Địa chỉ chi tiết
+            const chiTietDiaChiValue = chiTietDiaChi.value.trim();
+            if (!chiTietDiaChiValue) {
+                chiTietDiaChi.nextElementSibling.textContent = 'Địa chỉ chi tiết không được để trống';
+                isValid = false;
+            } else if (chiTietDiaChiValue.length < 5) {
+                chiTietDiaChi.nextElementSibling.textContent = 'Địa chỉ chi tiết phải có ít nhất 5 ký tự';
+                isValid = false;
+            } else if (chiTietDiaChiValue.length > 200) {
+                chiTietDiaChi.nextElementSibling.textContent = 'Địa chỉ chi tiết không được vượt quá 200 ký tự';
                 isValid = false;
             }
 
@@ -1254,19 +1306,6 @@
                         });
                     }
                 });
-            }
-        }
-
-        function setSelectValue(selectElement, value) {
-            if (!selectElement || !value) return;
-
-            // Find and select the option with matching value
-            const options = selectElement.options;
-            for (let i = 0; i < options.length; i++) {
-                if (options[i].value === value) {
-                    selectElement.selectedIndex = i;
-                    break;
-                }
             }
         }
 
