@@ -9,6 +9,7 @@ import com.example.AsmGD1.repository.BanHang.DonHangRepository;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuTraHangRepository;
+import com.example.AsmGD1.repository.NguoiDung.DiaChiNguoiDungRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.ViThanhToan.LichSuGiaoDichViRepository;
 import com.example.AsmGD1.repository.ViThanhToan.ViThanhToanRepository;
@@ -87,11 +88,14 @@ public class HoaDonService {
 
     @Autowired
     private PhieuGiamGiaService phieuGiamGiaService;
+
     @Autowired
     private LichSuDoiSanPhamRepository lichSuDoiSanPhamRepository;
 
     @Autowired
     private DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
+    @Autowired
+    private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -159,12 +163,18 @@ public class HoaDonService {
 
             String address = "Không rõ";
             if ("Tại quầy".equalsIgnoreCase(donHang.getPhuongThucBanHang())) {
-                address = hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getChiTietDiaChi() != null
-                        ? hoaDon.getNguoiDung().getChiTietDiaChi()
+                address = hoaDon.getDiaChi() != null && hoaDon.getDiaChi().getChiTietDiaChi() != null
+                        ? hoaDon.getDiaChi().getChiTietDiaChi() + ", " +
+                        hoaDon.getDiaChi().getPhuongXa() + ", " +
+                        hoaDon.getDiaChi().getQuanHuyen() + ", " +
+                        hoaDon.getDiaChi().getTinhThanhPho()
                         : "Mua tại quầy";
             } else {
-                address = hoaDon.getNguoiDung().getChiTietDiaChi() != null && !hoaDon.getNguoiDung().getChiTietDiaChi().isEmpty()
-                        ? hoaDon.getNguoiDung().getChiTietDiaChi()
+                address = hoaDon.getDiaChi() != null && hoaDon.getDiaChi().getChiTietDiaChi() != null
+                        ? hoaDon.getDiaChi().getChiTietDiaChi() + ", " +
+                        hoaDon.getDiaChi().getPhuongXa() + ", " +
+                        hoaDon.getDiaChi().getQuanHuyen() + ", " +
+                        hoaDon.getDiaChi().getTinhThanhPho()
                         : (donHang.getDiaChiGiaoHang() != null ? donHang.getDiaChiGiaoHang() : "Không rõ");
             }
             addInfoCell(infoTable, fontBold, fontNormal, "Địa chỉ:", address);
@@ -340,6 +350,7 @@ public class HoaDonService {
     public HoaDon save(HoaDon hoaDon) {
         try {
             HoaDon savedHoaDon = hoaDonRepository.saveAndFlush(hoaDon);
+            diaChiNguoiDungRepository.save(hoaDon.getDiaChi());
             System.out.println("Lưu hóa đơn thành công, ID: " + savedHoaDon.getId() + ", Trạng thái: " + savedHoaDon.getTrangThai());
             return savedHoaDon;
         } catch (ObjectOptimisticLockingFailureException e) {
@@ -364,6 +375,7 @@ public class HoaDonService {
         HoaDon hoaDon = new HoaDon();
         hoaDon.setDonHang(refreshedDonHang);
         hoaDon.setNguoiDung(refreshedDonHang.getNguoiDung());
+        hoaDon.setDiaChi(refreshedDonHang.getDiaChi()); // Liên kết với DiaChiNguoiDung của DonHang
         hoaDon.setTongTien(refreshedDonHang.getTongTien());
         hoaDon.setTienGiam(refreshedDonHang.getTienGiam() != null ? refreshedDonHang.getTienGiam() : BigDecimal.ZERO);
         hoaDon.setPhuongThucThanhToan(refreshedDonHang.getPhuongThucThanhToan());
@@ -443,9 +455,14 @@ public class HoaDonService {
             HoaDonDTO dto = new HoaDonDTO();
             dto.setId(hoaDon.getId());
             dto.setMaHoaDon(hoaDon.getDonHang().getMaDonHang());
-            dto.setTenKhachHang(hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen() : "Khách lẻ");
+            dto.setTenKhachHang(hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getHoTen(): "Khách lẻ");
             dto.setSoDienThoaiKhachHang(hoaDon.getNguoiDung() != null ? hoaDon.getNguoiDung().getSoDienThoai() : "Không rõ");
-            dto.setDiaChi(hoaDon.getNguoiDung() != null && hoaDon.getNguoiDung().getChiTietDiaChi() != null ? hoaDon.getNguoiDung().getChiTietDiaChi() : hoaDon.getGhiChu() != null ? hoaDon.getGhiChu() : "Không rõ");
+            dto.setDiaChi(hoaDon.getDiaChi() != null && hoaDon.getDiaChi().getChiTietDiaChi() != null
+                    ? hoaDon.getDiaChi().getChiTietDiaChi() + ", " +
+                    hoaDon.getDiaChi().getPhuongXa() + ", " +
+                    hoaDon.getDiaChi().getQuanHuyen() + ", " +
+                    hoaDon.getDiaChi().getTinhThanhPho()
+                    : hoaDon.getGhiChu() != null ? hoaDon.getGhiChu() : "Không rõ");
             dto.setTongTienHang(hoaDon.getTongTien().add(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO));
             dto.setTongTien(hoaDon.getTongTien());
             dto.setTienGiam(hoaDon.getTienGiam() != null ? hoaDon.getTienGiam() : BigDecimal.ZERO);
@@ -573,7 +590,6 @@ public class HoaDonService {
 
         return "Chưa xác nhận";
     }
-
 
     @Transactional
     public void processExchange(UUID hoaDonId, List<UUID> chiTietDonHangIds, List<UUID> newChiTietSanPhamIds, String lyDoDoiHang) {
@@ -946,10 +962,9 @@ public class HoaDonService {
             case "Hoàn thành" -> "hoan_thanh";
             case "Hủy đơn hàng" -> "huy";
             case "Đã đổi hàng" -> "da_doi_hang";
-            // Thêm mới: Mapping cho trạng thái trả hàng
-            case "Đã trả hàng" -> "da_tra_hang";  // Giả sử giá trị trạng thái trong don_hang là "da_tra_hang"
-            case "Đã trả hàng một phần" -> "da_tra_hang_mot_phan";  // Giả sử giá trị trạng thái trong don_hang là "da_tra_hang_mot_phan"
-            default -> throw new IllegalArgumentException("Trạng thái hóa đơn không hợp lệ: " + invoiceStatus);  // Thay vì return null để tránh lỗi NULL
+            case "Đã trả hàng" -> "da_tra_hang";
+            case "Đã trả hàng một phần" -> "da_tra_hang_mot_phan";
+            default -> throw new IllegalArgumentException("Trạng thái hóa đơn không hợp lệ: " + invoiceStatus);
         };
     }
 
@@ -1042,7 +1057,7 @@ public class HoaDonService {
                     "<div style='max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background-color: #fff;'>" +
                     "<h2 style='color: #0000FF; text-align: center;'>ACV Store Xin Chào</h2>" +
                     "<h2 style='color: #153054; text-align: center;'>Cập nhật trạng thái đơn hàng</h2>" +
-                    "<p style='text-align: center;'>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                    "<p style='text-align: center;'>Xin chào " + (hd.getDiaChi() != null ? hd.getDiaChi().getNguoiNhan() : nguoiDung.getHoTen()) + ",</p>" +
                     "<p style='text-align: center;'>Đơn hàng của bạn với mã <strong>" + hd.getDonHang().getMaDonHang() + "</strong> đã được cập nhật sang trạng thái: <strong>" + newStatus + "</strong>.</p>" +
                     "<p style='text-align: center;'><strong>Chi tiết:</strong> " + ghiChu + "</p>" +
                     "<p style='text-align: center; margin-top: 20px;'>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +

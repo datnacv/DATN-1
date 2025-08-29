@@ -832,32 +832,33 @@
                         <h6 class="mb-0"><i class="fas fa-user"></i> Thông tin khách hàng</h6>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">
-                            <i class="fas fa-user-circle"></i> Khách hàng:
-                        </span>
+        <span class="info-label">
+            <i class="fas fa-user-circle"></i> Người nhận:
+        </span>
                         <div class="d-flex align-items-center gap-2">
                             <span class="info-value" th:text="${hoaDon.nguoiDung.hoTen}"></span>
                         </div>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">
-                            <i class="fas fa-phone"></i> Số điện thoại:
-                        </span>
+        <span class="info-label">
+            <i class="fas fa-phone"></i> Số điện thoại:
+        </span>
                         <span class="info-value" th:text="${hoaDon.nguoiDung.soDienThoai}"></span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">
-                            <i class="fas fa-map-marker-alt"></i> Địa chỉ:
-                        </span>
-                        <span class="info-value" th:text="${hoaDon.nguoiDung.tinhThanhPho + ', ' + hoaDon.nguoiDung.quanHuyen + ', ' + hoaDon.nguoiDung.phuongXa + ', ' + hoaDon.nguoiDung.chiTietDiaChi}"></span>
+        <span class="info-label">
+            <i class="fas fa-map-marker-alt"></i> Địa chỉ:
+        </span>
+                        <span class="info-value" th:text="${hoaDon.donHang.diaChiGiaoHang}"></span>
                     </div>
                     <div class="info-row">
-                        <span class="info-label">
-                            <i class="fas fa-info-circle"></i> Trạng thái:
-                        </span>
+        <span class="info-label">
+            <i class="fas fa-info-circle"></i> Trạng thái:
+        </span>
                         <span id="statusBadge" class="status-badge" th:text="${currentStatus}"></span>
                     </div>
                 </div>
+
 
                 <div class="table-wrapper">
                     <div class="table-header">
@@ -1373,231 +1374,6 @@
         }
     }
 
-    function toggleEditForm() {
-        const editForm = document.getElementById("editForm");
-        const editButton = document.getElementById("editButton");
-        if (editForm.style.display === "none" || editForm.style.display === "") {
-            editForm.style.display = "block";
-            editButton.innerHTML = '<i class="fas fa-times"></i> Hủy';
-            fetchProvinces().then(() => {
-                setupEditForm();
-            });
-        } else {
-            editForm.style.display = "none";
-            editButton.innerHTML = '<i class="fas fa-edit"></i> Thay đổi';
-        }
-    }
-
-    $("#editHoaDonForm").submit(function(e) {
-        e.preventDefault();
-        let isValid = true;
-
-        // Lấy các giá trị từ form
-        const hoTen = $("#hoTen").val().trim();
-        const soDienThoai = $("#soDienThoai").val().trim();
-        const tinhThanhPho = $("#tinhThanhPho").val();
-        const quanHuyen = $("#quanHuyen").val();
-        const phuongXa = $("#phuongXa").val();
-        const chiTietDiaChi = $("#chiTietDiaChi").val().trim();
-
-        // Xóa thông báo lỗi cũ (nếu có)
-        $("#hoTen").next(".error-message").remove();
-        $("#soDienThoai").next(".error-message").remove();
-
-        // Validate Họ tên
-        const hoTenRegex = /^[A-Za-zÀ-ỹ\s]+$/;
-        if (!hoTen) {
-            $("#hoTen").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Họ tên không được để trống</div>');
-            isValid = false;
-        } else if (!hoTenRegex.test(hoTen)) {
-            $("#hoTen").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Họ tên chỉ được chứa chữ cái và khoảng trắng</div>');
-            isValid = false;
-        } else if (hoTen.indexOf('  ') !== -1) {
-            $("#hoTen").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Họ tên chỉ được chứa 1 khoảng trắng giữa các từ</div>');
-            isValid = false;
-        }
-
-        // Validate Số điện thoại
-        const soDienThoaiRegex = /^[0-9]{10}$/;
-        if (!soDienThoai) {
-            $("#soDienThoai").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Số điện thoại không được để trống</div>');
-            isValid = false;
-        } else if (!soDienThoaiRegex.test(soDienThoai)) {
-            $("#soDienThoai").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Số điện thoại phải là 10 chữ số</div>');
-            isValid = false;
-        }
-
-        // Validate các trường địa chỉ
-        if (!tinhThanhPho || !quanHuyen || !phuongXa) {
-            showToast("Vui lòng chọn đầy đủ tỉnh/thành phố, quận/huyện và phường/xã", "error");
-            isValid = false;
-        }
-        if (!chiTietDiaChi) {
-            $("#chiTietDiaChi").after('<div class="error-message" style="color: #dc3545; font-size: 0.8rem; margin-top: 0.25rem;">Chi tiết địa chỉ không được để trống</div>');
-            isValid = false;
-        }
-
-        if (isValid) {
-            const formData = {
-                hoTen: hoTen,
-                soDienThoai: soDienThoai,
-                tinhThanhPho: tinhThanhPho,
-                quanHuyen: quanHuyen,
-                phuongXa: phuongXa,
-                chiTietDiaChi: chiTietDiaChi
-            };
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/update/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify(formData),
-                success: function(response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function(error) {
-                    showToast("Lỗi khi cập nhật thông tin: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function() {
-                    $("#invoiceSpinner").hide();
-                    toggleEditForm();
-                }
-            });
-        }
-    });
-
-    async function fetchProvinces() {
-        try {
-            let response = await fetch("https://provinces.open-api.vn/api/p/");
-            let provinces = await response.json();
-            const provinceSelect = document.getElementById('tinhThanhPho');
-            provinceSelect.innerHTML = '<option value="">Chọn tỉnh/thành phố</option>';
-            provinces.forEach(province => {
-                const option = document.createElement("option");
-                option.value = province.name;
-                option.textContent = province.name;
-                option.setAttribute("data-code", province.code);
-                provinceSelect.appendChild(option);
-            });
-            return provinces;
-        } catch (error) {
-            console.error("Lỗi tải tỉnh/thành phố", error);
-            showToast("Lỗi tải danh sách tỉnh/thành phố", "error");
-            return [];
-        }
-    }
-
-    async function fetchDistricts(provinceCode, districtSelect, wardSelect) {
-        try {
-            let response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-            let data = await response.json();
-            districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
-            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-            data.districts.forEach(district => {
-                const option = document.createElement("option");
-                option.value = district.name;
-                option.textContent = district.name;
-                option.setAttribute("data-code", district.code);
-                districtSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error("Lỗi tải quận/huyện", error);
-            showToast("Lỗi tải danh sách quận/huyện", "error");
-        }
-    }
-
-    async function fetchWards(districtCode, wardSelect) {
-        try {
-            let response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-            let data = await response.json();
-            wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-            data.wards.forEach(ward => {
-                const option = document.createElement("option");
-                option.value = ward.name;
-                option.textContent = ward.name;
-                option.setAttribute("data-code", ward.code);
-                wardSelect.appendChild(option);
-            });
-        } catch (error) {
-            console.error("Lỗi tải phường/xã", error);
-            showToast("Lỗi tải danh sách phường/xã", "error");
-        }
-    }
-
-    function setSelectValue(selectElement, value) {
-        if (value && selectElement) {
-            const options = selectElement.querySelectorAll('option');
-            for (let option of options) {
-                if (option.value === value) {
-                    option.selected = true;
-                    break;
-                }
-            }
-        }
-    }
-
-    function setupEditForm() {
-        const provinceSelect = document.getElementById('tinhThanhPho');
-        const districtSelect = document.getElementById('quanHuyen');
-        const wardSelect = document.getElementById('phuongXa');
-
-        if (!provinceSelect || !districtSelect || !wardSelect) return;
-
-        const currentProvince = provinceSelect.getAttribute('data-current-value');
-        const currentDistrict = districtSelect.getAttribute('data-current-value');
-        const currentWard = wardSelect.getAttribute('data-current-value');
-
-        setSelectValue(provinceSelect, currentProvince);
-
-        const selectedProvinceOption = provinceSelect.querySelector(`option[value="${currentProvince}"]`);
-        if (selectedProvinceOption) {
-            const provinceCode = selectedProvinceOption.getAttribute('data-code');
-            if (provinceCode) {
-                fetchDistricts(provinceCode, districtSelect, wardSelect).then(() => {
-                    setSelectValue(districtSelect, currentDistrict);
-                    const selectedDistrictOption = districtSelect.querySelector(`option[value="${currentDistrict}"]`);
-                    if (selectedDistrictOption) {
-                        const districtCode = selectedDistrictOption.getAttribute('data-code');
-                        if (districtCode) {
-                            fetchWards(districtCode, wardSelect).then(() => {
-                                setSelectValue(wardSelect, currentWard);
-                            });
-                        }
-                    }
-                });
-            }
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const provinceSelect = document.getElementById('tinhThanhPho');
-        const districtSelect = document.getElementById('quanHuyen');
-        const wardSelect = document.getElementById('phuongXa');
-
-        if (provinceSelect && districtSelect && wardSelect) {
-            provinceSelect.addEventListener('change', function () {
-                const selectedOption = this.options[this.selectedIndex];
-                const provinceCode = selectedOption.getAttribute('data-code');
-                if (provinceCode) {
-                    fetchDistricts(provinceCode, districtSelect, wardSelect);
-                } else {
-                    districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
-                    wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-                }
-            });
-
-            districtSelect.addEventListener('change', function () {
-                const selectedOption = this.options[this.selectedIndex];
-                const districtCode = selectedOption.getAttribute('data-code');
-                if (districtCode) {
-                    fetchWards(districtCode, wardSelect);
-                } else {
-                    wardSelect.innerHTML = '<option value="">Chọn phường/xã</option>';
-                }
-            });
-        }
-    });
 </script>
 <script th:src="@{/js/notification.js}"></script>
 
