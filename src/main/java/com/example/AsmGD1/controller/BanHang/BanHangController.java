@@ -1024,8 +1024,23 @@
             try {
                 // Nếu FE truyền shippingFee mới -> cập nhật làm "phí ship GỐC" cho tab
                 if (shippingFee != null) {
-                    session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
+                    BigDecimal currentBase = (BigDecimal) Optional
+                            .ofNullable(session.getAttribute("SHIP_FEE_" + tabId))
+                            .orElse(BigDecimal.ZERO);
+
+                    UUID currentShipVoucherId = (UUID) session.getAttribute("SHIP_VOUCHER_ID_" + tabId);
+
+                    // Chỉ cập nhật phí GỐC khi:
+                    // 1) chưa có phí gốc, hoặc
+                    // 2) chưa áp freeship, hoặc
+                    // 3) phí mới >= phí gốc hiện tại (đổi DV vận chuyển làm phí tăng)
+                    if (currentBase == null || currentBase.signum() == 0
+                            || currentShipVoucherId == null
+                            || shippingFee.compareTo(currentBase) >= 0) {
+                        session.setAttribute("SHIP_FEE_" + tabId, shippingFee);
+                    }
                 }
+
 
                 BigDecimal shipBase = (BigDecimal) Optional.ofNullable(session.getAttribute("SHIP_FEE_" + tabId))
                         .orElse(shippingFee != null ? shippingFee : BigDecimal.ZERO);

@@ -194,7 +194,7 @@
                                         <label class="form-check-label">
                                             <input type="radio" th:field="*{loai}" value="FREESHIP_CAP"
                                                    onchange="toggleDiscountFields()"
-                                                   th:disabled="${st != 'Sắp diễn ra'}"> Miễn phí ship tối đa X₫
+                                                   th:disabled="${st != 'Sắp diễn ra'}"> Miễn phí ship tối đa X VND
                                         </label>
                                     </div>
                                 </div>
@@ -228,7 +228,7 @@
                                                    th:readonly="${st != 'Sắp diễn ra' || voucher.loai == 'FREESHIP_CAP'}"
                                                    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
                                             <span class="input-group-text" id="discountUnit"
-                                                  th:text="${voucher.loai == 'PERCENT' ? '%' : (voucher.loai == 'FREESHIP_FULL' ? '' : '₫')}">%</span>
+                                                  th:text="${voucher.loai == 'PERCENT' ? '%' : (voucher.loai == 'FREESHIP_FULL' ? '' : 'VND')}">%</span>
                                         </div>
                                         <div class="invalid-feedback" id="giaTriGiamError"></div>
                                     </div>
@@ -241,7 +241,7 @@
                                                    th:value="${giaTriGiamToiDaStr}"
                                                    th:readonly="${st != 'Sắp diễn ra'}"
                                                    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
-                                            <span class="input-group-text">₫</span>
+                                            <span class="input-group-text">VND</span>
                                         </div>
                                         <div class="invalid-feedback" id="giaTriGiamToiDaError"></div>
                                     </div>
@@ -253,7 +253,7 @@
                                                    th:value="${giaTriGiamToiThieuStr}"
                                                    th:readonly="${st != 'Sắp diễn ra'}"
                                                    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
-                                            <span class="input-group-text">₫</span>
+                                            <span class="input-group-text">VND</span>
                                         </div>
                                         <div class="invalid-feedback" id="giaTriGiamToiThieuError"></div>
                                     </div>
@@ -319,7 +319,7 @@
                                 </select>
                                 <!-- Thông báo lỗi PTTT bắt buộc -->
                                 <div id="ptttError" class="text-danger small mt-1 d-none">
-                                    Vui lòng chọn ít nhất một phương thức thanh toán.
+                                    vui lòng chọn ít nhất 1 pttt khi chưa chọn
                                 </div>
                             </div>
                         </div>
@@ -476,23 +476,17 @@
         });
     }
 
-    /* ===== Chuẩn hoá & validate tên (không khoảng trắng đầu/cuối, giữa từ 1 khoảng, chỉ chữ có dấu, >=6 ký tự không tính khoảng) ===== */
+    /* ===== Chuẩn hoá & validate tên ===== */
     function normalizeNameOnce(str){
         if (typeof str !== 'string') return '';
-        // cấm khoảng trắng đầu/cuối
         const trimmed = str.trim();
-        // gộp nhiều khoảng trong chuỗi thành 1
         return trimmed.replace(/\s+/g,' ');
     }
     function validateNameValue(name){
         if (!name) return 'Tên phiếu không được để trống.';
-        // không cho khoảng trắng đầu/cuối: so sánh sau trim
         if (name !== name.trim()) return 'Không cho phép khoảng trắng ở đầu hoặc cuối.';
-        // cấm nhiều khoảng giữa hai từ (sẽ bị bắt bởi regex dưới, nhưng báo lỗi rõ ràng hơn)
         if (/\s{2,}/.test(name)) return 'Giữa các từ chỉ được 1 khoảng trắng.';
-        // chỉ chữ (có dấu) + 1 khoảng giữa các từ
         if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(name)) return 'Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.';
-        // tối thiểu 6 ký tự không tính khoảng
         const nonSpaceLen = name.replace(/\s+/g,'').length;
         if (nonSpaceLen < 6) return 'Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).';
         return null;
@@ -500,9 +494,7 @@
 
     /* ===== Toggles ===== */
     function toggleScopeFields() {
-        // KHÓA chuyển phạm vi khi sửa
         if ($('#scopeGroup').data('locked') === true) return;
-
         const scope = $('input[name="phamViApDung"]:checked').val();
         const isShipping = scope === 'SHIPPING';
         $('#shipTypeGroup').toggle(isShipping);
@@ -523,7 +515,7 @@
         const isFreeshipFull = type === 'FREESHIP_FULL';
         const isFreeshipCap  = type === 'FREESHIP_CAP';
 
-        $('#discountUnit').text(isPercent ? '%' : '₫');
+        $('#discountUnit').text(isPercent ? '%' : 'VND');
 
         if (isFreeshipFull){
             $('#discountValueGroup').addClass('d-none');
@@ -581,7 +573,6 @@
         const ngayBatDauVal = $('#ngayBatDau').val();
         const ngayKetThucVal = $('#ngayKetThuc').val();
 
-        // parse local datetime
         const start = ngayBatDauVal ? new Date(ngayBatDauVal) : null;
         const end = ngayKetThucVal ? new Date(ngayKetThucVal) : null;
         const now = new Date();
@@ -612,13 +603,11 @@
             isValid = false;
         }
 
-        // Validate TÊN (nghiêm)
+        // Validate TÊN
         const rawName = $('#ten').val() || '';
         const normalizedName = normalizeNameOnce(rawName);
         if (rawName !== normalizedName){
-            // Không tự ý sửa ở FE — báo lỗi rõ ràng
             $('#ten').addClass('is-invalid');
-            // Ưu tiên lỗi khoảng trắng đầu/cuối
             if (rawName !== rawName.trim()){
                 $('#tenError').text('Không cho phép khoảng trắng ở đầu hoặc cuối.').show();
             }else{
@@ -632,12 +621,10 @@
             }
         }
 
-        // KHÓA phạm vi (ORDER/SHIPPING) – chỉ validate loại nằm trong phạm vi hiện tại
-        const scope = $('#scopeLockedVal').val(); // hidden giữ giá trị
+        const scope = $('#scopeLockedVal').val();
         const type = $('input[name="loai"]:checked').val();
 
         if (scope === 'ORDER' && !['PERCENT','CASH'].includes(type)){
-            // đề phòng ai đó chỉnh DOM
             $('#discountTypeGroup').find('input[type=radio]').addClass('is-invalid');
             alert('Phạm vi đang là GIẢM GIÁ ĐƠN HÀNG – chỉ được chọn kiểu PERCENT hoặc CASH.');
             isValid = false;
@@ -652,26 +639,21 @@
         const giaTriGiamToiDa = parseFloat(parseNumber($('#giaTriGiamToiDa').val() || '0')) || 0;
         const giaTriGiamToiThieu = parseFloat(parseNumber($('#giaTriGiamToiThieu').val() || '0')) || 0;
 
-        // Số âm đơn tối thiểu
         if (giaTriGiamToiThieu < 0){
             $('#giaTriGiamToiThieu').addClass('is-invalid');
             $('#giaTriGiamToiThieuError').text('Đơn tối thiểu không được âm.').show();
             isValid = false;
         }
 
-        // Theo phạm vi
         if (scope === 'ORDER'){
             if (type === 'PERCENT' || type === 'CASH'){
-                // giá trị giảm >0
                 if (giaTriGiam <= 0){
                     $('#giaTriGiam').addClass('is-invalid');
                     $('#giaTriGiamError').text('Giá trị giảm phải lớn hơn 0.').show();
                     isValid = false;
                 }
                 if (type === 'PERCENT'){
-                    // % nguyên 1..100
                     const raw = ($('#giaTriGiam').val() || '').trim();
-                    // không cho nhập dấu thập phân cho %
                     if (/[.,]/.test(raw)){
                         $('#giaTriGiam').addClass('is-invalid');
                         $('#giaTriGiamError').text('Giảm theo % phải là số nguyên.').show();
@@ -687,14 +669,12 @@
                         $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 khi giảm theo %.').show();
                         isValid = false;
                     }
-                    // Max discount < Min order (siết chặt như yêu cầu)
                     if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu){
                         $('#giaTriGiamToiDa').addClass('is-invalid');
                         $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
                         isValid = false;
                     }
                 } else { // CASH
-                    // tiền mặt < đơn tối thiểu (nếu có thiết lập)
                     if (giaTriGiamToiThieu > 0 && giaTriGiam >= giaTriGiamToiThieu){
                         $('#giaTriGiam').addClass('is-invalid');
                         $('#giaTriGiamError').text('Giá trị giảm (tiền mặt) phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
@@ -709,30 +689,18 @@
                     $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 cho FREESHIP_CAP.').show();
                     isValid = false;
                 }
-                // yêu cầu: max < minOrder
                 if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu){
                     $('#giaTriGiamToiDa').addClass('is-invalid');
                     $('#giaTriGiamToiDaError').text('Giảm phí ship tối đa phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
                     isValid = false;
                 }
-                // nếu cần giữ giới hạn 150% thì mở chú thích dưới (tuỳ bạn):
-                /*
-                if (giaTriGiamToiThieu > 0){
-                    const maxAllowed = giaTriGiamToiThieu * 1.5;
-                    if (giaTriGiamToiDa > maxAllowed){
-                        $('#giaTriGiamToiDa').addClass('is-invalid');
-                        $('#giaTriGiamToiDaError').text('Không vượt quá 150% giá trị đơn tối thiểu.').show();
-                        isValid = false;
-                    }
-                }
-                */
             }
         }
 
         // PTTT bắt buộc (bỏ 'all')
         const ptttChosen = ($('#paymentMethodSelect').val() || []).filter(v => v !== 'all');
         if (ptttChosen.length === 0){
-            $('#ptttError').text('Vui lòng chọn ít nhất một phương thức thanh toán.').removeClass('d-none');
+            $('#ptttError').text('vui lòng chọn ít nhất 1 pttt khi chưa chọn').removeClass('d-none');
             $('#paymentMethodSelect').next('.select2').find('.select2-selection').addClass('is-invalid-s2');
             isValid = false;
         }
@@ -790,7 +758,6 @@
             });
         });
 
-        // Riêng #giaTriGiam định dạng theo type
         if ($('#giaTriGiam').val()){
             formatGiaTriGiam();
         }
@@ -822,11 +789,9 @@
 
         // Nút xác nhận submit
         $('#confirmSubmit').on('click', function () {
-            // Chuẩn hoá số về raw trước khi submit
             ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
                 .forEach(sel => $(sel).val(parseNumber($(sel).val())));
 
-            // Bỏ 'all' nếu có trong select2
             const selected = $('#paymentMethodSelect').val();
             if (selected && selected.includes('all')) {
                 const allOptions = $('#paymentMethodSelect option').map(function(){return $(this).val();}).get().filter(v => v !== 'all');
