@@ -1000,6 +1000,22 @@ public class KHDonMuaController {
             }
         }
 
+        if (hoaDon == null
+                || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())
+                || !List.of("Vận chuyển thành công", "Chờ xử lý đổi hàng", "Hoàn thành").contains(hoaDon.getTrangThai())) {
+            model.addAttribute("hoaDon", null);
+            return "WebKhachHang/tra-doi-san-pham";
+        }
+
+// ❌ KHÓA: nếu HĐ đã đổi/đã có yêu cầu đổi được xác nhận → chặn form
+        boolean daDoi = "Đã đổi hàng".equals(hoaDon.getTrangThai())
+                || lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận");
+        if (daDoi) {
+            model.addAttribute("hoaDon", null);
+            model.addAttribute("message", "Hóa đơn này đã đổi hàng. Không thể tạo yêu cầu đổi thêm.");
+            return "WebKhachHang/tra-doi-san-pham";
+        }
+
         model.addAttribute("hoaDon", hoaDon);
         model.addAttribute("chiTietDonHangs", chiTietDonHangs); // Thêm danh sách chi tiết đơn hàng
         model.addAttribute("replacementProducts", replacementProducts);
@@ -1062,6 +1078,13 @@ public class KHDonMuaController {
             }
 
             HoaDon hoaDon = hoaDonOpt.get();
+            if ("Đã đổi hàng".equals(hoaDon.getTrangThai())
+                    || lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận")) {
+                response.put("success", false);
+                response.put("message", "Hóa đơn này đã đổi hàng. Không thể gửi yêu cầu đổi thêm.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
             if (!hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDungId)) {
                 logger.error("Người dùng {} không có quyền đổi hóa đơn {}", nguoiDungId, id);
                 response.put("success", false);

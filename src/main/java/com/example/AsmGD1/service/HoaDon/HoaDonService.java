@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class HoaDonService {
@@ -96,6 +97,103 @@ public class HoaDonService {
     private DonHangPhieuGiamGiaRepository donHangPhieuGiamGiaRepository;
     @Autowired
     private DiaChiNguoiDungRepository diaChiNguoiDungRepository;
+
+    @Transactional
+    public DonHang taoDonChenhLechDoiHang(HoaDon hoaDonGoc,
+                                          BigDecimal chenhLech,
+                                          int soLuongThayThe,
+                                          UUID chiTietSanPhamThayTheId,
+                                          String ghiChuThem) {
+        if (chenhLech == null || chenhLech.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Chênh lệch phải >= 0 để tạo đơn phụ thu/0đ.");
+        }
+        if (soLuongThayThe <= 0) {
+            throw new IllegalArgumentException("Số lượng thay thế phải > 0.");
+        }
+
+        ChiTietSanPham ctspThayThe = chiTietSanPhamRepository.findById(chiTietSanPhamThayTheId)
+                .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm thay thế không tồn tại."));
+
+        // 1) Tạo đơn chênh lệch (ship = 0, copy info từ HĐ gốc)
+        DonHang newOrder = new DonHang();
+        newOrder.setNguoiDung(hoaDonGoc.getNguoiDung());
+        newOrder.setMaDonHang("EX" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        newOrder.setTrangThaiThanhToan(false);
+        newOrder.setPhiVanChuyen(BigDecimal.ZERO);
+        newOrder.setPhuongThucThanhToan(hoaDonGoc.getPhuongThucThanhToan());
+        newOrder.setSoTienKhachDua(BigDecimal.ZERO);
+        newOrder.setThoiGianTao(LocalDateTime.now());
+        newOrder.setTienGiam(BigDecimal.ZERO);
+        newOrder.setTongTien(chenhLech);                   // <= có thể = 0
+        newOrder.setPhuongThucBanHang("Online");
+        newOrder.setDiaChi(hoaDonGoc.getDiaChi());
+        newOrder.setDiaChiGiaoHang(
+                hoaDonGoc.getDonHang() != null ? hoaDonGoc.getDonHang().getDiaChiGiaoHang() : null
+        );
+        newOrder.setGhiChu("Đơn chênh lệch đổi hàng từ " + hoaDonGoc.getDonHang().getMaDonHang()
+                + (ghiChuThem != null && !ghiChuThem.isBlank() ? (" - " + ghiChuThem) : ""));
+        newOrder = donHangRepository.save(newOrder);
+
+        // 2) Dòng hàng: tham chiếu trực tiếp CTSP thay thế; đơn giá = chênh lệch / SL (có thể = 0)
+        BigDecimal unitPrice = BigDecimal.ZERO;
+        if (soLuongThayThe > 0) {
+            unitPrice = chenhLech.divide(new BigDecimal(soLuongThayThe), 2, RoundingMode.HALF_UP);
+        }
+
+        ChiTietDonHang line = new ChiTietDonHang();
+        line.setDonHang(newOrder);
+        line.setChiTietSanPham(ctspThayThe);
+        line.setTenSanPham(ctspThayThe.getSanPham().getTenSanPham() + " (Phụ thu đổi hàng)");
+        line.setSoLuong(soLuongThayThe);
+        line.setGia(unitPrice);                                            // <= có thể = 0
+        line.setThanhTien(unitPrice.multiply(new BigDecimal(soLuongThayThe)));
+        line.setTrangThaiHoanTra(false);
+        line.setGhiChu("Phụ thu chênh lệch đổi hàng từ " + hoaDonGoc.getDonHang().getMaDonHang());
+        chiTietDonHangRepository.save(line);
+
+        // 3) Tạo hóa đơn cho đơn chênh lệch (sẽ là 0đ nếu chênh lệch = 0)
+        createHoaDonFromDonHang(newOrder);
+
+        return newOrder;
+    }
+
+    @Transactional
+    public void xuLyChenhLechSauDuyet(HoaDon hoaDonGoc,
+                                      BigDecimal chenhLech,
+                                      int soLuongThayThe,
+                                      UUID chiTietSanPhamThayTheId,
+                                      String moTa) {
+        if (chenhLech == null) return;
+
+        if (chenhLech.compareTo(BigDecimal.ZERO) >= 0) {
+            // Phụ thu hoặc 0đ → vẫn tạo đơn/hóa đơn mới (ship = 0)
+            taoDonChenhLechDoiHang(hoaDonGoc, chenhLech, soLuongThayThe, chiTietSanPhamThayTheId, moTa);
+            return;
+        }
+
+        // chênh lệch âm → hoàn ví nếu phù hợp
+        String pttt = hoaDonGoc.getPhuongThucThanhToan() != null
+                ? hoaDonGoc.getPhuongThucThanhToan().getTenPhuongThuc().trim()
+                : "";
+        if (List.of("Ví Thanh Toán", "Ví", "Chuyển khoản").contains(pttt)) {
+            BigDecimal soTienHoan = chenhLech.abs();
+            ViThanhToan vi = viThanhToanRepo.findByNguoiDung(hoaDonGoc.getNguoiDung())
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
+            vi.setSoDu(vi.getSoDu().add(soTienHoan));
+            vi.setThoiGianCapNhat(LocalDateTime.now());
+            viThanhToanRepo.save(vi);
+
+            LichSuGiaoDichVi ls = new LichSuGiaoDichVi();
+            ls.setIdViThanhToan(vi.getId());
+            ls.setLoaiGiaoDich("Hoàn tiền chênh lệch đổi hàng");
+            ls.setSoTien(soTienHoan);
+            ls.setMoTa(moTa != null ? moTa : ("Hoàn chênh lệch đơn " + hoaDonGoc.getDonHang().getMaDonHang()));
+            ls.setCreatedAt(LocalDateTime.now());
+            ls.setThoiGianGiaoDich(LocalDateTime.now());
+            lichSuRepo.save(ls);
+        }
+    }
 
     public byte[] generateHoaDonPDF(String id) {
         try {
@@ -595,6 +693,11 @@ public class HoaDonService {
     public void processExchange(UUID hoaDonId, List<UUID> chiTietDonHangIds, List<UUID> newChiTietSanPhamIds, String lyDoDoiHang) {
         HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
                 .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + hoaDonId));
+
+        if ("Đã đổi hàng".equals(hoaDon.getTrangThai())
+                || lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDonId, "Đã xác nhận")) {
+            throw new IllegalStateException("Hóa đơn này đã đổi hàng, không thể tạo yêu cầu đổi thêm.");
+        }
 
         // Kiểm tra trạng thái hợp lệ để đổi hàng
         if (!List.of("Hoàn thành", "Vận chuyển thành công", "Đã trả hàng một phần").contains(hoaDon.getTrangThai())) {

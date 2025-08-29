@@ -4,6 +4,7 @@ import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.SanPham.ChiTietSanPhamRepository;
 import com.example.AsmGD1.repository.WebKhachHang.LichSuDoiSanPhamRepository;
+import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
 import org.slf4j.Logger;
@@ -51,6 +52,9 @@ public class AdminExchangeController {
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
+    @Autowired
+    private HoaDonService hoaDonService;
+
     @GetMapping
     public String listExchangeRequests(
             @RequestParam(defaultValue = "0") int page,
@@ -93,7 +97,7 @@ public class AdminExchangeController {
         Map<String, Object> response = new HashMap<>();
 
         try {
-            // Kiểm tra quyền admin
+            // Quyền
             if (authentication == null || !authentication.getAuthorities().stream()
                     .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
                 response.put("success", false);
@@ -110,63 +114,86 @@ public class AdminExchangeController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra tồn kho cho sản phẩm thay thế
+            // Kho
             ChiTietSanPham replacementProduct = lichSu.getChiTietSanPhamThayThe();
             if (replacementProduct.getSoLuongTonKho() < lichSu.getSoLuong()) {
                 response.put("success", false);
-                response.put("message", "Sản phẩm thay thế không đủ tồn kho. Tồn kho hiện tại: " + replacementProduct.getSoLuongTonKho() + ", Yêu cầu: " + lichSu.getSoLuong());
+                response.put("message", "Sản phẩm thay thế không đủ tồn kho. Tồn kho hiện tại: "
+                        + replacementProduct.getSoLuongTonKho() + ", Yêu cầu: " + lichSu.getSoLuong());
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Cập nhật trạng thái yêu cầu đổi hàng
+            // Cập nhật trạng thái yêu cầu
             lichSu.setTrangThai("Đã xác nhận");
             lichSuDoiSanPhamRepository.save(lichSu);
 
-            // Cập nhật chi tiết đơn hàng
+            // Cập nhật CTĐH + kho
             ChiTietDonHang chiTietDonHang = lichSu.getChiTietDonHang();
             chiTietDonHang.setTrangThaiDoiSanPham(true);
             chiTietDonHang.setLyDoDoiHang(lichSu.getLyDoDoiHang());
 
-            // Cập nhật tồn kho
             ChiTietSanPham originalProduct = chiTietDonHang.getChiTietSanPham();
-            originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + lichSu.getSoLuong()); // Thêm lại số lượng sản phẩm gốc
-            replacementProduct.setSoLuongTonKho(replacementProduct.getSoLuongTonKho() - lichSu.getSoLuong()); // Trừ đúng số lượng sản phẩm thay thế
+            originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + lichSu.getSoLuong()); // trả hàng cũ
+            replacementProduct.setSoLuongTonKho(replacementProduct.getSoLuongTonKho() - lichSu.getSoLuong()); // trừ hàng mới
             chiTietSanPhamRepository.save(originalProduct);
             chiTietSanPhamRepository.save(replacementProduct);
 
-            // Cập nhật trạng thái hóa đơn
+            // Cập nhật HĐ gốc → Đã đổi hàng (KHÓA đổi tiếp)
             HoaDon hoaDon = lichSu.getHoaDon();
             hoaDon.setTrangThai("Đã đổi hàng");
             hoaDonRepository.save(hoaDon);
 
-            // Thêm lịch sử hóa đơn
-            LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
-            lichSuHoaDon.setHoaDon(hoaDon);
-            lichSuHoaDon.setTrangThai("Đã đổi hàng");
-            lichSuHoaDon.setThoiGian(LocalDateTime.now());
-            lichSuHoaDon.setGhiChu("Admin đã xác nhận yêu cầu đổi sản phẩm: " + lichSu.getLyDoDoiHang());
-            hoaDon.getLichSuHoaDons().add(lichSuHoaDon);
+            LichSuHoaDon lshd = new LichSuHoaDon();
+            lshd.setHoaDon(hoaDon);
+            lshd.setTrangThai("Đã đổi hàng");
+            lshd.setThoiGian(LocalDateTime.now());
+            lshd.setGhiChu("Admin xác nhận đổi: " + lichSu.getLyDoDoiHang());
+            hoaDon.getLichSuHoaDons().add(lshd);
             hoaDonRepository.save(hoaDon);
 
-            // Gửi thông báo hệ thống cho khách hàng
+            // Tính chênh lệch (tổng)
+            BigDecimal totalOriginal = (lichSu.getTongTienHoan() != null)
+                    ? lichSu.getTongTienHoan()
+                    : chiTietDonHang.getGia().multiply(BigDecimal.valueOf(lichSu.getSoLuong()));
+            BigDecimal totalReplacement = replacementProduct.getGia().multiply(BigDecimal.valueOf(lichSu.getSoLuong()));
+            BigDecimal chenhLech = totalReplacement.subtract(totalOriginal);
+
+            // XỬ LÝ CHÊNH LỆCH
+            String moTa = "Đổi '" + chiTietDonHang.getTenSanPham() + "' → '"
+                    + replacementProduct.getSanPham().getTenSanPham() + "', SL " + lichSu.getSoLuong();
+
+            hoaDonService.xuLyChenhLechSauDuyet(
+                    hoaDon,
+                    chenhLech,
+                    lichSu.getSoLuong(),
+                    replacementProduct.getId(),
+                    moTa
+            );
+
+            // Thông báo + Email
             NguoiDung user = hoaDon.getDonHang().getNguoiDung();
             thongBaoService.taoThongBaoHeThong(
                     user.getTenDangNhap(),
                     "Yêu cầu đổi sản phẩm đã được xác nhận",
-                    "Yêu cầu đổi sản phẩm cho đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã được xác nhận.",
+                    "Đơn " + hoaDon.getDonHang().getMaDonHang()
+                            + (chenhLech.compareTo(BigDecimal.ZERO) > 0
+                            ? " phát sinh phụ thu: " + String.format("%,.0f", chenhLech) + " VNĐ."
+                            : (chenhLech.compareTo(BigDecimal.ZERO) < 0
+                            ? " được hoàn chênh lệch: " + String.format("%,.0f", chenhLech.abs()) + " VNĐ."
+                            : " không phát sinh chênh lệch.")),
                     hoaDon.getDonHang()
             );
 
-            // Gửi email thông báo cho khách hàng
-            String emailContent = "<h2>Xác nhận yêu cầu đổi sản phẩm</h2>" +
-                    "<p>Xin chào " + user.getHoTen() + ",</p>" +
-                    "<p>Yêu cầu đổi sản phẩm của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận.</p>" +
-                    "<p><strong>Lý do:</strong> " + lichSu.getLyDoDoiHang() + "</p>" +
-                    (lichSu.getChenhLechGia() != null && lichSu.getChenhLechGia().compareTo(BigDecimal.ZERO) > 0 ?
-                            "<p><strong>Chênh lệch giá cần thanh toán:</strong> " + formatVND(lichSu.getChenhLechGia().doubleValue()) + "</p>" +
-                                    "<p>Vui lòng liên hệ đội ngũ hỗ trợ để hoàn tất thanh toán chênh lệch.</p>" : "") +
-                    "<p>Cảm ơn bạn đã sử dụng dịch vụ của ACV Store!</p>" +
-                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
+            String emailContent = "<h2>Xác nhận yêu cầu đổi sản phẩm</h2>"
+                    + "<p>Xin chào " + user.getHoTen() + ",</p>"
+                    + "<p>Yêu cầu đổi cho đơn <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận.</p>"
+                    + (chenhLech.compareTo(BigDecimal.ZERO) > 0
+                    ? "<p><strong>Phụ thu:</strong> " + String.format("%,.0f", chenhLech) + " VNĐ.<br>"
+                    + "Hệ thống đã tạo đơn chênh lệch mới (phí ship 0đ). Vui lòng thanh toán trong mục Đơn mua.</p>"
+                    : (chenhLech.compareTo(BigDecimal.ZERO) < 0
+                    ? "<p><strong>Đã hoàn chênh lệch:</strong> " + String.format("%,.0f", chenhLech.abs()) + " VNĐ.</p>"
+                    : "<p>Không phát sinh chênh lệch.</p>")
+            );
             emailService.sendEmail(user.getEmail(), "Xác nhận đổi sản phẩm - ACV Store", emailContent);
 
             response.put("success", true);
