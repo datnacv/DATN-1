@@ -139,7 +139,7 @@
                                             <input type="radio" th:field="*{loai}" value="FREESHIP_FULL" onchange="toggleDiscountFields()"> Miễn phí ship toàn phần
                                         </label>
                                         <label class="form-check-label">
-                                            <input type="radio" th:field="*{loai}" value="FREESHIP_CAP" onchange="toggleDiscountFields()"> Miễn phí ship tối đa X₫
+                                            <input type="radio" th:field="*{loai}" value="FREESHIP_CAP" onchange="toggleDiscountFields()"> Miễn phí ship tối đa X VND
                                         </label>
                                     </div>
                                 </div>
@@ -176,7 +176,7 @@
                                         <div class="input-group">
                                             <input type="text" th:field="*{giaTriGiamToiDa}" class="form-control" id="giaTriGiamToiDa"
                                                    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9,]/g,'')" placeholder="0">
-                                            <span class="input-group-text">₫</span>
+                                            <span class="input-group-text">VND</span>
                                         </div>
                                         <div class="invalid-feedback" id="giaTriGiamToiDaError"></div>
                                     </div>
@@ -185,7 +185,7 @@
                                         <div class="input-group">
                                             <input type="text" th:field="*{giaTriGiamToiThieu}" class="form-control" id="giaTriGiamToiThieu"
                                                    inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9]/g,'')" placeholder="0">
-                                            <span class="input-group-text">₫</span>
+                                            <span class="input-group-text">VND</span>
                                         </div>
                                         <div class="invalid-feedback" id="giaTriGiamToiThieuError"></div>
                                     </div>
@@ -238,7 +238,7 @@
                                 </select>
                                 <!-- Lỗi PTTT bắt buộc -->
                                 <div id="ptttError" class="text-danger small mt-1 d-none">
-                                    Vui lòng chọn ít nhất một phương thức thanh toán.
+                                    vui lòng chọn ít nhất 1 pttt khi chưa chọn
                                 </div>
                             </div>
                         </div>
@@ -434,7 +434,7 @@
         const isFreeshipFull = type === 'FREESHIP_FULL';
         const isFreeshipCap  = type === 'FREESHIP_CAP';
 
-        $('#discountUnit').text(isPercent ? '%' : '₫');
+        $('#discountUnit').text(isPercent ? '%' : 'VND');
 
         // đổi input filter theo kiểu giảm
         const $giaTri = $('#giaTriGiam');
@@ -617,7 +617,7 @@
         // PTTT (không tính 'all')
         const ptttChosen = ($('#paymentMethodSelect').val() || []).filter(v => v !== 'all');
         if (ptttChosen.length === 0){
-            $('#ptttError').text('Vui lòng chọn ít nhất một phương thức thanh toán.').removeClass('d-none');
+            $('#ptttError').text('vui lòng chọn ít nhất 1 pttt khi chưa chọn').removeClass('d-none');
             $('#paymentMethodSelect').next('.select2').find('.select2-selection').addClass('is-invalid-s2');
             isValid = false;
         }

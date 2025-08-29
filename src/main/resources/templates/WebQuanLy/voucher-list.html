@@ -592,6 +592,28 @@
         // Expose global
         window.refreshVoucherSummary = refreshVoucherSummary;
     });
+    // ---- Đổi ký hiệu ₫/đ sang VND trong bảng ----
+    function replaceCurrencyUnitsInTable(){
+        // Các cột: 6=Giá trị, 7=Giá trị tối đa, 8=Điều kiện
+        document.querySelectorAll('table.table tbody tr').forEach(tr=>{
+            [6,7,8].forEach(idx=>{
+                const td = tr.querySelector(`td:nth-child(${idx})`);
+                if(!td) return;
+                const before = td.textContent;
+                // 1) ₫ -> VND
+                let after = before.replace(/₫/g, 'VND');
+                // 2) Số + (khoảng trắng optional) + 'đ' ở cuối -> VND
+                //    (tránh đụng chữ "đ" trong tiếng Việt như "Điều kiện")
+                after = after.replace(/(\d[\d.\s,]*)\s?đ\b/gi, '$1 VND');
+                if (after !== before) td.textContent = after;
+            });
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        replaceCurrencyUnitsInTable();
+    });
+
 </script>
 <script th:if="${successMessage}">
     try { sessionStorage.removeItem('voucherCreateFormState'); } catch(e){}

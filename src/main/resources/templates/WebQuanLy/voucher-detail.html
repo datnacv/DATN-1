@@ -136,14 +136,14 @@
                                             <input type="radio" th:field="*{loai}" value="FREESHIP_FULL" disabled> Miễn phí ship toàn phần
                                         </label>
                                         <label class="form-check-label">
-                                            <input type="radio" th:field="*{loai}" value="FREESHIP_CAP" disabled> Miễn phí ship tối đa X₫
+                                            <input type="radio" th:field="*{loai}" value="FREESHIP_CAP" disabled> Miễn phí ship tối đa X VND
                                         </label>
                                     </div>
                                 </div>
 
                                 <!-- Kiểu giảm (ORDER) -->
                                 <div class="mb-3" id="discountTypeGroup" th:style="${voucher.phamViApDung == 'ORDER' ? 'display:block' : 'display:none'}">
-                                    <label class="form-label"><i class="fas fa-percentage me-2"></i>Kiểu giảm:</label>
+                                    <label class="form-label"><i class="fas a-percentage me-2"></i>Kiểu giảm:</label>
                                     <div class="d-flex flex-wrap gap-4">
                                         <label class="form-check-label">
                                             <input type="radio" th:field="*{loai}" value="PERCENT" disabled> Giảm theo %
@@ -162,7 +162,7 @@
                                             <input type="text" class="form-control" id="giaTriGiam" name="giaTriGiam" readonly
                                                    th:value="${voucher.loai == 'FREESHIP_FULL' ? 'Freeship toàn phần' : (giaTriGiamStr)}" placeholder="0">
                                             <span class="input-group-text" id="discountUnit"
-                                                  th:text="${voucher.loai == 'PERCENT' ? '%' : (voucher.loai == 'FREESHIP_FULL' ? '' : '₫')}">%</span>
+                                                  th:text="${voucher.loai == 'PERCENT' ? '%' : (voucher.loai == 'FREESHIP_FULL' ? '' : 'VND')}">%</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6" id="maxDiscountGroup" th:style="${(voucher.loai == 'PERCENT' or voucher.loai == 'FREESHIP_CAP') ? 'display:block' : 'display:none'}">
@@ -170,7 +170,7 @@
                                         <div class="input-group">
                                             <input type="text" class="form-control" id="giaTriGiamToiDa" name="giaTriGiamToiDa" readonly
                                                    th:value="${giaTriGiamToiDaStr}" placeholder="0">
-                                            <span class="input-group-text">₫</span>
+                                            <span class="input-group-text">VND</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -178,7 +178,7 @@
                                         <div class="input-group">
                                             <input type="text" class="form-control" id="giaTriGiamToiThieu" name="giaTriGiamToiThieu" readonly
                                                    th:value="${giaTriGiamToiThieuStr}" placeholder="0">
-                                            <span class="input-group-text">₫</span>
+                                            <span class="input-group-text">VND</span>
                                         </div>
                                     </div>
                                 </div>

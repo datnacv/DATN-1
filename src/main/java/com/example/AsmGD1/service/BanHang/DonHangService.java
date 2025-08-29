@@ -139,9 +139,12 @@ public class DonHangService {
 
         // ===== LẤY PHÍ SHIP GỐC =====
         // Ưu tiên phí FE gửi (PhiVanChuyen), nếu không có thì fallback session
-        BigDecimal shipBase = Optional.ofNullable(donHangDTO.getPhiVanChuyen())
-                .filter(f -> f.compareTo(BigDecimal.ZERO) > 0)
-                .orElse(getShipBaseFromSession(donHangDTO.getTabId()));
+        BigDecimal shipBase = getShipBaseFromSession(donHangDTO.getTabId());
+// Nếu session chưa có (0) thì mới lấy theo FE gửi (đơn KHÔNG áp mã vẫn có phí ship)
+        if (shipBase == null || shipBase.compareTo(BigDecimal.ZERO) <= 0) {
+            shipBase = Optional.ofNullable(donHangDTO.getPhiVanChuyen()).orElse(BigDecimal.ZERO);
+        }
+
 
         // Nếu không phải giao hàng thì phí ship = 0
         if (!isDelivery) {
