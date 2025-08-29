@@ -110,11 +110,11 @@ public class AdminExchangeController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra tồn kho
+            // Kiểm tra tồn kho cho sản phẩm thay thế
             ChiTietSanPham replacementProduct = lichSu.getChiTietSanPhamThayThe();
             if (replacementProduct.getSoLuongTonKho() < lichSu.getSoLuong()) {
                 response.put("success", false);
-                response.put("message", "Sản phẩm thay thế không đủ tồn kho.");
+                response.put("message", "Sản phẩm thay thế không đủ tồn kho. Tồn kho hiện tại: " + replacementProduct.getSoLuongTonKho() + ", Yêu cầu: " + lichSu.getSoLuong());
                 return ResponseEntity.badRequest().body(response);
             }
 
@@ -129,8 +129,8 @@ public class AdminExchangeController {
 
             // Cập nhật tồn kho
             ChiTietSanPham originalProduct = chiTietDonHang.getChiTietSanPham();
-            originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + lichSu.getSoLuong());
-            replacementProduct.setSoLuongTonKho(replacementProduct.getSoLuongTonKho() - lichSu.getSoLuong());
+            originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + lichSu.getSoLuong()); // Thêm lại số lượng sản phẩm gốc
+            replacementProduct.setSoLuongTonKho(replacementProduct.getSoLuongTonKho() - lichSu.getSoLuong()); // Trừ đúng số lượng sản phẩm thay thế
             chiTietSanPhamRepository.save(originalProduct);
             chiTietSanPhamRepository.save(replacementProduct);
 

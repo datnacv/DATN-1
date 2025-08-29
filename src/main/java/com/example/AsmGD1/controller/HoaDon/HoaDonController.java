@@ -1,6 +1,7 @@
 package com.example.AsmGD1.controller.HoaDon;
 
 import com.example.AsmGD1.dto.HoaDonDTO;
+import com.example.AsmGD1.entity.DiaChiNguoiDung;
 import com.example.AsmGD1.entity.DonHang;
 import com.example.AsmGD1.entity.HoaDon;
 import com.example.AsmGD1.entity.NguoiDung;
@@ -170,21 +171,33 @@ public class HoaDonController {
             String quanHuyen = request.get("quanHuyen");
             String phuongXa = request.get("phuongXa");
             String chiTietDiaChi = request.get("chiTietDiaChi");
-            if (hoTen == null || hoTen.trim().isEmpty() || soDienThoai == null || soDienThoai.trim().isEmpty() ||
+
+            if (hoTen == null || hoTen.trim().isEmpty() ||
+                    soDienThoai == null || soDienThoai.trim().isEmpty() ||
                     tinhThanhPho == null || tinhThanhPho.trim().isEmpty() ||
                     quanHuyen == null || quanHuyen.trim().isEmpty() ||
                     phuongXa == null || phuongXa.trim().isEmpty() ||
                     chiTietDiaChi == null || chiTietDiaChi.trim().isEmpty()) {
-                throw new IllegalArgumentException("Thông tin khách hàng không được để trống.");
+                throw new IllegalArgumentException("Thông tin địa chỉ không được để trống.");
             }
 
-            hoaDon.getNguoiDung().setHoTen(hoTen);
-            hoaDon.getNguoiDung().setSoDienThoai(soDienThoai);
-            hoaDon.getNguoiDung().setTinhThanhPho(tinhThanhPho);
-            hoaDon.getNguoiDung().setQuanHuyen(quanHuyen);
-            hoaDon.getNguoiDung().setPhuongXa(phuongXa);
-            hoaDon.getNguoiDung().setChiTietDiaChi(chiTietDiaChi);
+            // Cập nhật hoặc tạo mới DiaChiNguoiDung
+            DiaChiNguoiDung diaChi = hoaDon.getDiaChi();
+            if (diaChi == null) {
+                diaChi = new DiaChiNguoiDung();
+                diaChi.setNguoiDung(hoaDon.getNguoiDung());
+                diaChi.setThoiGianTao(LocalDateTime.now());
+            }
 
+            diaChi.setNguoiNhan(hoTen);
+            diaChi.setSoDienThoaiNguoiNhan(soDienThoai);
+            diaChi.setTinhThanhPho(tinhThanhPho);
+            diaChi.setQuanHuyen(quanHuyen);
+            diaChi.setPhuongXa(phuongXa);
+            diaChi.setChiTietDiaChi(chiTietDiaChi);
+            diaChi.setMacDinh(true); // Có thể điều chỉnh logic này tùy theo yêu cầu
+
+            hoaDon.setDiaChi(diaChi);
             hoaDonService.save(hoaDon);
 
             Map<String, Object> response = new HashMap<>();
@@ -194,6 +207,7 @@ public class HoaDonController {
             return ResponseEntity.badRequest().body(Map.of("error", "Lỗi khi cập nhật hóa đơn: " + e.getMessage()));
         }
     }
+
 
     @GetMapping("/download/{id}")
     public ResponseEntity<byte[]> downloadHoaDon(@PathVariable String id) {
