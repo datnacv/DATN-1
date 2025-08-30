@@ -845,7 +845,7 @@ public class KHDonMuaController {
             String lyDoGop = (description != null && !description.isBlank())
                     ? (reason + ": " + description)
                     : reason;
-            hoaDonService.processReturn(id, selectedProductIds, lyDoGop);
+            hoaDonService.processReturnKH(id, selectedProductIds, lyDoGop);
 
             // 6) Lấy trạng thái sau cập nhật để trả về client
             HoaDon hoaDonAfter = hoaDonRepo.findById(id).orElse(hoaDon);

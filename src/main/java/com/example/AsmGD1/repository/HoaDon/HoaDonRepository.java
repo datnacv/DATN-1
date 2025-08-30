@@ -16,6 +16,8 @@ import java.util.UUID;
 @Repository
 public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
 
+    List<HoaDon> findByTrangThai(String trangThai);
+
     List<HoaDon> findByDonHang_NguoiDungIdAndDonHang_MaDonHangContainingIgnoreCase(UUID nguoiDungId, String maDonHang);
     Optional<HoaDon> findByDonHangId(UUID donHangId);
 

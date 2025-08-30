@@ -945,7 +945,7 @@
           <td>
             <span th:text="${chiTiet.ghiChu != null ? chiTiet.ghiChu : 'Không có'}"></span>
           </td>
-          <td th:if="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Chờ xử lý đổi hàng' or currentStatus == 'Đã đổi hàng' or currentStatus == 'Hoàn thành'}">
+          <td th:if="${currentStatus == 'Vận chuyển thành công' or currentStatus == 'Chờ xử lý đổi hàng' or currentStatus == 'Đã đổi hàng'}">
             <button class="btn-exchange"
                     th:attr="onclick=|requestExchangeProduct('${hoaDon.id}', '${chiTiet.id}')|"
                     th:disabled="${chiTiet.trangThaiDoiSanPham}">
