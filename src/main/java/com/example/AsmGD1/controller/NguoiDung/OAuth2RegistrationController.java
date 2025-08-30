@@ -111,7 +111,7 @@ public class OAuth2RegistrationController {
             nguoiDung.setPhuongXa(phuongXa);
             nguoiDung.setChiTietDiaChi(chiTietDiaChi);
 
-            // Lưu người dùng
+            // Lưu người dùng vào cơ sở dữ liệu
             nguoiDungService.save(nguoiDung);
 
             // Cập nhật authentication
@@ -144,4 +144,5 @@ public class OAuth2RegistrationController {
 
         return "redirect:/cart";
     }
+
 }

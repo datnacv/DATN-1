@@ -42,7 +42,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
         attributes.put("email", nguoiDung.getEmail());
         attributes.put("name", nguoiDung.getHoTen());
-        attributes.put("id", nguoiDung.getId().toString());
+        attributes.put("id", nguoiDung.getId() != null ? nguoiDung.getId().toString() : null);
 
         return new DefaultOAuth2User(
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + nguoiDung.getVaiTro().toUpperCase())),
@@ -66,13 +66,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 return existingUser; // Trả về người dùng hiện có nếu tìm thấy
             }
 
+            // Tạo đối tượng NguoiDung nhưng không lưu ngay
             NguoiDung newUser = new NguoiDung();
             newUser.setEmail(email);
             newUser.setHoTen(name != null ? name : "Unknown");
             newUser.setVaiTro("CUSTOMER");
             newUser.setThoiGianTao(LocalDateTime.now());
             newUser.setTrangThai(true);
-            return nguoiDungService.save(newUser);
+            return newUser; // Trả về đối tượng mà không lưu vào DB
         }
     }
 }
