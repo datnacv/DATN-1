@@ -15,7 +15,6 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -33,11 +32,15 @@ public class SecurityConfig implements ApplicationContextAware {
 
     private final CustomUserDetailsService customUserDetailsService;
     private final HttpSession session;
+    private final CustomOAuth2SuccessHandler oauth2SuccessHandler;
     private ApplicationContext applicationContext;
 
-    public SecurityConfig(CustomUserDetailsService customUserDetailsService, HttpSession session) {
+    public SecurityConfig(CustomUserDetailsService customUserDetailsService,
+                          HttpSession session,
+                          CustomOAuth2SuccessHandler oauth2SuccessHandler) {
         this.customUserDetailsService = customUserDetailsService;
         this.session = session;
+        this.oauth2SuccessHandler = oauth2SuccessHandler;
     }
 
     @Override
@@ -133,35 +136,18 @@ public class SecurityConfig implements ApplicationContextAware {
                         .requestMatchers("/acvstore/login", "/acvstore/register-face", "/acvstore/verify-face").permitAll()
                         .requestMatchers("/acvstore/vi/**").hasRole("ADMIN")
                         .requestMatchers("/acvstore/verify-success").authenticated()
-
-                        // Quản lý sản phẩm - Cả ADMIN và EMPLOYEE đều có thể xem sản phẩm
                         .requestMatchers("/acvstore/san-pham", "/acvstore/san-pham/get/**").hasAnyRole("ADMIN", "EMPLOYEE")
                         .requestMatchers("/acvstore/san-pham/save", "/acvstore/san-pham/update-status", "/acvstore/san-pham/upload-image").hasRole("ADMIN")
-
-                        // Thuộc tính sản phẩm - CHỈ ADMIN
                         .requestMatchers("/acvstore/xuat-xu/**", "/acvstore/mau-sac/**", "/acvstore/kich-co/**",
                                 "/acvstore/chat-lieu/**", "/acvstore/kieu-dang/**", "/acvstore/co-ao/**",
                                 "/acvstore/tay-ao/**", "/acvstore/danh-muc/**", "/acvstore/thuong-hieu/**").hasRole("ADMIN")
-
-                        // Quản lý nhân viên - CHỈ ADMIN
                         .requestMatchers("/acvstore/employees/**").hasRole("ADMIN")
-
-                        // Truy cập bảng điều khiển
                         .requestMatchers("/acvstore/admin-dashboard").hasRole("ADMIN")
                         .requestMatchers("/acvstore/employee-dashboard").hasRole("EMPLOYEE")
-
-                        // Thống kê - Cả ADMIN và EMPLOYEE
                         .requestMatchers("/acvstore/thong-ke").hasAnyRole("ADMIN", "EMPLOYEE")
-
-                        // Bán hàng và hóa đơn - Cả ADMIN và EMPLOYEE
                         .requestMatchers("/acvstore/ban-hang/**", "/acvstore/hoa-don/**").hasAnyRole("ADMIN", "EMPLOYEE")
-
-                        // Giảm giá - Cả ADMIN và EMPLOYEE
                         .requestMatchers("/acvstore/phieu-giam-gia/**", "/acvstore/chien-dich-giam-gia/**").hasAnyRole("ADMIN", "EMPLOYEE")
-
-                        // Khách hàng - Cả ADMIN và EMPLOYEE
                         .requestMatchers("/acvstore/customers/**").hasAnyRole("ADMIN", "EMPLOYEE")
-
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -229,6 +215,7 @@ public class SecurityConfig implements ApplicationContextAware {
 
     @Bean
     public SecurityFilterChain customerSecurityFilterChain(HttpSecurity http) throws Exception {
+        NguoiDungService nguoiDungService = applicationContext.getBean(NguoiDungService.class);
         http
                 .securityMatcher("/customers/**")
                 .authorizeHttpRequests(auth -> auth
@@ -255,16 +242,10 @@ public class SecurityConfig implements ApplicationContextAware {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/customers/login")
-                        .userInfoEndpoint(userInfo -> userInfo.userService(new CustomOAuth2UserService(applicationContext.getBean(NguoiDungService.class), session)))
-                        .successHandler((request, response, authentication) -> {
-                            HttpSession session = request.getSession();
-                            if (session.getAttribute("pendingUser") != null) {
-                                response.sendRedirect("/customers/oauth2/register");
-                            } else {
-                                SecurityContextHolder.getContext().setAuthentication(authentication);
-                                response.sendRedirect("/");
-                            }
-                        })
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(new CustomOAuth2UserService(nguoiDungService, session))
+                        )
+                        .successHandler(oauth2SuccessHandler)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/customers/logout")
@@ -293,6 +274,7 @@ public class SecurityConfig implements ApplicationContextAware {
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+        NguoiDungService nguoiDungService = applicationContext.getBean(NguoiDungService.class);
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/chitietsanpham", "/new", "/all", "/bestsellers", "/category/**", "/search/**", "/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user", "/css/**", "/js/**", "/image/**", "/images/**", "/vi/**", "/uploads/**").permitAll()
@@ -310,15 +292,10 @@ public class SecurityConfig implements ApplicationContextAware {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/customers/login")
-                        .userInfoEndpoint(userInfo -> userInfo.userService(new CustomOAuth2UserService(applicationContext.getBean(NguoiDungService.class), session)))
-                        .successHandler((request, response, authentication) -> {
-                            HttpSession session = request.getSession();
-                            if (session.getAttribute("pendingUser") != null) {
-                                response.sendRedirect("/customers/oauth2/register");
-                            } else {
-                                response.sendRedirect("/");
-                            }
-                        })
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(new CustomOAuth2UserService(nguoiDungService, session))
+                        )
+                        .successHandler(oauth2SuccessHandler)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/customers/logout")
@@ -342,18 +319,6 @@ public class SecurityConfig implements ApplicationContextAware {
                 .csrf(csrf -> csrf.disable());
 
         return http.build();
-    }
-
-    @Bean
-    public AuthenticationSuccessHandler oauth2SuccessHandler() {
-        return (request, response, authentication) -> {
-            HttpSession session = request.getSession();
-            if (session.getAttribute("pendingUser") != null) {
-                response.sendRedirect("/customers/oauth2/register");
-            } else {
-                response.sendRedirect("/");
-            }
-        };
     }
 
     @Bean

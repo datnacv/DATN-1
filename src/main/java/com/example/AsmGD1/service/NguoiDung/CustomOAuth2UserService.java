@@ -1,7 +1,7 @@
 package com.example.AsmGD1.service.NguoiDung;
 
-
 import com.example.AsmGD1.entity.NguoiDung;
+import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
@@ -31,19 +32,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oAuth2User = super.loadUser(userRequest);
         NguoiDung nguoiDung = processOAuth2User(oAuth2User, userRequest.getClientRegistration().getRegistrationId());
 
-        // Kiểm tra nếu người dùng chưa hoàn tất đăng ký
-        boolean isNewUser = nguoiDung.getTenDangNhap() == null || nguoiDung.getMatKhau() == null;
-        if (isNewUser) {
-            session.setAttribute("pendingUser", nguoiDung);
-        } else {
-            session.removeAttribute("pendingUser");
-        }
-
-        // Trả về DefaultOAuth2User với thông tin NguoiDung
-        Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
+        // Wrap NguoiDung in DefaultOAuth2User
+        Map<String, Object> attributes = new HashMap<>();
         attributes.put("email", nguoiDung.getEmail());
         attributes.put("name", nguoiDung.getHoTen());
-        attributes.put("id", nguoiDung.getId().toString()); // Thêm ID vào attributes
+        attributes.put("id", nguoiDung.getId().toString());
 
         return new DefaultOAuth2User(
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + nguoiDung.getVaiTro().toUpperCase())),
@@ -60,17 +53,26 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new IllegalArgumentException("Email không thể null khi đăng nhập OAuth2");
         }
 
-        NguoiDung existingUser = nguoiDungService.getUserByEmail(email);
-        if (existingUser != null) {
-            return existingUser; // Trả về người dùng hiện có nếu tìm thấy
+        NguoiDung nguoiDung = nguoiDungService.getUserByEmail(email);
+        if (nguoiDung == null) {
+            // Create new user for OAuth2
+            nguoiDung = new NguoiDung();
+            nguoiDung.setId(UUID.randomUUID());
+            nguoiDung.setEmail(email);
+            nguoiDung.setHoTen(name != null ? name : "Unknown");
+            nguoiDung.setVaiTro("CUSTOMER");
+            nguoiDung.setThoiGianTao(LocalDateTime.now());
+            nguoiDung.setTrangThai(true);
+            nguoiDungService.save(nguoiDung);
         }
 
-        NguoiDung newUser = new NguoiDung();
-        newUser.setEmail(email);
-        newUser.setHoTen(name != null ? name : "Unknown");
-        newUser.setVaiTro("CUSTOMER");
-        newUser.setThoiGianTao(LocalDateTime.now());
-        newUser.setTrangThai(true);
-        return nguoiDungService.save(newUser);
+        // Chỉ set pendingUser nếu người dùng mới và chưa có tenDangNhap hoặc matKhau
+        if (nguoiDung.getTenDangNhap() == null || nguoiDung.getMatKhau() == null) {
+            session.setAttribute("pendingUser", nguoiDung);
+        } else {
+            session.removeAttribute("pendingUser");
+        }
+
+        return nguoiDung;
     }
 }
