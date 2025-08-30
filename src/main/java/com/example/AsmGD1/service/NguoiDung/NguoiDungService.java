@@ -50,27 +50,35 @@ public class NguoiDungService {
             nguoiDung.setThoiGianTao(LocalDateTime.now());
             nguoiDung.setTrangThai(true);
 
-            // Kiểm tra tên đăng nhập trùng lặp
-            if (nguoiDung.getTenDangNhap() != null && nguoiDungRepository.findByTenDangNhap(nguoiDung.getTenDangNhap()).isPresent()) {
+            // Kiểm tra các trường bắt buộc
+            if (nguoiDung.getTenDangNhap() == null || nguoiDung.getTenDangNhap().trim().isEmpty()) {
+                throw new IllegalArgumentException("Tên đăng nhập không được để trống.");
+            }
+            if (nguoiDung.getMatKhau() == null || nguoiDung.getMatKhau().trim().isEmpty()) {
+                throw new IllegalArgumentException("Mật khẩu không được để trống.");
+            }
+            if (nguoiDung.getSoDienThoai() == null || nguoiDung.getSoDienThoai().trim().isEmpty()) {
+                throw new IllegalArgumentException("Số điện thoại không được để trống.");
+            }
+            if (nguoiDung.getEmail() == null || nguoiDung.getEmail().trim().isEmpty()) {
+                throw new IllegalArgumentException("Email không được để trống.");
+            }
+
+            // Kiểm tra trùng lặp
+            if (nguoiDungRepository.findByTenDangNhap(nguoiDung.getTenDangNhap()).isPresent()) {
                 throw new RuntimeException("Tên đăng nhập đã tồn tại.");
             }
-
-            // Kiểm tra email trùng lặp
-            if (nguoiDung.getEmail() != null && nguoiDungRepository.existsByEmail(nguoiDung.getEmail())) {
+            if (nguoiDungRepository.existsByEmail(nguoiDung.getEmail())) {
                 throw new RuntimeException("Email đã tồn tại.");
             }
-
-            // Kiểm tra số điện thoại trùng lặp
-            if (nguoiDung.getSoDienThoai() != null && nguoiDungRepository.existsBySoDienThoai(nguoiDung.getSoDienThoai())) {
+            if (nguoiDungRepository.existsBySoDienThoai(nguoiDung.getSoDienThoai())) {
                 throw new RuntimeException("Số điện thoại đã tồn tại.");
             }
 
-            // Mã hóa mật khẩu nếu có
-            if (nguoiDung.getMatKhau() != null && !nguoiDung.getMatKhau().isEmpty()) {
-                nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
-            }
+            // Mã hóa mật khẩu
+            nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));
         } else {
-            // Khi cập nhật, chỉ mã hóa mật khẩu nếu nó thay đổi
+            // Khi cập nhật, kiểm tra mật khẩu nếu thay đổi
             Optional<NguoiDung> existing = nguoiDungRepository.findById(nguoiDung.getId());
             if (existing.isPresent() && nguoiDung.getMatKhau() != null && !nguoiDung.getMatKhau().isEmpty()) {
                 nguoiDung.setMatKhau(passwordEncoder.encode(nguoiDung.getMatKhau()));

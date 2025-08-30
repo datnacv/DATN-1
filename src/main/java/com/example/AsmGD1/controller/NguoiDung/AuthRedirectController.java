@@ -1,5 +1,6 @@
 package com.example.AsmGD1.controller.NguoiDung;
 
+import com.example.AsmGD1.entity.NguoiDung;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -14,25 +15,22 @@ public class AuthRedirectController {
             return "redirect:/acvstore/login?error=unauthorized";
         }
 
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        boolean isEmployee = auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE"));
+        NguoiDung nguoiDung = (NguoiDung) auth.getPrincipal();
+        String vaiTro = nguoiDung.getVaiTro();
 
-        // Nếu login bằng customer → không cho truy cập
-        if (!isAdmin && !isEmployee) {
-            SecurityContextHolder.clearContext(); // clear phiên đăng nhập
+        if ("CUSTOMER".equalsIgnoreCase(vaiTro)) {
+            SecurityContextHolder.clearContext();
             return "redirect:/acvstore/login?error=accessDenied";
-        }
-
-        if (isAdmin) {
-            // Chuyển hướng admin đến trang xác định khuôn mặt
-            return "redirect:/acvstore/employees/verify-face";
-//            return "redirect:/acvstore/thong-ke";
-        } else {
-            // Chuyển hướng employee đến dashboard
-//            return "redirect:/acvstore/employees/employee-dashboard";
+        } else if ("ADMIN".equalsIgnoreCase(vaiTro)) {
+            byte[] descriptor = nguoiDung.getFaceDescriptor();
+            if (descriptor == null || descriptor.length == 0) {
+                return "redirect:/acvstore/register-face";
+            }
+            return "redirect:/acvstore/verify-face";
+        } else if ("EMPLOYEE".equalsIgnoreCase(vaiTro)) {
             return "redirect:/acvstore/employee-dashboard";
+        } else {
+            return "redirect:/acvstore/login?error=unauthorizedRole";
         }
     }
 

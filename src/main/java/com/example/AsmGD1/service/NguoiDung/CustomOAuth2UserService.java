@@ -1,6 +1,5 @@
 package com.example.AsmGD1.service.NguoiDung;
 
-
 import com.example.AsmGD1.entity.NguoiDung;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -43,7 +42,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Map<String, Object> attributes = new HashMap<>(oAuth2User.getAttributes());
         attributes.put("email", nguoiDung.getEmail());
         attributes.put("name", nguoiDung.getHoTen());
-        attributes.put("id", nguoiDung.getId().toString()); // Thêm ID vào attributes
+        attributes.put("id", nguoiDung.getId() != null ? nguoiDung.getId().toString() : null);
 
         return new DefaultOAuth2User(
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + nguoiDung.getVaiTro().toUpperCase())),
@@ -60,17 +59,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new IllegalArgumentException("Email không thể null khi đăng nhập OAuth2");
         }
 
-        NguoiDung existingUser = nguoiDungService.getUserByEmail(email);
-        if (existingUser != null) {
-            return existingUser; // Trả về người dùng hiện có nếu tìm thấy
-        }
+        // Đồng bộ hóa để tránh xung đột
+        synchronized (email.intern()) {
+            NguoiDung existingUser = nguoiDungService.getUserByEmail(email);
+            if (existingUser != null) {
+                return existingUser; // Trả về người dùng hiện có nếu tìm thấy
+            }
 
-        NguoiDung newUser = new NguoiDung();
-        newUser.setEmail(email);
-        newUser.setHoTen(name != null ? name : "Unknown");
-        newUser.setVaiTro("CUSTOMER");
-        newUser.setThoiGianTao(LocalDateTime.now());
-        newUser.setTrangThai(true);
-        return nguoiDungService.save(newUser);
+            // Tạo đối tượng NguoiDung nhưng không lưu ngay
+            NguoiDung newUser = new NguoiDung();
+            newUser.setEmail(email);
+            newUser.setHoTen(name != null ? name : "Unknown");
+            newUser.setVaiTro("CUSTOMER");
+            newUser.setThoiGianTao(LocalDateTime.now());
+            newUser.setTrangThai(true);
+            return newUser; // Trả về đối tượng mà không lưu vào DB
+        }
     }
 }
