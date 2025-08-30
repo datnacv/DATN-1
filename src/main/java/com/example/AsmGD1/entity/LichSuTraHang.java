@@ -37,4 +37,7 @@ public class LichSuTraHang {
 
     @Column(name = "trang_thai")
     private String trangThai;
+
+    @Column(name = "thoi_gian_xac_nhan")
+    private LocalDateTime thoiGianXacNhan; // Thêm trường này
 }

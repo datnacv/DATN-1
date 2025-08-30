@@ -233,6 +233,14 @@
                 </div>
             </li>
 
+            <!-- Quản lý trả hàng - ONLY for ADMIN -->
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                <a th:href="@{/acvstore/quan-ly-tra-hang}" class="nav-link d-flex align-items-center">
+                    <i class="fa-solid fa-undo-alt"></i>
+                    <span class="nav-text">Quản lý trả hàng</span>
+                </a>
+            </li>
+
             <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                 <a th:href="@{/acvstore/exchange-requests}" class="nav-link d-flex align-items-center">
                     <i class="fa-solid fa-user-tie"></i>

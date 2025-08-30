@@ -11,6 +11,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Add SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
     <script th:src="@{/js/notification.js}"></script>
     <style>
@@ -657,7 +659,13 @@
 
     function confirmReturn() {
         if (!hoaDonId) {
-            alert('Không thể xác định hóa đơn. Vui lòng tải lại trang.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Không thể xác định hóa đơn. Vui lòng tải lại trang.',
+                confirmButtonColor: '#153054',
+                confirmButtonText: 'OK'
+            });
             return;
         }
 
@@ -668,40 +676,97 @@
         console.log('Reason:', lyDoTraHang);
 
         if (checkboxes.length === 0) {
-            alert('Vui lòng chọn ít nhất một sản phẩm để trả.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Chưa chọn sản phẩm',
+                text: 'Vui lòng chọn ít nhất một sản phẩm để trả.',
+                confirmButtonColor: '#153054',
+                confirmButtonText: 'OK'
+            });
             return;
         }
         if (!lyDoTraHang) {
-            alert('Vui lòng nhập lý do trả hàng.');
+            Swal.fire({
+                icon: 'warning',
+                title: 'Thiếu lý do',
+                text: 'Vui lòng nhập lý do trả hàng.',
+                confirmButtonColor: '#153054',
+                confirmButtonText: 'OK'
+            });
             return;
         }
 
-        // Thêm hộp thoại xác nhận
-        if (!confirm('Bạn có chắc chắn muốn thực hiện trả hàng cho các sản phẩm đã chọn?')) {
-            return; // Người dùng hủy, không thực hiện trả hàng
-        }
+        // Confirmation dialog
+        Swal.fire({
+            title: 'Xác nhận trả hàng',
+            text: 'Bạn có chắc chắn muốn thực hiện trả hàng cho các sản phẩm đã chọn?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#153054',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading dialog
+                Swal.fire({
+                    title: 'Đang xử lý',
+                    text: 'Vui lòng chờ trong giây lát...',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
-        const chiTietDonHangIds = Array.from(checkboxes).map(cb => cb.value);
+                const chiTietDonHangIds = Array.from(checkboxes).map(cb => cb.value);
 
-        $.ajax({
-            url: '/acvstore/tra-hang/confirm/' + hoaDonId,
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                chiTietDonHangIds: chiTietDonHangIds,
-                lyDoTraHang: lyDoTraHang
-            }),
-            success: function(response) {
-                if (response.success) {
-                    alert(response.message);
-                    window.location.href = '/acvstore/hoa-don/detail/' + hoaDonId;
-                } else {
-                    alert(response.error || 'Đã xảy ra lỗi khi trả hàng.');
-                }
-            },
-            error: function(xhr) {
-                console.error('Error:', xhr.responseText);
-                alert(xhr.responseJSON?.error || 'Lỗi kết nối server.');
+                $.ajax({
+                    url: '/acvstore/tra-hang/confirm/' + hoaDonId,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        chiTietDonHangIds: chiTietDonHangIds,
+                        lyDoTraHang: lyDoTraHang
+                    }),
+                    success: function(response) {
+                        // Close loading dialog
+                        Swal.close();
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: response.message,
+                                confirmButtonColor: '#153054',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                window.location.href = '/acvstore/hoa-don/detail/' + hoaDonId;
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Lỗi',
+                                text: response.error || 'Đã xảy ra lỗi khi trả hàng.',
+                                confirmButtonColor: '#153054',
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        // Close loading dialog
+                        Swal.close();
+                        console.error('Error:', xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi kết nối',
+                            text: xhr.responseJSON?.error || 'Lỗi kết nối server.',
+                            confirmButtonColor: '#153054',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
             }
         });
     }
