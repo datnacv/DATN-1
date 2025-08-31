@@ -844,7 +844,7 @@
                                             <div class="col-md-4">
                                                 <label class="form-label">Giá bán chung</label>
                                                 <div class="input-group">
-                                                    <span class="input-group-text">₫</span>
+                                                    <span class="input-group-text">VNĐ</span>
                                                     <input type="number" class="form-control" id="bulkPrice" step="1000" min="0" style="width: 100px;">
                                                 </div>
                                             </div>
@@ -1272,8 +1272,14 @@
             // Validate images for each color
             colors.forEach(colorId => {
                 const inputElement = $(`#image-input-${colorId}`);
-                if (!inputElement[0] || !inputElement[0].files || inputElement[0].files.length === 0) {
-                    showError(`image-input-${colorId}`, `Vui lòng tải lên ít nhất một ảnh cho màu ${$('#colorSelect option[value="' + colorId + '"]').text()}.`);
+                const filesLength = inputElement[0]?.files?.length || 0;
+                const colorText = $('#colorSelect option[value="' + colorId + '"]').text();
+
+                if (filesLength === 0) {
+                    showError(`image-input-${colorId}`, `Vui lòng tải lên ít nhất một ảnh cho màu ${colorText}.`);
+                    isValid = false;
+                } else if (filesLength > 3) {
+                    showError(`image-input-${colorId}`, `Tối đa chỉ được chọn 3 ảnh cho màu ${colorText}. Vui lòng chọn lại.`);
                     isValid = false;
                 }
             });
@@ -1451,6 +1457,21 @@
             const anyChecked = $(this).is(':checked');
             $('#bulkEditRow').toggleClass('active', anyChecked);
         });
+
+        // Thêm validation cho input file ảnh màu
+        document.addEventListener('change', function(event) {
+            if (event.target.classList.contains('color-file-input')) {
+                const input = event.target;
+                const colorId = input.id.split('-')[2];
+                if (input.files.length > 3) {
+                    alert('Bạn chỉ được chọn tối đa 3 ảnh cho mỗi màu sắc. Vui lòng chọn lại.');
+                    input.value = '';
+                    updateFileInputLabel(input, colorId);
+                    return;
+                }
+                updateFileInputLabel(input, colorId);
+            }
+        });
     });
 
     function generateVariations() {
@@ -1469,52 +1490,57 @@
         colors.forEach((colorId, colorIndex) => {
             const colorText = $('#colorSelect option[value="' + colorId + '"]').text();
             let groupHtml = `
-                <tr class="color-group" data-color="${colorId}">
-                    <td colspan="6" style="background-color: #f8f9fa; font-weight: bold;">Màu: ${colorText}</td>
-                </tr>
-                <tr class="color-group-image" data-color="${colorId}">
-                    <td colspan="6">
-                        <div class="custom-file-input-wrapper">
-                            <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
-                            <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
-                            <input type="file" class="color-file-input" id="image-input-${colorId}" name="colorImages[${colorId}]" multiple accept="image/*" onchange="updateFileInputLabel(this, '${colorId}')">
-                        </div>
-                        <div class="image-preview-container mt-2" id="preview-${colorId}"></div>
-                    </td>
-                </tr>
-            `;
+            <tr class="color-group" data-color="${colorId}">
+                <td colspan="6" style="background-color: #f8f9fa; font-weight: bold;">Màu: ${colorText}</td>
+            </tr>
+            <tr class="color-group-image" data-color="${colorId}">
+                <td colspan="6">
+                    <div class="custom-file-input-wrapper">
+                        <span class="custom-file-input-button"><i class="fas fa-upload"></i> Chọn ảnh</span>
+                        <span class="custom-file-input-label" data-placeholder="Chưa có ảnh nào được chọn">Chưa có ảnh nào được chọn</span>
+                        <input type="file" class="color-file-input" id="image-input-${colorId}" name="colorImages[${colorId}]" multiple accept="image/*" onchange="updateFileInputLabel(this, '${colorId}')">
+                    </div>
+                    <div class="image-preview-container mt-2" id="preview-${colorId}"></div>
+                </td>
+            </tr>
+        `;
             container.append(groupHtml);
 
             sizes.forEach((sizeId, sizeIndex) => {
                 const sizeText = $('#sizeSelect option[value="' + sizeId + '"]').text();
                 const variationHtml = `
-                    <tr class="variation-item" data-index="${variationIndex}" data-color="${colorId}">
-                        <td><input type="checkbox" class="variation-checkbox" name="selectedVariations" value="${variationIndex}"></td>
-                        <td>${variationIndex + 1}</td>
-                        <td>${colorText} - ${sizeText}</td>
-                        <td>
-                            <div class="input-group">
-                                <span class="input-group-text">₫</span>
-                                <input type="number" class="form-control variation-price" name="variations[${variationIndex}].price" step="1000" min="0" required>
-                            </div>
+                <tr class="variation-item" data-index="${variationIndex}" data-color="${colorId}">
+                    <td><input type="checkbox" class="variation-checkbox" name="selectedVariations" value="${variationIndex}"></td>
+                    <td>${variationIndex + 1}</td>
+                    <td>${colorText} - ${sizeText}</td>
+                    <td>
+                        <div class="input-group">
+                            <span class="input-group-text">₫</span>
+                            <input type="number" class="form-control variation-price" name="variations[${variationIndex}].price" step="1000" min="0" required>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-boxes"></i></span>
+                            <input type="number" class="form-control variation-stock" name="variations[${variationIndex}].stockQuantity" min="0" required>
                         </td>
-                        <td>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-boxes"></i></span>
-                                <input type="number" class="form-control variation-stock" name="variations[${variationIndex}].stockQuantity" min="0" required>
-                            </div>
-                        </td>
-                        <td>
-                            <button type="button" class="btn btn-danger btn-sm remove-variation" onclick="removeVariation(this)">Xóa</button>
-                        </td>
-                        <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
-                        <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizeId}">
-                    </tr>
-                `;
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm remove-variation" onclick="removeVariation(this)">Xóa</button>
+                    </td>
+                    <input type="hidden" name="variations[${variationIndex}].colorId" value="${colorId}">
+                    <input type="hidden" name="variations[${variationIndex}].sizeId" value="${sizeId}">
+                </tr>
+            `;
                 container.append(variationHtml);
                 variationIndex++;
             });
         });
+
+        // Fetch existing images for the selected product
+        const productId = $('#productSelect').val();
+        if (productId) {
+            fetchExistingImages(productId);
+        }
     }
 
     function toggleSelectAll() {
@@ -1564,6 +1590,16 @@
         const label = wrapper.querySelector('.custom-file-input-label');
         const placeholder = label.getAttribute('data-placeholder') || 'Chưa có ảnh nào được chọn';
 
+        // Validate max 3 images
+        if (inputElement.files && inputElement.files.length > 3) {
+            alert('Bạn chỉ được chọn tối đa 3 ảnh cho mỗi màu sắc. Vui lòng chọn lại.');
+            inputElement.value = '';
+            label.textContent = placeholder;
+            const previewContainer = document.getElementById(`preview-${colorId}`);
+            if (previewContainer) previewContainer.innerHTML = '';
+            return;
+        }
+
         if (inputElement.files && inputElement.files.length > 0) {
             if (inputElement.files.length === 1) {
                 label.textContent = inputElement.files[0].name;
@@ -1583,14 +1619,71 @@
                     const previewDiv = document.createElement('div');
                     previewDiv.classList.add('image-preview');
                     previewDiv.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview ${index + 1}">
-                        <button type="button" class="remove-image" onclick="removeImagePreview(this, '${colorId}', ${index})">×</button>
-                    `;
+                    <img src="${e.target.result}" alt="Preview ${index + 1}">
+                    <button type="button" class="remove-image" onclick="removeImagePreview(this, '${colorId}', ${index})">×</button>
+                `;
                     previewContainer.appendChild(previewDiv);
                 };
                 reader.readAsDataURL(file);
             });
         }
+    }
+
+    function fetchExistingImages(productId) {
+        $.ajax({
+            url: `/acvstore/chi-tiet-san-pham/api/product-images/${productId}`,
+            type: 'GET',
+            success: function(response) {
+                if (response && response.images) {
+                    response.images.forEach(image => {
+                        const colorId = image.colorId;
+                        const previewContainer = document.getElementById(`preview-${colorId}`);
+                        if (previewContainer) {
+                            const previewDiv = document.createElement('div');
+                            previewDiv.classList.add('image-preview');
+                            previewDiv.innerHTML = `
+                            <img src="${image.url}" alt="Existing Image">
+                            <button type="button" class="remove-image" onclick="removeExistingImage('${image.id}', '${colorId}')">×</button>
+                        `;
+                            previewContainer.appendChild(previewDiv);
+
+                            const inputElement = document.getElementById(`image-input-${colorId}`);
+                            const label = inputElement.closest('.custom-file-input-wrapper').querySelector('.custom-file-input-label');
+                            label.textContent = 'Đã có ảnh được tải lên';
+                        }
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('Lỗi khi lấy ảnh hiện có:', xhr.statusText);
+            }
+        });
+    }
+
+    function removeExistingImage(imageId, colorId) {
+        $.ajax({
+            url: `/acvstore/chi-tiet-san-pham/api/delete-image/${imageId}`,
+            type: 'DELETE',
+            success: function() {
+                const previewContainer = document.getElementById(`preview-${colorId}`);
+                if (previewContainer) {
+                    const imagePreviews = previewContainer.querySelectorAll('.image-preview');
+                    imagePreviews.forEach(preview => {
+                        if (preview.querySelector('img').src.includes(imageId)) {
+                            preview.remove();
+                        }
+                    });
+
+                    const inputElement = document.getElementById(`image-input-${colorId}`);
+                    const label = inputElement.closest('.custom-file-input-wrapper').querySelector('.custom-file-input-label');
+                    const remainingImages = previewContainer.querySelectorAll('.image-preview').length;
+                    label.textContent = remainingImages > 0 ? `${remainingImages} ảnh đã được chọn` : 'Chưa có ảnh nào được chọn';
+                }
+            },
+            error: function(xhr) {
+                alert('Lỗi khi xóa ảnh: ' + (xhr.responseJSON ? xhr.responseJSON.error : xhr.statusText));
+            }
+        });
     }
 
     function removeImagePreview(button, colorId, index) {
