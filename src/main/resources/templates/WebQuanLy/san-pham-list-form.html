@@ -14,6 +14,10 @@
     <script th:src="@{/js/sidebar.js}" defer></script>
     <!-- Add html5-qrcode library for QR code scanning -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <!-- Add TomSelect CSS and JS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <style>
         :root {
             /* Màu chính */
@@ -605,12 +609,14 @@
 
         .search-form-row {
             display: flex;
+            flex-wrap: wrap;
             align-items: end;
             gap: 1.5rem;
         }
 
-        .search-form-row .col-md-4 {
-            flex: 1;
+        .search-form-row .col-md-3, .search-form-row .col-md-4 {
+            flex: 1 1 20%; /* Làm cho các cột linh hoạt hơn, khoảng 20% mỗi cột để phù hợp 4-5 cột/hàng */
+            min-width: 200px; /* Đảm bảo không quá nhỏ */
         }
 
         .search-form-row .floating-label {
@@ -799,6 +805,32 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Custom style for TomSelect to match theme */
+        .ts-wrapper.single .ts-control, .ts-wrapper.multi .ts-control {
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            background-color: var(--content-background);
+        }
+
+        .ts-wrapper.single .ts-control:focus, .ts-wrapper.multi .ts-control:focus {
+            border-color: var(--border-active);
+            box-shadow: 0 0 0 0.25rem rgba(98, 178, 231, 0.1);
+        }
+
+        .ts-dropdown {
+            font-size: 14px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+        }
+
+        .ts-control input {
+            padding: 4px;
+        }
+
+        .ts-readonly .ts-control { opacity: .7; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -838,35 +870,20 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="floating-label">
-                                <label for="trangThaiFilter">Trạng thái</label>
-                                <select class="form-select" id="trangThaiFilter" name="trangThai" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả trạng thái --</option>
-                                    <option value="true" th:selected="${selectedTrangThai != null and selectedTrangThai == true}">Đang Bán</option>
-                                    <option value="false" th:selected="${selectedTrangThai != null and selectedTrangThai == false}">Ngừng Bán</option>
+                                <label for="coAoFilter">Cổ áo</label>
+                                <select class="form-select" id="coAoFilter" name="coAoId">
+                                    <option value="">-- Tất cả cổ áo --</option>
+                                    <option th:each="ca : ${coAoList}" th:value="${ca.id}" th:text="${ca.tenCoAo}" th:selected="${selectedCoAoId == ca.id}"></option>
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="d-flex gap-2" style="height: 58px; margin-bottom: 6px;">
-                                <a th:href="@{/acvstore/chi-tiet-san-pham/add}" th:if="${isAdmin}" class="btn btn-primary flex-fill d-flex align-items-center justify-content-center gap-2">
-                                    <i class="fas fa-plus"></i>
-                                    <span>Thêm sản phẩm mới</span>
-                                </a>
-                                <button type="button" class="btn btn-secondary flex-fill d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
-                                    <i class="fas fa-qrcode"></i>
-                                    <span>Quét QR</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Row mới cho bộ lọc thuộc tính -->
-                    <div class="search-form-row mt-3">
+
                         <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="danhMucFilter">Danh mục</label>
-                                <select class="form-select" id="danhMucFilter" name="danhMucId" onchange="this.form.submit()">
+                                <select class="form-select" id="danhMucFilter" name="danhMucId">
                                     <option value="">-- Tất cả danh mục --</option>
                                     <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}" th:selected="${selectedDanhMucId == dm.id}"></option>
                                 </select>
@@ -875,7 +892,7 @@
                         <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="thuongHieuFilter">Thương hiệu</label>
-                                <select class="form-select" id="thuongHieuFilter" name="thuongHieuId" onchange="this.form.submit()">
+                                <select class="form-select" id="thuongHieuFilter" name="thuongHieuId">
                                     <option value="">-- Tất cả thương hiệu --</option>
                                     <option th:each="th : ${thuongHieuList}" th:value="${th.id}" th:text="${th.tenThuongHieu}" th:selected="${selectedThuongHieuId == th.id}"></option>
                                 </select>
@@ -884,7 +901,7 @@
                         <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="kieuDangFilter">Kiểu dáng</label>
-                                <select class="form-select" id="kieuDangFilter" name="kieuDangId" onchange="this.form.submit()">
+                                <select class="form-select" id="kieuDangFilter" name="kieuDangId">
                                     <option value="">-- Tất cả kiểu dáng --</option>
                                     <option th:each="kd : ${kieuDangList}" th:value="${kd.id}" th:text="${kd.tenKieuDang}" th:selected="${selectedKieuDangId == kd.id}"></option>
                                 </select>
@@ -893,18 +910,16 @@
                         <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="chatLieuFilter">Chất liệu</label>
-                                <select class="form-select" id="chatLieuFilter" name="chatLieuId" onchange="this.form.submit()">
+                                <select class="form-select" id="chatLieuFilter" name="chatLieuId">
                                     <option value="">-- Tất cả chất liệu --</option>
                                     <option th:each="cl : ${chatLieuList}" th:value="${cl.id}" th:text="${cl.tenChatLieu}" th:selected="${selectedChatLieuId == cl.id}"></option>
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="search-form-row mt-3">
                         <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="xuatXuFilter">Xuất xứ</label>
-                                <select class="form-select" id="xuatXuFilter" name="xuatXuId" onchange="this.form.submit()">
+                                <select class="form-select" id="xuatXuFilter" name="xuatXuId">
                                     <option value="">-- Tất cả xuất xứ --</option>
                                     <option th:each="xx : ${xuatXuList}" th:value="${xx.id}" th:text="${xx.tenXuatXu}" th:selected="${selectedXuatXuId == xx.id}"></option>
                                 </select>
@@ -913,7 +928,7 @@
                         <div class="col-md-3">
                             <div class="floating-label">
                                 <label for="tayAoFilter">Tay áo</label>
-                                <select class="form-select" id="tayAoFilter" name="tayAoId" onchange="this.form.submit()">
+                                <select class="form-select" id="tayAoFilter" name="tayAoId">
                                     <option value="">-- Tất cả tay áo --</option>
                                     <option th:each="ta : ${tayAoList}" th:value="${ta.id}" th:text="${ta.tenTayAo}" th:selected="${selectedTayAoId == ta.id}"></option>
                                 </select>
@@ -921,13 +936,29 @@
                         </div>
                         <div class="col-md-3">
                             <div class="floating-label">
-                                <label for="coAoFilter">Cổ áo</label>
-                                <select class="form-select" id="coAoFilter" name="coAoId" onchange="this.form.submit()">
-                                    <option value="">-- Tất cả cổ áo --</option>
-                                    <option th:each="ca : ${coAoList}" th:value="${ca.id}" th:text="${ca.tenCoAo}" th:selected="${selectedCoAoId == ca.id}"></option>
+                                <label for="trangThaiFilter">Trạng thái</label>
+                                <select class="form-select" id="trangThaiFilter" name="trangThai">
+                                    <option value="">-- Tất cả trạng thái --</option>
+                                    <option value="true" th:selected="${selectedTrangThai != null and selectedTrangThai == true}">Đang Bán</option>
+                                    <option value="false" th:selected="${selectedTrangThai != null and selectedTrangThai == false}">Ngừng Bán</option>
                                 </select>
                             </div>
                         </div>
+
+                    </div>
+                    <div class="d-flex justify-content-end mt-3 gap-2">
+                        <a th:href="@{/acvstore/chi-tiet-san-pham/add}" th:if="${isAdmin}" class="btn btn-primary d-flex align-items-center justify-content-center gap-2">
+                            <i class="fas fa-plus"></i>
+                            <span>Thêm sản phẩm mới</span>
+                        </a>
+                        <button type="button" class="btn btn-secondary d-flex align-items-center justify-content-center gap-2" data-bs-toggle="modal" data-bs-target="#qrScannerModal">
+                            <i class="fas fa-qrcode"></i>
+                            <span>Quét QR</span>
+                        </button>
+                        <button type="button" class="btn btn-danger d-flex align-items-center justify-content-center gap-2" onclick="resetFilters()">
+                            <i class="fas fa-times"></i>
+                            <span>Xóa bộ lọc</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1430,7 +1461,90 @@
             });
     }
 
+    function resetFilters() {
+        document.getElementById('searchNameInput').value = '';
+        document.getElementById('trangThaiFilter').tomselect.clear();
+        document.getElementById('danhMucFilter').tomselect.clear();
+        document.getElementById('thuongHieuFilter').tomselect.clear();
+        document.getElementById('kieuDangFilter').tomselect.clear();
+        document.getElementById('chatLieuFilter').tomselect.clear();
+        document.getElementById('xuatXuFilter').tomselect.clear();
+        document.getElementById('tayAoFilter').tomselect.clear();
+        document.getElementById('coAoFilter').tomselect.clear();
+        document.getElementById('searchForm').submit();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize TomSelect for all filter selects
+        new TomSelect('#trangThaiFilter', {
+            placeholder: "-- Tất cả trạng thái --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#danhMucFilter', {
+            placeholder: "-- Tất cả danh mục --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#thuongHieuFilter', {
+            placeholder: "-- Tất cả thương hiệu --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#kieuDangFilter', {
+            placeholder: "-- Tất cả kiểu dáng --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#chatLieuFilter', {
+            placeholder: "-- Tất cả chất liệu --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#xuatXuFilter', {
+            placeholder: "-- Tất cả xuất xứ --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#tayAoFilter', {
+            placeholder: "-- Tất cả tay áo --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#coAoFilter', {
+            placeholder: "-- Tất cả cổ áo --",
+            allowClear: true,
+            onChange: function(value) {
+                this.input.form.submit();
+            }
+        });
+
+        new TomSelect('#editDanhMuc', {
+            placeholder: "-- Chọn danh mục --",
+            allowClear: true
+        });
+
         const isAdmin = document.querySelector('.role-admin') !== null;
         if (!isAdmin) {
             console.log('Employee user - Management functions disabled');
