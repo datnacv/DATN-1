@@ -1056,6 +1056,11 @@
                                 </div>
                             </td>
                         </tr>
+                        <tr th:if="${#lists.isEmpty(sanPhamList)}">
+                            <td th:colspan="${isAdmin ? 9 : 8}" class="text-center py-4 text-muted fw-semibold fs-5">
+                                <i class="fas fa-search me-2"></i>Không có sản phẩm nào phù hợp với bộ lọc.
+                            </td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>
