@@ -112,10 +112,10 @@ public class HoaDonController {
             HoaDon hoaDon = hoaDonService.findById(uuid)
                     .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại với ID: " + id));
 
-            if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
-                    !"Hoàn thành".equals(hoaDon.getTrangThai())) {
-                hoaDonService.updateStatus(uuid, "Hoàn thành", "Hoàn thành tự động (Tại quầy)", true);
-            }
+//            if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang()) &&
+//                    !"Hoàn thành".equals(hoaDon.getTrangThai())) {
+//                hoaDonService.updateStatus(uuid, "Hoàn thành", "Hoàn thành tự động (Tại quầy)", true);
+//            }
 
             model.addAttribute("hoaDon", hoaDon);
             model.addAttribute("currentStatus", hoaDonService.getCurrentStatus(hoaDon));
