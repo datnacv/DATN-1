@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -46,6 +47,7 @@ public class ChiTietSanPhamController {
     @Autowired private KhachHangSanPhamRepository khachHangSanPhamRepository;
     @Autowired private NguoiDungService nguoiDungService;
     @Autowired private ChiTietSanPhamRepository chiTietSanPhamRepository;
+    @Autowired private SimpMessagingTemplate messagingTemplate; // Thêm để gửi message WebSocket
 
     // Helper method to check if current user is admin
     private boolean isCurrentUserAdmin() {
@@ -284,6 +286,10 @@ public class ChiTietSanPhamController {
             chiTietSanPham.setTrangThai(trangThai != null ? trangThai : false);
             chiTietSanPhamService.save(chiTietSanPham);
 
+            // Gửi thông báo WebSocket đến topic của sản phẩm
+            UUID sanPhamId = chiTietSanPham.getSanPham().getId();
+            messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
+
             response.put("success", true);
             response.put("message", "Cập nhật trạng thái thành công!");
             return ResponseEntity.ok(response);
@@ -304,6 +310,10 @@ public class ChiTietSanPhamController {
             }
 
             chiTietSanPhamService.saveSingleChiTietSanPham(dto, imageFiles);
+
+            // Gửi thông báo WebSocket đến topic của sản phẩm
+            messagingTemplate.convertAndSend("/topic/product/" + dto.getProductId(), Map.of("action", "refresh"));
+
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + dto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
             logger.error("Lỗi khi lưu chi tiết sản phẩm: ", e);
@@ -320,6 +330,10 @@ public class ChiTietSanPhamController {
             }
 
             chiTietSanPhamService.saveChiTietSanPhamVariationsDto(batchDto);
+
+            // Gửi thông báo WebSocket đến topic của sản phẩm
+            messagingTemplate.convertAndSend("/topic/product/" + batchDto.getProductId(), Map.of("action", "refresh"));
+
             return "redirect:/acvstore/chi-tiet-san-pham?productId=" + batchDto.getProductId() + "&success=Thêm thành công";
         } catch (Exception e) {
             logger.error("Lỗi khi lưu batch chi tiết sản phẩm: ", e);
@@ -452,8 +466,11 @@ public class ChiTietSanPhamController {
                 chiTietSanPhamService.updateChiTietSanPham(updateDto, safeImages, deletedIds);
             }
 
-            body.put("message", "Cập nhật chi tiết sản phẩm thành công");
+            // Gửi thông báo WebSocket đến topic của sản phẩm
             UUID productId = productIdFromDb != null ? productIdFromDb : updateDto.getProductId();
+            messagingTemplate.convertAndSend("/topic/product/" + productId, Map.of("action", "refresh"));
+
+            body.put("message", "Cập nhật chi tiết sản phẩm thành công");
             if (productId != null) body.put("productId", productId.toString());
 
             return ResponseEntity.ok(body);
@@ -503,6 +520,16 @@ public class ChiTietSanPhamController {
             }
 
             int affected = chiTietSanPhamService.updateBulkFullAttributes(ids, updateDto);
+
+            // Gửi thông báo WebSocket đến topic của sản phẩm (lấy từ một id bất kỳ)
+            if (!ids.isEmpty()) {
+                ChiTietSanPham sample = chiTietSanPhamService.findById(ids.get(0));
+                if (sample != null && sample.getSanPham() != null) {
+                    UUID sanPhamId = sample.getSanPham().getId();
+                    messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
+                }
+            }
+
             return ResponseEntity.ok(Map.of("message", "Đã cập nhật " + affected + " biến thể."));
         } catch (Exception e) {
             logger.error("Lỗi khi cập nhật hàng loạt: ", e);
@@ -700,6 +727,10 @@ public class ChiTietSanPhamController {
             }
 
             chiTietSanPhamService.save(target);
+
+            // Gửi thông báo WebSocket đến topic của sản phẩm
+            UUID sanPhamId = target.getSanPham().getId();
+            messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
 
             res.put("success", true);
             res.put("message", "Đã cộng " + qty + " vào tồn kho.");

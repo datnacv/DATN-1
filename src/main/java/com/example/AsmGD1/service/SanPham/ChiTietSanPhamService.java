@@ -11,6 +11,7 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,6 +40,7 @@ public class ChiTietSanPhamService {
     @Autowired private CoAoRepository coAoRepo;
     @Autowired private KieuDangRepository kieuDangRepo;
     @Autowired private ThuongHieuRepository thuongHieuRepo;
+    @Autowired private SimpMessagingTemplate messagingTemplate; // Thêm để gửi message WebSocket
 
     private final String UPLOAD_DIR;
 
@@ -115,6 +117,10 @@ public class ChiTietSanPhamService {
         }
 
         chiTietSanPhamRepo.delete(chiTiet);
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = chiTiet.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
     }
 
     public List<ChiTietSanPham> findAllByTrangThaiAndKeyword(String keyword) {
@@ -242,6 +248,9 @@ public class ChiTietSanPhamService {
                 saveImagesToLocal(savedDetail, variationImages.stream().limit(3).collect(Collectors.toList()));
             }
         }
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        messagingTemplate.convertAndSend("/topic/product/" + batchDto.getProductId(), Map.of("action", "refresh"));
     }
 
     @Transactional
@@ -292,6 +301,9 @@ public class ChiTietSanPhamService {
         if (imageFiles != null && !imageFiles.isEmpty()) {
             saveImagesToLocal(savedDetail, imageFiles);
         }
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        messagingTemplate.convertAndSend("/topic/product/" + dto.getProductId(), Map.of("action", "refresh"));
     }
 
     @Transactional
@@ -354,6 +366,10 @@ public class ChiTietSanPhamService {
 
         // Lưu lại lần cuối để đảm bảo tất cả thay đổi được áp dụng
         chiTietSanPhamRepo.save(existingDetail);
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = existingDetail.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
     }
 
     @Transactional
@@ -390,12 +406,17 @@ public class ChiTietSanPhamService {
                 hinhAnhSanPhamRepo.findByChiTietSanPhamIdOrderByThuTu(existing.getId());
         existing.setHinhAnhSanPhams(updatedImages);
         chiTietSanPhamRepo.save(existing);
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = existing.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
     }
 
 
     @Transactional
     public int updateBulkFullAttributes(List<UUID> ids, ChiTietSanPhamUpdateDto dto) {
         int count = 0;
+        Set<UUID> sanPhamIds = new HashSet<>(); // Để gửi WebSocket cho các sản phẩm liên quan
         for (UUID id : ids) {
             ChiTietSanPham existing = chiTietSanPhamRepo.findById(id)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy chi tiết sản phẩm: " + id));
@@ -425,7 +446,14 @@ public class ChiTietSanPhamService {
 
             chiTietSanPhamRepo.save(existing);
             count++;
+            sanPhamIds.add(existing.getSanPham().getId());
         }
+
+        // Gửi thông báo WebSocket đến tất cả các topic sản phẩm liên quan
+        for (UUID sanPhamId : sanPhamIds) {
+            messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
+        }
+
         return count;
     }
 
@@ -544,7 +572,13 @@ public class ChiTietSanPhamService {
 
     @Transactional
     public ChiTietSanPham save(ChiTietSanPham chiTietSanPham) {
-        return chiTietSanPhamRepo.save(chiTietSanPham);
+        ChiTietSanPham saved = chiTietSanPhamRepo.save(chiTietSanPham);
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = chiTietSanPham.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
+
+        return saved;
     }
 
     public List<ChiTietSanPham> findAllByTrangThai() {
@@ -564,6 +598,10 @@ public class ChiTietSanPhamService {
         if (imageFiles != null && imageFiles.length > 0) {
             saveImagesToLocal(savedDetail, Arrays.asList(imageFiles));
         }
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = pd.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
     }
 
     @Transactional
@@ -579,7 +617,13 @@ public class ChiTietSanPhamService {
         productDetail.setSoLuongTonKho(newStock);
         productDetail.setTrangThai(newStock > 0);
 
-        return chiTietSanPhamRepo.save(productDetail);
+        ChiTietSanPham saved = chiTietSanPhamRepo.save(productDetail);
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = productDetail.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
+
+        return saved;
     }
 
     public void updateStock(UUID productDetailId, int quantity) {
@@ -591,6 +635,10 @@ public class ChiTietSanPhamService {
         }
         chiTiet.setSoLuongTonKho(newStock);
         chiTietSanPhamRepo.save(chiTiet);
+
+        // Gửi thông báo WebSocket đến topic của sản phẩm
+        UUID sanPhamId = chiTiet.getSanPham().getId();
+        messagingTemplate.convertAndSend("/topic/product/" + sanPhamId, Map.of("action", "refresh"));
     }
 
     public String layAnhDauTien(ChiTietSanPham chiTiet) {
