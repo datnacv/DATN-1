@@ -25,6 +25,29 @@ public interface SanPhamRepository extends JpaRepository<SanPham, UUID> {
     @Query("SELECT sp FROM SanPham sp WHERE sp.trangThai = :trangThai")
     Page<SanPham> findByTrangThai(@Param("trangThai") Boolean trangThai, Pageable pageable);
 
+    // Trong SanPhamRepository (thêm import nếu cần: import java.util.UUID;)
+    @Query("SELECT DISTINCT sp FROM SanPham sp " +
+            "WHERE (:searchName IS NULL OR LOWER(sp.tenSanPham) LIKE LOWER(CONCAT('%', :searchName, '%')) OR LOWER(sp.maSanPham) LIKE LOWER(CONCAT('%', :searchName, '%'))) " +
+            "AND (:trangThai IS NULL OR sp.trangThai = :trangThai) " +
+            "AND (:danhMucId IS NULL OR sp.danhMuc.id = :danhMucId) " +
+            "AND (:thuongHieuId IS NULL OR EXISTS (SELECT 1 FROM ChiTietSanPham ct WHERE ct.sanPham = sp AND ct.thuongHieu.id = :thuongHieuId)) " +
+            "AND (:kieuDangId IS NULL OR EXISTS (SELECT 1 FROM ChiTietSanPham ct WHERE ct.sanPham = sp AND ct.kieuDang.id = :kieuDangId)) " +
+            "AND (:chatLieuId IS NULL OR EXISTS (SELECT 1 FROM ChiTietSanPham ct WHERE ct.sanPham = sp AND ct.chatLieu.id = :chatLieuId)) " +
+            "AND (:xuatXuId IS NULL OR EXISTS (SELECT 1 FROM ChiTietSanPham ct WHERE ct.sanPham = sp AND ct.xuatXu.id = :xuatXuId)) " +
+            "AND (:tayAoId IS NULL OR EXISTS (SELECT 1 FROM ChiTietSanPham ct WHERE ct.sanPham = sp AND ct.tayAo.id = :tayAoId)) " +
+            "AND (:coAoId IS NULL OR EXISTS (SELECT 1 FROM ChiTietSanPham ct WHERE ct.sanPham = sp AND ct.coAo.id = :coAoId))")
+    Page<SanPham> findByAdvancedFilters(
+            @Param("searchName") String searchName,
+            @Param("trangThai") Boolean trangThai,
+            @Param("danhMucId") UUID danhMucId,
+            @Param("thuongHieuId") UUID thuongHieuId,
+            @Param("kieuDangId") UUID kieuDangId,
+            @Param("chatLieuId") UUID chatLieuId,
+            @Param("xuatXuId") UUID xuatXuId,
+            @Param("tayAoId") UUID tayAoId,
+            @Param("coAoId") UUID coAoId,
+            Pageable pageable);
+
     Page<SanPham> findByTenSanPhamContainingIgnoreCaseOrMaSanPhamContainingIgnoreCase(String ten, String ma, Pageable pageable);
 
     @Query("SELECT sp FROM SanPham sp WHERE sp.trangThai = true")

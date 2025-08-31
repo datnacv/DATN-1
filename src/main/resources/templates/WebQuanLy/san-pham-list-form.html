@@ -820,6 +820,7 @@
         <div class="text-center mb-2 mt-3">
             <h2 class="page-title">QUẢN LÝ SẢN PHẨM</h2>
         </div>
+        <!-- Trong HTML san-pham-list-form.html, thay thế phần <div th:fragment="content"> bằng code sau: -->
         <div th:fragment="content">
             <div class="search-section">
                 <div class="section-header">
@@ -857,6 +858,74 @@
                                     <i class="fas fa-qrcode"></i>
                                     <span>Quét QR</span>
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row mới cho bộ lọc thuộc tính -->
+                    <div class="search-form-row mt-3">
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="danhMucFilter">Danh mục</label>
+                                <select class="form-select" id="danhMucFilter" name="danhMucId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả danh mục --</option>
+                                    <option th:each="dm : ${danhMucList}" th:value="${dm.id}" th:text="${dm.tenDanhMuc}" th:selected="${selectedDanhMucId == dm.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="thuongHieuFilter">Thương hiệu</label>
+                                <select class="form-select" id="thuongHieuFilter" name="thuongHieuId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả thương hiệu --</option>
+                                    <option th:each="th : ${thuongHieuList}" th:value="${th.id}" th:text="${th.tenThuongHieu}" th:selected="${selectedThuongHieuId == th.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="kieuDangFilter">Kiểu dáng</label>
+                                <select class="form-select" id="kieuDangFilter" name="kieuDangId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả kiểu dáng --</option>
+                                    <option th:each="kd : ${kieuDangList}" th:value="${kd.id}" th:text="${kd.tenKieuDang}" th:selected="${selectedKieuDangId == kd.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="chatLieuFilter">Chất liệu</label>
+                                <select class="form-select" id="chatLieuFilter" name="chatLieuId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả chất liệu --</option>
+                                    <option th:each="cl : ${chatLieuList}" th:value="${cl.id}" th:text="${cl.tenChatLieu}" th:selected="${selectedChatLieuId == cl.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="search-form-row mt-3">
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="xuatXuFilter">Xuất xứ</label>
+                                <select class="form-select" id="xuatXuFilter" name="xuatXuId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả xuất xứ --</option>
+                                    <option th:each="xx : ${xuatXuList}" th:value="${xx.id}" th:text="${xx.tenXuatXu}" th:selected="${selectedXuatXuId == xx.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="tayAoFilter">Tay áo</label>
+                                <select class="form-select" id="tayAoFilter" name="tayAoId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả tay áo --</option>
+                                    <option th:each="ta : ${tayAoList}" th:value="${ta.id}" th:text="${ta.tenTayAo}" th:selected="${selectedTayAoId == ta.id}"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="floating-label">
+                                <label for="coAoFilter">Cổ áo</label>
+                                <select class="form-select" id="coAoFilter" name="coAoId" onchange="this.form.submit()">
+                                    <option value="">-- Tất cả cổ áo --</option>
+                                    <option th:each="ca : ${coAoList}" th:value="${ca.id}" th:text="${ca.tenCoAo}" th:selected="${selectedCoAoId == ca.id}"></option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -963,17 +1032,17 @@
                 <nav aria-label="Page navigation" class="mt-4">
                     <ul class="pagination pagination-custom">
                         <li class="page-item" th:class="${currentPage == 0 ? 'disabled' : ''}">
-                            <a class="page-link" th:href="@{/acvstore/san-pham(page=${currentPage - 1}, searchName=${searchName}, trangThai=${selectedTrangThai})}" aria-label="Previous">
+                            <a class="page-link" th:href="@{/acvstore/san-pham(page=${currentPage - 1}, searchName=${searchName}, trangThai=${selectedTrangThai}, danhMucId=${selectedDanhMucId}, thuongHieuId=${selectedThuongHieuId}, kieuDangId=${selectedKieuDangId}, chatLieuId=${selectedChatLieuId}, xuatXuId=${selectedXuatXuId}, tayAoId=${selectedTayAoId}, coAoId=${selectedCoAoId})}" aria-label="Previous">
                                 <i class="fas fa-chevron-left me-1"></i>Trước
                             </a>
                         </li>
                         <li class="page-item" th:each="p : ${#numbers.sequence(0, totalPages - 1)}"
                             th:class="${p == currentPage ? 'active' : ''}">
-                            <a class="page-link" th:href="@{/acvstore/san-pham(page=${p}, searchName=${searchName}, trangThai=${selectedTrangThai})}"
+                            <a class="page-link" th:href="@{/acvstore/san-pham(page=${p}, searchName=${searchName}, trangThai=${selectedTrangThai}, danhMucId=${selectedDanhMucId}, thuongHieuId=${selectedThuongHieuId}, kieuDangId=${selectedKieuDangId}, chatLieuId=${selectedChatLieuId}, xuatXuId=${selectedXuatXuId}, tayAoId=${selectedTayAoId}, coAoId=${selectedCoAoId})}"
                                th:text="${p + 1}">1</a>
                         </li>
                         <li class="page-item" th:class="${currentPage == totalPages - 1 ? 'disabled' : ''}">
-                            <a class="page-link" th:href="@{/acvstore/san-pham(page=${currentPage + 1}, searchName=${searchName}, trangThai=${selectedTrangThai})}" aria-label="Next">
+                            <a class="page-link" th:href="@{/acvstore/san-pham(page=${currentPage + 1}, searchName=${searchName}, trangThai=${selectedTrangThai}, danhMucId=${selectedDanhMucId}, thuongHieuId=${selectedThuongHieuId}, kieuDangId=${selectedKieuDangId}, chatLieuId=${selectedChatLieuId}, xuatXuId=${selectedXuatXuId}, tayAoId=${selectedTayAoId}, coAoId=${selectedCoAoId})}" aria-label="Next">
                                 Sau<i class="fas fa-chevron-right ms-1"></i>
                             </a>
                         </li>

@@ -5,8 +5,7 @@ import com.example.AsmGD1.entity.DanhMuc;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
-import com.example.AsmGD1.service.SanPham.DanhMucService;
-import com.example.AsmGD1.service.SanPham.SanPhamService;
+import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +46,13 @@ public class SanPhamController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    @Autowired private ThuongHieuService thuongHieuService;
+    @Autowired private KieuDangService kieuDangService;
+    @Autowired private ChatLieuService chatLieuService;
+    @Autowired private XuatXuService xuatXuService;
+    @Autowired private TayAoService tayAoService;
+    @Autowired private CoAoService coAoService;
+
     // Helper method to check if current user is admin
     private boolean isCurrentUserAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -76,24 +82,30 @@ public class SanPhamController {
             Model model,
             @RequestParam(value = "searchName", required = false) String searchName,
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
+            @RequestParam(value = "danhMucId", required = false) UUID danhMucId,
+            @RequestParam(value = "thuongHieuId", required = false) UUID thuongHieuId,
+            @RequestParam(value = "kieuDangId", required = false) UUID kieuDangId,
+            @RequestParam(value = "chatLieuId", required = false) UUID chatLieuId,
+            @RequestParam(value = "xuatXuId", required = false) UUID xuatXuId,
+            @RequestParam(value = "tayAoId", required = false) UUID tayAoId,
+            @RequestParam(value = "coAoId", required = false) UUID coAoId,
             @RequestParam(value = "page", defaultValue = "0") int page) {
 
         addUserInfoToModel(model);
 
         Pageable pageable = PageRequest.of(page, 5);
-        Page<SanPham> sanPhamPage;
-
-        if (searchName != null && !searchName.trim().isEmpty()) {
-            searchName = searchName.trim();
-            sanPhamPage = sanPhamService.searchByTenOrMa(searchName, pageable);
-            if (trangThai != null) {
-                sanPhamPage = sanPhamService.findByTenSanPhamContaining(searchName, trangThai, pageable);
-            }
-        } else if (trangThai != null) {
-            sanPhamPage = sanPhamService.findByTrangThai(trangThai, pageable);
-        } else {
-            sanPhamPage = sanPhamService.findAllPaginated(pageable);
-        }
+        Page<SanPham> sanPhamPage = sanPhamService.findByAdvancedFilters(
+                searchName,
+                trangThai,
+                danhMucId,
+                thuongHieuId,
+                kieuDangId,
+                chatLieuId,
+                xuatXuId,
+                tayAoId,
+                coAoId,
+                pageable
+        );
 
         List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
 
@@ -104,6 +116,19 @@ public class SanPhamController {
         model.addAttribute("selectedTrangThai", trangThai);
         model.addAttribute("sanPham", new SanPham());
         model.addAttribute("danhMucList", danhMucList);
+        model.addAttribute("thuongHieuList", thuongHieuService.getAllThuongHieu());
+        model.addAttribute("kieuDangList", kieuDangService.getAllKieuDang());
+        model.addAttribute("chatLieuList", chatLieuService.getAllChatLieu());
+        model.addAttribute("xuatXuList", xuatXuService.getAllXuatXu());
+        model.addAttribute("tayAoList", tayAoService.getAllTayAo());
+        model.addAttribute("coAoList", coAoService.getAllCoAo());
+        model.addAttribute("selectedDanhMucId", danhMucId);
+        model.addAttribute("selectedThuongHieuId", thuongHieuId);
+        model.addAttribute("selectedKieuDangId", kieuDangId);
+        model.addAttribute("selectedChatLieuId", chatLieuId);
+        model.addAttribute("selectedXuatXuId", xuatXuId);
+        model.addAttribute("selectedTayAoId", tayAoId);
+        model.addAttribute("selectedCoAoId", coAoId);
 
         return "WebQuanLy/san-pham-list-form";
     }
