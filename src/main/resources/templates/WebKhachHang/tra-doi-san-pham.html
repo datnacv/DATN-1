@@ -53,24 +53,6 @@
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255,255,255,0.1); position: fixed; top: 45px; left: 0; width: 100%; z-index: 1040; }
 
-        .dropdown-menu {
-            display: none;
-            position: absolute;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            min-width: 200px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 12px;
-            z-index: 1000;
-            padding: 8px;
-        }
-
-        .dropdown:hover .dropdown-menu {
-            display: block;
-            animation: fadeInUp 0.3s ease;
-        }
-
         .page-title {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
             -webkit-background-clip: text;
@@ -391,6 +373,85 @@
             transform: translateY(-2px);
         }
 
+        /* Modal styles */
+        .modal-lg {
+            max-width: 900px;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+            color: white;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
+
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .replacement-product-modal {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .replacement-product-modal:hover {
+            background: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .replacement-product-modal.selected {
+            border-color: var(--primary-color);
+            background: #f0f8ff;
+        }
+
+        .search-form {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 1rem;
@@ -424,169 +485,6 @@
                 justify-content: center;
             }
         }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .success-message {
-            background: var(--success-color);
-            color: white;
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-        }
-
-        .error-message {
-            background: var(--error-color);
-            color: white;
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-        }
-
-        .search-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 1000;
-            max-height: 300px;
-            overflow-y: auto;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .search-suggestions.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .suggestion-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .suggestion-item:hover {
-            background-color: #f1f5f9;
-        }
-        .suggestion-item img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            margin-right: 10px;
-            border-radius: 4px;
-        }
-        .history-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-            background-color: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .history-item:hover {
-            background-color: #e2e8f0;
-        }
-        .history-item .highlight {
-            background-color: #9FD5F7;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
-        .history-item .delete-btn {
-            color: #ef4444;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 5px;
-            transition: color 0.2s;
-        }
-        .history-item .delete-btn:hover {
-            color: #b91c1c;
-        }.search-suggestions {
-             position: absolute;
-             top: 100%;
-             left: 0;
-             right: 0;
-             background: white;
-             border: 1px solid #ccc;
-             border-radius: 8px;
-             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-             z-index: 1000;
-             max-height: 300px;
-             overflow-y: auto;
-             opacity: 0;
-             visibility: hidden;
-             transition: opacity 0.3s ease, visibility 0.3s ease;
-         }
-        .search-suggestions.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .suggestion-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .suggestion-item:hover {
-            background-color: #f1f5f9;
-        }
-        .suggestion-item img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            margin-right: 10px;
-            border-radius: 4px;
-        }
-        .history-item {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s;
-            background-color: #f8fafc;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .history-item:hover {
-            background-color: #e2e8f0;
-        }
-        .history-item .highlight {
-            background-color: #9FD5F7;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
-        .history-item .delete-btn {
-            color: #ef4444;
-            font-size: 14px;
-            cursor: pointer;
-            padding: 5px;
-            transition: color 0.2s;
-        }
-        .history-item .delete-btn:hover {
-            color: #b91c1c;
-        }
-
     </style>
 </head>
 <body>
@@ -628,7 +526,7 @@
         <form id="exchangeForm" th:action="@{/dsdon-mua/api/orders/exchange/{id}(id=${hoaDon.id})}" method="post">
             <!-- Phần sản phẩm được chọn để đổi -->
             <div class="info-section">
-                <h4><i class="fas fa-box mr-2"></i>Sản phẩm được chọn để đổi</h4>
+                <h4><i class="fas fa-box mr-2"></i>Chọn sản phẩm để đổi</h4>
                 <table>
                     <thead>
                     <tr>
@@ -644,7 +542,11 @@
                     <tbody>
                     <tr th:each="chiTiet : ${chiTietDonHangs}">
                         <td>
-                            <input type="checkbox" name="selectedProducts" th:value="${chiTiet.id}" th:disabled="${chiTiet.trangThaiHoanTra or chiTiet.trangThaiDoiSanPham}"/>
+                            <input type="checkbox"
+                                   name="selectedProducts"
+                                   th:value="${chiTiet.id}"
+                                   th:disabled="${chiTiet.trangThaiHoanTra or chiTiet.trangThaiDoiSanPham}"
+                                   class="product-select-checkbox"/>
                         </td>
                         <td>
                             <div class="product-info">
@@ -660,9 +562,8 @@
                                     </small>
                                 </div>
                             </div>
-                            <input type="hidden" name="selectedProducts" th:value="${chiTiet.id}"/>
                         </td>
-                        <td th:text="${chiTiet.soLuong}"></td>
+                        <td th:text="${chiTiet.soLuong}" class="max-quantity"></td>
                         <td>
                             <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
                         </td>
@@ -687,32 +588,11 @@
                     </tr>
                     </tbody>
                 </table>
-                <div class="form-group mt-4">
-                    <label for="soLuong">Số lượng muốn đổi:</label>
-                    <input type="number" id="soLuong" name="soLuong" min="1" th:attr="max=${chiTietDonHangs[0].soLuong}" required placeholder="Nhập số lượng"/>
-                </div>
             </div>
 
-            <!-- Phần danh sách sản phẩm thay thế -->
-            <div class="info-section">
-                <h4><i class="fas fa-box-open mr-2"></i>Chọn sản phẩm thay thế</h4>
-                <div class="form-group mb-4 position-relative">
-                    <label for="searchProduct">Tìm kiếm sản phẩm thay thế:</label>
-                    <input type="text" id="searchProduct" name="keyword" th:value="${keyword}" placeholder="Nhập tên sản phẩm..." class="form-control"/>
-                    <div id="searchSuggestions" class="search-suggestions"></div>
-                </div>
-                <div id="replacementProductsContainer">
-                    <!-- Danh sách sản phẩm sẽ được render bởi JavaScript -->
-                </div>
-
-                <!-- Phân trang -->
-                <div id="paginationContainer" class="pagination mt-4 d-flex justify-content-center">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination" id="paginationLinks">
-                            <!-- Phân trang sẽ được render bởi JavaScript -->
-                        </ul>
-                    </nav>
-                </div>
+            <div class="info-section" id="selectedReplacementProducts" style="display: none;">
+                <h4><i class="fas fa-check-circle mr-2"></i>Sản phẩm thay thế đã chọn</h4>
+                <div id="replacementList"></div>
             </div>
 
             <!-- Phần thông tin yêu cầu đổi -->
@@ -755,8 +635,58 @@
     </div>
 </section>
 
+<!-- Modal chọn sản phẩm thay thế -->
+<div class="modal fade" id="replacementProductModal" tabindex="-1" aria-labelledby="replacementProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="replacementProductModalLabel">
+                    <i class="fas fa-box-open mr-2"></i>Chọn sản phẩm thay thế
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-4 position-relative search-form">
+                    <label for="searchProduct">Tìm kiếm sản phẩm thay thế:</label>
+                    <input type="text" id="searchProduct" name="keyword" placeholder="Nhập tên sản phẩm..." class="form-control"/>
+                </div>
+
+                <div class="form-group mb-4">
+                    <label for="soLuong">Số lượng muốn đổi:</label>
+                    <input type="number" id="soLuong" name="soLuong" min="1" required placeholder="Nhập số lượng"/>
+                </div>
+
+                <div id="replacementProductsContainer">
+                    <!-- Danh sách sản phẩm sẽ được render bởi JavaScript -->
+                </div>
+
+                <!-- Phân trang -->
+                <div id="paginationContainer" class="pagination mt-4 d-flex justify-content-center">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination" id="paginationLinks">
+                            <!-- Phân trang sẽ được render bởi JavaScript -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Hủy
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmSelection">
+                    <i class="fas fa-check"></i> Xác nhận chọn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        let selectedProductData = null;
+        let selectedReplacementProducts = [];
+        let maxSoLuong = 1;
+
         const priceElements = document.querySelectorAll('.price[data-value]');
         priceElements.forEach(element => {
             const value = parseFloat(element.getAttribute('data-value'));
@@ -766,35 +696,60 @@
             }).format(value).replace('₫', ' VNĐ');
         });
 
-        // Lấy số lượng tối đa từ sản phẩm được chọn
-        const maxSoLuong = parseInt(document.querySelector('tbody tr td:nth-child(3)').textContent) || 1;
+        // Xử lý checkbox chọn sản phẩm
+        document.querySelectorAll('.product-select-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // Bỏ chọn tất cả checkbox khác
+                document.querySelectorAll('.product-select-checkbox').forEach(cb => {
+                    if (cb !== this) cb.checked = false;
+                });
+
+                if (this.checked) {
+                    const row = this.closest('tr');
+                    maxSoLuong = parseInt(row.querySelector('.max-quantity').textContent) || 1;
+
+                    // Lưu thông tin sản phẩm được chọn
+                    selectedProductData = {
+                        id: this.value,
+                        name: row.querySelector('.product-details strong').textContent,
+                        maxQuantity: maxSoLuong,
+                        price: parseFloat(row.querySelector('.price').getAttribute('data-value'))
+                    };
+
+                    // Hiển thị modal
+                    const modal = new bootstrap.Modal(document.getElementById('replacementProductModal'));
+                    modal.show();
+
+                    // Reset form trong modal
+                    document.getElementById('soLuong').value = 1;
+                    document.getElementById('soLuong').max = maxSoLuong;
+                    document.getElementById('searchProduct').value = '';
+                    selectedReplacementProducts = [];
+
+                    // Tải danh sách sản phẩm thay thế
+                    loadReplacementProducts(0, '');
+                } else {
+                    selectedProductData = null;
+                    selectedReplacementProducts = [];
+                    calculatePriceDifference();
+                }
+            });
+        });
 
         // Hàm tính chênh lệch giá
         function calculatePriceDifference() {
-            const selectedProductRow = document.querySelector('tbody tr');
-            const replacementProducts = document.querySelectorAll('input[name="replacementProducts"]:checked');
             let totalOriginalPrice = 0;
             let totalReplacementPrice = 0;
 
-            // Lấy số lượng từ input #soLuong thay vì maxSoLuong cố định
             const soLuongInput = document.getElementById('soLuong');
             const selectedQuantity = parseInt(soLuongInput.value) || 1;
 
-            if (selectedProductRow && selectedQuantity <= maxSoLuong) {
-                const priceElement = selectedProductRow.querySelector('.price');
-                const originalPrice = parseFloat(priceElement.getAttribute('data-value'));
-                totalOriginalPrice = originalPrice * selectedQuantity; // Dùng số lượng thực tế
-            } else {
-                totalOriginalPrice = 0; // Nếu số lượng không hợp lệ, đặt về 0
+            if (selectedProductData && selectedQuantity <= selectedProductData.maxQuantity) {
+                totalOriginalPrice = selectedProductData.price * selectedQuantity;
             }
 
-            replacementProducts.forEach(product => {
-                const container = product.closest('.replacement-product');
-                const qtyInput = container.querySelector('.replacement-quantity');
-                const soLuong = parseInt(qtyInput.value) || 0;
-                const priceElement = container.querySelector('.price');
-                const replacementPrice = parseFloat(priceElement.getAttribute('data-value'));
-                totalReplacementPrice += replacementPrice * soLuong;
+            selectedReplacementProducts.forEach(product => {
+                totalReplacementPrice += product.price * product.quantity;
             });
 
             const priceDifference = totalReplacementPrice - totalOriginalPrice;
@@ -806,21 +761,16 @@
                 currency: 'VND'
             }).format(priceDifference).replace('₫', ' VNĐ');
             priceDifferenceValue.value = priceDifference;
-
-            // Cập nhật số lượng gửi đi (nếu cần)
-            const soLuongInputs = document.querySelectorAll('.replacement-quantity');
-            soLuongInputs.forEach(input => {
-                input.setAttribute('name', 'soLuong'); // Đảm bảo gửi đúng tên
-            });
         }
 
         // Hàm tải danh sách sản phẩm thay thế
         function loadReplacementProducts(page = 0, keyword = '') {
+            if (!selectedProductData) return;
+
             const hoaDonId = document.getElementById('exchangeForm').getAttribute('action').match(/\/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/)[1];
             const size = 5;
-            const chiTietId = '[[${chiTietId}]]';
 
-            fetch(`/dsdon-mua/api/replacement-products/${hoaDonId}?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}&chiTietId=${chiTietId}`, {
+            fetch(`/dsdon-mua/api/replacement-products/${hoaDonId}?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}&chiTietId=${selectedProductData.id}`, {
                 method: 'GET',
                 credentials: 'include'
             })
@@ -848,71 +798,97 @@
                 });
         }
 
-        // Hàm render danh sách sản phẩm thay thế
+        // Hàm render danh sách sản phẩm thay thế trong modal
+        // Hàm render danh sách sản phẩm thay thế trong modal
         function renderReplacementProducts(products) {
             const container = document.getElementById('replacementProductsContainer');
             container.innerHTML = '';
 
+            if (products.length === 0) {
+                container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-search text-muted" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                <p class="text-muted">Không tìm thấy sản phẩm thay thế phù hợp</p>
+            </div>
+        `;
+                return;
+            }
+
             products.forEach(product => {
+                const isSelected = selectedReplacementProducts.find(p => p.id === product.id);
+                const selectedClass = isSelected ? 'selected' : '';
+
                 const productHtml = `
-                <div class="replacement-product">
-                    <input type="checkbox" name="replacementProducts" value="${product.id}" data-stock="${product.soLuongTonKho}"/>
-                    <img src="${product.imageUrl}" class="product-img" alt="Ảnh sản phẩm thay thế"/>
-                    <div class="flex-1">
-                        <span>${product.tenSanPham} (${product.mauSac}, ${product.kichCo})</span>
-                        <div class="flex items-center gap-4 mt-1">
-                            <span class="price" data-value="${product.giaValue}">${product.gia}</span>
-                            ${product.oldPrice ? `<span><del>${product.oldPrice}</del></span>` : ''}
-                            ${product.discount ? `<span class="text-red-500"><strong>${product.discount}</strong></span>` : ''}
-                            ${product.campaignName ? `<span class="text-blue-500"><strong>${product.campaignName}</strong></span>` : ''}
-                            <span class="text-sm text-gray-600">Tồn kho: ${product.soLuongTonKho}</span>
-                            <input type="number" class="replacement-quantity" min="1" max="${Math.min(product.soLuongTonKho, maxSoLuong)}" value="1" style="width: 80px; padding: 5px; border-radius: 8px; border: 2px solid var(--gray-300);"/>
-                        </div>
+            <div class="replacement-product-modal ${selectedClass}" data-product-id="${product.id}">
+                <input type="checkbox"
+                       class="replacement-checkbox"
+                       value="${product.id}"
+                       data-stock="${product.soLuongTonKho}"
+                       data-price="${product.giaValue}"
+                       data-name="${product.tenSanPham} (${product.mauSac}, ${product.kichCo})"
+                       ${isSelected ? 'checked' : ''}/>
+                <img src="${product.imageUrl}" class="product-img" alt="Ảnh sản phẩm thay thế"/>
+                <div class="flex-1">
+                    <div><strong>${product.tenSanPham}</strong></div>
+                    <div class="text-sm text-gray-600 mb-2">Màu: ${product.mauSac} | Kích cỡ: ${product.kichCo}</div>
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span class="price" data-value="${product.giaValue}">${product.gia}</span>
+                        ${product.oldPrice ? `<span><del class="text-muted">${product.oldPrice}</del></span>` : ''}
+                        ${product.discount ? `<span class="badge bg-danger">${product.discount}</span>` : ''}
+                        ${product.campaignName ? `<span class="badge bg-primary">${product.campaignName}</span>` : ''}
+                        <span class="text-sm text-gray-600">Tồn kho: ${product.soLuongTonKho}</span>
+                    </div>
+                    <div class="mt-2 quantity-section">
+                        <label class="form-label">Số lượng:</label>
+                        <input type="number"
+                               class="replacement-quantity form-control"
+                               min="1"
+                               max="${Math.min(product.soLuongTonKho, maxSoLuong)}"
+                               value="${isSelected ? isSelected.quantity : 1}"
+                               style="width: 120px;" ${isSelected ? '' : 'disabled'}/>
                     </div>
                 </div>
-            `;
+            </div>
+        `;
                 container.insertAdjacentHTML('beforeend', productHtml);
             });
 
-            // Gắn sự kiện cho checkbox và input số lượng
-            document.querySelectorAll('input[name="replacementProducts"]').forEach(checkbox => {
+            // Gắn sự kiện cho checkbox
+            document.querySelectorAll('.replacement-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
-                    const container = this.closest('.replacement-product');
+                    const container = this.closest('.replacement-product-modal');
                     const qtyInput = container.querySelector('.replacement-quantity');
-                    const soLuong = parseInt(qtyInput.value) || 0;
-                    const stock = parseInt(this.getAttribute('data-stock'));
+                    const imageUrl = container.querySelector('img').getAttribute('src');
 
-                    if (this.checked && soLuong > stock) {
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: `Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: ${stock}.`,
-                            icon: 'error',
-                            confirmButtonColor: '#153054'
-                        }).then(() => {
-                            this.checked = false;
-                            qtyInput.value = Math.min(stock, maxSoLuong);
-                            calculatePriceDifference();
-                        });
-                    } else if (this.checked && soLuong > maxSoLuong) {
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: `Số lượng đổi không được vượt quá số lượng đã mua: ${maxSoLuong}.`,
-                            icon: 'error',
-                            confirmButtonColor: '#153054'
-                        }).then(() => {
-                            qtyInput.value = maxSoLuong;
-                            calculatePriceDifference();
-                        });
+                    if (this.checked) {
+                        container.classList.add('selected');
+                        qtyInput.disabled = false;
+
+                        const productData = {
+                            id: this.value,
+                            name: this.getAttribute('data-name'),
+                            price: parseFloat(this.getAttribute('data-price')),
+                            stock: parseInt(this.getAttribute('data-stock')),
+                            quantity: parseInt(qtyInput.value) || 1,
+                            imageUrl: imageUrl
+                        };
+
+                        selectedReplacementProducts.push(productData);
                     } else {
-                        calculatePriceDifference();
+                        container.classList.remove('selected');
+                        qtyInput.disabled = true;
+                        selectedReplacementProducts = selectedReplacementProducts.filter(p => p.id !== this.value);
                     }
+
+                    updateModalPriceDifference();
                 });
             });
 
+            // Gắn sự kiện cho input số lượng
             document.querySelectorAll('.replacement-quantity').forEach(input => {
                 input.addEventListener('change', function() {
-                    const container = this.closest('.replacement-product');
-                    const checkbox = container.querySelector('input[name="replacementProducts"]');
+                    const container = this.closest('.replacement-product-modal');
+                    const checkbox = container.querySelector('.replacement-checkbox');
                     const soLuong = parseInt(this.value) || 0;
                     const stock = parseInt(checkbox.getAttribute('data-stock'));
 
@@ -922,41 +898,88 @@
                             text: `Số lượng sản phẩm thay thế không đủ. Tồn kho hiện tại: ${stock}.`,
                             icon: 'error',
                             confirmButtonColor: '#153054'
-                        }).then(() => {
-                            this.value = Math.min(stock, maxSoLuong);
-                            calculatePriceDifference();
                         });
+                        this.value = Math.min(stock, maxSoLuong);
                     } else if (soLuong > maxSoLuong) {
                         Swal.fire({
                             title: 'Lỗi!',
                             text: `Số lượng đổi không được vượt quá số lượng đã mua: ${maxSoLuong}.`,
                             icon: 'error',
                             confirmButtonColor: '#153054'
-                        }).then(() => {
-                            this.value = maxSoLuong;
-                            calculatePriceDifference();
                         });
+                        this.value = maxSoLuong;
                     } else if (soLuong <= 0) {
-                        Swal.fire({
-                            title: 'Lỗi!',
-                            text: 'Số lượng phải lớn hơn 0.',
-                            icon: 'error',
-                            confirmButtonColor: '#153054'
-                        }).then(() => {
-                            this.value = 1;
-                            calculatePriceDifference();
-                        });
-                    } else {
-                        calculatePriceDifference();
+                        this.value = 1;
                     }
+
+                    // Cập nhật quantity trong selectedReplacementProducts
+                    const productIndex = selectedReplacementProducts.findIndex(p => p.id === checkbox.value);
+                    if (productIndex !== -1) {
+                        selectedReplacementProducts[productIndex].quantity = parseInt(this.value) || 1;
+                    }
+
+                    updateModalPriceDifference();
                 });
             });
         }
 
-        // Hàm render phân trang (giữ nguyên)
+        // Hàm cập nhật chênh lệch giá trong modal
+        // Hàm cập nhật chênh lệch giá trong modal
+        function updateModalPriceDifference() {
+            const soLuongInput = document.getElementById('soLuong');
+            const selectedQuantity = parseInt(soLuongInput.value) || 1;
+
+            let totalOriginalPrice = 0;
+            let totalReplacementPrice = 0;
+            let totalReplacementQuantity = 0;
+
+            if (selectedProductData && selectedQuantity <= selectedProductData.maxQuantity) {
+                totalOriginalPrice = selectedProductData.price * selectedQuantity;
+            }
+
+            selectedReplacementProducts.forEach(product => {
+                totalReplacementPrice += product.price * product.quantity;
+                totalReplacementQuantity += product.quantity;
+            });
+
+            // Kiểm tra tổng số lượng thay thế
+            if (totalReplacementQuantity > selectedQuantity) {
+                Swal.fire({
+                    title: 'Cảnh báo!',
+                    text: `Tổng số lượng sản phẩm thay thế (${totalReplacementQuantity}) vượt quá số lượng muốn đổi (${selectedQuantity}).`,
+                    icon: 'warning',
+                    confirmButtonColor: '#153054'
+                });
+            }
+
+            const priceDifference = totalReplacementPrice - totalOriginalPrice;
+
+            // Hiển thị thông tin trong modal footer
+            const modalFooter = document.querySelector('#replacementProductModal .modal-footer');
+            let existingInfo = modalFooter.querySelector('.price-info');
+            if (!existingInfo) {
+                existingInfo = document.createElement('div');
+                existingInfo.className = 'price-info me-auto';
+                modalFooter.insertBefore(existingInfo, modalFooter.firstChild);
+            }
+
+            existingInfo.innerHTML = `
+        <div class="text-sm">
+            <div>Chênh lệch giá: <strong class="price">${new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND'
+            }).format(priceDifference).replace('₫', ' VNĐ')}</strong></div>
+            <div class="text-muted">Số lượng thay thế: ${totalReplacementQuantity}/${selectedQuantity}</div>
+        </div>
+    `;
+        }
+
+        // Hàm render phân trang
         function renderPagination(currentPage, totalPages, keyword) {
             const paginationLinks = document.getElementById('paginationLinks');
             paginationLinks.innerHTML = '';
+
+            if (totalPages <= 1) return;
 
             const prevDisabled = currentPage === 0 ? 'disabled' : '';
             paginationLinks.insertAdjacentHTML('beforeend', `
@@ -996,7 +1019,7 @@
             });
         }
 
-        // Xử lý tìm kiếm
+        // Xử lý tìm kiếm trong modal
         let searchTimeout;
         const searchInput = document.getElementById('searchProduct');
         searchInput.addEventListener('input', function() {
@@ -1007,28 +1030,38 @@
             }, 500);
         });
 
-        // Xử lý form submit
-        document.getElementById('exchangeForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const selectedProducts = document.querySelectorAll('input[name="selectedProducts"]:checked');
-            const replacementProducts = document.querySelectorAll('input[name="replacementProducts"]:checked');
-            const reason = document.getElementById('reason').value;
-            const description = document.getElementById('description').value;
-            const email = document.getElementById('email').value;
-            const priceDifference = parseFloat(document.getElementById('priceDifferenceValue').value);
-
-            if (selectedProducts.length !== 1) {
+        // Xử lý thay đổi số lượng muốn đổi
+        document.getElementById('soLuong').addEventListener('input', function() {
+            const selectedQuantity = parseInt(this.value) || 1;
+            if (selectedQuantity > maxSoLuong) {
                 Swal.fire({
                     title: 'Lỗi!',
-                    text: 'Vui lòng chọn đúng một sản phẩm để đổi.',
+                    text: `Số lượng đổi không được vượt quá số lượng đã mua: ${maxSoLuong}.`,
                     icon: 'error',
                     confirmButtonColor: '#153054'
                 });
-                return;
+                this.value = maxSoLuong;
+            } else if (selectedQuantity <= 0) {
+                this.value = 1;
             }
 
-            if (replacementProducts.length === 0) {
+            // Cập nhật max cho tất cả input số lượng thay thế
+            document.querySelectorAll('.replacement-quantity').forEach(input => {
+                input.max = Math.min(parseInt(input.closest('.replacement-product-modal').querySelector('.replacement-checkbox').getAttribute('data-stock')), selectedQuantity);
+            });
+
+            updateModalPriceDifference();
+        });
+
+
+        // Xử lý xác nhận chọn sản phẩm thay thế
+        // Xử lý xác nhận chọn sản phẩm thay thế
+        // Xử lý xác nhận chọn sản phẩm thay thế
+        document.getElementById('confirmSelection').addEventListener('click', function() {
+            const soLuongInput = document.getElementById('soLuong');
+            const selectedQuantity = parseInt(soLuongInput.value) || 1;
+
+            if (selectedReplacementProducts.length === 0) {
                 Swal.fire({
                     title: 'Lỗi!',
                     text: 'Vui lòng chọn ít nhất một sản phẩm thay thế.',
@@ -1038,23 +1071,101 @@
                 return;
             }
 
-            // Tính tổng số lượng của các sản phẩm thay thế
-            let totalReplacementQuantity = 0;
-            replacementProducts.forEach(product => {
-                const container = product.closest('.replacement-product');
-                const qtyInput = container.querySelector('.replacement-quantity');
-                totalReplacementQuantity += parseInt(qtyInput.value) || 0;
-            });
-
-            if (totalReplacementQuantity > maxSoLuong) {
+            // Kiểm tra tổng số lượng
+            const totalReplacementQuantity = selectedReplacementProducts.reduce((sum, product) => sum + product.quantity, 0);
+            if (totalReplacementQuantity > selectedQuantity) {
                 Swal.fire({
                     title: 'Lỗi!',
-                    text: `Tổng số lượng sản phẩm thay thế (${totalReplacementQuantity}) không được vượt quá số lượng đã mua (${maxSoLuong}). Vui lòng điều chỉnh số lượng.`,
+                    text: `Tổng số lượng sản phẩm thay thế (${totalReplacementQuantity}) không được vượt quá số lượng muốn đổi (${selectedQuantity}).`,
                     icon: 'error',
                     confirmButtonColor: '#153054'
                 });
                 return;
             }
+
+            // Đóng modal và cập nhật giao diện chính
+            const modal = bootstrap.Modal.getInstance(document.getElementById('replacementProductModal'));
+            modal.hide();
+
+            // Hiển thị danh sách sản phẩm thay thế đã chọn
+            const replacementList = document.getElementById('replacementList');
+            const selectedSection = document.getElementById('selectedReplacementProducts');
+            replacementList.innerHTML = '';
+
+            selectedReplacementProducts.forEach(product => {
+                const productHtml = `
+            <div class="replacement-product">
+                <img src="${product.imageUrl || '/images/default-product.jpg'}" class="product-img" alt="Ảnh sản phẩm thay thế"/>
+                <div class="flex-1">
+                    <div><strong>${product.name}</strong></div>
+                    <div class="text-sm text-gray-600">Số lượng: ${product.quantity}</div>
+                    <div class="price" data-value="${product.price}">${new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND'
+                }).format(product.price).replace('₫', ' VNĐ')}</div>
+                </div>
+            </div>
+        `;
+                replacementList.insertAdjacentHTML('beforeend', productHtml);
+            });
+
+            selectedSection.style.display = 'block';
+
+            // Cập nhật chênh lệch giá trên form chính
+            calculatePriceDifference();
+
+            Swal.fire({
+                title: 'Thành công!',
+                text: `Đã chọn ${selectedReplacementProducts.length} sản phẩm thay thế với tổng số lượng ${totalReplacementQuantity}.`,
+                icon: 'success',
+                confirmButtonColor: '#153054',
+                timer: 2000
+            });
+        });
+
+        // Reset khi đóng modal
+        document.getElementById('replacementProductModal').addEventListener('hidden.bs.modal', function() {
+            if (selectedReplacementProducts.length === 0) {
+                const selectedCheckbox = document.querySelector('.product-select-checkbox:checked');
+                if (selectedCheckbox) {
+                    selectedCheckbox.checked = false;
+                    selectedProductData = null;
+                }
+                document.getElementById('selectedReplacementProducts').style.display = 'none';
+                document.getElementById('replacementList').innerHTML = '';
+                calculatePriceDifference();
+            }
+        });
+
+        // Xử lý form submit
+        document.getElementById('exchangeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!selectedProductData) {
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Vui lòng chọn sản phẩm để đổi.',
+                    icon: 'error',
+                    confirmButtonColor: '#153054'
+                });
+                return;
+            }
+
+            if (selectedReplacementProducts.length === 0) {
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Vui lòng chọn ít nhất một sản phẩm thay thế.',
+                    icon: 'error',
+                    confirmButtonColor: '#153054'
+                });
+                return;
+            }
+
+            const reason = document.getElementById('reason').value;
+            const description = document.getElementById('description').value;
+            const email = document.getElementById('email').value;
+            const priceDifference = parseFloat(document.getElementById('priceDifferenceValue').value);
+            const soLuongDoi = parseInt(document.getElementById('soLuong').value) || 1;
 
             const submitButton = this.querySelector('.btn-confirm');
             const originalText = submitButton.innerHTML;
@@ -1071,15 +1182,11 @@
             });
 
             // Gửi từng yêu cầu cho từng sản phẩm thay thế
-            const promises = Array.from(replacementProducts).map((product, index) => {
-                const container = product.closest('.replacement-product');
-                const qtyInput = container.querySelector('.replacement-quantity');
-                const soLuong = parseInt(qtyInput.value) || 0;
-
+            const promises = selectedReplacementProducts.map((product, index) => {
                 const formData = new FormData();
-                formData.append('selectedProducts', selectedProducts[0].value);
-                formData.append('replacementProducts', product.value);
-                formData.append('soLuong', soLuong);
+                formData.append('selectedProducts', selectedProductData.id);
+                formData.append('replacementProducts', product.id);
+                formData.append('soLuong', product.quantity);
                 formData.append('reason', reason);
                 formData.append('description', description);
                 formData.append('email', email);
@@ -1129,34 +1236,9 @@
                     });
                 });
         });
-
-        // Tải danh sách sản phẩm ban đầu
-        loadReplacementProducts(0, document.getElementById('searchProduct').value);
-
-// Gắn sự kiện cho các input để tính chênh lệch giá
-        document.querySelectorAll('input[name="replacementProducts"], .replacement-quantity', '#soLuong').forEach(element => {
-            element.addEventListener('change', calculatePriceDifference); // Sử dụng 'change' cho checkbox và số lượng
-        });
-
-// Thêm sự kiện 'input' cho #soLuong để tính toán ngay khi nhập
-        const soLuongInput = document.getElementById('soLuong');
-        soLuongInput.addEventListener('input', function() {
-            const selectedQuantity = parseInt(this.value) || 1;
-            if (selectedQuantity <= maxSoLuong) {
-                calculatePriceDifference();
-            } else {
-                Swal.fire({
-                    title: 'Lỗi!',
-                    text: `Số lượng đổi không được vượt quá số lượng đã mua: ${maxSoLuong}.`,
-                    icon: 'error',
-                    confirmButtonColor: '#153054'
-                }).then(() => {
-                    this.value = maxSoLuong;
-                    calculatePriceDifference();
-                });
-            }
-        });
     });
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
