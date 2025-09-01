@@ -1102,11 +1102,14 @@
     function updateTimeline(currentStatus) {
       const timelineSteps = document.querySelectorAll('.timeline-step');
       const isCanceled = currentStatus === 'Hủy đơn hàng';
-      const isReturned = currentStatus === 'Đã trả hàng';
+      const isReturned = currentStatus === 'Đã trả hàng' || currentStatus === 'Đã trả hàng một phần';
+      const isExchanged = currentStatus === 'Chờ xử lý đổi hàng' || currentStatus === 'Đã đổi hàng';
 
+      // Reset all steps
       timelineSteps.forEach(step => {
         step.classList.remove('completed', 'cancel');
         step.removeAttribute('data-status');
+        step.style.display = 'flex';
       });
 
       const statusSteps = [
@@ -1147,13 +1150,20 @@
               timelineSteps[i].style.display = 'none';
             }
           });
-        } else {
-          [3, 4, 5, 6, 7, 8].forEach(i => {
-            if (timelineSteps[i]) {
-              timelineSteps[i].style.display = 'flex';
+        } else if (isReturned || isExchanged) {
+          [3, 4, 5].forEach(i => {
+            if (timelineSteps[i] && i > currentStep.step) {
+              timelineSteps[i].style.display = 'none';
             }
           });
         }
+      }
+
+      // Update timeline progress bar
+      const timelineContainer = document.querySelector('.timeline-container');
+      if (timelineContainer && currentStep) {
+        const progressWidth = (currentStep.step / (statusSteps.length - 1)) * 100;
+        timelineContainer.style.setProperty('--progress-width', `${progressWidth}%`);
       }
     }
 
@@ -1333,17 +1343,17 @@
 
   function confirmReceivedOrder(button) {
     const id = button.getAttribute('data-id');
-    console.log("Confirming order with ID:", id);
+    console.log("Xác nhận đơn hàng với ID:", id);
 
     Swal.fire({
       title: 'Xác nhận đã nhận hàng?',
       html: `
-        <p style="color: red; font-weight: bold; margin-top: 10px; margin-bottom: 15px">
-          <i class="fas fa-exclamation-circle" style="color: red; margin-right: 5px;"></i>
-          Lưu ý quan trọng
-        </p>
-        <p>Sau khi xác nhận sẽ không thể yêu cầu đổi hoặc trả hàng nữa. Vui lòng kiểm tra kỹ sản phẩm trước khi xác nhận.</p>
-      `,
+          <p style="color: red; font-weight: bold; margin-top: 10px; margin-bottom: 15px">
+            <i class="fas fa-exclamation-circle" style="color: red; margin-right: 5px;"></i>
+            Lưu ý quan trọng
+          </p>
+          <p>Sau khi xác nhận sẽ không thể yêu cầu đổi hoặc trả hàng nữa. Vui lòng kiểm tra kỹ sản phẩm trước khi xác nhận.</p>
+        `,
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: '<i class="fas fa-check mr-2"></i>Xác nhận',
@@ -1372,20 +1382,69 @@
             'Content-Type': 'application/json',
           },
         })
-                .then((response) => response.json().then(data => ({ status: response.status, data })))
-                .then(({ status, data }) => {
-                  if (status === 200) {
+                .then(async (response) => {
+                  // Kiểm tra content-type để xác định cách parse response
+                  const contentType = response.headers.get('content-type');
+
+                  if (!response.ok) {
+                    // Nếu không thành công, xử lý theo content-type
+                    if (contentType && contentType.includes('application/json')) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || `HTTP Error: ${response.status}`);
+                    } else {
+                      const errorText = await response.text();
+                      throw new Error(errorText || `HTTP Error: ${response.status}`);
+                    }
+                  }
+
+                  // Nếu thành công, parse theo content-type
+                  if (contentType && contentType.includes('application/json')) {
+                    return await response.json();
+                  } else {
+                    const text = await response.text();
+                    // Thử parse JSON nếu text trông giống JSON
+                    try {
+                      return JSON.parse(text);
+                    } catch {
+                      // Nếu không parse được JSON, trả về object với success = true
+                      return { success: true, message: text || 'Thành công' };
+                    }
+                  }
+                })
+                .then((data) => {
+                  Swal.close();
+
+                  if (data.success) {
+                    // Cập nhật giao diện ngay lập tức
+                    const statusElement = document.querySelector('.order-status');
+                    if (statusElement) {
+                      statusElement.textContent = 'Hoàn thành';
+                      statusElement.classList.add('bg-green-500', 'transition', 'duration-500');
+                      setTimeout(() => statusElement.classList.remove('bg-green-500'), 1000);
+                    }
+
+                    // Cập nhật timeline nếu hàm tồn tại
+                    if (typeof updateTimeline === 'function') {
+                      updateTimeline('Hoàn thành');
+                    }
+
+                    // Cập nhật action buttons nếu hàm tồn tại
+                    if (typeof updateActionButtons === 'function') {
+                      const hoaDonId = id;
+                      const maDonHangElement = document.querySelector('.order-info h3 span');
+                      const maDonHang = maDonHangElement ? maDonHangElement.textContent : '';
+                      updateActionButtons('Hoàn thành', hoaDonId, maDonHang);
+                    }
+
                     Swal.fire({
                       title: 'Thành công!',
-                      text: 'Đã xác nhận nhận hàng.',
+                      text: data.message || 'Đã xác nhận nhận hàng.',
                       icon: 'success',
                       confirmButtonColor: '#153054',
                       customClass: {
                         popup: 'rounded-lg',
                         confirmButton: 'rounded-lg'
                       }
-                    }).then(() => {
-                      window.location.href = window.location.pathname + '?t=' + new Date().getTime();
                     });
                   } else {
                     Swal.fire({
@@ -1401,10 +1460,27 @@
                   }
                 })
                 .catch((error) => {
-                  console.error('Error confirming order:', error);
+                  Swal.close();
+                  console.error('Lỗi khi xác nhận đơn hàng:', error);
+
+                  // Xử lý các loại lỗi khác nhau
+                  let errorMessage = 'Có lỗi xảy ra. Vui lòng thử lại.';
+
+                  if (error.message.includes('404')) {
+                    errorMessage = 'Không tìm thấy đơn hàng hoặc URL không đúng.';
+                  } else if (error.message.includes('401')) {
+                    errorMessage = 'Bạn cần đăng nhập để thực hiện thao tác này.';
+                  } else if (error.message.includes('403')) {
+                    errorMessage = 'Bạn không có quyền thực hiện thao tác này.';
+                  } else if (error.message.includes('500')) {
+                    errorMessage = 'Lỗi server. Vui lòng thử lại sau.';
+                  } else if (error.message !== 'Có lỗi xảy ra. Vui lòng thử lại.') {
+                    errorMessage = error.message;
+                  }
+
                   Swal.fire({
                     title: 'Lỗi!',
-                    text: 'Có lỗi xảy ra. Vui lòng thử lại.',
+                    text: errorMessage,
                     icon: 'error',
                     confirmButtonColor: '#153054',
                     customClass: {

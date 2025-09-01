@@ -630,60 +630,64 @@ public class HoaDonService {
     }
 
     public String getCurrentStatus(HoaDon hoaDon) {
-        // 1) Hủy luôn ưu tiên cao nhất
-        if ("Hủy đơn hàng".equals(hoaDon.getTrangThai())) return "Hủy đơn hàng";
+        // Kiểm tra trạng thái hủy đơn hàng
+        if ("Hủy đơn hàng".equals(hoaDon.getTrangThai())) {
+            return "Hủy đơn hàng";
+        }
 
-        // 2) Nếu đã được set rõ ràng là Đã đổi hàng / Chờ xử lý đổi hàng thì ưu tiên theo đó
+        // Kiểm tra trạng thái đổi hàng dựa trên trạng thái hóa đơn hoặc lịch sử đổi hàng
         if ("Đã đổi hàng".equals(hoaDon.getTrangThai()) ||
                 hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã đổi hàng".equals(ls.getTrangThai())) ||
                 lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận")) {
             return "Đã đổi hàng";
         }
+
+        // Kiểm tra trạng thái chờ xử lý đổi hàng
         if ("Chờ xử lý đổi hàng".equals(hoaDon.getTrangThai()) ||
                 hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Chờ xử lý đổi hàng".equals(ls.getTrangThai())) ||
                 lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Chờ xử lý")) {
             return "Chờ xử lý đổi hàng";
         }
 
-        // 3) Ưu tiên TRẢ HÀNG trước (vì đây là tình trạng “ghi đè” bạn đang gặp)
-        //    Nếu đã set trạng thái ở Hóa đơn là Đã trả hàng / Đã trả hàng một phần thì trả về luôn
-        if ("Đã trả hàng".equals(hoaDon.getTrangThai())) return "Đã trả hàng";
-        if ("Đã trả hàng một phần".equals(hoaDon.getTrangThai())) return "Đã trả hàng một phần";
-
-        //    Hoặc suy ra từ chi tiết đơn hàng
-        List<ChiTietDonHang> items = hoaDon.getDonHang().getChiTietDonHangs();
-        long total = items.size();
-        long returned = items.stream().filter(i -> Boolean.TRUE.equals(i.getTrangThaiHoanTra())).count();
-        if (returned > 0 && returned == total) return "Đã trả hàng";
-        if (returned > 0) return "Đã trả hàng một phần";
-
-        // 4) Luồng “Tại quầy” luôn coi là hoàn thành (nếu chưa có trả hàng ở trên)
-        if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
-            return "Hoàn thành";
-        }
-
-        // 5) Các trạng thái theo lịch sử
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai())))
-            return "Vận chuyển thành công";
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang vận chuyển".equals(ls.getTrangThai())))
-            return "Đang vận chuyển";
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang xử lý Online".equals(ls.getTrangThai())))
-            return "Đang xử lý Online";
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận Online".equals(ls.getTrangThai())))
-            return "Đã xác nhận Online";
-        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận".equals(ls.getTrangThai())))
-            return "Đã xác nhận";
-
-        // 6) Chỉ trả "Hoàn thành" nếu thật sự không có trả hàng và lịch sử có Hoàn thành
+        // Kiểm tra trạng thái hoàn thành
         if ("Hoàn thành".equals(hoaDon.getTrangThai()) ||
                 hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Hoàn thành".equals(ls.getTrangThai()))) {
             return "Hoàn thành";
         }
 
-        // 7) Mặc định
+        // Kiểm tra trạng thái trả hàng
+        List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
+        long totalItems = chiTietDonHangs.size();
+        long returnedItems = chiTietDonHangs.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getTrangThaiHoanTra()))
+                .count();
+
+        if (returnedItems > 0 && returnedItems == totalItems) {
+            return "Đã trả hàng";
+        } else if (returnedItems > 0) {
+            return "Đã trả hàng một phần";
+        }
+
+        // Kiểm tra phương thức bán hàng tại quầy
+        if ("Tại quầy".equalsIgnoreCase(hoaDon.getDonHang().getPhuongThucBanHang())) {
+            return "Hoàn thành";
+        }
+
+        // Kiểm tra trạng thái khác dựa trên lịch sử hóa đơn
+        if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Vận chuyển thành công".equals(ls.getTrangThai()))) {
+            return "Vận chuyển thành công";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang vận chuyển".equals(ls.getTrangThai()))) {
+            return "Đang vận chuyển";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đang xử lý Online".equals(ls.getTrangThai()))) {
+            return "Đang xử lý Online";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận Online".equals(ls.getTrangThai()))) {
+            return "Đã xác nhận Online";
+        } else if (hoaDon.getLichSuHoaDons().stream().anyMatch(ls -> "Đã xác nhận".equals(ls.getTrangThai()))) {
+            return "Đã xác nhận";
+        }
+
         return "Chưa xác nhận";
     }
-
 
     @Transactional
     public void processExchange(UUID hoaDonId, List<UUID> chiTietDonHangIds, List<UUID> newChiTietSanPhamIds, String lyDoDoiHang) {
