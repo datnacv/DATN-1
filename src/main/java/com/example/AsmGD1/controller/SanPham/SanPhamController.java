@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;  // Thêm import này
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -89,11 +90,23 @@ public class SanPhamController {
             @RequestParam(value = "xuatXuId", required = false) UUID xuatXuId,
             @RequestParam(value = "tayAoId", required = false) UUID tayAoId,
             @RequestParam(value = "coAoId", required = false) UUID coAoId,
-            @RequestParam(value = "page", defaultValue = "0") int page) {
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "sortField", required = false, defaultValue = "thoiGianTao") String sortField,  // Mặc định sort theo ngày tạo
+            @RequestParam(value = "sortDir", required = false, defaultValue = "desc") String sortDir) {  // Mặc định desc (mới nhất đầu)
 
         addUserInfoToModel(model);
 
-        Pageable pageable = PageRequest.of(page, 5);
+        // Xử lý sort: Đảm bảo field hợp lệ (maSanPham, tongSoLuong, thoiGianTao)
+        String validSortField = switch (sortField) {
+            case "maSanPham", "tongSoLuong", "thoiGianTao" -> sortField;
+            default -> "thoiGianTao";  // Mặc định nếu field không hợp lệ
+        };
+
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(direction, validSortField);
+
+        Pageable pageable = PageRequest.of(page, 5, sort);  // Áp dụng sort vào Pageable
+
         Page<SanPham> sanPhamPage = sanPhamService.findByAdvancedFilters(
                 searchName,
                 trangThai,
@@ -129,6 +142,11 @@ public class SanPhamController {
         model.addAttribute("selectedXuatXuId", xuatXuId);
         model.addAttribute("selectedTayAoId", tayAoId);
         model.addAttribute("selectedCoAoId", coAoId);
+
+        // Thêm param sort vào model để giữ trạng thái sort trong HTML
+        model.addAttribute("sortField", validSortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equalsIgnoreCase("asc") ? "desc" : "asc");
 
         return "WebQuanLy/san-pham-list-form";
     }

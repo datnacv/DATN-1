@@ -81,11 +81,12 @@ public class SanPhamService {
         return sanPham;
     }
 
-    // Trong SanPhamService (thêm import nếu cần: import java.util.UUID;)
+
     public Page<SanPham> findByAdvancedFilters(String searchName, Boolean trangThai,
                                                UUID danhMucId, UUID thuongHieuId, UUID kieuDangId,
                                                UUID chatLieuId, UUID xuatXuId, UUID tayAoId, UUID coAoId,
                                                Pageable pageable) {
+        // Pageable sẽ tự áp dụng sort từ controller
         Page<SanPham> sanPhamPage = sanPhamRepository.findByAdvancedFilters(
                 searchName != null && !searchName.isEmpty() ? searchName : null,
                 trangThai,

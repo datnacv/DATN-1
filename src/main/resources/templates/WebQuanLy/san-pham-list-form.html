@@ -975,13 +975,25 @@
                         <thead>
                         <tr>
                             <th>#</th>
-                            <th>Mã SP</th>
+                            <th>
+                                <a th:href="@{/acvstore/san-pham(page=${currentPage}, sortField='maSanPham', sortDir=${sortField == 'maSanPham' and sortDir == 'asc' ? 'desc' : 'asc'}, searchName=${searchName}, trangThai=${selectedTrangThai}, danhMucId=${selectedDanhMucId}, thuongHieuId=${selectedThuongHieuId}, kieuDangId=${selectedKieuDangId}, chatLieuId=${selectedChatLieuId}, xuatXuId=${selectedXuatXuId}, tayAoId=${selectedTayAoId}, coAoId=${selectedCoAoId})}">
+                                    Mã SP
+                                    <i th:if="${sortField == 'maSanPham' and sortDir == 'asc'}" class="fas fa-sort-up"></i>
+                                    <i th:if="${sortField == 'maSanPham' and sortDir == 'desc'}" class="fas fa-sort-down"></i>
+                                </a>
+                            </th>
                             <th>Hình ảnh</th>
                             <th>Tên sản phẩm</th>
                             <th>Danh mục</th>
                             <th>Tồn kho</th>
                             <th th:if="${isAdmin}">Trạng thái</th>
-                            <th>Ngày tạo</th>
+                            <th>
+                                <a th:href="@{/acvstore/san-pham(page=${currentPage}, sortField='thoiGianTao', sortDir=${sortField == 'thoiGianTao' and sortDir == 'asc' ? 'desc' : 'asc'}, searchName=${searchName}, trangThai=${selectedTrangThai}, danhMucId=${selectedDanhMucId}, thuongHieuId=${selectedThuongHieuId}, kieuDangId=${selectedKieuDangId}, chatLieuId=${selectedChatLieuId}, xuatXuId=${selectedXuatXuId}, tayAoId=${selectedTayAoId}, coAoId=${selectedCoAoId})}">
+                                    Ngày tạo
+                                    <i th:if="${sortField == 'thoiGianTao' and sortDir == 'asc'}" class="fas fa-sort-up"></i>
+                                    <i th:if="${sortField == 'thoiGianTao' and sortDir == 'desc'}" class="fas fa-sort-down"></i>
+                                </a>
+                            </th>
                             <th>Thao tác</th>
                         </tr>
                         </thead>
@@ -1467,16 +1479,7 @@
     }
 
     function resetFilters() {
-        document.getElementById('searchNameInput').value = '';
-        document.getElementById('trangThaiFilter').tomselect.clear();
-        document.getElementById('danhMucFilter').tomselect.clear();
-        document.getElementById('thuongHieuFilter').tomselect.clear();
-        document.getElementById('kieuDangFilter').tomselect.clear();
-        document.getElementById('chatLieuFilter').tomselect.clear();
-        document.getElementById('xuatXuFilter').tomselect.clear();
-        document.getElementById('tayAoFilter').tomselect.clear();
-        document.getElementById('coAoFilter').tomselect.clear();
-        document.getElementById('searchForm').submit();
+        window.location.href = '/acvstore/san-pham';
     }
 
     document.addEventListener('DOMContentLoaded', function() {
