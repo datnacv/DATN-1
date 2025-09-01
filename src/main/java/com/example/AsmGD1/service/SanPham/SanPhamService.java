@@ -81,6 +81,29 @@ public class SanPhamService {
         return sanPham;
     }
 
+
+    public Page<SanPham> findByAdvancedFilters(String searchName, Boolean trangThai,
+                                               UUID danhMucId, UUID thuongHieuId, UUID kieuDangId,
+                                               UUID chatLieuId, UUID xuatXuId, UUID tayAoId, UUID coAoId,
+                                               Pageable pageable) {
+        // Pageable sẽ tự áp dụng sort từ controller
+        Page<SanPham> sanPhamPage = sanPhamRepository.findByAdvancedFilters(
+                searchName != null && !searchName.isEmpty() ? searchName : null,
+                trangThai,
+                danhMucId,
+                thuongHieuId,
+                kieuDangId,
+                chatLieuId,
+                xuatXuId,
+                tayAoId,
+                coAoId,
+                pageable
+        );
+        sanPhamPage.getContent().forEach(this::setTongSoLuong);
+        sanPhamPage.getContent().forEach(this::autoUpdateStatusBasedOnDetails);
+        return sanPhamPage;
+    }
+
     public void save(SanPham sanPham) {
         sanPhamRepository.save(sanPham);
     }

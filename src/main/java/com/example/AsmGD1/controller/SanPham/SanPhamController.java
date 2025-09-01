@@ -5,14 +5,14 @@ import com.example.AsmGD1.entity.DanhMuc;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.entity.SanPham;
 import com.example.AsmGD1.service.NguoiDung.NguoiDungService;
-import com.example.AsmGD1.service.SanPham.DanhMucService;
-import com.example.AsmGD1.service.SanPham.SanPhamService;
+import com.example.AsmGD1.service.SanPham.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;  // Thêm import này
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -47,6 +47,13 @@ public class SanPhamController {
     @Autowired
     private NguoiDungService nguoiDungService;
 
+    @Autowired private ThuongHieuService thuongHieuService;
+    @Autowired private KieuDangService kieuDangService;
+    @Autowired private ChatLieuService chatLieuService;
+    @Autowired private XuatXuService xuatXuService;
+    @Autowired private TayAoService tayAoService;
+    @Autowired private CoAoService coAoService;
+
     // Helper method to check if current user is admin
     private boolean isCurrentUserAdmin() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -76,24 +83,42 @@ public class SanPhamController {
             Model model,
             @RequestParam(value = "searchName", required = false) String searchName,
             @RequestParam(value = "trangThai", required = false) Boolean trangThai,
-            @RequestParam(value = "page", defaultValue = "0") int page) {
+            @RequestParam(value = "danhMucId", required = false) UUID danhMucId,
+            @RequestParam(value = "thuongHieuId", required = false) UUID thuongHieuId,
+            @RequestParam(value = "kieuDangId", required = false) UUID kieuDangId,
+            @RequestParam(value = "chatLieuId", required = false) UUID chatLieuId,
+            @RequestParam(value = "xuatXuId", required = false) UUID xuatXuId,
+            @RequestParam(value = "tayAoId", required = false) UUID tayAoId,
+            @RequestParam(value = "coAoId", required = false) UUID coAoId,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "sortField", required = false, defaultValue = "thoiGianTao") String sortField,  // Mặc định sort theo ngày tạo
+            @RequestParam(value = "sortDir", required = false, defaultValue = "desc") String sortDir) {  // Mặc định desc (mới nhất đầu)
 
         addUserInfoToModel(model);
 
-        Pageable pageable = PageRequest.of(page, 5);
-        Page<SanPham> sanPhamPage;
+        // Xử lý sort: Đảm bảo field hợp lệ (maSanPham, tongSoLuong, thoiGianTao)
+        String validSortField = switch (sortField) {
+            case "maSanPham", "tongSoLuong", "thoiGianTao" -> sortField;
+            default -> "thoiGianTao";  // Mặc định nếu field không hợp lệ
+        };
 
-        if (searchName != null && !searchName.trim().isEmpty()) {
-            searchName = searchName.trim();
-            sanPhamPage = sanPhamService.searchByTenOrMa(searchName, pageable);
-            if (trangThai != null) {
-                sanPhamPage = sanPhamService.findByTenSanPhamContaining(searchName, trangThai, pageable);
-            }
-        } else if (trangThai != null) {
-            sanPhamPage = sanPhamService.findByTrangThai(trangThai, pageable);
-        } else {
-            sanPhamPage = sanPhamService.findAllPaginated(pageable);
-        }
+        Sort.Direction direction = sortDir.equalsIgnoreCase("asc") ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Sort sort = Sort.by(direction, validSortField);
+
+        Pageable pageable = PageRequest.of(page, 5, sort);  // Áp dụng sort vào Pageable
+
+        Page<SanPham> sanPhamPage = sanPhamService.findByAdvancedFilters(
+                searchName,
+                trangThai,
+                danhMucId,
+                thuongHieuId,
+                kieuDangId,
+                chatLieuId,
+                xuatXuId,
+                tayAoId,
+                coAoId,
+                pageable
+        );
 
         List<DanhMuc> danhMucList = danhMucService.getAllDanhMuc();
 
@@ -104,6 +129,24 @@ public class SanPhamController {
         model.addAttribute("selectedTrangThai", trangThai);
         model.addAttribute("sanPham", new SanPham());
         model.addAttribute("danhMucList", danhMucList);
+        model.addAttribute("thuongHieuList", thuongHieuService.getAllThuongHieu());
+        model.addAttribute("kieuDangList", kieuDangService.getAllKieuDang());
+        model.addAttribute("chatLieuList", chatLieuService.getAllChatLieu());
+        model.addAttribute("xuatXuList", xuatXuService.getAllXuatXu());
+        model.addAttribute("tayAoList", tayAoService.getAllTayAo());
+        model.addAttribute("coAoList", coAoService.getAllCoAo());
+        model.addAttribute("selectedDanhMucId", danhMucId);
+        model.addAttribute("selectedThuongHieuId", thuongHieuId);
+        model.addAttribute("selectedKieuDangId", kieuDangId);
+        model.addAttribute("selectedChatLieuId", chatLieuId);
+        model.addAttribute("selectedXuatXuId", xuatXuId);
+        model.addAttribute("selectedTayAoId", tayAoId);
+        model.addAttribute("selectedCoAoId", coAoId);
+
+        // Thêm param sort vào model để giữ trạng thái sort trong HTML
+        model.addAttribute("sortField", validSortField);
+        model.addAttribute("sortDir", sortDir);
+        model.addAttribute("reverseSortDir", sortDir.equalsIgnoreCase("asc") ? "desc" : "asc");
 
         return "WebQuanLy/san-pham-list-form";
     }

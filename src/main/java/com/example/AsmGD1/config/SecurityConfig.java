@@ -277,7 +277,13 @@ public class SecurityConfig implements ApplicationContextAware {
         NguoiDungService nguoiDungService = applicationContext.getBean(NguoiDungService.class);
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/chitietsanpham", "/new", "/all", "/bestsellers", "/category/**", "/search/**", "/acvstore/login", "/acvstore/verify-face", "/customers/login", "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user", "/css/**", "/js/**", "/image/**", "/images/**", "/vi/**", "/uploads/**").permitAll()
+                        .requestMatchers(
+                                "/", "/chitietsanpham", "/new", "/all", "/bestsellers", "/category/**",
+                                "/search/**", "/acvstore/login", "/acvstore/verify-face", "/customers/login",
+                                "/customers/oauth2/register", "/api/cart/check-auth", "/api/cart/get-user",
+                                "/css/**", "/js/**", "/image/**", "/images/**", "/vi/**", "/uploads/**",
+                                "/ws/**"
+                        ).permitAll()
                         .requestMatchers("/cart", "/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -317,7 +323,6 @@ public class SecurityConfig implements ApplicationContextAware {
                         .invalidSessionUrl("/customers/login?invalid")
                 )
                 .csrf(csrf -> csrf.disable());
-
         return http.build();
     }
 
