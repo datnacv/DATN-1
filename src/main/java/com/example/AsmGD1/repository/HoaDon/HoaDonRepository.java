@@ -21,7 +21,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, UUID> {
     List<HoaDon> findByDonHang_NguoiDungIdAndDonHang_MaDonHangContainingIgnoreCase(UUID nguoiDungId, String maDonHang);
     Optional<HoaDon> findByDonHangId(UUID donHangId);
 
-    HoaDon findByDonHang_MaDonHang(String maDonHang);
+    Optional<HoaDon> findByDonHang_MaDonHang(String maDonHang);
 
     HoaDon findByDonHang_Id(UUID idDonHang);
 
