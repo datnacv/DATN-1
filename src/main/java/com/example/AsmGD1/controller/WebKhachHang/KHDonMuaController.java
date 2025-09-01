@@ -239,6 +239,53 @@ public class KHDonMuaController {
         return "WebKhachHang/don-mua";
     }
 
+    @GetMapping("/api/orders/status")
+    public ResponseEntity<Map<String, Object>> getOrderStatus(
+            @RequestParam("maDonHang") String maDonHang,
+            Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            response.put("success", false);
+            response.put("message", "Vui lòng đăng nhập để tiếp tục.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+        if (nguoiDungId == null) {
+            response.put("success", false);
+            response.put("message", "Không thể xác định người dùng.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+        if (nguoiDung == null) {
+            response.put("success", false);
+            response.put("message", "Người dùng không tồn tại.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
+
+        Optional<HoaDon> hoaDonOpt = hoaDonRepo.findByDonHang_MaDonHang(maDonHang);
+        if (hoaDonOpt.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Không tìm thấy đơn hàng.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        HoaDon hoaDon = hoaDonOpt.get();
+        if (!hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDungId)) {
+            response.put("success", false);
+            response.put("message", "Bạn không có quyền truy cập đơn hàng này.");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+
+        String currentStatus = hoaDonService.getCurrentStatus(hoaDon);
+
+        response.put("success", true);
+        response.put("trangThai", currentStatus);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/api/orders/search")
     public ResponseEntity<List<Map<String, Object>>> searchOrders(
             @RequestParam("maDonHang") String maDonHang,
@@ -483,61 +530,139 @@ public class KHDonMuaController {
 
     @PostMapping("/api/orders/confirm-received/{id}")
     @Transactional(rollbackOn = Exception.class)
-    public ResponseEntity<?> confirmReceivedOrder(@PathVariable("id") UUID id, Authentication authentication) {
-        System.out.println("Received confirmReceivedOrder request for id: " + id);
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Vui lòng đăng nhập để xác nhận.");
-        }
-
-        UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
-        if (nguoiDungId == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Không thể xác định người dùng.");
-        }
-
-        NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
-        if (nguoiDung == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Người dùng không tồn tại.");
-        }
-
-        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy đơn hàng hoặc bạn không có quyền xác nhận.");
-        }
-
-        if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
-            return ResponseEntity.badRequest().body("Chỉ có thể xác nhận khi đơn hàng ở trạng thái 'Vận chuyển thành công'.");
-        }
+    public ResponseEntity<Map<String, Object>> confirmReceivedOrder(@PathVariable("id") UUID id, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
 
         try {
+            System.out.println("Received confirmReceivedOrder request for id: " + id);
+
+            // Kiểm tra authentication
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Vui lòng đăng nhập để xác nhận.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            // Lấy thông tin người dùng
+            UUID nguoiDungId = getNguoiDungIdFromAuthentication(authentication);
+            if (nguoiDungId == null) {
+                response.put("success", false);
+                response.put("message", "Không thể xác định người dùng.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            NguoiDung nguoiDung = nguoiDungService.findById(nguoiDungId);
+            if (nguoiDung == null) {
+                response.put("success", false);
+                response.put("message", "Người dùng không tồn tại.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            // Tìm hóa đơn
+            Optional<HoaDon> hoaDonOpt = hoaDonRepo.findById(id);
+            if (hoaDonOpt.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Không tìm thấy đơn hàng.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+            }
+
+            HoaDon hoaDon = hoaDonOpt.get();
+
+            // Kiểm tra quyền sở hữu
+            if (hoaDon.getDonHang() == null ||
+                    hoaDon.getDonHang().getNguoiDung() == null ||
+                    !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền xác nhận đơn hàng này.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
+            // Kiểm tra trạng thái
+            if (!"Vận chuyển thành công".equals(hoaDon.getTrangThai())) {
+                response.put("success", false);
+                response.put("message", "Chỉ có thể xác nhận khi đơn hàng ở trạng thái 'Vận chuyển thành công'. Trạng thái hiện tại: " + hoaDon.getTrangThai());
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Cập nhật trạng thái hóa đơn
             hoaDon.setTrangThai("Hoàn thành");
             hoaDon.setNgayThanhToan(LocalDateTime.now());
             hoaDon.setGhiChu("Khách hàng xác nhận đã nhận hàng");
 
+            // Cập nhật trạng thái đơn hàng
             DonHang donHang = hoaDon.getDonHang();
-            donHang.setTrangThai("THANH_CONG");
-            donHangRepository.save(donHang);
+            if (donHang != null) {
+                donHang.setTrangThai("THANH_CONG");
+                donHangRepository.save(donHang);
+            }
 
-            hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
-            HoaDon savedHoaDon = hoaDonService.save(hoaDon);
+            // Thêm lịch sử hóa đơn
+            try {
+                hoaDonService.addLichSuHoaDon(hoaDon, "Hoàn thành", "Khách hàng xác nhận đã nhận hàng");
+            } catch (Exception e) {
+                System.err.println("Lỗi khi thêm lịch sử hóa đơn: " + e.getMessage());
+                // Tạo lịch sử thủ công nếu service bị lỗi
+                LichSuHoaDon lichSu = new LichSuHoaDon();
+                lichSu.setHoaDon(hoaDon);
+                lichSu.setTrangThai("Hoàn thành");
+                lichSu.setThoiGian(LocalDateTime.now());
+                lichSu.setGhiChu("Khách hàng xác nhận đã nhận hàng");
+                lichSuHoaDonRepository.save(lichSu);
+            }
 
-            thongBaoService.taoThongBaoHeThong(
-                    "admin",
-                    "Đơn hàng đã hoàn thành",
-                    "Đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã được khách hàng xác nhận hoàn thành.",
-                    hoaDon.getDonHang()
-            );
+            // Lưu hóa đơn
+            HoaDon savedHoaDon = hoaDonRepo.save(hoaDon);
 
-            String emailContent = "<h2>Thông báo hoàn thành đơn hàng</h2>" +
-                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
-                    "<p>Đơn hàng của bạn với mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận hoàn thành.</p>" +
-                    "<p>Cảm ơn bạn đã mua sắm tại ACV Store! Chúng tôi mong được phục vụ bạn trong tương lai.</p>" +
-                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
-            emailService.sendEmail(nguoiDung.getEmail(), "Hoàn thành đơn hàng - ACV Store", emailContent);
+            // Gửi thông báo (không để lỗi này làm fail transaction)
+            try {
+                thongBaoService.taoThongBaoHeThong(
+                        "admin",
+                        "Đơn hàng đã hoàn thành",
+                        "Đơn hàng mã " + hoaDon.getDonHang().getMaDonHang() + " đã được khách hàng xác nhận hoàn thành.",
+                        hoaDon.getDonHang()
+                );
+            } catch (Exception e) {
+                System.err.println("Lỗi khi gửi thông báo: " + e.getMessage());
+            }
 
-            return ResponseEntity.ok(Map.of("message", "Đã xác nhận nhận hàng thành công và gửi thông báo cho admin."));
+            // Gửi email (không để lỗi này làm fail transaction)
+            try {
+                String emailContent = "<h2>Thông báo hoàn thành đơn hàng</h2>" +
+                        "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                        "<p>Đơn hàng của bạn với mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận hoàn thành.</p>" +
+                        "<p>Cảm ơn bạn đã mua sắm tại ACV Store! Chúng tôi mong được phục vụ bạn trong tương lai.</p>" +
+                        "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
+                emailService.sendEmail(nguoiDung.getEmail(), "Hoàn thành đơn hàng - ACV Store", emailContent);
+            } catch (Exception e) {
+                System.err.println("Lỗi khi gửi email: " + e.getMessage());
+            }
+
+            // Trả về response thành công
+            response.put("success", true);
+            response.put("message", "Đã xác nhận nhận hàng thành công.");
+            response.put("newStatus", "Hoàn thành");
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println("Lỗi tham số không hợp lệ: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Tham số không hợp lệ: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (ObjectOptimisticLockingFailureException e) {
+            System.err.println("Lỗi xung đột dữ liệu: " + e.getMessage());
+            response.put("success", false);
+            response.put("message", "Dữ liệu đã được cập nhật bởi người khác. Vui lòng thử lại.");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+
         } catch (Exception e) {
-            System.err.println("Lỗi khi xác nhận đơn hàng: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi xác nhận: " + e.getMessage());
+            System.err.println("Lỗi không mong muốn khi xác nhận đơn hàng: " + e.getMessage());
+            e.printStackTrace(); // In stack trace để debug
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi xác nhận đơn hàng. Vui lòng thử lại sau.");
+            response.put("error", e.getMessage()); // Thêm chi tiết lỗi để debug
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
 
@@ -883,7 +1008,7 @@ public class KHDonMuaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(required = false) UUID chiTietId, // Thêm tham số chiTietId
+            @RequestParam(required = false) List<UUID> chiTietIds, // Chấp nhận danh sách chiTietIds
             Model model,
             Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -900,9 +1025,25 @@ public class KHDonMuaController {
             return "redirect:/dang-nhap";
         }
 
-        HoaDon hoaDon = hoaDonRepo.findById(id).orElse(null);
-        if (hoaDon == null || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId()) || !List.of("Vận chuyển thành công", "Chờ xử lý đổi hàng", "Đã đổi hàng", "Hoàn thành").contains(hoaDon.getTrangThai())) {
+        Optional<HoaDon> hoaDonOpt = hoaDonRepo.findById(id);
+        if (hoaDonOpt.isEmpty()) {
             model.addAttribute("hoaDon", null);
+            return "WebKhachHang/tra-doi-san-pham";
+        }
+
+        HoaDon hoaDon = hoaDonOpt.get();
+        if (!hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDungId) ||
+                !List.of("Vận chuyển thành công", "Chờ xử lý đổi hàng", "Hoàn thành").contains(hoaDon.getTrangThai())) {
+            model.addAttribute("hoaDon", null);
+            return "WebKhachHang/tra-doi-san-pham";
+        }
+
+        // Kiểm tra nếu hóa đơn đã được đổi
+        boolean daDoi = "Đã đổi hàng".equals(hoaDon.getTrangThai()) ||
+                lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận");
+        if (daDoi) {
+            model.addAttribute("hoaDon", null);
+            model.addAttribute("message", "Hóa đơn này đã đổi hàng. Không thể tạo yêu cầu đổi thêm.");
             return "WebKhachHang/tra-doi-san-pham";
         }
 
@@ -910,21 +1051,20 @@ public class KHDonMuaController {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-        // Lấy chi tiết đơn hàng cụ thể nếu chiTietId được cung cấp
+        // Lấy chi tiết đơn hàng dựa trên chiTietIds nếu có, nếu không lấy toàn bộ
         List<ChiTietDonHang> chiTietDonHangs;
-        if (chiTietId != null) {
-            chiTietDonHangs = chiTietDonHangRepository.findById(chiTietId)
+        if (chiTietIds != null && !chiTietIds.isEmpty()) {
+            chiTietDonHangs = chiTietDonHangRepository.findAllById(chiTietIds).stream()
                     .filter(chiTiet -> chiTiet.getDonHang().getId().equals(hoaDon.getDonHang().getId()))
-                    .map(Collections::singletonList)
-                    .orElse(Collections.emptyList());
+                    .collect(Collectors.toList());
         } else {
             chiTietDonHangs = chiTietDonHangRepository.findByDonHangId(hoaDon.getDonHang().getId());
         }
 
         // Kiểm tra nếu sản phẩm đã được đổi
-        if (!chiTietDonHangs.isEmpty() && chiTietDonHangs.get(0).getTrangThaiDoiSanPham()) {
+        if (chiTietDonHangs.stream().anyMatch(ChiTietDonHang::getTrangThaiDoiSanPham)) {
             model.addAttribute("hoaDon", null);
-            model.addAttribute("message", "Sản phẩm này đã được yêu cầu đổi trước đó.");
+            model.addAttribute("message", "Một hoặc nhiều sản phẩm đã được yêu cầu đổi trước đó.");
             return "WebKhachHang/tra-doi-san-pham";
         }
 
@@ -1000,24 +1140,8 @@ public class KHDonMuaController {
             }
         }
 
-        if (hoaDon == null
-                || !hoaDon.getDonHang().getNguoiDung().getId().equals(nguoiDung.getId())
-                || !List.of("Vận chuyển thành công", "Chờ xử lý đổi hàng", "Hoàn thành").contains(hoaDon.getTrangThai())) {
-            model.addAttribute("hoaDon", null);
-            return "WebKhachHang/tra-doi-san-pham";
-        }
-
-// ❌ KHÓA: nếu HĐ đã đổi/đã có yêu cầu đổi được xác nhận → chặn form
-        boolean daDoi = "Đã đổi hàng".equals(hoaDon.getTrangThai())
-                || lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận");
-        if (daDoi) {
-            model.addAttribute("hoaDon", null);
-            model.addAttribute("message", "Hóa đơn này đã đổi hàng. Không thể tạo yêu cầu đổi thêm.");
-            return "WebKhachHang/tra-doi-san-pham";
-        }
-
         model.addAttribute("hoaDon", hoaDon);
-        model.addAttribute("chiTietDonHangs", chiTietDonHangs); // Thêm danh sách chi tiết đơn hàng
+        model.addAttribute("chiTietDonHangs", chiTietDonHangs);
         model.addAttribute("replacementProducts", replacementProducts);
         model.addAttribute("currentPage", productPage.getNumber());
         model.addAttribute("totalPages", productPage.getTotalPages());
@@ -1025,7 +1149,7 @@ public class KHDonMuaController {
         model.addAttribute("keyword", keyword);
         model.addAttribute("user", nguoiDung);
         model.addAttribute("cartCount", 0);
-        model.addAttribute("chiTietId", chiTietId); // Thêm chiTietId vào model
+        model.addAttribute("chiTietIds", chiTietIds != null ? chiTietIds : Collections.emptyList());
         return "WebKhachHang/tra-doi-san-pham";
     }
 
@@ -1035,14 +1159,13 @@ public class KHDonMuaController {
             @PathVariable UUID id,
             @RequestParam List<UUID> selectedProducts,
             @RequestParam List<UUID> replacementProducts,
-            @RequestParam List<Integer> soLuong, // Thêm danh sách số lượng
+            @RequestParam List<Integer> soLuong,
             @RequestParam String reason,
             @RequestParam(required = false) String description,
             @RequestParam String email,
             @RequestParam BigDecimal priceDifference,
             HttpSession session,
             Authentication authentication) {
-
         Map<String, Object> response = new HashMap<>();
         logger.info("Bắt đầu xử lý yêu cầu đổi hàng cho id: {}, user: {}", id, authentication.getName());
         logger.info("Dữ liệu nhận được: selectedProducts={}, replacementProducts={}, soLuong={}, reason={}, email={}, priceDifference={}",
@@ -1078,8 +1201,8 @@ public class KHDonMuaController {
             }
 
             HoaDon hoaDon = hoaDonOpt.get();
-            if ("Đã đổi hàng".equals(hoaDon.getTrangThai())
-                    || lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận")) {
+            if ("Đã đổi hàng".equals(hoaDon.getTrangThai()) ||
+                    lichSuDoiSanPhamRepository.existsByHoaDonIdAndTrangThai(hoaDon.getId(), "Đã xác nhận")) {
                 response.put("success", false);
                 response.put("message", "Hóa đơn này đã đổi hàng. Không thể gửi yêu cầu đổi thêm.");
                 return ResponseEntity.badRequest().body(response);
@@ -1092,7 +1215,7 @@ public class KHDonMuaController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            List<String> allowedStatuses = Arrays.asList("Vận chuyển thành công", "Chờ xử lý đổi hàng", "Đã đổi hàng", "Hoàn thành");
+            List<String> allowedStatuses = Arrays.asList("Vận chuyển thành công", "Chờ xử lý đổi hàng", "Hoàn thành");
             if (!allowedStatuses.contains(hoaDon.getTrangThai())) {
                 logger.error("Trạng thái hóa đơn {} không cho phép đổi: {}", id, hoaDon.getTrangThai());
                 response.put("success", false);
@@ -1100,112 +1223,172 @@ public class KHDonMuaController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            if (selectedProducts == null || selectedProducts.size() != 1) {
+            if (selectedProducts == null || selectedProducts.isEmpty()) {
                 logger.error("Số lượng sản phẩm được chọn không hợp lệ: {}", selectedProducts);
                 response.put("success", false);
-                response.put("message", "Vui lòng chọn đúng một sản phẩm để đổi.");
+                response.put("message", "Vui lòng chọn ít nhất một sản phẩm để đổi.");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            if (replacementProducts == null || replacementProducts.isEmpty()) {
-                logger.error("Số lượng sản phẩm thay thế không hợp lệ: {}", replacementProducts);
+            if (replacementProducts == null || replacementProducts.isEmpty() || soLuong == null || soLuong.isEmpty() || replacementProducts.size() != soLuong.size()) {
+                logger.error("Số lượng hoặc sản phẩm thay thế không hợp lệ: replacementProducts={}, soLuong={}", replacementProducts, soLuong);
                 response.put("success", false);
-                response.put("message", "Vui lòng chọn ít nhất một sản phẩm thay thế.");
+                response.put("message", "Vui lòng chọn ít nhất một sản phẩm thay thế với số lượng hợp lệ.");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            if (soLuong == null || soLuong.isEmpty() || soLuong.size() != replacementProducts.size()) {
-                logger.error("Số lượng không khớp với sản phẩm thay thế: soLuong={}, replacementProducts={}", soLuong, replacementProducts);
+            // Lấy danh sách chi tiết đơn hàng
+            List<ChiTietDonHang> chiTietDonHangs = chiTietDonHangRepository.findAllById(selectedProducts);
+            if (chiTietDonHangs.size() != selectedProducts.size()) {
                 response.put("success", false);
-                response.put("message", "Số lượng không hợp lệ.");
+                response.put("message", "Một số sản phẩm được chọn không tồn tại.");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            UUID selectedProductId = selectedProducts.get(0);
-            Optional<ChiTietDonHang> chiTietOpt = chiTietDonHangRepository.findById(selectedProductId);
-            if (chiTietOpt.isEmpty()) {
-                logger.error("Không tìm thấy sản phẩm trong đơn hàng với id: {}", selectedProductId);
+            // Kiểm tra tổng số lượng của sản phẩm được chọn để đổi
+            int totalSelectedQuantity = chiTietDonHangs.stream().mapToInt(ChiTietDonHang::getSoLuong).sum();
+            int totalReplacementQuantity = soLuong.stream().mapToInt(Integer::intValue).sum();
+            if (totalReplacementQuantity != totalSelectedQuantity) {
+                logger.error("Tổng số lượng đổi {} không khớp với tổng số lượng đã chọn {}", totalReplacementQuantity, totalSelectedQuantity);
                 response.put("success", false);
-                response.put("message", "Không tìm thấy sản phẩm trong đơn hàng.");
+                response.put("message", "Tổng số lượng đổi phải bằng tổng số lượng đã chọn.");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            ChiTietDonHang chiTietDonHang = chiTietOpt.get();
-            if (!chiTietDonHang.getDonHang().getId().equals(hoaDon.getDonHang().getId())) {
-                logger.error("Sản phẩm {} không thuộc hóa đơn {}", selectedProductId, id);
-                response.put("success", false);
-                response.put("message", "Sản phẩm không thuộc hóa đơn này.");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            int totalSoLuong = soLuong.stream().mapToInt(Integer::intValue).sum();
-            if (totalSoLuong > chiTietDonHang.getSoLuong()) {
-                logger.error("Tổng số lượng đổi {} vượt quá số lượng đã mua {}", totalSoLuong, chiTietDonHang.getSoLuong());
-                response.put("success", false);
-                response.put("message", "Tổng số lượng đổi không được vượt quá số lượng đã mua.");
-                return ResponseEntity.badRequest().body(response);
-            }
-
-            // Kiểm tra tồn kho và tạo bản ghi cho từng sản phẩm thay thế
+            // Chuẩn bị các biến tính toán
             String lyDoDay = reason + (description != null && !description.trim().isEmpty() ? ": " + description : "");
-            chiTietDonHang.setTrangThaiDoiSanPham(true);
-            chiTietDonHang.setLyDoDoiHang(lyDoDay);
-            chiTietDonHangRepository.save(chiTietDonHang);
+            BigDecimal tongTienGoc = BigDecimal.ZERO;
+            BigDecimal tongTienThayThe = BigDecimal.ZERO;
 
-            hoaDon.setTrangThai("Chờ xử lý đổi hàng");
-            HoaDon savedHoaDon = hoaDonRepo.save(hoaDon);
-            logger.info("Cập nhật trạng thái hóa đơn {} thành 'Chờ xử lý đổi hàng'", hoaDon.getId());
+            // Tính tổng tiền sản phẩm gốc được chọn
+            for (ChiTietDonHang chiTiet : chiTietDonHangs) {
+                BigDecimal giaGoc = chiTiet.getChiTietSanPhamDto() != null
+                        ? chiTiet.getChiTietSanPhamDto().getGia()
+                        : chiTiet.getGia();
+                tongTienGoc = tongTienGoc.add(giaGoc.multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
+            }
 
-            LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
-            lichSuHoaDon.setHoaDon(hoaDon);
-            lichSuHoaDon.setTrangThai("Chờ xử lý đổi hàng");
-            lichSuHoaDon.setThoiGian(LocalDateTime.now());
-            lichSuHoaDon.setGhiChu("Khách hàng yêu cầu đổi sản phẩm: " + lyDoDay +
-                    (priceDifference.compareTo(BigDecimal.ZERO) > 0 ? ", Chênh lệch: " + formatVND(priceDifference.doubleValue()) : ""));
-            lichSuHoaDonRepository.save(lichSuHoaDon);
-
-            // Tạo bản ghi LichSuDoiSanPham cho từng sản phẩm thay thế
-            BigDecimal originalPrice = chiTietDonHang.getChiTietSanPhamDto() != null
-                    ? chiTietDonHang.getChiTietSanPhamDto().getGia()
-                    : chiTietDonHang.getGia();
+            // Lấy và validate sản phẩm thay thế
+            List<ChiTietSanPham> sanPhamThayTheList = new ArrayList<>();
             for (int i = 0; i < replacementProducts.size(); i++) {
                 UUID replacementProductId = replacementProducts.get(i);
                 int currentSoLuong = soLuong.get(i);
 
                 Optional<ChiTietSanPham> sanPhamThayTheOpt = chiTietSanPhamRepository.findById(replacementProductId);
                 if (sanPhamThayTheOpt.isEmpty()) {
-                    logger.error("Sản phẩm thay thế không tồn tại với id: {}", replacementProductId);
-                    continue; // Bỏ qua sản phẩm lỗi, không dừng toàn bộ quá trình
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm thay thế không tồn tại với id: " + replacementProductId);
+                    return ResponseEntity.badRequest().body(response);
                 }
 
                 ChiTietSanPham chiTietSanPhamThayThe = sanPhamThayTheOpt.get();
                 if (chiTietSanPhamThayThe.getSoLuongTonKho() < currentSoLuong) {
-                    logger.error("Số lượng tồn kho {} không đủ cho số lượng yêu cầu {} của sản phẩm {}", chiTietSanPhamThayThe.getSoLuongTonKho(), currentSoLuong, replacementProductId);
-                    continue; // Bỏ qua sản phẩm không đủ tồn kho
+                    response.put("success", false);
+                    response.put("message", "Số lượng tồn kho không đủ cho sản phẩm: " + chiTietSanPhamThayThe.getSanPham().getTenSanPham());
+                    return ResponseEntity.badRequest().body(response);
                 }
 
-                BigDecimal replacementPrice = chiTietSanPhamThayThe.getChiTietSanPhamDto() != null
-                        ? chiTietSanPhamThayThe.getChiTietSanPhamDto().getGia()
-                        : chiTietSanPhamThayThe.getGia();
-                BigDecimal totalOriginalPrice = originalPrice.multiply(BigDecimal.valueOf(currentSoLuong));
-                BigDecimal totalReplacementPrice = replacementPrice.multiply(BigDecimal.valueOf(currentSoLuong));
-                BigDecimal currentPriceDifference = totalReplacementPrice.subtract(totalOriginalPrice);
+                sanPhamThayTheList.add(chiTietSanPhamThayThe);
 
-                LichSuDoiSanPham lichSuDoiSanPham = new LichSuDoiSanPham();
-                lichSuDoiSanPham.setChiTietDonHang(chiTietDonHang);
-                lichSuDoiSanPham.setHoaDon(hoaDon);
-                lichSuDoiSanPham.setChiTietSanPhamThayThe(chiTietSanPhamThayThe);
-                lichSuDoiSanPham.setSoLuong(currentSoLuong);
-                lichSuDoiSanPham.setTongTienHoan(totalOriginalPrice);
-                lichSuDoiSanPham.setLyDoDoiHang(lyDoDay);
-                lichSuDoiSanPham.setThoiGianDoi(LocalDateTime.now());
-                lichSuDoiSanPham.setTrangThai("Chờ xử lý");
-                if (currentPriceDifference.compareTo(BigDecimal.ZERO) > 0) {
-                    lichSuDoiSanPham.setChenhLechGia(currentPriceDifference);
+                // Tính giá sản phẩm thay thế (có thể có giảm giá)
+                BigDecimal giaThayThe = chiTietSanPhamThayThe.getGia();
+
+                // Kiểm tra xem có chiến dịch giảm giá không
+                Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamThayThe.getId());
+                if (activeCampaign.isPresent()) {
+                    ChienDichGiamGia campaign = activeCampaign.get();
+                    BigDecimal discount = giaThayThe.multiply(campaign.getPhanTramGiam()).divide(BigDecimal.valueOf(100));
+                    giaThayThe = giaThayThe.subtract(discount);
                 }
-                lichSuDoiSanPhamRepository.save(lichSuDoiSanPham);
+
+                tongTienThayThe = tongTienThayThe.add(giaThayThe.multiply(BigDecimal.valueOf(currentSoLuong)));
             }
 
+            // Tính chênh lệch giá thực tế
+            BigDecimal chenhLechGiaThucTe = tongTienThayThe.subtract(tongTienGoc);
+            logger.info("Tính toán giá: Tổng tiền gốc = {}, Tổng tiền thay thế = {}, Chênh lệch = {}",
+                    tongTienGoc, tongTienThayThe, chenhLechGiaThucTe);
+
+            // Kiểm tra xem priceDifference có khớp với chenhLechGiaThucTe không
+            if (priceDifference != null && chenhLechGiaThucTe.compareTo(priceDifference) != 0) {
+                logger.error("Chênh lệch giá không khớp: Đã nhập = {}, Tính toán = {}", priceDifference, chenhLechGiaThucTe);
+                response.put("success", false);
+                response.put("message", "Số tiền phải đúng với giá trị đã nhập.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Cập nhật trạng thái chi tiết đơn hàng
+            for (ChiTietDonHang chiTietDonHang : chiTietDonHangs) {
+                chiTietDonHang.setTrangThaiDoiSanPham(true);
+                chiTietDonHang.setLyDoDoiHang(lyDoDay);
+                chiTietDonHangRepository.save(chiTietDonHang);
+            }
+
+            // Cập nhật trạng thái hóa đơn
+            hoaDon.setTrangThai("Chờ xử lý đổi hàng");
+            HoaDon savedHoaDon = hoaDonRepo.save(hoaDon);
+            logger.info("Cập nhật trạng thái hóa đơn {} thành 'Chờ xử lý đổi hàng'", hoaDon.getId());
+
+            // Tạo lịch sử hóa đơn
+            LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
+            lichSuHoaDon.setHoaDon(hoaDon);
+            lichSuHoaDon.setTrangThai("Chờ xử lý đổi hàng");
+            lichSuHoaDon.setThoiGian(LocalDateTime.now());
+            lichSuHoaDon.setGhiChu("Khách hàng yêu cầu đổi sản phẩm: " + lyDoDay +
+                    (chenhLechGiaThucTe.compareTo(BigDecimal.ZERO) > 0 ? ", Chênh lệch: " + formatVND(chenhLechGiaThucTe.doubleValue()) : ""));
+            lichSuHoaDonRepository.save(lichSuHoaDon);
+
+            // Tạo bản ghi lịch sử đổi sản phẩm
+            int totalAssigned = 0;
+            for (ChiTietDonHang chiTietDonHangGoc : chiTietDonHangs) {
+                int soLuongGoc = chiTietDonHangGoc.getSoLuong();
+                int soLuongConLai = soLuongGoc;
+
+                while (soLuongConLai > 0 && totalAssigned < soLuong.size()) {
+                    int soLuongDoi = Math.min(soLuongConLai, soLuong.get(totalAssigned));
+                    ChiTietSanPham chiTietSanPhamThayThe = sanPhamThayTheList.get(totalAssigned);
+                    BigDecimal giaGoc = chiTietDonHangGoc.getChiTietSanPhamDto() != null
+                            ? chiTietDonHangGoc.getChiTietSanPhamDto().getGia()
+                            : chiTietDonHangGoc.getGia();
+                    BigDecimal giaThayThe = chiTietSanPhamThayThe.getGia();
+                    Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamThayThe.getId());
+                    if (activeCampaign.isPresent()) {
+                        ChienDichGiamGia campaign = activeCampaign.get();
+                        BigDecimal discount = giaThayThe.multiply(campaign.getPhanTramGiam()).divide(BigDecimal.valueOf(100));
+                        giaThayThe = giaThayThe.subtract(discount);
+                    }
+                    BigDecimal tongTienHoan = giaGoc.multiply(BigDecimal.valueOf(soLuongDoi));
+                    BigDecimal tongTienMoi = giaThayThe.multiply(BigDecimal.valueOf(soLuongDoi));
+                    BigDecimal chenhLechCap = tongTienMoi.subtract(tongTienHoan);
+
+                    LichSuDoiSanPham lichSuDoiSanPham = new LichSuDoiSanPham();
+                    lichSuDoiSanPham.setChiTietDonHang(chiTietDonHangGoc);
+                    lichSuDoiSanPham.setHoaDon(hoaDon);
+                    lichSuDoiSanPham.setChiTietSanPhamThayThe(chiTietSanPhamThayThe);
+                    lichSuDoiSanPham.setSoLuong(soLuongDoi);
+                    lichSuDoiSanPham.setTongTienHoan(tongTienHoan);
+                    lichSuDoiSanPham.setLyDoDoiHang(lyDoDay);
+                    lichSuDoiSanPham.setThoiGianDoi(LocalDateTime.now());
+                    lichSuDoiSanPham.setTrangThai("Chờ xử lý");
+                    lichSuDoiSanPham.setChenhLechGia(chenhLechCap);
+
+                    logger.info("Lưu lịch sử đổi - Gốc={} -> Thay thế={}, Số lượng={}, Tiền hoàn={}, Tiền mới={}, Chênh lệch={}",
+                            chiTietDonHangGoc.getTenSanPham(), chiTietSanPhamThayThe.getSanPham().getTenSanPham(),
+                            soLuongDoi, tongTienHoan, tongTienMoi, chenhLechCap);
+
+                    lichSuDoiSanPhamRepository.save(lichSuDoiSanPham);
+                    soLuongConLai -= soLuongDoi;
+                    totalAssigned++;
+                }
+
+                if (soLuongConLai > 0) {
+                    response.put("success", false);
+                    response.put("message", "Số lượng sản phẩm thay thế không đủ để đổi cho sản phẩm gốc.");
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            // Gửi thông báo và email
             try {
                 String thongBaoContent = "Khách hàng " + user.getHoTen() + " yêu cầu đổi sản phẩm cho đơn hàng " + hoaDon.getDonHang().getMaDonHang();
                 thongBaoService.taoThongBaoHeThong("admin", "Yêu cầu đổi sản phẩm mới", thongBaoContent, hoaDon.getDonHang());
@@ -1217,11 +1400,11 @@ public class KHDonMuaController {
                 String emailContent = "<h2>Xác nhận yêu cầu đổi sản phẩm</h2>" +
                         "<p>Xin chào " + user.getHoTen() + ",</p>" +
                         "<p>Yêu cầu đổi sản phẩm của bạn cho đơn hàng mã <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được gửi thành công và đang chờ xử lý.</p>" +
-                        "<p><strong>Sản phẩm đổi:</strong> " + chiTietDonHang.getTenSanPham() + "</p>" +
-                        "<p><strong>Số lượng:</strong> " + totalSoLuong + "</p>" +
+                        "<p><strong>Sản phẩm đổi:</strong> " + chiTietDonHangs.stream().map(ChiTietDonHang::getTenSanPham).collect(Collectors.joining(", ")) + "</p>" +
+                        "<p><strong>Số lượng:</strong> " + totalSelectedQuantity + "</p>" +
                         "<p><strong>Lý do:</strong> " + lyDoDay + "</p>" +
-                        (priceDifference.compareTo(BigDecimal.ZERO) > 0 ?
-                                "<p><strong>Chênh lệch giá cần thanh toán:</strong> " + formatVND(priceDifference.doubleValue()) + "</p>" +
+                        (chenhLechGiaThucTe.compareTo(BigDecimal.ZERO) > 0 ?
+                                "<p><strong>Chênh lệch giá cần thanh toán:</strong> " + formatVND(chenhLechGiaThucTe.doubleValue()) + "</p>" +
                                         "<p>Vui lòng liên hệ đội ngũ hỗ trợ để hoàn tất thanh toán chênh lệch.</p>" : "") +
                         "<p>Chúng tôi sẽ xử lý yêu cầu trong thời gian sớm nhất.</p>" +
                         "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
@@ -1242,15 +1425,14 @@ public class KHDonMuaController {
         }
     }
 
-    // Trong KHDonMuaController.java
-
     @GetMapping("/api/replacement-products/{id}")
     public ResponseEntity<Map<String, Object>> getReplacementProducts(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(required = false) UUID chiTietId,
+            @RequestParam(required = false) List<UUID> chiTietIds, // Chấp nhận danh sách chiTietIds
+            @RequestParam(required = false) UUID currentProductId, // Thêm tham số để xác định sản phẩm hiện tại
             Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
         DecimalFormat formatter = new DecimalFormat("#,###"); // Khai báo formatter
@@ -1284,17 +1466,29 @@ public class KHDonMuaController {
             }
 
             BigDecimal minPriceAfterDiscount;
-            if (chiTietId != null) {
-                Optional<ChiTietDonHang> chiTietOpt = chiTietDonHangRepository.findById(chiTietId);
-                if (chiTietOpt.isEmpty() || !chiTietOpt.get().getDonHang().getId().equals(hoaDon.getDonHang().getId())) {
+
+            // Nếu có currentProductId, chỉ lấy giá của sản phẩm đó
+            if (currentProductId != null) {
+                Optional<ChiTietDonHang> currentProduct = chiTietDonHangRepository.findById(currentProductId);
+                if (currentProduct.isPresent() &&
+                        currentProduct.get().getDonHang().getId().equals(hoaDon.getDonHang().getId())) {
+                    ChiTietDonHang chiTiet = currentProduct.get();
+                    minPriceAfterDiscount = chiTiet.getChiTietSanPhamDto() != null ?
+                            chiTiet.getChiTietSanPhamDto().getGia() : chiTiet.getGia();
+                } else {
                     response.put("success", false);
-                    response.put("message", "Sản phẩm không hợp lệ.");
+                    response.put("message", "Sản phẩm hiện tại không hợp lệ.");
                     return ResponseEntity.badRequest().body(response);
                 }
-                ChiTietDonHang chiTiet = chiTietOpt.get();
-                minPriceAfterDiscount = chiTiet.getChiTietSanPhamDto() != null
-                        ? chiTiet.getChiTietSanPhamDto().getGia()
-                        : chiTiet.getGia();
+            } else if (chiTietIds != null && !chiTietIds.isEmpty()) {
+                // Logic cũ: lấy giá thấp nhất từ danh sách
+                List<ChiTietDonHang> chiTietDonHangs = chiTietDonHangRepository.findAllById(chiTietIds).stream()
+                        .filter(chiTiet -> chiTiet.getDonHang().getId().equals(hoaDon.getDonHang().getId()))
+                        .collect(Collectors.toList());
+                minPriceAfterDiscount = chiTietDonHangs.stream()
+                        .map(chiTiet -> chiTiet.getChiTietSanPhamDto() != null ? chiTiet.getChiTietSanPhamDto().getGia() : chiTiet.getGia())
+                        .min(BigDecimal::compareTo)
+                        .orElse(BigDecimal.ZERO);
             } else {
                 minPriceAfterDiscount = chiTietDonHangRepository.findByDonHangId(hoaDon.getDonHang().getId())
                         .stream()
@@ -1359,8 +1553,10 @@ public class KHDonMuaController {
             response.put("products", products);
             response.put("currentPage", productPage.getNumber());
             response.put("totalPages", productPage.getTotalPages());
+            response.put("minPrice", minPriceAfterDiscount); // Thêm thông tin giá tối thiểu để debug
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            logger.error("Lỗi khi lấy danh sách sản phẩm thay thế cho hóa đơn {}: {}", id, e.getMessage());
             response.put("success", false);
             response.put("message", "Có lỗi xảy ra: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);

@@ -22,4 +22,10 @@ public interface LichSuDoiSanPhamRepository extends JpaRepository<LichSuDoiSanPh
                                                   @Param("hoTen") String hoTen,
                                                   Pageable pageable);
 
+
+    @Query("SELECT l FROM LichSuDoiSanPham l WHERE " +
+            "(:maDonHang = '' OR l.hoaDon.donHang.maDonHang LIKE %:maDonHang%) AND " +
+            "(:hoTen = '' OR l.hoaDon.donHang.nguoiDung.hoTen LIKE %:hoTen%) AND " +
+            "(:trangThai = '' OR l.trangThai = :trangThai)")
+    Page<LichSuDoiSanPham> findByMaDonHangOrHoTenOrTrangThai(String maDonHang, String hoTen, String trangThai, Pageable pageable);
 }

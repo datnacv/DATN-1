@@ -60,6 +60,7 @@ public class AdminExchangeController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(required = false) String searchMaDonHang,
             @RequestParam(required = false) String searchHoTen,
+            @RequestParam(required = false) String searchTrangThai, // Thêm tham số trạng thái
             Model model) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -74,10 +75,13 @@ public class AdminExchangeController {
         Pageable pageable = PageRequest.of(page, 10, sort);
 
         Page<LichSuDoiSanPham> exchangeRequests;
-        if ((searchMaDonHang != null && !searchMaDonHang.isEmpty()) || (searchHoTen != null && !searchHoTen.isEmpty())) {
-            exchangeRequests = lichSuDoiSanPhamRepository.findByMaDonHangOrHoTen(
+        if ((searchMaDonHang != null && !searchMaDonHang.isEmpty()) ||
+                (searchHoTen != null && !searchHoTen.isEmpty()) ||
+                (searchTrangThai != null && !searchTrangThai.isEmpty())) {
+            exchangeRequests = lichSuDoiSanPhamRepository.findByMaDonHangOrHoTenOrTrangThai(
                     searchMaDonHang != null ? searchMaDonHang.trim() : "",
                     searchHoTen != null ? searchHoTen.trim() : "",
+                    searchTrangThai != null ? searchTrangThai.trim() : "",
                     pageable);
         } else {
             exchangeRequests = lichSuDoiSanPhamRepository.findAll(pageable);
@@ -88,6 +92,7 @@ public class AdminExchangeController {
         model.addAttribute("totalPages", exchangeRequests.getTotalPages());
         model.addAttribute("searchMaDonHang", searchMaDonHang);
         model.addAttribute("searchHoTen", searchHoTen);
+        model.addAttribute("searchTrangThai", searchTrangThai); // Thêm trạng thái vào model
         return "WebQuanLy/exchange-requests";
     }
 

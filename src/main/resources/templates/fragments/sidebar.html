@@ -81,6 +81,33 @@
                 </a>
             </li>
 
+            <!-- Quản lý đơn hàng - ONLY for ADMIN -->
+            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                <a class="nav-link d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse" href="#donhangSubmenu" role="button" aria-expanded="false" aria-controls="donhangSubmenu">
+                    <span class="d-flex align-items-center">
+                        <i class="fa-solid fa-clipboard-list"></i>
+                        <span class="nav-text">Quản lý đơn hàng</span>
+                    </span>
+                    <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                </a>
+                <div class="collapse" id="donhangSubmenu">
+                    <ul class="nav flex-column ms-3">
+                        <li class="nav-item">
+                            <a th:href="@{/acvstore/quan-ly-tra-hang}" class="nav-link">
+                                <i class="fa-solid fa-undo-alt"></i>
+                                <span class="nav-text">Quản lý trả hàng</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a th:href="@{/acvstore/exchange-requests}" class="nav-link">
+                                <i class="fa-solid fa-exchange-alt"></i>
+                                <span class="nav-text">Quản lý đổi hàng</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+
             <!-- Sản phẩm - Available for both ADMIN and EMPLOYEE -->
             <li class="nav-item">
                 <a class="nav-link d-flex justify-content-between align-items-center collapsed" data-bs-toggle="collapse" href="#sanphamSubmenu" role="button" aria-expanded="false" aria-controls="sanphamSubmenu">
@@ -233,20 +260,7 @@
                 </div>
             </li>
 
-            <!-- Quản lý trả hàng - ONLY for ADMIN -->
-            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                <a th:href="@{/acvstore/quan-ly-tra-hang}" class="nav-link d-flex align-items-center">
-                    <i class="fa-solid fa-undo-alt"></i>
-                    <span class="nav-text">Quản lý trả hàng</span>
-                </a>
-            </li>
 
-            <li class="nav-item" sec:authorize="hasRole('ADMIN')">
-                <a th:href="@{/acvstore/exchange-requests}" class="nav-link d-flex align-items-center">
-                    <i class="fa-solid fa-user-tie"></i>
-                    <span class="nav-text">Quản lý đổi hàng</span>
-                </a>
-            </li>
 
         </ul>
     </div>

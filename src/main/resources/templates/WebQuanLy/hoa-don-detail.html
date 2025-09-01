@@ -1221,157 +1221,270 @@
     }
 
     function confirmHoaDon() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/confirm/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: phuongThucBanHang === "Online" ? "Đã xác nhận đơn hàng Online" : "Đã xác nhận đơn hàng" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận hóa đơn: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Xác nhận đơn hàng?',
+            text: 'Bạn có chắc chắn muốn xác nhận đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check mr-2"></i>Xác nhận',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/confirm/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: phuongThucBanHang === "Online" ? "Đã xác nhận đơn hàng Online" : "Đã xác nhận đơn hàng" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận hóa đơn: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
     function confirmDelivery() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận giao hàng cho đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/confirm-delivery/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đang vận chuyển đơn hàng" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận giao hàng: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Xác nhận giao hàng?',
+            text: 'Bạn có chắc chắn muốn xác nhận giao hàng cho đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-truck mr-2"></i>Xác nhận',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/confirm-delivery/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: "Đang vận chuyển đơn hàng" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận giao hàng: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
     function confirmDelivered() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận vận chuyển thành công cho đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/confirm-delivered/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Vận chuyển thành công" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận vận chuyển: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Xác nhận vận chuyển thành công?',
+            text: 'Bạn có chắc chắn muốn xác nhận vận chuyển thành công cho đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check-circle mr-2"></i>Xác nhận',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/confirm-delivered/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: "Vận chuyển thành công" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận vận chuyển: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
     function confirmOnlineProcessing() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận đang xử lý Online cho đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/confirm-online-processing/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đang xử lý đơn hàng Online" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận xử lý Online: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Xác nhận đang xử lý Online?',
+            text: 'Bạn có chắc chắn muốn xác nhận đang xử lý Online cho đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-cog mr-2"></i>Xác nhận',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#ff6f61',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/confirm-online-processing/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: "Đang xử lý đơn hàng Online" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận xử lý Online: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
+
     function confirmOnlineShipping() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận đang vận chuyển cho đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/confirm-online-shipping/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đang vận chuyển đơn hàng Online" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận đang vận chuyển: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Xác nhận đang vận chuyển?',
+            text: 'Bạn có chắc chắn muốn xác nhận đang vận chuyển cho đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-truck mr-2"></i>Xác nhận',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/confirm-online-shipping/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: "Đang vận chuyển đơn hàng Online" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận đang vận chuyển: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
     function confirmOnlineDelivered() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận vận chuyển thành công cho đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/confirm-online-delivered/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Vận chuyển thành công" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận vận chuyển thành công: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Xác nhận vận chuyển thành công?',
+            text: 'Bạn có chắc chắn muốn xác nhận vận chuyển thành công cho đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-check-circle mr-2"></i>Xác nhận',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#17a2b8',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/confirm-online-delivered/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: "Vận chuyển thành công" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận vận chuyển thành công: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
     function completeOrder() {
-        if (confirm("Bạn có chắc chắn muốn xác nhận hoàn thành đơn hàng này?")) {
-            $("#invoiceSpinner").show();
-            $.ajax({
-                url: `/acvstore/hoa-don/complete/${hoaDonId}`,
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({ ghiChu: "Đơn hàng hoàn thành" }),
-                success: function (response) {
-                    showToast(response.message, "success");
-                    window.location.reload();
-                },
-                error: function (error) {
-                    showToast("Lỗi khi xác nhận hoàn thành: " + (error.responseJSON?.error || "Không xác định"), "error");
-                },
-                complete: function () {
-                    $("#invoiceSpinner").hide();
-                }
-            });
-        }
+        Swal.fire({
+            title: 'Hoàn thành đơn hàng?',
+            text: 'Bạn có chắc chắn muốn xác nhận hoàn thành đơn hàng này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-flag-checkered mr-2"></i>Hoàn thành',
+            cancelButtonText: '<i class="fas fa-times mr-2"></i>Hủy',
+            confirmButtonColor: '#20c997',
+            cancelButtonColor: '#6c757d',
+            customClass: {
+                popup: 'rounded-lg',
+                confirmButton: 'rounded-lg',
+                cancelButton: 'rounded-lg'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $("#invoiceSpinner").show();
+                $.ajax({
+                    url: `/acvstore/hoa-don/complete/${hoaDonId}`,
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ ghiChu: "Đơn hàng hoàn thành" }),
+                    success: function (response) {
+                        showToast(response.message, "success");
+                        window.location.reload();
+                    },
+                    error: function (error) {
+                        showToast("Lỗi khi xác nhận hoàn thành: " + (error.responseJSON?.error || "Không xác định"), "error");
+                    },
+                    complete: function () {
+                        $("#invoiceSpinner").hide();
+                    }
+                });
+            }
+        });
     }
 
 </script>
