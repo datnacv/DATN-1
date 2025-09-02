@@ -1910,11 +1910,13 @@
         };
 
         $('#editImages').on('change', function () {
+            const currentExisting = $('#existingImages .image-preview').length;
+            const maxNew = 3 - currentExisting;
             const previewContainer = $('#newImagesPreview');
             previewContainer.empty();
             const files = this.files;
-            if (files.length > 3) {
-                showToast('Bạn chỉ có thể tải lên tối đa 3 ảnh.', 'warning');
+            if (files.length > maxNew) {
+                showToast(`Bạn chỉ có thể thêm tối đa ${maxNew} ảnh nữa.`, 'warning');
                 this.value = '';
                 $('#noNewImagePlaceholder').show();
                 return;
@@ -1965,6 +1967,12 @@
                 hasError = true;
             } else {
                 $('#editStockQuantity').removeClass('is-invalid');
+            }
+
+            const totalImages = $('#existingImages .image-preview').length + $('#newImagesPreview .image-preview').length;
+            if (totalImages > 3) {
+                showToast('Tổng số ảnh không được vượt quá 3.', 'error');
+                hasError = true;
             }
 
             if (hasError) {
