@@ -714,11 +714,19 @@
                 const maxSoLuong = parseInt(row.querySelector('.max-quantity').textContent) || 1;
 
                 if (this.checked) {
+                    // Lấy đơn giá gốc (cột 4) & đơn giá sau giảm (cột 7)
+                    const unitPriceEl = row.querySelector('td:nth-child(4) .price[data-value]'); // Giá
+                    const finalPriceEl = row.querySelector('td:nth-child(7) .price[data-value]'); // Giá sau giảm
+
+                    const unitPrice = unitPriceEl ? parseFloat(unitPriceEl.dataset.value) : 0;
+                    const unitFinalPrice = finalPriceEl ? parseFloat(finalPriceEl.dataset.value) : unitPrice; // fallback
+
                     const productData = {
                         id: this.value,
                         name: row.querySelector('.product-details strong').textContent,
                         maxQuantity: maxSoLuong,
-                        price: parseFloat(row.querySelector('.price').getAttribute('data-value'))
+                        priceOriginal: unitPrice,
+                        priceFinal: unitFinalPrice
                     };
                     selectedProductData.push(productData);
                     productReplacementMap.set(productData.id, []); // Khởi tạo mảng thay thế cho sản phẩm mới
@@ -819,24 +827,13 @@
             let totalOriginalPrice = 0;
             let totalReplacementPrice = 0;
 
-            // Tính tổng giá trị sản phẩm gốc - SỬA ĐỔI: Sử dụng giá hiển thị (đã áp dụng giảm giá nếu có)
-            selectedProductData.forEach(product => {
-                // Lấy giá hiển thị từ DOM (đã được format với giảm giá)
-                const checkbox = document.querySelector(`.product-select-checkbox[value="${product.id}"]`);
-                if (checkbox) {
-                    const row = checkbox.closest('tr');
-                    const priceElement = row.querySelector('.price[data-value]');
-                    if (priceElement) {
-                        // data-value chứa giá sau khi đã áp dụng giảm giá (nếu có)
-                        const currentPrice = parseFloat(priceElement.getAttribute('data-value'));
-                        totalOriginalPrice += currentPrice * product.maxQuantity;
-
-                        console.log(`Sản phẩm gốc ${product.name}: giá = ${currentPrice}, số lượng = ${product.maxQuantity}`);
-                    }
-                }
-            });
-
-            // Tính tổng giá trị sản phẩm thay thế (giữ nguyên)
+            // Tính tổng giá trị sản phẩm gốc dựa trên số lượng tối đa
+            totalOriginalPrice = selectedProductData
+                .reduce((sum, product) => {
+                    const unit = (product.priceFinal ?? product.priceOriginal ?? 0);
+                    return sum + unit * product.maxQuantity;
+                }, 0);
+            // Tính tổng giá trị sản phẩm thay thế
             productReplacementMap.forEach(replacements => {
                 totalReplacementPrice += replacements.reduce((sum, replacement) => sum + replacement.price * replacement.quantity, 0);
             });
@@ -845,28 +842,11 @@
             const priceDifferenceElement = document.getElementById('priceDifference');
             const priceDifferenceValue = document.getElementById('priceDifferenceValue');
 
-            // Cập nhật hiển thị
             priceDifferenceElement.textContent = new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
             }).format(priceDifference).replace('₫', ' VNĐ');
             priceDifferenceValue.value = priceDifference;
-
-            // Thêm màu sắc để dễ nhận biết
-            if (priceDifference > 0) {
-                priceDifferenceElement.style.color = '#ef4444'; // Đỏ - khách hàng phải trả thêm
-                priceDifferenceElement.innerHTML = '<i class="fas fa-plus-circle mr-1"></i>' + priceDifferenceElement.textContent;
-            } else if (priceDifference < 0) {
-                priceDifferenceElement.style.color = '#10b981'; // Xanh - khách hàng được hoàn lại
-                priceDifferenceElement.innerHTML = '<i class="fas fa-minus-circle mr-1"></i>' + priceDifferenceElement.textContent;
-            } else {
-                priceDifferenceElement.style.color = '#6b7280'; // Xám - không chênh lệch
-                priceDifferenceElement.innerHTML = '<i class="fas fa-equals mr-1"></i>' + priceDifferenceElement.textContent;
-            }
-
-            console.log(`Tổng tiền gốc (sau giảm giá): ${totalOriginalPrice}VND`);
-            console.log(`Tổng tiền thay thế: ${totalReplacementPrice}VND`);
-            console.log(`Chênh lệch: ${priceDifference}VND`);
 
             // Cập nhật danh sách sản phẩm thay thế đã chọn
             renderSelectedReplacementProducts();
