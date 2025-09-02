@@ -20,6 +20,8 @@ public class LichSuTraHangDTO {
     private String lyDoTraHang;
     private String trangThai;
     private LocalDateTime thoiGianTra;
+    private String tongGiamOrder;
+    private String tongGiamShip;
 
     // Constructor, getters, setters
     public LichSuTraHangDTO(LichSuTraHang traHang, DecimalFormat formatter) {

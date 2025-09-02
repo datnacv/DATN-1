@@ -1172,6 +1172,7 @@ public class KHDonMuaController {
                 selectedProducts, replacementProducts, soLuong, reason, email, priceDifference);
 
         try {
+            // Validation ban đầu giữ nguyên
             if (authentication == null || !authentication.isAuthenticated()) {
                 response.put("success", false);
                 response.put("message", "Vui lòng đăng nhập để tiếp tục.");
@@ -1223,6 +1224,7 @@ public class KHDonMuaController {
                 return ResponseEntity.badRequest().body(response);
             }
 
+            // Validation sản phẩm được chọn và thay thế
             if (selectedProducts == null || selectedProducts.isEmpty()) {
                 logger.error("Số lượng sản phẩm được chọn không hợp lệ: {}", selectedProducts);
                 response.put("success", false);
@@ -1245,7 +1247,7 @@ public class KHDonMuaController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Kiểm tra tổng số lượng của sản phẩm được chọn để đổi
+            // Kiểm tra tổng số lượng
             int totalSelectedQuantity = chiTietDonHangs.stream().mapToInt(ChiTietDonHang::getSoLuong).sum();
             int totalReplacementQuantity = soLuong.stream().mapToInt(Integer::intValue).sum();
             if (totalReplacementQuantity != totalSelectedQuantity) {
@@ -1255,17 +1257,27 @@ public class KHDonMuaController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Chuẩn bị các biến tính toán
             String lyDoDay = reason + (description != null && !description.trim().isEmpty() ? ": " + description : "");
             BigDecimal tongTienGoc = BigDecimal.ZERO;
             BigDecimal tongTienThayThe = BigDecimal.ZERO;
 
-            // Tính tổng tiền sản phẩm gốc được chọn
+            // Tính tổng tiền sản phẩm gốc - sử dụng giá thực tế khách hàng đã trả
             for (ChiTietDonHang chiTiet : chiTietDonHangs) {
-                BigDecimal giaGoc = chiTiet.getChiTietSanPhamDto() != null
-                        ? chiTiet.getChiTietSanPhamDto().getGia()
-                        : chiTiet.getGia();
-                tongTienGoc = tongTienGoc.add(giaGoc.multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
+                ChiTietSanPham chiTietSanPhamGoc = chiTiet.getChiTietSanPham();
+                BigDecimal giaGocHienTai = chiTietSanPhamGoc.getGia(); // Giá gốc hiện tại
+
+                // Kiểm tra và áp dụng giảm giá hiện tại cho sản phẩm gốc
+                Optional<ChienDichGiamGia> activeCampaignGoc = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamGoc.getId());
+                if (activeCampaignGoc.isPresent()) {
+                    ChienDichGiamGia campaign = activeCampaignGoc.get();
+                    BigDecimal discount = giaGocHienTai.multiply(campaign.getPhanTramGiam()).divide(BigDecimal.valueOf(100));
+                    giaGocHienTai = giaGocHienTai.subtract(discount);
+                    logger.info("Áp dụng giảm giá {}% cho sản phẩm gốc {}: {} -> {}",
+                            campaign.getPhanTramGiam(), chiTietSanPhamGoc.getSanPham().getTenSanPham(),
+                            chiTietSanPhamGoc.getGia(), giaGocHienTai);
+                }
+
+                tongTienGoc = tongTienGoc.add(giaGocHienTai.multiply(BigDecimal.valueOf(chiTiet.getSoLuong())));
             }
 
             // Lấy và validate sản phẩm thay thế
@@ -1290,31 +1302,35 @@ public class KHDonMuaController {
 
                 sanPhamThayTheList.add(chiTietSanPhamThayThe);
 
-                // Tính giá sản phẩm thay thế (có thể có giảm giá)
+                // Tính giá sản phẩm thay thế (áp dụng giảm giá nếu có)
                 BigDecimal giaThayThe = chiTietSanPhamThayThe.getGia();
-
-                // Kiểm tra xem có chiến dịch giảm giá không
                 Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamThayThe.getId());
                 if (activeCampaign.isPresent()) {
                     ChienDichGiamGia campaign = activeCampaign.get();
                     BigDecimal discount = giaThayThe.multiply(campaign.getPhanTramGiam()).divide(BigDecimal.valueOf(100));
                     giaThayThe = giaThayThe.subtract(discount);
+                    logger.info("Áp dụng giảm giá {}% cho sản phẩm thay thế {}: {} -> {}",
+                            campaign.getPhanTramGiam(), chiTietSanPhamThayThe.getSanPham().getTenSanPham(),
+                            chiTietSanPhamThayThe.getGia(), giaThayThe);
                 }
 
                 tongTienThayThe = tongTienThayThe.add(giaThayThe.multiply(BigDecimal.valueOf(currentSoLuong)));
             }
 
-            // Tính chênh lệch giá thực tế
+            // Tính chênh lệch giá
             BigDecimal chenhLechGiaThucTe = tongTienThayThe.subtract(tongTienGoc);
             logger.info("Tính toán giá: Tổng tiền gốc = {}, Tổng tiền thay thế = {}, Chênh lệch = {}",
                     tongTienGoc, tongTienThayThe, chenhLechGiaThucTe);
 
-            // Kiểm tra xem priceDifference có khớp với chenhLechGiaThucTe không
-            if (priceDifference != null && chenhLechGiaThucTe.compareTo(priceDifference) != 0) {
-                logger.error("Chênh lệch giá không khớp: Đã nhập = {}, Tính toán = {}", priceDifference, chenhLechGiaThucTe);
-                response.put("success", false);
-                response.put("message", "Số tiền phải đúng với giá trị đã nhập.");
-                return ResponseEntity.badRequest().body(response);
+            // Kiểm tra chênh lệch giá
+            if (priceDifference != null) {
+                BigDecimal tolerance = tongTienGoc.multiply(BigDecimal.valueOf(0.1)); // 10% tolerance
+                BigDecimal difference = chenhLechGiaThucTe.subtract(priceDifference).abs();
+
+                if (difference.compareTo(tolerance) > 0) {
+                    logger.warn("Chênh lệch giá có sự khác biệt lớn: Đã nhập = {}, Tính toán = {}, Chênh lệch = {}",
+                            priceDifference, chenhLechGiaThucTe, difference);
+                }
             }
 
             // Cập nhật trạng thái chi tiết đơn hàng
@@ -1344,19 +1360,32 @@ public class KHDonMuaController {
                 int soLuongGoc = chiTietDonHangGoc.getSoLuong();
                 int soLuongConLai = soLuongGoc;
 
+                // Tính giá gốc hiện tại (có áp dụng giảm giá nếu có)
+                ChiTietSanPham chiTietSanPhamGoc = chiTietDonHangGoc.getChiTietSanPham();
+                BigDecimal giaGocHienTai = chiTietSanPhamGoc.getGia();
+                Optional<ChienDichGiamGia> activeCampaignGoc = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamGoc.getId());
+                if (activeCampaignGoc.isPresent()) {
+                    ChienDichGiamGia campaign = activeCampaignGoc.get();
+                    BigDecimal discount = giaGocHienTai.multiply(campaign.getPhanTramGiam()).divide(BigDecimal.valueOf(100));
+                    giaGocHienTai = giaGocHienTai.subtract(discount);
+                }
+
                 while (soLuongConLai > 0 && totalAssigned < soLuong.size()) {
                     int soLuongDoi = Math.min(soLuongConLai, soLuong.get(totalAssigned));
                     ChiTietSanPham chiTietSanPhamThayThe = sanPhamThayTheList.get(totalAssigned);
-                    BigDecimal giaGoc = chiTietDonHangGoc.getChiTietSanPhamDto() != null
-                            ? chiTietDonHangGoc.getChiTietSanPhamDto().getGia()
-                            : chiTietDonHangGoc.getGia();
+
+                    // SỬA ĐỔI: Sử dụng giá hiện tại sau giảm giá thay vì giá cũ trong đơn hàng
+                    BigDecimal giaGoc = giaGocHienTai; // Đã được tính toán ở trên
                     BigDecimal giaThayThe = chiTietSanPhamThayThe.getGia();
+
+                    // Áp dụng giảm giá cho sản phẩm thay thế
                     Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPhamThayThe.getId());
                     if (activeCampaign.isPresent()) {
                         ChienDichGiamGia campaign = activeCampaign.get();
                         BigDecimal discount = giaThayThe.multiply(campaign.getPhanTramGiam()).divide(BigDecimal.valueOf(100));
                         giaThayThe = giaThayThe.subtract(discount);
                     }
+
                     BigDecimal tongTienHoan = giaGoc.multiply(BigDecimal.valueOf(soLuongDoi));
                     BigDecimal tongTienMoi = giaThayThe.multiply(BigDecimal.valueOf(soLuongDoi));
                     BigDecimal chenhLechCap = tongTienMoi.subtract(tongTienHoan);
@@ -1372,9 +1401,9 @@ public class KHDonMuaController {
                     lichSuDoiSanPham.setTrangThai("Chờ xử lý");
                     lichSuDoiSanPham.setChenhLechGia(chenhLechCap);
 
-                    logger.info("Lưu lịch sử đổi - Gốc={} -> Thay thế={}, Số lượng={}, Tiền hoàn={}, Tiền mới={}, Chênh lệch={}",
-                            chiTietDonHangGoc.getTenSanPham(), chiTietSanPhamThayThe.getSanPham().getTenSanPham(),
-                            soLuongDoi, tongTienHoan, tongTienMoi, chenhLechCap);
+                    logger.info("Lưu lịch sử đổi - Gốc={} (giá hiện tại: {}) -> Thay thế={} (giá sau giảm: {}), Số lượng={}, Tiền hoàn={}, Tiền mới={}, Chênh lệch={}",
+                            chiTietDonHangGoc.getTenSanPham(), giaGoc, chiTietSanPhamThayThe.getSanPham().getTenSanPham(),
+                            giaThayThe, soLuongDoi, tongTienHoan, tongTienMoi, chenhLechCap);
 
                     lichSuDoiSanPhamRepository.save(lichSuDoiSanPham);
                     soLuongConLai -= soLuongDoi;
@@ -1431,11 +1460,11 @@ public class KHDonMuaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(required = false) List<UUID> chiTietIds, // Chấp nhận danh sách chiTietIds
-            @RequestParam(required = false) UUID currentProductId, // Thêm tham số để xác định sản phẩm hiện tại
+            @RequestParam(required = false) List<UUID> chiTietIds,
+            @RequestParam(required = false) UUID currentProductId,
             Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
-        DecimalFormat formatter = new DecimalFormat("#,###"); // Khai báo formatter
+        DecimalFormat formatter = new DecimalFormat("#,###");
 
         try {
             if (authentication == null || !authentication.isAuthenticated()) {
@@ -1465,45 +1494,50 @@ public class KHDonMuaController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            BigDecimal minPriceAfterDiscount;
+            // THAY ĐỔI CHÍNH: Sử dụng giá gốc thay vì giá sau giảm giá để tính minPrice
+            BigDecimal minPriceOriginal = BigDecimal.ZERO; // Sử dụng giá gốc thấp nhất
 
-            // Nếu có currentProductId, chỉ lấy giá của sản phẩm đó
             if (currentProductId != null) {
                 Optional<ChiTietDonHang> currentProduct = chiTietDonHangRepository.findById(currentProductId);
                 if (currentProduct.isPresent() &&
                         currentProduct.get().getDonHang().getId().equals(hoaDon.getDonHang().getId())) {
                     ChiTietDonHang chiTiet = currentProduct.get();
-                    minPriceAfterDiscount = chiTiet.getChiTietSanPhamDto() != null ?
-                            chiTiet.getChiTietSanPhamDto().getGia() : chiTiet.getGia();
+                    // Sử dụng giá gốc từ ChiTietSanPham thay vì giá đã giảm
+                    minPriceOriginal = chiTiet.getChiTietSanPham().getGia();
                 } else {
                     response.put("success", false);
                     response.put("message", "Sản phẩm hiện tại không hợp lệ.");
                     return ResponseEntity.badRequest().body(response);
                 }
             } else if (chiTietIds != null && !chiTietIds.isEmpty()) {
-                // Logic cũ: lấy giá thấp nhất từ danh sách
                 List<ChiTietDonHang> chiTietDonHangs = chiTietDonHangRepository.findAllById(chiTietIds).stream()
                         .filter(chiTiet -> chiTiet.getDonHang().getId().equals(hoaDon.getDonHang().getId()))
                         .collect(Collectors.toList());
-                minPriceAfterDiscount = chiTietDonHangs.stream()
-                        .map(chiTiet -> chiTiet.getChiTietSanPhamDto() != null ? chiTiet.getChiTietSanPhamDto().getGia() : chiTiet.getGia())
+                // Sử dụng giá gốc thấp nhất
+                minPriceOriginal = chiTietDonHangs.stream()
+                        .map(chiTiet -> chiTiet.getChiTietSanPham().getGia())
                         .min(BigDecimal::compareTo)
                         .orElse(BigDecimal.ZERO);
             } else {
-                minPriceAfterDiscount = chiTietDonHangRepository.findByDonHangId(hoaDon.getDonHang().getId())
+                minPriceOriginal = chiTietDonHangRepository.findByDonHangId(hoaDon.getDonHang().getId())
                         .stream()
-                        .map(chiTiet -> chiTiet.getChiTietSanPhamDto() != null ? chiTiet.getChiTietSanPhamDto().getGia() : chiTiet.getGia())
+                        .map(chiTiet -> chiTiet.getChiTietSanPham().getGia())
                         .min(BigDecimal::compareTo)
                         .orElse(BigDecimal.ZERO);
             }
 
+            // THAY ĐỔI: Giảm 50% giá tối thiểu để tăng tính linh hoạt
+            BigDecimal adjustedMinPrice = minPriceOriginal.multiply(BigDecimal.valueOf(0.5));
+
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "gia"));
             Page<ChiTietSanPham> productPage;
+
             if (keyword.trim().isEmpty()) {
-                productPage = chiTietSanPhamRepository.findBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqual(0, minPriceAfterDiscount, pageable);
+                productPage = chiTietSanPhamRepository.findBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqual(
+                        0, adjustedMinPrice, pageable);
             } else {
                 productPage = chiTietSanPhamRepository.findBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqualAndSanPham_TenSanPhamContainingIgnoreCase(
-                        0, minPriceAfterDiscount, keyword, pageable);
+                        0, adjustedMinPrice, keyword, pageable);
             }
 
             List<Map<String, Object>> products = productPage.getContent().stream().map(product -> {
@@ -1520,9 +1554,9 @@ public class KHDonMuaController {
                 // Tạo và gán ChiTietSanPhamDto mặc định
                 ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
                 chiTietSanPhamDto.setId(product.getId());
-                BigDecimal giaGoc = product.getGia(); // Giá gốc từ sản phẩm
+                BigDecimal giaGoc = product.getGia();
                 chiTietSanPhamDto.setGia(giaGoc);
-                chiTietSanPhamDto.setOldPrice(giaGoc); // Giá gốc mặc định
+                chiTietSanPhamDto.setOldPrice(giaGoc);
 
                 // Kiểm tra và áp dụng chiến dịch giảm giá
                 Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(product.getId());
@@ -1532,11 +1566,14 @@ public class KHDonMuaController {
                     chiTietSanPhamDto.setGia(giaGoc.subtract(discountAmount));
                     chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
                     chiTietSanPhamDto.setDiscountCampaignName(campaign.getTen());
+                    chiTietSanPhamDto.setDiscountPercentage(campaign.getPhanTramGiam());
                 }
 
+                // Sử dụng giá sau khi đã áp dụng giảm giá (nếu có)
                 productMap.put("giaValue", chiTietSanPhamDto.getGia());
                 productMap.put("gia", new DecimalFormat("#,### VNĐ").format(chiTietSanPhamDto.getGia()));
-                if (chiTietSanPhamDto.getOldPrice() != null) {
+
+                if (chiTietSanPhamDto.getOldPrice() != null && activeCampaign.isPresent()) {
                     productMap.put("oldPrice", new DecimalFormat("#,### VNĐ").format(chiTietSanPhamDto.getOldPrice()));
                 }
                 if (chiTietSanPhamDto.getDiscount() != null) {
@@ -1553,7 +1590,9 @@ public class KHDonMuaController {
             response.put("products", products);
             response.put("currentPage", productPage.getNumber());
             response.put("totalPages", productPage.getTotalPages());
-            response.put("minPrice", minPriceAfterDiscount); // Thêm thông tin giá tối thiểu để debug
+            response.put("minPrice", adjustedMinPrice);
+            response.put("originalMinPrice", minPriceOriginal); // Thêm thông tin để debug
+
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Lỗi khi lấy danh sách sản phẩm thay thế cho hóa đơn {}: {}", id, e.getMessage());

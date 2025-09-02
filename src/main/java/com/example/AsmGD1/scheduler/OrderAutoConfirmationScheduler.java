@@ -6,18 +6,17 @@ import com.example.AsmGD1.entity.LichSuHoaDon;
 import com.example.AsmGD1.entity.NguoiDung;
 import com.example.AsmGD1.repository.HoaDon.HoaDonRepository;
 import com.example.AsmGD1.repository.HoaDon.LichSuHoaDonRepository;
-
+import com.example.AsmGD1.repository.BanHang.DonHangRepository; // <- thêm nếu muốn save DonHang tường minh
 import com.example.AsmGD1.service.HoaDon.HoaDonService;
 import com.example.AsmGD1.service.ThongBao.ThongBaoService;
 import com.example.AsmGD1.service.WebKhachHang.EmailService;
+import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import jakarta.transaction.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,96 +25,120 @@ import java.util.Optional;
 @Component
 public class OrderAutoConfirmationScheduler {
 
-    private static final Logger logger = LoggerFactory.getLogger(OrderAutoConfirmationScheduler.class);
-//    AUTO_CONFIRM_DAYS
-    private static final long AUTO_CONFIRM_MINUTES = 5; // Xác nhận sau 5 phút // Số ngày tự động xác nhận (có thể cấu hình qua application.properties nếu cần)
+    private static final Logger log = LoggerFactory.getLogger(OrderAutoConfirmationScheduler.class);
+
     private static final String TRANSPORT_SUCCESS_STATUS = "Vận chuyển thành công";
     private static final String COMPLETED_STATUS = "Hoàn thành";
     private static final String DON_HANG_SUCCESS_STATUS = "THANH_CONG";
 
-    @Autowired
-    private HoaDonRepository hoaDonRepository;
+    private final HoaDonRepository hoaDonRepository;
+    private final LichSuHoaDonRepository lichSuHoaDonRepository;
+    private final DonHangRepository donHangRepository;
+    private final HoaDonService hoaDonService;
+    private final ThongBaoService thongBaoService;
+    private final EmailService emailService;
 
-    @Autowired
-    private LichSuHoaDonRepository lichSuHoaDonRepository;
+    // Đọc từ cấu hình: mặc định 30 giây
+    private final long autoConfirmSeconds;
 
-    @Autowired
-    private HoaDonService hoaDonService;
-
-    @Autowired
-    private ThongBaoService thongBaoService;
-
-    @Autowired
-    private EmailService emailService;
+    public OrderAutoConfirmationScheduler(HoaDonRepository hoaDonRepository,
+                                          LichSuHoaDonRepository lichSuHoaDonRepository,
+                                          DonHangRepository donHangRepository,
+                                          HoaDonService hoaDonService,
+                                          ThongBaoService thongBaoService,
+                                          EmailService emailService,
+                                          @Value("${order.auto-complete-seconds:30}") long autoConfirmSeconds) {
+        this.hoaDonRepository = hoaDonRepository;
+        this.lichSuHoaDonRepository = lichSuHoaDonRepository;
+        this.donHangRepository = donHangRepository;
+        this.hoaDonService = hoaDonService;
+        this.thongBaoService = thongBaoService;
+        this.emailService = emailService;
+        this.autoConfirmSeconds = autoConfirmSeconds;
+    }
 
     /**
-     * Scheduler chạy hàng ngày lúc 00:00 (midnight) để kiểm tra và tự động xác nhận đơn hàng.
-     * Có thể thay đổi cron expression, ví dụ: @Scheduled(fixedRate = 60000) để chạy mỗi phút cho test.
+     * Quét mỗi 10 giây (fixedDelay) để giảm trùng lặp khi job chạy lâu.
+     * Bạn có thể chỉnh về 5 giây nếu cần mượt hơn.
      */
-//    @Scheduled(cron = "0 0 0 * * ?")  // Hàng ngày lúc 00:00
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedDelay = 10_000)
     @Transactional(rollbackOn = Exception.class)
     public void autoConfirmOrders() {
-        logger.info("Bắt đầu task tự động xác nhận đơn hàng...");
+        log.info("Bắt đầu task tự động xác nhận đơn hàng ({}s)...", autoConfirmSeconds);
 
-        // Tìm tất cả hóa đơn ở trạng thái "Vận chuyển thành công"
-        List<HoaDon> pendingOrders = hoaDonRepository.findByTrangThai(TRANSPORT_SUCCESS_STATUS);
-        int confirmedCount = 0;
+        // Lấy tất cả hóa đơn đang ở trạng thái "Vận chuyển thành công"
+        List<HoaDon> delivered = hoaDonRepository.findByTrangThai(TRANSPORT_SUCCESS_STATUS);
+        int confirmed = 0;
 
-        for (HoaDon hoaDon : pendingOrders) {
+        for (HoaDon hd : delivered) {
             try {
-                // Tìm LichSuHoaDon gần nhất với trạng thái "Vận chuyển thành công"
-                Optional<LichSuHoaDon> latestHistoryOpt = lichSuHoaDonRepository
-                        .findFirstByHoaDonIdAndTrangThaiOrderByThoiGianDesc(hoaDon.getId(), TRANSPORT_SUCCESS_STATUS);
+                // Lấy mốc thời gian "Vận chuyển thành công" gần nhất
+                Optional<LichSuHoaDon> latestDelivered = lichSuHoaDonRepository
+                        .findFirstByHoaDonIdAndTrangThaiOrderByThoiGianDesc(hd.getId(), TRANSPORT_SUCCESS_STATUS);
 
-                if (latestHistoryOpt.isPresent()) {
-                    LichSuHoaDon latestHistory = latestHistoryOpt.get();
-                    LocalDateTime transportSuccessTime = latestHistory.getThoiGian();
-                    Duration duration = Duration.between(transportSuccessTime, LocalDateTime.now());
+                if (latestDelivered.isEmpty()) continue;
 
-                    // Nếu đã trôi qua >= 7 ngày
-                    if (duration.toDays() >= AUTO_CONFIRM_MINUTES) {
-                        // Tự động xác nhận
-                        hoaDon.setTrangThai(COMPLETED_STATUS);
-                        hoaDon.setNgayThanhToan(LocalDateTime.now());
-                        hoaDon.setGhiChu("Tự động xác nhận đã nhận hàng sau " + AUTO_CONFIRM_MINUTES + " ngày");
+                LocalDateTime deliveredAt = latestDelivered.get().getThoiGian();
+                long elapsed = Duration.between(deliveredAt, LocalDateTime.now()).getSeconds();
 
-                        DonHang donHang = hoaDon.getDonHang();
-                        donHang.setTrangThai(DON_HANG_SUCCESS_STATUS);
-                        hoaDonService.save(hoaDon);  // Lưu hóa đơn (cũng lưu donHang nếu cascade)
+                // Chưa đủ thời gian → bỏ qua
+                if (elapsed < autoConfirmSeconds) continue;
 
-                        // Thêm lịch sử
-                        hoaDonService.addLichSuHoaDon(hoaDon, COMPLETED_STATUS, "Tự động xác nhận sau " + AUTO_CONFIRM_MINUTES + " ngày");
+                // Double-check: có ai vừa đổi trạng thái không?
+                if (!TRANSPORT_SUCCESS_STATUS.equals(hd.getTrangThai())) continue;
 
-                        // Gửi thông báo hệ thống cho admin
-                        thongBaoService.taoThongBaoHeThong(
-                                "admin",
-                                "Đơn hàng tự động hoàn thành",
-                                "Đơn hàng mã " + donHang.getMaDonHang() + " đã được tự động xác nhận hoàn thành sau " + AUTO_CONFIRM_MINUTES + " ngày.",
-                                donHang
-                        );
+                // Cập nhật hóa đơn
+                hd.setTrangThai(COMPLETED_STATUS);
+                hd.setNgayThanhToan(LocalDateTime.now());
+                String note = "Hệ thống tự động xác nhận đã nhận hàng sau " + autoConfirmSeconds + " giây.";
+                hd.setGhiChu(note);
 
-                        // Gửi email cho khách hàng
-                        NguoiDung nguoiDung = donHang.getNguoiDung();
-                        if (nguoiDung != null && nguoiDung.getEmail() != null) {
-                            String emailContent = "<h2>Thông báo hoàn thành đơn hàng tự động</h2>" +
-                                    "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
-                                    "<p>Đơn hàng của bạn với mã <strong>" + donHang.getMaDonHang() + "</strong> đã được tự động xác nhận hoàn thành sau " + AUTO_CONFIRM_MINUTES + " ngày kể từ khi vận chuyển thành công.</p>" +
-                                    "<p>Nếu bạn có bất kỳ vấn đề gì, vui lòng liên hệ hỗ trợ.</p>" +
-                                    "<p>Cảm ơn bạn đã mua sắm tại ACV Store!</p>" +
-                                    "<p>Trân trọng,<br>Đội ngũ ACV Store</p>";
-                            emailService.sendEmail(nguoiDung.getEmail(), "Hoàn thành đơn hàng tự động - ACV Store", emailContent);
-                        }
-
-                        confirmedCount++;
-                        logger.info("Tự động xác nhận đơn hàng {} thành công.", hoaDon.getId());
-                    }
+                // Cập nhật đơn hàng
+                DonHang dh = hd.getDonHang();
+                if (dh != null) {
+                    dh.setTrangThai(DON_HANG_SUCCESS_STATUS);
+                    // Lưu tường minh để tránh phụ thuộc cascade
+                    donHangRepository.save(dh);
                 }
-            } catch (Exception e) {
-                logger.error("Lỗi khi tự động xác nhận đơn hàng {}: {}", hoaDon.getId(), e.getMessage(), e);
+
+                // Lưu hóa đơn
+                hoaDonRepository.save(hd);
+
+                // Ghi lịch sử
+                try {
+                    hoaDonService.addLichSuHoaDon(hd, COMPLETED_STATUS, note);
+                } catch (Exception e) {
+                    log.warn("Lỗi add lịch sử, bỏ qua: {}", e.getMessage());
+                }
+
+                // Thông báo + email (không làm fail job)
+                try {
+                    thongBaoService.taoThongBaoHeThong(
+                            "admin",
+                            "Đơn hàng đã hoàn thành (tự động)",
+                            "Đơn hàng mã " + (dh != null ? dh.getMaDonHang() : "N/A") + " đã được hệ thống tự động xác nhận sau " + autoConfirmSeconds + " giây.",
+                            dh
+                    );
+
+                    if (dh != null && dh.getNguoiDung() != null && dh.getNguoiDung().getEmail() != null) {
+                        NguoiDung nguoiDung = dh.getNguoiDung();
+                        String emailContent = "<h2>Hoàn thành đơn hàng</h2>" +
+                                "<p>Xin chào " + nguoiDung.getHoTen() + ",</p>" +
+                                "<p>Đơn hàng <strong>" + dh.getMaDonHang() + "</strong> đã được hệ thống tự động xác nhận hoàn thành sau " + autoConfirmSeconds + " giây kể từ khi giao thành công.</p>" +
+                                "<p>Nếu có vấn đề, vui lòng liên hệ ACV Store.</p>";
+                        emailService.sendEmail(nguoiDung.getEmail(), "Hoàn thành đơn hàng - ACV Store", emailContent);
+                    }
+                } catch (Exception e) {
+                    log.warn("Gửi thông báo/email lỗi: {}", e.getMessage());
+                }
+
+                confirmed++;
+                log.info("Auto-complete hóa đơn {} xong.", hd.getId());
+            } catch (Exception ex) {
+                log.error("Lỗi auto-complete hóa đơn {}: {}", hd.getId(), ex.getMessage(), ex);
             }
         }
 
-        logger.info("Task hoàn tất: {} đơn hàng được tự động xác nhận.", confirmedCount);
+        log.info("Task hoàn tất: {} hóa đơn được tự động xác nhận.", confirmed);
     }
 }

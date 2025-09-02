@@ -241,6 +241,20 @@
             z-index: 1;
         }
 
+        .btn-approve-all {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: var(--white);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            width: auto;
+            padding: 0 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-approve-all:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
         .price {
             font-weight: 700;
             color: var(--primary-color);
@@ -535,18 +549,28 @@
         .color-dot[data-color*="lục"], .color-dot[data-color*="green"] { background-color: #10b981; }
 
         /* Enhanced table layout for product columns */
-        table th:nth-child(3), table th:nth-child(6) {
+        table th:nth-child(3), table th:nth-child(4) {
             min-width: 220px;
         }
 
-        table td:nth-child(3), table td:nth-child(6) {
+        table td:nth-child(3), table td:nth-child(4) {
             white-space: normal;
             min-width: 220px;
         }
 
-        table th:nth-child(4), table th:nth-child(5),
-        table th:nth-child(7), table th:nth-child(8) {
+        table th:nth-child(5), table th:nth-child(6),
+        table th:nth-child(7), table th:nth-child(8),
+        table th:nth-child(9) {
             min-width: 120px;
+        }
+
+        /* Group separation */
+        .group-start {
+            border-top: 2px solid var(--gray-300) !important;
+        }
+
+        .group-row td {
+            background: rgba(21, 48, 84, 0.02);
         }
     </style>
 </head>
@@ -585,8 +609,8 @@
                             <option value="" th:selected="${searchTrangThai == null or searchTrangThai == ''}">Tất cả</option>
                             <option value="Chờ xử lý" th:selected="${searchTrangThai == 'Chờ xử lý'}">Chờ xử lý</option>
                             <option value="Đã xác nhận" th:selected="${searchTrangThai == 'Đã xác nhận'}">Đã xác nhận</option>
-<!--                            <option value="Đã hủy" th:selected="${searchTrangThai == 'Đã hủy'}">Đã hủy</option>-->
-<!--                            <option value="Đang xử lý" th:selected="${searchTrangThai == 'Đang xử lý'}">Đang xử lý</option>-->
+                            <!--                            <option value="Đã hủy" th:selected="${searchTrangThai == 'Đã hủy'}">Đã hủy</option>-->
+                            <!--                            <option value="Đang xử lý" th:selected="${searchTrangThai == 'Đang xử lý'}">Đang xử lý</option>-->
                         </select>
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
@@ -618,74 +642,137 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="request : ${exchangeRequests}">
-                        <td th:text="${request.hoaDon.donHang.maDonHang}"></td>
-                        <td th:text="${request.hoaDon.donHang.nguoiDung.hoTen}"></td>
-                        <!-- Enhanced original product display with visual variants -->
-                        <td>
-                            <div class="product-section original">
-                                <div class="product-info">
-                                    <div class="product-name" th:text="${request.chiTietDonHang.tenSanPham}"></div>
-                                    <div class="product-variants">
-                                        <div class="color-swatch" th:if="${request.chiTietDonHang.chiTietSanPham.mauSac != null}">
-                                            <div class="color-dot" th:attr="data-color=${request.chiTietDonHang.chiTietSanPham.mauSac.tenMau}"></div>
-                                            <span th:text="${request.chiTietDonHang.chiTietSanPham.mauSac.tenMau}"></span>
+                    <th:block th:each="group, groupStat : ${groups}">
+                        <tr th:class="${groupStat.first} ? 'group-start' : ''">
+                            <td th:rowspan="${group.size}" th:text="${group[0].hoaDon.donHang.maDonHang}"></td>
+                            <td th:rowspan="${group.size}" th:text="${group[0].hoaDon.donHang.nguoiDung.hoTen}"></td>
+                            <!-- Sản phẩm gốc đầu tiên -->
+                            <td>
+                                <div class="product-section original">
+                                    <div class="product-info">
+                                        <div class="product-name" th:text="${group[0].chiTietDonHang.tenSanPham}"></div>
+                                        <div class="product-variants">
+                                            <div class="color-swatch" th:if="${group[0].chiTietDonHang.chiTietSanPham.mauSac != null}">
+                                                <div class="color-dot" th:attr="data-color=${group[0].chiTietDonHang.chiTietSanPham.mauSac.tenMau}"></div>
+                                                <span th:text="${group[0].chiTietDonHang.chiTietSanPham.mauSac.tenMau}"></span>
+                                            </div>
+                                            <div class="size-badge" th:if="${group[0].chiTietDonHang.chiTietSanPham.kichCo != null}"
+                                                 th:text="${group[0].chiTietDonHang.chiTietSanPham.kichCo.ten}"></div>
                                         </div>
-                                        <div class="size-badge" th:if="${request.chiTietDonHang.chiTietSanPham.kichCo != null}"
-                                             th:text="${request.chiTietDonHang.chiTietSanPham.kichCo.ten}"></div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td style="display: none;"></td>
-                        <td style="display: none;"></td>
-                        <!-- Enhanced replacement product display with visual variants -->
-                        <td>
-                            <div class="product-section replacement">
-                                <div class="product-info">
-                                    <div class="product-name" th:text="${request.chiTietSanPhamThayThe.sanPham.tenSanPham}"></div>
-                                    <div class="product-variants">
-                                        <div class="color-swatch" th:if="${request.chiTietSanPhamThayThe.mauSac != null}">
-                                            <div class="color-dot" th:attr="data-color=${request.chiTietSanPhamThayThe.mauSac.tenMau}"></div>
-                                            <span th:text="${request.chiTietSanPhamThayThe.mauSac.tenMau}"></span>
+                            </td>
+                            <!-- Sản phẩm thay thế đầu tiên -->
+                            <td>
+                                <div class="product-section replacement">
+                                    <div class="product-info">
+                                        <div class="product-name" th:text="${group[0].chiTietSanPhamThayThe.sanPham.tenSanPham}"></div>
+                                        <div class="product-variants">
+                                            <div class="color-swatch" th:if="${group[0].chiTietSanPhamThayThe.mauSac != null}">
+                                                <div class="color-dot" th:attr="data-color=${group[0].chiTietSanPhamThayThe.mauSac.tenMau}"></div>
+                                                <span th:text="${group[0].chiTietSanPhamThayThe.mauSac.tenMau}"></span>
+                                            </div>
+                                            <div class="size-badge" th:if="${group[0].chiTietSanPhamThayThe.kichCo != null}"
+                                                 th:text="${group[0].chiTietSanPhamThayThe.kichCo.ten}"></div>
                                         </div>
-                                        <div class="size-badge" th:if="${request.chiTietSanPhamThayThe.kichCo != null}"
-                                             th:text="${request.chiTietSanPhamThayThe.kichCo.ten}"></div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td style="display: none;"></td>
-                        <td style="display: none;"></td>
-                        <td th:text="${request.soLuong}"></td>
-                        <td th:text="${request.lyDoDoiHang}"></td>
-                        <!-- Enhanced status display with prominent badges -->
-                        <td>
-                            <div class="status-badge"
-                                 th:classappend="${request.trangThai == 'Chờ xử lý'} ? 'status-pending' :
-                                                (${request.trangThai == 'Đã xác nhận'} ? 'status-confirmed' :
-                                                (${request.trangThai == 'Đã hủy'} ? 'status-cancelled' : 'status-processing'))">
-                                <i th:class="${request.trangThai == 'Chờ xử lý'} ? 'fas fa-clock' :
-                                             (${request.trangThai == 'Đã xác nhận'} ? 'fas fa-check-circle' :
-                                             (${request.trangThai == 'Đã hủy'} ? 'fas fa-times-circle' : 'fas fa-spinner'))"></i>
-                                <span th:text="${request.trangThai}"></span>
-                            </div>
-                        </td>
-                        <td th:text="${request.thoiGianDoi}"></td>
-                        <td>
-                            <span class="price"
-                                  th:attr="data-value=${request.chenhLechGia != null ? request.chenhLechGia : 0}"
-                                  th:classappend="${request.chenhLechGia != null and request.chenhLechGia < 0} ? 'negative'"></span>
-                        </td>
-                        <td class="action-buttons">
-                            <button th:if="${request.trangThai == 'Chờ xử lý'}"
-                                    class="btn-approve"
-                                    th:attr="data-id=${request.id}"
-                                    onclick="approveRequest(this)">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </td>
-                    </tr>
+                            </td>
+                            <td th:text="${group[0].soLuong}"></td>
+                            <td th:text="${group[0].lyDoDoiHang}"></td>
+                            <td>
+                                <div class="status-badge"
+                                     th:classappend="${group[0].trangThai == 'Chờ xử lý'} ? 'status-pending' :
+                                                    (${group[0].trangThai == 'Đã xác nhận'} ? 'status-confirmed' :
+                                                    (${group[0].trangThai == 'Đã hủy'} ? 'status-cancelled' : 'status-processing'))">
+                                    <i th:class="${group[0].trangThai == 'Chờ xử lý'} ? 'fas fa-clock' :
+                                                 (${group[0].trangThai == 'Đã xác nhận'} ? 'fas fa-check-circle' :
+                                                 (${group[0].trangThai == 'Đã hủy'} ? 'fas fa-times-circle' : 'fas fa-spinner'))"></i>
+                                    <span th:text="${group[0].trangThai}"></span>
+                                </div>
+                            </td>
+                            <td th:text="${group[0].thoiGianDoi}"></td>
+                            <td>
+                                <span class="price"
+                                      th:attr="data-value=${group[0].chenhLechGia != null ? group[0].chenhLechGia : 0}"
+                                      th:classappend="${group[0].chenhLechGia != null and group[0].chenhLechGia < 0} ? 'negative'"></span>
+                            </td>
+                            <td class="action-buttons" th:rowspan="${group.size}">
+                                <button th:if="${group[0].trangThai == 'Chờ xử lý'}"
+                                        class="btn-approve"
+                                        th:attr="data-id=${group[0].id}"
+                                        onclick="approveRequest(this)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button th:if="${group.size > 1 and group[0].trangThai == 'Chờ xử lý'}"
+                                        class="btn-approve-all"
+                                        th:attr="data-hoadon-id=${group[0].hoaDon.id}"
+                                        onclick="approveAll(this)">
+                                    <i class="fas fa-check-double me-1"></i> Xác nhận tất cả
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Các yêu cầu tiếp theo trong nhóm (nếu có) -->
+                        <tr th:each="request, stat : ${group}" th:if="${stat.index > 0}" th:class="'group-row'">
+                            <td>
+                                <div class="product-section original">
+                                    <div class="product-info">
+                                        <div class="product-name" th:text="${request.chiTietDonHang.tenSanPham}"></div>
+                                        <div class="product-variants">
+                                            <div class="color-swatch" th:if="${request.chiTietDonHang.chiTietSanPham.mauSac != null}">
+                                                <div class="color-dot" th:attr="data-color=${request.chiTietDonHang.chiTietSanPham.mauSac.tenMau}"></div>
+                                                <span th:text="${request.chiTietDonHang.chiTietSanPham.mauSac.tenMau}"></span>
+                                            </div>
+                                            <div class="size-badge" th:if="${request.chiTietDonHang.chiTietSanPham.kichCo != null}"
+                                                 th:text="${request.chiTietDonHang.chiTietSanPham.kichCo.ten}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="product-section replacement">
+                                    <div class="product-info">
+                                        <div class="product-name" th:text="${request.chiTietSanPhamThayThe.sanPham.tenSanPham}"></div>
+                                        <div class="product-variants">
+                                            <div class="color-swatch" th:if="${request.chiTietSanPhamThayThe.mauSac != null}">
+                                                <div class="color-dot" th:attr="data-color=${request.chiTietSanPhamThayThe.mauSac.tenMau}"></div>
+                                                <span th:text="${request.chiTietSanPhamThayThe.mauSac.tenMau}"></span>
+                                            </div>
+                                            <div class="size-badge" th:if="${request.chiTietSanPhamThayThe.kichCo != null}"
+                                                 th:text="${request.chiTietSanPhamThayThe.kichCo.ten}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td th:text="${request.soLuong}"></td>
+                            <td th:text="${request.lyDoDoiHang}"></td>
+                            <td>
+                                <div class="status-badge"
+                                     th:classappend="${request.trangThai == 'Chờ xử lý'} ? 'status-pending' :
+                                                    (${request.trangThai == 'Đã xác nhận'} ? 'status-confirmed' :
+                                                    (${request.trangThai == 'Đã hủy'} ? 'status-cancelled' : 'status-processing'))">
+                                    <i th:class="${request.trangThai == 'Chờ xử lý'} ? 'fas fa-clock' :
+                                                 (${request.trangThai == 'Đã xác nhận'} ? 'fas fa-check-circle' :
+                                                 (${request.trangThai == 'Đã hủy'} ? 'fas fa-times-circle' : 'fas fa-spinner'))"></i>
+                                    <span th:text="${request.trangThai}"></span>
+                                </div>
+                            </td>
+                            <td th:text="${request.thoiGianDoi}"></td>
+                            <td>
+                                <span class="price"
+                                      th:attr="data-value=${request.chenhLechGia != null ? request.chenhLechGia : 0}"
+                                      th:classappend="${request.chenhLechGia != null and request.chenhLechGia < 0} ? 'negative'"></span>
+                            </td>
+                            <td class="action-buttons">
+                                <button th:if="${request.trangThai == 'Chờ xử lý'}"
+                                        class="btn-approve"
+                                        th:attr="data-id=${request.id}"
+                                        onclick="approveRequest(this)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </th:block>
                     </tbody>
                 </table>
             </div>
@@ -737,6 +824,19 @@
             cancelButtonText: 'Hủy'
         }).then((result) => {
             if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Đang xử lý',
+                    text: 'Vui lòng chờ trong giây lát...',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
                 fetch(`/acvstore/exchange-requests/approve/${id}`, {
                     method: 'POST',
                     headers: {
@@ -745,6 +845,7 @@
                 })
                     .then(response => response.json())
                     .then(data => {
+                        Swal.close(); // Close loading alert
                         Swal.fire({
                             title: data.success ? 'Thành công!' : 'Lỗi!',
                             text: data.message,
@@ -757,6 +858,66 @@
                         });
                     })
                     .catch(error => {
+                        Swal.close(); // Close loading alert
+                        Swal.fire({
+                            title: 'Lỗi!',
+                            text: 'Có lỗi xảy ra. Vui lòng thử lại.',
+                            icon: 'error',
+                            confirmButtonColor: '#153054'
+                        });
+                    });
+            }
+        });
+    }
+
+    function approveAll(button) {
+        const hoaDonId = button.getAttribute('data-hoadon-id');
+        Swal.fire({
+            title: 'Xác nhận tất cả yêu cầu',
+            text: 'Bạn có chắc muốn xác nhận tất cả yêu cầu đổi hàng cho hóa đơn này?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Xác nhận tất cả',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading state
+                Swal.fire({
+                    title: 'Đang xử lý',
+                    text: 'Vui lòng chờ trong giây lát...',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch(`/acvstore/exchange-requests/approve-all/${hoaDonId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        Swal.close(); // Close loading alert
+                        Swal.fire({
+                            title: data.success ? 'Thành công!' : 'Lỗi!',
+                            text: data.message,
+                            icon: data.success ? 'success' : 'error',
+                            confirmButtonColor: '#153054'
+                        }).then(() => {
+                            if (data.success) {
+                                window.location.reload();
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        Swal.close(); // Close loading alert
                         Swal.fire({
                             title: 'Lỗi!',
                             text: 'Có lỗi xảy ra. Vui lòng thử lại.',
@@ -783,6 +944,19 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 const reason = result.value || '';
+                // Show loading state
+                Swal.fire({
+                    title: 'Đang xử lý',
+                    text: 'Vui lòng chờ trong giây lát...',
+                    icon: 'info',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
                 fetch(`/acvstore/exchange-requests/reject/${id}?rejectReason=${encodeURIComponent(reason)}`, {
                     method: 'POST',
                     headers: {
@@ -791,6 +965,7 @@
                 })
                     .then(response => response.json())
                     .then(data => {
+                        Swal.close(); // Close loading alert
                         Swal.fire({
                             title: data.success ? 'Thành công!' : 'Lỗi!',
                             text: data.message,
@@ -803,6 +978,7 @@
                         });
                     })
                     .catch(error => {
+                        Swal.close(); // Close loading alert
                         Swal.fire({
                             title: 'Lỗi!',
                             text: 'Có lỗi xảy ra. Vui lòng thử lại.',

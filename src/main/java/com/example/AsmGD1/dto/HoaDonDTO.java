@@ -31,6 +31,8 @@
         private List<LichSuDTO> lichSuHoaDons = new ArrayList<>();
         private BigDecimal giamPhiVanChuyen; // Thêm trường này
         private String phieuGiamGia; // Thêm trường này
+        private BigDecimal tongGiamShip; // Thay giamPhiVanChuyen thành tongGiamShip để nhất quán
+        private BigDecimal tongGiamOrder; // Thêm trường này
 
 
         @Data

@@ -857,7 +857,7 @@
       </button>
       <button th:if="${currentStatus == 'Chưa xác nhận'}"
               class="btn-cancel"
-              th:attr="onclick=|cancelOrder('${hoaDon.donHang.maDonHang}', '${hoaDon.id}')|">
+              th:attr="onclick=|cancelOrder('${hoaDon.id}', '${hoaDon.donHang.maDonHang}')|">
         <i class="fas fa-times"></i>
         Hủy đơn hàng
       </button>
@@ -1187,7 +1187,7 @@
         `;
       } else if (cancelableStatuses.includes(currentStatus)) {
         actionButtons.innerHTML = `
-          <button class="btn-cancel" onclick="cancelOrder('${maDonHang}', '${hoaDonId}')">
+          <button class="btn-cancel" onclick="cancelOrder('${hoaDonId}', '${maDonHang}')">
               <i class="fas fa-times"></i> Hủy đơn hàng
           </button>
         `;
@@ -1493,7 +1493,7 @@
     });
   }
 
-  function cancelOrder(maDonHang, id) {
+  function cancelOrder(hoaDonId, maDonHang) { // Đổi thứ tự tham số
     Swal.fire({
       title: 'Hủy đơn hàng?',
       text: 'Bạn có chắc chắn muốn hủy đơn hàng này?',
@@ -1522,7 +1522,11 @@
           }
         });
 
-        fetch(`/dsdon-mua/api/orders/cancel/${id}`, {
+        // Sử dụng hoaDonId (UUID) - tham số đầu tiên
+        console.log('Gửi yêu cầu hủy đơn với hoaDonId (UUID):', hoaDonId);
+        console.log('Mã đơn hàng:', maDonHang);
+
+        fetch(`/dsdon-mua/api/orders/cancel/${hoaDonId}`, {
           method: 'POST',
           credentials: 'include',
           headers: {

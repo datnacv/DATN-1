@@ -28,9 +28,7 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Controller
 @RequestMapping("/acvstore/exchange-requests")
@@ -74,22 +72,45 @@ public class AdminExchangeController {
         Sort sort = Sort.by(Sort.Direction.DESC, "thoiGianDoi");
         Pageable pageable = PageRequest.of(page, 10, sort);
 
-        Page<LichSuDoiSanPham> exchangeRequests;
+        Page<LichSuDoiSanPham> exchangeRequestsPage;
         if ((searchMaDonHang != null && !searchMaDonHang.isEmpty()) ||
                 (searchHoTen != null && !searchHoTen.isEmpty()) ||
                 (searchTrangThai != null && !searchTrangThai.isEmpty())) {
-            exchangeRequests = lichSuDoiSanPhamRepository.findByMaDonHangOrHoTenOrTrangThai(
+            exchangeRequestsPage = lichSuDoiSanPhamRepository.findByMaDonHangOrHoTenOrTrangThai(
                     searchMaDonHang != null ? searchMaDonHang.trim() : "",
                     searchHoTen != null ? searchHoTen.trim() : "",
                     searchTrangThai != null ? searchTrangThai.trim() : "",
                     pageable);
         } else {
-            exchangeRequests = lichSuDoiSanPhamRepository.findAll(pageable);
+            exchangeRequestsPage = lichSuDoiSanPhamRepository.findAll(pageable);
         }
 
-        model.addAttribute("exchangeRequests", exchangeRequests.getContent());
-        model.addAttribute("currentPage", exchangeRequests.getNumber());
-        model.addAttribute("totalPages", exchangeRequests.getTotalPages());
+        List<LichSuDoiSanPham> requests = exchangeRequestsPage.getContent();
+
+        // Nhóm các yêu cầu theo mã đơn hàng
+        List<List<LichSuDoiSanPham>> groups = new ArrayList<>();
+        if (!requests.isEmpty()) {
+            List<LichSuDoiSanPham> currentGroup = new ArrayList<>();
+            String currentMa = requests.get(0).getHoaDon().getDonHang().getMaDonHang();
+            currentGroup.add(requests.get(0));
+            for (int i = 1; i < requests.size(); i++) {
+                LichSuDoiSanPham r = requests.get(i);
+                String ma = r.getHoaDon().getDonHang().getMaDonHang();
+                if (ma.equals(currentMa)) {
+                    currentGroup.add(r);
+                } else {
+                    groups.add(currentGroup);
+                    currentGroup = new ArrayList<>();
+                    currentGroup.add(r);
+                    currentMa = ma;
+                }
+            }
+            groups.add(currentGroup);
+        }
+
+        model.addAttribute("groups", groups);
+        model.addAttribute("currentPage", exchangeRequestsPage.getNumber());
+        model.addAttribute("totalPages", exchangeRequestsPage.getTotalPages());
         model.addAttribute("searchMaDonHang", searchMaDonHang);
         model.addAttribute("searchHoTen", searchHoTen);
         model.addAttribute("searchTrangThai", searchTrangThai); // Thêm trạng thái vào model
@@ -99,6 +120,10 @@ public class AdminExchangeController {
     @PostMapping("/approve/{id}")
     @Transactional
     public ResponseEntity<Map<String, Object>> approveExchangeRequest(@PathVariable UUID id, Authentication authentication) {
+        return approveSingle(id, authentication);
+    }
+
+    private ResponseEntity<Map<String, Object>> approveSingle(UUID id, Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
 
         try {
@@ -209,6 +234,140 @@ public class AdminExchangeController {
             logger.error("Lỗi khi xác nhận yêu cầu đổi sản phẩm: {}", e.getMessage(), e);
             response.put("success", false);
             response.put("message", "Có lỗi xảy ra khi xác nhận yêu cầu. Vui lòng thử lại sau.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PostMapping("/approve-all/{hoaDonId}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> approveAllExchangeRequests(@PathVariable UUID hoaDonId, Authentication authentication) {
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            // Quyền
+            if (authentication == null || !authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"))) {
+                response.put("success", false);
+                response.put("message", "Bạn không có quyền xác nhận yêu cầu đổi hàng.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
+            HoaDon hoaDon = hoaDonRepository.findById(hoaDonId)
+                    .orElseThrow(() -> new RuntimeException("Hóa đơn không tồn tại."));
+
+            List<LichSuDoiSanPham> pendingRequests = lichSuDoiSanPhamRepository.findByHoaDonAndTrangThai(hoaDon, "Chờ xử lý");
+
+            if (pendingRequests.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "Không có yêu cầu đổi hàng chờ xử lý cho hóa đơn này.");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Kiểm tra tồn kho cho tất cả
+            for (LichSuDoiSanPham lichSu : pendingRequests) {
+                ChiTietSanPham replacementProduct = lichSu.getChiTietSanPhamThayThe();
+                if (replacementProduct.getSoLuongTonKho() < lichSu.getSoLuong()) {
+                    response.put("success", false);
+                    response.put("message", "Sản phẩm thay thế không đủ tồn kho cho yêu cầu: " + lichSu.getId());
+                    return ResponseEntity.badRequest().body(response);
+                }
+            }
+
+            BigDecimal totalChenhLech = BigDecimal.ZERO;
+            StringBuilder moTaBuilder = new StringBuilder("Đổi hàng nhóm: ");
+
+            for (LichSuDoiSanPham lichSu : pendingRequests) {
+                // Xử lý từng yêu cầu giống approve single, nhưng gộp chênh lệch
+                lichSu.setTrangThai("Đã xác nhận");
+                lichSuDoiSanPhamRepository.save(lichSu);
+
+                ChiTietDonHang chiTietDonHang = lichSu.getChiTietDonHang();
+                chiTietDonHang.setTrangThaiDoiSanPham(true);
+                chiTietDonHang.setLyDoDoiHang(lichSu.getLyDoDoiHang());
+
+                ChiTietSanPham originalProduct = chiTietDonHang.getChiTietSanPham();
+                ChiTietSanPham replacementProduct = lichSu.getChiTietSanPhamThayThe();
+
+                originalProduct.setSoLuongTonKho(originalProduct.getSoLuongTonKho() + lichSu.getSoLuong());
+                replacementProduct.setSoLuongTonKho(replacementProduct.getSoLuongTonKho() - lichSu.getSoLuong());
+                chiTietSanPhamRepository.save(originalProduct);
+                chiTietSanPhamRepository.save(replacementProduct);
+
+                BigDecimal totalOriginal = (lichSu.getTongTienHoan() != null)
+                        ? lichSu.getTongTienHoan()
+                        : chiTietDonHang.getGia().multiply(BigDecimal.valueOf(lichSu.getSoLuong()));
+                BigDecimal totalReplacement = replacementProduct.getGia().multiply(BigDecimal.valueOf(lichSu.getSoLuong()));
+                BigDecimal chenhLech = totalReplacement.subtract(totalOriginal);
+                totalChenhLech = totalChenhLech.add(chenhLech);
+
+                moTaBuilder.append("\n- Đổi '").append(chiTietDonHang.getTenSanPham())
+                        .append("' → '").append(replacementProduct.getSanPham().getTenSanPham())
+                        .append("', SL ").append(lichSu.getSoLuong());
+            }
+
+            // Cập nhật hóa đơn
+            hoaDon.setTrangThai("Đã đổi hàng");
+            hoaDonRepository.save(hoaDon);
+
+            LichSuHoaDon lshd = new LichSuHoaDon();
+            lshd.setHoaDon(hoaDon);
+            lshd.setTrangThai("Đã đổi hàng");
+            lshd.setThoiGian(LocalDateTime.now());
+            lshd.setGhiChu("Admin xác nhận đổi nhóm");
+            hoaDon.getLichSuHoaDons().add(lshd);
+            hoaDonRepository.save(hoaDon);
+
+            // Xử lý chênh lệch tổng
+            if (totalChenhLech.compareTo(BigDecimal.ZERO) != 0) {
+                // Vì là nhóm, có thể cần tạo một chi tiết đơn hàng ảo hoặc xử lý tổng
+                // Giả sử sử dụng một replacementProduct bất kỳ cho id, hoặc null nếu không cần
+                // Ở đây tôi giả sử dùng id của replacement đầu tiên
+                UUID sampleReplacementId = pendingRequests.get(0).getChiTietSanPhamThayThe().getId();
+                int totalSoLuong = pendingRequests.stream().mapToInt(LichSuDoiSanPham::getSoLuong).sum();
+
+                hoaDonService.xuLyChenhLechSauDuyet(
+                        hoaDon,
+                        totalChenhLech,
+                        totalSoLuong,
+                        sampleReplacementId,
+                        moTaBuilder.toString()
+                );
+            }
+
+            // Thông báo + Email
+            NguoiDung user = hoaDon.getDonHang().getNguoiDung();
+            thongBaoService.taoThongBaoHeThong(
+                    user.getTenDangNhap(),
+                    "Tất cả yêu cầu đổi sản phẩm đã được xác nhận",
+                    "Đơn " + hoaDon.getDonHang().getMaDonHang()
+                            + (totalChenhLech.compareTo(BigDecimal.ZERO) > 0
+                            ? " phát sinh phụ thu: " + String.format("%,.0f", totalChenhLech) + " VNĐ."
+                            : (totalChenhLech.compareTo(BigDecimal.ZERO) < 0
+                            ? " được hoàn chênh lệch: " + String.format("%,.0f", totalChenhLech.abs()) + " VNĐ."
+                            : " không phát sinh chênh lệch.")),
+                    hoaDon.getDonHang()
+            );
+
+            String emailContent = "<h2>Xác nhận tất cả yêu cầu đổi sản phẩm</h2>"
+                    + "<p>Xin chào " + user.getHoTen() + ",</p>"
+                    + "<p>Tất cả yêu cầu đổi cho đơn <strong>" + hoaDon.getDonHang().getMaDonHang() + "</strong> đã được xác nhận.</p>"
+                    + (totalChenhLech.compareTo(BigDecimal.ZERO) > 0
+                    ? "<p><strong>Phụ thu tổng:</strong> " + String.format("%,.0f", totalChenhLech) + " VNĐ.<br>"
+                    + "Hệ thống đã tạo đơn chênh lệch mới (phí ship 0đ). Vui lòng thanh toán trong mục Đơn mua.</p>"
+                    : (totalChenhLech.compareTo(BigDecimal.ZERO) < 0
+                    ? "<p><strong>Đã hoàn chênh lệch tổng:</strong> " + String.format("%,.0f", totalChenhLech.abs()) + " VNĐ.</p>"
+                    : "<p>Không phát sinh chênh lệch.</p>")
+            );
+            emailService.sendEmail(user.getEmail(), "Xác nhận đổi sản phẩm - ACV Store", emailContent);
+
+            response.put("success", true);
+            response.put("message", "Tất cả yêu cầu đổi sản phẩm đã được xác nhận.");
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("Lỗi khi xác nhận tất cả yêu cầu đổi sản phẩm: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "Có lỗi xảy ra khi xác nhận. Vui lòng thử lại sau.");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }

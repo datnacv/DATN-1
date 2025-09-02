@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -413,26 +414,22 @@
                 <span class="info-value" th:text="${lichSuTraHang.chiTietDonHang?.formattedGia ?: '0 VNĐ'}"></span>
               </div>
               <div class="info-item">
-                <span class="info-label">Tổng tiền hoàn (ước tính)</span>
-                <span class="info-value highlight-amount"
-                      th:text="${formattedTongHoan != null ? formattedTongHoan : '0 VNĐ'}"></span>
+                <span class="info-label">Giảm giá đơn hàng</span>
+                <span class="info-value" th:text="${tongGiamOrder}"></span>
               </div>
-<!--              <div class="info-item"-->
-<!--                   th:if="${lichSuTraHang.trangThai == 'Đã xác nhận' and lichSuTraHang.tongTienHoan != null}">-->
-<!--                <span class="info-label">Tổng tiền hoàn thực tế</span>-->
-<!--                <span class="info-value highlight-amount">-->
-<!--    <span th:if="${lichSuTraHang.tongTienHoan != null}"-->
-<!--          th:text="${#numbers.formatDecimal(lichSuTraHang.tongTienHoan, 0, 0, 'POINT', '.')} + ' VNĐ'"></span>-->
-<!--    <span th:if="${lichSuTraHang.tongTienHoan == null}">0 VNĐ</span>-->
-<!--  </span>-->
-<!--              </div>-->
+              <div class="info-item">
+                <span class="info-label">Tổng tiền hoàn</span>
+                <span class="info-value highlight-amount" th:text="${formattedTongHoan != null ? formattedTongHoan : '0 VNĐ'}"></span>
+              </div>
               <div class="info-item">
                 <span class="info-label">Lý do trả hàng</span>
                 <span class="info-value" th:text="${lichSuTraHang.lyDoTraHang ?: 'N/A'}"></span>
               </div>
               <div class="info-item">
                 <span class="info-label">Trạng thái</span>
-                <span class="info-value status-badge status-pending" th:text="${lichSuTraHang.trangThai ?: 'N/A'}"></span>
+                <span class="info-value status-badge status-pending"
+                      th:classappend="${lichSuTraHang.trangThai == 'Đã xác nhận' ? 'status-confirmed' : lichSuTraHang.trangThai == 'Đã hủy' ? 'status-cancelled' : 'status-pending'}"
+                      th:text="${lichSuTraHang.trangThai ?: 'N/A'}"></span>
               </div>
               <div class="info-item">
                 <span class="info-label">Thời gian yêu cầu</span>
