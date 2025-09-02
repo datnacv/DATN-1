@@ -11,6 +11,7 @@ import com.example.AsmGD1.service.GiamGia.PhieuGiamGiaCuaNguoiDungService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -41,6 +42,9 @@ public class PhieuGiamGiaController {
 
     @Autowired
     private PhuongThucThanhToanRepository phuongThucThanhToanRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     // ===== RBAC =====
     private boolean isCurrentUserAdmin() {
@@ -435,6 +439,16 @@ public class PhieuGiamGiaController {
 
         try {
             PhieuGiamGia savedVoucher = phieuGiamGiaRepository.save(voucher);
+
+            phieuGiamGiaRepository.flush();
+
+            try {
+                Thread.sleep(500); // 500ms delay to ensure transaction is fully committed
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            broadcastVoucherUpdate("CREATED", savedVoucher, "Phiếu giảm giá mới được tạo: " + savedVoucher.getMa());
 
             if ("ca_nhan".equalsIgnoreCase(voucher.getKieuPhieu()) && selectedCustomerIds != null) {
                 List<NguoiDung> selectedUsers = phieuService.layNguoiDungTheoIds(selectedCustomerIds);
@@ -845,9 +859,11 @@ public class PhieuGiamGiaController {
 
         try {
             PhieuGiamGia saved = phieuGiamGiaRepository.save(existing);
+//  nam      Gán khách & gửi mail nếu là cá nhân
+//           if (isCaNhan && selectedCustomerIds != null && !selectedCustomerIds.isEmpty()) {
+            broadcastVoucherUpdate("UPDATED", saved, "Phiếu giảm giá được cập nhật: " + saved.getMa());
 
-            // Gán khách & gửi mail nếu là cá nhân
-            if (isCaNhan && selectedCustomerIds != null && !selectedCustomerIds.isEmpty()) {
+            if ("ca_nhan".equalsIgnoreCase(saved.getKieuPhieu()) && selectedCustomerIds != null) {
                 List<NguoiDung> users = phieuService.layNguoiDungTheoIds(selectedCustomerIds);
                 for (NguoiDung user : users) {
                     phieuService.ganPhieuChoNguoiDung(user, saved);
@@ -903,6 +919,8 @@ public class PhieuGiamGiaController {
         }
 
         try {
+            broadcastVoucherUpdate("DELETED", voucher, "Phiếu giảm giá bị xóa: " + voucher.getMa());
+
             phieuService.xoaTatCaGanKetTheoPhieu(id);
             phieuGiamGiaRepository.deletePhuongThucThanhToanByPhieuGiamGiaId(id);
             phieuGiamGiaRepository.deleteById(id);
@@ -939,5 +957,33 @@ public class PhieuGiamGiaController {
             result.add(m);
         }
         return result;
+    }
+
+    private void broadcastVoucherUpdate(String action, PhieuGiamGia voucher, String message) {
+        try {
+            Map<String, Object> update = new HashMap<>();
+            update.put("action", action);
+            update.put("voucherId", voucher.getId().toString());
+            update.put("voucherCode", voucher.getMa());
+            update.put("voucherName", voucher.getTen());
+            update.put("status", getTrangThai(voucher));
+            update.put("quantity", voucher.getSoLuong());
+            update.put("message", message);
+            update.put("timestamp", System.currentTimeMillis());
+
+            System.out.println("Broadcasting voucher update: " + action + " for voucher: " + voucher.getMa());
+
+            // Broadcast to admin voucher list
+            messagingTemplate.convertAndSend("/topic/vouchers", update);
+
+            // Broadcast to payment pages
+            messagingTemplate.convertAndSend("/topic/payment/vouchers", update);
+
+            System.out.println("Successfully broadcasted voucher update for: " + voucher.getMa());
+
+        } catch (Exception e) {
+            System.err.println("Failed to broadcast voucher update: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

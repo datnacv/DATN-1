@@ -1422,10 +1422,14 @@
 
 
 
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/js/navbar.js"></script>
-<script>
+<!-- Added SockJS and STOMP for WebSocket support -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+
+<script th:inline="javascript">
     function normalizeVNPhone(raw='') {
         let s = String(raw).trim().replace(/\s|\.|-/g,'');
         if (s.startsWith('+84')) s = '0' + s.slice(3);
@@ -2207,24 +2211,26 @@
     };
 
     // ================== WALLET ==================
-    async function loadWalletBalance() {
+    async function LoadWalletBalance() {
         const el = document.getElementById('wallet-balance');
+        if (!el) return;
+
         el.textContent = '(Đang tải...)';
         el.classList.add('loading');
+
         try {
             const res = await fetch('/api/wallet/balance', { credentials: 'include' });
             const data = await res.json();
-            if (res.ok && data.success) el.textContent = `(Số dư: ${formatVND(data.data || 0)})`;
-            else {
+            if (res.ok && data.success) {
+                el.textContent = `(Số dư: ${formatVND(data.data || 0)})`;
+            } else {
                 el.textContent = '(Không có ví)';
-                Swal.fire({ icon:'warning', title:'Cảnh báo', text: data.message || 'Không thể tải số dư ví.' });
             }
             loadingState.walletBalance = true;
             checkLoadingComplete();
         } catch (err) {
             console.error('Lỗi tải số dư ví:', err);
             el.textContent = '(Lỗi tải số dư)';
-            Swal.fire({ icon:'error', title:'Lỗi', text:'Không thể tải số dư ví. Vui lòng kiểm tra kết nối!' });
             loadingState.walletBalance = true;
             checkLoadingComplete();
         } finally {
@@ -2235,6 +2241,8 @@
     // ================== ORDER ITEMS ==================
     async function loadOrderItems() {
         const container = document.getElementById('order-items');
+        if (!container) return;
+
         const mode = getCheckoutMode();
         let items = [];
         let subtotal = 0;
@@ -2293,21 +2301,28 @@
     `).join('');
         }
 
-        document.getElementById('subtotal').textContent = formatVND(subtotal);
-        if (!document.getElementById('shipping-fee').textContent.trim()) {
-            document.getElementById('shipping-fee').textContent = formatVND(0);
+        const subtotalEl = document.getElementById('subtotal');
+        const shippingEl = document.getElementById('shipping-fee');
+        const discountOrderEl = document.getElementById('discount-order');
+        const discountShipEl = document.getElementById('discount-ship');
+
+        if (subtotalEl) subtotalEl.textContent = formatVND(subtotal);
+        if (shippingEl && !shippingEl.textContent.trim()) {
+            shippingEl.textContent = formatVND(0);
         }
-        document.getElementById('discount-order').textContent = formatVND(0);
-        document.getElementById('discount-ship').textContent = formatVND(0);
+        if (discountOrderEl) discountOrderEl.textContent = formatVND(0);
+        if (discountShipEl) discountShipEl.textContent = formatVND(0);
+
         updateTotal();
 
         loadingState.orderItems = true;
         checkLoadingComplete();
 
-        // >>> thêm dòng này
-        markVoucherEligibility();
+        // Call markVoucherEligibility if it exists
+        if (typeof markVoucherEligibility === 'function') {
+            markVoucherEligibility();
+        }
     }
-
 
     // Build body for voucher APIs (for buy-now & cart-selected)
     function buildVoucherBodyForCurrentMode() {
@@ -2332,6 +2347,8 @@
         const discountEl = document.getElementById('discount-order');
         const selOrder = document.getElementById('order-voucher');
 
+        console.log("[v0] Applying ORDER voucher:", voucherCode);
+
         // Không chọn mã -> clear
         if (!voucherCode) {
             discountEl.textContent = formatVND(0);
@@ -2345,6 +2362,14 @@
         const source = mode;
         const subtotal = onlyDigits(document.getElementById('subtotal').textContent);
         const checkoutItems = buildVoucherBodyForCurrentMode();
+
+        console.log("[v0] Voucher request data:", {
+            voucherCode,
+            mode,
+            source,
+            subtotal,
+            checkoutItems
+        });
 
         // LẤY PTTT ĐANG CHỌN
         const paymentMethodId = document.querySelector('input[name="paymentMethod"]:checked')?.value;
@@ -2363,6 +2388,9 @@
             + `&subtotal=${subtotal}`
             + `&paymentMethodId=${encodeURIComponent(paymentMethodId)}`;
 
+        console.log("[v0] API URL:", url);
+        console.log("[v0] Request timestamp:", new Date().toISOString());
+
         try {
             const res = await fetch(url, {
                 method: 'POST',
@@ -2372,9 +2400,18 @@
             });
             const data = await res.json();
 
+            console.log("[v0] API Response:", {
+                status: res.status,
+                ok: res.ok,
+                data: data
+            });
+
             if (res.ok && (data.success || data.isSuccess)) {
                 const discount = Number(data.data || 0);
                 discountEl.textContent = formatVND(discount);
+
+                console.log("[v0] Voucher applied successfully, discount:", discount);
+
                 if (!silent) {
                     Swal.fire({
                         icon: 'success',
@@ -2388,6 +2425,9 @@
             } else {
                 discountEl.textContent = formatVND(0);
                 selOrder.value = ''; // Bỏ chọn nếu áp dụng thất bại
+
+                console.log("[v0] Voucher application failed:", data.message);
+
                 if (!silent) {
                     Swal.fire({
                         icon: 'error',
@@ -2399,6 +2439,8 @@
             }
         } catch (err) {
             console.error('Lỗi ORDER voucher:', err);
+            console.log("[v0] Voucher application error:", err);
+
             discountEl.textContent = formatVND(0);
             selOrder.value = ''; // Bỏ chọn nếu có lỗi
             if (!silent) {
@@ -2629,6 +2671,7 @@
                         cancelButtonText:'Quay lại',
                         confirmButtonColor:'#153054',
                         cancelButtonColor:'#d33',
+                        customClass:{ cancelButton:'swal-cancel-button' }
                     }).then(r => { if (r.isConfirmed) location.href = '/vi?redirect=/thanh-toan'; });
                     btn.classList.remove('loading'); btn.disabled = false; return;
                 }
@@ -2743,7 +2786,7 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         const mode = getCheckoutMode();
         sessionStorage.setItem('checkout.from', mode);
         if (mode === 'buy-now')       localStorage.removeItem('cartSelectedItems');
@@ -2756,7 +2799,7 @@
         loadOrderItems();
         updateCartCount();
         loadSavedAddresses();
-        loadWalletBalance();
+        LoadWalletBalance();
 
         document
             .querySelector('.payment-method[data-value="550E8400-E29B-41D4-A716-446655440017"]')
@@ -2958,6 +3001,338 @@
         const m = bootstrap.Modal.getInstance(document.getElementById('voucherModal'));
         if (m) m.hide();
     }
+
+    async function reloadVouchersInModal() {
+        try {
+            console.log('[v0] Reloading vouchers in modal...');
+
+            // Simply reload the page's voucher modal content by fetching the current page
+            // This ensures we get the latest vouchers from the server
+            const currentUrl = window.location.href;
+            const response = await fetch(currentUrl, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // Indicate this is an AJAX request
+                }
+            });
+
+            if (!response.ok) {
+                console.error('[v0] Failed to reload vouchers:', response.status);
+                return;
+            }
+
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Extract voucher lists from the fresh HTML
+            const newShipList = doc.getElementById('ship-list');
+            const newOrderList = doc.getElementById('order-list');
+
+            if (newShipList && newOrderList) {
+                // Update the modal content with fresh vouchers
+                const currentShipList = document.getElementById('ship-list');
+                const currentOrderList = document.getElementById('order-list');
+
+                if (currentShipList) currentShipList.innerHTML = newShipList.innerHTML;
+                if (currentOrderList) currentOrderList.innerHTML = newOrderList.innerHTML;
+
+                console.log('[v0] Vouchers reloaded successfully');
+
+                // Re-apply eligibility and sorting
+                if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
+                if (typeof sortVouchersInModal === 'function') sortVouchersInModal();
+            }
+
+        } catch (error) {
+            console.error('[v0] Error reloading vouchers:', error);
+        }
+    }
+
+    function handlePaymentVoucherUpdate(update) {
+        console.log('[v0] Voucher update received:', update);
+
+        const { action, voucherId, voucherCode, status, quantity, message } = update;
+
+        // Show notification for new vouchers
+        if (action === 'CREATED') {
+            // Show toast notification for new voucher
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Mã giảm giá mới!',
+                    text: `Có mã giảm giá mới: ${voucherCode}`,
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top-end',
+                    toast: true
+                });
+            }
+        }
+
+        // Check if currently applied vouchers are affected
+        const currentOrderVoucher = document.getElementById('order-voucher')?.value;
+        const currentShipVoucher = document.getElementById('ship-voucher')?.value;
+
+        if (currentOrderVoucher === voucherCode || currentShipVoucher === voucherCode) {
+            console.log('[v0] Currently applied voucher affected:', voucherCode);
+
+            // Re-validate current vouchers
+            setTimeout(async () => {
+                if (currentOrderVoucher === voucherCode) {
+                    const result = await applyOrderVoucher({ silent: true });
+                    if (!result.ok) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Mã giảm giá không còn hiệu lực',
+                            text: `Mã ORDER "${voucherCode}" đã thay đổi và không thể áp dụng.`,
+                            confirmButtonText: 'Đã hiểu'
+                        });
+                    }
+                }
+
+                if (currentShipVoucher === voucherCode) {
+                    const result = await applyShipVoucher({ silent: true });
+                    if (!result.ok) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Mã freeship không còn hiệu lực',
+                            text: `Mã FREESHIP "${voucherCode}" đã thay đổi và không thể áp dụng.`,
+                            confirmButtonText: 'Đã hiểu'
+                        });
+                    }
+                }
+            }, 2000); // Increased delay to 2 seconds for better backend sync
+        }
+
+        if (action === 'CREATED' || action === 'UPDATED' || action === 'DELETED') {
+            console.log('[v0] Reloading voucher dropdowns due to action:', action);
+
+            setTimeout(async () => {
+                await reloadVoucherDropdowns();
+
+                // Also reload modal if it's open
+                const modal = document.getElementById('voucherModal');
+                if (modal && modal.classList.contains('show')) {
+                    console.log('[v0] Modal is open, reloading vouchers...');
+                    await reloadVouchersInModal();
+                } else {
+                    console.log('[v0] Modal is closed, vouchers will be updated when opened');
+                }
+            }, 1500); // Increased delay to 1.5 seconds for better backend sync
+        }
+    }
+
+    async function reloadVoucherDropdowns() {
+        try {
+            console.log('[v0] Reloading voucher dropdowns...');
+            const response = await fetch(window.location.href, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!response.ok) {
+                console.error('[v0] Failed to reload voucher dropdowns:', response.status);
+                return;
+            }
+
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const newOrderVoucherSelect = doc.getElementById('order-voucher');
+            const newShipVoucherSelect = doc.getElementById('ship-voucher');
+
+            if (newOrderVoucherSelect && newShipVoucherSelect) {
+                const currentOrderVoucherSelect = document.getElementById('order-voucher');
+                const currentShipVoucherSelect = document.getElementById('ship-voucher');
+
+                if (currentOrderVoucherSelect) currentOrderVoucherSelect.innerHTML = newOrderVoucherSelect.innerHTML;
+                if (currentShipVoucherSelect) currentShipVoucherSelect.innerHTML = newShipVoucherSelect.innerHTML;
+
+                console.log('[v0] Voucher dropdowns reloaded successfully');
+            }
+        } catch (error) {
+            console.error('[v0] Error reloading voucher dropdowns:', error);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('voucherModal');
+        if (modalEl) {
+            modalEl.addEventListener('show.bs.modal', () => {
+                console.log('[v0] Modal opening, reloading vouchers...');
+                setTimeout(() => {
+                    reloadVouchersInModal();
+                }, 100);
+            });
+
+            modalEl.addEventListener('shown.bs.modal', () => {
+                if (typeof markVoucherEligibility === 'function') markVoucherEligibility();
+                if (typeof sortVouchersInModal === 'function') sortVouchersInModal();
+            });
+        }
+    });
+
+    function connectWebSocket() {
+        try {
+            console.log('[v0] Connecting to WebSocket...');
+            const socket = new SockJS('/ws');
+            stompClient = new StompJs.Client({
+                webSocketFactory: () => socket,
+                debug: (str) => console.log('[v0 WebSocket]', str),
+                reconnectDelay: 5000,
+                heartbeatIncoming: 4000,
+                heartbeatOutgoing: 4000,
+            });
+
+            stompClient.onConnect = (frame) => {
+                console.log('[v0] Connected to voucher updates successfully');
+
+                // Subscribe to payment voucher updates
+                stompClient.subscribe('/topic/payment/vouchers', (message) => {
+                    try {
+                        const update = JSON.parse(message.body);
+                        console.log('[v0] Received voucher update:', update);
+                        handlePaymentVoucherUpdate(update);
+                    } catch (e) {
+                        console.error('[v0] Error parsing voucher update:', e);
+                    }
+                });
+            };
+
+            stompClient.onStompError = (frame) => {
+                console.error('[v0] STOMP error:', frame);
+            };
+
+            stompClient.onDisconnect = () => {
+                console.log('[v0] WebSocket disconnected');
+            };
+
+            stompClient.activate();
+        } catch (error) {
+            console.error('[v0] WebSocket connection failed:', error);
+        }
+    }
+
+    connectWebSocket();
+
+    let voucherReloadInProgress = false;
+    let pendingVoucherUpdates = [];
+
+    // Enhanced voucher dropdown reload with cache busting and retry mechanism
+    async function reloadVoucherDropdowns(retryCount = 0) {
+        if (voucherReloadInProgress) {
+            console.log('[v0] Voucher reload already in progress, skipping...');
+            return false;
+        }
+
+        try {
+            voucherReloadInProgress = true;
+            console.log('[v0] Reloading voucher dropdowns...');
+
+            const timestamp = Date.now();
+            const response = await fetch(`${window.location.pathname}?_t=${timestamp}`, {
+                method: 'GET',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            // Update order voucher dropdown
+            const newOrderSelect = doc.querySelector('#order-voucher');
+            const currentOrderSelect = document.querySelector('#order-voucher');
+            if (newOrderSelect && currentOrderSelect) {
+                const selectedValue = currentOrderSelect.value;
+                currentOrderSelect.innerHTML = newOrderSelect.innerHTML;
+                if (currentOrderSelect.querySelector(`option[value="${selectedValue}"]`)) {
+                    currentOrderSelect.value = selectedValue;
+                }
+            }
+
+            // Update ship voucher dropdown
+            const newShipSelect = doc.querySelector('#ship-voucher');
+            const currentShipSelect = document.querySelector('#ship-voucher');
+            if (newShipSelect && currentShipSelect) {
+                const selectedValue = currentShipSelect.value;
+                currentShipSelect.innerHTML = newShipSelect.innerHTML;
+                if (currentShipSelect.querySelector(`option[value="${selectedValue}"]`)) {
+                    currentShipSelect.value = selectedValue;
+                }
+            }
+
+            console.log('[v0] Voucher dropdowns reloaded successfully');
+            return true;
+
+        } catch (error) {
+            console.error('[v0] Error reloading voucher dropdowns:', error);
+
+            if (retryCount < 3) {
+                const delay = Math.pow(2, retryCount) * 1000;
+                console.log(`[v0] Retrying in ${delay}ms... (${retryCount + 1}/3)`);
+                setTimeout(() => reloadVoucherDropdowns(retryCount + 1), delay);
+            }
+            return false;
+        } finally {
+            voucherReloadInProgress = false;
+        }
+    }
+
+    // Process pending voucher updates
+    async function processPendingVoucherUpdates() {
+        if (pendingVoucherUpdates.length === 0) return;
+
+        console.log(`[v0] Processing ${pendingVoucherUpdates.length} pending voucher updates`);
+
+        while (pendingVoucherUpdates.length > 0) {
+            const update = pendingVoucherUpdates.shift();
+            await handleVoucherUpdate(update);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between updates
+        }
+    }
+
+    // Handle individual voucher update
+    async function handleVoucherUpdate(data) {
+        console.log('[v0] Processing voucher update:', data);
+
+        // Wait for backend to fully process the change
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Reload voucher dropdowns
+        const reloadSuccess = await reloadVoucherDropdowns();
+
+        if (reloadSuccess) {
+            // If modal is open, also reload modal content
+            const modal = document.querySelector('#voucherModal');
+            if (modal && modal.style.display !== 'none') {
+                console.log('[v0] Modal is open, reloading modal vouchers...');
+                setTimeout(() => {
+                    if (typeof reloadVouchersInModal === 'function') {
+                        reloadVouchersInModal();
+                    }
+                }, 500);
+            }
+        }
+    }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        if (stompClient && stompClient.connected) {
+            stompClient.deactivate();
+        }
+    });
 
 </script>
 </body>
