@@ -500,7 +500,7 @@
       </div>
       <div class="modal-body p-4">
         <div class="modal-product-info flex items-center space-x-4">
-          <img id="modalProductImage" src="" alt="Product Image" class="w-20 h-20 object-cover rounded">
+          <img id="modalProductImage" src="/placeholder.svg" alt="Product Image" class="w-20 h-20 object-cover rounded">
           <div>
             <h6 id="modalProductName" class="font-semibold"></h6>
             <p id="modalProductPrice" class="text-blue-800 font-bold"></p>
@@ -603,17 +603,16 @@
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
 
-        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
-          <span th:text="${product.price}"></span> VNĐ
-        </div>
+        <div class="price-container mt-2">
+          Giá hiện tại (giá sau giảm hoặc giá thường)
+          <div class="price text-blue-800 font-bold" th:attr="data-price=${product.price}">
+            <span th:text="${product.price}"></span> VNĐ
+          </div>
 
-        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
-          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
-        </div>
-
-        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
-          <span class="stars"></span>
-          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
+          Giá gốc (chỉ hiển thị khi có giảm giá)
+          <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="old-price text-sm text-gray-500 line-through mt-1">
+            Giá gốc: <span class="formatted-old-price" th:text="${product.oldPrice}"></span> VNĐ
+          </div>
         </div>
       </a>
     </div>
@@ -662,17 +661,16 @@
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
-        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
-          <span th:text="${product.price}"></span> VNĐ
-        </div>
+        <div class="price-container mt-2">
+          Giá hiện tại (giá sau giảm hoặc giá thường)
+          <div class="price text-blue-800 font-bold" th:attr="data-price=${product.price}">
+            <span th:text="${product.price}"></span> VNĐ
+          </div>
 
-        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
-          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
-        </div>
-
-        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
-          <span class="stars"></span>
-          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
+          Giá gốc (chỉ hiển thị khi có giảm giá)
+          <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="old-price text-sm text-gray-500 line-through mt-1">
+            Giá gốc: <span class="formatted-old-price" th:text="${product.oldPrice}"></span> VNĐ
+          </div>
         </div>
       </a>
     </div>
@@ -723,17 +721,16 @@
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
-        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
-          <span th:text="${product.price}"></span> VNĐ
-        </div>
+        <div class="price-container mt-2">
+          Giá hiện tại (giá sau giảm hoặc giá thường)
+          <div class="price text-blue-800 font-bold" th:attr="data-price=${product.price}">
+            <span th:text="${product.price}"></span> VNĐ
+          </div>
 
-        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
-          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
-        </div>
-
-        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
-          <span class="stars"></span>
-          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
+          Giá gốc (chỉ hiển thị khi có giảm giá)
+          <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="old-price text-sm text-gray-500 line-through mt-1">
+            Giá gốc: <span class="formatted-old-price" th:text="${product.oldPrice}"></span> VNĐ
+          </div>
         </div>
       </a>
     </div>
@@ -872,50 +869,58 @@
 
                   const priceInfo = data[productId];
                   const priceEl = card.querySelector('.price');
-                  let oldPriceContainer = card.querySelector('.text-sm.text-red-600.line-through');
+                  let oldPriceContainer = card.querySelector('.old-price');
 
-                  // Cập nhật giá hiện tại (giá giảm hoặc giá thường)
                   if (priceEl) {
-                    const newPrice = Number(priceInfo.giaSauGiam || 0).toLocaleString('vi-VN') + ' VNĐ';
-                    if (priceEl.textContent !== newPrice) {
-                      priceEl.textContent = 'Từ ' + newPrice;
-                      priceEl.classList.add('text-blue-600', 'font-bold');
+                    // Kiểm tra xem có giảm giá không
+                    const hasDiscount = priceInfo.discountPercentage > 0 && priceInfo.oldPrice && priceInfo.oldPrice !== priceInfo.giaSauGiam;
+
+                    if (hasDiscount) {
+                      // Hiển thị giá sau giảm
+                      const discountedPrice = Number(priceInfo.giaSauGiam || 0).toLocaleString('vi-VN') + ' VNĐ';
+                      priceEl.textContent = 'Từ ' + discountedPrice;
+                      priceEl.classList.add('text-red-600', 'font-bold'); // Màu đỏ cho giá giảm
+
+                      // Hiển thị giá gốc với gạch ngang
+                      const originalPrice = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+                      if (!oldPriceContainer) {
+                        // Tạo phần tử hiển thị giá gốc
+                        oldPriceContainer = document.createElement('div');
+                        oldPriceContainer.className = 'old-price text-sm text-gray-500 line-through mt-1';
+                        oldPriceContainer.innerHTML = 'Giá gốc: <span class="formatted-old-price"></span> VNĐ';
+                        // Chèn sau phần tử giá hiện tại
+                        priceEl.parentNode.insertBefore(oldPriceContainer, priceEl.nextSibling);
+                      }
+
+                      const oldPriceSpan = oldPriceContainer.querySelector('.formatted-old-price');
+                      oldPriceSpan.textContent = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN');
+                      oldPriceContainer.style.display = 'block';
+
+                    } else {
+                      // Không có giảm giá, hiển thị giá thường
+                      const regularPrice = Number(priceInfo.giaSauGiam || priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+                      priceEl.textContent = 'Từ ' + regularPrice;
+                      priceEl.classList.remove('text-red-600');
+                      priceEl.classList.add('text-blue-800', 'font-bold');
+
+                      // Ẩn giá gốc
+                      if (oldPriceContainer) {
+                        oldPriceContainer.style.display = 'none';
+                      }
                     }
-                  }
-
-
-
-                  // Chỉ hiển thị giá gốc nếu có giảm giá (discountPercentage > 0 và oldPrice tồn tại)
-                  if (priceInfo.discountPercentage > 0 && priceInfo.oldPrice && priceInfo.oldPrice !== priceInfo.giaSauGiam) {
-                    const oldPrice = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
-
-                    if (!oldPriceContainer) {
-                      // Tạo phần tử container giá gốc nếu chưa tồn tại
-                      oldPriceContainer = document.createElement('div');
-                      oldPriceContainer.className = 'text-sm text-red-600 line-through';
-                      const oldPriceSpan = document.createElement('span');
-                      oldPriceSpan.className = 'formatted-old-price';
-                      oldPriceContainer.appendChild(oldPriceSpan);
-                      // Chèn ngay sau phần tử giá hiện tại
-                      priceEl.parentNode.insertBefore(oldPriceContainer, priceEl.nextSibling);
-                    }
-
-                    const oldPriceSpan = oldPriceContainer.querySelector('.formatted-old-price');
-                    if (oldPriceSpan.textContent !== oldPrice) {
-                      oldPriceSpan.textContent = oldPrice;
-                    }
-                    oldPriceContainer.style.display = 'block'; // Đảm bảo hiển thị
-                  } else if (oldPriceContainer) {
-                    // Ẩn giá gốc nếu không có giảm giá
-                    oldPriceContainer.style.display = 'none';
                   }
 
                   // Cập nhật badge giảm giá
                   const discountEl = card.querySelector('.badge-discount') || document.createElement('span');
                   if (!card.contains(discountEl)) {
                     discountEl.className = 'badge-discount absolute top-2 right-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow';
-                    card.querySelector('.relative').appendChild(discountEl);
+                    const relativeContainer = card.querySelector('.relative');
+                    if (relativeContainer) {
+                      relativeContainer.appendChild(discountEl);
+                    }
                   }
+
                   if (priceInfo.discountPercentage > 0) {
                     discountEl.textContent = `-${priceInfo.discountPercentage}%`;
                     discountEl.style.display = 'block';
@@ -1349,7 +1354,7 @@
       return 'Xin lỗi, bot không phản hồi đúng định dạng.';
     }
 
-    let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
+    let cleanedMessage = data.message.replace(/\`\`\`json\n|\n\`\`\`/g, '').trim();
     console.log('Trước khi làm sạch:', cleanedMessage);
 
     cleanedMessage = cleanedMessage.replace(/[\u001F\u007F-\u009F]/g, '');
@@ -1665,11 +1670,15 @@
 
 
         const cur = Number(data.gia || 0).toLocaleString('vi-VN') + ' VNĐ';
-        if (data.oldPrice && data.oldPrice !== data.gia) {
+        if (data.oldPrice && data.oldPrice !== data.gia && data.discountPercentage > 0) {
           const old = Number(data.oldPrice).toLocaleString('vi-VN') + ' VNĐ';
-          priceEl.innerHTML = `${cur} <span class="text-red-600 line-through ml-2">${old}</span>`;
+          priceEl.innerHTML = `
+            <span class="text-red-600 font-bold text-lg">${cur}</span>
+            <br>
+            <span class="text-gray-500 line-through text-sm">Giá gốc: ${old}</span>
+          `;
         } else {
-          priceEl.textContent = cur;
+          priceEl.innerHTML = `<span class="text-blue-800 font-bold text-lg">${cur}</span>`;
         }
       }
 

@@ -19,40 +19,76 @@ import java.util.UUID;
 @Repository
 public interface ThongKeRepository extends JpaRepository<ThongKe, UUID> {
 
-    // ========================= DOANH THU TỔNG (HT ∪ ĐĐH) =========================
+    // ========================= DOANH THU TỔNG (HT ∪ ĐĐH ∪ TRMP) =========================
     @Query(value = """
-WITH ht AS (  -- Hóa đơn Hoàn thành trong khoảng
+WITH ht AS (  -- Hoàn thành
   SELECT DISTINCT hd.id_don_hang AS id_dh
   FROM hoa_don hd
   WHERE COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) >= :start
     AND COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) <  :end
     AND UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'HOÀN THÀNH%'
 ),
-ddh AS (      -- Hóa đơn Đã đổi hàng trong khoảng
+ddh AS (      -- Đã đổi hàng
   SELECT DISTINCT hd.id_don_hang AS id_dh
   FROM hoa_don hd
   WHERE COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) >= :start
     AND COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) <  :end
     AND UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'ĐÃ ĐỔI HÀNG%'
 ),
-eligible AS ( -- gộp, tránh trùng đơn hàng
+trmp AS (     -- Đã trả hàng một phần  ✅ THÊM
+  SELECT DISTINCT hd.id_don_hang AS id_dh
+  FROM hoa_don hd
+  WHERE COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) >= :start
+    AND COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) <  :end
+    AND UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'ĐÃ TRẢ HÀNG MỘT PHẦN%'
+),
+eligible AS ( -- gộp
   SELECT id_dh FROM ht
-  UNION
-  SELECT id_dh FROM ddh
-)
-SELECT COALESCE(SUM(merch - order_disc), 0)
-FROM (
+  UNION SELECT id_dh FROM ddh
+  UNION SELECT id_dh FROM trmp
+),
+lines_all AS ( -- tổng hàng ban đầu (đã gồm giảm theo chiến dịch nếu ct.thanh_tien có)
+  SELECT ct.id_don_hang AS id_dh,
+         SUM(COALESCE(ct.thanh_tien,
+             CAST(ct.so_luong AS decimal(18,6)) * CAST(ct.gia AS decimal(18,6))
+         )) AS merch_all
+  FROM chi_tiet_don_hang ct
+  GROUP BY ct.id_don_hang
+),
+lines_kept AS ( -- phần còn giữ (không trả)
+  SELECT ct.id_don_hang AS id_dh,
+         SUM(COALESCE(ct.thanh_tien,
+             CAST(ct.so_luong AS decimal(18,6)) * CAST(ct.gia AS decimal(18,6))
+         )) AS merch_kept
+  FROM chi_tiet_don_hang ct
+  WHERE (ct.trang_thai_hoan_tra = 0 OR ct.trang_thai_hoan_tra IS NULL)
+  GROUP BY ct.id_don_hang
+),
+order_disc AS ( -- tổng ORDER voucher của đơn
+  SELECT v.id_don_hang AS id_dh,
+         SUM(CAST(v.gia_tri_giam AS decimal(18,6))) AS disc_total
+  FROM don_hang_phieu_giam_gia v
+  WHERE UPPER(v.loai_giam_gia) = N'ORDER'
+  GROUP BY v.id_don_hang
+),
+per_order AS ( -- tổng hợp theo đơn
   SELECT e.id_dh,
-         SUM(CAST(ct.so_luong AS decimal(18,2)) * CAST(ct.gia AS decimal(18,2))) AS merch,
-         COALESCE(SUM(CAST(v.gia_tri_giam AS decimal(18,2))),0) AS order_disc
+         COALESCE(k.merch_kept, 0) AS merch_kept,
+         COALESCE(a.merch_all, 0)  AS merch_all,
+         COALESCE(d.disc_total, 0) AS disc_total
   FROM eligible e
-  JOIN chi_tiet_don_hang ct
-    ON ct.id_don_hang = e.id_dh
-   AND (ct.trang_thai_hoan_tra = 0 OR ct.trang_thai_hoan_tra IS NULL)
-  LEFT JOIN don_hang_phieu_giam_gia v
-    ON v.id_don_hang = e.id_dh AND UPPER(v.loai_giam_gia) = N'ORDER'
-  GROUP BY e.id_dh
-) X
+  LEFT JOIN lines_kept k ON k.id_dh = e.id_dh
+  LEFT JOIN lines_all  a ON a.id_dh = e.id_dh
+  LEFT JOIN order_disc d ON d.id_dh = e.id_dh
+)
+SELECT COALESCE(SUM(
+  CASE WHEN p.merch_kept <= 0 THEN 0
+       ELSE GREATEST(
+              p.merch_kept - (p.disc_total * (CAST(p.merch_kept AS decimal(18,6))
+                                  / NULLIF(CAST(p.merch_all AS decimal(18,6)),0))), 0)
+  END
+), 0)
+FROM per_order p
 """, nativeQuery = true)
     BigDecimal tinhDoanhThuTheoHoaDon(@Param("start") LocalDateTime start,
                                       @Param("end")   LocalDateTime end);
@@ -135,7 +171,7 @@ WHERE ls.thoi_gian >= :start
     """)
     Page<SanPhamTonKhoThapDTO> laySanPhamTonKhoThap(@Param("threshold") int threshold, Pageable pageable);
 
-    // ========================= NHÃN NGÀY (HT ∪ ĐĐH) =========================
+    // ========================= NHÃN NGÀY (HT ∪ ĐĐH ∪ TRMP) =========================
     @Query(value = """
 SELECT DISTINCT CAST(COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) AS date) AS d
 FROM hoa_don hd
@@ -144,6 +180,7 @@ WHERE COALESCE(hd.ngay_thanh_toan, hd.ngay_tao) >= :start
   AND (
     UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'HOÀN THÀNH%'
     OR UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'ĐÃ ĐỔI HÀNG%'
+    OR UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'ĐÃ TRẢ HÀNG MỘT PHẦN%'  -- ✅ THÊM
   )
 ORDER BY d
 """, nativeQuery = true)
@@ -198,7 +235,7 @@ WHERE CAST(ls.thoi_gian AS date) = :date
     List<Object[]> thongKeSoHoaDonTheoNgay(@Param("start") LocalDateTime start,
                                            @Param("end")   LocalDateTime end);
 
-    // ========================= DOANH THU THEO NGÀY (HT ∪ ĐĐH) =========================
+    // ========================= DOANH THU THEO NGÀY (HT ∪ ĐĐH ∪ TRMP) =========================
     @Query(value = """
 WITH eligible AS (
   SELECT dh.id AS id_dh,
@@ -210,24 +247,58 @@ WITH eligible AS (
     AND (
       UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'HOÀN THÀNH%'
       OR UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'ĐÃ ĐỔI HÀNG%'
+      OR UPPER(LTRIM(RTRIM(hd.trang_thai)) COLLATE Vietnamese_100_CI_AI_SC_UTF8) LIKE N'ĐÃ TRẢ HÀNG MỘT PHẦN%'  -- ✅ THÊM
     )
 ),
-agg AS (
+lines_all AS (
+  SELECT ct.id_don_hang AS id_dh,
+         SUM(COALESCE(ct.thanh_tien,
+             CAST(ct.so_luong AS decimal(18,6)) * CAST(ct.gia AS decimal(18,6))
+         )) AS merch_all
+  FROM chi_tiet_don_hang ct
+  GROUP BY ct.id_don_hang
+),
+lines_kept AS (
+  SELECT ct.id_don_hang AS id_dh,
+         SUM(COALESCE(ct.thanh_tien,
+             CAST(ct.so_luong AS decimal(18,6)) * CAST(ct.gia AS decimal(18,6))
+         )) AS merch_kept
+  FROM chi_tiet_don_hang ct
+  WHERE (ct.trang_thai_hoan_tra = 0 OR ct.trang_thai_hoan_tra IS NULL)
+  GROUP BY ct.id_don_hang
+),
+order_disc AS (
+  SELECT v.id_don_hang AS id_dh,
+         SUM(CAST(v.gia_tri_giam AS decimal(18,6))) AS disc_total
+  FROM don_hang_phieu_giam_gia v
+  WHERE UPPER(v.loai_giam_gia) = N'ORDER'
+  GROUP BY v.id_don_hang
+),
+per_order AS (
   SELECT e.d,
-         SUM(CAST(ct.so_luong AS decimal(18,2)) * CAST(ct.gia AS decimal(18,2)))
-         - COALESCE(SUM(CAST(v.gia_tri_giam AS decimal(18,2))),0) AS s
+         COALESCE(k.merch_kept, 0) AS merch_kept,
+         COALESCE(a.merch_all, 0)  AS merch_all,
+         COALESCE(d.disc_total, 0) AS disc_total
   FROM eligible e
-  JOIN chi_tiet_don_hang ct
-    ON ct.id_don_hang = e.id_dh
-   AND (ct.trang_thai_hoan_tra = 0 OR ct.trang_thai_hoan_tra IS NULL)
-  LEFT JOIN don_hang_phieu_giam_gia v
-    ON v.id_don_hang = e.id_dh AND UPPER(v.loai_giam_gia) = N'ORDER'
-  GROUP BY e.d
+  LEFT JOIN lines_kept k ON k.id_dh = e.id_dh
+  LEFT JOIN lines_all  a ON a.id_dh = e.id_dh
+  LEFT JOIN order_disc d ON d.id_dh = e.id_dh
+),
+per_order_rev AS (
+  SELECT d,
+         CAST(GREATEST(
+           CASE WHEN merch_kept <= 0 THEN 0
+                ELSE merch_kept - (disc_total * (CAST(merch_kept AS decimal(18,6))
+                           / NULLIF(CAST(merch_all AS decimal(18,6)),0)))
+           END, 0) AS decimal(18,2)) AS rev
+  FROM per_order
 )
-SELECT d, s
-FROM agg
+SELECT d, SUM(rev) AS s
+FROM per_order_rev
+GROUP BY d
 ORDER BY d
 """, nativeQuery = true)
     List<Object[]> thongKeDoanhThuTheoNgay(@Param("start") LocalDateTime start,
                                            @Param("end")   LocalDateTime end);
+
 }

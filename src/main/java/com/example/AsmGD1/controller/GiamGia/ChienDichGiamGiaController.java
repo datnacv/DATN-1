@@ -8,6 +8,7 @@ import com.example.AsmGD1.service.SanPham.SanPhamService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -32,6 +33,9 @@ public class ChienDichGiamGiaController {
 
     @Autowired
     private NguoiDungService nguoiDungService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     // ===== RBAC helpers =====
     private boolean isCurrentUserAdmin() {
@@ -183,6 +187,9 @@ public class ChienDichGiamGiaController {
         chienDich.setThoiGianTao(LocalDateTime.now());
         try {
             chienDichService.taoMoiChienDichKemChiTiet(chienDich, danhSachChiTietId);
+
+            broadcastCampaignUpdate("CREATED", chienDich);
+
             redirectAttributes.addFlashAttribute("successMessage", "Tạo chiến dịch thành công!");
             return "redirect:/acvstore/chien-dich-giam-gia";
         } catch (RuntimeException e) {
@@ -403,6 +410,9 @@ public class ChienDichGiamGiaController {
             chienDich.setThoiGianTao(chienDichCu.getThoiGianTao());
 
             chienDichService.capNhatChienDichKemChiTiet(chienDich, danhSachChiTietId);
+
+            broadcastCampaignUpdate("UPDATED", chienDich);
+
             redirectAttributes.addFlashAttribute("successMessage", "Cập nhật chiến dịch thành công!");
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi cập nhật: " + e.getMessage());
@@ -448,7 +458,14 @@ public class ChienDichGiamGiaController {
         }
 
         try {
+            ChienDichGiamGia chienDich = chienDichService.timTheoId(id).orElse(null);
+
             chienDichService.xoaChienDich(id);
+
+            if (chienDich != null) {
+                broadcastCampaignUpdate("DELETED", chienDich);
+            }
+
             redirectAttributes.addFlashAttribute("successMessage", "Xóa chiến dịch thành công!");
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa: " + e.getMessage());
@@ -456,27 +473,94 @@ public class ChienDichGiamGiaController {
         return "redirect:/acvstore/chien-dich-giam-gia";
     }
 
-    @GetMapping("/search-products")
+    @GetMapping("/statuses")
     @ResponseBody
-    public Page<SanPham> timKiemSanPham(
-            @RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
-            @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "5") int size,
-            @RequestParam(name = "selectedProductIds", required = false) List<UUID> selectedProductIds
-    ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("tenSanPham").ascending());
+    public Map<String, String> getCampaignStatuses(@RequestParam("ids") String idsStr) {
+        Map<String, String> result = new HashMap<>();
+        if (idsStr == null || idsStr.trim().isEmpty()) {
+            return result;
+        }
 
-        if (selectedProductIds != null && !selectedProductIds.isEmpty()) {
-            if (keyword.isBlank()) {
-                return sanPhamService.getPagedAvailableOrSelectedProducts(pageable, selectedProductIds);
+        try {
+            String[] idArray = idsStr.split(",");
+            for (String idStr : idArray) {
+                UUID id = UUID.fromString(idStr.trim());
+                Optional<ChienDichGiamGia> campaign = chienDichService.timTheoId(id);
+                if (campaign.isPresent()) {
+                    String status = getStatus(campaign.get());
+                    result.put(id.toString(), status);
+                }
             }
-            return sanPhamService.searchAvailableOrSelectedByTenOrMa(keyword, pageable, selectedProductIds);
+        } catch (Exception e) {
+            // Return empty map on error
         }
 
-        if (keyword.isBlank()) {
-            return sanPhamService.getPagedAvailableProducts(pageable);
+        return result;
+    }
+
+    @GetMapping("/suggest")
+    @ResponseBody
+    public List<String> getSuggestions(@RequestParam("q") String query,
+                                       @RequestParam(defaultValue = "8") int limit) {
+        if (query == null || query.trim().isEmpty()) {
+            return Collections.emptyList();
         }
-        return sanPhamService.searchAvailableByTenOrMa(keyword, pageable);
+
+        try {
+            // Simple suggestion logic - you can enhance this based on your needs
+            List<String> suggestions = new ArrayList<>();
+
+            // Add percentage suggestions if query contains numbers
+            if (query.matches(".*\\d.*")) {
+                suggestions.add(query + "%");
+                if (!query.endsWith("%")) {
+                    suggestions.add(query + "% giảm giá");
+                }
+            }
+
+            // Add common campaign name patterns
+            String[] patterns = {
+                    "Giảm giá " + query,
+                    "Khuyến mãi " + query,
+                    "Sale " + query,
+                    query + " Flash Sale",
+                    query + " Mega Sale"
+            };
+
+            for (String pattern : patterns) {
+                if (suggestions.size() >= limit) break;
+                suggestions.add(pattern);
+            }
+
+            return suggestions.subList(0, Math.min(suggestions.size(), limit));
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private void broadcastCampaignUpdate(String action, ChienDichGiamGia campaign) {
+        try {
+            Map<String, Object> message = new HashMap<>();
+            message.put("action", action);
+            message.put("campaignId", campaign.getId().toString());
+            message.put("campaignCode", campaign.getMa());
+            message.put("campaignName", campaign.getTen());
+            message.put("discountPercent", campaign.getPhanTramGiam());
+            message.put("startDate", campaign.getNgayBatDau().toString());
+            message.put("endDate", campaign.getNgayKetThuc().toString());
+            message.put("status", getStatus(campaign));
+            message.put("timestamp", LocalDateTime.now().toString());
+
+            // Broadcast to admin interface
+            messagingTemplate.convertAndSend("/topic/campaign-updates", message);
+
+            // Broadcast to client-side product pages for price updates
+            messagingTemplate.convertAndSend("/topic/price-updates", message);
+
+        } catch (Exception e) {
+            // Log error but don't fail the main operation
+            System.err.println("Failed to broadcast campaign update: " + e.getMessage());
+        }
     }
 
     // ===== Helpers =====

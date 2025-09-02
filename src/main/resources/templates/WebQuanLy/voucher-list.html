@@ -449,6 +449,8 @@
 
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
 <script th:inline="javascript">
     // Đo chiều cao navbar để content sát tuyệt đối
     function setNavHeightVar(){
@@ -458,6 +460,29 @@
     }
     document.addEventListener('DOMContentLoaded', setNavHeightVar);
     window.addEventListener('resize', setNavHeightVar);
+
+    function showConnectionErrorNotification() {
+        let notification = document.getElementById('connectionErrorNotification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'connectionErrorNotification';
+            notification.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+            notification.style.cssText = 'top: 80px; left: 50%; transform: translateX(-50%); z-index: 1050; min-width: 300px;';
+            notification.innerHTML = `
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Không thể kết nối real-time
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            document.body.appendChild(notification);
+        }
+    }
+
+    function hideConnectionErrorNotification() {
+        const notification = document.getElementById('connectionErrorNotification');
+        if (notification) {
+            notification.remove();
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", function () {
         // Toasts server-side
@@ -473,13 +498,13 @@
             const toastEl = document.createElement('div');
             toastEl.className = `toast align-items-center ${bgMap[type]||bgMap.danger} border-0`;
             toastEl.setAttribute('role','alert'); toastEl.setAttribute('aria-live','assertive'); toastEl.setAttribute('aria-atomic','true');
-            toastEl.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas ${iconMap[type]||iconMap.danger} me-2"></i>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>`;
+            toastEl.innerHTML = ``
+                + `<div class="d-flex">`
+                + `    <div class="toast-body">`
+                + `        <i class="fas ${iconMap[type]||iconMap.danger} me-2"></i>${message}`
+                + `    </div>`
+                + `    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>`
+                + `</div>`;
             container.appendChild(toastEl);
             const t = new bootstrap.Toast(toastEl, { delay: 2500 });
             toastEl.addEventListener('hidden.bs.toast', ()=> toastEl.remove());
@@ -582,16 +607,162 @@
             }
         }
 
-        // Poll mỗi 10s
-        const POLL_MS = 10000;
+        let stompClient = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        function connectWebSocket() {
+            try {
+                const socket = new SockJS('/ws');
+                stompClient = new window.StompJs.Client({
+                    webSocketFactory: () => socket,
+                    debug: (str) => console.log('[WebSocket Debug]', str),
+                    reconnectDelay: 5000,
+                    heartbeatIncoming: 4000,
+                    heartbeatOutgoing: 4000,
+                });
+
+                stompClient.onConnect = (frame) => {
+                    console.log('[WebSocket] Connected to voucher updates');
+                    reconnectAttempts = 0;
+                    hideConnectionErrorNotification();
+
+                    // Subscribe to voucher updates
+                    stompClient.subscribe('/topic/vouchers', (message) => {
+                        try {
+                            const update = JSON.parse(message.body);
+                            handleVoucherUpdate(update);
+                        } catch (e) {
+                            console.error('[WebSocket] Error parsing voucher update:', e);
+                        }
+                    });
+
+                    showToast('Kết nối real-time thành công', 'success');
+                };
+
+                stompClient.onStompError = (frame) => {
+                    console.error('[WebSocket] STOMP error:', frame);
+                    showConnectionErrorNotification();
+
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        setTimeout(() => {
+                            reconnectAttempts++;
+                            console.log(`[WebSocket] Reconnecting after STOMP error... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                            connectWebSocket();
+                        }, 2000);
+                    }
+                };
+
+                stompClient.onWebSocketClose = () => {
+                    console.log('[WebSocket] Connection closed');
+                    showConnectionErrorNotification();
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        setTimeout(() => {
+                            console.log(`[WebSocket] Reconnecting... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                            connectWebSocket();
+                        }, 3000 * reconnectAttempts);
+                    }
+                };
+
+                stompClient.onWebSocketError = (error) => {
+                    console.error('[WebSocket] Connection error:', error);
+                    showConnectionErrorNotification();
+                };
+
+                stompClient.activate();
+            } catch (error) {
+                console.error('[WebSocket] Connection failed:', error);
+                showConnectionErrorNotification();
+
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    setTimeout(() => {
+                        reconnectAttempts++;
+                        console.log(`[WebSocket] Retrying connection... (${reconnectAttempts}/${maxReconnectAttempts})`);
+                        connectWebSocket();
+                    }, 5000);
+                }
+            }
+        }
+
+        function handleVoucherUpdate(update) {
+            console.log('[WebSocket] Voucher update received:', update);
+
+            const { action, voucherId, voucherCode, newStatus, quantity, message } = update;
+
+            // Update quantity display
+            const qtyEl = document.querySelector(`.voucher-qty[data-id="${voucherId}"]`);
+            if (qtyEl && quantity !== undefined) {
+                const oldQty = qtyEl.textContent.trim();
+                const newQty = (quantity !== null && quantity !== undefined) ? quantity : '-';
+                if (oldQty !== String(newQty)) {
+                    qtyEl.textContent = newQty;
+                    qtyEl.classList.add('flash-update');
+                    setTimeout(() => qtyEl.classList.remove('flash-update'), 1000);
+                }
+            }
+
+            // Update status display
+            const statusEl = document.querySelector(`.voucher-status[data-id="${voucherId}"]`);
+            if (statusEl && newStatus) {
+                const newHtml = renderStatusBadge(newStatus);
+                if (statusEl.innerHTML.trim() !== newHtml.trim()) {
+                    statusEl.innerHTML = newHtml;
+                    statusEl.classList.add('flash-update');
+                    setTimeout(() => statusEl.classList.remove('flash-update'), 1000);
+                }
+            }
+
+            // Show notification for different actions
+            let toastType = 'info';
+            let toastMessage = message || 'Cập nhật phiếu giảm giá';
+
+            switch (action) {
+                case 'CREATED':
+                    toastType = 'success';
+                    toastMessage = `Phiếu mới: ${voucherCode}`;
+                    // Refresh page to show new voucher
+                    setTimeout(() => window.location.reload(), 1500);
+                    break;
+                case 'UPDATED':
+                    toastType = 'info';
+                    toastMessage = `Cập nhật: ${voucherCode}`;
+                    break;
+                case 'DELETED':
+                    toastType = 'warning';
+                    toastMessage = `Đã xóa: ${voucherCode}`;
+                    // Remove the row from table
+                    const row = document.querySelector(`tr[data-voucher-id="${voucherId}"]`);
+                    if (row) {
+                        row.style.transition = 'opacity 0.5s ease';
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 500);
+                    }
+                    break;
+                case 'STATUS_CHANGED':
+                    toastType = 'info';
+                    toastMessage = `${voucherCode}: ${update.oldStatus} → ${newStatus}`;
+                    break;
+            }
+
+            showToast(toastMessage, toastType);
+        }
+
+        // Connect to WebSocket
+        connectWebSocket();
+
+        const POLL_MS = 60000; // Increased to 60 seconds as fallback
         let pollTimer = setInterval(refreshVoucherSummary, POLL_MS);
 
-        // Lần đầu vào trang cũng cập nhật
-        refreshVoucherSummary();
-
-        // Expose global
-        window.refreshVoucherSummary = refreshVoucherSummary;
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stompClient && stompClient.connected) {
+                stompClient.deactivate();
+            }
+            clearInterval(pollTimer);
+        });
     });
+
     // ---- Đổi ký hiệu ₫/đ sang VND trong bảng ----
     function replaceCurrencyUnitsInTable(){
         // Các cột: 6=Giá trị, 7=Giá trị tối đa, 8=Điều kiện
@@ -613,7 +784,6 @@
     document.addEventListener("DOMContentLoaded", function () {
         replaceCurrencyUnitsInTable();
     });
-
 </script>
 <script th:if="${successMessage}">
     try { sessionStorage.removeItem('voucherCreateFormState'); } catch(e){}
