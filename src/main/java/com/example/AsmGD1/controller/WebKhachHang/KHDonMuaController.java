@@ -1526,8 +1526,8 @@ public class KHDonMuaController {
                         .orElse(BigDecimal.ZERO);
             }
 
-            // THAY ĐỔI: Giảm 50% giá tối thiểu để tăng tính linh hoạt
-            BigDecimal adjustedMinPrice = minPriceOriginal.multiply(BigDecimal.valueOf(0.5));
+
+            BigDecimal adjustedMinPrice = minPriceOriginal;
 
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "gia"));
             Page<ChiTietSanPham> productPage;
