@@ -40,6 +40,8 @@ public class PhieuGiamGiaService {
         return phieuGiamGiaRepository.save(phieu);
     }
 
+
+
     public String tinhTrang(PhieuGiamGia v) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime batDau = v.getNgayBatDau();
@@ -116,6 +118,44 @@ public class PhieuGiamGiaService {
         if (giamGia.compareTo(tongTien) > 0) giamGia = tongTien;
         logger.info("✅ Số tiền được giảm: {}", giamGia);
         return giamGia;
+    }
+
+    public boolean isVoucherValid(PhieuGiamGia phieu, BigDecimal orderTotal, UUID paymentMethodId) {
+        if (phieu == null) {
+            logger.warn("Voucher is null");
+            return false;
+        }
+
+        // Check status
+        String status = tinhTrang(phieu);
+        if (!"Đang diễn ra".equals(status)) {
+            logger.warn("Voucher {} is not active. Status: {}", phieu.getMa(), status);
+            return false;
+        }
+
+        // Check quantity
+        if (phieu.getSoLuong() != null && phieu.getSoLuong() <= 0) {
+            logger.warn("Voucher {} has no remaining quantity: {}", phieu.getMa(), phieu.getSoLuong());
+            return false;
+        }
+
+        // Check minimum order value
+        if (phieu.getGiaTriGiamToiThieu() != null && orderTotal != null) {
+            if (orderTotal.compareTo(phieu.getGiaTriGiamToiThieu()) < 0) {
+                logger.warn("Order total {} is less than minimum required {} for voucher {}",
+                        orderTotal, phieu.getGiaTriGiamToiThieu(), phieu.getMa());
+                return false;
+            }
+        }
+
+        // Check payment method
+        if (!isPaymentMethodAllowed(phieu, paymentMethodId)) {
+            logger.warn("Payment method {} not allowed for voucher {}", paymentMethodId, phieu.getMa());
+            return false;
+        }
+
+        logger.info("Voucher {} is valid for application", phieu.getMa());
+        return true;
     }
 
     /* =========================
