@@ -12,6 +12,8 @@
     <link rel="stylesheet" th:href="@{/css/admin.css}">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/sidebar.js}" defer></script>
+    <!-- Add SweetAlert2 for custom confirm dialogs -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root {
             --primary-color: #153054;
@@ -1892,29 +1894,29 @@
         let deletedImageIds = [];
 
         window.deleteImage = function(button) {
-            // Completely prevent deletion if user is employee - no action at all
+            // Loại bỏ hoàn toàn chức năng xóa nếu user là employee
             if (window.isEmployee) {
                 return false;
             }
 
             const imageId = $(button).data('image-id');
-            if (confirm('Bạn có chắc muốn xóa ảnh này?')) {
-                deletedImageIds.push(imageId);
-                $('#deletedImageIds').val(deletedImageIds.join(','));
-                $(button).closest('.image-preview').remove();
-                showToast('Ảnh đã được đánh dấu để xóa khi lưu.', 'info');
-                if ($('#existingImages .image-preview').length === 0) {
-                    $('#noExistingImagePlaceholder').show();
-                }
+            deletedImageIds.push(imageId);
+            $('#deletedImageIds').val(deletedImageIds.join(','));
+            $(button).closest('.image-preview').remove();
+            showToast('Ảnh đã được đánh dấu để xóa khi lưu.', 'info');
+            if ($('#existingImages .image-preview').length === 0) {
+                $('#noExistingImagePlaceholder').show();
             }
         };
 
         $('#editImages').on('change', function () {
+            const currentExisting = $('#existingImages .image-preview').length;
+            const maxNew = 3 - currentExisting;
             const previewContainer = $('#newImagesPreview');
             previewContainer.empty();
             const files = this.files;
-            if (files.length > 3) {
-                showToast('Bạn chỉ có thể tải lên tối đa 3 ảnh.', 'warning');
+            if (files.length > maxNew) {
+                showToast(`Bạn chỉ có thể thêm tối đa ${maxNew} ảnh nữa.`, 'warning');
                 this.value = '';
                 $('#noNewImagePlaceholder').show();
                 return;
@@ -1965,6 +1967,12 @@
                 hasError = true;
             } else {
                 $('#editStockQuantity').removeClass('is-invalid');
+            }
+
+            const totalImages = $('#existingImages .image-preview').length + $('#newImagesPreview .image-preview').length;
+            if (totalImages > 3) {
+                showToast('Tổng số ảnh không được vượt quá 3.', 'error');
+                hasError = true;
             }
 
             if (hasError) {
@@ -2170,41 +2178,51 @@
                 return;
             }
 
-            if (!confirm(`Bạn có chắc muốn thay đổi trạng thái thành "${newStatus ? 'Đang Bán' : 'Ngừng Bán'}"?`)) {
-                $(this).prop('checked', !newStatus);
-                return;
-            }
-
-            // Cập nhật label ngay lập tức
-            statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
-
-            $.ajax({
-                url: '/acvstore/chi-tiet-san-pham/update-status',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    id: productDetailId,
-                    trangThai: newStatus
-                }),
-                success: function (response) {
-                    if (response.success) {
-                        showToast(response.message || 'Cập nhật trạng thái thành công!', 'success');
-                        // Đảm bảo UI được cập nhật đúng
-                        toggleElement.prop('checked', newStatus);
-                        statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
-                    } else {
-                        showToast(response.message || 'Có lỗi xảy ra', 'error');
-                        // Revert lại trạng thái cũ
-                        toggleElement.prop('checked', !newStatus);
-                        statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
-                    }
-                },
-                error: function (xhr) {
-                    console.error('Ajax error:', xhr); // Debug
-                    showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseJSON?.message || xhr.responseText || xhr.statusText), 'error');
-                    // Revert lại trạng thái cũ
+            Swal.fire({
+                title: 'Xác nhận thay đổi trạng thái',
+                text: `Bạn có chắc muốn thay đổi trạng thái thành "${newStatus ? 'Đang Bán' : 'Ngừng Bán'}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Đồng ý',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Người dùng xác nhận, tiếp tục cập nhật
+                    statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
+                    $.ajax({
+                        url: '/acvstore/chi-tiet-san-pham/update-status',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: productDetailId,
+                            trangThai: newStatus
+                        }),
+                        success: function (response) {
+                            if (response.success) {
+                                showToast(response.message || 'Cập nhật trạng thái thành công!', 'success');
+                                // Đảm bảo UI được cập nhật đúng
+                                toggleElement.prop('checked', newStatus);
+                                statusLabel.text(newStatus ? 'Đang Bán' : 'Ngừng Bán');
+                            } else {
+                                showToast(response.message || 'Có lỗi xảy ra', 'error');
+                                // Revert lại trạng thái cũ
+                                toggleElement.prop('checked', !newStatus);
+                                statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
+                            }
+                        },
+                        error: function (xhr) {
+                            console.error('Ajax error:', xhr); // Debug
+                            showToast("Lỗi khi cập nhật trạng thái: " + (xhr.responseJSON?.message || xhr.responseText || xhr.statusText), 'error');
+                            // Revert lại trạng thái cũ
+                            toggleElement.prop('checked', !newStatus);
+                            statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
+                        }
+                    });
+                } else {
+                    // Người dùng hủy, revert trạng thái gốc
                     toggleElement.prop('checked', !newStatus);
-                    statusLabel.text(!newStatus ? 'Đang Bán' : 'Ngừng Bán');
                 }
             });
         });
