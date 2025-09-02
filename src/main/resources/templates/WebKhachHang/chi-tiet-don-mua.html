@@ -900,45 +900,49 @@
               <div class="product-details">
                 <strong th:text="${chiTiet.tenSanPham}"></strong>
                 <small th:if="${chiTiet.chiTietSanPham.mauSac != null}">
-                  <i class="fas fa-palette mr-1"></i>Màu sắc: <span th:text="${chiTiet.chiTietSanPham.mauSac.tenMau}"></span>
+                  <i class="fas fa-palette mr-1"></i>Màu sắc:
+                  <span th:text="${chiTiet.chiTietSanPham.mauSac.tenMau}"></span>
                 </small>
                 <small th:if="${chiTiet.chiTietSanPham.kichCo != null}">
-                  <i class="fas fa-ruler mr-1"></i>Kích cỡ: <span th:text="${chiTiet.chiTietSanPham.kichCo.ten}"></span>
+                  <i class="fas fa-ruler mr-1"></i>Kích cỡ:
+                  <span th:text="${chiTiet.chiTietSanPham.kichCo.ten}"></span>
                 </small>
               </div>
             </div>
           </td>
+
+          <!-- Số lượng -->
           <td>
             <span class="font-semibold text-lg" th:text="${chiTiet.soLuong}"></span>
           </td>
+
+          <!-- Đơn giá (snapshot) -->
           <td>
-            <span class="price font-semibold" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
+    <span class="price font-semibold"
+          th:attr="data-value=${chiTiet.gia}"></span>
           </td>
+
+          <!-- Giá gốc: không có snapshot “giá gốc” riêng → hiển thị “-” -->
+          <td>-</td>
+
+          <!-- Giảm giá dòng = (gia * soLuong) - thanhTien (tất cả là snapshot) -->
           <td>
-        <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-          <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
-        </span>
-            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-          -
-        </span>
+    <span class="price"
+          th:attr="data-value=${(chiTiet.gia != null && chiTiet.soLuong != null && chiTiet.thanhTien != null)
+                                 ? (chiTiet.gia * chiTiet.soLuong - chiTiet.thanhTien)
+                                 : 0}"></span>
           </td>
+
+          <!-- Chiến dịch: không snapshot tên chiến dịch → “-” -->
+          <td>-</td>
+
+          <!-- Thành tiền (snapshot) -->
           <td>
-        <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
-          <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
-        </span>
-            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">
-        </span>
+    <span class="price font-semibold text-[#153054]"
+          th:attr="data-value=${chiTiet.thanhTien}"></span>
           </td>
-          <td>
-        <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
-          <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
-        </span>
-            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}">
-        </span>
-          </td>
-          <td>
-            <span class="price font-semibold text-[#153054]" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia * chiTiet.soLuong : chiTiet.gia * chiTiet.soLuong}"></span>
-          </td>
+
+          <!-- Ghi chú -->
           <td>
             <span th:text="${chiTiet.ghiChu != null ? chiTiet.ghiChu : 'Không có'}"></span>
           </td>
@@ -980,7 +984,8 @@
         <span class="payment-label">
           <i class="fas fa-percentage mr-2"></i>Tổng giảm giá
         </span>
-        <span class="payment-value" id="tienGiam" th:attr="data-value=${hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0}"></span>
+        <span class="payment-value price" id="tienGiam"
+              th:attr="data-value=${hoaDon.donHang.tienGiam != null ? hoaDon.donHang.tienGiam : 0}"></span>
       </div>
 
       <div class="payment-info" th:if="${currentStatus == 'Đã trả hàng'}">
@@ -1263,11 +1268,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     updateCartCount();
 
-    const tienGiamElement = document.getElementById('tienGiam');
-    if (tienGiamElement) {
-      const value = parseFloat(tienGiamElement.getAttribute('data-value')) || 0;
-      tienGiamElement.textContent = formatVND(value, true);
-    }
 
     document.querySelectorAll('.price').forEach(element => {
       const value = parseFloat(element.getAttribute('data-value')) || 0;

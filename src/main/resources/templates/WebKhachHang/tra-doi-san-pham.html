@@ -536,7 +536,8 @@
                         <th><i class="fas fa-tag mr-2"></i>Giá</th>
                         <th><i class="fas fa-tags mr-2"></i>Giá gốc</th>
                         <th><i class="fas fa-fire mr-2"></i>Giảm giá</th>
-                        <th><i class="fas fa-bullhorn mr-2"></i>Chiến dịch</th>
+                        <th><i class="fas fa-percent mr-2"></i>Giá sau giảm</th>
+<!--                        <th><i class="fas fa-bullhorn mr-2"></i>Chiến dịch</th>-->
                     </tr>
                     </thead>
                     <tbody>
@@ -564,27 +565,34 @@
                             </div>
                         </td>
                         <td th:text="${chiTiet.soLuong}" class="max-quantity"></td>
+                        <!-- Đơn giá (snapshot đã lưu trong đơn) -->
                         <td>
-                            <span class="price" th:attr="data-value=${chiTiet.chiTietSanPhamDto != null ? chiTiet.chiTietSanPhamDto.gia : chiTiet.gia}"></span>
+                            <span class="price" th:attr="data-value=${chiTiet.gia}"></span>
                         </td>
+
+
+                        <!-- Giá gốc: không lưu riêng trong DB -> hiển thị '-' -->
+                        <td>-</td>
+
+                        <!-- Giảm giá dòng (snapshot): (gia * soLuong) - thanhTien -->
                         <td>
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">
-                                <del th:text="${#numbers.formatDecimal(chiTiet.chiTietSanPhamDto.oldPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'"></del>
-                            </span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.oldPrice != null}">-</span>
+                              <span class="price"
+                                    th:attr="data-value=${(chiTiet.gia != null && chiTiet.soLuong != null && chiTiet.thanhTien != null)
+                                   ? (chiTiet.gia * chiTiet.soLuong - chiTiet.thanhTien)
+                                   : 0}">
+                              </span>
                         </td>
+
                         <td>
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}" class="text-red-500">
-                                <strong th:text="${chiTiet.chiTietSanPhamDto.discount}"></strong>
-                            </span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discount != null}">-</span>
+                              <span class="price"
+                                    th:attr="data-value=${(chiTiet.thanhTien != null and chiTiet.soLuong != null and chiTiet.soLuong > 0)
+                                         ? (chiTiet.thanhTien / chiTiet.soLuong)
+                                         : chiTiet.gia}">
+                              </span>
                         </td>
-                        <td>
-                            <span th:if="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}" class="text-blue-500">
-                                <strong th:text="${chiTiet.chiTietSanPhamDto.discountCampaignName}"></strong>
-                            </span>
-                            <span th:unless="${chiTiet.chiTietSanPhamDto != null and chiTiet.chiTietSanPhamDto.discountCampaignName != null}">-</span>
-                        </td>
+
+<!--                        &lt;!&ndash; Chiến dịch: không snapshot tên chiến dịch -> '-' &ndash;&gt;-->
+<!--                        <td>-</td>-->
                     </tr>
                     </tbody>
                 </table>
