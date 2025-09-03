@@ -397,22 +397,31 @@
     function validateTenField(){
         const $ten = $('#ten');
         const raw = $ten.val() ?? '';
-        const trimmed = raw.trim(); // kiểm tra dựa trên phần giữa (cho phép đầu/cuối)
+        const trimmed = raw.trim();
+
         let msg = '';
-        if (!trimmed) msg = 'Tên phiếu không được để trống.';
-        else if (/[\p{L}]\s{2,}[\p{L}]/u.test(trimmed)) msg = 'Giữa các từ chỉ được 1 khoảng trắng.';
-        else if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(trimmed)) msg = 'Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng trắng.';
-        else {
+
+        if (!trimmed) {
+            msg = 'Tên phiếu không được để trống.';
+        } else if (/\s{2,}/.test(trimmed)) { // cấm >= 2 khoảng trắng liên tiếp ở giữa
+            msg = 'Giữa các từ chỉ được 1 khoảng trắng.';
+        } else if (!/^[\p{L}\d\-\/]+(?: [\p{L}\d\-\/]+)*$/u.test(trimmed)) {
+            // Cho phép: chữ (có dấu), số, dấu "-" và "/" ; các nhóm cách nhau đúng 1 space
+            msg = 'Tên chỉ gồm chữ (có dấu), số, dấu “-” và “/”; giữa các nhóm cách đúng 1 khoảng trắng.';
+        } else {
             const nonSpaceLen = trimmed.replace(/\s+/g,'').length;
-            if (nonSpaceLen < 6) msg = 'Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).';
+            if (nonSpaceLen < 6)       msg = 'Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).';
             else if (trimmed.length > 100) msg = 'Tên tối đa 100 ký tự.';
         }
+
         if (msg){
-            $ten.addClass('is-invalid'); $('#tenError').text(msg).show();
+            $ten.addClass('is-invalid');
+            $('#tenError').text(msg).show();
             return false;
         }
-        // KHÔNG đụng tới khoảng trắng đầu/cuối — giữ nguyên người dùng nhập
-        $ten.removeClass('is-invalid'); $('#tenError').text('').hide();
+        // giữ nguyên khoảng trắng đầu/cuối theo yêu cầu
+        $ten.removeClass('is-invalid');
+        $('#tenError').text('').hide();
         return true;
     }
 
