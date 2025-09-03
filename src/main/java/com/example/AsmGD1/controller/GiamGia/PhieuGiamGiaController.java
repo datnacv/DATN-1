@@ -226,17 +226,22 @@ public class PhieuGiamGiaController {
             voucher.setMa(normMa);
         }
 
-        // ----- TÊN: cho phép space đầu/cuối; giữa chỉ 1 space; chỉ chữ; >=6 ký tự (không tính space); <=100 -----
+        // ----- TÊN: cho phép space đầu/cuối; giữa chỉ 1 space; chữ+số+-+/; >=6 (không tính space); <=100 -----
         if (voucher.getTen() == null || voucher.getTen().isBlank()) {
             errors.add("Tên phiếu không được để trống.");
         } else {
-            String tenRaw = voucher.getTen();
+            String tenRaw  = voucher.getTen();
             String tenTrim = tenRaw.trim();
+
+            // cấm >= 2 khoảng trắng liên tiếp
             if (tenTrim.matches(".*\\s{2,}.*")) {
                 errors.add("Tên phiếu: giữa các từ chỉ được 1 khoảng trắng.");
-            } else if (!tenTrim.matches("^[\\p{L}]+(?: [\\p{L}]+)*$")) {
-                errors.add("Tên phiếu chỉ được chứa chữ (có dấu), giữa các từ cách đúng 1 khoảng trắng.");
-            } else {
+            }
+            // CHO PHÉP: chữ (có dấu), số, dấu '-' và '/', các nhóm cách nhau đúng 1 space
+            else if (!tenTrim.matches("^[\\p{L}\\d\\-/]+(?: [\\p{L}\\d\\-/]+)*$")) {
+                errors.add("Tên chỉ gồm chữ (có dấu), số, dấu '-' và '/'; giữa các nhóm cách đúng 1 khoảng trắng.");
+            }
+            else {
                 int nonSpaceLen = tenTrim.replaceAll("\\s+", "").length();
                 if (nonSpaceLen < 6) {
                     errors.add("Tên phiếu phải có ít nhất 6 ký tự (không tính khoảng trắng).");
@@ -244,9 +249,11 @@ public class PhieuGiamGiaController {
                     errors.add("Tên phiếu tối đa 100 ký tự.");
                 }
             }
-            // giữ nguyên khoảng trắng đầu/cuối theo yêu cầu
+
+            // Giữ nguyên khoảng trắng đầu/cuối theo yêu cầu
             voucher.setTen(voucher.getTen());
         }
+
 
         // ----- Phạm vi -----
         if (voucher.getPhamViApDung() == null ||
@@ -657,6 +664,31 @@ public class PhieuGiamGiaController {
         voucher.setPhamViApDung(existing.getPhamViApDung());
 
         List<String> errors = new ArrayList<>();
+// ----- TÊN: không cho phép space đầu/cuối; giữa chỉ 1 space; chữ+số+-+/; >=6 (không tính space); <=100 -----
+        if (voucher.getTen() == null || voucher.getTen().isBlank()) {
+            errors.add("Tên phiếu không được để trống.");
+        } else {
+            String tenRaw  = voucher.getTen();
+            String tenTrim = tenRaw.trim();
+
+            if (!tenRaw.equals(tenTrim)) {
+                errors.add("Không cho phép khoảng trắng ở đầu hoặc cuối.");
+            } else if (tenTrim.matches(".*\\s{2,}.*")) {
+                errors.add("Tên phiếu: giữa các từ chỉ được 1 khoảng trắng.");
+            } else if (!tenTrim.matches("^[\\p{L}\\d\\-/]+(?: [\\p{L}\\d\\-/]+)*$")) {
+                errors.add("Tên chỉ gồm chữ (có dấu), số, dấu '-' và '/'; giữa các nhóm cách đúng 1 khoảng trắng.");
+            } else {
+                int nonSpaceLen = tenTrim.replaceAll("\\s+", "").length();
+                if (nonSpaceLen < 6) {
+                    errors.add("Tên phiếu phải có ít nhất 6 ký tự (không tính khoảng trắng).");
+                } else if (tenTrim.length() > 100) {
+                    errors.add("Tên phiếu tối đa 100 ký tự.");
+                }
+            }
+
+            // Không tự ý cắt khoảng trắng: tuân theo rule của trang edit (đã cấm space đầu/cuối ở trên)
+            voucher.setTen(tenRaw);
+        }
 
         // ===== Parse số =====
         BigDecimal parsedGiaTriGiam = null;

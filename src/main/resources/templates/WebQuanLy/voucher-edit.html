@@ -486,11 +486,18 @@
         if (!name) return 'Tên phiếu không được để trống.';
         if (name !== name.trim()) return 'Không cho phép khoảng trắng ở đầu hoặc cuối.';
         if (/\s{2,}/.test(name)) return 'Giữa các từ chỉ được 1 khoảng trắng.';
-        if (!/^[\p{L}]+(?: [\p{L}]+)*$/u.test(name)) return 'Tên chỉ gồm chữ (có dấu), giữa các từ cách đúng 1 khoảng, không số/ký tự đặc biệt.';
+
+        // Cho phép: chữ (có dấu), số, dấu "-" và "/"; các nhóm cách nhau đúng 1 space
+        if (!/^[\p{L}\d\-\/]+(?: [\p{L}\d\-\/]+)*$/u.test(name)) {
+            return 'Tên chỉ gồm chữ (có dấu), số, dấu “-” và “/”; giữa các nhóm cách đúng 1 khoảng trắng.';
+        }
+
         const nonSpaceLen = name.replace(/\s+/g,'').length;
         if (nonSpaceLen < 6) return 'Tên phải có ít nhất 6 ký tự (không tính khoảng trắng).';
+        if (name.length > 100) return 'Tên tối đa 100 ký tự.';
         return null;
     }
+
 
     /* ===== Toggles ===== */
     function toggleScopeFields() {
