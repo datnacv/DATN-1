@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -366,32 +365,32 @@
         <h2 class="page-title">Chi tiết yêu cầu trả hàng</h2>
       </div>
 
-      <div th:if="${lichSuTraHang == null}" class="error-state fade-in">
+      <div th:if="${danhSachLichSuTraHang == null}" class="error-state fade-in">
         <div class="error-icon">❌</div>
         <p class="error-message">Không tìm thấy yêu cầu trả hàng.</p>
         <a href="/acvstore/quan-ly-tra-hang" class="btn btn-secondary">Quay lại danh sách</a>
       </div>
 
-      <div th:if="${lichSuTraHang != null}">
+      <div th:if="${danhSachLichSuTraHang != null && !danhSachLichSuTraHang.isEmpty()}">
         <div class="card fade-in">
           <div class="card-header order-info">Thông tin đơn hàng</div>
           <div class="card-body">
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">Mã đơn hàng</span>
-                <span class="info-value" th:text="${lichSuTraHang.hoaDon?.donHang?.maDonHang ?: 'N/A'}"></span>
+                <span class="info-value" th:text="${hoaDon?.donHang?.maDonHang ?: 'N/A'}"></span>
               </div>
               <div class="info-item">
                 <span class="info-label">Khách hàng</span>
-                <span class="info-value" th:text="${lichSuTraHang.hoaDon?.donHang?.nguoiDung?.hoTen ?: 'N/A'}"></span>
+                <span class="info-value" th:text="${hoaDon?.donHang?.nguoiDung?.hoTen ?: 'N/A'}"></span>
               </div>
               <div class="info-item">
                 <span class="info-label">Email</span>
-                <span class="info-value" th:text="${lichSuTraHang.hoaDon?.donHang?.nguoiDung?.email ?: 'N/A'}"></span>
+                <span class="info-value" th:text="${hoaDon?.donHang?.nguoiDung?.email ?: 'N/A'}"></span>
               </div>
               <div class="info-item">
                 <span class="info-label">Trạng thái hóa đơn</span>
-                <span class="info-value status-badge status-confirmed" th:text="${lichSuTraHang.hoaDon?.trangThai ?: 'N/A'}"></span>
+                <span class="info-value status-badge status-confirmed" th:text="${hoaDon?.trangThai ?: 'N/A'}"></span>
               </div>
             </div>
           </div>
@@ -400,19 +399,28 @@
         <div class="card fade-in">
           <div class="card-header product-info">Thông tin sản phẩm trả</div>
           <div class="card-body">
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="info-label">Tên sản phẩm</span>
-                <span class="info-value" th:text="${lichSuTraHang.chiTietDonHang?.tenSanPham ?: 'N/A'}"></span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Số lượng</span>
-                <span class="info-value" th:text="${lichSuTraHang.soLuong > 0 ? lichSuTraHang.soLuong : 'N/A'}"></span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Giá mỗi sản phẩm</span>
-                <span class="info-value" th:text="${lichSuTraHang.chiTietDonHang?.formattedGia ?: '0 VNĐ'}"></span>
-              </div>
+            <table class="table table-bordered">
+              <thead>
+              <tr>
+                <th>Tên sản phẩm</th>
+                <th>Số lượng</th>
+                <th>Giá mỗi sản phẩm</th>
+                <th>Lý do trả hàng</th>
+                <th>Thời gian yêu cầu</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr th:each="item : ${danhSachLichSuTraHang}">
+                <td th:text="${item.chiTietDonHang?.chiTietSanPham?.sanPham?.tenSanPham ?: 'N/A'}"></td>
+                <td th:text="${item.soLuong > 0 ? item.soLuong : 'N/A'}"></td>
+                <td th:text="${item.chiTietDonHang?.formattedGia ?: '0 VNĐ'}"></td>
+                <td th:text="${item.lyDoTraHang ?: 'N/A'}"></td>
+                <td th:text="${item.thoiGianTra != null ? #temporals.format(item.thoiGianTra, 'dd/MM/yyyy HH:mm') : 'N/A'}"></td>
+              </tr>
+              </tbody>
+            </table>
+
+            <div class="info-grid mt-4">
               <div class="info-item">
                 <span class="info-label">Giảm giá đơn hàng</span>
                 <span class="info-value" th:text="${tongGiamOrder}"></span>
@@ -422,24 +430,16 @@
                 <span class="info-value highlight-amount" th:text="${formattedTongHoan != null ? formattedTongHoan : '0 VNĐ'}"></span>
               </div>
               <div class="info-item">
-                <span class="info-label">Lý do trả hàng</span>
-                <span class="info-value" th:text="${lichSuTraHang.lyDoTraHang ?: 'N/A'}"></span>
-              </div>
-              <div class="info-item">
                 <span class="info-label">Trạng thái</span>
-                <span class="info-value status-badge status-pending"
-                      th:classappend="${lichSuTraHang.trangThai == 'Đã xác nhận' ? 'status-confirmed' : lichSuTraHang.trangThai == 'Đã hủy' ? 'status-cancelled' : 'status-pending'}"
-                      th:text="${lichSuTraHang.trangThai ?: 'N/A'}"></span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Thời gian yêu cầu</span>
-                <span class="info-value" th:text="${lichSuTraHang.thoiGianTra != null ? #temporals.format(lichSuTraHang.thoiGianTra, 'dd/MM/yyyy HH:mm') : 'N/A'}"></span>
+                <span class="info-value status-badge"
+                      th:classappend="${danhSachLichSuTraHang[0].trangThai == 'Đã xác nhận' ? 'status-confirmed' : danhSachLichSuTraHang[0].trangThai == 'Đã hủy' ? 'status-cancelled' : 'status-pending'}"
+                      th:text="${danhSachLichSuTraHang[0].trangThai ?: 'N/A'}"></span>
               </div>
             </div>
           </div>
         </div>
 
-        <div class="card fade-in" th:if="${lichSuTraHang.trangThai == 'Chờ xác nhận'}">
+        <div class="card fade-in" th:if="${danhSachLichSuTraHang[0].trangThai == 'Chờ xác nhận'}">
           <div class="card-header actions">Hành động</div>
           <div class="card-body">
             <div class="form-section">
@@ -465,7 +465,7 @@
 <script src="/js/jquery.min.js"></script>
 <script src="/js/bootstrap.bundle.min.js"></script>
 <script th:inline="javascript">
-  const lichSuId = /*[[${lichSuTraHang != null ? lichSuTraHang.id : null}]]*/ null;
+  const lichSuId = /*[[${danhSachLichSuTraHang != null ? danhSachLichSuTraHang[0].id : null}]]*/ null;
 
   // Kiểm tra an toàn hơn
   if (!lichSuId || lichSuId === 'null' || lichSuId === '') {
@@ -494,7 +494,7 @@
 
     Swal.fire({
       title: 'Xác nhận trả hàng',
-      text: 'Bạn có chắc chắn muốn xác nhận yêu cầu trả hàng này?',
+      text: 'Bạn có chắc chắn muốn xác nhận tất cả yêu cầu trả hàng cho đơn hàng này?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#153054',

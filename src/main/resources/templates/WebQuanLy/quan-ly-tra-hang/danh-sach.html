@@ -313,64 +313,67 @@
         <div class="ms-auto" th:replace="~{fragments/account_dropdown :: accountDropdown(user=${user})}"></div>
     </nav>
     <div class="content mt-16" id="mainContent">
-<div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="fas fa-undo-alt"></i>
-            Quản lý yêu cầu trả hàng
-        </h1>
-        <p class="dashboard-subtitle">Theo dõi và xử lý các yêu cầu trả hàng từ khách hàng</p>
-    </div>
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">
+                    <i class="fas fa-undo-alt"></i>
+                    Quản lý yêu cầu trả hàng
+                </h1>
+                <p class="dashboard-subtitle">Theo dõi và xử lý các yêu cầu trả hàng từ khách hàng</p>
+            </div>
 
-    <div class="filter-section">
-        <label for="statusFilter" class="filter-label">
-            <i class="fas fa-filter"></i> Lọc theo trạng thái
-        </label>
-        <select id="statusFilter" onchange="filterByStatus()" class="filter-select">
-            <option th:value="'tat-ca'" th:selected="${status == 'tat-ca'}">
-                <i class="fas fa-list"></i> Tất cả
-            </option>
-            <option th:value="'cho-xac-nhan'" th:selected="${status == 'cho-xac-nhan'}">
-                <i class="fas fa-clock"></i> Chờ xác nhận
-            </option>
-            <option th:value="'da-xac-nhan'" th:selected="${status == 'da-xac-nhan'}">
-                <i class="fas fa-check"></i> Đã xác nhận
-            </option>
-            <option th:value="'da-huy'" th:selected="${status == 'da-huy'}">
-                <i class="fas fa-times"></i> Đã hủy
-            </option>
-        </select>
-    </div>
+            <div class="filter-section">
+                <label for="statusFilter" class="filter-label">
+                    <i class="fas fa-filter"></i> Lọc theo trạng thái
+                </label>
+                <select id="statusFilter" onchange="filterByStatus()" class="filter-select">
+                    <option th:value="'tat-ca'" th:selected="${status == 'tat-ca'}">
+                        <i class="fas fa-list"></i> Tất cả
+                    </option>
+                    <option th:value="'cho-xac-nhan'" th:selected="${status == 'cho-xac-nhan'}">
+                        <i class="fas fa-clock"></i> Chờ xác nhận
+                    </option>
+                    <option th:value="'da-xac-nhan'" th:selected="${status == 'da-xac-nhan'}">
+                        <i class="fas fa-check"></i> Đã xác nhận
+                    </option>
+                    <option th:value="'da-huy'" th:selected="${status == 'da-huy'}">
+                        <i class="fas fa-times"></i> Đã hủy
+                    </option>
+                </select>
+            </div>
 
-    <div class="table-container">
-        <table class="modern-table">
-            <thead class="table-header">
-            <tr>
-                <th><i class="fas fa-hashtag"></i> Mã đơn hàng</th>
-                <th><i class="fas fa-user"></i> Khách hàng</th>
-                <th><i class="fas fa-box"></i> Sản phẩm</th>
-                <th><i class="fas fa-sort-numeric-up"></i> Số lượng</th>
-                <th><i class="fas fa-money-bill-wave"></i> Tổng tiền hoàn</th>
-                <th><i class="fas fa-comment"></i> Lý do</th>
-                <th><i class="fas fa-info-circle"></i> Trạng thái</th>
-                <th><i class="fas fa-calendar"></i> Thời gian yêu cầu</th>
-                <th><i class="fas fa-cogs"></i> Hành động</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr class="table-row" th:each="traHang : ${danhSachTraHang}">
-                <td class="table-cell">
-                    <span class="order-id" th:text="${traHang.maDonHang}"></span>
-                </td>
-                <td class="table-cell" th:text="${traHang.hoTenKhachHang}"></td>
-                <td class="table-cell" th:text="${traHang.tenSanPham}"></td>
-                <td class="table-cell" th:text="${traHang.soLuong}"></td>
-                <td class="table-cell">
-                    <span class="currency" th:text="${traHang.formattedTongHoan}"></span>
-                </td>
-                <td class="table-cell" th:text="${traHang.lyDoTraHang}"></td>
-                <td class="table-cell">
-                    <span th:class="${traHang.trangThai == 'Chờ xác nhận' ? 'status-badge status-pending' :
+            <div class="table-container">
+                <table class="modern-table">
+                    <thead class="table-header">
+                    <tr>
+                        <th><i class="fas fa-hashtag"></i> Mã đơn hàng</th>
+                        <th><i class="fas fa-user"></i> Khách hàng</th>
+                        <th><i class="fas fa-box"></i> Sản phẩm</th>
+                        <th><i class="fas fa-sort-numeric-up"></i> Số lượng</th>
+                        <th><i class="fas fa-money-bill-wave"></i> Tổng tiền hoàn</th>
+                        <th><i class="fas fa-comment"></i> Lý do</th>
+                        <th><i class="fas fa-info-circle"></i> Trạng thái</th>
+                        <th><i class="fas fa-calendar"></i> Thời gian yêu cầu</th>
+                        <th><i class="fas fa-cogs"></i> Hành động</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr class="table-row" th:each="traHang : ${danhSachTraHang}">
+                        <td class="table-cell">
+                            <span class="order-id" th:text="${traHang.maDonHang}"></span>
+                        </td>
+                        <td class="table-cell" th:text="${traHang.hoTenKhachHang}"></td>
+                        <td class="table-cell">
+                            <span th:each="tenSanPham, iterStat : ${traHang.tenSanPhams}"
+                                  th:text="${tenSanPham} + (${iterStat.last} ? '' : ', ')"></span>
+                        </td>
+                        <td class="table-cell" th:text="${traHang.tongSoLuong}"></td>
+                        <td class="table-cell">
+                            <span class="currency" th:text="${traHang.formattedTongHoan}"></span>
+                        </td>
+                        <td class="table-cell" th:text="${traHang.lyDoTraHang}"></td>
+                        <td class="table-cell">
+                            <span th:class="${traHang.trangThai == 'Chờ xác nhận' ? 'status-badge status-pending' :
                                            traHang.trangThai == 'Đã xác nhận' ? 'status-badge status-confirmed' :
                                            'status-badge status-cancelled'}">
                                 <i th:class="${traHang.trangThai == 'Chờ xác nhận' ? 'fas fa-clock' :
@@ -378,50 +381,50 @@
                                              'fas fa-times'}"></i>
                                 <span th:text="${traHang.trangThai}"></span>
                             </span>
-                </td>
-                <td class="table-cell" th:text="${#temporals.format(traHang.thoiGianTra, 'dd/MM/yyyy HH:mm')}"></td>
-                <td class="table-cell">
-                    <a th:href="@{/acvstore/quan-ly-tra-hang/chi-tiet/{id}(id=${traHang.id})}" class="action-btn">
-                        <i class="fas fa-eye"></i>
-                        Chi tiết
-                    </a>
-                </td>
-            </tr>
-            <tr th:if="${danhSachTraHang.isEmpty()}">
-                <td colspan="9" class="table-cell">
-                    <div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <h3>Không có yêu cầu trả hàng nào</h3>
-                        <p>Hiện tại chưa có yêu cầu trả hàng nào trong hệ thống.</p>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
+                        </td>
+                        <td class="table-cell" th:text="${#temporals.format(traHang.thoiGianTra, 'dd/MM/yyyy HH:mm')}"></td>
+                        <td class="table-cell">
+                            <a th:href="@{/acvstore/quan-ly-tra-hang/chi-tiet/{id}(id=${traHang.id})}" class="action-btn">
+                                <i class="fas fa-eye"></i>
+                                Chi tiết
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${danhSachTraHang.isEmpty()}">
+                        <td colspan="9" class="table-cell">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <h3>Không có yêu cầu trả hàng nào</h3>
+                                <p>Hiện tại chưa có yêu cầu trả hàng nào trong hệ thống.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
 
-    <nav th:if="${totalPages > 1}" class="pagination-container">
-        <ul class="pagination">
-            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                <a class="page-link" th:href="@{/acvstore/quan-ly-tra-hang(status=${status}, page=${currentPage - 1})}">
-                    <i class="fas fa-chevron-left"></i>
-                    Trước
-                </a>
-            </li>
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                th:classappend="${i == currentPage} ? 'active'">
-                <a class="page-link" th:href="@{/acvstore/quan-ly-tra-hang(status=${status}, page=${i})}" th:text="${i + 1}"></a>
-            </li>
-            <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                <a class="page-link" th:href="@{/acvstore/quan-ly-tra-hang(status=${status}, page=${currentPage + 1})}">
-                    Sau
-                    <i class="fas fa-chevron-right"></i>
-                </a>
-            </li>
-        </ul>
-    </nav>
-</div>
-</div>
+            <nav th:if="${totalPages > 1}" class="pagination-container">
+                <ul class="pagination">
+                    <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/acvstore/quan-ly-tra-hang(status=${status}, page=${currentPage - 1})}">
+                            <i class="fas fa-chevron-left"></i>
+                            Trước
+                        </a>
+                    </li>
+                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                        th:classappend="${i == currentPage} ? 'active'">
+                        <a class="page-link" th:href="@{/acvstore/quan-ly-tra-hang(status=${status}, page=${i})}" th:text="${i + 1}"></a>
+                    </li>
+                    <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                        <a class="page-link" th:href="@{/acvstore/quan-ly-tra-hang(status=${status}, page=${currentPage + 1})}">
+                            Sau
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
 </div>
 
 <script src="/js/jquery.min.js"></script>

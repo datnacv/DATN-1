@@ -751,10 +751,10 @@ public class HoaDonService {
                 }
             }
 
-            // Không có dòng dương -> bỏ qua group này
-            if (tongPhuThu.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
+//            // Không có dòng dương -> bỏ qua group này
+//            if (tongPhuThu.compareTo(BigDecimal.ZERO) <= 0) {
+//                continue;
+//            }
 
             // 3) Cập nhật tổng tiền + trạng thái đơn theo đã thanh toán
             newOrder.setTongTien(tongPhuThu);

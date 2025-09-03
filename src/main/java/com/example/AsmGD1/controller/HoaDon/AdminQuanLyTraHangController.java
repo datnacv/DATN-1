@@ -1,6 +1,6 @@
-
 package com.example.AsmGD1.controller.HoaDon;
 
+import com.example.AsmGD1.dto.HoaDonTraHangDTO;
 import com.example.AsmGD1.dto.LichSuTraHangDTO;
 import com.example.AsmGD1.entity.*;
 import com.example.AsmGD1.repository.BanHang.DonHangPhieuGiamGiaRepository;
@@ -111,55 +111,78 @@ public class AdminQuanLyTraHangController {
         symbols.setGroupingSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-        List<LichSuTraHangDTO> formattedList = traHangPage.getContent().stream()
-                .map(traHang -> {
-                    LichSuTraHangDTO dto = new LichSuTraHangDTO(traHang, formatter);
-                    // Tính toán tổng tiền hoàn với giảm giá
-                    HoaDon hoaDon = traHang.getHoaDon();
-                    ChiTietDonHang chiTiet = traHang.getChiTietDonHang();
-                    List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
-                    List<DonHangPhieuGiamGia> voucherOrder = allVouchers.stream()
-                            .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+        // Nhóm các yêu cầu trả hàng theo HoaDon
+        Map<HoaDon, List<LichSuTraHang>> groupedByHoaDon = traHangPage.getContent().stream()
+                .collect(Collectors.groupingBy(LichSuTraHang::getHoaDon));
+
+        List<HoaDonTraHangDTO> formattedList = groupedByHoaDon.entrySet().stream()
+                .map(entry -> {
+                    HoaDon hoaDon = entry.getKey();
+                    List<LichSuTraHang> traHangs = entry.getValue();
+
+                    // Tính toán thông tin tổng hợp
+                    List<String> tenSanPhams = traHangs.stream()
+                            .map(traHang -> traHang.getChiTietDonHang().getChiTietSanPham().getSanPham().getTenSanPham())
                             .collect(Collectors.toList());
 
-                    BigDecimal tongGiamOrder = voucherOrder.stream()
-                            .map(DonHangPhieuGiamGia::getGiaTriGiam)
-                            .filter(Objects::nonNull)
-                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    int tongSoLuong = traHangs.stream()
+                            .mapToInt(LichSuTraHang::getSoLuong)
+                            .sum();
 
-                    BigDecimal tongGiamShip = BigDecimal.ZERO; // Không sử dụng phí ship
+                    BigDecimal tongTienHoan = BigDecimal.ZERO;
+                    for (LichSuTraHang traHang : traHangs) {
+                        ChiTietDonHang chiTiet = traHang.getChiTietDonHang();
+                        List<DonHangPhieuGiamGia> allVouchers = donHangPhieuGiamGiaRepository.findByDonHang_IdOrderByThoiGianApDungAsc(hoaDon.getDonHang().getId());
+                        List<DonHangPhieuGiamGia> voucherOrder = allVouchers.stream()
+                                .filter(p -> "ORDER".equalsIgnoreCase(p.getLoaiGiamGia()))
+                                .collect(Collectors.toList());
 
-                    dto.setTongGiamOrder(formatter.format(tongGiamOrder) + " VNĐ");
-                    dto.setTongGiamShip(formatter.format(tongGiamShip) + " VNĐ");
+                        BigDecimal tongGiamOrder = voucherOrder.stream()
+                                .map(DonHangPhieuGiamGia::getGiaTriGiam)
+                                .filter(Objects::nonNull)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                    if ("Đã xác nhận".equals(traHang.getTrangThai()) && traHang.getTongTienHoan() != null) {
-                        dto.setTongTienHoan(traHang.getTongTienHoan());
-                        dto.setFormattedTongHoan(formatter.format(traHang.getTongTienHoan()) + " VNĐ");
-                    } else {
-                        if (chiTiet.getThanhTien() != null) {
-                            BigDecimal tongTienHangTra = chiTiet.getThanhTien();
-                            BigDecimal tongTienGocHoaDon = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                                    .filter(item -> item.getThanhTien() != null)
-                                    .map(ChiTietDonHang::getThanhTien)
-                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        BigDecimal tongTienHangTra = chiTiet.getThanhTien() != null ? chiTiet.getThanhTien() : BigDecimal.ZERO;
+                        BigDecimal tongTienGocHoaDon = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                                .filter(item -> item.getThanhTien() != null)
+                                .map(ChiTietDonHang::getThanhTien)
+                                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                            BigDecimal tyLeHoanTra = tongTienGocHoaDon.compareTo(BigDecimal.ZERO) > 0
-                                    ? tongTienHangTra.divide(tongTienGocHoaDon, 4, RoundingMode.HALF_UP)
-                                    : BigDecimal.ZERO;
+                        BigDecimal tyLeHoanTra = tongTienGocHoaDon.compareTo(BigDecimal.ZERO) > 0
+                                ? tongTienHangTra.divide(tongTienGocHoaDon, 4, RoundingMode.HALF_UP)
+                                : BigDecimal.ZERO;
 
-                            BigDecimal giamGiaOrderHoanTra = tongGiamOrder.multiply(tyLeHoanTra).setScale(0, RoundingMode.HALF_UP);
-                            BigDecimal tongTienHoan = tongTienHangTra.subtract(giamGiaOrderHoanTra);
-                            if (tongTienHoan.compareTo(BigDecimal.ZERO) < 0) {
-                                tongTienHoan = BigDecimal.ZERO;
-                            }
-                            dto.setTongTienHoan(tongTienHoan);
-                            dto.setFormattedTongHoan(formatter.format(tongTienHoan) + " VNĐ");
-                        } else {
-                            dto.setTongTienHoan(BigDecimal.ZERO);
-                            dto.setFormattedTongHoan("0 VNĐ");
+                        BigDecimal giamGiaOrderHoanTra = tongGiamOrder.multiply(tyLeHoanTra).setScale(0, RoundingMode.HALF_UP);
+                        BigDecimal tienHoanItem = tongTienHangTra.subtract(giamGiaOrderHoanTra);
+                        if (tienHoanItem.compareTo(BigDecimal.ZERO) < 0) {
+                            tienHoanItem = BigDecimal.ZERO;
                         }
+                        tongTienHoan = tongTienHoan.add(tienHoanItem);
                     }
-                    return dto;
+
+                    String formattedTongHoan = formatter.format(tongTienHoan) + " VNĐ";
+                    String lyDoTraHang = traHangs.stream()
+                            .map(LichSuTraHang::getLyDoTraHang)
+                            .filter(Objects::nonNull)
+                            .findFirst()
+                            .orElse("Không có lý do");
+
+                    String trangThai = traHangs.get(0).getTrangThai(); // Lấy trạng thái từ yêu cầu đầu tiên
+                    LocalDateTime thoiGianTra = traHangs.get(0).getThoiGianTra(); // Lấy thời gian từ yêu cầu đầu tiên
+                    UUID id = traHangs.get(0).getId(); // Lấy ID của yêu cầu đầu tiên để liên kết tới chi tiết
+
+                    return new HoaDonTraHangDTO(
+                            hoaDon.getDonHang().getMaDonHang(),
+                            hoaDon.getDonHang().getNguoiDung().getHoTen(),
+                            tenSanPhams,
+                            tongSoLuong,
+                            tongTienHoan,
+                            formattedTongHoan,
+                            lyDoTraHang,
+                            trangThai,
+                            thoiGianTra,
+                            id
+                    );
                 })
                 .collect(Collectors.toList());
 
@@ -187,53 +210,64 @@ public class AdminQuanLyTraHangController {
         try {
             Optional<LichSuTraHang> lichSuOpt = lichSuTraHangRepository.findById(id);
             if (lichSuOpt.isEmpty()) {
-                model.addAttribute("lichSuTraHang", null);
+                model.addAttribute("danhSachLichSuTraHang", null);
                 return "WebQuanLy/quan-ly-tra-hang/chi-tiet";
             }
 
             LichSuTraHang lichSu = lichSuOpt.get();
 
             // Kiểm tra null safety
-            if (lichSu.getHoaDon() == null || lichSu.getChiTietDonHang() == null) {
-                logger.warn("LichSuTraHang {} thiếu thông tin hoaDon hoặc chiTietDonHang", id);
-                model.addAttribute("lichSuTraHang", null);
+            if (lichSu.getHoaDon() == null) {
+                logger.warn("LichSuTraHang {} thiếu thông tin hoaDon", id);
+                model.addAttribute("danhSachLichSuTraHang", null);
                 return "WebQuanLy/quan-ly-tra-hang/chi-tiet";
             }
 
             HoaDon hoaDon = lichSu.getHoaDon();
-            ChiTietDonHang chiTiet = lichSu.getChiTietDonHang();
+
+            // Lấy tất cả yêu cầu trả hàng cho hóa đơn này (bất kể trạng thái)
+            List<LichSuTraHang> danhSachLichSuTraHang = lichSuTraHangRepository.findByHoaDon(hoaDon);
+            if (danhSachLichSuTraHang.isEmpty()) {
+                model.addAttribute("danhSachLichSuTraHang", null);
+                return "WebQuanLy/quan-ly-tra-hang/chi-tiet";
+            }
 
             // Định dạng tiền tệ
             DecimalFormatSymbols symbols = new DecimalFormatSymbols();
             symbols.setGroupingSeparator('.');
             DecimalFormat formatter = new DecimalFormat("#,###", symbols);
 
-            // Format giá sản phẩm
-            if (chiTiet.getGia() != null) {
-                try {
-                    chiTiet.setFormattedGia(formatter.format(chiTiet.getGia()));
-                } catch (Exception e) {
-                    logger.error("Lỗi format giá sản phẩm: {}", e.getMessage());
+            // Format giá sản phẩm cho từng item
+            for (LichSuTraHang item : danhSachLichSuTraHang) {
+                ChiTietDonHang chiTiet = item.getChiTietDonHang();
+                if (chiTiet == null) continue;
+
+                if (chiTiet.getGia() != null) {
+                    try {
+                        chiTiet.setFormattedGia(formatter.format(chiTiet.getGia()));
+                    } catch (Exception e) {
+                        logger.error("Lỗi format giá sản phẩm: {}", e.getMessage());
+                        chiTiet.setFormattedGia("0");
+                    }
+                } else {
                     chiTiet.setFormattedGia("0");
                 }
-            } else {
-                chiTiet.setFormattedGia("0");
-            }
 
-            // Xử lý giảm giá sản phẩm
-            ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
-            if (chiTietSanPham != null && chiTietSanPham.getGia() != null) {
-                try {
-                    Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
-                    activeCampaign.ifPresent(campaign -> {
-                        BigDecimal discount = chiTietSanPham.getGia()
-                                .multiply(campaign.getPhanTramGiam())
-                                .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
-                        BigDecimal giaSauGiam = chiTietSanPham.getGia().subtract(discount);
-                        chiTiet.setFormattedGia(formatter.format(giaSauGiam));
-                    });
-                } catch (Exception e) {
-                    logger.error("Lỗi xử lý giảm giá: {}", e.getMessage());
+                // Xử lý giảm giá sản phẩm
+                ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
+                if (chiTietSanPham != null && chiTietSanPham.getGia() != null) {
+                    try {
+                        Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
+                        activeCampaign.ifPresent(campaign -> {
+                            BigDecimal discount = chiTietSanPham.getGia()
+                                    .multiply(campaign.getPhanTramGiam())
+                                    .divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
+                            BigDecimal giaSauGiam = chiTietSanPham.getGia().subtract(discount);
+                            chiTiet.setFormattedGia(formatter.format(giaSauGiam));
+                        });
+                    } catch (Exception e) {
+                        logger.error("Lỗi xử lý giảm giá: {}", e.getMessage());
+                    }
                 }
             }
 
@@ -251,32 +285,40 @@ public class AdminQuanLyTraHangController {
 
             BigDecimal tongGiamShip = BigDecimal.ZERO; // Không sử dụng phí ship
 
-            // Tính và format tổng hoàn tiền ước tính
+            // Tính và format tổng hoàn tiền ước tính cho tất cả items
             String formattedTongHoan = "0";
             try {
                 BigDecimal tongTienHoan = BigDecimal.ZERO;
 
-                if ("Đã xác nhận".equals(lichSu.getTrangThai()) && lichSu.getTongTienHoan() != null) {
-                    // Đã xác nhận - dùng số tiền hoàn thực tế
-                    tongTienHoan = lichSu.getTongTienHoan();
+                // Kiểm tra trạng thái (lấy từ item đầu tiên vì tất cả cùng trạng thái)
+                if ("Đã xác nhận".equals(danhSachLichSuTraHang.get(0).getTrangThai())) {
+                    // Đã xác nhận - sum tongTienHoan từ tất cả
+                    tongTienHoan = danhSachLichSuTraHang.stream()
+                            .map(LichSuTraHang::getTongTienHoan)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
                 } else {
-                    // Chưa xác nhận - tính ước tính
-                    if (chiTiet.getThanhTien() != null) {
-                        BigDecimal tongTienHangTra = chiTiet.getThanhTien();
-                        BigDecimal tongTienGocHoaDon = hoaDon.getDonHang().getChiTietDonHangs().stream()
-                                .filter(item -> item.getThanhTien() != null)
-                                .map(ChiTietDonHang::getThanhTien)
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    // Chưa xác nhận - tính ước tính tổng
+                    BigDecimal tongTienHangTra = danhSachLichSuTraHang.stream()
+                            .map(LichSuTraHang::getChiTietDonHang)
+                            .filter(Objects::nonNull)
+                            .map(ChiTietDonHang::getThanhTien)
+                            .filter(Objects::nonNull)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                        BigDecimal tyLeHoanTra = tongTienGocHoaDon.compareTo(BigDecimal.ZERO) > 0
-                                ? tongTienHangTra.divide(tongTienGocHoaDon, 4, RoundingMode.HALF_UP)
-                                : BigDecimal.ZERO;
+                    BigDecimal tongTienGocHoaDon = hoaDon.getDonHang().getChiTietDonHangs().stream()
+                            .filter(item -> item.getThanhTien() != null)
+                            .map(ChiTietDonHang::getThanhTien)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-                        BigDecimal giamGiaOrderHoanTra = tongGiamOrder.multiply(tyLeHoanTra).setScale(0, RoundingMode.HALF_UP);
-                        tongTienHoan = tongTienHangTra.subtract(giamGiaOrderHoanTra);
-                        if (tongTienHoan.compareTo(BigDecimal.ZERO) < 0) {
-                            tongTienHoan = BigDecimal.ZERO;
-                        }
+                    BigDecimal tyLeHoanTra = tongTienGocHoaDon.compareTo(BigDecimal.ZERO) > 0
+                            ? tongTienHangTra.divide(tongTienGocHoaDon, 4, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+
+                    BigDecimal giamGiaOrderHoanTra = tongGiamOrder.multiply(tyLeHoanTra).setScale(0, RoundingMode.HALF_UP);
+                    tongTienHoan = tongTienHangTra.subtract(giamGiaOrderHoanTra);
+                    if (tongTienHoan.compareTo(BigDecimal.ZERO) < 0) {
+                        tongTienHoan = BigDecimal.ZERO;
                     }
                 }
 
@@ -289,16 +331,15 @@ public class AdminQuanLyTraHangController {
             // Thêm thông tin giảm giá vào model
             model.addAttribute("tongGiamOrder", formatter.format(tongGiamOrder) + " VNĐ");
             model.addAttribute("tongGiamShip", formatter.format(tongGiamShip) + " VNĐ");
-            model.addAttribute("lichSuTraHang", lichSu);
+            model.addAttribute("danhSachLichSuTraHang", danhSachLichSuTraHang);
             model.addAttribute("hoaDon", hoaDon);
-            model.addAttribute("chiTietDonHang", chiTiet);
             model.addAttribute("formattedTongHoan", formattedTongHoan);
 
             return "WebQuanLy/quan-ly-tra-hang/chi-tiet";
 
         } catch (Exception e) {
             logger.error("Lỗi không mong muốn trong chiTietTraHang: {}", e.getMessage(), e);
-            model.addAttribute("lichSuTraHang", null);
+            model.addAttribute("danhSachLichSuTraHang", null);
             return "WebQuanLy/quan-ly-tra-hang/chi-tiet";
         }
     }
@@ -335,20 +376,27 @@ public class AdminQuanLyTraHangController {
             }
 
             HoaDon hoaDon = lichSu.getHoaDon();
-            ChiTietDonHang chiTietDonHang = lichSu.getChiTietDonHang();
-            NguoiDung nguoiDung = hoaDon.getDonHang().getNguoiDung();
 
-            // Validation thêm
-            if (chiTietDonHang.getThanhTien() == null) {
+            // Lấy tất cả yêu cầu chờ xác nhận cho hóa đơn này để gộp xác nhận
+            List<LichSuTraHang> pendingReturns = lichSuTraHangRepository.findByHoaDonAndTrangThai(hoaDon, "Chờ xác nhận");
+            if (pendingReturns.isEmpty()) {
                 response.put("success", false);
-                response.put("message", "Không thể tính toán tiền hoàn - thiếu thông tin giá.");
+                response.put("message", "Không có yêu cầu chờ xác nhận.");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // 1. Tính toán tiền hoàn thực tế
+            NguoiDung nguoiDung = hoaDon.getDonHang().getNguoiDung();
+
+            // 1. Tính toán tiền hoàn thực tế cho tất cả
             BigDecimal tongTienHoanThucTe = BigDecimal.ZERO;
             try {
-                BigDecimal tongTienHangTra = chiTietDonHang.getThanhTien();
+                BigDecimal tongTienHangTra = pendingReturns.stream()
+                        .map(LichSuTraHang::getChiTietDonHang)
+                        .filter(Objects::nonNull)
+                        .map(ChiTietDonHang::getThanhTien)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
                 BigDecimal tongTienGocHoaDon = hoaDon.getDonHang().getChiTietDonHangs().stream()
                         .filter(item -> item.getThanhTien() != null)
                         .map(ChiTietDonHang::getThanhTien)
@@ -379,6 +427,23 @@ public class AdminQuanLyTraHangController {
                 if (tongTienHoanThucTe.compareTo(BigDecimal.ZERO) < 0) {
                     tongTienHoanThucTe = BigDecimal.ZERO;
                 }
+
+                // Phân bổ tiền hoàn cho từng item (để lưu vào entity)
+                for (LichSuTraHang item : pendingReturns) {
+                    ChiTietDonHang chiTietDonHang = item.getChiTietDonHang();
+                    if (chiTietDonHang.getThanhTien() == null) continue;
+
+                    BigDecimal tyLeItem = tongTienHangTra.compareTo(BigDecimal.ZERO) > 0
+                            ? chiTietDonHang.getThanhTien().divide(tongTienHangTra, 4, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
+
+                    BigDecimal giamItem = giamGiaOrderHoanTra.multiply(tyLeItem).setScale(0, RoundingMode.HALF_UP);
+                    BigDecimal hoanItem = chiTietDonHang.getThanhTien().subtract(giamItem);
+                    if (hoanItem.compareTo(BigDecimal.ZERO) < 0) {
+                        hoanItem = BigDecimal.ZERO;
+                    }
+                    item.setTongTienHoan(hoanItem);
+                }
             } catch (Exception e) {
                 logger.error("Lỗi tính toán tiền hoàn: {}", e.getMessage());
                 response.put("success", false);
@@ -386,12 +451,27 @@ public class AdminQuanLyTraHangController {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
             }
 
-            // 2. Cập nhật tồn kho
-            ChiTietSanPham chiTietSanPham = chiTietDonHang.getChiTietSanPham();
-            if (chiTietSanPham != null) {
-                chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + lichSu.getSoLuong());
-                chiTietSanPhamRepository.save(chiTietSanPham);
+            // 2. Cập nhật tồn kho và trạng thái cho từng item
+            for (LichSuTraHang item : pendingReturns) {
+                ChiTietDonHang chiTietDonHang = item.getChiTietDonHang();
+                ChiTietSanPham chiTietSanPham = chiTietDonHang.getChiTietSanPham();
+                if (chiTietSanPham != null) {
+                    chiTietSanPham.setSoLuongTonKho(chiTietSanPham.getSoLuongTonKho() + item.getSoLuong());
+                    chiTietSanPhamRepository.save(chiTietSanPham);
+                }
+
+                // Set trạng thái hoàn tra cho chi tiết đơn hàng
+                chiTietDonHang.setTrangThaiHoanTra(true);
+                // Giả sử có repository cho ChiTietDonHang, save nó (thêm nếu cần)
+                // chiTietDonHangRepository.save(chiTietDonHang); // Nếu có repository riêng
+
+                item.setTrangThai("Đã xác nhận");
+                item.setThoiGianXacNhan(LocalDateTime.now());
+                lichSuTraHangRepository.save(item);
             }
+
+            // Flush để đảm bảo dữ liệu được commit
+            lichSuTraHangRepository.flush();
 
             // 3. Hoàn tiền vào ví (nếu cần)
             String pttt = hoaDon.getPhuongThucThanhToan() != null
@@ -422,16 +502,7 @@ public class AdminQuanLyTraHangController {
                 }
             }
 
-            // 4. Cập nhật trạng thái
-            lichSu.setTongTienHoan(tongTienHoanThucTe);
-            lichSu.setTrangThai("Đã xác nhận");
-            lichSu.setThoiGianXacNhan(LocalDateTime.now());
-            lichSuTraHangRepository.save(lichSu);
-
-            // Flush để đảm bảo dữ liệu được commit
-            lichSuTraHangRepository.flush();
-
-            // 5. Cập nhật hóa đơn
+            // 4. Cập nhật hóa đơn
             List<ChiTietDonHang> chiTietDonHangs = hoaDon.getDonHang().getChiTietDonHangs();
             long totalItems = chiTietDonHangs.size();
             long returnedItems = chiTietDonHangs.stream()
@@ -449,7 +520,7 @@ public class AdminQuanLyTraHangController {
             hoaDon.setTrangThai(trangThaiTraHang);
             hoaDonRepository.save(hoaDon);
 
-            // 6. Lịch sử hóa đơn
+            // 5. Lịch sử hóa đơn
             LichSuHoaDon lichSuHoaDon = new LichSuHoaDon();
             lichSuHoaDon.setHoaDon(hoaDon);
             lichSuHoaDon.setTrangThai(trangThaiTraHang);
@@ -458,7 +529,7 @@ public class AdminQuanLyTraHangController {
                     ". Tổng tiền hoàn: " + formatCurrency(tongTienHoanThucTe));
             lichSuHoaDonRepository.save(lichSuHoaDon);
 
-            // 7. Thông báo
+            // 6. Thông báo
             try {
                 thongBaoService.taoThongBaoHeThong(
                         nguoiDung.getTenDangNhap(),
