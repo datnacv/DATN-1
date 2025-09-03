@@ -3054,6 +3054,32 @@
 
         const { action, voucherId, voucherCode, status, quantity, message } = update;
 
+        // Auto-refresh page when vouchers are created, updated, or deleted from admin
+        if (action === 'CREATED' || action === 'UPDATED' || action === 'DELETED') {
+            console.log('[v0] Auto-refreshing page due to voucher update from admin:', action);
+
+            // Show notification before refresh
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Cập nhật mã giảm giá!',
+                    text: `Trang sẽ tự động làm mới để cập nhật mã giảm giá mới nhất.`,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    position: 'top-end',
+                    toast: true
+                });
+            }
+
+            // Auto-refresh after 2.5 seconds to allow notification to show
+            setTimeout(() => {
+                console.log('[v0] Refreshing page now...');
+                window.location.reload();
+            }, 2500);
+
+            return; // Exit early since we're refreshing
+        }
+
         // Show notification for new vouchers
         if (action === 'CREATED') {
             // Show toast notification for new voucher

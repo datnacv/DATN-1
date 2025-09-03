@@ -15,6 +15,56 @@
 
     <!-- Styles -->
     <style>
+
+        /* Messenger FAB (nút mở Messenger) */
+        .messenger-fab{
+            position: fixed;
+            bottom: 92px;            /* = 20px (chatbot) + 60px (nút) + 12px khoảng cách */
+            right: 20px;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: #0084FF;     /* màu Messenger */
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,.25);
+            z-index: 10001;
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .messenger-fab:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0,0,0,.3);
+        }
+        .messenger-fab i{ font-size: 28px; }
+
+        @media (max-width: 640px){
+            .messenger-fab{ bottom: 90px; right: 16px; width: 56px; height: 56px; }
+        }
+        /* Messenger FAB (nút mở Messenger) */
+        .messenger-fab{
+            position: fixed;
+            bottom: 92px;            /* = 20px (chatbot) + 60px (nút) + 12px khoảng cách */
+            right: 20px;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: #0084FF;     /* màu Messenger */
+            color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,.25);
+            z-index: 10001;
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .messenger-fab:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(0,0,0,.3);
+        }
+        .messenger-fab i{ font-size: 28px; }
+
+        @media (max-width: 640px){
+            .messenger-fab{ bottom: 90px; right: 16px; width: 56px; height: 56px; }
+        }
+
         .navbar {
             background: linear-gradient(to right, #153054, #1e4066);
             position: fixed;
@@ -629,6 +679,16 @@
 <div id="chatbot-toggle" style="position:fixed;bottom:20px;right:20px;background:#9FD5F7;width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:10000;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);">
     <img th:src="@{/image/ACV.jpg}" alt="ACV" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
 </div>
+
+<!-- Messenger shortcut -->
+<a id="messenger-launch"
+   class="messenger-fab"
+   href="https://m.me/820646527788683"
+   target="_blank" rel="noopener"
+   title="Mở trong Messenger" aria-label="Mở chat trong Messenger">
+    <i class="fa-brands fa-facebook-messenger"></i>
+</a>
+
 
 <!-- Chatbot Box -->
 <div id="chatbot-box">
