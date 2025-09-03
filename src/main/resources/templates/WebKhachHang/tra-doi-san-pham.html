@@ -726,19 +726,24 @@
                         name: row.querySelector('.product-details strong').textContent,
                         maxQuantity: maxSoLuong,
                         priceOriginal: unitPrice,
-                        priceFinal: unitFinalPrice
+                        priceFinal: unitFinalPrice // SỬA: Lưu giá sau giảm
                     };
+
                     selectedProductData.push(productData);
                     productReplacementMap.set(productData.id, []); // Khởi tạo mảng thay thế cho sản phẩm mới
                     maxSoLuongTotal += maxSoLuong;
 
-                    // Cập nhật currentProductId thành sản phẩm vừa được chọn
+                    // SỬA: Tự động mở modal cho sản phẩm vừa được chọn
                     currentProductId = productData.id;
+                    showModalForProduct(productData.id);
+
+                    console.log(`Đã chọn sản phẩm: ${productData.name}, Giá gốc: ${unitPrice}, Giá sau giảm: ${unitFinalPrice}`);
                 } else {
                     const productId = this.value;
                     const removedProduct = selectedProductData.find(p => p.id === productId);
                     if (removedProduct) {
                         maxSoLuongTotal -= removedProduct.maxQuantity;
+                        console.log(`Đã bỏ chọn sản phẩm: ${removedProduct.name}`);
                     }
                     selectedProductData = selectedProductData.filter(p => p.id !== productId);
                     productReplacementMap.delete(productId); // Xóa danh sách thay thế khi bỏ chọn
@@ -748,72 +753,37 @@
                         currentProductId = selectedProductData[0].id; // Chuyển sang sản phẩm khác
                     } else {
                         currentProductId = null;
+                        hideModal();
                     }
                 }
 
-                // Cập nhật max cho input số lượng trong modal
-                document.getElementById('soLuong').max = maxSoLuongTotal;
-                showOrUpdateModal();
                 updatePriceDifference();
             });
         });
 
-        // Thêm event listener cho việc chuyển đổi giữa các sản phẩm đã chọn
-        function addProductSwitchEvents() {
-            selectedProductData.forEach(product => {
-                const checkbox = document.querySelector(`.product-select-checkbox[value="${product.id}"]`);
-                if (checkbox) {
-                    checkbox.addEventListener('click', function(e) {
-                        if (this.checked && currentProductId !== product.id) {
-                            // Chuyển sang sản phẩm khác mà không bỏ tick
-                            currentProductId = product.id;
+        // SỬA: Hàm mở modal riêng cho từng sản phẩm
+        function showModalForProduct(productId) {
+            currentProductId = productId;
+            const product = selectedProductData.find(p => p.id === productId);
+            if (!product) return;
 
-                            // Nếu modal đang mở, cập nhật danh sách sản phẩm thay thế
-                            const modal = bootstrap.Modal.getInstance(document.getElementById('replacementProductModal'));
-                            if (modal && modal._isShown) {
-                                currentSearchKeyword = document.getElementById('searchProduct').value;
-                                currentPage = 0;
-                                loadReplacementProducts(currentPage, currentSearchKeyword);
-                            }
+            // Cập nhật title modal
+            const modalTitle = document.getElementById('replacementProductModalLabel');
+            modalTitle.innerHTML = `<i class="fas fa-box-open mr-2"></i>Chọn sản phẩm thay thế cho: ${product.name}`;
 
-                            e.preventDefault(); // Ngăn không cho bỏ tick
-                            return false;
-                        }
-                    });
-                }
-            });
-        }
+            // Reset modal
+            document.getElementById('soLuong').value = 1;
+            document.getElementById('soLuong').max = product.maxQuantity;
+            document.getElementById('searchProduct').value = '';
+            currentSearchKeyword = '';
+            currentPage = 0;
 
-        // Hàm hiển thị hoặc cập nhật modal
-        function showOrUpdateModal() {
+            // Load sản phẩm thay thế
+            loadReplacementProducts(currentPage, currentSearchKeyword);
+
+            // Hiển thị modal
             const modal = new bootstrap.Modal(document.getElementById('replacementProductModal'));
-
-            if (!modal._isShown && selectedProductData.length > 0) {
-                // Mở modal mới
-                document.getElementById('soLuong').value = 1;
-                document.getElementById('soLuong').max = maxSoLuongTotal;
-                document.getElementById('searchProduct').value = '';
-                currentSearchKeyword = '';
-                currentPage = 0;
-                loadReplacementProducts(currentPage, currentSearchKeyword);
-                modal.show();
-            } else if (selectedProductData.length > 0) {
-                // Cập nhật modal đang mở
-                document.getElementById('soLuong').max = maxSoLuongTotal;
-                // Tải lại danh sách sản phẩm với currentProductId mới
-                loadReplacementProducts(currentPage, currentSearchKeyword);
-            } else {
-                hideModal();
-            }
-
-            // Cập nhật title modal để hiển thị sản phẩm hiện tại
-            if (currentProductId) {
-                const currentProduct = selectedProductData.find(p => p.id === currentProductId);
-                if (currentProduct) {
-                    const modalTitle = document.getElementById('replacementProductModalLabel');
-                    modalTitle.innerHTML = `<i class="fas fa-box-open mr-2"></i>Chọn sản phẩm thay thế cho: ${currentProduct.name}`;
-                }
-            }
+            modal.show();
         }
 
         // Hàm ẩn modal
@@ -827,39 +797,74 @@
             let totalOriginalPrice = 0;
             let totalReplacementPrice = 0;
 
-            // Tính tổng giá trị sản phẩm gốc dựa trên số lượng tối đa
-            totalOriginalPrice = selectedProductData
-                .reduce((sum, product) => {
-                    const unit = (product.priceFinal ?? product.priceOriginal ?? 0);
-                    return sum + unit * product.maxQuantity;
-                }, 0);
-            // Tính tổng giá trị sản phẩm thay thế
+            // SỬA: Tính tổng giá trị sản phẩm gốc dựa trên giá sau giảm thực tế (từ cột thứ 7)
+            selectedProductData.forEach(product => {
+                // Lấy đơn giá sau giảm từ UI (cột thứ 7 trong bảng)
+                const checkbox = document.querySelector(`.product-select-checkbox[value="${product.id}"]`);
+                if (checkbox && checkbox.checked) {
+                    const row = checkbox.closest('tr');
+                    const finalPriceElement = row.querySelector('td:nth-child(7) .price[data-value]'); // Cột "Giá sau giảm"
+
+                    let unitFinalPrice;
+                    if (finalPriceElement && finalPriceElement.dataset.value) {
+                        unitFinalPrice = parseFloat(finalPriceElement.dataset.value);
+                    } else {
+                        // Fallback: nếu không có giá sau giảm, sử dụng giá gốc
+                        unitFinalPrice = product.priceFinal || product.priceOriginal || 0;
+                    }
+
+                    totalOriginalPrice += unitFinalPrice * product.maxQuantity;
+
+                    console.log(`Sản phẩm gốc ${product.name}: Đơn giá sau giảm = ${unitFinalPrice}, Số lượng = ${product.maxQuantity}, Thành tiền = ${unitFinalPrice * product.maxQuantity}`);
+                }
+            });
+
+            // Tính tổng giá trị sản phẩm thay thế (đã bao gồm giảm giá)
             productReplacementMap.forEach(replacements => {
-                totalReplacementPrice += replacements.reduce((sum, replacement) => sum + replacement.price * replacement.quantity, 0);
+                totalReplacementPrice += replacements.reduce((sum, replacement) => {
+                    const totalPrice = replacement.price * replacement.quantity;
+                    console.log(`Sản phẩm thay thế ${replacement.name}: Đơn giá sau giảm = ${replacement.price}, Số lượng = ${replacement.quantity}, Thành tiền = ${totalPrice}`);
+                    return sum + totalPrice;
+                }, 0);
             });
 
             const priceDifference = totalReplacementPrice - totalOriginalPrice;
             const priceDifferenceElement = document.getElementById('priceDifference');
             const priceDifferenceValue = document.getElementById('priceDifferenceValue');
 
+            console.log(`Tính toán chênh lệch: Tổng gốc = ${totalOriginalPrice}, Tổng thay thế = ${totalReplacementPrice}, Chênh lệch = ${priceDifference}`);
+
+            // Cập nhật hiển thị
             priceDifferenceElement.textContent = new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
             }).format(priceDifference).replace('₫', ' VNĐ');
             priceDifferenceValue.value = priceDifference;
 
+            // Đổi màu tùy thuộc vào chênh lệch
+            if (priceDifference > 0) {
+                priceDifferenceElement.style.color = '#ef4444'; // Đỏ - cần trả thêm
+                priceDifferenceElement.title = 'Cần thanh toán thêm';
+            } else if (priceDifference < 0) {
+                priceDifferenceElement.style.color = '#10b981'; // Xanh lá - được hoàn
+                priceDifferenceElement.title = 'Sẽ được hoàn tiền';
+            } else {
+                priceDifferenceElement.style.color = '#6b7280'; // Xám - bằng nhau
+                priceDifferenceElement.title = 'Không có chênh lệch';
+            }
+
             // Cập nhật danh sách sản phẩm thay thế đã chọn
             renderSelectedReplacementProducts();
         }
 
-        // Hàm tải danh sách sản phẩm thay thế (cập nhật để sử dụng currentProductId)
+        // SỬA: Hàm tải danh sách sản phẩm thay thế sử dụng currentProductId
         function loadReplacementProducts(page = 0, keyword = '') {
             if (selectedProductData.length === 0 || !currentProductId) return;
 
             const hoaDonId = document.getElementById('exchangeForm').getAttribute('action').match(/\/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/)[1];
             const size = 5;
 
-            // Sử dụng currentProductId thay vì tất cả chiTietIds
+            // SỬA: Sử dụng currentProductId thay vì tất cả chiTietIds
             const url = `/dsdon-mua/api/replacement-products/${hoaDonId}?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}&currentProductId=${currentProductId}`;
 
             fetch(url, {
@@ -873,7 +878,7 @@
                         renderPagination(data.currentPage, data.totalPages, keyword);
 
                         // Log để debug
-                        console.log(`Loaded replacement products for product ${currentProductId}, min price: ${data.minPrice}`);
+                        console.log(`Loaded ${data.products.length} replacement products for product ${currentProductId}, minPrice: ${data.minPriceAfterDiscount}`);
                     } else {
                         Swal.fire({
                             title: 'Lỗi!',
@@ -904,6 +909,7 @@
                 <div class="text-center py-4">
                     <i class="fas fa-search text-muted" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                     <p class="text-muted">Không tìm thấy sản phẩm thay thế phù hợp cho sản phẩm này</p>
+                    <small class="text-muted">Gợi ý: Chỉ hiển thị sản phẩm có giá >= giá sau giảm của sản phẩm cần đổi</small>
                 </div>
             `;
                 return;
