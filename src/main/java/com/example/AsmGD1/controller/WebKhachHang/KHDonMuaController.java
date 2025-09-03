@@ -1315,11 +1315,10 @@ public class KHDonMuaController {
                     pending.put("paymentMethodId", paymentMethodId);
                     session.setAttribute("pendingExchange", pending);
 
-//                    // Gọi API tạo link VNPay (giả định)
-//                    String paymentUrl = createVNPayLink(chenhLechGiaThucTe, productName, description, from, id.toString());
+//
 
                     response.put("success", true);
-//                    response.put("paymentUrl", paymentUrl);
+
                     return ResponseEntity.ok(response);
                 } else if (paymentMethodId.equals(COD_ID)) {
                     // Ghi chú cần thu thêm khi giao hàng
