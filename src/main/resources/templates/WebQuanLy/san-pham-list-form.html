@@ -1177,7 +1177,7 @@
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                     <i class="fas fa-times me-2"></i>Hủy bỏ
                                 </button>
-                                <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save me-2"></i>Lưu thay đổi
                                 </button>
                             </div>
@@ -1352,6 +1352,19 @@
     }
 
     let html5QrCode = null;
+
+    const searchInput = document.getElementById('searchNameInput');
+    let debounceTimer;
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                document.getElementById('searchForm').submit();
+            }, 500);  // Submit sau 500ms không nhập thêm
+        });
+    }
+
 
     async function showQrScanner() {
         const qrReader = document.getElementById('qr-reader');
