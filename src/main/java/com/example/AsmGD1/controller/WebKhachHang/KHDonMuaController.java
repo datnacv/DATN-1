@@ -202,34 +202,11 @@ public class KHDonMuaController {
         List<HoaDon> danhSachHoaDon = hoaDonPage.getContent();
         for (HoaDon hoaDon : danhSachHoaDon) {
             hoaDon.setFormattedTongTien(hoaDon.getTongTien() != null ? formatter.format(hoaDon.getTongTien()) : "0");
-
+            //fix cứng đơn mua
             for (ChiTietDonHang chiTiet : hoaDon.getDonHang().getChiTietDonHangs()) {
-                chiTiet.setFormattedGia(chiTiet.getGia() != null ? formatter.format(chiTiet.getGia()) : "0");
-
-                // Lấy thông tin giảm giá từ ChiTietSanPham
-                ChiTietSanPham chiTietSanPham = chiTiet.getChiTietSanPham();
-                Optional<ChienDichGiamGia> activeCampaign = chienDichGiamGiaService.getActiveCampaignForProductDetail(chiTietSanPham.getId());
-                if (activeCampaign.isPresent()) {
-                    ChienDichGiamGia campaign = activeCampaign.get();
-                    ChiTietSanPhamDto chiTietSanPhamDto = new ChiTietSanPhamDto();
-                    chiTietSanPhamDto.setId(chiTietSanPham.getId());
-                    chiTietSanPhamDto.setGia(chiTietSanPham.getGia());
-                    chiTietSanPhamDto.setOldPrice(chiTietSanPham.getGia());
-                    chiTietSanPhamDto.setDiscountPercentage(campaign.getPhanTramGiam());
-                    chiTietSanPhamDto.setDiscountCampaignName(campaign.getTen());
-
-                    // Tính giá sau giảm
-                    BigDecimal discount = chiTietSanPham.getGia()
-                            .multiply(campaign.getPhanTramGiam())
-                            .divide(BigDecimal.valueOf(100));
-                    chiTietSanPhamDto.setGia(chiTietSanPham.getGia().subtract(discount));
-                    chiTietSanPhamDto.setDiscount(formatter.format(campaign.getPhanTramGiam()) + "%");
-
-                    // Gán DTO vào chiTiet để sử dụng trong view
-                    chiTiet.setChiTietSanPhamDto(chiTietSanPhamDto);
-                    chiTiet.setFormattedGia(formatter.format(chiTietSanPhamDto.getGia()));
-                }
-
+                // Đơn giá hiển thị = đơn giá khách đã trả cho 1 SP (ưu tiên thanhTien/soLuong, fallback giá snapshot)
+                BigDecimal unitPaid = getPaidUnitPrice(chiTiet); // bạn đã có method này
+                chiTiet.setFormattedGia(unitPaid != null ? formatter.format(unitPaid) : "0");
                 boolean daDanhGia = danhGiaRepository.existsByHoaDonIdAndChiTietSanPhamIdAndNguoiDungId(
                         hoaDon.getId(), chiTiet.getChiTietSanPham().getId(), nguoiDung.getId()
                 );
