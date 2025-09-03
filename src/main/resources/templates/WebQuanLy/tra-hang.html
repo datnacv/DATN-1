@@ -467,7 +467,7 @@
             <h3><i class="fas fa-user-circle"></i> Thông tin khách hàng</h3>
             <p><strong>Khách hàng:</strong> <span th:text="${hoaDon.tenKhachHang} ?: 'Khách lẻ'"></span></p>
             <p><strong>Số điện thoại:</strong> <span th:text="${hoaDon.soDienThoaiKhachHang} ?: 'Không rõ'"></span></p>
-            <p><strong>Địa chỉ:</strong> <span th:text="${hoaDon.diaChi != null ? hoaDon.diaChi : 'Không rõ'}"></span></p>
+<!--            <p><strong>Địa chỉ:</strong> <span th:text="${hoaDon.diaChi != null ? hoaDon.diaChi : 'Không rõ'}"></span></p>-->
             <p><strong>Thời gian tạo:</strong> <span th:text="${#temporals.format(hoaDon.thoiGianTao, 'dd/MM/yyyy HH:mm:ss') ?: 'Chưa có'}"></span></p>
             <p><strong>Thời gian hoàn thành:</strong> <span th:text="${hoaDon.ngayThanhToan != null ? #temporals.format(hoaDon.ngayThanhToan, 'dd/MM/yyyy HH:mm:ss') : 'Chưa hoàn thành'}"></span></p>
         </div>
