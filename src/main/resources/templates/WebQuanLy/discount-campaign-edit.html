@@ -222,23 +222,23 @@
         </form>
 
         <!-- Modal Xác nhận -->
-        <div class="modal fade" id="confirmUpdateModal" tabindex="-1" aria-hidden="true"
-             th:if="${isAdmin and !isReadOnly}">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header border-0">
-                        <h5 class="modal-title"><i class="fas fa-circle-question me-2"></i>Xác nhận cập nhật</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body"><p class="mb-0">Bạn có chắc muốn cập nhật đợt giảm giá này?</p></div>
-                    <div class="modal-footer border-0">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="button" id="confirmUpdateBtn" class="btn btn-primary">Xác nhận cập nhật</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!--        <div class="modal fade" id="confirmUpdateModal" tabindex="-1" aria-hidden="true"-->
+<!--             th:if="${isAdmin and !isReadOnly}">-->
+<!--            <div class="modal-dialog modal-dialog-centered">-->
+<!--                <div class="modal-content">-->
+<!--                    <div class="modal-header border-0">-->
+<!--                        <h5 class="modal-title"><i class="fas fa-circle-question me-2"></i>Xác nhận cập nhật</h5>-->
+<!--                        <button type="button" class="btn-close" data-bs-dismiss="modal"-->
+<!--                                aria-label="Close"></button>-->
+<!--                    </div>-->
+<!--                    <div class="modal-body"><p class="mb-0">Bạn có chắc muốn cập nhật đợt giảm giá này?</p></div>-->
+<!--                    <div class="modal-footer border-0">-->
+<!--                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>-->
+<!--                        <button type="button" id="confirmUpdateBtn" class="btn btn-primary">Xác nhận cập nhật</button>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
 
     </div>
 </div>
@@ -254,6 +254,8 @@
     const isAdmin   = /*[[${isAdmin}]]*/ false;
     const isReadOnly= /*[[${isReadOnly}]]*/ false;
     const viewMode  = /*[[${viewMode}]]*/ false;
+    let currentProductKeyword = "";
+    let currentProductPage = 0;
 
     /* ===== Helpers cho TÊN đợt ===== */
     function normalizeTen(el){
@@ -361,7 +363,16 @@
 
 
         form.addEventListener('submit', function(e){
-            if(!isAdmin){ e.preventDefault(); alert('Bạn không có quyền thực hiện thao tác này!'); return; }
+            if(!isAdmin){
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Không có quyền',
+                    text: 'Bạn không có quyền thực hiện thao tác này!',
+                    confirmButtonText: 'Đã hiểu'
+                });
+                return;
+            }
 
             // Tên: VALIDATE trước, hợp lệ mới normalize
             if(ten){
@@ -376,21 +387,47 @@
                 percent.setCustomValidity(ok || v === '' ? '' : 'Phần trăm giảm phải là số nguyên từ 1 đến 99.');
             }
 
+            if(!this.reportValidity()){
+                e.preventDefault();
+                return;
+            }
 
-            if(!this.reportValidity()){ e.preventDefault(); return; }
-
-            // Hiện modal xác nhận một lần
+            // Dùng Swal.fire để xác nhận + hiển thị "Đang xử lý..."
             if (!this._asked) {
                 e.preventDefault();
-                const modalEl=document.getElementById("confirmUpdateModal");
-                if (modalEl && typeof bootstrap !== "undefined") {
-                    const confirmModal=new bootstrap.Modal(modalEl);
-                    const confirmBtn=document.getElementById("confirmUpdateBtn");
-                    confirmBtn.onclick=()=>{ this._asked=true; confirmBtn.disabled=true; confirmBtn.textContent='Đang cập nhật...'; this.submit(); };
-                    confirmModal.show();
-                }
+                const formEl = this;
+
+                Swal.fire({
+                    title: 'Xác nhận cập nhật',
+                    text: 'Bạn có chắc muốn cập nhật đợt giảm giá này?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Xác nhận cập nhật',
+                    cancelButtonText: 'Hủy',
+                    reverseButtons: true,
+                    focusCancel: true
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        formEl._asked = true;
+
+                        // Hiển thị trạng thái đang xử lý
+                        Swal.fire({
+                            title: 'Đang xử lý...',
+                            html: '<small>Vui lòng đợi trong giây lát.</small>',
+                            allowEscapeKey: false,
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        // Cho loader kịp hiển thị rồi submit
+                        setTimeout(() => formEl.submit(), 120);
+                    }
+                });
             }
         });
+
     }
 
     // ====== (giữ nguyên) render list SP/CTSP, pagination... ======
@@ -474,48 +511,110 @@
                 else { container.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Lỗi khi tải chi tiết sản phẩm</td></tr>`; syncHiddenFromVisible(); }
             });
     }
-    function renderPagination(totalPages,currentPage,keyword){
-        const pagination=document.getElementById("productPagination");
-        if(!pagination || !isAdmin) return;
-        let html=`<ul class="pagination justify-content-center">`;
-        for(let i=0;i<totalPages;i++){
-            html+=`<li class="page-item ${i===currentPage?'active':''}">
-                     <a class="page-link" href="#" data-page="${i}" data-keyword="${keyword}">${i+1}</a>
-                   </li>`;
+    function renderPagination(totalPages, currentPage, keyword) {
+        const pagination = document.getElementById("productPagination");
+        if (!pagination || !isAdmin) return;
+
+        if (!Number.isFinite(totalPages) || totalPages <= 1) {
+            pagination.innerHTML = "";
+            return;
         }
-        html+=`</ul>`;
-        pagination.innerHTML=html;
-        pagination.querySelectorAll(".page-link").forEach(link=>{
-            link.addEventListener("click",e=>{
+
+        let html = `<ul class="pagination justify-content-center mb-0">`;
+
+        const prevDisabled = currentPage <= 0 ? " disabled" : "";
+        const prevPage = Math.max(0, currentPage - 1);
+        html += `
+    <li class="page-item${prevDisabled}">
+      <a class="page-link" href="#" data-page="${prevPage}" data-keyword="${keyword}">Trước</a>
+    </li>`;
+
+        for (let i = 0; i < totalPages; i++) {
+            html += `
+      <li class="page-item ${i === currentPage ? "active" : ""}">
+        <a class="page-link" href="#" data-page="${i}" data-keyword="${keyword}">${i + 1}</a>
+      </li>`;
+        }
+
+        const nextDisabled = currentPage >= totalPages - 1 ? " disabled" : "";
+        const nextPage = Math.min(totalPages - 1, currentPage + 1);
+        html += `
+    <li class="page-item${nextDisabled}">
+      <a class="page-link" href="#" data-page="${nextPage}" data-keyword="${keyword}">Sau</a>
+    </li>`;
+
+        html += `</ul>`;
+        pagination.innerHTML = html;
+
+        pagination.querySelectorAll(".page-link").forEach(link => {
+            link.addEventListener("click", e => {
                 e.preventDefault();
-                if(isAdmin){
-                    const page=parseInt(link.dataset.page);
-                    const kw=link.dataset.keyword;
-                    searchProducts(kw,page);
+                if (!isAdmin) return;
+                if (link.closest(".disabled")) return;
+
+                let page = parseInt(link.dataset.page, 10); // ✅ base 10
+                const kw = link.dataset.keyword || "";
+
+                // Clamp nếu tổng trang vừa thay đổi
+                if (Number.isFinite(currentProductTotalPages) && currentProductTotalPages > 0) {
+                    page = Math.min(Math.max(0, page), currentProductTotalPages - 1);
                 }
+
+                searchProducts(kw, page);
             });
         });
     }
-    function searchProducts(keyword="", page=0){
-        if(!isAdmin) return;
-        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}&selectedProductIds=${[...selectedProductIds].join(',')}`)
-            .then(res=>res.json())
-            .then(data=>{
-                renderProductList(data.content);
-                renderPagination(data.totalPages, data.number, keyword);
+
+    function searchProducts(keyword = "", page = 0, _retry = false) {
+        if (!isAdmin) return;
+
+        const url =
+            `/acvstore/chien-dich-giam-gia/search-products` +
+            `?keyword=${encodeURIComponent(keyword)}` +
+            `&page=${Math.max(0, page)}` +
+            `&size=${pageSize}`; // pageSize = 5
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                const list = Array.isArray(data.content) ? data.content : [];
+                const totalPages = Number.isFinite(data.totalPages) ? data.totalPages : 0;
+                const current = Number.isFinite(data.number) ? data.number : 0;
+
+                // Lưu lại để clamp các click sau
+                currentProductTotalPages = totalPages;
+
+                // Fallback: nếu trang vượt quá giới hạn (VD: sau khi lọc), nhảy về trang cuối
+                if (!list.length && totalPages > 0 && current >= totalPages && !_retry) {
+                    return searchProducts(keyword, totalPages - 1, true);
+                }
+
+                renderProductList(list);
+                renderPagination(totalPages, current, keyword);
             })
             .catch(console.error);
     }
-    function renderProductList(products){
-        const tbody=document.getElementById("productTableBody");
-        tbody.innerHTML=products.length===0
-            ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
-            : products.map(p=>`
-        <tr class="product-row" data-id="${p.id}">
-          <td><input type="checkbox" class="product-checkbox" value="${p.id}" ${selectedProductIds.has(p.id)?'checked':''} ${!isAdmin?'disabled':''}></td>
-          <td>${p.maSanPham}</td>
-          <td>${p.tenSanPham}</td>
-        </tr>`).join('');
+
+    function renderProductList(products) {
+        const tbody = document.getElementById("productTableBody");
+        if (!tbody) return;
+
+        if (!Array.isArray(products) || products.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`;
+        } else {
+            tbody.innerHTML = products.map(p => {
+                const idStr = String(p.id);
+                const checked = selectedProductIds.has(idStr) ? "checked" : "";
+                const disabled = !isAdmin ? "disabled" : "";
+                return `
+        <tr class="product-row" data-id="${idStr}">
+          <td><input type="checkbox" class="product-checkbox" value="${idStr}" ${checked} ${disabled}></td>
+          <td>${p.maSanPham ?? ""}</td>
+          <td>${p.tenSanPham ?? ""}</td>
+        </tr>`;
+            }).join("");
+        }
+
         attachCheckboxHandler(".product-checkbox", selectedProductIds, "selectAllProducts");
         updateSelectAll(".product-checkbox", "selectAllProducts");
     }
@@ -548,15 +647,15 @@
         });
 
         // modal confirm submit
-        const form=document.getElementById("updateCampaignForm");
-        const modalEl=document.getElementById("confirmUpdateModal");
-        const confirmBtn=document.getElementById("confirmUpdateBtn");
-        let confirmModal=null;
-        if(modalEl && typeof bootstrap!=="undefined"){ confirmModal=new bootstrap.Modal(modalEl); }
-        confirmBtn?.addEventListener("click", function(){
-            this.disabled=true; this.textContent="Đang cập nhật...";
-            form?.submit();
-        });
+        // const form=document.getElementById("updateCampaignForm");
+        // const modalEl=document.getElementById("confirmUpdateModal");
+        // const confirmBtn=document.getElementById("confirmUpdateBtn");
+        // let confirmModal=null;
+        // if(modalEl && typeof bootstrap!=="undefined"){ confirmModal=new bootstrap.Modal(modalEl); }
+        // confirmBtn?.addEventListener("click", function(){
+        //     this.disabled=true; this.textContent="Đang cập nhật...";
+        //     form?.submit();
+        // });
 
         document.getElementById("productSearchInput")?.addEventListener("input", function(){
             if(!isAdmin) return;
@@ -571,5 +670,7 @@
     });
 </script>
 <script th:src="@{/js/notification.js}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </body>
 </html>

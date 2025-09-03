@@ -423,21 +423,21 @@
         </div>
 
         <!-- Modal xác nhận -->
-        <div class="modal fade" id="confirmEditModal" tabindex="-1" aria-labelledby="confirmEditModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="confirmEditModalLabel">Xác nhận lưu thay đổi</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">Bạn có chắc chắn muốn lưu các thay đổi của phiếu này không?</div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="button" class="btn btn-primary" id="confirmSubmit">Xác nhận</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!--        <div class="modal fade" id="confirmEditModal" tabindex="-1" aria-labelledby="confirmEditModalLabel" aria-hidden="true">-->
+<!--            <div class="modal-dialog modal-dialog-centered">-->
+<!--                <div class="modal-content">-->
+<!--                    <div class="modal-header">-->
+<!--                        <h5 class="modal-title" id="confirmEditModalLabel">Xác nhận lưu thay đổi</h5>-->
+<!--                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--                    </div>-->
+<!--                    <div class="modal-body">Bạn có chắc chắn muốn lưu các thay đổi của phiếu này không?</div>-->
+<!--                    <div class="modal-footer">-->
+<!--                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>-->
+<!--                        <button type="button" class="btn btn-primary" id="confirmSubmit">Xác nhận</button>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
 
     </div> <!-- /content -->
 </div> <!-- /with st -->
@@ -561,7 +561,7 @@
     }
 
     /* ===== Validation (FE) ===== */
-    function validateForm(){
+    function validateForm() {
         let isValid = true;
         $('.invalid-feedback').text('').hide();
         $('.form-control').removeClass('is-invalid');
@@ -577,27 +577,27 @@
         const end = ngayKetThucVal ? new Date(ngayKetThucVal) : null;
         const now = new Date();
 
-        if (!start){
+        if (!start) {
             $('#ngayBatDau').addClass('is-invalid');
             $('#ngayBatDauError').text('Ngày bắt đầu không được để trống.').show();
             isValid = false;
-        } else if (start < now){
+        } else if (start < now) {
             $('#ngayBatDau').addClass('is-invalid');
             $('#ngayBatDauError').text('Ngày bắt đầu không được trước thời điểm hiện tại.').show();
             isValid = false;
         }
 
-        if (!end){
+        if (!end) {
             $('#ngayKetThuc').addClass('is-invalid');
             $('#ngayKetThucError').text('Ngày kết thúc không được để trống.').show();
             isValid = false;
-        } else if (end < now){
+        } else if (end < now) {
             $('#ngayKetThuc').addClass('is-invalid');
             $('#ngayKetThucError').text('Ngày kết thúc không được trong quá khứ.').show();
             isValid = false;
         }
 
-        if (start && end && start > end){
+        if (start && end && start > end) {
             $('#ngayBatDau').addClass('is-invalid');
             $('#ngayBatDauError').text('Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.').show();
             isValid = false;
@@ -606,30 +606,32 @@
         // Validate TÊN
         const rawName = $('#ten').val() || '';
         const normalizedName = normalizeNameOnce(rawName);
-        if (rawName !== normalizedName){
+        if (rawName !== normalizedName) {
             $('#ten').addClass('is-invalid');
-            if (rawName !== rawName.trim()){
+            if (rawName !== rawName.trim()) {
                 $('#tenError').text('Không cho phép khoảng trắng ở đầu hoặc cuối.').show();
-            }else{
+            } else {
                 $('#tenError').text('Giữa các từ chỉ được 1 khoảng trắng.').show();
             }
             isValid = false;
         } else {
             const msg = validateNameValue(normalizedName);
-            if (msg){
-                $('#ten').addClass('is-invalid'); $('#tenError').text(msg).show(); isValid=false;
+            if (msg) {
+                $('#ten').addClass('is-invalid');
+                $('#tenError').text(msg).show();
+                isValid = false;
             }
         }
 
         const scope = $('#scopeLockedVal').val();
         const type = $('input[name="loai"]:checked').val();
 
-        if (scope === 'ORDER' && !['PERCENT','CASH'].includes(type)){
+        if (scope === 'ORDER' && !['PERCENT', 'CASH'].includes(type)) {
             $('#discountTypeGroup').find('input[type=radio]').addClass('is-invalid');
             alert('Phạm vi đang là GIẢM GIÁ ĐƠN HÀNG – chỉ được chọn kiểu PERCENT hoặc CASH.');
             isValid = false;
         }
-        if (scope === 'SHIPPING' && !['FREESHIP_FULL','FREESHIP_CAP'].includes(type)){
+        if (scope === 'SHIPPING' && !['FREESHIP_FULL', 'FREESHIP_CAP'].includes(type)) {
             $('#shipTypeGroup').find('input[type=radio]').addClass('is-invalid');
             alert('Phạm vi đang là GIẢM PHÍ VẬN CHUYỂN – chỉ được chọn FREESHIP_FULL hoặc FREESHIP_CAP.');
             isValid = false;
@@ -639,57 +641,57 @@
         const giaTriGiamToiDa = parseFloat(parseNumber($('#giaTriGiamToiDa').val() || '0')) || 0;
         const giaTriGiamToiThieu = parseFloat(parseNumber($('#giaTriGiamToiThieu').val() || '0')) || 0;
 
-        if (giaTriGiamToiThieu < 0){
+        if (giaTriGiamToiThieu < 0) {
             $('#giaTriGiamToiThieu').addClass('is-invalid');
             $('#giaTriGiamToiThieuError').text('Đơn tối thiểu không được âm.').show();
             isValid = false;
         }
 
-        if (scope === 'ORDER'){
-            if (type === 'PERCENT' || type === 'CASH'){
-                if (giaTriGiam <= 0){
+        if (scope === 'ORDER') {
+            if (type === 'PERCENT' || type === 'CASH') {
+                if (giaTriGiam <= 0) {
                     $('#giaTriGiam').addClass('is-invalid');
                     $('#giaTriGiamError').text('Giá trị giảm phải lớn hơn 0.').show();
                     isValid = false;
                 }
-                if (type === 'PERCENT'){
+                if (type === 'PERCENT') {
                     const raw = ($('#giaTriGiam').val() || '').trim();
-                    if (/[.,]/.test(raw)){
+                    if (/[.,]/.test(raw)) {
                         $('#giaTriGiam').addClass('is-invalid');
                         $('#giaTriGiamError').text('Giảm theo % phải là số nguyên.').show();
-                        isValid=false;
+                        isValid = false;
                     }
-                    if (giaTriGiam > 100){
+                    if (giaTriGiam > 100) {
                         $('#giaTriGiam').addClass('is-invalid');
                         $('#giaTriGiamError').text('Giảm theo % không được vượt quá 100.').show();
                         isValid = false;
                     }
-                    if (giaTriGiamToiDa <= 0){
+                    if (giaTriGiamToiDa <= 0) {
                         $('#giaTriGiamToiDa').addClass('is-invalid');
                         $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 khi giảm theo %.').show();
                         isValid = false;
                     }
-                    if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu){
+                    if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu) {
                         $('#giaTriGiamToiDa').addClass('is-invalid');
                         $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
                         isValid = false;
                     }
                 } else { // CASH
-                    if (giaTriGiamToiThieu > 0 && giaTriGiam >= giaTriGiamToiThieu){
+                    if (giaTriGiamToiThieu > 0 && giaTriGiam >= giaTriGiamToiThieu) {
                         $('#giaTriGiam').addClass('is-invalid');
                         $('#giaTriGiamError').text('Giá trị giảm (tiền mặt) phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
                         isValid = false;
                     }
                 }
             }
-        } else if (scope === 'SHIPPING'){
-            if (type === 'FREESHIP_CAP'){
-                if (giaTriGiamToiDa <= 0){
+        } else if (scope === 'SHIPPING') {
+            if (type === 'FREESHIP_CAP') {
+                if (giaTriGiamToiDa <= 0) {
                     $('#giaTriGiamToiDa').addClass('is-invalid');
                     $('#giaTriGiamToiDaError').text('Giá trị giảm tối đa phải > 0 cho FREESHIP_CAP.').show();
                     isValid = false;
                 }
-                if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu){
+                if (giaTriGiamToiThieu > 0 && giaTriGiamToiDa >= giaTriGiamToiThieu) {
                     $('#giaTriGiamToiDa').addClass('is-invalid');
                     $('#giaTriGiamToiDaError').text('Giảm phí ship tối đa phải nhỏ hơn Đơn tối thiểu áp dụng.').show();
                     isValid = false;
@@ -699,19 +701,47 @@
 
         // PTTT bắt buộc (bỏ 'all')
         const ptttChosen = ($('#paymentMethodSelect').val() || []).filter(v => v !== 'all');
-        if (ptttChosen.length === 0){
+        if (ptttChosen.length === 0) {
             $('#ptttError').text('vui lòng chọn ít nhất 1 pttt khi chưa chọn').removeClass('d-none');
             $('#paymentMethodSelect').next('.select2').find('.select2-selection').addClass('is-invalid-s2');
             isValid = false;
         }
 
-        if (isValid){
-            new bootstrap.Modal('#confirmEditModal').show();
+        if (isValid) {
+            Swal.fire({
+                title: 'Xác nhận lưu thay đổi',
+                text: 'Bạn có chắc chắn muốn lưu các thay đổi của phiếu này không?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#153054', // primary
+                cancelButtonColor: '#9FD5F7',  // secondary
+                reverseButtons: true,
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Chuẩn hoá số trước khi submit
+                    ['#giaTriGiam', '#giaTriGiamToiDa', '#giaTriGiamToiThieu', '#gioiHanSuDung']
+                        .forEach(sel => $(sel).val(parseNumber($(sel).val())));
+
+                    // Bỏ 'all' trước khi submit
+                    const selected = $('#paymentMethodSelect').val();
+                    if (selected && selected.includes('all')) {
+                        const allOptions = $('#paymentMethodSelect option').map(function () {
+                            return $(this).val();
+                        }).get().filter(v => v !== 'all');
+                        $('#paymentMethodSelect').val(allOptions).trigger('change');
+                    }
+
+                    $('#editVoucherForm').trigger('submit');
+                }
+            });
         }
         return isValid;
     }
 
-    /* ===== READY ===== */
+        /* ===== READY ===== */
     $(document).ready(function () {
         // Select2 + xử lý "all"
         $('#paymentMethodSelect').select2({
@@ -788,18 +818,18 @@
         setMinNowForDatetimeInputs();
 
         // Nút xác nhận submit
-        $('#confirmSubmit').on('click', function () {
-            ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
-                .forEach(sel => $(sel).val(parseNumber($(sel).val())));
-
-            const selected = $('#paymentMethodSelect').val();
-            if (selected && selected.includes('all')) {
-                const allOptions = $('#paymentMethodSelect option').map(function(){return $(this).val();}).get().filter(v => v !== 'all');
-                $('#paymentMethodSelect').val(allOptions).trigger('change');
-            }
-
-            $('#editVoucherForm').submit();
-        });
+        // $('#confirmSubmit').on('click', function () {
+        //     ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
+        //         .forEach(sel => $(sel).val(parseNumber($(sel).val())));
+        //
+        //     const selected = $('#paymentMethodSelect').val();
+        //     if (selected && selected.includes('all')) {
+        //         const allOptions = $('#paymentMethodSelect option').map(function(){return $(this).val();}).get().filter(v => v !== 'all');
+        //         $('#paymentMethodSelect').val(allOptions).trigger('change');
+        //     }
+        //
+        //     $('#editVoucherForm').submit();
+        // });
 
         // Toasts
         showToast('successToast');
@@ -807,5 +837,7 @@
         showToast('infoToast');
     });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </body>
 </html>
