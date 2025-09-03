@@ -744,6 +744,7 @@
       transform: translateY(-2px);
       box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
     }
+    .multiline { white-space: pre-line; }
   </style>
 </head>
 <body>
@@ -868,7 +869,11 @@
       <h4><i class="fas fo-shipping-fast mr-2"></i>Thông tin giao hàng</h4>
       <p><strong><i class="fas fa-map-marker-alt mr-2"></i>Địa chỉ:</strong> <span th:text="${hoaDon.donHang.diaChiGiaoHang}"></span></p>
       <p><strong><i class="fas fa-store mr-2"></i>Phương thức bán hàng:</strong> <span th:text="${hoaDon.donHang.phuongThucBanHang}"></span></p>
-      <p><strong><i class="fas fa-sticky-note mr-2"></i>Ghi chú:</strong> <span th:text="${hoaDon.donHang.ghiChu != null ? hoaDon.donHang.ghiChu : 'Không có'}"></span></p>
+      <p>
+        <strong><i class="fas fa-sticky-note mr-2"></i>Ghi chú:</strong>
+        <span class="multiline"
+              th:text="${hoaDon.donHang.ghiChu != null ? hoaDon.donHang.ghiChu : 'Không có'}"></span>
+      </p>
     </div>
 
     <!-- Enhanced Product Table -->

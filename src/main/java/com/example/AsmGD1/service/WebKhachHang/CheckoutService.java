@@ -65,9 +65,23 @@ public class CheckoutService {
         donHang.setPhiVanChuyen(phiShip);
 
         String contact = "Người nhận: " + request.getFullName() + ", SĐT: " + request.getPhone();
-        donHang.setGhiChu((request.getNotes() != null && !request.getNotes().isBlank())
-                ? (request.getNotes() + " | " + contact)
-                : contact);
+        StringBuilder ghiChu = new StringBuilder();
+
+        if (request.getNotes() != null && !request.getNotes().isBlank()) {
+            ghiChu.append(request.getNotes().trim());
+        }
+
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            if (ghiChu.length() > 0) ghiChu.append("\n");
+            ghiChu.append("Người nhận: ").append(request.getFullName().trim());
+        }
+
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            if (ghiChu.length() > 0) ghiChu.append("\n");
+            ghiChu.append("SĐT: ").append(request.getPhone().trim());
+        }
+
+        donHang.setGhiChu(ghiChu.length() > 0 ? ghiChu.toString() : null);
 
         // ===== Địa chỉ giao hàng =====
         if (addressId != null) {
