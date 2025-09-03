@@ -36,4 +36,12 @@ public class LichSuDoiSanPham {
     private String trangThai;
     @Column(name = "chenh_lech_gia")
     private BigDecimal chenhLechGia; // Thêm trường này
+
+    @ManyToOne
+    @JoinColumn(name = "id_phuong_thuc_thanh_toan")
+    private PhuongThucThanhToan phuongThucThanhToan;
+
+    @Column(name = "da_thanh_toan_chenh_lech")
+    private Boolean daThanhToanChenhLech = false;
+
 }

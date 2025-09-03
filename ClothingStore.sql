@@ -708,3 +708,11 @@ ALTER TABLE don_hang ALTER COLUMN tong_tien          DECIMAL(18,2) NOT NULL;
 
 ALTER TABLE chi_tiet_don_hang ALTER COLUMN gia        DECIMAL(18,2) NOT NULL;
 ALTER TABLE chi_tiet_don_hang ALTER COLUMN thanh_tien DECIMAL(18,2) NOT NULL;
+
+ALTER TABLE lich_su_doi_san_pham
+    ADD id_phuong_thuc_thanh_toan UNIQUEIDENTIFIER NULL
+    CONSTRAINT FK_lsdoi_pttt FOREIGN KEY (id_phuong_thuc_thanh_toan)
+        REFERENCES phuong_thuc_thanh_toan(id);
+
+ALTER TABLE lich_su_doi_san_pham
+    ADD da_thanh_toan_chenh_lech BIT NOT NULL DEFAULT 0;
