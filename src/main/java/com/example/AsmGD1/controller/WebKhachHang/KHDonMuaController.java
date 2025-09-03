@@ -1218,6 +1218,12 @@ public class KHDonMuaController {
 
                     // Lưu lịch sử đổi
                     LichSuDoiSanPham ls = new LichSuDoiSanPham();
+                    ls.setPhuongThucThanhToan(
+                            (paymentMethodId != null)
+                                    ? phuongThucThanhToanRepository.findById(paymentMethodId).orElse(null)
+                                    : null
+                    );
+                    ls.setChenhLechGia(chenhLechCap);
                     ls.setChiTietDonHang(ctGoc);
                     ls.setHoaDon(hoaDon);
                     ls.setChiTietSanPhamThayThe(ctThayThe);
@@ -1307,6 +1313,35 @@ public class KHDonMuaController {
                     return ResponseEntity.badRequest().body(response);
                 }
             }
+
+            if (chenhLechGiaThucTe.compareTo(BigDecimal.ZERO) > 0) {
+                UUID VI_ID   = UUID.fromString("550E8400-E29B-41D4-A716-446655440019");
+                UUID BANK_ID = UUID.fromString("550E8400-E29B-41D4-A716-446655440018");
+                UUID COD_ID  = UUID.fromString("550E8400-E29B-41D4-A716-446655440017");
+
+                if (paymentMethodId.equals(VI_ID)) {
+                    // Sau khi gọi service trừ ví thành công:
+                    lichSuDoiSanPhamRepository
+                            .findByHoaDonAndTrangThai(hoaDon, "Chờ xử lý")
+                            .stream()
+                            .filter(x -> x.getChenhLechGia()!=null && x.getChenhLechGia().compareTo(BigDecimal.ZERO) > 0)
+                            .forEach(x -> {
+                                x.setDaThanhToanChenhLech(true);  // ✅ đã thu tiền chênh lệch
+                                lichSuDoiSanPhamRepository.save(x);
+                            });
+                } else if (paymentMethodId.equals(BANK_ID) || paymentMethodId.equals(COD_ID)) {
+                    // Chỉ ghi nhận PTTT nếu chưa có
+                    lichSuDoiSanPhamRepository
+                            .findByHoaDonAndTrangThai(hoaDon, "Chờ xử lý")
+                            .forEach(x -> {
+                                if (x.getPhuongThucThanhToan() == null) {
+                                    phuongThucThanhToanRepository.findById(paymentMethodId).ifPresent(x::setPhuongThucThanhToan);
+                                    lichSuDoiSanPhamRepository.save(x);
+                                }
+                            });
+                }
+            }
+
 
             // 9) Đánh dấu dòng đã yêu cầu đổi
             for (ChiTietDonHang ct : chiTietDonHangs) {

@@ -188,6 +188,13 @@ public class AdminExchangeController {
             BigDecimal totalReplacement = replacementProduct.getGia().multiply(BigDecimal.valueOf(lichSu.getSoLuong()));
             BigDecimal chenhLech = totalReplacement.subtract(totalOriginal);
 
+            // Lấy PTTT: ưu tiên PTTT được KH chọn khi tạo yêu cầu đổi; nếu null, fallback PTTT của HĐ gốc
+            PhuongThucThanhToan pttt = (lichSu.getPhuongThucThanhToan() != null)
+                    ? lichSu.getPhuongThucThanhToan()
+                    : hoaDon.getPhuongThucThanhToan();
+
+            boolean daThanhToan = Boolean.TRUE.equals(lichSu.getDaThanhToanChenhLech());
+
             // XỬ LÝ CHÊNH LỆCH
             String moTa = "Đổi '" + chiTietDonHang.getTenSanPham() + "' → '"
                     + replacementProduct.getSanPham().getTenSanPham() + "', SL " + lichSu.getSoLuong();
@@ -197,8 +204,11 @@ public class AdminExchangeController {
                     chenhLech,
                     lichSu.getSoLuong(),
                     replacementProduct.getId(),
-                    moTa
+                    moTa,
+                    pttt,          // ✅ đẩy PTTT
+                    daThanhToan    // ✅ đẩy cờ đã thanh toán chênh lệch
             );
+
 
             // Thông báo + Email
             NguoiDung user = hoaDon.getDonHang().getNguoiDung();

@@ -103,7 +103,9 @@ public class HoaDonService {
                                           BigDecimal chenhLech,
                                           int soLuongThayThe,
                                           UUID chiTietSanPhamThayTheId,
-                                          String ghiChuThem) {
+                                          String ghiChuThem,
+                                          PhuongThucThanhToan pttt,      // ✅ mới
+                                          boolean daThanhToan) {          // ✅ mới
         if (chenhLech == null || chenhLech.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Chênh lệch phải >= 0 để tạo đơn phụ thu/0đ.");
         }
@@ -114,17 +116,20 @@ public class HoaDonService {
         ChiTietSanPham ctspThayThe = chiTietSanPhamRepository.findById(chiTietSanPhamThayTheId)
                 .orElseThrow(() -> new RuntimeException("Chi tiết sản phẩm thay thế không tồn tại."));
 
-        // 1) Tạo đơn chênh lệch (ship = 0, copy info từ HĐ gốc)
+        // 1) Đơn chênh lệch (ship 0, copy info)
         DonHang newOrder = new DonHang();
         newOrder.setNguoiDung(hoaDonGoc.getNguoiDung());
         newOrder.setMaDonHang("EX" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        newOrder.setTrangThaiThanhToan(false);
+        newOrder.setTrangThaiThanhToan(daThanhToan);                  // ✅ theo cờ
         newOrder.setPhiVanChuyen(BigDecimal.ZERO);
-        newOrder.setPhuongThucThanhToan(hoaDonGoc.getPhuongThucThanhToan());
-        newOrder.setSoTienKhachDua(BigDecimal.ZERO);
+        newOrder.setPhuongThucThanhToan(
+                pttt != null ? pttt : hoaDonGoc.getPhuongThucThanhToan()   // ✅ PTTT ưu tiên từ yêu cầu đổi
+        );
+        newOrder.setSoTienKhachDua(daThanhToan ? chenhLech : BigDecimal.ZERO); // ✅ nếu đã thu, ghi nhận số tiền
+        newOrder.setThoiGianThanhToan(daThanhToan ? LocalDateTime.now() : null);
         newOrder.setThoiGianTao(LocalDateTime.now());
         newOrder.setTienGiam(BigDecimal.ZERO);
-        newOrder.setTongTien(chenhLech);                   // <= có thể = 0
+        newOrder.setTongTien(chenhLech);                   // có thể = 0
         newOrder.setPhuongThucBanHang("Online");
         newOrder.setDiaChi(hoaDonGoc.getDiaChi());
         newOrder.setDiaChiGiaoHang(
@@ -134,26 +139,31 @@ public class HoaDonService {
                 + (ghiChuThem != null && !ghiChuThem.isBlank() ? (" - " + ghiChuThem) : ""));
         newOrder = donHangRepository.save(newOrder);
 
-        // 2) Dòng hàng: tham chiếu trực tiếp CTSP thay thế; đơn giá = chênh lệch / SL (có thể = 0)
-        BigDecimal unitPrice = BigDecimal.ZERO;
-        if (soLuongThayThe > 0) {
-            unitPrice = chenhLech.divide(new BigDecimal(soLuongThayThe), 2, RoundingMode.HALF_UP);
-        }
+        // 2) Dòng hàng = phần chênh lệch/SL (VND làm tròn)
+        BigDecimal unitPrice = (soLuongThayThe > 0)
+                ? chenhLech.divide(new BigDecimal(soLuongThayThe), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
 
         ChiTietDonHang line = new ChiTietDonHang();
         line.setDonHang(newOrder);
         line.setChiTietSanPham(ctspThayThe);
         line.setTenSanPham(ctspThayThe.getSanPham().getTenSanPham() + " (Phụ thu đổi hàng)");
         line.setSoLuong(soLuongThayThe);
-        line.setGia(unitPrice);                                            // <= có thể = 0
+        line.setGia(unitPrice);
         line.setThanhTien(unitPrice.multiply(new BigDecimal(soLuongThayThe)));
         line.setTrangThaiHoanTra(false);
         line.setGhiChu("Phụ thu chênh lệch đổi hàng từ " + hoaDonGoc.getDonHang().getMaDonHang());
         chiTietDonHangRepository.save(line);
 
-        // 3) Tạo hóa đơn cho đơn chênh lệch (sẽ là 0đ nếu chênh lệch = 0)
+        // 3) Hóa đơn
         createHoaDonFromDonHang(newOrder);
 
+        // Override trạng thái hóa đơn mới theo cờ đã thanh toán
+        if (daThanhToan) {
+            newOrder.setTrangThaiThanhToan(true);
+            newOrder.setThoiGianThanhToan(LocalDateTime.now());
+            donHangRepository.save(newOrder);
+        }
         return newOrder;
     }
 
@@ -162,20 +172,23 @@ public class HoaDonService {
                                       BigDecimal chenhLech,
                                       int soLuongThayThe,
                                       UUID chiTietSanPhamThayTheId,
-                                      String moTa) {
+                                      String moTa,
+                                      PhuongThucThanhToan pttt,   // ✅ mới
+                                      boolean daThanhToan) {      // ✅ mới
         if (chenhLech == null) return;
 
         if (chenhLech.compareTo(BigDecimal.ZERO) >= 0) {
-            // Phụ thu hoặc 0đ → vẫn tạo đơn/hóa đơn mới (ship = 0)
-            taoDonChenhLechDoiHang(hoaDonGoc, chenhLech, soLuongThayThe, chiTietSanPhamThayTheId, moTa);
+            // Phụ thu hoặc 0đ → tạo đơn/hóa đơn mới (ship=0)
+            taoDonChenhLechDoiHang(hoaDonGoc, chenhLech, soLuongThayThe, chiTietSanPhamThayTheId, moTa, pttt, daThanhToan);
             return;
         }
 
         // chênh lệch âm → hoàn ví nếu phù hợp
-        String pttt = hoaDonGoc.getPhuongThucThanhToan() != null
-                ? hoaDonGoc.getPhuongThucThanhToan().getTenPhuongThuc().trim()
-                : "";
-        if (List.of("Ví Thanh Toán", "Ví", "Chuyển khoản").contains(pttt)) {
+        String ptttName = (pttt != null && pttt.getTenPhuongThuc() != null)
+                ? pttt.getTenPhuongThuc().trim()
+                : (hoaDonGoc.getPhuongThucThanhToan() != null ? hoaDonGoc.getPhuongThucThanhToan().getTenPhuongThuc().trim() : "");
+
+        if (List.of("Ví Thanh Toán", "Ví", "Chuyển khoản").contains(ptttName)) {
             BigDecimal soTienHoan = chenhLech.abs();
             ViThanhToan vi = viThanhToanRepo.findByNguoiDung(hoaDonGoc.getNguoiDung())
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
@@ -631,83 +644,137 @@ public class HoaDonService {
 
     @Transactional
     public HoaDon taoHoaDonPhuThuNhieuDong(HoaDon hoaDonGoc, List<LichSuDoiSanPham> items) {
-        // 1) Tạo DonHang mới dùng để lập 1 hóa đơn phụ thu nhiều dòng
-        DonHang newOrder = new DonHang();
-        newOrder.setNguoiDung(hoaDonGoc.getNguoiDung());
-        newOrder.setMaDonHang("EX" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        newOrder.setTrangThaiThanhToan(false);
-        newOrder.setPhiVanChuyen(BigDecimal.ZERO); // phụ thu -> free ship
-        newOrder.setPhuongThucThanhToan(hoaDonGoc.getPhuongThucThanhToan());
-        newOrder.setSoTienKhachDua(BigDecimal.ZERO);
-        newOrder.setThoiGianTao(LocalDateTime.now());
-        newOrder.setTienGiam(BigDecimal.ZERO);
-        newOrder.setTongTien(BigDecimal.ZERO); // sẽ cập nhật ở cuối
-        newOrder.setPhuongThucBanHang("Online");
-        newOrder.setDiaChi(hoaDonGoc.getDiaChi());
-        newOrder.setDiaChiGiaoHang(
-                hoaDonGoc.getDonHang() != null ? hoaDonGoc.getDonHang().getDiaChiGiaoHang() : null
-        );
-        newOrder.setGhiChu("Đơn chênh lệch đổi hàng từ " + hoaDonGoc.getDonHang().getMaDonHang());
-        newOrder = donHangRepository.save(newOrder);
+        if (items == null || items.isEmpty()) return null;
 
-        BigDecimal tongPhuThu = BigDecimal.ZERO;
-        int stt = 1;
+        // Group theo PTTT: nếu item không có PTTT riêng -> fallback PTTT của HĐ gốc
+        Map<UUID, List<LichSuDoiSanPham>> groups = new LinkedHashMap<>();
+        Map<UUID, PhuongThucThanhToan> groupPttt = new HashMap<>();
 
-        // 2) Mỗi LichSuDoiSanPham -> 1 dòng phụ thu (nếu chênh lệch dương)
         for (LichSuDoiSanPham ls : items) {
-            ChiTietDonHang ctGoc = ls.getChiTietDonHang();
-            ChiTietSanPham ctThayThe = ls.getChiTietSanPhamThayThe();
+            PhuongThucThanhToan pttt = (ls.getPhuongThucThanhToan() != null)
+                    ? ls.getPhuongThucThanhToan()
+                    : hoaDonGoc.getPhuongThucThanhToan();
+            UUID key = (pttt != null && pttt.getId() != null) ? pttt.getId() : UUID.randomUUID(); // tránh null key
 
-            // Lấy chênh lệch của mục này
-            BigDecimal chenhLechItem =
-                    (ls.getChenhLechGia() != null)
-                            ? ls.getChenhLechGia()
-                            : ctThayThe.getGia().multiply(BigDecimal.valueOf(ls.getSoLuong()))
-                            .subtract(
-                                    (ls.getTongTienHoan() != null)
-                                            ? ls.getTongTienHoan()
-                                            : ctGoc.getGia().multiply(BigDecimal.valueOf(ls.getSoLuong()))
-                            );
+            groups.computeIfAbsent(key, k -> new ArrayList<>()).add(ls);
+            groupPttt.putIfAbsent(key, pttt);
+        }
 
-            // Chỉ tạo dòng nếu chênh lệch > 0 (âm thì là hoàn tiền – xử lý ở nơi khác)
-            if (chenhLechItem.compareTo(BigDecimal.ZERO) > 0) {
-                // Đơn giá phụ thu cho dòng này (làm tròn 0 chữ số thập phân – VND)
-                BigDecimal unitDiff = chenhLechItem
-                        .divide(BigDecimal.valueOf(ls.getSoLuong()), 0, RoundingMode.HALF_UP);
+        HoaDon hoaDonKetQuaCuoi = null;
 
-                ChiTietDonHang line = new ChiTietDonHang();
-                line.setDonHang(newOrder);
-                line.setChiTietSanPham(ctThayThe);
-                line.setTenSanPham(ctThayThe.getSanPham().getTenSanPham() + " (Phụ thu đổi hàng)");
-                line.setSoLuong(ls.getSoLuong());
-                line.setGia(unitDiff);
-                line.setThanhTien(unitDiff.multiply(BigDecimal.valueOf(ls.getSoLuong())));
-                line.setTrangThaiHoanTra(false);
-                line.setGhiChu("Phụ thu đổi hàng từ '" + ctGoc.getTenSanPham()
-                        + "' → '" + ctThayThe.getSanPham().getTenSanPham() + "', SL " + ls.getSoLuong());
-                chiTietDonHangRepository.save(line);
+        for (Map.Entry<UUID, List<LichSuDoiSanPham>> entry : groups.entrySet()) {
+            PhuongThucThanhToan ptttGroup = groupPttt.get(entry.getKey());
+            List<LichSuDoiSanPham> groupItems = entry.getValue();
 
-                tongPhuThu = tongPhuThu.add(line.getThanhTien());
-                stt++;
+            // 1) Tạo DonHang mới cho group
+            DonHang newOrder = new DonHang();
+            newOrder.setNguoiDung(hoaDonGoc.getNguoiDung());
+            newOrder.setMaDonHang("EX" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+            newOrder.setTrangThaiThanhToan(false);
+            newOrder.setPhiVanChuyen(BigDecimal.ZERO);
+            newOrder.setPhuongThucThanhToan(ptttGroup);
+            newOrder.setSoTienKhachDua(BigDecimal.ZERO);
+            newOrder.setThoiGianTao(LocalDateTime.now());
+            newOrder.setTienGiam(BigDecimal.ZERO);
+            newOrder.setTongTien(BigDecimal.ZERO);
+            newOrder.setPhuongThucBanHang("Online");
+            newOrder.setDiaChi(hoaDonGoc.getDiaChi());
+            newOrder.setDiaChiGiaoHang(
+                    hoaDonGoc.getDonHang() != null ? hoaDonGoc.getDonHang().getDiaChiGiaoHang() : null
+            );
+            newOrder.setGhiChu("Đơn chênh lệch đổi hàng (gộp) từ " + hoaDonGoc.getDonHang().getMaDonHang());
+            newOrder = donHangRepository.save(newOrder);
+
+            BigDecimal tongPhuThu = BigDecimal.ZERO;
+
+            // Kiểm tra nhóm đã thanh toán hết chưa (chỉ khi mọi item trong group = true)
+            boolean daThanhToanGroup = groupItems.stream()
+                    .allMatch(ls -> Boolean.TRUE.equals(ls.getDaThanhToanChenhLech()));
+
+            // 2) Duyệt từng item: tạo dòng phụ thu nếu chênh lệch dương, hoàn ví nếu âm
+            for (LichSuDoiSanPham ls : groupItems) {
+                ChiTietDonHang ctGoc = ls.getChiTietDonHang();
+                ChiTietSanPham ctThayThe = ls.getChiTietSanPhamThayThe();
+
+                BigDecimal chenhLechItem =
+                        (ls.getChenhLechGia() != null)
+                                ? ls.getChenhLechGia()
+                                : ctThayThe.getGia().multiply(BigDecimal.valueOf(ls.getSoLuong()))
+                                .subtract(
+                                        (ls.getTongTienHoan() != null)
+                                                ? ls.getTongTienHoan()
+                                                : ctGoc.getGia().multiply(BigDecimal.valueOf(ls.getSoLuong()))
+                                );
+
+                // Dương -> tạo dòng phụ thu
+                if (chenhLechItem.compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal unitDiff = chenhLechItem
+                            .divide(BigDecimal.valueOf(ls.getSoLuong()), 0, RoundingMode.HALF_UP);
+
+                    ChiTietDonHang line = new ChiTietDonHang();
+                    line.setDonHang(newOrder);
+                    line.setChiTietSanPham(ctThayThe);
+                    line.setTenSanPham(ctThayThe.getSanPham().getTenSanPham() + " (Phụ thu đổi hàng)");
+                    line.setSoLuong(ls.getSoLuong());
+                    line.setGia(unitDiff);
+                    line.setThanhTien(unitDiff.multiply(BigDecimal.valueOf(ls.getSoLuong())));
+                    line.setTrangThaiHoanTra(false);
+                    line.setGhiChu("Phụ thu đổi hàng từ '" + ctGoc.getTenSanPham()
+                            + "' → '" + ctThayThe.getSanPham().getTenSanPham() + "', SL " + ls.getSoLuong());
+                    chiTietDonHangRepository.save(line);
+
+                    tongPhuThu = tongPhuThu.add(line.getThanhTien());
+
+                } else if (chenhLechItem.compareTo(BigDecimal.ZERO) < 0) {
+                    // Âm -> hoàn ví (nếu PTTT ví/CK)
+                    String ptttName = (ptttGroup != null && ptttGroup.getTenPhuongThuc() != null)
+                            ? ptttGroup.getTenPhuongThuc().trim()
+                            : "";
+                    if (List.of("Ví Thanh Toán", "Ví", "Chuyển khoản").contains(ptttName)) {
+                        BigDecimal soTienHoan = chenhLechItem.abs();
+                        ViThanhToan vi = viThanhToanRepo.findByNguoiDung(hoaDonGoc.getNguoiDung())
+                                .orElseThrow(() -> new RuntimeException("Không tìm thấy ví của người dùng"));
+
+                        vi.setSoDu(vi.getSoDu().add(soTienHoan));
+                        vi.setThoiGianCapNhat(LocalDateTime.now());
+                        viThanhToanRepo.save(vi);
+
+                        LichSuGiaoDichVi lsVi = new LichSuGiaoDichVi();
+                        lsVi.setIdViThanhToan(vi.getId());
+                        lsVi.setLoaiGiaoDich("Hoàn tiền chênh lệch đổi hàng");
+                        lsVi.setSoTien(soTienHoan);
+                        lsVi.setMoTa("Hoàn chênh lệch đơn " + hoaDonGoc.getDonHang().getMaDonHang());
+                        lsVi.setCreatedAt(LocalDateTime.now());
+                        lsVi.setThoiGianGiaoDich(LocalDateTime.now());
+                        lichSuRepo.save(lsVi);
+                    }
+                }
             }
+
+            // Không có dòng dương -> bỏ qua group này
+            if (tongPhuThu.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            // 3) Cập nhật tổng tiền + trạng thái đơn theo đã thanh toán
+            newOrder.setTongTien(tongPhuThu);
+            if (daThanhToanGroup) {
+                newOrder.setTrangThaiThanhToan(true);
+                newOrder.setSoTienKhachDua(tongPhuThu);
+                newOrder.setThoiGianThanhToan(LocalDateTime.now());
+            }
+            donHangRepository.save(newOrder);
+
+            // Tạo hóa đơn
+            createHoaDonFromDonHang(newOrder);
+
+            // Lấy hóa đơn vừa tạo và override trạng thái theo cờ đã thanh toán
+            hoaDonKetQuaCuoi = hoaDonRepository.findByDonHang(newOrder).orElse(null);
         }
 
-        // Nếu không có dòng phụ thu dương nào thì trả về (tuỳ nghiệp vụ có thể huỷ newOrder)
-        if (tongPhuThu.compareTo(BigDecimal.ZERO) <= 0) {
-            // Không phát sinh phụ thu -> không cần tạo hóa đơn mới
-            return null;
-        }
-
-        // 3) Cập nhật tổng tiền đơn & tạo Hoá đơn từ Đơn hàng
-        newOrder.setTongTien(tongPhuThu);
-        donHangRepository.save(newOrder);
-
-        createHoaDonFromDonHang(newOrder);
-
-        // Lấy hóa đơn vừa tạo để trả về (tùy bạn có cần dùng)
-        Optional<HoaDon> hdMoi = hoaDonRepository.findByDonHang(newOrder);
-        return hdMoi.orElse(null);
+        return hoaDonKetQuaCuoi;
     }
+
 
     public String getCurrentStatus(HoaDon hoaDon) {
         // Kiểm tra trạng thái hủy đơn hàng
