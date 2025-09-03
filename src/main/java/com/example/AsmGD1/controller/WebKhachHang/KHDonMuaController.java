@@ -1383,12 +1383,13 @@ public class KHDonMuaController {
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(required = false) List<UUID> chiTietIds,
-            @RequestParam(required = false) UUID currentProductId, // SỬA: Thêm tham số currentProductId
+            @RequestParam(required = false) UUID currentProductId,
             Authentication authentication) {
         Map<String, Object> response = new HashMap<>();
         DecimalFormat formatter = new DecimalFormat("#,###");
 
         try {
+            // 1. Kiểm tra xác thực
             if (authentication == null || !authentication.isAuthenticated()) {
                 response.put("success", false);
                 response.put("message", "Vui lòng đăng nhập để tiếp tục.");
@@ -1402,6 +1403,7 @@ public class KHDonMuaController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
             }
 
+            // 2. Kiểm tra hóa đơn
             Optional<HoaDon> hoaDonOpt = hoaDonRepo.findById(id);
             if (hoaDonOpt.isEmpty()) {
                 response.put("success", false);
@@ -1416,7 +1418,7 @@ public class KHDonMuaController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
             }
 
-            // SỬA: Tính minPrice dựa trên currentProductId cụ thể
+            // 3. Tính giá tối thiểu sau giảm (minPriceAfterDiscount) dựa trên currentProductId
             BigDecimal minPriceAfterDiscount;
             if (currentProductId != null) {
                 // Lấy giá sau giảm của sản phẩm cụ thể
@@ -1465,7 +1467,7 @@ public class KHDonMuaController {
                         .orElse(BigDecimal.ZERO);
             }
 
-            // Tìm sản phẩm thay thế với giá gốc >= minPriceAfterDiscount
+            // 4. Tìm sản phẩm thay thế với giá gốc >= minPriceAfterDiscount
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "gia"));
             Page<ChiTietSanPham> productPage;
             if (keyword.trim().isEmpty()) {
@@ -1477,9 +1479,8 @@ public class KHDonMuaController {
                                 0, minPriceAfterDiscount, keyword, pageable);
             }
 
+            // 5. Lọc sản phẩm theo giá sau giảm
             List<Map<String, Object>> products = new ArrayList<>();
-
-            // SỬA: Lọc thêm theo giá sau giảm
             for (ChiTietSanPham product : productPage.getContent()) {
                 Map<String, Object> productMap = new HashMap<>();
                 productMap.put("id", product.getId().toString());
@@ -1506,11 +1507,10 @@ public class KHDonMuaController {
                     productMap.put("campaignName", campaign.getTen());
                 }
 
-                // SỬA: Chỉ thêm sản phẩm nếu giá sau giảm >= minPriceAfterDiscount
+                // Chỉ thêm sản phẩm nếu giá sau giảm >= minPriceAfterDiscount
                 if (giaSauGiam.compareTo(minPriceAfterDiscount) >= 0) {
                     productMap.put("giaValue", giaSauGiam);
                     productMap.put("gia", new DecimalFormat("#,### VNĐ").format(giaSauGiam));
-
                     products.add(productMap);
 
                     logger.debug("Sản phẩm thay thế hợp lệ: {} - Giá gốc: {}, Giá sau giảm: {}, Min required: {}",
@@ -1521,12 +1521,22 @@ public class KHDonMuaController {
                 }
             }
 
+            // 6. Tính toán totalPages dựa trên tổng số sản phẩm thỏa mãn điều kiện
+            long totalFilteredProducts;
+            if (keyword.trim().isEmpty()) {
+                totalFilteredProducts = chiTietSanPhamRepository
+                        .countBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqual(0, minPriceAfterDiscount);
+            } else {
+                totalFilteredProducts = chiTietSanPhamRepository
+                        .countBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqualAndSanPham_TenSanPhamContainingIgnoreCase(
+                                0, minPriceAfterDiscount, keyword);
+            }
+            int totalPages = (int) Math.ceil((double) totalFilteredProducts / size);
+
+            // 7. Chuẩn bị response
             response.put("success", true);
             response.put("products", products);
             response.put("currentPage", productPage.getNumber());
-            // SỬA: Tính lại totalPages dựa trên số sản phẩm sau khi lọc
-            int totalFilteredProducts = products.size();
-            int totalPages = (int) Math.ceil((double) totalFilteredProducts / size);
             response.put("totalPages", Math.max(totalPages, 1)); // Ít nhất 1 trang
             response.put("minPriceAfterDiscount", minPriceAfterDiscount); // Thêm để debug
 

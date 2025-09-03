@@ -21,6 +21,19 @@ import java.util.UUID;
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, UUID> {
 
+
+    long countBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqual(int soLuongTonKho, BigDecimal gia);
+
+    long countBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqualAndSanPham_TenSanPhamContainingIgnoreCase(
+            int soLuongTonKho, BigDecimal gia, String tenSanPham);
+
+
+    Page<ChiTietSanPham> findBySoLuongTonKhoGreaterThan(int soLuongTonKho, Pageable pageable);
+
+    // Phương thức tìm sản phẩm theo từ khóa và số lượng tồn kho
+    Page<ChiTietSanPham> findBySoLuongTonKhoGreaterThanAndSanPham_TenSanPhamContainingIgnoreCase(
+            int soLuongTonKho, String tenSanPham, Pageable pageable);
+
     List<ChiTietSanPham> findByGiaGreaterThanEqualAndSoLuongTonKhoGreaterThan(BigDecimal gia, int soLuongTonKho);
 
     Page<ChiTietSanPham> findBySoLuongTonKhoGreaterThanAndGiaGreaterThanEqual(int soLuongTonKho, BigDecimal gia, Pageable pageable);
