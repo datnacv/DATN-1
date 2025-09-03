@@ -83,6 +83,35 @@ public class ChienDichGiamGiaController {
         if (s == null) return null;
         return s.trim().replaceAll("\\s+", " ");
     }
+    // ❌ XÓA 2 method trùng mapping trước đó
+// ✅ GIỮ DUY NHẤT method này
+    @GetMapping(value = "/search-products", produces = "application/json")
+    @ResponseBody
+    public Page<SanPham> searchProductsAjax(
+            @RequestParam(name="keyword", required=false, defaultValue="") String keyword,
+            @RequestParam(name="page", defaultValue="0") int page,
+            @RequestParam(name="size", defaultValue="5") int size,
+            @RequestParam(name="selectedIds", required=false) String selectedIdsCsv
+    ){
+        // chuẩn hoá keyword (tuỳ chọn)
+        keyword = normalizeSearchKeyword(keyword);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "thoiGianTao"));
+
+        // parse selectedIds CSV -> Set<UUID>
+        Set<UUID> selectedIds = new LinkedHashSet<>();
+        if (selectedIdsCsv != null && !selectedIdsCsv.isBlank()){
+            for (String s : selectedIdsCsv.split(",")){
+                s = s.trim();
+                if (!s.isEmpty()){
+                    try { selectedIds.add(UUID.fromString(s)); } catch (IllegalArgumentException ignored) {}
+                }
+            }
+        }
+
+        // Gộp “available” + “đã chọn” để các SP đã tick luôn xuất hiện
+        return sanPhamService.searchAvailableOrSelectedByTenOrMa(keyword, pageable, selectedIds);
+    }
 
     // ===== List =====
     @GetMapping
@@ -95,7 +124,7 @@ public class ChienDichGiamGiaController {
             @RequestParam(name = "status", required = false) String status,
             @RequestParam(name = "discountLevel", required = false) String discountLevel,
             @RequestParam(name = "page", defaultValue = "0") int page,
-            @RequestParam(name = "size", defaultValue = "10") int size,
+            @RequestParam(name = "size", defaultValue = "5") int size,
             Model model
     ) {
         if (!isCurrentUserAdmin() && !isCurrentUserEmployee()) {
@@ -131,7 +160,7 @@ public class ChienDichGiamGiaController {
     @GetMapping("/create")
     public String hienFormTaoMoi(Model model,
                                  @RequestParam(defaultValue = "0") int page,
-                                 @RequestParam(defaultValue = "10") int size,
+                                 @RequestParam(defaultValue = "5") int size,
                                  RedirectAttributes redirectAttributes) {
         if (!isCurrentUserAdmin()) {
             redirectAttributes.addFlashAttribute("errorMessage", "Bạn không có quyền truy cập chức năng này!");
@@ -173,7 +202,7 @@ public class ChienDichGiamGiaController {
             model.addAttribute("errorMessage", error);
             model.addAttribute("chienDich", chienDich);
 
-            Pageable pageable = PageRequest.of(0, 10);
+            Pageable pageable = PageRequest.of(0, 5);
             Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
 
             model.addAttribute("productPage", productPage);
@@ -196,7 +225,7 @@ public class ChienDichGiamGiaController {
             model.addAttribute("errorMessage", e.getMessage());
             model.addAttribute("chienDich", chienDich);
 
-            Pageable pageable = PageRequest.of(0, 10);
+            Pageable pageable = PageRequest.of(0, 5);
             Page<SanPham> productPage = sanPhamService.getPagedAvailableProducts(pageable);
 
             model.addAttribute("productPage", productPage);
@@ -274,7 +303,7 @@ public class ChienDichGiamGiaController {
     @GetMapping("/edit/{id}")
     public String hienFormChinhSua(@PathVariable("id") UUID id,
                                    @RequestParam(defaultValue = "0") int page,
-                                   @RequestParam(defaultValue = "10") int size,
+                                   @RequestParam(defaultValue = "5") int size,
                                    @RequestParam(name = "selectedProductIds", required = false) String selectedProductIdsStr,
                                    Model model,
                                    RedirectAttributes redirectAttributes) {
@@ -384,7 +413,7 @@ public class ChienDichGiamGiaController {
 
                 model.addAttribute("errorMessage", error);
 
-                Pageable pageable = PageRequest.of(0, 10);
+                Pageable pageable = PageRequest.of(0, 5);
                 Page<SanPham> productPage = sanPhamService.getPagedProducts(pageable);
                 model.addAttribute("productPage", productPage);
                 model.addAttribute("currentProductPage", productPage.getNumber());

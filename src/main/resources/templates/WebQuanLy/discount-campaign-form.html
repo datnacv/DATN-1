@@ -115,12 +115,10 @@
                             </div>
                             <div class="col-md-12 d-flex justify-content-end">
                                 <button type="reset" class="btn btn-outline-secondary me-2">Làm mới</button>
-                                <button type="button" class="btn btn-primary"
-                                        id="openConfirmModalBtn"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#confirmCreateModal">
+                                <button type="button" class="btn btn-primary" id="openConfirmModalBtn">
                                     Tạo chiến dịch
                                 </button>
+
                             </div>
                         </div>
                     </div>
@@ -153,28 +151,12 @@
                                     <th>Tên sản phẩm</th>
                                 </tr>
                                 </thead>
-                                <tbody id="productTableBody">
-                                <tr th:each="product : ${productPage.content}" th:data-id="${product.id}" class="product-row">
-                                    <td><input type="checkbox" class="product-checkbox form-check-input" th:value="${product.id}"></td>
-                                    <td th:text="${product.maSanPham}"></td>
-                                    <td th:text="${product.tenSanPham}"></td>
-                                </tr>
-                                </tbody>
+                                <tbody id="productTableBody"><!-- JS sẽ render kết quả ở đây --></tbody>
                             </table>
-                            <nav id="productPagination">
-                                <ul class="pagination justify-content-center">
-                                    <li class="page-item" th:classappend="${currentProductPage == 0} ? 'disabled'">
-                                        <a class="page-link pagination-link" th:data-page="${currentProductPage - 1}" href="javascript:void(0)">Trước</a>
-                                    </li>
-                                    <li class="page-item" th:each="i : ${#numbers.sequence(0, totalProductPages - 1)}"
-                                        th:classappend="${i == currentProductPage} ? 'active'">
-                                        <a class="page-link pagination-link" th:data-page="${i}" href="javascript:void(0)" th:text="${i + 1}"></a>
-                                    </li>
-                                    <li class="page-item" th:classappend="${currentProductPage + 1 == totalProductPages} ? 'disabled'">
-                                        <a class="page-link pagination-link" th:data-page="${currentProductPage + 1}" href="javascript:void(0)">Sau</a>
-                                    </li>
-                                </ul>
-                            </nav>
+
+                            <nav id="productPagination"><!-- JS sẽ render phân trang ở đây --></nav>
+
+
                         </div>
                     </div>
                 </div>
@@ -362,45 +344,85 @@
             saveSelections();
         });
     }
-    function searchProducts(query,page=0){
-        document.getElementById("productsLoading").style.display="block";
-        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(query)}&page=${page}&size=${pageSize}`)
-            .then(res=>res.json())
-            .then(data=>{
+    function searchProducts(query, page = 0){
+        document.getElementById("productsLoading").style.display = "block";
+        const selectedIdsParam = [...selectedProductIds].join(',');
+        fetch(`/acvstore/chien-dich-giam-gia/search-products?keyword=${encodeURIComponent(query)}&page=${page}&size=${pageSize}&selectedIds=${selectedIdsParam}`)
+            .then(res => res.json())
+            .then(data => {
                 renderSearchResults(data.content);
                 renderPagination(data.totalPages, data.number, query);
-                document.getElementById("productsLoading").style.display="none";
+                document.getElementById("productsLoading").style.display = "none";
             });
     }
+
     function renderSearchResults(products){
-        const tbody=document.getElementById("productTableBody");
+        const tbody = document.getElementById("productTableBody");
         tbody.innerHTML = products.length===0
             ? `<tr><td colspan="3" class="text-center">Không tìm thấy sản phẩm nào</td></tr>`
-            : products.map(p=>`
-                <tr class="product-row" data-id="${p.id}">
-                    <td><input type="checkbox" class="product-checkbox form-check-input" value="${p.id}" ${selectedProductIds.has(p.id)?'checked':''}></td>
-                    <td>${p.maSanPham}</td>
-                    <td>${p.tenSanPham}</td>
-                </tr>`).join('');
+            : products.map(p => `
+      <tr class="product-row" data-id="${p.id}">
+        <td><input type="checkbox" class="product-checkbox form-check-input" value="${p.id}" ${selectedProductIds.has(p.id)?'checked':''}></td>
+        <td>${p.maSanPham}</td>
+        <td>${p.tenSanPham}</td>
+      </tr>`).join('');
+
         attachCheckboxEvents(".product-checkbox", selectedProductIds);
         updateSelectAll("#selectAllProducts", ".product-checkbox");
+        loadProductDetails(); // đảm bảo panel chi tiết khớp selection
     }
-    function renderPagination(totalPages,currentPage,keyword){
-        const pagination=document.getElementById("productPagination");
-        if(totalPages<=1){ pagination.innerHTML=""; return; }
-        let html=''; for(let i=0;i<totalPages;i++){
-            html+=`<li class="page-item ${i===currentPage?'active':''}">
-                      <a class="page-link pagination-link" data-page="${i}" data-keyword="${keyword}" href="#">${i+1}</a>
-                    </li>`;
+
+    function renderPagination(totalPages, currentPage, keyword){
+        const pagination = document.getElementById("productPagination");
+
+        // Luôn hiển thị ít nhất 1 trang
+        const pages = Math.max(Number(totalPages) || 0, 1);
+        const page = Math.min(Math.max(Number(currentPage) || 0, 0), pages - 1);
+        const kw = (keyword ?? "");
+
+        let html = `<ul class="pagination justify-content-center">`;
+
+        // Prev
+        const prevDisabled = page <= 0 ? " disabled" : "";
+        const prevPage = page > 0 ? page - 1 : 0;
+        html += `
+      <li class="page-item${prevDisabled}">
+        <a class="page-link pagination-link" data-page="${prevPage}" data-keyword="${kw}" href="#">Trước</a>
+      </li>`;
+
+        // Numbers
+        for (let i = 0; i < pages; i++) {
+            html += `
+          <li class="page-item ${i === page ? "active" : ""}">
+            <a class="page-link pagination-link" data-page="${i}" data-keyword="${kw}" href="#">${i + 1}</a>
+          </li>`;
         }
-        pagination.innerHTML=`<ul class="pagination justify-content-center">${html}</ul>`;
-        document.querySelectorAll(".pagination-link").forEach(link=>{
-            link.addEventListener("click",function(e){
-                e.preventDefault(); const page=parseInt(this.getAttribute("data-page")); const kw=this.getAttribute("data-keyword");
-                currentSearchPage=page; searchProducts(kw,page);
+
+        // Next
+        const nextDisabled = page >= pages - 1 ? " disabled" : "";
+        const nextPage = page < pages - 1 ? page + 1 : pages - 1;
+        html += `
+      <li class="page-item${nextDisabled}">
+        <a class="page-link pagination-link" data-page="${nextPage}" data-keyword="${kw}" href="#">Sau</a>
+      </li>`;
+
+        html += `</ul>`;
+        pagination.innerHTML = html;
+
+        // Gán sự kiện (bỏ qua nút disabled)
+        document.querySelectorAll("#productPagination .pagination-link").forEach(link=>{
+            link.addEventListener("click", function(e){
+                e.preventDefault();
+                if (this.closest(".page-item")?.classList.contains("disabled")) return;
+                const p = parseInt(this.getAttribute("data-page"), 10);
+                const q = this.getAttribute("data-keyword") ?? "";
+                currentSearchPage = p;
+                searchProducts(q, p);
             });
         });
     }
+
+
     function initEvents(){
         document.querySelector("button[type='reset']")?.addEventListener("click", ()=>{
             clearSelections();
@@ -419,7 +441,7 @@
         });
         document.getElementById("discountForm").addEventListener("submit", saveSelections);
     }
-    function setupDatetimeValidationAndModalFlow(){
+    function setupDatetimeValidation(){
         const form=document.getElementById('discountForm');
         const startInput=form.querySelector('input[name="ngayBatDau"]');
         const endInput=form.querySelector('input[name="ngayKetThuc"]');
@@ -474,37 +496,21 @@
                 if (tenInput.checkValidity()) normalizeTen(tenInput);
             });
         }
-
-        const confirmModalEl=document.getElementById('confirmCreateModal');
-        confirmModalEl.addEventListener('show.bs.modal', function(event){
-            // Validate trước, nếu OK mới normalize
-            if(maInput){ normalizeMa(maInput); validateMa(maInput); }
-            if(tenInput){
-                validateTen(tenInput);
-                if (tenInput.checkValidity()) normalizeTen(tenInput);
-            }
-            if(percent){ validatePercentInt(percent); }
-            if(!form.checkValidity()){
-                event.preventDefault();
-                setTimeout(()=>form.reportValidity(),0);
-            }else{
-                saveSelections();
-            }
-        });
     }
 
     function initFormState(){
-        const hasError=!!document.querySelector(".alert.alert-danger");
-        if(window.location.pathname.includes("/acvstore/chien-dich-giam-gia/create") && !hasError){
+        const hasError = !!document.querySelector(".alert.alert-danger");
+        if (window.location.pathname.includes("/acvstore/chien-dich-giam-gia/create") && !hasError) {
             clearSelections();
         }
-        restoreSelectedProducts();
-        attachCheckboxEvents(".product-checkbox", selectedProductIds);
         attachMasterCheckboxEvents();
         initEvents();
         saveSelections();
-        setupDatetimeValidationAndModalFlow();
+        setupDatetimeValidation(); // 👈 sửa lại
+        searchProducts('', 0);     // load luôn sản phẩm trang đầu
     }
+
+
     document.addEventListener("DOMContentLoaded", initFormState);
 
     document.getElementById("confirmSubmitBtn").addEventListener("click", function(){
@@ -534,8 +540,69 @@
             },200);
         }
     });
+    let submitting = false;
+
+    function showConfirmThenSubmit(){
+        const form=document.getElementById("discountForm");
+        const maInput=form.querySelector('input[name="ma"]');
+        const tenInput=form.querySelector('input[name="ten"]');
+        const percent=form.querySelector('input[name="phanTramGiam"]');
+
+        if(maInput){ normalizeMa(maInput); validateMa(maInput); }
+        if(tenInput){
+            validateTen(tenInput);
+            if (tenInput.checkValidity()) normalizeTen(tenInput);
+        }
+        if(percent){ validatePercentInt(percent); }
+
+        saveSelections();
+
+        if(!form.checkValidity()){
+            form.reportValidity();
+            form.querySelector(':invalid')?.focus({preventScroll:false});
+            return;
+        }
+
+        Swal.fire({
+            title: 'Tạo chiến dịch?',
+            html: 'Bạn có chắc chắn muốn tạo chiến dịch giảm giá với các thông tin đã nhập không?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Xác nhận',
+            cancelButtonText: 'Hủy',
+            reverseButtons: true,
+            focusCancel: true
+        }).then(res=>{
+            if(res.isConfirmed){
+                submitting = true;
+                Swal.fire({
+                    title: 'Đang xử lý...',
+                    html: 'Vui lòng đợi trong giây lát',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                        form.requestSubmit();
+                    }
+                });
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", ()=>{
+        document.getElementById("openConfirmModalBtn")?.addEventListener("click", showConfirmThenSubmit);
+        document.getElementById("discountForm")?.addEventListener("submit", function(e){
+            if(!submitting){
+                e.preventDefault();
+                showConfirmThenSubmit();
+            }
+        });
+    });
+
 </script>
 
 <script th:src="@{/js/notification.js}"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 </body>
 </html>

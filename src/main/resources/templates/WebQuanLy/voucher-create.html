@@ -300,21 +300,21 @@
         </div>
 
         <!-- Confirmation Modal -->
-        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="confirmModalLabel">Xác nhận lưu</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">Bạn có chắc chắn muốn lưu phiếu giảm giá này không?</div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                        <button type="button" class="btn btn-primary" id="confirmSubmit">Xác nhận</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<!--        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">-->
+<!--            <div class="modal-dialog modal-dialog-centered">-->
+<!--                <div class="modal-content">-->
+<!--                    <div class="modal-header">-->
+<!--                        <h5 class="modal-title" id="confirmModalLabel">Xác nhận lưu</h5>-->
+<!--                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>-->
+<!--                    </div>-->
+<!--                    <div class="modal-body">Bạn có chắc chắn muốn lưu phiếu giảm giá này không?</div>-->
+<!--                    <div class="modal-footer">-->
+<!--                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>-->
+<!--                        <button type="button" class="btn btn-primary" id="confirmSubmit">Xác nhận</button>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
     </div>
 </div>
 
@@ -354,6 +354,23 @@
         $('#ngayKetThuc').attr('min', minEnd);
         const endVal = $('#ngayKetThuc').val();
         if (endVal && new Date(endVal) < base) $('#ngayKetThuc').val(minEnd);
+    }
+    function doBeforeSubmit(){
+        try { sessionStorage.removeItem(STORAGE_KEY); } catch(e){}
+
+        // parse về số thô trước khi submit
+        ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
+            .forEach(sel => $(sel).val(parseNumber($(sel).val())));
+
+        // nếu người dùng lỡ chọn "Tất cả" thì chuyển thành danh sách cụ thể
+        const selected = $('#paymentMethodSelect').val();
+        if (selected && selected.includes('all')){
+            const allOptions = $('#paymentMethodSelect option')
+                .map(function(){return $(this).val();}).get().filter(v=>'all'!==v);
+            $('#paymentMethodSelect').val(allOptions).trigger('change');
+        }
+
+        $('#createVoucherForm').submit();
     }
 
     /* ===== MA/TEN helpers ===== */
@@ -622,8 +639,24 @@
             isValid = false;
         }
 
-        if (isValid){ new bootstrap.Modal('#confirmModal').show(); }
+        if (isValid){
+            Swal.fire({
+                title: 'Xác nhận lưu',
+                text: 'Bạn có chắc chắn muốn lưu phiếu giảm giá này không?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#153054', // primary
+                cancelButtonColor: '#9FD5F7'   // secondary
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    doBeforeSubmit();
+                }
+            });
+        }
         return isValid;
+
     }
 
     /* ===== Draft Save/Restore (optional) ===== */
@@ -738,21 +771,22 @@
         toggleUsageCount();
 
         // Submit xác nhận
-        $('#confirmSubmit').on('click', function(){
-            try { sessionStorage.removeItem(STORAGE_KEY); } catch(e){}
-            // parse về dạng thô trước khi submit
-            ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
-                .forEach(sel => $(sel).val(parseNumber($(sel).val())));
-            const selected = $('#paymentMethodSelect').val();
-            if (selected && selected.includes('all')){
-                const allOptions = $('#paymentMethodSelect option')
-                    .map(function(){return $(this).val();}).get().filter(v=>'all'!==v);
-                $('#paymentMethodSelect').val(allOptions).trigger('change');
-            }
-            $('#createVoucherForm').submit();
-        });
+        // $('#confirmSubmit').on('click', function(){
+        //     try { sessionStorage.removeItem(STORAGE_KEY); } catch(e){}
+        //     // parse về dạng thô trước khi submit
+        //     ['#giaTriGiam','#giaTriGiamToiDa','#giaTriGiamToiThieu','#gioiHanSuDung']
+        //         .forEach(sel => $(sel).val(parseNumber($(sel).val())));
+        //     const selected = $('#paymentMethodSelect').val();
+        //     if (selected && selected.includes('all')){
+        //         const allOptions = $('#paymentMethodSelect option')
+        //             .map(function(){return $(this).val();}).get().filter(v=>'all'!==v);
+        //         $('#paymentMethodSelect').val(allOptions).trigger('change');
+        //     }
+        //     $('#createVoucherForm').submit();
+        // });
 
     });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>
