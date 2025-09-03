@@ -11,6 +11,31 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
+    /* Messenger FAB (nút mở Messenger) */
+    .messenger-fab{
+      position: fixed;
+      bottom: 92px;            /* = 20px (chatbot) + 60px (nút) + 12px khoảng cách */
+      right: 20px;
+      width: 60px; height: 60px;
+      border-radius: 50%;
+      background: #0084FF;     /* màu Messenger */
+      color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+      z-index: 10001;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .messenger-fab:hover{
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(0,0,0,.3);
+    }
+    .messenger-fab i{ font-size: 28px; }
+
+    @media (max-width: 640px){
+      .messenger-fab{ bottom: 90px; right: 16px; width: 56px; height: 56px; }
+    }
+
     .navbar {  background: linear-gradient(135deg, #153054 0%, #1e4066 100%);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -500,7 +525,7 @@
       </div>
       <div class="modal-body p-4">
         <div class="modal-product-info flex items-center space-x-4">
-          <img id="modalProductImage" src="/placeholder.svg" alt="Product Image" class="w-20 h-20 object-cover rounded">
+          <img id="modalProductImage" src="" alt="Product Image" class="w-20 h-20 object-cover rounded">
           <div>
             <h6 id="modalProductName" class="font-semibold"></h6>
             <p id="modalProductPrice" class="text-blue-800 font-bold"></p>
@@ -603,16 +628,17 @@
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
 
-        <div class="price-container mt-2">
-          Giá hiện tại (giá sau giảm hoặc giá thường)
-          <div class="price text-blue-800 font-bold" th:attr="data-price=${product.price}">
-            <span th:text="${product.price}"></span> VNĐ
-          </div>
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
+          <span th:text="${product.price}"></span> VNĐ
+        </div>
 
-          Giá gốc (chỉ hiển thị khi có giảm giá)
-          <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="old-price text-sm text-gray-500 line-through mt-1">
-            Giá gốc: <span class="formatted-old-price" th:text="${product.oldPrice}"></span> VNĐ
-          </div>
+        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
+        </div>
+
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -661,16 +687,17 @@
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
-        <div class="price-container mt-2">
-          Giá hiện tại (giá sau giảm hoặc giá thường)
-          <div class="price text-blue-800 font-bold" th:attr="data-price=${product.price}">
-            <span th:text="${product.price}"></span> VNĐ
-          </div>
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
+          <span th:text="${product.price}"></span> VNĐ
+        </div>
 
-          Giá gốc (chỉ hiển thị khi có giảm giá)
-          <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="old-price text-sm text-gray-500 line-through mt-1">
-            Giá gốc: <span class="formatted-old-price" th:text="${product.oldPrice}"></span> VNĐ
-          </div>
+        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
+        </div>
+
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -721,16 +748,17 @@
       <a th:href="@{/chitietsanpham(id=${product.id})}" class="block p-4">
         <h4 th:text="${product.tenSanPham}" class="text-sm font-semibold text-gray-800 truncate"></h4>
 
-        <div class="price-container mt-2">
-          Giá hiện tại (giá sau giảm hoặc giá thường)
-          <div class="price text-blue-800 font-bold" th:attr="data-price=${product.price}">
-            <span th:text="${product.price}"></span> VNĐ
-          </div>
+        <div class="price text-blue-800 font-bold mt-2" th:attr="data-price=${product.price}">
+          <span th:text="${product.price}"></span> VNĐ
+        </div>
 
-          Giá gốc (chỉ hiển thị khi có giảm giá)
-          <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="old-price text-sm text-gray-500 line-through mt-1">
-            Giá gốc: <span class="formatted-old-price" th:text="${product.oldPrice}"></span> VNĐ
-          </div>
+        <div th:if="${product.oldPrice != null and product.discount != '0%'}" class="text-sm text-red-600 line-through">
+          <span class="formatted-old-price" th:text="${product.oldPrice}">Giá gốc</span>
+        </div>
+
+        <div class="rating text-yellow-400 text-sm mt-1" th:attr="data-product-id=${product.id}">
+          <span class="stars"></span>
+          <span class="avg-rating">0</span> (<span class="total-reviews">0</span> đánh giá)
         </div>
       </a>
     </div>
@@ -746,6 +774,15 @@
   <img th:src="@{/image/ACV.jpg}" alt="ACV"
        style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
 </div>
+
+<!-- Messenger shortcut -->
+<a id="messenger-launch"
+   class="messenger-fab"
+   href="https://m.me/820646527788683"
+   target="_blank" rel="noopener"
+   title="Mở trong Messenger" aria-label="Mở chat trong Messenger">
+  <i class="fa-brands fa-facebook-messenger"></i>
+</a>
 
 
 <div id="chatbot-box">
@@ -869,58 +906,50 @@
 
                   const priceInfo = data[productId];
                   const priceEl = card.querySelector('.price');
-                  let oldPriceContainer = card.querySelector('.old-price');
+                  let oldPriceContainer = card.querySelector('.text-sm.text-red-600.line-through');
 
+                  // Cập nhật giá hiện tại (giá giảm hoặc giá thường)
                   if (priceEl) {
-                    // Kiểm tra xem có giảm giá không
-                    const hasDiscount = priceInfo.discountPercentage > 0 && priceInfo.oldPrice && priceInfo.oldPrice !== priceInfo.giaSauGiam;
-
-                    if (hasDiscount) {
-                      // Hiển thị giá sau giảm
-                      const discountedPrice = Number(priceInfo.giaSauGiam || 0).toLocaleString('vi-VN') + ' VNĐ';
-                      priceEl.textContent = 'Từ ' + discountedPrice;
-                      priceEl.classList.add('text-red-600', 'font-bold'); // Màu đỏ cho giá giảm
-
-                      // Hiển thị giá gốc với gạch ngang
-                      const originalPrice = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
-
-                      if (!oldPriceContainer) {
-                        // Tạo phần tử hiển thị giá gốc
-                        oldPriceContainer = document.createElement('div');
-                        oldPriceContainer.className = 'old-price text-sm text-gray-500 line-through mt-1';
-                        oldPriceContainer.innerHTML = 'Giá gốc: <span class="formatted-old-price"></span> VNĐ';
-                        // Chèn sau phần tử giá hiện tại
-                        priceEl.parentNode.insertBefore(oldPriceContainer, priceEl.nextSibling);
-                      }
-
-                      const oldPriceSpan = oldPriceContainer.querySelector('.formatted-old-price');
-                      oldPriceSpan.textContent = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN');
-                      oldPriceContainer.style.display = 'block';
-
-                    } else {
-                      // Không có giảm giá, hiển thị giá thường
-                      const regularPrice = Number(priceInfo.giaSauGiam || priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
-                      priceEl.textContent = 'Từ ' + regularPrice;
-                      priceEl.classList.remove('text-red-600');
-                      priceEl.classList.add('text-blue-800', 'font-bold');
-
-                      // Ẩn giá gốc
-                      if (oldPriceContainer) {
-                        oldPriceContainer.style.display = 'none';
-                      }
+                    const newPrice = Number(priceInfo.giaSauGiam || 0).toLocaleString('vi-VN') + ' VNĐ';
+                    if (priceEl.textContent !== newPrice) {
+                      priceEl.textContent = 'Từ ' + newPrice;
+                      priceEl.classList.add('text-blue-600', 'font-bold');
                     }
+                  }
+
+
+
+                  // Chỉ hiển thị giá gốc nếu có giảm giá (discountPercentage > 0 và oldPrice tồn tại)
+                  if (priceInfo.discountPercentage > 0 && priceInfo.oldPrice && priceInfo.oldPrice !== priceInfo.giaSauGiam) {
+                    const oldPrice = Number(priceInfo.oldPrice || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+                    if (!oldPriceContainer) {
+                      // Tạo phần tử container giá gốc nếu chưa tồn tại
+                      oldPriceContainer = document.createElement('div');
+                      oldPriceContainer.className = 'text-sm text-red-600 line-through';
+                      const oldPriceSpan = document.createElement('span');
+                      oldPriceSpan.className = 'formatted-old-price';
+                      oldPriceContainer.appendChild(oldPriceSpan);
+                      // Chèn ngay sau phần tử giá hiện tại
+                      priceEl.parentNode.insertBefore(oldPriceContainer, priceEl.nextSibling);
+                    }
+
+                    const oldPriceSpan = oldPriceContainer.querySelector('.formatted-old-price');
+                    if (oldPriceSpan.textContent !== oldPrice) {
+                      oldPriceSpan.textContent = oldPrice;
+                    }
+                    oldPriceContainer.style.display = 'block'; // Đảm bảo hiển thị
+                  } else if (oldPriceContainer) {
+                    // Ẩn giá gốc nếu không có giảm giá
+                    oldPriceContainer.style.display = 'none';
                   }
 
                   // Cập nhật badge giảm giá
                   const discountEl = card.querySelector('.badge-discount') || document.createElement('span');
                   if (!card.contains(discountEl)) {
                     discountEl.className = 'badge-discount absolute top-2 right-2 bg-red-500 text-white text-xs font-semibold px-2 py-1 rounded shadow';
-                    const relativeContainer = card.querySelector('.relative');
-                    if (relativeContainer) {
-                      relativeContainer.appendChild(discountEl);
-                    }
+                    card.querySelector('.relative').appendChild(discountEl);
                   }
-
                   if (priceInfo.discountPercentage > 0) {
                     discountEl.textContent = `-${priceInfo.discountPercentage}%`;
                     discountEl.style.display = 'block';
@@ -1354,7 +1383,7 @@
       return 'Xin lỗi, bot không phản hồi đúng định dạng.';
     }
 
-    let cleanedMessage = data.message.replace(/\`\`\`json\n|\n\`\`\`/g, '').trim();
+    let cleanedMessage = data.message.replace(/```json\n|\n```/g, '').trim();
     console.log('Trước khi làm sạch:', cleanedMessage);
 
     cleanedMessage = cleanedMessage.replace(/[\u001F\u007F-\u009F]/g, '');
@@ -1670,15 +1699,11 @@
 
 
         const cur = Number(data.gia || 0).toLocaleString('vi-VN') + ' VNĐ';
-        if (data.oldPrice && data.oldPrice !== data.gia && data.discountPercentage > 0) {
+        if (data.oldPrice && data.oldPrice !== data.gia) {
           const old = Number(data.oldPrice).toLocaleString('vi-VN') + ' VNĐ';
-          priceEl.innerHTML = `
-            <span class="text-red-600 font-bold text-lg">${cur}</span>
-            <br>
-            <span class="text-gray-500 line-through text-sm">Giá gốc: ${old}</span>
-          `;
+          priceEl.innerHTML = `${cur} <span class="text-red-600 line-through ml-2">${old}</span>`;
         } else {
-          priceEl.innerHTML = `<span class="text-blue-800 font-bold text-lg">${cur}</span>`;
+          priceEl.textContent = cur;
         }
       }
 
