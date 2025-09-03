@@ -318,21 +318,9 @@ public class AdminExchangeController {
             hoaDonRepository.save(hoaDon);
 
             // Xử lý chênh lệch tổng
-            if (totalChenhLech.compareTo(BigDecimal.ZERO) != 0) {
-                // Vì là nhóm, có thể cần tạo một chi tiết đơn hàng ảo hoặc xử lý tổng
-                // Giả sử sử dụng một replacementProduct bất kỳ cho id, hoặc null nếu không cần
-                // Ở đây tôi giả sử dùng id của replacement đầu tiên
-                UUID sampleReplacementId = pendingRequests.get(0).getChiTietSanPhamThayThe().getId();
-                int totalSoLuong = pendingRequests.stream().mapToInt(LichSuDoiSanPham::getSoLuong).sum();
+            // Tạo 1 hoá đơn phụ thu chứa nhiều sản phẩm (mỗi lịch sử đổi là 1 dòng – chỉ lấy dòng chênh lệch dương)
+            hoaDonService.taoHoaDonPhuThuNhieuDong(hoaDon, pendingRequests);
 
-                hoaDonService.xuLyChenhLechSauDuyet(
-                        hoaDon,
-                        totalChenhLech,
-                        totalSoLuong,
-                        sampleReplacementId,
-                        moTaBuilder.toString()
-                );
-            }
 
             // Thông báo + Email
             NguoiDung user = hoaDon.getDonHang().getNguoiDung();

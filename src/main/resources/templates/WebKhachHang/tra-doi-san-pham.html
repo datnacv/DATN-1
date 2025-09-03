@@ -631,6 +631,20 @@
                 </div>
             </div>
 
+            <!-- Phần phương thức thanh toán (chỉ hiển thị nếu priceDifference > 0) -->
+            <div class="info-section" id="paymentSection" style="display: none;">
+                <h4><i class="fas fa-credit-card mr-2"></i>Phương thức thanh toán chênh lệch</h4>
+                <div class="payment-method active" data-value="550E8400-E29B-41D4-A716-446655440017">
+                    <input type="radio" name="paymentMethod" value="550E8400-E29B-41D4-A716-446655440017" checked>
+                    <span class="ml-2 font-medium">Thanh toán khi nhận hàng (COD)</span>
+                </div>
+                <div class="payment-method" data-value="550E8400-E29B-41D4-A716-446655440019">
+                    <input type="radio" name="paymentMethod" value="550E8400-E29B-41D4-A716-446655440019">
+                    <span class="ml-2 font-medium">Ví điện tử</span>
+                    <span id="wallet-balance" class="ml-2 text-sm text-gray-600">(Đang tải...)</span>
+                </div>
+            </div>
+
             <div class="action-buttons">
                 <button type="submit" class="btn-confirm">
                     <i class="fas fa-exchange-alt"></i> Gửi yêu cầu đổi
@@ -698,6 +712,7 @@
         let currentSearchKeyword = ''; // Lưu từ khóa tìm kiếm hiện tại
         let currentPage = 0; // Lưu trang hiện tại
 
+        // Định dạng giá tiền cho các phần tử .price
         const priceElements = document.querySelectorAll('.price[data-value]');
         priceElements.forEach(element => {
             const value = parseFloat(element.getAttribute('data-value'));
@@ -705,6 +720,33 @@
                 style: 'currency',
                 currency: 'VND'
             }).format(value).replace('₫', ' VNĐ');
+        });
+
+        // Thêm: Tải số dư ví
+        async function loadWalletBalance() {
+            const el = document.getElementById('wallet-balance');
+            if (!el) return;
+            el.textContent = '(Đang tải...)';
+            try {
+                const res = await fetch('/api/wallet/balance', { credentials: 'include' });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    el.textContent = `(Số dư: ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.data || 0).replace('₫', ' VNĐ')})`;
+                } else {
+                    el.textContent = '(Không có ví)';
+                }
+            } catch (err) {
+                el.textContent = '(Lỗi tải số dư)';
+            }
+        }
+
+        // Thêm: Xử lý chọn phương thức thanh toán
+        document.querySelectorAll('.payment-method').forEach(method => {
+            method.addEventListener('click', () => {
+                document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('active'));
+                method.classList.add('active');
+                method.querySelector('input').checked = true;
+            });
         });
 
         // Xử lý checkbox chọn sản phẩm
@@ -726,14 +768,14 @@
                         name: row.querySelector('.product-details strong').textContent,
                         maxQuantity: maxSoLuong,
                         priceOriginal: unitPrice,
-                        priceFinal: unitFinalPrice // SỬA: Lưu giá sau giảm
+                        priceFinal: unitFinalPrice // Lưu giá sau giảm
                     };
 
                     selectedProductData.push(productData);
                     productReplacementMap.set(productData.id, []); // Khởi tạo mảng thay thế cho sản phẩm mới
                     maxSoLuongTotal += maxSoLuong;
 
-                    // SỬA: Tự động mở modal cho sản phẩm vừa được chọn
+                    // Tự động mở modal cho sản phẩm vừa được chọn
                     currentProductId = productData.id;
                     showModalForProduct(productData.id);
 
@@ -761,7 +803,7 @@
             });
         });
 
-        // SỬA: Hàm mở modal riêng cho từng sản phẩm
+        // Hàm mở modal riêng cho từng sản phẩm
         function showModalForProduct(productId) {
             currentProductId = productId;
             const product = selectedProductData.find(p => p.id === productId);
@@ -797,9 +839,8 @@
             let totalOriginalPrice = 0;
             let totalReplacementPrice = 0;
 
-            // SỬA: Tính tổng giá trị sản phẩm gốc dựa trên giá sau giảm thực tế (từ cột thứ 7)
+            // Tính tổng giá trị sản phẩm gốc dựa trên giá sau giảm thực tế (từ cột thứ 7)
             selectedProductData.forEach(product => {
-                // Lấy đơn giá sau giảm từ UI (cột thứ 7 trong bảng)
                 const checkbox = document.querySelector(`.product-select-checkbox[value="${product.id}"]`);
                 if (checkbox && checkbox.checked) {
                     const row = checkbox.closest('tr');
@@ -831,6 +872,7 @@
             const priceDifference = totalReplacementPrice - totalOriginalPrice;
             const priceDifferenceElement = document.getElementById('priceDifference');
             const priceDifferenceValue = document.getElementById('priceDifferenceValue');
+            const paymentSection = document.getElementById('paymentSection');
 
             console.log(`Tính toán chênh lệch: Tổng gốc = ${totalOriginalPrice}, Tổng thay thế = ${totalReplacementPrice}, Chênh lệch = ${priceDifference}`);
 
@@ -840,6 +882,14 @@
                 currency: 'VND'
             }).format(priceDifference).replace('₫', ' VNĐ');
             priceDifferenceValue.value = priceDifference;
+
+            // Hiển thị/ẩn phần thanh toán
+            if (priceDifference > 0) {
+                paymentSection.style.display = 'block';
+                loadWalletBalance(); // Tải số dư ví khi hiển thị
+            } else {
+                paymentSection.style.display = 'none';
+            }
 
             // Đổi màu tùy thuộc vào chênh lệch
             if (priceDifference > 0) {
@@ -857,14 +907,13 @@
             renderSelectedReplacementProducts();
         }
 
-        // SỬA: Hàm tải danh sách sản phẩm thay thế sử dụng currentProductId
+        // Hàm tải danh sách sản phẩm thay thế sử dụng currentProductId
         function loadReplacementProducts(page = 0, keyword = '') {
             if (selectedProductData.length === 0 || !currentProductId) return;
 
             const hoaDonId = document.getElementById('exchangeForm').getAttribute('action').match(/\/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/)[1];
             const size = 5;
 
-            // SỬA: Sử dụng currentProductId thay vì tất cả chiTietIds
             const url = `/dsdon-mua/api/replacement-products/${hoaDonId}?page=${page}&size=${size}&keyword=${encodeURIComponent(keyword)}&currentProductId=${currentProductId}`;
 
             fetch(url, {
@@ -1206,9 +1255,10 @@
         });
 
         // Xử lý form submit
-        document.getElementById('exchangeForm').addEventListener('submit', function(e) {
+        document.getElementById('exchangeForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            // Validate sản phẩm được chọn
             if (selectedProductData.length === 0) {
                 Swal.fire({
                     title: 'Lỗi!',
@@ -1219,6 +1269,7 @@
                 return;
             }
 
+            // Validate sản phẩm thay thế
             const totalReplacements = Array.from(productReplacementMap.values()).flat();
             if (totalReplacements.length === 0) {
                 Swal.fire({
@@ -1230,24 +1281,59 @@
                 return;
             }
 
+            // Validate phương thức thanh toán nếu priceDifference > 0
+            const priceDifference = parseFloat(document.getElementById('priceDifferenceValue').value);
+            if (priceDifference > 0) {
+                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+                if (!selectedMethod) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Chưa chọn phương thức thanh toán',
+                        text: 'Vui lòng chọn một phương thức thanh toán để tiếp tục.',
+                        confirmButtonColor: '#153054'
+                    });
+                    return;
+                }
+
+                // Nếu chọn Ví, kiểm tra số dư
+                if (selectedMethod === '550E8400-E29B-41D4-A716-446655440019') {
+                    try {
+                        const res = await fetch('/api/wallet/balance', { credentials: 'include' });
+                        const data = await res.json();
+                        if (!res.ok || !data.success || (data.data || 0) < priceDifference) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Số dư không đủ',
+                                html: `<p>Bạn cần <strong>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(priceDifference).replace('₫', ' VNĐ')}</strong> nhưng số dư hiện tại là <strong>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.data || 0).replace('₫', ' VNĐ')}</strong>.</p><p>Vui lòng nạp thêm tiền vào ví để tiếp tục.</p>`,
+                                showCancelButton: true,
+                                confirmButtonText: 'Nạp tiền ngay',
+                                cancelButtonText: 'Quay lại',
+                                confirmButtonColor: '#153054',
+                                cancelButtonColor: '#d33'
+                            }).then(r => {
+                                if (r.isConfirmed) {
+                                    const id = document.getElementById('exchangeForm').getAttribute('action').match(/\/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/)[1];
+                                    location.href = '/vi?redirect=/tra-doi-san-pham/' + id;
+                                }
+                            });
+                            return;
+                        }
+                    } catch (err) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: 'Không thể kiểm tra số dư ví.',
+                            confirmButtonColor: '#153054'
+                        });
+                        return;
+                    }
+                }
+            }
+
+            // Thu thập dữ liệu form
             const reason = document.getElementById('reason').value;
             const description = document.getElementById('description').value;
             const email = document.getElementById('email').value;
-            const priceDifference = parseFloat(document.getElementById('priceDifferenceValue').value);
-
-            const submitButton = this.querySelector('.btn-confirm');
-            const originalText = submitButton.innerHTML;
-
-            submitButton.innerHTML = '<div class="loading"></div> Đang xử lý...';
-            submitButton.disabled = true;
-
-            Swal.fire({
-                title: 'Đang xử lý...',
-                text: 'Vui lòng đợi trong giây lát',
-                allowOutsideClick: false,
-                showConfirmButton: false,
-                didOpen: () => Swal.showLoading()
-            });
 
             const formData = new FormData();
             selectedProductData.forEach(product => formData.append('selectedProducts[]', product.id));
@@ -1260,39 +1346,73 @@
             formData.append('email', email);
             formData.append('priceDifference', priceDifference);
 
-            fetch(this.action, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-            })
-                .then(response => response.json())
-                .then(data => {
-                    submitButton.innerHTML = originalText;
-                    submitButton.disabled = false;
-                    Swal.fire({
-                        title: data.success ? 'Thành công!' : 'Lỗi!',
-                        text: data.message,
-                        icon: data.success ? 'success' : 'error',
-                        confirmButtonColor: '#153054',
-                        confirmButtonText: 'Đồng ý'
-                    }).then(() => {
-                        if (data.success) {
+            // Thêm paymentMethodId nếu priceDifference > 0
+            if (priceDifference > 0) {
+                const selectedMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value;
+                formData.append('paymentMethodId', selectedMethod);
+            }
+
+            // Hiển thị loading
+            const submitButton = this.querySelector('.btn-confirm');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<div class="loading"></div> Đang xử lý...';
+            submitButton.disabled = true;
+
+            Swal.fire({
+                title: 'Đang xử lý...',
+                text: 'Vui lòng đợi trong giây lát',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            // Gửi request
+            try {
+                const response = await fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+                const data = await response.json();
+
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+
+                if (data.success) {
+                    if (data.paymentUrl) { // Nếu backend trả về URL VNPay
+                        window.location.href = data.paymentUrl;
+                    } else {
+                        Swal.fire({
+                            title: 'Thành công!',
+                            text: data.message,
+                            icon: 'success',
+                            confirmButtonColor: '#153054',
+                            confirmButtonText: 'Đồng ý'
+                        }).then(() => {
                             window.location.href = '/dsdon-mua';
-                        }
-                    });
-                })
-                .catch(error => {
-                    submitButton.innerHTML = originalText;
-                    submitButton.disabled = false;
-                    console.error('Lỗi khi gửi yêu cầu:', error);
+                        });
+                    }
+                } else {
                     Swal.fire({
                         title: 'Lỗi!',
-                        text: 'Có lỗi xảy ra. Vui lòng kiểm tra console để biết chi tiết.',
+                        text: data.message,
                         icon: 'error',
                         confirmButtonColor: '#153054',
                         confirmButtonText: 'Đồng ý'
                     });
+                }
+            } catch (error) {
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+                console.error('Lỗi khi gửi yêu cầu:', error);
+                Swal.fire({
+                    title: 'Lỗi!',
+                    text: 'Có lỗi xảy ra. Vui lòng kiểm tra console để biết chi tiết.',
+                    icon: 'error',
+                    confirmButtonColor: '#153054',
+                    confirmButtonText: 'Đồng ý'
                 });
+            }
         });
     });
 </script>

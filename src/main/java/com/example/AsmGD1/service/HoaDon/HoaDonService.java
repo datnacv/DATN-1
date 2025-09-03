@@ -629,6 +629,86 @@ public class HoaDonService {
         System.out.println("Đã thêm LichSuHoaDon: " + trangThai);
     }
 
+    @Transactional
+    public HoaDon taoHoaDonPhuThuNhieuDong(HoaDon hoaDonGoc, List<LichSuDoiSanPham> items) {
+        // 1) Tạo DonHang mới dùng để lập 1 hóa đơn phụ thu nhiều dòng
+        DonHang newOrder = new DonHang();
+        newOrder.setNguoiDung(hoaDonGoc.getNguoiDung());
+        newOrder.setMaDonHang("EX" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+        newOrder.setTrangThaiThanhToan(false);
+        newOrder.setPhiVanChuyen(BigDecimal.ZERO); // phụ thu -> free ship
+        newOrder.setPhuongThucThanhToan(hoaDonGoc.getPhuongThucThanhToan());
+        newOrder.setSoTienKhachDua(BigDecimal.ZERO);
+        newOrder.setThoiGianTao(LocalDateTime.now());
+        newOrder.setTienGiam(BigDecimal.ZERO);
+        newOrder.setTongTien(BigDecimal.ZERO); // sẽ cập nhật ở cuối
+        newOrder.setPhuongThucBanHang("Online");
+        newOrder.setDiaChi(hoaDonGoc.getDiaChi());
+        newOrder.setDiaChiGiaoHang(
+                hoaDonGoc.getDonHang() != null ? hoaDonGoc.getDonHang().getDiaChiGiaoHang() : null
+        );
+        newOrder.setGhiChu("Đơn chênh lệch đổi hàng từ " + hoaDonGoc.getDonHang().getMaDonHang());
+        newOrder = donHangRepository.save(newOrder);
+
+        BigDecimal tongPhuThu = BigDecimal.ZERO;
+        int stt = 1;
+
+        // 2) Mỗi LichSuDoiSanPham -> 1 dòng phụ thu (nếu chênh lệch dương)
+        for (LichSuDoiSanPham ls : items) {
+            ChiTietDonHang ctGoc = ls.getChiTietDonHang();
+            ChiTietSanPham ctThayThe = ls.getChiTietSanPhamThayThe();
+
+            // Lấy chênh lệch của mục này
+            BigDecimal chenhLechItem =
+                    (ls.getChenhLechGia() != null)
+                            ? ls.getChenhLechGia()
+                            : ctThayThe.getGia().multiply(BigDecimal.valueOf(ls.getSoLuong()))
+                            .subtract(
+                                    (ls.getTongTienHoan() != null)
+                                            ? ls.getTongTienHoan()
+                                            : ctGoc.getGia().multiply(BigDecimal.valueOf(ls.getSoLuong()))
+                            );
+
+            // Chỉ tạo dòng nếu chênh lệch > 0 (âm thì là hoàn tiền – xử lý ở nơi khác)
+            if (chenhLechItem.compareTo(BigDecimal.ZERO) > 0) {
+                // Đơn giá phụ thu cho dòng này (làm tròn 0 chữ số thập phân – VND)
+                BigDecimal unitDiff = chenhLechItem
+                        .divide(BigDecimal.valueOf(ls.getSoLuong()), 0, RoundingMode.HALF_UP);
+
+                ChiTietDonHang line = new ChiTietDonHang();
+                line.setDonHang(newOrder);
+                line.setChiTietSanPham(ctThayThe);
+                line.setTenSanPham(ctThayThe.getSanPham().getTenSanPham() + " (Phụ thu đổi hàng)");
+                line.setSoLuong(ls.getSoLuong());
+                line.setGia(unitDiff);
+                line.setThanhTien(unitDiff.multiply(BigDecimal.valueOf(ls.getSoLuong())));
+                line.setTrangThaiHoanTra(false);
+                line.setGhiChu("Phụ thu đổi hàng từ '" + ctGoc.getTenSanPham()
+                        + "' → '" + ctThayThe.getSanPham().getTenSanPham() + "', SL " + ls.getSoLuong());
+                chiTietDonHangRepository.save(line);
+
+                tongPhuThu = tongPhuThu.add(line.getThanhTien());
+                stt++;
+            }
+        }
+
+        // Nếu không có dòng phụ thu dương nào thì trả về (tuỳ nghiệp vụ có thể huỷ newOrder)
+        if (tongPhuThu.compareTo(BigDecimal.ZERO) <= 0) {
+            // Không phát sinh phụ thu -> không cần tạo hóa đơn mới
+            return null;
+        }
+
+        // 3) Cập nhật tổng tiền đơn & tạo Hoá đơn từ Đơn hàng
+        newOrder.setTongTien(tongPhuThu);
+        donHangRepository.save(newOrder);
+
+        createHoaDonFromDonHang(newOrder);
+
+        // Lấy hóa đơn vừa tạo để trả về (tùy bạn có cần dùng)
+        Optional<HoaDon> hdMoi = hoaDonRepository.findByDonHang(newOrder);
+        return hdMoi.orElse(null);
+    }
+
     public String getCurrentStatus(HoaDon hoaDon) {
         // Kiểm tra trạng thái hủy đơn hàng
         if ("Hủy đơn hàng".equals(hoaDon.getTrangThai())) {
