@@ -888,9 +888,9 @@
           <th><i class="fas fa-image mr-2"></i>Sản phẩm</th>
           <th><i class="fas fa-sort-numeric-up mr-2"></i>Số lượng</th>
           <th><i class="fas fa-tag mr-2"></i>Giá</th>
-          <th><i class="fas fa-tags mr-2"></i>Giá gốc</th>
+
           <th><i class="fas fa-fire mr-2"></i>Giảm giá</th>
-          <th><i class="fas fa-bullhorn mr-2"></i>Chiến dịch</th>
+
           <th><i class="fas fa-calculator mr-2"></i>Thành tiền</th>
           <th><i class="fas fa-comment mr-2"></i>Ghi chú</th>
           <!-- Bỏ cột hành động riêng lẻ cho từng sản phẩm -->
@@ -927,8 +927,8 @@
           th:attr="data-value=${chiTiet.gia}"></span>
           </td>
 
-          <!-- Giá gốc: không có snapshot “giá gốc” riêng → hiển thị “-” -->
-          <td>-</td>
+<!--          &lt;!&ndash; Giá gốc: không có snapshot “giá gốc” riêng → hiển thị “-” &ndash;&gt;-->
+<!--          <td>-</td>-->
 
           <!-- Giảm giá dòng = (gia * soLuong) - thanhTien (tất cả là snapshot) -->
           <td>
@@ -938,8 +938,8 @@
                                  : 0}"></span>
           </td>
 
-          <!-- Chiến dịch: không snapshot tên chiến dịch → “-” -->
-          <td>-</td>
+<!--          &lt;!&ndash; Chiến dịch: không snapshot tên chiến dịch → “-” &ndash;&gt;-->
+<!--          <td>-</td>-->
 
           <!-- Thành tiền (snapshot) -->
           <td>

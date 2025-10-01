@@ -702,7 +702,6 @@ public class HoaDonService {
                     // ✅ Tạo dòng chi tiết cho cả phụ thu (>0) LẪN 0Đ (=0)
                     BigDecimal unitDiff = chenhLechItem
                             .divide(BigDecimal.valueOf(ls.getSoLuong()), 0, RoundingMode.HALF_UP);
-
                     LineSpec spec = new LineSpec();
                     spec.ctThayThe = ctThayThe;
                     spec.ten = ctThayThe.getSanPham().getTenSanPham() +

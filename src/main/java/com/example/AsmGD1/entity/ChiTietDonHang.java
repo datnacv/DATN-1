@@ -29,7 +29,7 @@ public class ChiTietDonHang {
     @Column(name = "gia", nullable = false, precision = 10, scale = 2)
     private BigDecimal gia;
 
-    @Column(name = "ten_san_pham", nullable = false, length = 100)
+    @Column(name = "ten_san_pham", nullable = false)
     private String tenSanPham;
 
     @Column(name = "thanh_tien", nullable = false, precision = 10, scale = 2)
